@@ -41,6 +41,7 @@ fun DebugGattExplorerScreen(
     vm: GattExplorerViewModel = hiltViewModel(),
 ) {
     val ui = vm.ui.collectAsStateWithLifecycle().value
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -49,9 +50,12 @@ fun DebugGattExplorerScreen(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("GATT Explorer", style = MaterialTheme.typography.titleLarge)
+                Text("GATT Explorer", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                OutlinedButton(onClick = { shareGatt(context, vm) }, enabled = ui.services.isNotEmpty()) {
+                    Text("Export")
+                }
                 OutlinedButton(onClick = { vm.disconnect() }) { Text("Disconnect") }
             }
         }
@@ -134,4 +138,27 @@ private fun CharacteristicRow(ch: GattCharacteristicInfo, vm: GattExplorerViewMo
             ) { Text("Write") }
         }
     }
+}
+
+/** Write the GATT markdown snapshot to app-specific storage and fire a share intent. */
+private fun shareGatt(
+    context: android.content.Context,
+    vm: GattExplorerViewModel,
+) {
+    val md = vm.exportMarkdown()
+    val dir = java.io.File(context.getExternalFilesDir(null), "watchfit-logs").apply { mkdirs() }
+    val ts = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
+    val file = java.io.File(dir, "gatt-$ts.md")
+    file.writeText(md, Charsets.UTF_8)
+    val uri = androidx.core.content.FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        file,
+    )
+    val share = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+        type = "text/markdown"
+        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(android.content.Intent.createChooser(share, "Export GATT"))
 }
