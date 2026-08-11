@@ -97,11 +97,13 @@ fun AppNavigation() {
                 ComingSoonScreen("Workouts", "Workout history. Available once the workout protocol is decoded.")
             }
             composable(Routes.DEVICE) {
-                val vm: DashboardViewModel = hiltViewModel()
+                val vm: com.watchfitre.ui.device.DeviceViewModel = hiltViewModel()
                 val ui = vm.ui.collectAsStateWithLifecycle().value
                 DeviceScreen(
                     connection = ui.connection,
-                    debugVisible = ui.settings.debugEnabled,
+                    info = ui.info,
+                    debugVisible = false,
+                    onRefresh = { vm.refresh() },
                     onOpenExplorer = { nav.navigate(Routes.DEBUG_SCANNER) },
                 )
             }
