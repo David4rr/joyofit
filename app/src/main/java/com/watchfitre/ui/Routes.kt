@@ -13,6 +13,7 @@ object Routes {
     const val DEBUG_SCANNER = "debug/scanner"
     const val DEBUG_GATT = "debug/gatt"
     const val DEBUG_LOG = "debug/log"
+    const val DEBUG_REPLAY = "debug/replay"
 
     val bottomNav = listOf(HOME, HEALTH, SLEEP, WORKOUTS, DEVICE, SETTINGS)
 }

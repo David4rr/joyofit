@@ -34,6 +34,7 @@ import com.watchfitre.ui.screens.SettingsScreen
 import com.watchfitre.ui.settings.SettingsViewModel
 import com.watchfitre.ui.screens.debug.DebugGattExplorerScreen
 import com.watchfitre.ui.screens.debug.DebugPacketLogScreen
+import com.watchfitre.ui.screens.debug.DebugReplayScreen
 import com.watchfitre.ui.screens.debug.DebugScannerScreen
 
 private data class NavItem(val route: String, val labelRes: Int, val icon: ImageVector)
@@ -117,6 +118,7 @@ fun AppNavigation() {
                     onEnableDebug = vm::enableDebug,
                     onOpenDebugScanner = { nav.navigate(Routes.DEBUG_SCANNER) },
                     onOpenDebugLog = { nav.navigate(Routes.DEBUG_LOG) },
+                    onOpenDebugReplay = { nav.navigate(Routes.DEBUG_REPLAY) },
                 )
             }
             composable(Routes.DEBUG_SCANNER) {
@@ -124,6 +126,9 @@ fun AppNavigation() {
             }
             composable(Routes.DEBUG_GATT) { DebugGattExplorerScreen() }
             composable(Routes.DEBUG_LOG) { DebugPacketLogScreen() }
+            composable(Routes.DEBUG_REPLAY) {
+                DebugReplayScreen(onInjected = { nav.navigate(Routes.DEBUG_LOG) })
+            }
         }
     }
 }

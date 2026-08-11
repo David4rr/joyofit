@@ -11,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +36,7 @@ fun SettingsScreen(
     onEnableDebug: () -> Unit,
     onOpenDebugScanner: () -> Unit,
     onOpenDebugLog: () -> Unit,
+    onOpenDebugReplay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -74,6 +76,9 @@ fun SettingsScreen(
                     }
                     Button(onClick = onOpenDebugLog, modifier = Modifier.fillMaxWidth()) {
                         Text("Packet Log")
+                    }
+                    OutlinedButton(onClick = onOpenDebugReplay, modifier = Modifier.fillMaxWidth()) {
+                        Text("Replay Capture")
                     }
                 }
             }
