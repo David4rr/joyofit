@@ -66,6 +66,12 @@ android {
     }
 }
 
+// Room schema export (for migration tracking) — KSP arg.
+ksp {
+    arg("room.schemaLocation", "${rootProject.projectDir}/app/schemas")
+    arg("room.generateKotlin", "true")
+}
+
 dependencies {
     // Core / lifecycle
     implementation(libs.androidx.core.ktx)
@@ -93,6 +99,11 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // Testing
     testImplementation(libs.junit)
