@@ -90,7 +90,7 @@ class BleConnectionManager @Inject constructor(
         }
 
         @Deprecated("Pre-API-33 overload. Still fired on API 29-32.", ReplaceWith("onCharacteristicRead(gatt, characteristic, value, status)"))
-        @Suppress("DEPRECATION")
+        @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
         override fun onCharacteristicRead(
             gatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic,
@@ -99,6 +99,7 @@ class BleConnectionManager @Inject constructor(
             handleCharacteristicRead(characteristic, characteristic.value ?: ByteArray(0), status)
         }
 
+        @Suppress("DEPRECATION") // characteristic.value: the 3-arg value overload is API 33+; we support 29-32.
         override fun onCharacteristicWrite(
             gatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic,
@@ -126,7 +127,7 @@ class BleConnectionManager @Inject constructor(
         }
 
         @Deprecated("Pre-API-33 overload. Still fired on API 29-32.")
-        @Suppress("DEPRECATION")
+        @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
         override fun onCharacteristicChanged(
             gatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic,

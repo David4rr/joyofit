@@ -36,6 +36,7 @@ class BleIoManager @Inject constructor(
         return tryOp { gatt.readCharacteristic(char) }
     }
 
+    @Suppress("DEPRECATION") // char.value setter: the value-arg overload is API 33+; we support 29-32.
     fun write(charUuid: UUID, payload: ByteArray): Boolean {
         val gatt = connectionManager.currentGatt ?: return false
         val char = gattManager.findCharacteristic(gatt, charUuid) ?: return false
@@ -54,6 +55,7 @@ class BleIoManager @Inject constructor(
      * Enable / disable notifications (or indications) by writing the CCCD.
      * Picks indication when only INDICATE is supported.
      */
+    @Suppress("DEPRECATION") // cccd.value setter: the value-arg overload is API 33+; we support 29-32.
     fun setNotify(charUuid: UUID, enable: Boolean): Boolean {
         val gatt = connectionManager.currentGatt ?: return false
         val char = gattManager.findCharacteristic(gatt, charUuid) ?: return false
