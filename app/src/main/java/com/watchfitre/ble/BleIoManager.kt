@@ -71,7 +71,7 @@ class BleIoManager @Inject constructor(
             gattManager.markSubscribed(charUuid, enable)
             return true
         }
-        val flag: Int = when {
+        val flag: ByteArray = when {
             enable && supportsIndicate -> BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
             enable -> BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             else -> BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE

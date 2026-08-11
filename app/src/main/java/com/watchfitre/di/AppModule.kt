@@ -3,6 +3,7 @@ package com.watchfitre.di
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.dataStoreFile
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import dagger.Module
