@@ -786,7 +786,7 @@ Android reports it as `DEVICE_TYPE_DUAL` with the identity address equal to the 
   changed in the stack is not known; it may be that Android had not yet seen the watch advertise. [INFERENCE] An iOS app always scans before
   it connects, so it is not affected.
 
-### 2026-10-16: first bind from a client the watch does not know, over LE (bind lab; stopped before the bind completes)
+### 2026-10-16: first bind from a client the watch does not know, over LE (bind lab; the bind could not complete on this phone)
 
 `BindLab` (see the README) presented a throwaway identity (fresh android id `6F2F0768…`, own empty key store) from the same phone, on a session of its own, while the
 binding the app holds stayed untouched (the app's op2 reconnect worked right after each run).
@@ -800,7 +800,18 @@ binding the app holds stayed untouched (the app's op2 reconnect worked right aft
 - **PinCode** (`01/2c`, request TLV `01` empty) is answered for an unknown client in about 100 ms with no interaction on the watch. Response TLV `01` = 80 bytes (AES-128-CBC, PKCS5,
   key `DIGEST_SECRET_v1` because authVersion is 1), `02` = the 16-byte IV. The plaintext is 64 bytes and a fresh one comes with every request; every nibble of it is a decimal digit, so its
   upper-case hex string is 128 digits and the case of the hex does not matter for this watch. The HiChain op1 key is SHA-256 of that string as UTF-8.
-- **Not done:** HiChain op1 steps 1 to 4 over LE. The watch holds one credential: binding from any identity (Huawei Health, another Gadgetbridge install, this app) invalidates the previous one
-  (Gadgetbridge issues 4148 and 4300: "HH resets the connection keys so you'll need to re-pair the device again with GB"; Huawei's own guide: a watch connects to one phone at a time). So
-  completing a bind from a throwaway identity would have cost the app its binding; the lab refuses that without `--ez commit true`. Which op1 step makes the watch drop the old credential is not known.
-- **Not tested:** a central the watch has no Classic bond with (the phone that ran the lab is bonded; the host's BlueZ adapter scanned nothing at all at the time).
+- **HiChain op1 step 1 (owner-approved committing run, 01:48).** The watch shows a pairing prompt on its screen once step 1 (a 695-byte frame, written as 512 + 2 + 181 bytes) arrives. The
+  reply and a second event both came 3.1 s after the request, which fits the owner's tap on ACCEPT [INFERENCE: the tap time was not logged]. Within 100 ms of it, (a) the watch started LE pairing (SMP): Android raised a pairing request (variant 3, consent) and a
+  notification "Pairing request" for the watch on the phone, which nobody accepted, so `SMP_CONN_TOUT` came 30 s later and the watch showed "failed"; (b) the watch sent its step 1 reply, about
+  835 bytes, as notifications of ATT MTU - 3 = 514 bytes and the 321 left over. **Android's stack discarded the 514-byte one**: `gatt_cl.cc: gatt_process_notification: value.len larger than
+  GATT_MAX_ATTR_LEN, discard`. The tail (JSON ending `...,"groupName":"health_group_name","groupOp":2,"groupType":256,"peerDeviceId":"<the watch's authId>","connDeviceId":"<the watch's authId>",
+  "appId":"com.huawei.health","requestId":"<ours>","ownerName":""}` + NUL, TLV `02=01`, `03=<requestId, 8 bytes>`, `04=00`, `05=00`) reached the app as "Packet parse failed: Magic mismatch" and the
+  request timed out. Nothing was committed (the old key kept working). Android 14 and newer request ATT MTU 517 whatever `requestMtu` says (`GATTC_ConfigureMTU ... mtu:517 user mtu 512`), so on
+  such a phone this reply can never be received; op2 replies (485 bytes at most) fit. Declaring a slice size and MTU of 200 in the LinkParams request changed nothing (same reply, same
+  chunking). An iPhone negotiates its own MTU (historically at most 185), so its chunks stay far below 512. The lab refuses runs that reach op1 step 1 on Android 14+.
+- **A first bind therefore needs two confirmations over LE**: ACCEPT on the watch, and the phone's own Bluetooth pairing consent (an iPhone shows the system pairing dialog).
+  Whether the watch needs the SMP bond to finish before op1 steps 2 to 4 is not known.
+- **Not done:** HiChain op1 steps 2 to 4 over LE. The watch holds one credential: binding from any identity (Huawei Health, another Gadgetbridge install, this app) invalidates the previous one
+  (Gadgetbridge issues 4148 and 4300: "HH resets the connection keys so you'll need to re-pair the device again with GB"; Huawei's own guide: a watch connects to one phone at a time), so a
+  completed bind from a throwaway identity costs the app its binding; the lab refuses that without `--ez commit true`.
+- **Not tested:** a central the watch has no Classic bond with (the phone that ran the lab is bonded; the host's BlueZ adapter, an Intel AX200, scanned nothing at all).

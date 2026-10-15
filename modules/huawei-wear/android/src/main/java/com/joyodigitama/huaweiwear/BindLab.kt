@@ -2,6 +2,7 @@ package com.joyodigitama.huaweiwear
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothManager
+import android.os.Build
 import android.util.Log
 import kotlinx.coroutines.CancellationException
 
@@ -17,6 +18,10 @@ import kotlinx.coroutines.CancellationException
  * After a lab authenticates it reads the battery to prove the key works, and with `adopt` the lab identity then replaces the
  * stored one, so the app keeps working with it. The lab never connects the app's own link and never syncs; the background link is
  * paused meanwhile and put back after.
+ *
+ * Android 14 and newer cannot run the first HiChain step of a bind: they ask for ATT MTU 517 whatever the app requests, the watch
+ * then answers in 514-byte notifications and the stack drops everything over 512 bytes (gatt_cl.cc, GATT_MAX_ATTR_LEN), so the
+ * reply to operationCode 1 step 1 (about 835 bytes) loses its head and the bind times out. The lab refuses those runs there.
  */
 internal object BindLab {
   private const val TAG = "JoyoFitBle"
@@ -40,7 +45,8 @@ internal object BindLab {
   }
 
   @SuppressLint("MissingPermission")
-  suspend fun run(runtime: WearRuntime, rawAddress: String, tag: String, stop: BindStop?, commit: Boolean, adopt: Boolean) {
+  suspend fun run(runtime: WearRuntime, rawAddress: String, tag: String, lab: AuthLab, commit: Boolean, adopt: Boolean) {
+    val stop = lab.stopAfter
     val address = rawAddress.trim().uppercase()
     if (!Regex("[A-Za-z0-9]{1,16}").matches(tag)) {
       Log.e(TAG, "lab: the identity tag must be 1 to 16 letters or digits")
@@ -94,7 +100,15 @@ internal object BindLab {
           )
         }
       }
-      val authenticator = HuaweiAuthenticator(live, identity, LabEvents, model.deviceType(ModelTransport.LE), AuthLab(stop))
+      if (!real && identity.isFirstConnection && (stop == null || stop == BindStop.ISO_MAC_VERIFIED) &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+      ) {
+        throw WearException(
+          ErrorCodes.PROTOCOL,
+          "Android 14+ drops the watch's 514-byte notifications, so the reply to HiChain operationCode 1 step 1 never arrives on this phone",
+        )
+      }
+      val authenticator = HuaweiAuthenticator(live, identity, LabEvents, model.deviceType(ModelTransport.LE), lab)
       val mode = authenticator.authenticate()
       Log.i(TAG, "lab: AUTHENTICATED ${mode.wire}, protocolVersion ${authenticator.protocolVersion}, bonded ${!identity.isFirstConnection}")
       val battery = live.queryBattery(Timeouts.QUERY_MS)

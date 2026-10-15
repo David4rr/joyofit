@@ -29,9 +29,9 @@ import kotlinx.coroutines.launch
  * reads the battery and, unless `sync` is false, runs an activity sync (steps), then disconnects and restores the switch and
  * the background link (unless `restore` is false). Every step is logged under the JoyoFitBle logcat tag.
  *
- * With `--es lab TAG [--es stop negotiation|pin|step2] [--ez commit true] [--ez adopt true]` it runs the [BindLab] instead: a throwaway
- * client identity (`real` is the stored one, which only reconnects) that authenticates over LE GATT, to see what a phone that never
- * bound before gets from the watch.
+ * With `--es lab TAG [--es stop negotiation|pin|step2] [--ez commit true] [--ez adopt true] [--ei linkslice N] [--ei linkmtu N]` it runs
+ * the [BindLab] instead: a throwaway client identity (`real` is the stored one, which only reconnects) that authenticates over LE GATT,
+ * to see what a phone that never bound before gets from the watch. `linkslice` and `linkmtu` fill those numbers into the LinkParams request.
  *
  * The manifest requires android.permission.DUMP, which only the adb shell and the system hold, so no other app can send it.
  */
@@ -65,7 +65,9 @@ class BleProbeReceiver : BroadcastReceiver() {
       }
       val commit = intent.getBooleanExtra("commit", false)
       val adopt = intent.getBooleanExtra("adopt", false)
-      runtime.scope.launch { BindLab.run(runtime, address, labTag, stop, commit, adopt) }
+      val linkSlice = if (intent.hasExtra("linkslice")) intent.getIntExtra("linkslice", 0) else null
+      val linkMtu = if (intent.hasExtra("linkmtu")) intent.getIntExtra("linkmtu", 0) else null
+      runtime.scope.launch { BindLab.run(runtime, address, labTag, AuthLab(stop, linkSlice, linkMtu), commit, adopt) }
       return
     }
     val scanSeconds = intent.getIntExtra("scan", 0)

@@ -76,7 +76,8 @@ adb shell am broadcast ... --es lab t1 --ez commit true --ez adopt true      # a
 `stop negotiation` and `stop pin` only ask the watch questions. `step2` also sends HiChain operationCode 1 steps 1 and 2 and stops before the auth token
 is delivered. Without a stop, a lab identity that never bound completes the bind, which makes the watch drop the binding the app holds (it keeps one),
 so the lab refuses without `--ez commit true`; `--ez adopt true` then makes the lab identity the app's stored one so the app keeps working. Frames and the
-session's secrets are logged in full under `JoyoFitBle`.
+session's secrets are logged in full under `JoyoFitBle`. On Android 14 and newer the lab refuses runs that reach the first HiChain bind step (`step2` or a bind): the phone asks for ATT MTU 517,
+the watch answers in 514-byte notifications and Android discards anything over 512 bytes, so the watch's reply never arrives (see protocol/README.md, Observations).
 
 ```mermaid
 flowchart LR

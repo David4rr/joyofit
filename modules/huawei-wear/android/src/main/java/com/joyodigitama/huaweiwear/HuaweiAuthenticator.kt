@@ -11,6 +11,7 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiConstants
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiCoordinator.HuaweiDeviceType
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiCrypto
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiPacket
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.DeviceConfig
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.DeviceConfig.HiChain
 import nodomain.freeyourgadget.gadgetbridge.util.CryptoUtils
@@ -53,8 +54,12 @@ internal enum class BindStop {
   ISO_MAC_VERIFIED,
 }
 
-/** Bind lab options: [stopAfter] ends the authentication with an ERR_PROTOCOL; a lab also traces this session's secrets to the log. */
-internal class AuthLab(val stopAfter: BindStop?) {
+/**
+ * Bind lab options: [stopAfter] ends the authentication with an ERR_PROTOCOL; a lab also traces this session's secrets to the log.
+ * [linkSlice] and [linkMtu] put those numbers into the LinkParams request (GB sends it empty) to see whether the watch then sends
+ * its replies in smaller pieces.
+ */
+internal class AuthLab(val stopAfter: BindStop?, val linkSlice: Int? = null, val linkMtu: Int? = null) {
   fun reached(stage: BindStop) {
     if (stage == stopAfter) throw WearException(ErrorCodes.PROTOCOL, "Bind lab stopped after $stage on purpose")
   }
@@ -157,7 +162,7 @@ internal class HuaweiAuthenticator(
 
   private suspend fun linkParams(): ByteArray {
     val response = session
-      .request(DeviceConfig.LinkParams.Request(params, deviceType), Timeouts.AUTH_MS, "LinkParams")
+      .request(linkParamsRequest(), Timeouts.AUTH_MS, "LinkParams")
       .expect<DeviceConfig.LinkParams.Response>("LinkParams")
 
     params.setDeviceSupportType(response.deviceSupportType)
@@ -177,6 +182,19 @@ internal class HuaweiAuthenticator(
         "bondState=${response.bondState.hex2()} mtu=${response.mtu} sliceSize=${response.sliceSize}",
     )
     return response.serverNonce
+  }
+
+  private fun linkParamsRequest(): DeviceConfig.LinkParams.Request {
+    val request = DeviceConfig.LinkParams.Request(params, deviceType)
+    val slice = lab?.linkSlice
+    val mtu = lab?.linkMtu
+    if (slice != null || mtu != null) {
+      val tlv = HuaweiTLV().put(0x01)
+      if (slice != null) tlv.put(0x02, slice.toShort()) else tlv.put(0x02)
+      if (mtu != null) tlv.put(0x03, mtu.toShort()) else tlv.put(0x03)
+      request.setTlv(tlv.put(0x04))
+    }
+    return request
   }
 
   // GetDeviceStatusRequest
