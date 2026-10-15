@@ -5,6 +5,7 @@ import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { Screen } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
+import { JoyoRogoCard } from '@/features/today/JoyoRogoCard';
 import { ReadinessSection } from '@/features/today/ReadinessSection';
 import { computeScores } from '@/features/today/scores';
 import { StrainSection } from '@/features/today/StrainSection';
@@ -37,6 +38,7 @@ export function ReadinessScreen() {
             onPress={() => router.push('/trends')}
             style={groupedRowStyle(colors, 0, 1)}
           />
+          <JoyoRogoCard />
         </>
       ) : error ? null : (
         <Skeleton width="100%" height={260} radius={radius.card} />
