@@ -1,0 +1,3297 @@
+{
+ "blocks": [
+  {
+   "result": {
+    "offset": 0,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "fileId": 5,
+    "unknown": 0
+   },
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain",
+   "command": 5,
+   "key": null,
+   "frame": "5a00d1002c050500000000001edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267cedde7"
+  },
+  {
+   "result": {
+    "offset": 305419896,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "fileId": 133,
+    "unknown": 254
+   },
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain, offset and unknown",
+   "command": 5,
+   "key": null,
+   "frame": "5a00d1002c058512345678fe1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce1eb9"
+  },
+  {
+   "result": {
+    "offset": -4096,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "fileId": 1,
+    "unknown": 1
+   },
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain, negative offset",
+   "command": 5,
+   "key": null,
+   "frame": "5a00d1002c0501fffff000011edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ceaf66"
+  },
+  {
+   "result": {
+    "offset": 100,
+    "data": "",
+    "fileId": 5,
+    "unknown": 0
+   },
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain, empty data",
+   "command": 5,
+   "key": null,
+   "frame": "5a0009002c0505000000640045cb"
+  },
+  {
+   "result": {
+    "offset": 100,
+    "data": "",
+    "fileId": 5,
+    "unknown": 0
+   },
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain, six bytes only",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0009002c0505000000640045cb"
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain, five bytes (underflow)",
+   "command": 5,
+   "key": null,
+   "frame": "5a0008002c05050000000176c0"
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain, three bytes",
+   "command": 5,
+   "key": null,
+   "frame": "5a0006002c0505000096b0"
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain, one byte",
+   "command": 5,
+   "key": null,
+   "frame": "5a0004002c0505cc28"
+  },
+  {
+   "result": {"error": "ArrayIndexOutOfBoundsException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain, empty body",
+   "command": 5,
+   "key": null,
+   "frame": "5a0003002c057e64"
+  },
+  {
+   "result": {
+    "offset": 16777216,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "fileId": 124,
+    "unknown": 0
+   },
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain starting like a TLV marker but not one",
+   "command": 5,
+   "key": null,
+   "frame": "5a00d1002c057c01000000001edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce028f"
+  },
+  {
+   "result": {
+    "offset": 16777216,
+    "data": "00001edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "fileId": 124,
+    "unknown": 0
+   },
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C plain 7c 01 00",
+   "command": 5,
+   "key": null,
+   "frame": "5a00d3002c057c010000000000001edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ced5c6"
+  },
+  {
+   "result": {
+    "offset": 8192,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "fileId": 22,
+    "unknown": 3
+   },
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted cbc",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00eb002c057c01017d10d11c41e268519c4b21db60ec000000017e8150ad10e14ce5eb4ea5b90fd23bc0861a79a316d57405e73b4bd35fab5373ff74d78be23d23f4da81189d81e544f669b2aa9d91340e122968d933b5367416104ef763f9cd04cd31e09c8cc833ced3bb251cd00fb2c0ccf4c47a0673c76a35968e20b8aa8d9c1894930f86047a6512d95c173922806473e9ab11490944077b7ff54a1fc8b073cfc92486e471e52bec8a9e961345b84bfb192ea4c544cca8c1eef2548246db0f6a60157cc1aae2c6a4f73dedae74578ee75be977a4f1ad065aa903166a78f8b65467ceb62b79e462a745268b893d"
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted empty plain cbc",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002a002c057c01017d10d716ada1ad52d1180722107d000000027e107f99a52ba11bfd92ff2245c57ea5dbfccb02"
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted too short cbc",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002a002c057c01017d1088f4f0c8ff5449b31494532f000000037e10b908b1e82c5f7b55bfa337f0aac9e322619b"
+  },
+  {
+   "result": {
+    "offset": 8192,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "fileId": 22,
+    "unknown": 3
+   },
+   "encryptMethod": 1,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted gcm",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00f9002c057c01017d108693249cb166638be6fe212b000000017e815e91f8648885cfc9c8da9239efa78346fc250d0c8f1505b70131725a0845f3765aaddba6ddc684cb1a7190b09d38f6d1cf3990fc17cb1dcc0f1c6dd7fbe6bc3c7e96d0052a0cc0c7eef968c65075f26de9ec25cd6d06c9f603a77c00a9a6d558a6acd9120b7c0fd1d40c1ca3252845643e320ebf64e805656b9ea3a8ab751f2737add340c6c53aaf8a4fe104910d45b8b06f7c97cae740f418a3418e7de451d7a7cf600e148185ca1419348be173918163067cbf222e0bd984f9bd511c22fc2b1fc23301bf31ba670636db778cb740aa0f68537fe2ca46059f6b3d26ef143de68a"
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "encryptMethod": 1,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted empty plain gcm",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002a002c057c01017d10317bcd5c16ff250f11ec9b2d000000027e10ec586a44e541a465d1022ffde36ed2104fec"
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "encryptMethod": 1,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted too short gcm",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002d002c057c01017d108ee33bef0bd43225d42bfdcb000000037e13f5e2c38afea1ba2590f260ac19e051a526bf942477"
+  },
+  {
+   "result": {
+    "offset": 8192,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "fileId": 22,
+    "unknown": 3
+   },
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 4,
+   "name": "2C encrypted deviceSupportType 4",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00f9002c057c01017d103a491db363ecb85294d7f14ef755931f7e815e50528fe58cde45b33a475bda0d8f4f01123c045a12c51a64d9f75f272141da5a6fbd74a5e1e1843231d476d617feeeecaf02d87f2146aa59028c836ec85f5b0c1b32a1deeb4cb2739f95ed72fc8c8a3eea86e4146b440bfee59f33f4201746816509ec583aff3bf3625fc102d8cb472949d1b4f58b9bb5c16890a1d276aa41eddb60595852ed4e4d66eb4d26a7d5735988695671523598c54e66e95c7cf70d140e09aa0b961aeca386d405343af70e09eb5a0b4a954641d82bc2f538913e460a52dc55bd3f6cca90d48a9e6ed9259bff7e0dbc5b73ae6de948b292823f1baec4"
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 4,
+   "name": "2C encrypted empty plain deviceSupportType 4",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002a002c057c01017d10f7f0918a8cbb08a9a8c29b5e138585787e102ceefbc3abf394b8efe97b1f10d81e1016e3"
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 4,
+   "name": "2C encrypted too short deviceSupportType 4",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002d002c057c01017d10db051417f94ca7d68b6cf6999f14df187e13bb3cad519137ee9d0857a30d9a20f6059eb182f947"
+  },
+  {
+   "result": {"error": "CryptoException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted, no key",
+   "command": 5,
+   "key": null,
+   "frame": "5a00eb002c057c01017d105dcf4159ed2c8cecd1250d86000000047e815087946577a21be575eac8cc760ed998062919267dd486e79e8413cec79eaab198c102e2acc4a01a97a3ae1a57734f17c76889bdd511b758633409990ff7a3ae735dc7631a3c83730176b8f9b0a7ea573597fcbf693d298fcdd3527df567c288d921dddee3fee1875228dd61744c19e78c17ae47c038cdb10fbc551feeaa9e6ca35c1a884e21514546d1abdf8345c02323eae074c32c6f45f7d4f7538c8128f4c446688a61ee6076d8dd5e4ba87d8875dc9d1acf8e4ef23c5e556968cca3433146b4760dab84a3e890ad55e007d45db1bedba6"
+  },
+  {
+   "result": {"error": "CryptoException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted, wrong key",
+   "command": 5,
+   "key": "31fc0704d935f99333504742bf543aed",
+   "frame": "5a00eb002c057c01017d108c492d180b1770f0cf5a9ccf000000057e8150a54f7b931f84c09cf41986f17dc6f8e4536733716c9bda56f5a6b962ee53bd02c93c692976d796255b38c79ff0c7458b2ba0513ab2ceb4a0b68929d1eaa686b96b68e106a4763aff6d8c7a39e0cd90c8709e5de3bb94389e49421c0d7bace2fee98b41886093a33e9ffd41f1731157cce12fb25df52bd43e2da89cfc08d1174eed52c7ec6340f155ee9833d1df4442e73aa8c220a18ae87ed31fee07d67ad8f8ff3bd21b7067f1e21fc4dbc5e5bbf008afbe5586a1232241ada2f380857105ec6e4d15afc5e3d199e2742197e7a4c324b390"
+  },
+  {
+   "result": {"error": "CryptoException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted, garbled cipher",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00eb002c057c01017d107d52408f5c055f01113bed88000000067e8150099ed05bba875dfbb5c894a3cdcf426a8fb0ea803f767af7d2cf47e2208c79814d58e03f25e5109303783c183837f0d03bb10c853994c5aea7ce68dc9990daa0be1fc49f722e91a1e3adbc0cbaba3b3d8b0f86badf46d6a827694134c8328b2cebef647a37c3585e00f575b94f346656ee8254822b9feefc2e4b0fc02f6ec359001ea9efe18bceeea98e2fd06ec3064be7c7bc7ba5e9ff8bc3820b3aaad99477b1ff2c83d8e23b624fb65ed9e8d5034b90addfe11b974d9e5a9c92b93e8f408ac8ae28598b77ab688d2b2a2bec95172465f1"
+  },
+  {
+   "result": {"error": ""},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C encrypted, truncated",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00e4002c057c01017d107d52408f5c055f01113bed88000000067e8150099ed05bba875dfbb5c894a3cdcf426a8fb0ea803f767af7d2cf47e2208c79814d58e03f25e5109303783c183837f0d03bb10c853994c5aea7ce68dc9990daa0be1fc49f722e91a1e3adbc0cbaba3b3d8b0f86badf46d6a827694134c8328b2cebef647a37c3585e00f575b94f346656ee8254822b9feefc2e4b0fc02f6ec359001ea9efe18bceeea98e2fd06ec3064be7c7bc7ba5e9ff8bc3820b3aaad99477b1ff2c83d8e23b624fb65ed9e8d5034b90addfe11b974d9e5a9c92b93e8f408ac8ae28598b77ab688d0d47"
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C marker with no cipher",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0006002c057c0101f339"
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "encryptMethod": 0,
+   "service": 44,
+   "deviceSupportType": 1,
+   "name": "2C marker with iv only",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0018002c057c01017d10f8981904fa525bc5538711c044bafc8567d1"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 0,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "decodeError": "notTLV"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A plain data (not TLV)",
+   "command": 5,
+   "key": null,
+   "frame": "5a00cc000a05001edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267cef471"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 200,
+    "data": "0bba13049a9e3a0a48ca78eb174311535035758576ee5722ff4a1d1e7dab5575862b22f57a9ffdfa232099d73e8adc7ab644",
+    "decodeError": "notTLV"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A plain data, number 200",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0036000a05c80bba13049a9e3a0a48ca78eb174311535035758576ee5722ff4a1d1e7dab5575862b22f57a9ffdfa232099d73e8adc7ab644ce3b"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 7,
+    "data": "",
+    "decodeError": "notTLV"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A number only",
+   "command": 5,
+   "key": null,
+   "frame": "5a0004000a0507d80c"
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A empty body",
+   "command": 5,
+   "key": null,
+   "frame": "5a0003000a05d224"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 3,
+    "data": "4101424200",
+    "decodeError": "notTLV"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A plain data that parses as TLV without cipher",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0009000a050341014242002189"
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A plain data, single zero",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0005000a0500009a42"
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A plain data, two bytes tag 0 len 0",
+   "command": 5,
+   "key": null,
+   "frame": "5a0007000a050100000066b4"
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A data that is a valid TLV without the cipher elements",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0006000a05410142c95b"
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A data that is a valid TLV with only a cipher element",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0006000a057e014220cf"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 125,
+    "data": "10441d02047981d8d82893ae6d92dd4eba7e03010203",
+    "decodeError": "crypto"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A data that is a valid TLV with iv and an unaligned cipher",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a001a000a057d10441d02047981d8d82893ae6d92dd4eba7e030102038b5b"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 125,
+    "data": "10573efc0319cdb71d1dd61599666663877e1000000000000000000000000000000000",
+    "decodeError": "crypto"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A data that is a valid TLV with iv and a block of zeros",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0027000a057d10573efc0319cdb71d1dd61599666663877e10000000000000000000000000000000007856"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 9,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "decodeError": null
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted cbc",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00eb000a057c01017d106b861c33d365d6a8188cbd32000000077e81502be4fd32af44d4fecd0d6c2dc35de883e0268782e01ad31036bd2fa7eb75c4b109b9055be74a1e50c77240f578fe7bc778c780383fc746ca056f626034fd2289879f287d4614652010a3e591328a75b0fb5f1820ca1c363c1dcf15e29106cf5b28218ed4f37b586831292971295c142990c5ec5c2c50b6c24ddeebac54a216c0452dcf4a1bb423076cb6e7dfaebed7094595116c745c99774dfe6ce03bd3127098ef8e1e145b698a861aebcf38b4ac05c0d52524a25154a142b167ce45d8cef1b577e04438f0dc47d7ec07d5ae91924ec9db"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 128,
+    "data": "",
+    "decodeError": null
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted number only cbc",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002a000a057c01017d10317255366598fb98c93fb6cf000000087e10c89e6f31de803d5f640d4a1b5faa48f0fdbc"
+  },
+  {
+   "result": {"error": "ArrayIndexOutOfBoundsException"},
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted empty plain cbc",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002a000a057c01017d105844b17cdda8e14f098590d6000000097e108b3cc4a4ea9248ea8aeb3188e17dcfb0e3d5"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 9,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "decodeError": null
+   },
+   "encryptMethod": 1,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted gcm",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00f4000a057c01017d107afc19679a2d0f5dd86851a3000000047e81598ab42926c1a8a49a5464832c1f7e23574b485b4cc929a824aa6c7ff1ca48a65b0193c7595dd8eaf7d31b26012d227119bdb3276ff438e7609043a06b78479524f6d4fd0fde4e0dfdaa693f15fa982ee3469af11264aa20ac34b5ef6b47467688441033e5b0d38d72317f896145661e108fcbf55ffc87c59330a4ff3b545b406c42f973075112e64d1ae7f8d4b5d5eaeb8f6119492646676c02645215e001619bb8fef5a5fe8d6f15c6f1f5b699bdb5f5b6957cfdae1d6eca260380b0e578417a3af6accab470120301b28b78932e26e1875ce24d207c81e2b025e7"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 128,
+    "data": "",
+    "decodeError": null
+   },
+   "encryptMethod": 1,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted number only gcm",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002b000a057c01017d1057c54183c47d3668d0fe30d8000000057e11eaf7126b7704edc9c2b1b209b87dcea983a299"
+  },
+  {
+   "result": {"error": "ArrayIndexOutOfBoundsException"},
+   "encryptMethod": 1,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted empty plain gcm",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002a000a057c01017d105e49316b2cab1c9f3f804eeb000000067e10d22254603042f27b3349b1ecdd2ede79b180"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 9,
+    "data": "1edb0d0439ea194f3e0de016ebcb2520563874172cb780dc2dcc60e6570c0d001e4be8537400dee86a38dc83055240614dde9bb46b74c89b846f4c02643020662f148a996d6fce9934f84231169127d888013c9d8794210c0a7f1aeac25dc4d4d9740d3d6ebd96bb4939754d2873306be16d6067b275a07f0e1284ba75317ead660912ed327599e9b605b122d83d6d5634e56b0fd2cd1740814f09015449d1d16640f98d6bc05894724d6a43d8f09da7e35b57d0036d60387a3e3e968c0a48cf2bdf8cf33dd267ce",
+    "decodeError": null
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 4,
+   "name": "0A encrypted deviceSupportType 4",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00f4000a057c01017d1088bca8e0a38301da15785e9df8440e977e8159655118c2d0b19d4f36a69dbfb08c8d9b956274a9beb9be0cf2ae3fd9ffdd375e1e0066485aa3ad18c5be02974780c735491f24aeb3635f0130e4bdf1e9b7f29d162e65bf14f2e35b0c645225b4d103e9d5799b874bbf6de5e908a7df3c595af975960c05f67d1263f6d3293887fab82910f9e93ddd99079d29a6261ac03882b7aaeb2b9135c133109ad3074d6b0678a66ed1faed8996750ca807e644d54bd3404a0eba5e8e1f9b997875c01125141911fe9539db2c8b35f7ad55ae425fd8b68421542c80ca5ee15447ec4f14e8e2f0730cc7d609414cc1c8cfab3b"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 128,
+    "data": "",
+    "decodeError": null
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 4,
+   "name": "0A encrypted number only deviceSupportType 4",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002b000a057c01017d10d3425205597c1dd41a3a2809e90c68b57e115d5453fa7ac513c4c643e2d2625a2a35df8d59"
+  },
+  {
+   "result": {"error": "ArrayIndexOutOfBoundsException"},
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 4,
+   "name": "0A encrypted empty plain deviceSupportType 4",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a002a000a057c01017d10ed04371d60d6fce16ece27862ddc9ada7e1078323043e0fe5b083d22f8396dff85f279be"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 124,
+    "data": "01017d10a5f72b7872c3e047454c645f0000000a7e8150a6d68a8dd7ea5cb83001a4914d35ae81ed097c0cac62540bef697757aa790afa39d4a1c4801f744e67fcdc73a68998cdaee974468e23af2401a563bd26a20ab80fde24bfbe1d65a5a622798d4fee86b3fd07147e9209ba9de3c6582f7fedf2d5f2de27f9d5f87923b68fc80a4124c7e8549a0fe6d001e9edc20f5c651005db390f243727b52c752a71a14d1bf93799c4e86105d01aa2ec24ab5f03659f8d00134f11c85392902357797960ae1e702c2a36bb4ed5932aa2d85215ffe2a9741d2564b8b7dfa8c6ee4099b5e1fc98447b4c",
+    "decodeError": "crypto"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted, no key",
+   "command": 5,
+   "key": null,
+   "frame": "5a00eb000a057c01017d10a5f72b7872c3e047454c645f0000000a7e8150a6d68a8dd7ea5cb83001a4914d35ae81ed097c0cac62540bef697757aa790afa39d4a1c4801f744e67fcdc73a68998cdaee974468e23af2401a563bd26a20ab80fde24bfbe1d65a5a622798d4fee86b3fd07147e9209ba9de3c6582f7fedf2d5f2de27f9d5f87923b68fc80a4124c7e8549a0fe6d001e9edc20f5c651005db390f243727b52c752a71a14d1bf93799c4e86105d01aa2ec24ab5f03659f8d00134f11c85392902357797960ae1e702c2a36bb4ed5932aa2d85215ffe2a9741d2564b8b7dfa8c6ee4099b5e1fc98447b4c98cc"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 124,
+    "data": "01017d10c95c44a67a4220855900e8ef0000000b7e815051dff946f0ff5d7df52fe130797e98106a31b59e59e3272505266f23a82b86ba292740b1f7eb20127739d0527272d310b511e57240cbacaca2e92e57c27c271ded627cb4e2057e1c631ef85f9ca16f65e67bdf0b14b6da469c76297f65fec899fa4a55c5925525fa83d9c0d47dd0c7f776c483985843eb3f4a1d3a57430aaf39c3fdf26b2700399364d2d7a5086e0fd8c155e678f4f91682de8990a1122ad8cab3420c19f9327b577efef0c380d4266b2bd71dc35cbc0cd93906287ac78c8d5ac7cfcb4d38cdcd8866ff5ed1ca3447eb",
+    "decodeError": "crypto"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted, wrong key",
+   "command": 5,
+   "key": "6a5ff603b918976213197dc439ef7754",
+   "frame": "5a00eb000a057c01017d10c95c44a67a4220855900e8ef0000000b7e815051dff946f0ff5d7df52fe130797e98106a31b59e59e3272505266f23a82b86ba292740b1f7eb20127739d0527272d310b511e57240cbacaca2e92e57c27c271ded627cb4e2057e1c631ef85f9ca16f65e67bdf0b14b6da469c76297f65fec899fa4a55c5925525fa83d9c0d47dd0c7f776c483985843eb3f4a1d3a57430aaf39c3fdf26b2700399364d2d7a5086e0fd8c155e678f4f91682de8990a1122ad8cab3420c19f9327b577efef0c380d4266b2bd71dc35cbc0cd93906287ac78c8d5ac7cfcb4d38cdcd8866ff5ed1ca3447eb9764"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 124,
+    "data": "01017d108aeb6c5f95a111210c3893830000000c7e81501da07beed80562ef7af29f73a81b7a97ad91c472c39575cb474c952c4c001a6d569582a4f8cb6081873fdc508ad9848cb6751991b73fa236f0e5453e472e727f1dbdc7a67d26641860af1836f8d19f12a6a803b48808bb0cc6962c78c69b92569c99133191949118771ceb129ded056b6146321a146f10c6b39c7c1106db11346913f7000652f121f67cca6b606586348c0e69ad21964a68d5ac874f0f8a42ab3ef6cf4f268ff71db59e2aa1a87d8a307179fad692ba18970a1e6a1a9f9030d96882c48872341e8fc5716b63f8d65e23",
+    "decodeError": "crypto"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted, garbled cipher",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00eb000a057c01017d108aeb6c5f95a111210c3893830000000c7e81501da07beed80562ef7af29f73a81b7a97ad91c472c39575cb474c952c4c001a6d569582a4f8cb6081873fdc508ad9848cb6751991b73fa236f0e5453e472e727f1dbdc7a67d26641860af1836f8d19f12a6a803b48808bb0cc6962c78c69b92569c99133191949118771ceb129ded056b6146321a146f10c6b39c7c1106db11346913f7000652f121f67cca6b606586348c0e69ad21964a68d5ac874f0f8a42ab3ef6cf4f268ff71db59e2aa1a87d8a307179fad692ba18970a1e6a1a9f9030d96882c48872341e8fc5716b63f8d65e239b74"
+  },
+  {
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 124,
+    "data": "01017d108aeb6c5f95a111210c3893830000000c7e81501da07beed80562ef7af29f73a81b7a97ad91c472c39575cb474c952c4c001a6d569582a4f8cb6081873fdc508ad9848cb6751991b73fa236f0e5453e472e727f1dbdc7a67d26641860af1836f8d19f12a6a803b48808bb0cc6962c78c69b92569c99133191949118771ceb129ded056b6146321a146f10c6b39c7c1106db11346913f7000652f121f67cca6b606586348c0e69ad21964a68d5ac874f0f8a42ab3ef6cf4f268ff71db59e2aa1a87d8a307179fad692ba18970a1e6a1a9f9030d96882c48872341e8fc5",
+    "decodeError": "notTLV"
+   },
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A encrypted, truncated",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a00e4000a057c01017d108aeb6c5f95a111210c3893830000000c7e81501da07beed80562ef7af29f73a81b7a97ad91c472c39575cb474c952c4c001a6d569582a4f8cb6081873fdc508ad9848cb6751991b73fa236f0e5453e472e727f1dbdc7a67d26641860af1836f8d19f12a6a803b48808bb0cc6962c78c69b92569c99133191949118771ceb129ded056b6146321a146f10c6b39c7c1106db11346913f7000652f121f67cca6b606586348c0e69ad21964a68d5ac874f0f8a42ab3ef6cf4f268ff71db59e2aa1a87d8a307179fad692ba18970a1e6a1a9f9030d96882c48872341e8fc5645b"
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "encryptMethod": 0,
+   "service": 10,
+   "deviceSupportType": 1,
+   "name": "0A marker with iv only",
+   "command": 5,
+   "key": "6200a6135509f95dd83196ccc7599a61",
+   "frame": "5a0018000a057c01017d107d80f003596476a7085ce4ef0d788c217b0a"
+  }
+ ],
+ "responses": [
+  {
+   "result": {
+    "fileName": "sequence_data",
+    "fileSize": 1234,
+    "fileType": "SEQUENCE_DATA",
+    "fileId": 5
+   },
+   "service": 44,
+   "name": "2C init ok",
+   "command": 1,
+   "frame": "5a001e002c01010d73657175656e63655f646174610201160301050404000004d2acd0",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "73657175656e63655f64617461"
+    },
+    {
+     "tag": 2,
+     "value": "16"
+    },
+    {
+     "tag": 3,
+     "value": "05"
+    },
+    {
+     "tag": 4,
+     "value": "000004d2"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileName": "sequence_data",
+    "fileSize": -1,
+    "fileType": "SEQUENCE_DATA",
+    "fileId": 5
+   },
+   "service": 44,
+   "name": "2C init size -1",
+   "command": 1,
+   "frame": "5a001e002c01010d73657175656e63655f646174610201160301050404ffffffff12e4",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "73657175656e63655f64617461"
+    },
+    {
+     "tag": 2,
+     "value": "16"
+    },
+    {
+     "tag": 3,
+     "value": "05"
+    },
+    {
+     "tag": 4,
+     "value": "ffffffff"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileName": "a",
+    "fileSize": 5,
+    "fileType": "UNKNOWN",
+    "fileId": 5
+   },
+   "service": 44,
+   "name": "2C init unknown type",
+   "command": 1,
+   "frame": "5a0012002c010101610201990301050404000000058d87",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "61"
+    },
+    {
+     "tag": 2,
+     "value": "99"
+    },
+    {
+     "tag": 3,
+     "value": "05"
+    },
+    {
+     "tag": 4,
+     "value": "00000005"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileName": "a",
+    "fileSize": 5,
+    "fileType": "UNKNOWN",
+    "fileId": 255
+   },
+   "service": 44,
+   "name": "2C init negative type byte",
+   "command": 1,
+   "frame": "5a0012002c010101610201ff0301ff04040000000569f9",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "61"
+    },
+    {
+     "tag": 2,
+     "value": "ff"
+    },
+    {
+     "tag": 3,
+     "value": "ff"
+    },
+    {
+     "tag": 4,
+     "value": "00000005"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileName": "sleep_state.bin",
+    "fileSize": 32,
+    "fileType": "SLEEP_STATE",
+    "fileId": 133
+   },
+   "service": 44,
+   "name": "2C init sleep state",
+   "command": 1,
+   "frame": "5a0020002c01010f736c6565705f73746174652e62696e02010e0301850404000000203dea",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "736c6565705f73746174652e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "0e"
+    },
+    {
+     "tag": 3,
+     "value": "85"
+    },
+    {
+     "tag": 4,
+     "value": "00000020"
+    }
+   ]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 44,
+   "name": "2C init missing id",
+   "command": 1,
+   "frame": "5a000f002c0101016102011604040000000588b2",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "61"
+    },
+    {
+     "tag": 2,
+     "value": "16"
+    },
+    {
+     "tag": 4,
+     "value": "00000005"
+    }
+   ]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 44,
+   "name": "2C init missing name",
+   "command": 1,
+   "frame": "5a000f002c010201160301010404000000058b4a",
+   "tlv": [
+    {
+     "tag": 2,
+     "value": "16"
+    },
+    {
+     "tag": 3,
+     "value": "01"
+    },
+    {
+     "tag": 4,
+     "value": "00000005"
+    }
+   ]
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "service": 44,
+   "name": "2C init size 3 bytes",
+   "command": 1,
+   "frame": "5a0011002c01010161020116030101040301020375d8",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "61"
+    },
+    {
+     "tag": 2,
+     "value": "16"
+    },
+    {
+     "tag": 3,
+     "value": "01"
+    },
+    {
+     "tag": 4,
+     "value": "010203"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileName": "a",
+    "fileSize": 256,
+    "fileType": "SEQUENCE_DATA",
+    "fileId": 1
+   },
+   "service": 44,
+   "name": "2C init size 5 bytes",
+   "command": 1,
+   "frame": "5a0013002c0101016102011603010104050000010009e32e",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "61"
+    },
+    {
+     "tag": 2,
+     "value": "16"
+    },
+    {
+     "tag": 3,
+     "value": "01"
+    },
+    {
+     "tag": 4,
+     "value": "0000010009"
+    }
+   ]
+  },
+  {
+   "result": {"error": "ArrayIndexOutOfBoundsException"},
+   "service": 44,
+   "name": "2C init empty type",
+   "command": 1,
+   "frame": "5a0011002c0101016102000301010404000000055840",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "61"
+    },
+    {
+     "tag": 2,
+     "value": ""
+    },
+    {
+     "tag": 3,
+     "value": "01"
+    },
+    {
+     "tag": 4,
+     "value": "00000005"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileName": "a",
+    "fileSize": 5,
+    "fileType": "SLEEP_DATA",
+    "fileId": 1
+   },
+   "service": 44,
+   "name": "2C init extra tags",
+   "command": 1,
+   "frame": "5a001b002c017f04000186a001016102010f0301010404000000050501099c0c",
+   "tlv": [
+    {
+     "tag": 127,
+     "value": "000186a0"
+    },
+    {
+     "tag": 1,
+     "value": "61"
+    },
+    {
+     "tag": 2,
+     "value": "0f"
+    },
+    {
+     "tag": 3,
+     "value": "01"
+    },
+    {
+     "tag": 4,
+     "value": "00000005"
+    },
+    {
+     "tag": 5,
+     "value": "09"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileName": "a",
+    "fileSize": 5,
+    "fileType": "SLEEP_DATA",
+    "fileId": 1
+   },
+   "service": 44,
+   "name": "2C init first of repeated tags",
+   "command": 1,
+   "frame": "5a0015002c0101016101016202010f030101040400000005acdc",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "61"
+    },
+    {
+     "tag": 1,
+     "value": "62"
+    },
+    {
+     "tag": 2,
+     "value": "0f"
+    },
+    {
+     "tag": 3,
+     "value": "01"
+    },
+    {
+     "tag": 4,
+     "value": "00000005"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileHash": "c1027a00b3ff2b47aedacc89e12ca9182510da0e4a065b4d118483ef6b11cc87",
+    "fileId": 133
+   },
+   "service": 44,
+   "name": "2C hash ok",
+   "command": 2,
+   "frame": "5a0028002c020101850320c1027a00b3ff2b47aedacc89e12ca9182510da0e4a065b4d118483ef6b11cc873583",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "85"
+    },
+    {
+     "tag": 3,
+     "value": "c1027a00b3ff2b47aedacc89e12ca9182510da0e4a065b4d118483ef6b11cc87"
+    }
+   ]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 44,
+   "name": "2C hash missing hash",
+   "command": 2,
+   "frame": "5a0006002c02010185e941",
+   "tlv": [{
+    "tag": 1,
+    "value": "85"
+   }]
+  },
+  {
+   "result": {
+    "fileHash": "",
+    "fileId": 133
+   },
+   "service": 44,
+   "name": "2C hash empty hash",
+   "command": 2,
+   "frame": "5a0008002c020101850300d4eb",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "85"
+    },
+    {
+     "tag": 3,
+     "value": ""
+    }
+   ]
+  },
+  {
+   "result": {
+    "maxBlockSize": 65536,
+    "noEncrypt": false,
+    "burstSize": 1000,
+    "timeout": 10,
+    "fileId": 133
+   },
+   "service": 44,
+   "name": "2C info ok",
+   "command": 3,
+   "frame": "5a0016002c0301018502010a030203e804040001000005010053de",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "85"
+    },
+    {
+     "tag": 2,
+     "value": "0a"
+    },
+    {
+     "tag": 3,
+     "value": "03e8"
+    },
+    {
+     "tag": 4,
+     "value": "00010000"
+    },
+    {
+     "tag": 5,
+     "value": "00"
+    }
+   ]
+  },
+  {
+   "result": {
+    "maxBlockSize": -1,
+    "noEncrypt": true,
+    "burstSize": -32768,
+    "timeout": 255,
+    "fileId": 133
+   },
+   "service": 44,
+   "name": "2C info noEncrypt",
+   "command": 3,
+   "frame": "5a0016002c030101850201ff030280000404ffffffff0501015398",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "85"
+    },
+    {
+     "tag": 2,
+     "value": "ff"
+    },
+    {
+     "tag": 3,
+     "value": "8000"
+    },
+    {
+     "tag": 4,
+     "value": "ffffffff"
+    },
+    {
+     "tag": 5,
+     "value": "01"
+    }
+   ]
+  },
+  {
+   "result": {
+    "maxBlockSize": 1,
+    "noEncrypt": false,
+    "burstSize": 1,
+    "timeout": 0,
+    "fileId": 133
+   },
+   "service": 44,
+   "name": "2C info bool 2",
+   "command": 3,
+   "frame": "5a0016002c0301018502010003020001040400000001050102aff6",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "85"
+    },
+    {
+     "tag": 2,
+     "value": "00"
+    },
+    {
+     "tag": 3,
+     "value": "0001"
+    },
+    {
+     "tag": 4,
+     "value": "00000001"
+    },
+    {
+     "tag": 5,
+     "value": "02"
+    }
+   ]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 44,
+   "name": "2C info missing block size",
+   "command": 3,
+   "frame": "5a0010002c0301018502010a030203e8050100f9d6",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "85"
+    },
+    {
+     "tag": 2,
+     "value": "0a"
+    },
+    {
+     "tag": 3,
+     "value": "03e8"
+    },
+    {
+     "tag": 5,
+     "value": "00"
+    }
+   ]
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "service": 44,
+   "name": "2C info burst 1 byte",
+   "command": 3,
+   "frame": "5a0015002c0301018502010a030107040400000001050100a4a6",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "85"
+    },
+    {
+     "tag": 2,
+     "value": "0a"
+    },
+    {
+     "tag": 3,
+     "value": "07"
+    },
+    {
+     "tag": 4,
+     "value": "00000001"
+    },
+    {
+     "tag": 5,
+     "value": "00"
+    }
+   ]
+  },
+  {
+   "result": {"error": "ArrayIndexOutOfBoundsException"},
+   "service": 44,
+   "name": "2C info empty bool",
+   "command": 3,
+   "frame": "5a0015002c0301018502010a030200010404000000010500101c",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "85"
+    },
+    {
+     "tag": 2,
+     "value": "0a"
+    },
+    {
+     "tag": 3,
+     "value": "0001"
+    },
+    {
+     "tag": 4,
+     "value": "00000001"
+    },
+    {
+     "tag": 5,
+     "value": ""
+    }
+   ]
+  },
+  {
+   "result": {
+    "filename": "x.bin",
+    "srcFingerprint": "sfp",
+    "fileSize": 777,
+    "dstPackage": "dst.pkg",
+    "description": "desc",
+    "srcPackage": "src.pkg",
+    "dstFingerprint": "dfp",
+    "fileType": 16,
+    "fileId": 4
+   },
+   "service": 44,
+   "name": "2C incoming ok",
+   "command": 7,
+   "frame": "5a0038002c070105782e62696e02011003010404040000030907046465736308077372632e706b6709076473742e706b670a037366700b03646670bff1",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "782e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "04"
+    },
+    {
+     "tag": 4,
+     "value": "00000309"
+    },
+    {
+     "tag": 7,
+     "value": "64657363"
+    },
+    {
+     "tag": 8,
+     "value": "7372632e706b67"
+    },
+    {
+     "tag": 9,
+     "value": "6473742e706b67"
+    },
+    {
+     "tag": 10,
+     "value": "736670"
+    },
+    {
+     "tag": 11,
+     "value": "646670"
+    }
+   ]
+  },
+  {
+   "result": {
+    "filename": "x.bin",
+    "srcFingerprint": null,
+    "fileSize": 777,
+    "dstPackage": "t",
+    "description": "d",
+    "srcPackage": "s",
+    "dstFingerprint": null,
+    "fileType": 16,
+    "fileId": 4
+   },
+   "service": 44,
+   "name": "2C incoming no fingerprints",
+   "command": 7,
+   "frame": "5a001f002c070105782e62696e0201100301040404000003090701640801730901749c5a",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "782e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "04"
+    },
+    {
+     "tag": 4,
+     "value": "00000309"
+    },
+    {
+     "tag": 7,
+     "value": "64"
+    },
+    {
+     "tag": 8,
+     "value": "73"
+    },
+    {
+     "tag": 9,
+     "value": "74"
+    }
+   ]
+  },
+  {
+   "result": {
+    "filename": "x.bin",
+    "srcFingerprint": null,
+    "fileSize": 777,
+    "dstPackage": "t",
+    "description": "d",
+    "srcPackage": "s",
+    "dstFingerprint": "dfp",
+    "fileType": 16,
+    "fileId": 4
+   },
+   "service": 44,
+   "name": "2C incoming one fingerprint",
+   "command": 7,
+   "frame": "5a0024002c070105782e62696e0201100301040404000003090701640801730901740b036466704e21",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "782e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "04"
+    },
+    {
+     "tag": 4,
+     "value": "00000309"
+    },
+    {
+     "tag": 7,
+     "value": "64"
+    },
+    {
+     "tag": 8,
+     "value": "73"
+    },
+    {
+     "tag": 9,
+     "value": "74"
+    },
+    {
+     "tag": 11,
+     "value": "646670"
+    }
+   ]
+  },
+  {
+   "result": {
+    "filename": "x.bin",
+    "srcFingerprint": null,
+    "fileSize": 240,
+    "dstPackage": "t",
+    "description": "d",
+    "srcPackage": "s",
+    "dstFingerprint": null,
+    "fileType": 16,
+    "fileId": 4
+   },
+   "service": 44,
+   "name": "2C incoming size 1 byte",
+   "command": 7,
+   "frame": "5a001c002c070105782e62696e0201100301040401f00701640801730901741160",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "782e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "04"
+    },
+    {
+     "tag": 4,
+     "value": "f0"
+    },
+    {
+     "tag": 7,
+     "value": "64"
+    },
+    {
+     "tag": 8,
+     "value": "73"
+    },
+    {
+     "tag": 9,
+     "value": "74"
+    }
+   ]
+  },
+  {
+   "result": {
+    "filename": "x.bin",
+    "srcFingerprint": null,
+    "fileSize": 61441,
+    "dstPackage": "t",
+    "description": "d",
+    "srcPackage": "s",
+    "dstFingerprint": null,
+    "fileType": 16,
+    "fileId": 4
+   },
+   "service": 44,
+   "name": "2C incoming size 2 bytes",
+   "command": 7,
+   "frame": "5a001d002c070105782e62696e0201100301040402f00107016408017309017438f7",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "782e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "04"
+    },
+    {
+     "tag": 4,
+     "value": "f001"
+    },
+    {
+     "tag": 7,
+     "value": "64"
+    },
+    {
+     "tag": 8,
+     "value": "73"
+    },
+    {
+     "tag": 9,
+     "value": "74"
+    }
+   ]
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "service": 44,
+   "name": "2C incoming size 3 bytes",
+   "command": 7,
+   "frame": "5a001e002c070105782e62696e0201100301040403f0010207016408017309017460ca",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "782e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "04"
+    },
+    {
+     "tag": 4,
+     "value": "f00102"
+    },
+    {
+     "tag": 7,
+     "value": "64"
+    },
+    {
+     "tag": 8,
+     "value": "73"
+    },
+    {
+     "tag": 9,
+     "value": "74"
+    }
+   ]
+  },
+  {
+   "result": {
+    "filename": "x.bin",
+    "srcFingerprint": null,
+    "fileSize": -268369405,
+    "dstPackage": "t",
+    "description": "d",
+    "srcPackage": "s",
+    "dstFingerprint": null,
+    "fileType": 16,
+    "fileId": 4
+   },
+   "service": 44,
+   "name": "2C incoming size 4 bytes negative",
+   "command": 7,
+   "frame": "5a001f002c070105782e62696e0201100301040404f0010203070164080173090174070b",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "782e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "04"
+    },
+    {
+     "tag": 4,
+     "value": "f0010203"
+    },
+    {
+     "tag": 7,
+     "value": "64"
+    },
+    {
+     "tag": 8,
+     "value": "73"
+    },
+    {
+     "tag": 9,
+     "value": "74"
+    }
+   ]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 44,
+   "name": "2C incoming missing description",
+   "command": 7,
+   "frame": "5a001c002c070105782e62696e020110030104040400000309080173090174c4c6",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "782e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "04"
+    },
+    {
+     "tag": 4,
+     "value": "00000309"
+    },
+    {
+     "tag": 8,
+     "value": "73"
+    },
+    {
+     "tag": 9,
+     "value": "74"
+    }
+   ]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 44,
+   "name": "2C incoming missing dst package",
+   "command": 7,
+   "frame": "5a001c002c070105782e62696e0201100301040404000003090701640801730c98",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "782e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "04"
+    },
+    {
+     "tag": 4,
+     "value": "00000309"
+    },
+    {
+     "tag": 7,
+     "value": "64"
+    },
+    {
+     "tag": 8,
+     "value": "73"
+    }
+   ]
+  },
+  {
+   "result": {"fileNames": [
+    "sleep_state.bin",
+    "sleep_data.bin"
+   ]},
+   "service": 10,
+   "name": "0A init two names",
+   "command": 1,
+   "frame": "5a0023000a01011e736c6565705f73746174652e62696e3b736c6565705f646174612e62696efa3b",
+   "tlv": [{
+    "tag": 1,
+    "value": "736c6565705f73746174652e62696e3b736c6565705f646174612e62696e"
+   }]
+  },
+  {
+   "result": {"fileNames": [
+    "a.bin",
+    "b.bin"
+   ]},
+   "service": 10,
+   "name": "0A init trailing separator",
+   "command": 1,
+   "frame": "5a0011000a01010c612e62696e3b622e62696e3b624a",
+   "tlv": [{
+    "tag": 1,
+    "value": "612e62696e3b622e62696e3b"
+   }]
+  },
+  {
+   "result": {"fileNames": ["a.bin"]},
+   "service": 10,
+   "name": "0A init trailing separators",
+   "command": 1,
+   "frame": "5a000d000a010108612e62696e3b3b3b73b6",
+   "tlv": [{
+    "tag": 1,
+    "value": "612e62696e3b3b3b"
+   }]
+  },
+  {
+   "result": {"fileNames": [
+    "",
+    "a.bin"
+   ]},
+   "service": 10,
+   "name": "0A init leading separator",
+   "command": 1,
+   "frame": "5a000b000a0101063b612e62696e74a4",
+   "tlv": [{
+    "tag": 1,
+    "value": "3b612e62696e"
+   }]
+  },
+  {
+   "result": {"fileNames": [""]},
+   "service": 10,
+   "name": "0A init empty",
+   "command": 1,
+   "frame": "5a0005000a01010075b3",
+   "tlv": [{
+    "tag": 1,
+    "value": ""
+   }]
+  },
+  {
+   "result": {"fileNames": []},
+   "service": 10,
+   "name": "0A init only separator",
+   "command": 1,
+   "frame": "5a0006000a0101013bf1b9",
+   "tlv": [{
+    "tag": 1,
+    "value": "3b"
+   }]
+  },
+  {
+   "result": {"fileNames": []},
+   "service": 10,
+   "name": "0A init only separators",
+   "command": 1,
+   "frame": "5a0008000a0101033b3b3bd64a",
+   "tlv": [{
+    "tag": 1,
+    "value": "3b3b3b"
+   }]
+  },
+  {
+   "result": {"fileNames": [
+    "a",
+    "",
+    "b"
+   ]},
+   "service": 10,
+   "name": "0A init empty between",
+   "command": 1,
+   "frame": "5a0009000a010104613b3b62b85e",
+   "tlv": [{
+    "tag": 1,
+    "value": "613b3b62"
+   }]
+  },
+  {
+   "result": {"fileNames": ["7_gps.bin"]},
+   "service": 10,
+   "name": "0A init one name",
+   "command": 1,
+   "frame": "5a000e000a010109375f6770732e62696e590d",
+   "tlv": [{
+    "tag": 1,
+    "value": "375f6770732e62696e"
+   }]
+  },
+  {
+   "result": {"fileNames": [
+    "7_gps.bin",
+    "7_aux.bin"
+   ]},
+   "service": 10,
+   "name": "0A init gps nested",
+   "command": 1,
+   "frame": "5a0023000a01090200078b178c150d13375f6770732e62696e3b375f6175782e62696e0e01017720",
+   "tlv": [
+    {
+     "tag": 9,
+     "value": "0007"
+    },
+    {
+     "tag": 139,
+     "value": "8c150d13375f6770732e62696e3b375f6175782e62696e"
+    },
+    {
+     "tag": 14,
+     "value": "01"
+    }
+   ]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 10,
+   "name": "0A init gps nested missing",
+   "command": 1,
+   "frame": "5a000a000a018b058d030d0178d2d0",
+   "tlv": [{
+    "tag": 139,
+    "value": "8d030d0178"
+   }]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 10,
+   "name": "0A init nothing",
+   "command": 1,
+   "frame": "5a0003000a0192a0",
+   "tlv": []
+  },
+  {
+   "result": {"fileNames": ["first"]},
+   "service": 10,
+   "name": "0A init name wins over nested",
+   "command": 1,
+   "frame": "5a0016000a01010566697273748b0a8c080d067365636f6e64c055",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "6669727374"
+    },
+    {
+     "tag": 139,
+     "value": "8c080d067365636f6e64"
+    }
+   ]
+  },
+  {
+   "result": {
+    "maxBlockSize": 4096,
+    "packetSize": 244,
+    "version": "1.0",
+    "timeout": 30,
+    "unknown": true
+   },
+   "service": 10,
+   "name": "0A parameters ok",
+   "command": 2,
+   "frame": "5a0017000a020103312e30020101030200f4040210000502001e6c9a",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "312e30"
+    },
+    {
+     "tag": 2,
+     "value": "01"
+    },
+    {
+     "tag": 3,
+     "value": "00f4"
+    },
+    {
+     "tag": 4,
+     "value": "1000"
+    },
+    {
+     "tag": 5,
+     "value": "001e"
+    }
+   ]
+  },
+  {
+   "result": {
+    "maxBlockSize": -32768,
+    "packetSize": -1,
+    "version": "v",
+    "timeout": -3,
+    "unknown": false
+   },
+   "service": 10,
+   "name": "0A parameters negative",
+   "command": 2,
+   "frame": "5a0015000a020101760201000302ffff040280000502fffd752b",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "76"
+    },
+    {
+     "tag": 2,
+     "value": "00"
+    },
+    {
+     "tag": 3,
+     "value": "ffff"
+    },
+    {
+     "tag": 4,
+     "value": "8000"
+    },
+    {
+     "tag": 5,
+     "value": "fffd"
+    }
+   ]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 10,
+   "name": "0A parameters missing timeout",
+   "command": 2,
+   "frame": "5a0011000a020101760201000302000104020002e674",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "76"
+    },
+    {
+     "tag": 2,
+     "value": "00"
+    },
+    {
+     "tag": 3,
+     "value": "0001"
+    },
+    {
+     "tag": 4,
+     "value": "0002"
+    }
+   ]
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "service": 10,
+   "name": "0A parameters byte block size",
+   "command": 2,
+   "frame": "5a0014000a02010176020100030200010401020502000581ca",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "76"
+    },
+    {
+     "tag": 2,
+     "value": "00"
+    },
+    {
+     "tag": 3,
+     "value": "0001"
+    },
+    {
+     "tag": 4,
+     "value": "02"
+    },
+    {
+     "tag": 5,
+     "value": "0005"
+    }
+   ]
+  },
+  {
+   "result": {
+    "maxBlockSize": 2,
+    "packetSize": 1,
+    "version": "",
+    "timeout": 5,
+    "unknown": true
+   },
+   "service": 10,
+   "name": "0A parameters empty version",
+   "command": 2,
+   "frame": "5a0014000a020100020101030200010402000205020005822c",
+   "tlv": [
+    {
+     "tag": 1,
+     "value": ""
+    },
+    {
+     "tag": 2,
+     "value": "01"
+    },
+    {
+     "tag": 3,
+     "value": "0001"
+    },
+    {
+     "tag": 4,
+     "value": "0002"
+    },
+    {
+     "tag": 5,
+     "value": "0005"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileCreateTime": 1700000000,
+    "transferType": 1,
+    "fileLength": 1500,
+    "unknown": 3
+   },
+   "service": 10,
+   "name": "0A info ok",
+   "command": 3,
+   "frame": "5a0015000a030204000005dc04010105046553f1000601031478",
+   "tlv": [
+    {
+     "tag": 2,
+     "value": "000005dc"
+    },
+    {
+     "tag": 4,
+     "value": "01"
+    },
+    {
+     "tag": 5,
+     "value": "6553f100"
+    },
+    {
+     "tag": 6,
+     "value": "03"
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileCreateTime": -1,
+    "transferType": -1,
+    "fileLength": 99,
+    "unknown": -1
+   },
+   "service": 10,
+   "name": "0A info only length",
+   "command": 3,
+   "frame": "5a0009000a03020400000063c521",
+   "tlv": [{
+    "tag": 2,
+    "value": "00000063"
+   }]
+  },
+  {
+   "result": {
+    "fileCreateTime": -1,
+    "transferType": -1,
+    "fileLength": 0,
+    "unknown": -1
+   },
+   "service": 10,
+   "name": "0A info none",
+   "command": 3,
+   "frame": "5a0003000a03b2e2",
+   "tlv": []
+  },
+  {
+   "result": {
+    "fileCreateTime": -9,
+    "transferType": -2,
+    "fileLength": -7,
+    "unknown": -128
+   },
+   "service": 10,
+   "name": "0A info negative",
+   "command": 3,
+   "frame": "5a0015000a030204fffffff90401fe0504fffffff706018061a4",
+   "tlv": [
+    {
+     "tag": 2,
+     "value": "fffffff9"
+    },
+    {
+     "tag": 4,
+     "value": "fe"
+    },
+    {
+     "tag": 5,
+     "value": "fffffff7"
+    },
+    {
+     "tag": 6,
+     "value": "80"
+    }
+   ]
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "service": 10,
+   "name": "0A info short length",
+   "command": 3,
+   "frame": "5a0007000a03020200630248",
+   "tlv": [{
+    "tag": 2,
+    "value": "0063"
+   }]
+  },
+  {
+   "result": {"error": "ArrayIndexOutOfBoundsException"},
+   "service": 10,
+   "name": "0A info empty type",
+   "command": 3,
+   "frame": "5a000b000a0302040000000504003e07",
+   "tlv": [
+    {
+     "tag": 2,
+     "value": "00000005"
+    },
+    {
+     "tag": 4,
+     "value": ""
+    }
+   ]
+  },
+  {
+   "result": {
+    "fileCreateTime": 42,
+    "transferType": 2,
+    "fileLength": 0,
+    "unknown": -1
+   },
+   "service": 10,
+   "name": "0A info type and time only",
+   "command": 3,
+   "frame": "5a000c000a0304010205040000002a47ea",
+   "tlv": [
+    {
+     "tag": 4,
+     "value": "02"
+    },
+    {
+     "tag": 5,
+     "value": "0000002a"
+    }
+   ]
+  },
+  {
+   "result": {
+    "filename": "sleep_data.bin",
+    "offset": 4096,
+    "isOk": true
+   },
+   "service": 10,
+   "name": "0A block ok",
+   "command": 4,
+   "frame": "5a001f000a047f04000186a0010e736c6565705f646174612e62696e0204000010001747",
+   "tlv": [
+    {
+     "tag": 127,
+     "value": "000186a0"
+    },
+    {
+     "tag": 1,
+     "value": "736c6565705f646174612e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "00001000"
+    }
+   ]
+  },
+  {
+   "result": {
+    "filename": null,
+    "offset": 0,
+    "isOk": true
+   },
+   "service": 10,
+   "name": "0A block ok no name",
+   "command": 4,
+   "frame": "5a0009000a047f04000186a0b89b",
+   "tlv": [{
+    "tag": 127,
+    "value": "000186a0"
+   }]
+  },
+  {
+   "result": {
+    "filename": null,
+    "offset": 0,
+    "isOk": false
+   },
+   "service": 10,
+   "name": "0A block not ok",
+   "command": 4,
+   "frame": "5a0012000a047f04000000050101780204000000016b8f",
+   "tlv": [
+    {
+     "tag": 127,
+     "value": "00000005"
+    },
+    {
+     "tag": 1,
+     "value": "78"
+    },
+    {
+     "tag": 2,
+     "value": "00000001"
+    }
+   ]
+  },
+  {
+   "result": {"error": "MissingTagException"},
+   "service": 10,
+   "name": "0A block missing 7f",
+   "command": 4,
+   "frame": "5a0006000a04010178355b",
+   "tlv": [{
+    "tag": 1,
+    "value": "78"
+   }]
+  },
+  {
+   "result": {"error": "BufferUnderflowException"},
+   "service": 10,
+   "name": "0A block 7f short",
+   "command": 4,
+   "frame": "5a0007000a047f02018680d5",
+   "tlv": [{
+    "tag": 127,
+    "value": "0186"
+   }]
+  }
+ ],
+ "requests": [
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0028002c01011466696c655f534c4545505f53544154452e62696e02010e05046553f100060465554280f9f0"],
+   "service": 44,
+   "name": "2C init SLEEP_STATE",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f534c4545505f53544154452e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "0e"
+    },
+    {
+     "tag": 5,
+     "value": "6553f100"
+    },
+    {
+     "tag": 6,
+     "value": "65554280"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0024002c01011066696c655f534c4545505f535441544502010e0504fffffffb0604000000076ee2"],
+   "service": 44,
+   "name": "2C init SLEEP_STATE dict",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f534c4545505f5354415445"
+    },
+    {
+     "tag": 2,
+     "value": "0e"
+    },
+    {
+     "tag": 5,
+     "value": "fffffffb"
+    },
+    {
+     "tag": 6,
+     "value": "00000007"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0027002c01011366696c655f534c4545505f444154412e62696e02010f05046553f100060465554280d98c"],
+   "service": 44,
+   "name": "2C init SLEEP_DATA",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f534c4545505f444154412e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "0f"
+    },
+    {
+     "tag": 5,
+     "value": "6553f100"
+    },
+    {
+     "tag": 6,
+     "value": "65554280"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0023002c01010f66696c655f534c4545505f4441544102010f0504fffffffb060400000007ba26"],
+   "service": 44,
+   "name": "2C init SLEEP_DATA dict",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f534c4545505f44415441"
+    },
+    {
+     "tag": 2,
+     "value": "0f"
+    },
+    {
+     "tag": 5,
+     "value": "fffffffb"
+    },
+    {
+     "tag": 6,
+     "value": "00000007"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0020002c01010c66696c655f5252492e62696e02011005046553f100060465554280a6d1"],
+   "service": 44,
+   "name": "2C init RRI",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f5252492e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 5,
+     "value": "6553f100"
+    },
+    {
+     "tag": 6,
+     "value": "65554280"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001c002c01010866696c655f5252490201100504fffffffb060400000007975c"],
+   "service": 44,
+   "name": "2C init RRI dict",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f525249"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 5,
+     "value": "fffffffb"
+    },
+    {
+     "tag": 6,
+     "value": "00000007"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0020002c01010c66696c655f4750532e62696e02011105046553f100060465554280922c"],
+   "service": 44,
+   "name": "2C init GPS",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f4750532e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "11"
+    },
+    {
+     "tag": 5,
+     "value": "6553f100"
+    },
+    {
+     "tag": 6,
+     "value": "65554280"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001c002c01010866696c655f4750530201110504fffffffb0604000000077374"],
+   "service": 44,
+   "name": "2C init GPS dict",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f475053"
+    },
+    {
+     "tag": 2,
+     "value": "11"
+    },
+    {
+     "tag": 5,
+     "value": "fffffffb"
+    },
+    {
+     "tag": 6,
+     "value": "00000007"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0020002c01010c66696c655f5044522e62696e02011205046553f1000604655542802d23"],
+   "service": 44,
+   "name": "2C init PDR",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f5044522e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "12"
+    },
+    {
+     "tag": 5,
+     "value": "6553f100"
+    },
+    {
+     "tag": 6,
+     "value": "65554280"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001c002c01010866696c655f5044520201120504fffffffb0604000000074b56"],
+   "service": 44,
+   "name": "2C init PDR dict",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f504452"
+    },
+    {
+     "tag": 2,
+     "value": "12"
+    },
+    {
+     "tag": 5,
+     "value": "fffffffb"
+    },
+    {
+     "tag": 6,
+     "value": "00000007"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a002a002c01011666696c655f53455155454e43455f444154412e62696e02011605046553f100060465554280c5ca"],
+   "service": 44,
+   "name": "2C init SEQUENCE_DATA",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f53455155454e43455f444154412e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "16"
+    },
+    {
+     "tag": 5,
+     "value": "6553f100"
+    },
+    {
+     "tag": 6,
+     "value": "65554280"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a002c002c01011266696c655f53455155454e43455f444154410201160504fffffffb0604000000070c04000aae6d5669"],
+   "service": 44,
+   "name": "2C init SEQUENCE_DATA dict",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f53455155454e43455f44415441"
+    },
+    {
+     "tag": 2,
+     "value": "16"
+    },
+    {
+     "tag": 5,
+     "value": "fffffffb"
+    },
+    {
+     "tag": 6,
+     "value": "00000007"
+    },
+    {
+     "tag": 12,
+     "value": "000aae6d"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a002e002c01011a66696c655f4543475f414e414c595349535f444154412e62696e02011805046553f1000604655542803256"],
+   "service": 44,
+   "name": "2C init ECG_ANALYSIS_DATA",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f4543475f414e414c595349535f444154412e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "18"
+    },
+    {
+     "tag": 5,
+     "value": "6553f100"
+    },
+    {
+     "tag": 6,
+     "value": "65554280"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a002a002c01011666696c655f4543475f414e414c595349535f444154410201180504fffffffb06040000000738ba"],
+   "service": 44,
+   "name": "2C init ECG_ANALYSIS_DATA dict",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "66696c655f4543475f414e414c595349535f44415441"
+    },
+    {
+     "tag": 2,
+     "value": "18"
+    },
+    {
+     "tag": 5,
+     "value": "fffffffb"
+    },
+    {
+     "tag": 6,
+     "value": "00000007"
+    }
+   ]
+  },
+  {
+   "name": "2C init UNKNOWN",
+   "error": "RuntimeException"
+  },
+  {
+   "name": "2C init UNKNOWN dict",
+   "error": "RuntimeException"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": [
+    "5a00ef01002c0101831078787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878874f",
+    "5a00b9030178787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787802010f050400000001060400000002eb7e"
+   ],
+   "service": 44,
+   "name": "2C init long name sliced",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878"
+    },
+    {
+     "tag": 2,
+     "value": "0f"
+    },
+    {
+     "tag": 5,
+     "value": "00000001"
+    },
+    {
+     "tag": 6,
+     "value": "00000002"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0021002c01010d73657175656e63655f64617461020116050400000001060400000002ee0e"],
+   "service": 44,
+   "name": "2C init negative dict",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "73657175656e63655f64617461"
+    },
+    {
+     "tag": 2,
+     "value": "16"
+    },
+    {
+     "tag": 5,
+     "value": "00000001"
+    },
+    {
+     "tag": 6,
+     "value": "00000002"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0009002c020101850201011b9c"],
+   "service": 44,
+   "name": "2C hash",
+   "complete": true,
+   "command": 2,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "85"
+    },
+    {
+     "tag": 2,
+     "value": "01"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000e002c030101160200030004000500ddc7"],
+   "service": 44,
+   "name": "2C info",
+   "complete": true,
+   "command": 3,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "16"
+    },
+    {
+     "tag": 2,
+     "value": ""
+    },
+    {
+     "tag": 3,
+     "value": ""
+    },
+    {
+     "tag": 4,
+     "value": ""
+    },
+    {
+     "tag": 5,
+     "value": ""
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000e002c030101ff0200030004000500588c"],
+   "service": 44,
+   "name": "2C info 0xff",
+   "complete": true,
+   "command": 3,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "ff"
+    },
+    {
+     "tag": 2,
+     "value": ""
+    },
+    {
+     "tag": 3,
+     "value": ""
+    },
+    {
+     "tag": 4,
+     "value": ""
+    },
+    {
+     "tag": 5,
+     "value": ""
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0012002c040101050204000000000304000010008361"],
+   "service": 44,
+   "name": "2C block",
+   "complete": true,
+   "command": 4,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "05"
+    },
+    {
+     "tag": 2,
+     "value": "00000000"
+    },
+    {
+     "tag": 3,
+     "value": "00001000"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a0012002c040101050204000010000304000003e894d3"],
+   "service": 44,
+   "name": "2C block noEncrypt",
+   "complete": true,
+   "command": 4,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "05"
+    },
+    {
+     "tag": 2,
+     "value": "00001000"
+    },
+    {
+     "tag": 3,
+     "value": "000003e8"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0018002c040101160204000020000304000000640404000aae6d7421"],
+   "service": 44,
+   "name": "2C block dict, file id 0x16",
+   "complete": true,
+   "command": 4,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "16"
+    },
+    {
+     "tag": 2,
+     "value": "00002000"
+    },
+    {
+     "tag": 3,
+     "value": "00000064"
+    },
+    {
+     "tag": 4,
+     "value": "000aae6d"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0012002c04010105020400002000030400000064d758"],
+   "service": 44,
+   "name": "2C block dict, file id 5 (no dict sent)",
+   "complete": true,
+   "command": 4,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "05"
+    },
+    {
+     "tag": 2,
+     "value": "00002000"
+    },
+    {
+     "tag": 3,
+     "value": "00000064"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a0018002c040101160204ffffffff0304fffffffe04040000000164ae"],
+   "service": 44,
+   "name": "2C block dict, file id 0x16, noEncrypt",
+   "complete": true,
+   "command": 4,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "16"
+    },
+    {
+     "tag": 2,
+     "value": "ffffffff"
+    },
+    {
+     "tag": 3,
+     "value": "fffffffe"
+    },
+    {
+     "tag": 4,
+     "value": "00000001"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0009002c06010107020101ea0a"],
+   "service": 44,
+   "name": "2C complete ok",
+   "complete": true,
+   "command": 6,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "07"
+    },
+    {
+     "tag": 2,
+     "value": "01"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0009002c06010180020102567c"],
+   "service": 44,
+   "name": "2C complete failed",
+   "complete": true,
+   "command": 6,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "80"
+    },
+    {
+     "tag": 2,
+     "value": "02"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0039002c070105612e62696e02011003010304040000006308077372632e706b6709076473742e706b670a0573726366700b0564737466700d0101a124"],
+   "service": 44,
+   "name": "2C incoming init with packages",
+   "complete": true,
+   "command": 7,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "612e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "03"
+    },
+    {
+     "tag": 4,
+     "value": "00000063"
+    },
+    {
+     "tag": 8,
+     "value": "7372632e706b67"
+    },
+    {
+     "tag": 9,
+     "value": "6473742e706b67"
+    },
+    {
+     "tag": 10,
+     "value": "7372636670"
+    },
+    {
+     "tag": 11,
+     "value": "6473746670"
+    },
+    {
+     "tag": 13,
+     "value": "01"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0019002c070105612e62696e0201100301030404000000630d010048f2"],
+   "service": 44,
+   "name": "2C incoming init without packages",
+   "complete": true,
+   "command": 7,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "612e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "03"
+    },
+    {
+     "tag": 4,
+     "value": "00000063"
+    },
+    {
+     "tag": 13,
+     "value": "00"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001f002c070105612e62696e0201100301030404000000630801730901640d0100f0ed"],
+   "service": 44,
+   "name": "2C incoming init packages, null fingerprints",
+   "complete": true,
+   "command": 7,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "612e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "03"
+    },
+    {
+     "tag": 4,
+     "value": "00000063"
+    },
+    {
+     "tag": 8,
+     "value": "73"
+    },
+    {
+     "tag": 9,
+     "value": "64"
+    },
+    {
+     "tag": 13,
+     "value": "00"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0019002c070105612e62696e0201100301030404000000630d010048f2"],
+   "service": 44,
+   "name": "2C incoming init only src",
+   "complete": true,
+   "command": 7,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "612e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "10"
+    },
+    {
+     "tag": 3,
+     "value": "03"
+    },
+    {
+     "tag": 4,
+     "value": "00000063"
+    },
+    {
+     "tag": 13,
+     "value": "00"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0003000a0192a0"],
+   "service": 10,
+   "name": "0A init debug",
+   "complete": true,
+   "command": 1,
+   "tlv": []
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0014000a01020101830c04046553f1000504655542806b92"],
+   "service": 10,
+   "name": "0A init sleep",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 2,
+     "value": "01"
+    },
+    {
+     "tag": 131,
+     "value": "04046553f100050465554280"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0014000a01020101830c0404ffffffff050400000000b340"],
+   "service": 10,
+   "name": "0A init sleep negative",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 2,
+     "value": "01"
+    },
+    {
+     "tag": 131,
+     "value": "0404ffffffff050400000000"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0011000a0102010286090701018804090212348588"],
+   "service": 10,
+   "name": "0A init gps",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 2,
+     "value": "02"
+    },
+    {
+     "tag": 134,
+     "value": "070101880409021234"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0011000a01020102860907010188040902fffe9b60"],
+   "service": 10,
+   "name": "0A init gps negative",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 2,
+     "value": "02"
+    },
+    {
+     "tag": 134,
+     "value": "07010188040902fffe"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0014000a010201048f0c10046553f1001104655542806eb3"],
+   "service": 10,
+   "name": "0A init rri",
+   "complete": true,
+   "command": 1,
+   "tlv": [
+    {
+     "tag": 2,
+     "value": "04"
+    },
+    {
+     "tag": 143,
+     "value": "10046553f100110465554280"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "service": 10,
+   "name": "0A parameters 0",
+   "complete": true,
+   "error": "NullPointerException",
+   "command": 2,
+   "tlv": null
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006000a0206010178ec"],
+   "service": 10,
+   "name": "0A parameters 1",
+   "complete": true,
+   "command": 2,
+   "tlv": [{
+    "tag": 6,
+    "value": "01"
+   }]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0009000a020601020701036fd9"],
+   "service": 10,
+   "name": "0A parameters 2",
+   "complete": true,
+   "command": 2,
+   "tlv": [
+    {
+     "tag": 6,
+     "value": "02"
+    },
+    {
+     "tag": 7,
+     "value": "03"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006000a020601042849"],
+   "service": 10,
+   "name": "0A parameters 4",
+   "complete": true,
+   "command": 2,
+   "tlv": [{
+    "tag": 6,
+    "value": "04"
+   }]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006000a0206017fe7b5"],
+   "service": 10,
+   "name": "0A parameters 127",
+   "complete": true,
+   "command": 2,
+   "tlv": [{
+    "tag": 6,
+    "value": "7f"
+   }]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006000a020601ff763d"],
+   "service": 10,
+   "name": "0A parameters 255",
+   "complete": true,
+   "command": 2,
+   "tlv": [{
+    "tag": 6,
+    "value": "ff"
+   }]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0014000a03010f736c6565705f73746174652e62696eb33c"],
+   "service": 10,
+   "name": "0A info",
+   "complete": true,
+   "command": 3,
+   "tlv": [{
+    "tag": 1,
+    "value": "736c6565705f73746174652e62696e"
+   }]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": [
+    "5a00ef01000a0301822c79797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979a312",
+    "5a004603017979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979529d"
+   ],
+   "service": 10,
+   "name": "0A info long name sliced",
+   "complete": true,
+   "command": 3,
+   "tlv": [{
+    "tag": 1,
+    "value": "797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979797979"
+   }]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001f000a04010e736c6565705f646174612e62696e02040000000003040000040068ee"],
+   "service": 10,
+   "name": "0A block",
+   "complete": true,
+   "command": 4,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "736c6565705f646174612e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "00000000"
+    },
+    {
+     "tag": 3,
+     "value": "00000400"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001f000a04010e736c6565705f646174612e62696e0204000100000304000186a07ced"],
+   "service": 10,
+   "name": "0A block offset",
+   "complete": true,
+   "command": 4,
+   "tlv": [
+    {
+     "tag": 1,
+     "value": "736c6565705f646174612e62696e"
+    },
+    {
+     "tag": 2,
+     "value": "00010000"
+    },
+    {
+     "tag": 3,
+     "value": "000186a0"
+    }
+   ]
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006000a06060101b21d"],
+   "service": 10,
+   "name": "0A complete",
+   "complete": true,
+   "command": 6,
+   "tlv": [{
+    "tag": 6,
+    "value": "01"
+   }]
+  }
+ ],
+ "key": "6200a6135509f95dd83196ccc7599a61"
+}

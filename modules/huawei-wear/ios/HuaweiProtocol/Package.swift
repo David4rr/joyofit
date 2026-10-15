@@ -14,7 +14,8 @@ let package = Package(
         .target(name: "HuaweiProtocol"),
         .testTarget(
             name: "HuaweiProtocolTests",
-            dependencies: ["HuaweiProtocol"]
+            dependencies: ["HuaweiProtocol"],
+            exclude: ["Fixtures"]
         ),
     ]
 )
