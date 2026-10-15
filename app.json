@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "JoyoFit",
+    "slug": "joyofit",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "joyofit",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["android"],
+    "android": {
+      "package": "com.joyodigitama.joyofit",
+      "allowBackup": false,
+      "adaptiveIcon": {
+        "backgroundColor": "#F9F6F1",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "./plugins/with-release-signing",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 29
+          }
+        }
+      ],
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#F9F6F1",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#0D1112"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "joyorogoUrl": "https://api.joyorogo.com",
+      "cloudUrl": "https://joyofit-api.dzulfikar-at.workers.dev"
+    }
+  }
+}
