@@ -19,9 +19,9 @@ import { useWatch } from '@/state/WatchProvider';
 import { fonts, spacing, useColors } from '@/theme';
 
 const CONNECT_STEPS = [
-  'Pair the watch in Android Bluetooth settings. It has to appear in the list below.',
-  'Unbind it from Huawei Health first, or the watch will refuse this app.',
-  'On the first connect, keep the watch awake and accept the prompt on its screen.',
+  'Unbind it from Huawei Health first (or reset the band), so it is ready to pair.',
+  'Grant Bluetooth permissions. The app automatically scans for nearby Huawei and Honor bands.',
+  'On the first connect, tap Connect, keep the watch awake, and accept the checkmark prompt on its screen.',
 ];
 
 /** The three things that have to be true before the first connect, in the order they happen. */
@@ -79,10 +79,14 @@ export default function WatchScreen() {
 
   const pairedWatches = (
     <Section
-      title="Paired watches"
+      title={bonded.scanning ? 'Searching for devices...' : 'Available watches'}
       icon="bluetooth"
       trailing={
-        devices.length > VISIBLE_BONDED ? (
+        bonded.scanning ? (
+          <AppText variant="caption" muted>
+            Scanning...
+          </AppText>
+        ) : devices.length > 0 ? (
           <AppText variant="caption" muted>
             {devices.length}
           </AppText>
@@ -105,9 +109,20 @@ export default function WatchScreen() {
           {showEmpty ? (
             <EmptyState
               icon="bluetooth"
-              title="No paired devices"
-              description="Pair the watch in Android Bluetooth settings, then refresh."
-              action={{ label: 'Refresh list', icon: 'refresh', onPress: () => void bonded.reload() }}
+              title={bonded.scanning ? 'Scanning for devices...' : 'No devices found'}
+              description={
+                bonded.scanning
+                  ? 'Looking for nearby Huawei and Honor bands or watches. Make sure your band is turned on and ready to pair.'
+                  : 'No paired or nearby devices found. Make sure your band is turned on and disconnected from Huawei Health, then tap Scan.'
+              }
+              action={{
+                label: bonded.scanning ? 'Scanning...' : 'Scan nearby devices',
+                icon: 'refresh',
+                onPress: () => {
+                  void bonded.reload();
+                  void bonded.startScan();
+                },
+              }}
             />
           ) : (
             <>
@@ -136,7 +151,19 @@ export default function WatchScreen() {
                   </View>
                 ))}
               </ScrollView>
-              <Button label="Refresh list" icon="refresh" loading={bonded.loading} onPress={() => void bonded.reload()} />
+              <Button
+                label={bonded.scanning ? 'Stop scanning' : 'Scan nearby devices'}
+                icon={bonded.scanning ? 'close' : 'refresh'}
+                loading={bonded.loading}
+                onPress={() => {
+                  if (bonded.scanning) {
+                    void bonded.stopScan();
+                  } else {
+                    void bonded.reload();
+                    void bonded.startScan();
+                  }
+                }}
+              />
             </>
           )}
         </>

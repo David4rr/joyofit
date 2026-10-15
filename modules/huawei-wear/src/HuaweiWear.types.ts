@@ -28,6 +28,7 @@ export interface BondedDevice {
   support: ModelSupport;
   /** Why it is not `tested`, in a few words; null for tested models. */
   reason: string | null;
+  rssi?: number;
 }
 
 export interface DeviceInfo {
@@ -397,4 +398,6 @@ export type HuaweiWearModuleEvents = {
   onLiveWorkout: (event: LiveWorkout) => void;
   /** Once a second while `measureHrv` or the calibration of `setAutomaticStress` runs. */
   onHrvProgress: (event: HrvProgressEvent) => void;
+  onDeviceDiscovered: (event: BondedDevice) => void;
+  onScanStateChange: (event: { scanning: boolean; error?: string | null }) => void;
 };

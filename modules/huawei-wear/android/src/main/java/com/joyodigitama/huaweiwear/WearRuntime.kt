@@ -131,12 +131,23 @@ internal class WearRuntime private constructor(context: Context) {
     override fun hrvProgress(secondsLeft: Int, beats: Int) {
       listeners.forEach { it.hrvProgress(secondsLeft, beats) }
     }
+    override fun deviceDiscovered(device: Map<String, Any?>) {
+      listeners.forEach { it.deviceDiscovered(device) }
+    }
+
+    override fun scanState(scanning: Boolean, error: String?) {
+      listeners.forEach { it.scanState(scanning, error) }
+    }
   }
 
   /** Same fan-out the link reports through; background code logs here so the Log tab shows it. */
   val sink: WearEvents get() = events
 
   val link = WearLink(appContext, events, settings, syncStore)
+  fun startScan() = link.startScan()
+  fun stopScan() = link.stopScan()
+  fun getDiscoveredDevices() = link.getDiscoveredDevices()
+
 
   /** The support report: the last watch, its capabilities and the kept log, without addresses or serial. */
   fun supportReport(): Map<String, Any?> {

@@ -92,6 +92,13 @@ class HuaweiWearModule : Module() {
     override fun hrvProgress(secondsLeft: Int, beats: Int) {
       emit("onHrvProgress", mapOf("secondsLeft" to secondsLeft, "beats" to beats))
     }
+    override fun deviceDiscovered(device: Map<String, Any?>) {
+      emit("onDeviceDiscovered", device)
+    }
+
+    override fun scanState(scanning: Boolean, error: String?) {
+      emit("onScanStateChange", mapOf("scanning" to scanning, "error" to error))
+    }
 
     private fun emit(name: String, payload: Map<String, Any?>) {
       if (destroyed) return
@@ -122,7 +129,7 @@ class HuaweiWearModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("HuaweiWear")
 
-    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress")
+    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onDeviceDiscovered", "onScanStateChange")
 
     OnCreate {
       val runtime = runtime()
@@ -151,6 +158,18 @@ class HuaweiWearModule : Module() {
     AsyncFunction("getBondedDevices") {
       runtime().link.bondedDevices()
     }
+    AsyncFunction("startScan") {
+      runtime().startScan()
+    }
+
+    AsyncFunction("stopScan") {
+      runtime().stopScan()
+    }
+
+    Function("getDiscoveredDevices") {
+      runtime().getDiscoveredDevices()
+    }
+
 
     AsyncFunction("connect") Coroutine { address: String ->
       runtime().connectFromApp(address)
@@ -287,6 +306,7 @@ class HuaweiWearModule : Module() {
     OnDestroy {
       destroyed = true
       runtimeRef?.let {
+        try { it.stopScan() } catch (_: Exception) {}
         it.removeListener(listener)
         it.onModuleDestroyed()
       }

@@ -8,6 +8,10 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteException
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
+import java.util.concurrent.ConcurrentHashMap
 import android.os.Build
 import java.io.IOException
 import java.util.Locale
@@ -51,6 +55,13 @@ internal class WearLink(
   internal val syncExtensions = java.util.concurrent.CopyOnWriteArrayList<suspend (HuaweiSession) -> Unit>()
 
   private val lock = Any()
+  private val discoveredDevices = ConcurrentHashMap<String, Map<String, Any?>>()
+  private val discoveredNames = ConcurrentHashMap<String, String>()
+  private val discoveredTransports = ConcurrentHashMap<String, ModelTransport>()
+  private var scanCallback: ScanCallback? = null
+  @Volatile var isScanning: Boolean = false
+    private set
+
   private var current: Connection? = null
 
   @Volatile
@@ -75,7 +86,7 @@ internal class WearLink(
     lateinit var session: HuaweiSession
 
     /** A listed model uses its Gadgetbridge coordinator's link; for other names Android's view of the device decides. */
-    val transportKind: ModelTransport = model.transportFor(isLeOnly(device))
+    val transportKind: ModelTransport = model.transportFor(isLeOnly(device) || discoveredTransports[address] == ModelTransport.LE)
 
     /** GB's HuaweiDeviceType for the link: BR, or BLE / AW over GATT. */
     val deviceType: HuaweiDeviceType = model.deviceType(transportKind)
@@ -155,6 +166,104 @@ internal class WearLink(
       throw WearException(ErrorCodes.BLUETOOTH_PERMISSION, "BLUETOOTH_CONNECT permission denied: ${e.message}", e)
     }
   }
+  @SuppressLint("MissingPermission")
+  fun startScan() {
+    val adapter = requireAdapter()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+      appContext.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED
+    ) {
+      throw WearException(
+        ErrorCodes.BLUETOOTH_PERMISSION,
+        "BLUETOOTH_SCAN permission is not granted; request it before scanning",
+      )
+    }
+
+    val scanner = adapter.bluetoothLeScanner
+      ?: throw WearException(ErrorCodes.BLUETOOTH_UNAVAILABLE, "Bluetooth LE scanner unavailable")
+
+    synchronized(this) {
+      if (isScanning) return
+      isScanning = true
+    }
+    events.scanState(true, null)
+
+    val callback = object : ScanCallback() {
+      override fun onScanResult(callbackType: Int, result: ScanResult?) {
+        val device = result?.device ?: return
+        val rawName = try { device.name } catch (e: SecurityException) { null }
+          ?: result.scanRecord?.deviceName
+        val address = device.address
+
+        if (!rawName.isNullOrBlank()) {
+          discoveredNames[address] = rawName
+          val match = WatchModels.match(rawName)
+          if (match.connectable) {
+            discoveredTransports[address] = ModelTransport.LE
+            val item = mapOf(
+              "address" to address,
+              "name" to rawName,
+              "rssi" to result.rssi
+            ) + match.toJs()
+            discoveredDevices[address] = item
+            events.deviceDiscovered(item)
+          }
+        }
+      }
+
+      override fun onBatchScanResults(results: List<ScanResult?>) {
+        results.forEach { it?.let { res -> onScanResult(0, res) } }
+      }
+
+      override fun onScanFailed(errorCode: Int) {
+        synchronized(this@WearLink) {
+          isScanning = false
+          scanCallback = null
+        }
+        events.scanState(false, "BLE Scan failed with code $errorCode")
+      }
+    }
+
+    scanCallback = callback
+    val settings = ScanSettings.Builder()
+      .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+      .build()
+
+    try {
+      scanner.startScan(null, settings, callback)
+    } catch (e: Exception) {
+      synchronized(this) {
+        isScanning = false
+        scanCallback = null
+      }
+      events.scanState(false, e.message)
+      throw WearException(ErrorCodes.CONNECT_FAILED, "Could not start BLE scan: ${e.message}", e)
+    }
+  }
+
+  @SuppressLint("MissingPermission")
+  fun stopScan() {
+    val cb = synchronized(this) {
+      if (!isScanning) return
+      isScanning = false
+      val c = scanCallback
+      scanCallback = null
+      c
+    } ?: return
+
+    try {
+      val adapter = appContext.getSystemService(BluetoothManager::class.java)?.adapter
+      adapter?.bluetoothLeScanner?.stopScan(cb)
+    } catch (e: Exception) {
+      // ignore
+    } finally {
+      events.scanState(false, null)
+    }
+  }
+
+  fun getDiscoveredDevices(): List<Map<String, Any?>> {
+    return discoveredDevices.values.toList().sortedBy { (it["name"] as? String)?.lowercase(Locale.ROOT) ?: "" }
+  }
+
 
   private fun requireAdapter(): BluetoothAdapter {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -317,9 +426,9 @@ internal class WearLink(
   @SuppressLint("MissingPermission")
   private fun bondedName(device: BluetoothDevice): String? =
     try {
-      device.name
+      device.name?.takeIf { it.isNotBlank() } ?: discoveredNames[device.address]
     } catch (e: SecurityException) {
-      null
+      discoveredNames[device.address]
     }
 
   /** True when Android knows [device] as Bluetooth LE only, so it has no Classic side to open an RFCOMM socket on. */

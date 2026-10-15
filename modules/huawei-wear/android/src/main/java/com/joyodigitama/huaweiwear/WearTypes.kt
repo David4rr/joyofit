@@ -97,4 +97,6 @@ internal interface WearEvents {
 
   /** Once a second during a 1-minute HRV measurement (`onHrvProgress`): seconds left and intervals received with a usable signal. */
   fun hrvProgress(secondsLeft: Int, beats: Int) = Unit
+  fun deviceDiscovered(device: Map<String, Any?>) = Unit
+  fun scanState(scanning: Boolean, error: String? = null) = Unit
 }

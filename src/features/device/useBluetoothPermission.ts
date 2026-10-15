@@ -7,14 +7,36 @@ export type PermissionStatus = 'checking' | 'granted' | 'denied' | 'blocked';
 const RUNTIME_BLUETOOTH_API = 31;
 
 export async function ensureBluetoothConnect(): Promise<Exclude<PermissionStatus, 'checking'>> {
-  if (Platform.OS !== 'android' || Number(Platform.Version) < RUNTIME_BLUETOOTH_API) {
-    return 'granted';
+  if (Platform.OS !== 'android') return 'granted';
+  const version = Number(Platform.Version);
+  if (version >= RUNTIME_BLUETOOTH_API) {
+    const connectPerm = PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT;
+    const scanPerm = PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN;
+    const hasConnect = await PermissionsAndroid.check(connectPerm);
+    const hasScan = await PermissionsAndroid.check(scanPerm);
+    if (hasConnect && hasScan) return 'granted';
+
+    const results = await PermissionsAndroid.requestMultiple([connectPerm, scanPerm]);
+    const connectRes = results[connectPerm];
+    const scanRes = results[scanPerm];
+    if (connectRes === PermissionsAndroid.RESULTS.GRANTED && scanRes === PermissionsAndroid.RESULTS.GRANTED) {
+      return 'granted';
+    }
+    if (
+      connectRes === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN ||
+      scanRes === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN
+    ) {
+      return 'blocked';
+    }
+    return 'denied';
+  } else {
+    // Android < 12 requires location for BLE scanning
+    const locPerm = PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION;
+    if (await PermissionsAndroid.check(locPerm)) return 'granted';
+    const res = await PermissionsAndroid.request(locPerm);
+    if (res === PermissionsAndroid.RESULTS.GRANTED) return 'granted';
+    return res === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN ? 'blocked' : 'denied';
   }
-  const permission = PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT;
-  if (await PermissionsAndroid.check(permission)) return 'granted';
-  const result = await PermissionsAndroid.request(permission);
-  if (result === PermissionsAndroid.RESULTS.GRANTED) return 'granted';
-  return result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN ? 'blocked' : 'denied';
 }
 
 /** Checks BLUETOOTH_CONNECT on mount and asks for it when it is not yet granted. */
