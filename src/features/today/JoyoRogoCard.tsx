@@ -6,9 +6,14 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Screen';
 import { useCloud } from '@/state/CloudProvider';
 import { spacing } from '@/theme';
+import { HuaweiWear } from '@/wear';
 
 const DIARY_URL = 'https://joyorogo.com/makan';
-const ABOUT_URL = 'https://joyorogo.com';
+// The website sells Founder; a Play build must not lead to an outside checkout, so it points at JoyoRogo on Google Play.
+const ABOUT_URL =
+  HuaweiWear.distribution === 'play'
+    ? 'https://play.google.com/store/apps/details?id=com.joyodigitama.joyorogo'
+    : 'https://joyorogo.com';
 
 /**
  * The one place JoyoFit points at JoyoRogo outside Settings: under the readiness details, where "what should I eat on a day
