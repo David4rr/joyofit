@@ -7,7 +7,27 @@
     "icon": "./assets/icon.png",
     "scheme": "joyofit",
     "userInterfaceStyle": "automatic",
-    "platforms": ["android"],
+    "platforms": ["ios", "android"],
+    "ios": {
+      "bundleIdentifier": "com.joyodigitama.joyofit",
+      "buildNumber": "1",
+      "appleTeamId": "F6Q6UFUK69",
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "JoyoFit uses Bluetooth to connect to your Huawei or Honor watch and sync its data.",
+        "NSBluetoothPeripheralUsageDescription": "JoyoFit uses Bluetooth to connect to your Huawei or Honor watch and sync its data.",
+        "NSHealthShareUsageDescription": "JoyoFit does not read your Apple Health data. It only writes the data recorded by your watch.",
+        "NSHealthUpdateUsageDescription": "Allow JoyoFit to save the steps, distance, calories, heart rate, blood oxygen, sleep and workouts recorded by your watch to Apple Health.",
+        "UIBackgroundModes": ["bluetooth-central"]
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": []
+      }
+    },
     "android": {
       "package": "com.joyodigitama.joyofit",
       "allowBackup": false,
