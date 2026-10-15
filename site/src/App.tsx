@@ -15,16 +15,42 @@ import {
   Dumbbell,
   Flame,
   Footprints,
+  Heart,
   HeartPulse,
+  Mail,
   Moon,
+  Package,
   Palette,
   Route,
   Server,
   ShieldCheck,
+  Users,
   Watch,
   type LucideIcon,
 } from "lucide-react";
-import { CLOUDAGNI_URL, GITHUB_URL, HARGA_URL, JOYOROGO_URL, setMeta } from "./lib";
+import {
+  CLOUDAGNI_URL,
+  CONTACT_EMAIL,
+  DUKUNG_JAM_PATH,
+  GITHUB_URL,
+  HARGA_URL,
+  JOYOROGO_URL,
+  TESTER_GROUP_URL,
+  TESTER_OPTIN_URL,
+  TRAKTEER_URL,
+  WATCH_REPORTS_URL,
+  WATCH_REPORT_FORM_URL,
+  WATCH_REQUEST_URL,
+  goal,
+  setMeta,
+} from "./lib";
+import {
+  JAM_BELUM_PAKE,
+  JAM_BISA_DICOBA,
+  JAM_EKSPERIMEN_CLASSIC,
+  JAM_EKSPERIMEN_LE,
+  JAM_SUDAH_DIUJI,
+} from "./jam";
 import { PRIVASI_PATH, PrivasiPage } from "./Privasi";
 import { ButtonLink, GithubMark, Phone, Ring } from "./ui";
 
@@ -32,19 +58,11 @@ import { ButtonLink, GithubMark, Phone, Ring } from "./ui";
 const PRICE = { monthly: "Rp15.000", yearly: "Rp150.000" };
 
 const FACTS = [
-  { value: "35 model", label: "jam Huawei dan Honor bisa dicoba", href: "/jam" },
+  { value: `${JAM_BISA_DICOBA} model`, label: "jam dan band Huawei dan Honor bisa dicoba", href: "/jam" },
   { value: "Live", label: "detak, kkal, lemak dan karbo saat olahraga" },
   { value: "AGPL-3.0", label: "kode terbuka" },
   { value: "Lokal", label: "data di HP, cloud opsional" },
 ] as const;
-
-const JAM_SUDAH_DIUJI = ["Huawei Watch Fit 4 Pro"] as const;
-
-const JAM_EKSPERIMEN = ["Huawei Watch Fit 4", "Huawei Watch Fit 5", "Huawei Watch Fit 5 Pro", "Huawei Watch Fit 3", "Huawei Watch Fit 2", "Huawei Watch GT 2", "Huawei Watch GT 2 Pro", "Huawei Watch GT 3", "Huawei Watch GT 3 Pro", "Huawei Watch GT 3 SE", "Huawei Watch GT 4", "Huawei Watch GT 5", "Huawei Watch GT 5 Pro", "Huawei Watch GT 6", "Huawei Watch GT 6 Pro", "Huawei Watch GT 7", "Huawei Watch GT 7 Pro", "Huawei Watch GT Runner", "Huawei Watch GT Runner 2", "Huawei Watch GT Cyber", "Huawei Watch 3", "Huawei Watch 3 Pro", "Huawei Watch 4", "Huawei Watch 4 Pro", "Huawei Watch 5", "Huawei Watch D2", "Huawei Watch Ultimate", "Huawei Watch Ultimate 2", "Huawei TalkBand B6", "Honor MagicWatch 2", "Honor Watch GS 3", "Honor Watch GS Pro", "Honor Watch 4", "Honor Watch 4 Pro"] as const;
-
-const JAM_BELUM_BLE = ["Huawei Watch Fit", "Huawei Watch GT", "Huawei Watch GT 2e", "Huawei Band 2", "Huawei Band 2 Pro", "Huawei Band 3", "Huawei Band 3 Pro", "Huawei Band 3e", "Huawei Band 4", "Huawei Band 4 Pro", "Huawei Band 4e", "Huawei Band 6", "Huawei Band 7", "Huawei Band 8", "Huawei Band 9", "Huawei Band 10", "Huawei Band 11", "Huawei Band 11 Pro", "Honor Band 3", "Honor Band 4", "Honor Band 5", "Honor Band 6", "Honor Band 7", "Honor Band 9", "Honor Band 10", "Honor Watch"] as const;
-
-const JAM_BELUM_PAKE = ["Honor Watch 5", "Honor Watch 5 Pro", "Honor Watch 6"] as const;
 
 const BASICS = [
   {
@@ -124,11 +142,11 @@ const FACES: { Icon: LucideIcon; name: string; note: string }[] = [
 const FAQ = [
   {
     q: "Apakah saya perlu akun Huawei?",
-    a: "Tidak. JoyoFit bicara langsung ke jam lewat Bluetooth Classic. Yang perlu kamu lakukan: lepaskan jam dari Huawei Health dulu, karena jam hanya bisa terpasang ke satu aplikasi dalam satu waktu.",
+    a: "Tidak. JoyoFit bicara langsung ke jam lewat Bluetooth. Yang perlu kamu lakukan: lepaskan jam dari Huawei Health dulu, karena jam hanya bisa terpasang ke satu aplikasi dalam satu waktu.",
   },
   {
     q: "Jam apa saja yang didukung?",
-    a: "Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam Huawei dan Honor lain yang memakai Bluetooth Classic masih eksperimen, dan jam Bluetooth LE (band, Watch Fit pertama, GT pertama) belum bisa. Daftar lengkapnya ada di bagian Jam yang didukung. Aplikasinya untuk Android 10 ke atas. Belum ada versi iPhone.",
+    a: "Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jammu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas. Belum ada versi iPhone.",
   },
   {
     q: "Sudah stabil dipakai?",
@@ -224,7 +242,7 @@ function Footer() {
           <a href="/#cara" className={link}>
             Tiga cara pakai
           </a>
-          <a href={HARGA_URL} className={link}>
+          <a href={HARGA_URL} className={link} {...goal("founder_cta_click", "footer")}>
             Harga
           </a>
           <a href={JOYOROGO_URL} className={link}>
@@ -235,6 +253,18 @@ function Footer() {
           </a>
           <a href={GITHUB_URL} className={link}>
             Kode sumber
+          </a>
+          <a href={DUKUNG_JAM_PATH} className={link} {...goal("dukung_jam_click", "footer")}>
+            Dukung jam
+          </a>
+          <a
+            href={TRAKTEER_URL}
+            className={link}
+            target="_blank"
+            rel="noopener"
+            {...goal("trakteer_click", "footer")}
+          >
+            Dukung di Trakteer
           </a>
           <a href={PRIVASI_PATH} className={link}>
             Privasi
@@ -278,16 +308,44 @@ function Hero() {
           kamu mau.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <ButtonLink size="lg" href="#cara">
-            Pilih cara pakai
+          <ButtonLink
+            size="lg"
+            href={TESTER_GROUP_URL}
+            target="_blank"
+            rel="noopener"
+            {...goal("tester_group_click", "hero")}
+          >
+            <Users aria-hidden />
+            Gabung tester
+          </ButtonLink>
+          <ButtonLink size="lg" variant="secondary" href="#cara">
+            Cara pakai
           </ButtonLink>
           <ButtonLink size="lg" variant="secondary" href={GITHUB_URL} target="_blank" rel="noopener">
             <GithubMark className="size-[1.125rem]" />
-            Lihat di GitHub
+            GitHub
           </ButtonLink>
         </div>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Gratis dan open source. Diuji di Huawei Watch Fit 4 Pro, jam lain eksperimen. Android 10 ke atas.
+        <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground">
+          Aplikasinya masih di tes tertutup Google Play: gabung grup dulu, lalu ketuk{" "}
+          <a
+            href={TESTER_OPTIN_URL}
+            target="_blank"
+            rel="noopener"
+            className="font-semibold text-foreground underline underline-offset-4"
+            {...goal("tester_optin_click", "hero")}
+          >
+            Become a tester
+          </a>{" "}
+          setelah Google menyetujui akses tesnya. Gratis dan open source. Diuji di Huawei Watch Fit 4 Pro, jam lain
+          eksperimen. Android 10 ke atas.{" "}
+          <a
+            href={DUKUNG_JAM_PATH}
+            className="font-semibold text-foreground underline underline-offset-4"
+            {...goal("dukung_jam_click", "hero")}
+          >
+            Jammu belum diuji? Bantu kami mendukungnya.
+          </a>
         </p>
       </div>
 
@@ -699,9 +757,15 @@ function JamTeaser() {
         <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
           Diuji di Watch Fit 4 Pro, puluhan jam Huawei dan Honor lain bisa dicoba.
         </p>
-        <ButtonLink variant="secondary" className="shrink-0" href={JAM_PATH}>
-          Lihat daftar jam
-        </ButtonLink>
+        <div className="flex shrink-0 flex-wrap gap-3">
+          <ButtonLink variant="secondary" href={JAM_PATH}>
+            Lihat daftar jam
+          </ButtonLink>
+          <ButtonLink variant="outline" href={DUKUNG_JAM_PATH} {...goal("dukung_jam_click", "teaser")}>
+            <Watch aria-hidden />
+            Dukung jam barumu
+          </ButtonLink>
+        </div>
       </div>
     </section>
   );
@@ -735,6 +799,57 @@ function Code({ children }: { children: React.ReactNode }) {
   );
 }
 
+const TESTER_STEPS = [
+  "Gabung grup Google joyofit-testers dengan akun Google yang kamu pakai di Play Store. Grup inilah yang memberi akses ke tes tertutup.",
+  "Setelah Google mengaktifkan aksesnya, buka halaman tes di Play dan ketuk Become a tester. Kalau halaman belum bisa dibuka, tunggu sebentar lalu coba lagi.",
+  "Pasang JoyoFit dari Play Store. Data jam tetap tersimpan di HP; masuk dengan akun JoyoRogo hanya perlu kalau kamu mau cloud.",
+] as const;
+
+function TesterJoin() {
+  return (
+    <div
+      id="tester"
+      data-section="tester"
+      className="mt-12 scroll-mt-20 rounded-[1.75rem] bg-tidur-soft p-6 md:p-8"
+    >
+      <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-start">
+        <div>
+          <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">Gabung tester</h3>
+          <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-tidur-ink/85">
+            JoyoFit lewat Google Play masih tes tertutup. Gratis, dan kamu bisa membantu menemukan yang rusak
+            sebelum dirilis untuk semua orang.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <ButtonLink href={TESTER_GROUP_URL} target="_blank" rel="noopener" {...goal("tester_group_click", "cara")}>
+              <Users aria-hidden />
+              1. Gabung grup Google
+            </ButtonLink>
+            <ButtonLink
+              variant="outline"
+              href={TESTER_OPTIN_URL}
+              target="_blank"
+              rel="noopener"
+              {...goal("tester_optin_click", "cara")}
+            >
+              2. Become a tester di Play
+            </ButtonLink>
+          </div>
+        </div>
+        <ol className="space-y-4">
+          {TESTER_STEPS.map((step, i) => (
+            <li key={step} className="flex gap-3.5">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-card text-sm font-extrabold text-tidur-ink tabular-nums">
+                {i + 1}
+              </span>
+              <p className="pt-0.5 text-[0.9375rem] leading-relaxed text-tidur-ink/90">{step}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 function Options() {
   return (
     <section id="cara" data-section="options" className="scroll-mt-16 border-t border-border/70 py-20 md:py-24">
@@ -745,6 +860,8 @@ function Options() {
             Aplikasinya selalu gratis dan terbuka. Yang berbeda hanya di mana datamu dicadangkan.
           </p>
         </div>
+
+        <TesterJoin />
 
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {/* 1. Open source */}
@@ -839,7 +956,7 @@ function Options() {
               Olahraga otomatis terkirim ke Strava
             </p>
             <div className="mt-auto pt-6">
-              <ButtonLink className="w-full" href={HARGA_URL}>
+              <ButtonLink className="w-full" href={HARGA_URL} {...goal("founder_cta_click", "cara")}>
                 Langganan JoyoRogo Premium
               </ButtonLink>
               <p className="mt-2 text-center text-xs text-muted-foreground">
@@ -897,11 +1014,28 @@ function OpenSource() {
             </p>
           </div>
         </div>
-        <ButtonLink variant="outline" className="shrink-0" href={GITHUB_URL} target="_blank" rel="noopener">
-          <GithubMark className="size-4" />
-          Lihat di GitHub
-        </ButtonLink>
+        <div className="flex shrink-0 flex-col gap-3">
+          <ButtonLink variant="outline" href={GITHUB_URL} target="_blank" rel="noopener" {...goal("github_click", "opensource")}>
+            <GithubMark className="size-4" />
+            Lihat di GitHub
+          </ButtonLink>
+          <ButtonLink variant="outline" href={TRAKTEER_URL} target="_blank" rel="noopener" {...goal("trakteer_click", "opensource")}>
+            <Heart aria-hidden />
+            Dukung di Trakteer
+          </ButtonLink>
+        </div>
       </div>
+      <p className="mt-4 max-w-2xl px-1 text-sm leading-relaxed text-muted-foreground">
+        JoyoFit gratis dan dibuat di Malang oleh Dzulfikar. Dukungan lewat Trakteer membantu pengembangan dan
+        jam untuk diuji, dan tidak membeli fitur atau prioritas.{" "}
+        <a
+          href={DUKUNG_JAM_PATH}
+          className="font-semibold text-foreground underline underline-offset-4"
+          {...goal("dukung_jam_click", "opensource")}
+        >
+          Lihat cara membantu mendukung jam baru.
+        </a>
+      </p>
     </section>
   );
 }
@@ -1079,8 +1213,15 @@ function JamPage() {
           Jam yang didukung
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          Baru Huawei Watch Fit 4 Pro yang sudah kami uji. Jam lain di daftar Gadgetbridge masih
-          eksperimen: sambungannya sama, tapi belum pernah dicoba dengan JoyoFit.
+          Baru Huawei Watch Fit 4 Pro yang sudah kami uji. Jam dan band lain di daftar Gadgetbridge masih
+          eksperimen: jalur sambungannya ada, tapi belum pernah dicoba dengan JoyoFit.{" "}
+          <a
+            href={DUKUNG_JAM_PATH}
+            className="font-semibold text-foreground underline underline-offset-4"
+            {...goal("dukung_jam_click", "jam")}
+          >
+            Punya jam yang belum diuji? Bantu kami mendukungnya.
+          </a>
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-[1.75rem] bg-makan-soft p-6">
@@ -1089,19 +1230,21 @@ function JamPage() {
             <Chips items={JAM_SUDAH_DIUJI} />
           </div>
           <div className="rounded-[1.75rem] bg-card p-6">
-            <h3 className="text-xl font-extrabold tracking-tight">Eksperimen</h3>
+            <h3 className="text-xl font-extrabold tracking-tight">Eksperimen: jam</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Bluetooth Classic, belum pernah dicoba. Sebagian fitur mungkin tidak jalan.
             </p>
-            <Chips items={JAM_EKSPERIMEN} />
+            <Chips items={JAM_EKSPERIMEN_CLASSIC} />
           </div>
           <div className="rounded-[1.75rem] bg-card p-6">
-            <h3 className="text-xl font-extrabold tracking-tight">Belum bisa</h3>
+            <h3 className="text-xl font-extrabold tracking-tight">Eksperimen: band dan jam lama</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Bluetooth LE: JoyoFit belum punya jalur BLE.
+              Bluetooth LE, dibawa dari Gadgetbridge tanpa band untuk mencobanya. Menyambung, pairing, atau sinkron
+              bisa gagal. Band harus sudah terpasang (paired) di pengaturan Bluetooth Android.
             </p>
-            <Chips items={JAM_BELUM_BLE} />
-            <p className="mt-5 text-sm text-muted-foreground">
+            <Chips items={JAM_EKSPERIMEN_LE} />
+            <h3 className="mt-8 text-xl font-extrabold tracking-tight">Belum bisa</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               Pairing baru Honor belum diimplementasi:
             </p>
             <Chips items={JAM_BELUM_PAKE} />
@@ -1131,10 +1274,206 @@ function JamPage() {
   );
 }
 
+const DUKUNG_JAM_META = {
+  title: "Dukung jam barumu di JoyoFit",
+  description:
+    "Jam Huawei atau Honor-mu belum diuji di JoyoFit? Laporkan dari aplikasi, pinjamkan jam untuk diuji, atau patungan lewat Trakteer. Daftar jam yang diuji dan eksperimen.",
+};
+
+const DUKUNG_SUBJECT = "Pinjam jam untuk uji JoyoFit";
+
+function DukungJamPage() {
+  useEffect(() => {
+    const { title, description } = DUKUNG_JAM_META;
+    const url = `https://fit.joyorogo.com${DUKUNG_JAM_PATH}`;
+    document.title = `${title} | JoyoFit`;
+    setMeta('meta[name="description"]', "content", description);
+    setMeta('link[rel="canonical"]', "href", url);
+    setMeta('meta[property="og:url"]', "content", url);
+    setMeta('meta[property="og:title"]', "content", title);
+    setMeta('meta[property="og:description"]', "content", description);
+    setMeta('meta[name="twitter:title"]', "content", title);
+    setMeta('meta[name="twitter:description"]', "content", description);
+    window.scrollTo(0, 0);
+  }, []);
+
+  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(DUKUNG_SUBJECT)}&body=${encodeURIComponent(
+    "Model jam:\nKondisi (baik / ada cacat):\nKota:\nLama yang bisa dipinjamkan:\n",
+  )}`;
+
+  return (
+    <section data-section="dukung-jam" className="py-12 md:py-16">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
+        <a
+          href="/jam"
+          className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Daftar jam yang didukung
+        </a>
+        <h1 className="mt-4 max-w-3xl text-3xl font-extrabold tracking-tight text-balance md:text-[2.75rem] md:leading-[1.1]">
+          Bantu kami mendukung jammu
+        </h1>
+        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+          JoyoFit dibuat dan diuji dengan satu jam, Huawei Watch Fit 4 Pro. Jam lain masuk daftar karena
+          Gadgetbridge sudah punya modelnya, tapi tanpa jam asli kami tidak bisa memastikan apa yang jalan dan
+          apa yang tidak. Ada tiga cara membantu, dari yang paling murah.
+        </p>
+
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          <div className="flex flex-col rounded-[1.75rem] bg-makan-soft p-6">
+            <span className="flex size-10 items-center justify-center rounded-full bg-card text-makan-ink">
+              <Watch className="size-5" aria-hidden />
+            </span>
+            <h2 className="mt-4 text-xl font-extrabold tracking-tight">Laporkan dari aplikasi</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Kalau kamu punya jamnya, ini yang paling berguna dan tidak memakan biaya. Sambungkan jam sekali, lalu
+              buka tab Watch, pilih Help support your watch, dan ketuk Report on GitHub. Laporannya teks biasa,
+              tanpa alamat Bluetooth dan nomor seri. Tulis juga apa yang jalan dan apa yang tidak.
+            </p>
+            <div className="mt-auto flex flex-col gap-2 pt-6">
+              <ButtonLink
+                href={WATCH_REPORT_FORM_URL}
+                target="_blank"
+                rel="noopener"
+                {...goal("watch_report_click", "dukung-jam")}
+              >
+                Buka formulir laporan
+              </ButtonLink>
+              <p className="text-xs text-muted-foreground">
+                Formulir ini paling enak diisi dari tombol di aplikasi, karena kolom ringkasan dan log terisi
+                otomatis.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col rounded-[1.75rem] bg-card p-6">
+            <span className="flex size-10 items-center justify-center rounded-full bg-muted text-foreground">
+              <Package className="size-5" aria-hidden />
+            </span>
+            <h2 className="mt-4 text-xl font-extrabold tracking-tight">Pinjamkan atau kirim jam</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Kalau jammu belum ada di daftar uji dan kamu rela meminjamkannya, kirim email dulu. Kami meminjam
+              hanya untuk menguji dan mengembalikannya. Lama pinjam dan siapa yang menanggung ongkos kirim pulang
+              kita sepakati tertulis lewat email sebelum kamu mengirim apa pun, jadi jangan kirim paket tanpa
+              balasan dari kami.
+            </p>
+            <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+              {[
+                "Reset pabrik jam dan keluarkan dari akun Huawei dan Huawei Health sebelum dikirim.",
+                "Paket bisa hilang atau rusak di jalan. Pertimbangkan itu sebelum mengirim.",
+                "Kami tidak menjanjikan jammu akan berfungsi penuh setelah dicoba.",
+              ].map((line) => (
+                <li key={line} className="flex gap-2">
+                  <Dot />
+                  {line}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto pt-6">
+              <ButtonLink variant="secondary" className="w-full" href={mailto} {...goal("lend_watch_click", "dukung-jam")}>
+                <Mail aria-hidden />
+                Email {CONTACT_EMAIL}
+              </ButtonLink>
+            </div>
+          </div>
+
+          <div className="flex flex-col rounded-[1.75rem] bg-card p-6">
+            <span className="flex size-10 items-center justify-center rounded-full bg-muted text-foreground">
+              <Heart className="size-5" aria-hidden />
+            </span>
+            <h2 className="mt-4 text-xl font-extrabold tracking-tight">Patungan lewat Trakteer</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Dana patungan dipakai untuk membeli atau meminjam jam uji dan ongkos kirimnya, dimulai dari model yang
+              paling banyak diminta. Tulis nama model jammu di pesan Trakteer supaya kami tahu. Belum ada target
+              atau jumlah terkumpul yang kami tampilkan di sini, dan dukungan tidak menjamin model tertentu akan
+              didukung.
+            </p>
+            <div className="mt-auto pt-6">
+              <ButtonLink className="w-full" href={TRAKTEER_URL} target="_blank" rel="noopener" {...goal("trakteer_click", "dukung-jam")}>
+                <Heart aria-hidden />
+                Dukung di Trakteer
+              </ButtonLink>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-[1.75rem] bg-card p-6 md:p-8">
+          <h2 className="text-xl font-extrabold tracking-tight md:text-2xl">Jam yang paling diminta</h2>
+          <p className="mt-2 max-w-3xl text-[0.9375rem] leading-relaxed text-muted-foreground">
+            Kami mendahulukan model yang paling sering muncul di laporan dan permintaan. Angkanya tidak kami salin
+            ke sini; daftar yang hidup ada di GitHub, dengan label <Code>watch-report</Code>. Jam yang kamu
+            butuhkan belum ada? Ajukan permintaan, dan beri jempol di permintaan yang sama.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <ButtonLink
+              variant="secondary"
+              href={WATCH_REPORTS_URL}
+              target="_blank"
+              rel="noopener"
+              {...goal("watch_requests_click", "dukung-jam")}
+            >
+              <GithubMark className="size-4" />
+              Lihat laporan dan permintaan
+            </ButtonLink>
+            <ButtonLink
+              variant="outline"
+              href={WATCH_REQUEST_URL}
+              target="_blank"
+              rel="noopener"
+              {...goal("watch_request_new_click", "dukung-jam")}
+            >
+              Ajukan jam baru
+            </ButtonLink>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-[1.75rem] bg-card p-6 md:p-8">
+          <h2 className="text-xl font-extrabold tracking-tight md:text-2xl">Status jam saat ini</h2>
+          <div className="mt-4 grid gap-6 md:grid-cols-3">
+            <div>
+              <h3 className="font-bold">Sudah diuji ({JAM_SUDAH_DIUJI.length})</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Dicek langsung di jam asli.</p>
+              <Chips items={JAM_SUDAH_DIUJI} />
+            </div>
+            <div>
+              <h3 className="font-bold">Eksperimen ({JAM_EKSPERIMEN_CLASSIC.length + JAM_EKSPERIMEN_LE.length})</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Ada di daftar Gadgetbridge dan jalurnya sudah ada, tapi belum pernah dicoba dengan JoyoFit.
+              </p>
+              <details className="mt-3 text-sm">
+                <summary className="min-h-11 cursor-pointer py-2.5 font-semibold underline underline-offset-4">
+                  Tampilkan daftar
+                </summary>
+                <Chips items={[...JAM_EKSPERIMEN_CLASSIC, ...JAM_EKSPERIMEN_LE]} />
+              </details>
+            </div>
+            <div>
+              <h3 className="font-bold">Belum bisa ({JAM_BELUM_PAKE.length})</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Pairing baru Honor (HiChain PAKE) belum diimplementasi.
+              </p>
+              <Chips items={JAM_BELUM_PAKE} />
+            </div>
+          </div>
+          <p className="mt-5 text-sm text-muted-foreground">
+            Penjelasan tiap kelompok ada di halaman{" "}
+            <a href={JAM_PATH} className="font-semibold text-foreground underline underline-offset-4">
+              Jam yang didukung
+            </a>
+            . Daftar ini dibuat dari katalog di kode aplikasi, jadi selalu sama dengan yang dipakai aplikasi.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, "");
   const selfHost = path === SELF_HOST_PATH;
   const jam = path === JAM_PATH;
+  const dukungJam = path === DUKUNG_JAM_PATH;
   const privasi = path === PRIVASI_PATH;
   return (
     <div className="min-h-svh">
@@ -1144,6 +1483,8 @@ export function App() {
           <SelfHostPage />
         ) : jam ? (
           <JamPage />
+        ) : dukungJam ? (
+          <DukungJamPage />
         ) : privasi ? (
           <PrivasiPage />
         ) : (
