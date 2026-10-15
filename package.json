@@ -43,7 +43,9 @@
     "prebuild": "expo prebuild -p android",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "test:native": "cd android && ./gradlew :huawei-wear:testDebugUnitTest"
+    "test:native": "cd android && ./gradlew :huawei-wear:testDebugUnitTest",
+    "test:ios-protocol": "cd modules/huawei-wear/ios/HuaweiProtocol && swift test",
+    "golden:ios": "modules/huawei-wear/ios/HuaweiProtocol/GoldenGen/run.sh"
   },
   "private": true,
   "license": "AGPL-3.0-or-later"

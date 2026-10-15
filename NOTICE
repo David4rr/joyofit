@@ -7,7 +7,8 @@ of the License, or (at your option) any later version. See LICENSE.
 
 The Huawei protocol implementation in
 modules/huawei-wear/android/src/main/java/nodomain/freeyourgadget/gadgetbridge/
-and the Kotlin session layer in modules/huawei-wear/android/src/main/java/com/joyodigitama/huaweiwear/
+and the Kotlin session layer in modules/huawei-wear/android/src/main/java/com/joyodigitama/huaweiwear/,
+and their Swift port in modules/huawei-wear/ios/HuaweiProtocol/ (the iOS protocol layer),
 are derived from Gadgetbridge (https://codeberg.org/Freeyourgadget/Gadgetbridge),
 upstream commit bb7a1e83a29837153bf0c3a50e9869dec3dac0dd, licensed AGPL-3.0-or-later.
 Original copyright notices are retained in each ported file; modified files carry a

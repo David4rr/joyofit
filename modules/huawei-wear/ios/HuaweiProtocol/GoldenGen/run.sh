@@ -29,7 +29,7 @@ CP="$SLF4J_JAR:$JSON_JAR"
   $(find "$JAVA_SRC/nodomain" -name '*.java') \
   $(find "$HERE/src" -name '*.java') 2>"$OUT/javac.log" || { cat "$OUT/javac.log" >&2; exit 1; }
 
-if [ $# -gt 0 ]; then mains=("$@"); else mains=($(cd "$HERE/src" && ls Golden*.java | sed 's/\.java$//')); fi
+if [ $# -gt 0 ]; then mains=("$@"); else mains=($(cd "$HERE/src" && ls Golden*.java | grep -v '^GoldenSupport' | sed 's/\.java$//')); fi
 for m in "${mains[@]}"; do
   echo "== $m"
   "$JAVA" -cp "$OUT/classes:$CP" "$m" "$FIXTURES"
