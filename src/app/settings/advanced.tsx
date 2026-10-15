@@ -81,13 +81,15 @@ export default function AdvancedScreen() {
           onValueChange={(enabled) => void toggleCourses(enabled)}
         />
         {coursesError ? <Notice tone="danger">{coursesError}</Notice> : null}
-        <SwitchRow
-          label="Bluetooth LE link (developer)"
-          hint="Connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle."
-          value={forceBle}
-          onValueChange={(enabled) => void toggleForceBle(enabled)}
-        />
-        {bleError ? <Notice tone="danger">{bleError}</Notice> : null}
+        {__DEV__ ? (
+          <SwitchRow
+            label="Bluetooth LE link (developer)"
+            hint="Connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle."
+            value={forceBle}
+            onValueChange={(enabled) => void toggleForceBle(enabled)}
+          />
+        ) : null}
+        {__DEV__ && bleError ? <Notice tone="danger">{bleError}</Notice> : null}
       </Section>
       {courses.enabled ? (
         <NavRow

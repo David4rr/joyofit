@@ -54,6 +54,8 @@ an iOS port (CoreBluetooth only) would need. It scans for the watch's LE address
 the Nearby devices permission, which the switch asks for) and falls back to the bonded address. Default off. Every scan result, GATT step
 and packet of an LE link is logged under logcat tag `JoyoFitBle`. Without touching the app, from a computer:
 
+**Debug builds only:** the switch row (`__DEV__`) and `BleProbeReceiver` (manifest in `modules/huawei-wear/android/src/debug`) are absent from release, sideload and Play builds; the adb commands below need a debug build.
+
 ```bash
 adb shell am broadcast -n com.joyodigitama.joyofit/com.joyodigitama.huaweiwear.BleProbeReceiver \
   -a com.joyodigitama.joyofit.BLE_PROBE [--es address AA:BB:CC:DD:EE:FF] [--ez sync false] [--ez restore false]
