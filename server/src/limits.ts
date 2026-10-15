@@ -21,3 +21,10 @@ export const AUTH_TIMEOUT_MS = 5_000;
 
 export const DEFAULT_MAX_IMPORT_BYTES = 100 * 1024 * 1024;
 export const IMPORT_LIST_LIMIT = 50;
+
+/**
+ * How long a "Founder" answer is reused before JoyoRogo is asked again. A "not Founder" answer is kept far shorter,
+ * so someone who has just paid is not told to wait.
+ */
+export const ACCESS_CACHE_TTL_MS = 60_000;
+export const ACCESS_LOCKED_CACHE_TTL_MS = 10_000;

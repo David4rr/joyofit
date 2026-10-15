@@ -37,6 +37,8 @@ If you own an experimental or unknown model, connecting once helps a lot:
 
 The report is plain text: app version, phone, watch model and software, supported commands, ExpandCapability and the connect log. It has no Bluetooth addresses and no serial number.
 
+No watch to test with, or your model is not listed? The [Dukung jam](https://fit.joyorogo.com/dukung-jam) page (Indonesian) explains how to lend a device for testing, pool funds, or request a model.
+
 ## How it talks to the watch
 
 The Fit 4 Pro (and the other Classic watches) use **Bluetooth Classic RFCOMM**, not BLE GATT. This is why the earlier BLE explorer
@@ -324,6 +326,13 @@ separate Cloudflare Worker you deploy yourself ([`server/`](server/README.md): H
 app does not read from the cloud yet, and the Huawei-export importer is not written (the server already
 has `POST /v1/imports`, which stores a raw file in R2 and records an `imports` row for it).
 
+Uploading is a **JoyoRogo Founder** benefit. The Worker asks JoyoRogo (`fitness.cloudAccess`, with your session) and
+answers `402` with `paywall: true` to accounts that are not Founder; JoyoRogo servers without a paywall (self-host)
+count everyone as unlocked. Reads stay open. The app then shows that backup is part of Founder and stops uploading
+(no retry loop; coming back to the app or **Sync now** asks again). The sideload APK links to
+`joyorogo.com/founder`; the Play build shows the same text without a purchase link, as JoyoRogo's own Play build
+does.
+
 ```mermaid
 flowchart LR
   APP[JoyoFit app<br/>src/cloud · CloudProvider] -- "sign in (better-auth + expo)" --> JR[JoyoRogo api.joyorogo.com<br/>/api/auth]
@@ -443,6 +452,16 @@ web/                      JoyoFit Studio watch face editor (Vite + React, Cloudf
 The ported Java keeps GB's package names and file layout. Each modified file has a
 `Modified for watch-fit` header line. To pull in upstream fixes, diff these files against GB.
 The upstream base is recorded in [`NOTICE`](NOTICE).
+
+## Support
+
+JoyoFit is free and open source. If it is useful to you, you can support it on Trakteer:
+
+[![Support on Trakteer](https://img.shields.io/badge/Trakteer-support-be1e2d?logo=ko-fi&logoColor=white)](https://trakteer.id/dzulfikar_ats_tsauri)
+
+Support helps development and buying or borrowing watches to test, starting with the most requested models. It does not buy features or priority, and it does not promise that a given model will be supported. Say which watch you want in the Trakteer message.
+
+Want to join the closed test on Google Play? Join the [Google Group](https://groups.google.com/g/joyofit-testers), then open the [test page](https://play.google.com/apps/testing/com.joyodigitama.joyofit) and tap **Become a tester** once Google has enabled access.
 
 ## License
 

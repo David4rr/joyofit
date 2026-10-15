@@ -14,9 +14,16 @@ D1, with a raw-file endpoint into R2 for the future Huawei-export importer.
 All endpoints need `Cookie: <JoyoRogo session cookies>`; without a live session they answer `401`
 (`503` when JoyoRogo itself cannot be reached).
 
+Uploading is a JoyoRogo Founder benefit. `POST /v1/sync` and `POST /v1/imports` ask JoyoRogo's oRPC
+`fitness/cloudAccess` (with the forwarded session cookies) and answer `402 {"error":"founder_required","paywall":true}`
+unless the account is Founder, or the JoyoRogo server has no paywall (self-host: the same `premiumUnlocked` rule
+JoyoRogo uses for its own Founder features). Reads (`GET`) stay open, so existing data is never locked away. If
+JoyoRogo cannot answer (including a `404` from a JoyoRogo that predates the procedure) the answer is `503`, never
+a guess. Deploy JoyoRogo with `fitness.cloudAccess` before this Worker.
+
 | Endpoint | What it does |
 |---|---|
-| `GET /v1/me` | `{ user: {id, email, name}, rev, lastSyncAt }` |
+| `GET /v1/me` | `{ user: {id, email, name}, rev, lastSyncAt, cloud: { unlocked } }`; `unlocked` says whether uploads are accepted |
 | `POST /v1/sync` | Batched upsert. JSON body, at most 3 MB: `stepSamples` (≤ 5 000), `sleepSegments` (≤ 2 000), `workouts` (≤ 50, each with `points`, ≤ 30 000), `devices` (≤ 10). Validated with zod (`400` with the issues, `413` too big). Idempotent: a row identical to the stored one is not rewritten. Answers `{ rev, written }`. |
 | `GET /v1/sync?since=<rev>&limit=<n>` | Pull for other devices: rows changed after `since`, oldest change first, across all tables (`limit` ≤ 1 000, workouts ≤ 25 per page). Answers the four arrays plus `cursor` (the next `since`) and `hasMore`. |
 | `POST /v1/imports?filename=<name>` | The request body is the file, streamed straight into R2 at `imports/<userId>/<uuid>` (needs `Content-Length`, at most `MAX_IMPORT_BYTES`, default 100 MiB). Records an `imports` row (`uploading` → `uploaded`, or `failed`). Answers `201 {id, status, size, ...}`. |
@@ -71,13 +78,14 @@ bunx tsc --noEmit
 bun run types        # regenerate worker-configuration.d.ts after editing wrangler.jsonc
 ```
 
-The tests replace JoyoRogo with a fake `get-session` (a stubbed `fetch`, and a fake `AUTH_SERVICE` binding
+The tests replace JoyoRogo with a fake `get-session` and `fitness/cloudAccess` (a stubbed `fetch`, and a fake `AUTH_SERVICE` binding
 for the service-binding path).
 
 ## Notes
 
 - Sessions are cached per isolate for 60 s; a session revoked in JoyoRogo keeps working here for up to
-  that long. Failures are never cached.
+  that long. Failures are never cached. The Founder answer is cached the same way (60 s when unlocked, 10 s
+  when locked, so a fresh purchase is noticed quickly).
 - Deletions are not synced: the app never deletes rows, and the server has no delete endpoint yet.
 - The importer for the Huawei export does not exist yet; `imports.r2_key` and `status` are where it will
   pick files up (`uploaded` → its own states).

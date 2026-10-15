@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 
+import { CloudLockedError } from '@/cloud/api';
 import { authClient } from '@/cloud/auth';
 import { CLOUD_CONFIGURED } from '@/cloud/config';
 import { runUpload } from '@/cloud/uploader';
@@ -31,6 +32,11 @@ export interface CloudContextValue {
   /** JoyoRogo account email, from the session or the last upload. */
   email: string | null;
   uploading: boolean;
+  /**
+   * The server refused uploads because the account is not JoyoRogo Founder. Nothing is wrong: automatic uploads stop,
+   * and coming back to the app or "Sync now" asks again, so a fresh purchase is picked up.
+   */
+  locked: boolean;
   /** Last sign-in or upload failure. */
   error: string | null;
   /** Unix seconds of the last finished upload. */
@@ -54,7 +60,9 @@ export function useCloud(): CloudContextValue {
  * JoyoRogo sign-in plus the upload of the local database to the JoyoFit cloud Worker. An upload runs
  * after every local sync the app sees (`dataVersion`), when the app comes to the foreground, and on
  * "Sync now". Rows the background service stored while the app was closed go up on the next of those.
- * Uploads never overlap: a request made during one is served by one more run right after it.
+ * Uploads never overlap: a request made during one is served by one more run right after it. Backup is a JoyoRogo
+ * Founder benefit: once the server says the account is not Founder, local syncs stop triggering uploads (no retry
+ * loop); only returning to the foreground and "Sync now" check again.
  */
 export function CloudProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
@@ -65,6 +73,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const [stored, setStored] = useState<CloudState | null>(null);
   const [pending, setPending] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const lockedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const running = useRef<Promise<void> | null>(null);
   const again = useRef(false);
@@ -96,6 +106,16 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     };
   }, [load, dataVersion]);
 
+  const markLocked = useCallback((value: boolean) => {
+    lockedRef.current = value;
+    setLocked(value);
+  }, []);
+
+  // Signing out clears the lock; the next account is asked afresh.
+  useEffect(() => {
+    if (!signedIn) markLocked(false);
+  }, [signedIn, markLocked]);
+
   const syncNow = useCallback((): Promise<void> => {
     if (!CLOUD_CONFIGURED) {
       setError('The cloud server URL is not set in this build.');
@@ -113,8 +133,10 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           again.current = false;
           await runUpload(db);
         } while (again.current);
+        markLocked(false);
       } catch (e) {
-        setError(errorMessage(e));
+        if (e instanceof CloudLockedError) markLocked(true);
+        else setError(errorMessage(e));
       } finally {
         setUploading(false);
         running.current = null;
@@ -123,11 +145,11 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     })();
     running.current = run;
     return run;
-  }, [db, refresh]);
+  }, [db, refresh, markLocked]);
 
   // Upload after each local sync, and once at start, as soon as there is a session.
   useEffect(() => {
-    if (!signedIn || !CLOUD_CONFIGURED) return;
+    if (!signedIn || !CLOUD_CONFIGURED || lockedRef.current) return;
     const timer = setTimeout(() => void syncNow(), UPLOAD_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [signedIn, dataVersion, syncNow]);
@@ -167,6 +189,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       sessionPending: session.isPending,
       email: session.data?.user.email ?? stored?.email ?? null,
       uploading,
+      locked,
       error: error ?? stored?.lastError ?? null,
       lastSyncAt: stored?.lastSyncAt ?? null,
       pending,
@@ -174,7 +197,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       signOut,
       syncNow,
     }),
-    [signedIn, session.isPending, session.data, stored, uploading, error, pending, signIn, signOut, syncNow],
+    [signedIn, session.isPending, session.data, stored, uploading, locked, error, pending, signIn, signOut, syncNow],
   );
 
   return <CloudContext.Provider value={value}>{children}</CloudContext.Provider>;

@@ -29,6 +29,17 @@ export class CloudHttpError extends Error {
   }
 }
 
+/**
+ * The server refused an upload because the JoyoRogo account is not Founder (402 with `paywall: true`). Not a failure:
+ * the app shows the benefit and stops uploading until the account changes.
+ */
+export class CloudLockedError extends CloudHttpError {
+  constructor() {
+    super(402, 'founder_required', null);
+    this.message = 'Cloud backup is part of JoyoRogo Founder.';
+  }
+}
+
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS = 4;
 const BASE_DELAY_MS = 1_000;
@@ -65,7 +76,8 @@ async function requestOnce<T>(method: string, path: string, body: unknown): Prom
       signal: controller.signal,
     });
     if (!response.ok) {
-      const json = (await response.json().catch(() => null)) as { error?: unknown } | null;
+      const json = (await response.json().catch(() => null)) as { error?: unknown; paywall?: unknown } | null;
+      if (response.status === 402 && json?.paywall === true) throw new CloudLockedError();
       const retryAfter = Number(response.headers.get('retry-after'));
       throw new CloudHttpError(
         response.status,

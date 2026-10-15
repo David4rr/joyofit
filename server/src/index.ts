@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { ZodError } from "zod";
 
-import { requireUser } from "./auth";
+import { cloudUnlocked, requireFounder } from "./access";
+import { AuthUnavailableError, requireUser } from "./auth";
 import type { AppContext } from "./env";
 import { imports } from "./imports";
 import { MAX_SYNC_BODY_BYTES, PULL_DEFAULT_LIMIT, PULL_MAX_LIMIT } from "./limits";
@@ -52,10 +53,22 @@ v1.get("/me", async (c) => {
   const state = await c.env.DB.prepare("SELECT rev, last_sync_at FROM user_state WHERE user_id = ?1")
     .bind(user.id)
     .first<{ rev: number; last_sync_at: number | null }>();
-  return c.json({ user, rev: state?.rev ?? 0, lastSyncAt: state?.last_sync_at ?? null });
+  let unlocked: boolean | null;
+  try {
+    unlocked = await cloudUnlocked(c.env, c.req.header("cookie") ?? null);
+  } catch (error) {
+    if (error instanceof AuthUnavailableError) {
+      console.error(JSON.stringify({ event: "access_unavailable", message: error.message }));
+      return c.json({ error: "auth_unavailable" }, 503);
+    }
+    throw error;
+  }
+  if (unlocked === null) return c.json({ error: "unauthorized" }, 401);
+  // `unlocked` is JoyoRogo Founder (or a server without a paywall): only then are uploads accepted. Reads stay open.
+  return c.json({ user, rev: state?.rev ?? 0, lastSyncAt: state?.last_sync_at ?? null, cloud: { unlocked } });
 });
 
-v1.post("/sync", async (c) => {
+v1.post("/sync", requireFounder, async (c) => {
   const body = syncBodySchema.parse(await readJson(c.req.raw, MAX_SYNC_BODY_BYTES));
   const result = await applySync(c.env.DB, c.get("user").id, body, Date.now());
   return c.json(result);

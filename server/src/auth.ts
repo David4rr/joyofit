@@ -48,7 +48,7 @@ interface CacheEntry {
  */
 const verified = new Map<string, CacheEntry>();
 
-async function sha256Hex(text: string): Promise<string> {
+export async function sha256Hex(text: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -71,23 +71,35 @@ export function clearAuthCache(): void {
 }
 
 /**
- * Asks JoyoRogo's better-auth who owns these cookies: `GET <JOYOROGO_AUTH_URL>/api/auth/get-session`, through the
- * `AUTH_SERVICE` service binding when present. Returns null when JoyoRogo says there is no session.
+ * Calls JoyoRogo (`<JOYOROGO_AUTH_URL><path>`) with the caller's session cookies, through the `AUTH_SERVICE` service
+ * binding when present. Network errors and timeouts become AuthUnavailableError; the status is the caller's to judge.
  */
-async function fetchSession(env: AppEnv, cookie: string): Promise<{ user: AuthUser; expiresAt: number | null } | null> {
-  const url = `${env.JOYOROGO_AUTH_URL.replace(/\/+$/, "")}/api/auth/get-session`;
-  const init: RequestInit = {
-    method: "GET",
-    headers: { cookie, accept: "application/json" },
+export async function callJoyorogo(env: AppEnv, path: string, cookie: string, init: { method: string; body?: string }): Promise<Response> {
+  const url = `${env.JOYOROGO_AUTH_URL.replace(/\/+$/, "")}${path}`;
+  const request: RequestInit = {
+    method: init.method,
+    headers: {
+      cookie,
+      accept: "application/json",
+      ...(init.body === undefined ? {} : { "content-type": "application/json" }),
+    },
+    ...(init.body === undefined ? {} : { body: init.body }),
     redirect: "manual",
     signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
   };
-  let response: Response;
   try {
-    response = await (env.AUTH_SERVICE ? env.AUTH_SERVICE.fetch(url, init) : fetch(url, init));
+    return await (env.AUTH_SERVICE ? env.AUTH_SERVICE.fetch(url, request) : fetch(url, request));
   } catch (error) {
-    throw new AuthUnavailableError(`JoyoRogo auth unreachable: ${error instanceof Error ? error.message : String(error)}`);
+    throw new AuthUnavailableError(`JoyoRogo unreachable: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+/**
+ * Asks JoyoRogo's better-auth who owns these cookies: `GET /api/auth/get-session`.
+ * Returns null when JoyoRogo says there is no session.
+ */
+async function fetchSession(env: AppEnv, cookie: string): Promise<{ user: AuthUser; expiresAt: number | null } | null> {
+  const response = await callJoyorogo(env, "/api/auth/get-session", cookie, { method: "GET" });
   if (response.status === 401 || response.status === 403) {
     await response.body?.cancel();
     return null;

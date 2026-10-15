@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 
+import { requireFounder } from "./access";
 import type { AppContext } from "./env";
 import { DEFAULT_MAX_IMPORT_BYTES, IMPORT_LIST_LIMIT } from "./limits";
 
@@ -32,9 +33,9 @@ const toJson = (row: ImportRow) => ({
 
 /**
  * POST /v1/imports?filename=export.zip — the body is the file, streamed straight into R2 (never buffered).
- * `Content-Length` is required: R2 needs the size of a stream up front, and it enforces MAX_IMPORT_BYTES.
+ * Founder only (402 otherwise). `Content-Length` is required: R2 needs the size of a stream up front, and it enforces MAX_IMPORT_BYTES.
  */
-imports.post("/", async (c) => {
+imports.post("/", requireFounder, async (c) => {
   const user = c.get("user");
   const max = Number(c.env.MAX_IMPORT_BYTES) || DEFAULT_MAX_IMPORT_BYTES;
   const declared = c.req.header("content-length");

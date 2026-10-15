@@ -3,6 +3,7 @@ import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, vi } from "vitest";
 
 import app from "../src";
+import { clearAccessCache } from "../src/access";
 import { clearAuthCache } from "../src/auth";
 import type { AppEnv } from "../src/env";
 
@@ -14,15 +15,23 @@ export interface FakeUser {
 
 /** The sessions the fake JoyoRogo knows: token -> user. */
 const sessions = new Map<string, FakeUser>();
-export const upstream = { calls: [] as { url: string; cookie: string | null }[], failWith: null as number | null };
+/** Users whose JoyoRogo account counts as Founder (`fitness.cloudAccess` says `unlocked`). */
+const founders = new Set<string>();
+export const upstream = {
+  calls: [] as { url: string; cookie: string | null }[],
+  failWith: null as number | null,
+  /** Status the fake `fitness/cloudAccess` answers instead of the real answer; null = normal. */
+  accessFailWith: null as number | null,
+};
 
 let counter = 0;
-/** Registers a user and returns the Cookie header the app would send for them. */
-export function signUp(name: string): { user: FakeUser; cookie: string } {
+/** Registers a user and returns the Cookie header the app would send for them. Founder unless `founder` is false. */
+export function signUp(name: string, { founder = true }: { founder?: boolean } = {}): { user: FakeUser; cookie: string } {
   counter += 1;
   const user = { id: `user-${name}-${counter}`, email: `${name}-${counter}@example.com`, name };
   const token = `token-${name}-${counter}`;
   sessions.set(token, user);
+  if (founder) founders.add(user.id);
   return { user, cookie: `__Secure-better-auth.session_token=${token}.sig` };
 }
 
@@ -38,14 +47,31 @@ export function fakeGetSession(cookie: string | null): Response {
   });
 }
 
+/** What JoyoRogo's oRPC `fitness/cloudAccess` answers for a Cookie header. */
+export function fakeCloudAccess(cookie: string | null): Response {
+  if (upstream.accessFailWith) return new Response("boom", { status: upstream.accessFailWith });
+  const match = /session_token=(token-[^.;]+)/.exec(cookie ?? "");
+  const user = match?.[1] ? sessions.get(match[1]) : undefined;
+  if (!user) return Response.json({ json: { defined: false, code: "UNAUTHORIZED", status: 401 } }, { status: 401 });
+  const unlocked = founders.has(user.id);
+  return Response.json({ json: { unlocked, tier: unlocked ? "founder" : "free" } });
+}
+
+/** The fake JoyoRogo as a whole: routes by URL like the real server. */
+export function fakeJoyorogo(url: string, cookie: string | null): Response {
+  return url.endsWith("/rpc/fitness/cloudAccess") ? fakeCloudAccess(cookie) : fakeGetSession(cookie);
+}
+
 beforeEach(() => {
   clearAuthCache();
+  clearAccessCache();
   upstream.calls = [];
   upstream.failWith = null;
+  upstream.accessFailWith = null;
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers);
     upstream.calls.push({ url: String(input), cookie: headers.get("cookie") });
-    return fakeGetSession(headers.get("cookie"));
+    return fakeJoyorogo(String(input), headers.get("cookie"));
   });
 });
 

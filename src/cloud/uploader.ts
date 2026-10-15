@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import { CloudHttpError, cloudRequest } from '@/cloud/api';
+import { CloudHttpError, CloudLockedError, cloudRequest } from '@/cloud/api';
 import {
   getCloudState,
   getUploaded,
@@ -35,6 +35,8 @@ export interface UploadReport {
 
 interface MeResponse {
   user: { id: string; email: string };
+  /** Whether the server accepts uploads from this account (JoyoRogo Founder). Absent on servers that predate the gate. */
+  cloud?: { unlocked: boolean };
 }
 
 const log = (message: string, direction: 'info' | 'error' = 'info') =>
@@ -76,6 +78,7 @@ export async function runUpload(db: SQLiteDatabase): Promise<UploadReport> {
   const report: UploadReport = { stepSamples: 0, sleepSegments: 0, workouts: 0, skipped: 0 };
   try {
     const me = await cloudRequest<MeResponse>('GET', '/v1/me');
+    if (me.cloud?.unlocked === false) throw new CloudLockedError();
     const state = await getCloudState(db);
     if (state.userId !== me.user.id) {
       // First upload, or another JoyoRogo account signed in: that account has none of the rows yet.
@@ -150,6 +153,12 @@ export async function runUpload(db: SQLiteDatabase): Promise<UploadReport> {
     }
     return report;
   } catch (error) {
+    if (error instanceof CloudLockedError) {
+      // Not a failure to retry: clear any old error and let the caller show the Founder benefit instead.
+      log('cloud backup needs JoyoRogo Founder; not uploading');
+      await setCloudState(db, { last_error: null }).catch(() => undefined);
+      throw error;
+    }
     const message = errorMessage(error);
     log(`upload failed: ${message}`, 'error');
     await setCloudState(db, { last_error: message }).catch(() => undefined);
