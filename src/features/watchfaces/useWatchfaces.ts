@@ -53,6 +53,21 @@ export function useWatchfaces() {
     [run],
   );
 
+  /** Installs a watch face from an explicit URI (file://, content://, or http/https URL). */
+  const installFromUri = useCallback(async (uri: string, signature?: string, fileName?: string) => {
+    setProgress({ bytes: 0, total: 0 });
+    await run('install', async () => {
+      try {
+        const result = await HuaweiWear.installWatchface(uri, signature, fileName);
+        if (result.list) setList(result.list);
+        if (result.listed) setNotice(`${result.name}: ${result.message}`);
+        else setError(`${result.name}: ${result.message}`);
+      } finally {
+        setProgress(null);
+      }
+    });
+  }, [run]);
+
   /** Installs a picked .hwt; `signature` + `fileName` replay a captured Huawei signature (see installWatchface). */
   const install = useCallback(async (signature?: string, fileName?: string) => {
     let picked: DocumentPicker.DocumentPickerResult;
@@ -64,18 +79,8 @@ export function useWatchfaces() {
     }
     if (picked.canceled || picked.assets.length === 0) return;
     const asset = picked.assets[0];
-    setProgress({ bytes: 0, total: 0 });
-    await run('install', async () => {
-      try {
-        const result = await HuaweiWear.installWatchface(asset.uri, signature, fileName);
-        if (result.list) setList(result.list);
-        if (result.listed) setNotice(`${result.name}: ${result.message}`);
-        else setError(`${result.name}: ${result.message}`);
-      } finally {
-        setProgress(null);
-      }
-    });
-  }, [run]);
+    await installFromUri(asset.uri, signature, fileName);
+  }, [installFromUri]);
 
   useFocusEffect(
     useCallback(() => {
@@ -83,5 +88,5 @@ export function useWatchfaces() {
     }, [connected, refresh]),
   );
 
-  return { connected, list, busy, error, notice, progress, refresh, setActive, remove, install };
+  return { connected, list, busy, error, notice, progress, refresh, setActive, remove, install, installFromUri };
 }

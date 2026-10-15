@@ -73,8 +73,8 @@ const GROUPS: readonly SettingsGroup[] = [
     title: 'You and your data',
     data: [
       {
-        title: 'Health Connect and cloud',
-        subtitle: 'Share data with other apps, back up',
+        title: 'Health Connect and privacy',
+        subtitle: 'Sync with Android Health Connect, offline storage',
         icon: 'heart',
         tint: 'heart',
         href: '/settings/health',

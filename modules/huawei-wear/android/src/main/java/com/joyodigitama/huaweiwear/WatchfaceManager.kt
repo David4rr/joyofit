@@ -516,6 +516,32 @@ internal class WatchfaceController(
   private fun notConnected() = WearException(ErrorCodes.NOT_CONNECTED, "Not connected to a watch")
 
   private fun readUri(uri: String): ByteArray {
+    if (uri.startsWith("http://") || uri.startsWith("https://")) {
+      try {
+        val url = java.net.URL(uri)
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.connectTimeout = 15000
+        conn.readTimeout = 30000
+        conn.instanceFollowRedirects = true
+        return conn.inputStream.use { stream ->
+          val out = java.io.ByteArrayOutputStream()
+          val buffer = ByteArray(16384)
+          while (true) {
+            val n = stream.read(buffer)
+            if (n < 0) break
+            out.write(buffer, 0, n)
+            if (out.size() > WatchfacePackages.MAX_PACKAGE_BYTES) {
+              throw WearException(ErrorCodes.INVALID_ARGUMENT, "Downloaded file is larger than limit")
+            }
+          }
+          out.toByteArray()
+        }
+      } catch (e: WearException) {
+        throw e
+      } catch (e: Exception) {
+        throw WearException(ErrorCodes.INVALID_ARGUMENT, "Could not download watch face: ${e.message}", e)
+      }
+    }
     val parsed = Uri.parse(uri)
     try {
       val stream = context.contentResolver.openInputStream(parsed)

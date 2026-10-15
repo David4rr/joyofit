@@ -1,16 +1,26 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { IconChip } from '@/components/IconChip';
+import { Field, Input } from '@/components/Input';
 import { Card, Section, useContentPadding, useRefreshControl } from '@/components/Screen';
+import { Segmented } from '@/components/Segmented';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
+import { COMMUNITY_WATCHFACES } from '@/features/watchfaces/communityCatalog';
 import { useWatchfaces } from '@/features/watchfaces/useWatchfaces';
 import { formatDateTime } from '@/format';
 import { radius, spacing, tintColors, useColors } from '@/theme';
 import type { WatchfaceInfo } from '@/wear';
 
+const TAB_OPTIONS = [
+  { value: 'installed', label: 'On watch' },
+  { value: 'catalog', label: 'Free catalog' },
+] as const;
+
+type TabMode = (typeof TAB_OPTIONS)[number]['value'];
 const SKELETON_ROWS = [0, 1, 2];
 
 /** "Active" badge on the face that is on the watch's screen now. */
@@ -50,7 +60,11 @@ export function WatchfacesScreen() {
   const router = useRouter();
   const colors = useColors();
   const padding = useContentPadding(false);
-  const { connected, list, busy, error, notice, progress, refresh, setActive, remove, install } = useWatchfaces();
+  const { connected, list, busy, error, notice, progress, refresh, setActive, remove, install, installFromUri } =
+    useWatchfaces();
+  const [tab, setTab] = useState<TabMode>('installed');
+  const [customUrl, setCustomUrl] = useState('');
+  const [installingUrl, setInstallingUrl] = useState<string | null>(null);
   const refreshControl = useRefreshControl({
     refreshing: busy === 'list',
     onRefresh: () => void refresh(),
@@ -60,7 +74,6 @@ export function WatchfacesScreen() {
   const installing = busy === 'install';
   const percent =
     progress && progress.total > 0 ? Math.min(100, Math.round((progress.bytes / progress.total) * 100)) : 0;
-
   const confirmDelete = (face: WatchfaceInfo) =>
     Alert.alert('Delete watch face', `Delete "${face.name}" from the watch?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -79,58 +92,90 @@ export function WatchfacesScreen() {
 
   const header = (
     <View style={styles.header}>
-      <Section title="Install a watch face" icon="cloud-upload">
-        <AppText variant="caption">
-          Make faces in Huawei Theme Studio Pro and export them as .hwt files.{' '}
-          {list?.width && list.height
-            ? `This watch's screen is ${list.width} x ${list.height} px.`
-            : 'Make them for your watch\'s screen size.'}{' '}
-          A face made for another screen is refused before it is sent.
-        </AppText>
-        <AppText variant="caption" muted>
-          Whether the watch accepts a face that Huawei did not sign is not known. If it refuses, the exact status
-          code it returned is shown here and in the log.
-        </AppText>
-        {!connected ? (
-          <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
-            Connect your watch to manage its faces.
-          </Notice>
-        ) : null}
-        <Button
-          label="Install from file"
-          variant="primary"
-          icon="document"
-          disabled={!connected || !idle}
-          loading={installing}
-          onPress={() => void install()}
-        />
-        {installing && progress ? (
-          <View style={styles.progress}>
-            <View
-              accessibilityRole="progressbar"
-              accessibilityValue={{ min: 0, max: 100, now: percent }}
-              style={[styles.track, { backgroundColor: colors.muted }]}>
-              <View style={[styles.bar, { backgroundColor: colors.primary, width: `${percent}%` }]} />
-            </View>
-            <AppText variant="caption" muted>
-              {progress.total > 0
-                ? `${percent}% (${progress.bytes.toLocaleString()} of ${progress.total.toLocaleString()} bytes)`
-                : 'Waiting for the watch to accept the file...'}
-            </AppText>
+      <Segmented options={TAB_OPTIONS} value={tab} onChange={setTab} />
+
+      {tab === 'installed' ? (
+        <Section title="Install from file" icon="cloud-upload">
+          <AppText variant="caption">
+            Make faces in Huawei Theme Studio Pro and export them as .hwt files.{' '}
+            {list?.width && list.height
+              ? `This watch's screen is ${list.width} x ${list.height} px.`
+              : "Make them for your watch's screen size."}{' '}
+            A face made for another screen is refused before it is sent.
+          </AppText>
+          {!connected ? (
+            <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
+              Connect your watch to manage its faces.
+            </Notice>
+          ) : null}
+          <Button
+            label="Install from .hwt file"
+            variant="primary"
+            icon="document"
+            disabled={!connected || !idle}
+            loading={installing && installingUrl === null}
+            onPress={() => void install()}
+          />
+        </Section>
+      ) : (
+        <Section title="Community Watch Faces" icon="globe-outline">
+          <AppText variant="caption">
+            Browse free community watch faces. Tap Install to download and transfer to your watch in 1 click.
+            {list?.width && list.height ? ` Connected screen: ${list.width} x ${list.height} px.` : ''}
+          </AppText>
+          {!connected ? (
+            <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
+              Connect your watch to install faces directly.
+            </Notice>
+          ) : null}
+          <Field label="Install from custom URL" hint="Direct link to any public .hwt file">
+            <Input
+              placeholder="https://example.com/watchface.hwt"
+              value={customUrl}
+              onChangeText={setCustomUrl}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </Field>
+          <Button
+            label="Download & Install from URL"
+            icon="cloud-download-outline"
+            variant="primary"
+            disabled={!connected || !idle || !customUrl.trim().startsWith('http')}
+            loading={installing && installingUrl === customUrl}
+            onPress={() => {
+              const url = customUrl.trim();
+              setInstallingUrl(url);
+              void installFromUri(url).finally(() => setInstallingUrl(null));
+            }}
+          />
+        </Section>
+      )}
+
+      {installing && progress ? (
+        <View style={styles.progress}>
+          <View
+            accessibilityRole="progressbar"
+            accessibilityValue={{ min: 0, max: 100, now: percent }}
+            style={[styles.track, { backgroundColor: colors.muted }]}>
+            <View style={[styles.bar, { backgroundColor: colors.primary, width: `${percent}%` }]} />
           </View>
-        ) : null}
-        {notice ? (
-          <Notice icon="checkmark-circle">{notice}</Notice>
-        ) : null}
-        {error ? <Notice tone="danger">{error}</Notice> : null}
-      </Section>
+          <AppText variant="caption" muted>
+            {progress.total > 0
+              ? `${percent}% (${progress.bytes.toLocaleString()} of ${progress.total.toLocaleString()} bytes)`
+              : 'Transferring to watch...'}
+          </AppText>
+        </View>
+      ) : null}
+      {notice ? <Notice icon="checkmark-circle">{notice}</Notice> : null}
+      {error ? <Notice tone="danger">{error}</Notice> : null}
 
       <View style={styles.listTitle}>
         <View style={styles.listTitleRow} accessibilityRole="header">
-          <IconChip icon="watch" size="sm" />
-          <AppText variant="heading">On the watch</AppText>
+          <IconChip icon={tab === 'installed' ? 'watch' : 'grid'} size="sm" />
+          <AppText variant="heading">{tab === 'installed' ? 'On the watch' : 'Curated faces'}</AppText>
         </View>
-        {listMeta ? (
+        {tab === 'installed' && listMeta ? (
           <AppText variant="caption" muted>
             {listMeta}
           </AppText>
@@ -179,6 +224,62 @@ export function WatchfacesScreen() {
       </Card>
     );
   })();
+
+  if (tab === 'catalog') {
+    return (
+      <FlatList
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={padding}
+        data={COMMUNITY_WATCHFACES}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={header}
+        ItemSeparatorComponent={Separator}
+        refreshControl={refreshControl}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item: face }) => {
+          const matchesScreen =
+            list?.width && list.height ? list.width === face.width && list.height === face.height : null;
+          const isCurrentInstalling = installing && installingUrl === face.downloadUrl;
+          return (
+            <Card>
+              <View style={styles.faceHeader}>
+                <IconChip icon="watch" tint={matchesScreen ? 'link' : 'neutral'} />
+                <View style={styles.faceText}>
+                  <AppText variant="bodyStrong" numberOfLines={1}>
+                    {face.title}
+                  </AppText>
+                  <AppText variant="caption" muted>
+                    by {face.author} · {face.width}x{face.height} px · {face.sizeLabel}
+                  </AppText>
+                </View>
+                {matchesScreen ? (
+                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
+                    <AppText variant="label" color={colors.primary}>
+                      Matches
+                    </AppText>
+                  </View>
+                ) : null}
+              </View>
+              <AppText variant="caption">{face.description}</AppText>
+              <View style={styles.actions}>
+                <Button
+                  label={isCurrentInstalling ? 'Installing...' : '1-Click Install'}
+                  icon="cloud-download-outline"
+                  variant="primary"
+                  disabled={!connected || !idle}
+                  loading={isCurrentInstalling}
+                  onPress={() => {
+                    setInstallingUrl(face.downloadUrl);
+                    void installFromUri(face.downloadUrl).finally(() => setInstallingUrl(null));
+                  }}
+                />
+              </View>
+            </Card>
+          );
+        }}
+      />
+    );
+  }
 
   return (
     <FlatList
