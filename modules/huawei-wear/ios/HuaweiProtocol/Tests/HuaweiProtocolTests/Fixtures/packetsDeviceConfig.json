@@ -1,0 +1,4050 @@
+{
+ "commandsPerService": {
+  "22": "010307",
+  "23": "010406070b0c10121517",
+  "45": "01",
+  "24": "010204050609",
+  "46": "010203",
+  "25": "0104",
+  "26": "0103070506",
+  "48": "01",
+  "27": "010f191a",
+  "29": "0102030405060708090a",
+  "50": "01",
+  "51": "0102",
+  "52": "01",
+  "53": "0304",
+  "10": "01090a",
+  "32": "01020304090a",
+  "11": "0103",
+  "12": "01",
+  "34": "01",
+  "13": "01",
+  "35": "020b",
+  "36": "0102030405060708090a0b0c",
+  "15": "0103050607080a0b0c",
+  "37": "02040e",
+  "16": "01",
+  "38": "0203",
+  "17": "01",
+  "39": "010e",
+  "18": "01",
+  "19": "01",
+  "1": "040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f",
+  "2": "010405060708",
+  "3": "010304",
+  "4": "01",
+  "5": "01",
+  "6": "01",
+  "7": "0103050708090a0e1013161517181b1c1d1e21222324252829061f",
+  "8": "010203",
+  "9": "010b0c0d0e0f",
+  "20": "01",
+  "42": "0106",
+  "21": "01",
+  "43": "12"
+ },
+ "pinCodeVector": {
+  "cipher": "5790d93735cf63bcf6b9fecbd616e55bda1b658e835206b86fcafdd3010fc1c983bf641e8a3cbdc00fee7d95a053dc5f266f6dd9f53bb2fb91cfd3bbead12ff28bf3e9ad954ef0e6a68483d914e711cd",
+  "pin": "88064dc44827f3374e2c3b6c13a6232b3210b9845053646f34996fa3cbcf6c5f5f5d67831c207b19e0dd772c10c9cd44aec59bfa377d01ffec32adf99cc4507b",
+  "iv": "9b2747c4e872d27c436fa297e62e38f8"
+ },
+ "supportedCommandsPacking": [
+  {
+   "sliced": true,
+   "sliceSize": 244,
+   "encrypted": true,
+   "frames": ["5a00ce000103818148020101031e040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f02010203060104050607080201030303010304020104030101020105030101020106030101020107031b0103050708090a0e1013161517181b1c1d1e21222324252829061f02010803030102030201090306010b0c0d0e0f02010a030301090a02010b0302010302010c03010102010d03010102010f03090103050607080a0b0c020110030101020111030101020112030101020113030101020114030101020115030101eba7"],
+   "service": 1,
+   "name": "SupportedCommands slice 244",
+   "accepted": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "command": 3,
+   "tlv": "818148020101031e040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f02010203060104050607080201030303010304020104030101020105030101020106030101020107031b0103050708090a0e1013161517181b1c1d1e21222324252829061f02010803030102030201090306010b0c0d0e0f02010a030301090a02010b0302010302010c03010102010d03010102010f03090103050607080a0b0c020110030101020111030101020112030101020113030101020114030101020115030101"
+  },
+  {
+   "sliced": true,
+   "sliceSize": 1022,
+   "encrypted": true,
+   "frames": ["5a019300010381830d020101031e040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f02010203060104050607080201030303010304020104030101020105030101020106030101020107031b0103050708090a0e1013161517181b1c1d1e21222324252829061f02010803030102030201090306010b0c0d0e0f02010a030301090a02010b0302010302010c03010102010d03010102010f03090103050607080a0b0c0201100301010201110301010201120301010201130301010201140301010201150301010201160303010307020117030a010406070b0c1012151702011803060102040506090201190302010402011a0305010307050602011b0304010f191a02011d030a0102030405060708090a020120030601020304090a0201220301010201230302020b020124030c0102030405060708090a0b0c020125030302040e020126030202030201270302010e02012a0302010602012b03011202012d03010102012e0303010203020130030101020132030101020133030201020201340301010201350302030445a2"],
+   "service": 1,
+   "name": "SupportedCommands slice 1022",
+   "accepted": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "command": 3,
+   "tlv": "81830d020101031e040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f02010203060104050607080201030303010304020104030101020105030101020106030101020107031b0103050708090a0e1013161517181b1c1d1e21222324252829061f02010803030102030201090306010b0c0d0e0f02010a030301090a02010b0302010302010c03010102010d03010102010f03090103050607080a0b0c0201100301010201110301010201120301010201130301010201140301010201150301010201160303010307020117030a010406070b0c1012151702011803060102040506090201190302010402011a0305010307050602011b0304010f191a02011d030a0102030405060708090a020120030601020304090a0201220301010201230302020b020124030c0102030405060708090a0b0c020125030302040e020126030202030201270302010e02012a0302010602012b03011202012d03010102012e03030102030201300301010201320301010201330302010202013403010102013503020304"
+  },
+  {
+   "sliced": true,
+   "sliceSize": 200,
+   "encrypted": true,
+   "frames": ["5a00a200010381811c020101031e040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f02010203060104050607080201030303010304020104030101020105030101020106030101020107031b0103050708090a0e1013161517181b1c1d1e21222324252829061f02010803030102030201090306010b0c0d0e0f02010a030301090a02010b0302010302010c03010102010d030101020110030101dc45"],
+   "service": 1,
+   "name": "SupportedCommands slice 200",
+   "accepted": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "command": 3,
+   "tlv": "81811c020101031e040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f02010203060104050607080201030303010304020104030101020105030101020106030101020107031b0103050708090a0e1013161517181b1c1d1e21222324252829061f02010803030102030201090306010b0c0d0e0f02010a030301090a02010b0302010302010c03010102010d030101020110030101"
+  },
+  {
+   "sliced": true,
+   "sliceSize": 100,
+   "encrypted": true,
+   "frames": ["5a0041000103813c020101031e040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f0201020306010405060708020103030301030402010403010120bb"],
+   "service": 1,
+   "name": "SupportedCommands slice 100",
+   "accepted": [
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "command": 3,
+   "tlv": "813c020101031e040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f02010203060104050607080201030303010304020104030101"
+  },
+  {
+   "sliced": true,
+   "sliceSize": 40,
+   "encrypted": true,
+   "frames": ["5a000500010381001e54"],
+   "service": 1,
+   "name": "SupportedCommands slice 40",
+   "accepted": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "command": 3,
+   "tlv": "8100"
+  },
+  {
+   "sliced": true,
+   "sliceSize": 20,
+   "encrypted": true,
+   "frames": ["5a000500010381001e54"],
+   "service": 1,
+   "name": "SupportedCommands slice 20",
+   "accepted": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "command": 3,
+   "tlv": "8100"
+  }
+ ],
+ "responses": [
+  {
+   "service": 1,
+   "name": "LinkParams real LE",
+   "ok": true,
+   "fields": {
+    "bondState": 0,
+    "sliceSize": 1022,
+    "authVersion": 1,
+    "encryptMethod": 0,
+    "deviceSupportType": 4,
+    "protocolVersion": 2,
+    "interval": 0,
+    "serverNonce": "327869bc3ac600c4d525fdbe7382bbbe",
+    "authAlgo": 0,
+    "mtu": 514
+   },
+   "command": 1,
+   "tlv": "010102020203fe030202020402000005120001327869bc3ac600c4d525fdbe7382bbbe0701040801000901000c0100"
+  },
+  {
+   "service": 1,
+   "name": "LinkParams minimal (only 05)",
+   "ok": true,
+   "fields": {
+    "bondState": 0,
+    "sliceSize": 244,
+    "authVersion": 1,
+    "encryptMethod": 0,
+    "deviceSupportType": 0,
+    "protocolVersion": 0,
+    "interval": 0,
+    "serverNonce": "327869bc3ac600c4d525fdbe7382bbbe",
+    "authAlgo": 0,
+    "mtu": 20
+   },
+   "command": 1,
+   "tlv": "05120001327869bc3ac600c4d525fdbe7382bbbe"
+  },
+  {
+   "service": 1,
+   "name": "LinkParams all optional, gcm",
+   "ok": true,
+   "fields": {
+    "bondState": -126,
+    "sliceSize": -2828,
+    "authVersion": -125,
+    "encryptMethod": 1,
+    "deviceSupportType": -125,
+    "protocolVersion": -2,
+    "interval": 258,
+    "serverNonce": "327869bc3ac600c4d525fdbe7382bbbe",
+    "authAlgo": -127,
+    "mtu": -2
+   },
+   "command": 1,
+   "tlv": "0101fe0202f4f40302fffe040201020512aa83327869bc3ac600c4d525fdbe7382bbbe0701830801810901820c0101"
+  },
+  {
+   "service": 1,
+   "name": "LinkParams 05 longer than 18",
+   "ok": true,
+   "fields": {
+    "bondState": 0,
+    "sliceSize": 244,
+    "authVersion": 1,
+    "encryptMethod": 0,
+    "deviceSupportType": 0,
+    "protocolVersion": 0,
+    "interval": 0,
+    "serverNonce": "327869bc3ac600c4d525fdbe7382bbbe",
+    "authAlgo": 0,
+    "mtu": 20
+   },
+   "command": 1,
+   "tlv": "05150001327869bc3ac600c4d525fdbe7382bbbe010203"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "LinkParams no 05",
+   "ok": false,
+   "parseException": true,
+   "command": 1,
+   "tlv": "010102"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "LinkParams 05 too short (17)",
+   "ok": false,
+   "parseException": false,
+   "command": 1,
+   "tlv": "05110001459963bcda11e008ca6864ea460bd0"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "LinkParams 05 empty",
+   "ok": false,
+   "parseException": false,
+   "command": 1,
+   "tlv": "0500"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 1,
+   "name": "LinkParams 02 one byte",
+   "ok": false,
+   "parseException": false,
+   "command": 1,
+   "tlv": "02010705120001327869bc3ac600c4d525fdbe7382bbbe"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "LinkParams 07 empty",
+   "ok": false,
+   "parseException": false,
+   "command": 1,
+   "tlv": "05120001327869bc3ac600c4d525fdbe7382bbbe0700"
+  },
+  {
+   "service": 1,
+   "name": "SupportedServices",
+   "ok": true,
+   "fields": {"supportedServices": "01010001000001"},
+   "command": 2,
+   "tlv": "020701010001000001"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "SupportedServices missing",
+   "ok": false,
+   "parseException": true,
+   "command": 2,
+   "tlv": "010101"
+  },
+  {
+   "service": 1,
+   "name": "SupportedServices empty",
+   "ok": true,
+   "fields": {"supportedServices": ""},
+   "command": 2,
+   "tlv": "0200"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands two services",
+   "ok": true,
+   "fields": {"commandsLists": [
+    {
+     "service": 7,
+     "commands": "0105071015171c1d2829061f"
+    },
+    {
+     "service": 2,
+     "commands": "01040608"
+    }
+   ]},
+   "command": 3,
+   "tlv": "812b020107041b0100010100000000010000010100000101000000000000010101010201020406010100010001"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands service 1 all",
+   "ok": true,
+   "fields": {"commandsLists": [{
+    "service": 1,
+    "commands": "040708090a0d0e10111213141b1a1d21222324292a2b322e31303536372f"
+   }]},
+   "command": 3,
+   "tlv": "8123020101041e010101010101010101010101010101010101010101010101010101010101"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands none supported",
+   "ok": true,
+   "fields": {"commandsLists": [{
+    "service": 3,
+    "commands": ""
+   }]},
+   "command": 3,
+   "tlv": "81080201030403000000"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands flags other than 0/1",
+   "ok": true,
+   "fields": {"commandsLists": [{
+    "service": 3,
+    "commands": "03"
+   }]},
+   "command": 3,
+   "tlv": "810802010304030201ff"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands shorter list than table",
+   "ok": true,
+   "fields": {"commandsLists": [{
+    "service": 7,
+    "commands": "0103"
+   }]},
+   "command": 3,
+   "tlv": "810702010704020101"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands empty list",
+   "ok": true,
+   "fields": {"commandsLists": [{
+    "service": 4,
+    "commands": ""
+   }]},
+   "command": 3,
+   "tlv": "81050201040400"
+  },
+  {
+   "exception": "SupportedCommandsListException",
+   "service": 1,
+   "name": "SupportedCommands 04 before 02",
+   "ok": false,
+   "parseException": true,
+   "command": 3,
+   "tlv": "8103040101"
+  },
+  {
+   "exception": "SupportedCommandsListException",
+   "service": 1,
+   "name": "SupportedCommands unknown tag",
+   "ok": false,
+   "parseException": true,
+   "command": 3,
+   "tlv": "8106020104030101"
+  },
+  {
+   "exception": "SupportedCommandsListException",
+   "service": 1,
+   "name": "SupportedCommands empty container",
+   "ok": false,
+   "parseException": true,
+   "command": 3,
+   "tlv": "8100"
+  },
+  {
+   "exception": "SupportedCommandsListException",
+   "service": 1,
+   "name": "SupportedCommands only a service tag",
+   "ok": false,
+   "parseException": true,
+   "command": 3,
+   "tlv": "8103020104"
+  },
+  {
+   "exception": "NullPointerException",
+   "service": 1,
+   "name": "SupportedCommands unknown service (0x21)",
+   "ok": false,
+   "parseException": false,
+   "command": 3,
+   "tlv": "8106020121040101"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands unknown service, no flag set",
+   "ok": true,
+   "fields": {"commandsLists": [{
+    "service": 33,
+    "commands": ""
+   }]},
+   "command": 3,
+   "tlv": "8106020121040100"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "SupportedCommands list longer than table",
+   "ok": false,
+   "parseException": false,
+   "command": 3,
+   "tlv": "810702010404020101"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands longer list, extra zero",
+   "ok": true,
+   "fields": {"commandsLists": [{
+    "service": 4,
+    "commands": "01"
+   }]},
+   "command": 3,
+   "tlv": "810702010404020100"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 1,
+   "name": "SupportedCommands service tag empty",
+   "ok": false,
+   "parseException": false,
+   "command": 3,
+   "tlv": "81050200040101"
+  },
+  {
+   "exception": "NullPointerException",
+   "service": 1,
+   "name": "SupportedCommands negative service",
+   "ok": false,
+   "parseException": false,
+   "command": 3,
+   "tlv": "8106020185040101"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands two 04 after one 02",
+   "ok": true,
+   "fields": {"commandsLists": [
+    {
+     "service": 3,
+     "commands": "0304"
+    },
+    {
+     "service": 3,
+     "commands": "0304"
+    }
+   ]},
+   "command": 3,
+   "tlv": "810d02010304030100010403000101"
+  },
+  {
+   "service": 1,
+   "name": "SupportedCommands service tag two bytes",
+   "ok": true,
+   "fields": {"commandsLists": [{
+    "service": 3,
+    "commands": "010304"
+   }]},
+   "command": 3,
+   "tlv": "8109020203090403010101"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "SupportedCommands no 0x81",
+   "ok": false,
+   "parseException": true,
+   "command": 3,
+   "tlv": "020101"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "SupportedCommands 0x81 malformed nested TLV",
+   "ok": false,
+   "parseException": false,
+   "command": 3,
+   "tlv": "8103020901"
+  },
+  {
+   "service": 1,
+   "name": "TimeResponse with time",
+   "ok": true,
+   "fields": {"deviceTime": 1792000000},
+   "command": 5,
+   "tlv": "01046acfc000"
+  },
+  {
+   "service": 1,
+   "name": "TimeResponse negative time",
+   "ok": true,
+   "fields": {"deviceTime": -5},
+   "command": 5,
+   "tlv": "0104fffffffb"
+  },
+  {
+   "service": 1,
+   "name": "TimeResponse without time",
+   "ok": true,
+   "fields": {"deviceTime": 0},
+   "command": 5,
+   "tlv": "02020001"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 1,
+   "name": "TimeResponse short time",
+   "ok": false,
+   "parseException": false,
+   "command": 5,
+   "tlv": "01020102"
+  },
+  {
+   "service": 1,
+   "name": "TimeResponse long time",
+   "ok": true,
+   "fields": {"deviceTime": 16909060},
+   "command": 5,
+   "tlv": "0106010203040506"
+  },
+  {
+   "service": 1,
+   "name": "ProductInfo full",
+   "ok": true,
+   "fields": {
+    "productModel": "SYA-B29",
+    "regionCode": 7,
+    "serialNumber": "ABCD1234",
+    "otaSignatureLength": 512,
+    "hardwareVersion": "1.0.0.5",
+    "packageName": "com.huawei.watch",
+    "deviceName": "HUAWEI WATCH FIT 4 Pro-40A",
+    "softwareVersion": "6.1.0.117(SP20C00M05)"
+   },
+   "command": 7,
+   "tlv": "0307312e302e302e350715362e312e302e31313728535032304330304d303529090841424344313233340a0c20205359412d42323900200a0f10636f6d2e6875617765692e7761746368111a4855415745492057415443482046495420342050726f2d34304114010727020200"
+  },
+  {
+   "service": 1,
+   "name": "ProductInfo required only",
+   "ok": true,
+   "fields": {
+    "productModel": "model",
+    "regionCode": 0,
+    "serialNumber": null,
+    "otaSignatureLength": 256,
+    "hardwareVersion": null,
+    "packageName": null,
+    "deviceName": null,
+    "softwareVersion": "fw"
+   },
+   "command": 7,
+   "tlv": "070266770a056d6f64656c"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "ProductInfo no model",
+   "ok": false,
+   "parseException": true,
+   "command": 7,
+   "tlv": "07026677"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "ProductInfo no software",
+   "ok": false,
+   "parseException": true,
+   "command": 7,
+   "tlv": "0a056d6f64656c"
+  },
+  {
+   "service": 1,
+   "name": "ProductInfo region 4 bytes",
+   "ok": true,
+   "fields": {
+    "productModel": "m",
+    "regionCode": 5,
+    "serialNumber": null,
+    "otaSignatureLength": -3,
+    "hardwareVersion": null,
+    "packageName": null,
+    "deviceName": null,
+    "softwareVersion": "fw"
+   },
+   "command": 7,
+   "tlv": "070266770a016d1404000000052704fffffffd"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 1,
+   "name": "ProductInfo region 3 bytes",
+   "ok": false,
+   "parseException": false,
+   "command": 7,
+   "tlv": "070266770a016d1403010203"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 1,
+   "name": "ProductInfo region empty",
+   "ok": false,
+   "parseException": false,
+   "command": 7,
+   "tlv": "070266770a016d1400"
+  },
+  {
+   "service": 1,
+   "name": "ProductInfo region 6 bytes",
+   "ok": true,
+   "fields": {
+    "productModel": "m",
+    "regionCode": 258,
+    "serialNumber": null,
+    "otaSignatureLength": 256,
+    "hardwareVersion": null,
+    "packageName": null,
+    "deviceName": null,
+    "softwareVersion": "fw"
+   },
+   "command": 7,
+   "tlv": "070266770a016d1406000001020304"
+  },
+  {
+   "service": 1,
+   "name": "ProductInfo region 2 bytes unsigned",
+   "ok": true,
+   "fields": {
+    "productModel": "m",
+    "regionCode": 65534,
+    "serialNumber": null,
+    "otaSignatureLength": 255,
+    "hardwareVersion": null,
+    "packageName": null,
+    "deviceName": null,
+    "softwareVersion": "fw"
+   },
+   "command": 7,
+   "tlv": "070266770a016d1402fffe2701ff"
+  },
+  {
+   "service": 1,
+   "name": "ProductInfo utf8",
+   "ok": true,
+   "fields": {
+    "productModel": "手表",
+    "regionCode": 0,
+    "serialNumber": null,
+    "otaSignatureLength": 256,
+    "hardwareVersion": null,
+    "packageName": null,
+    "deviceName": "☃",
+    "softwareVersion": "vér"
+   },
+   "command": 7,
+   "tlv": "070476c3a9720a06e6898be8a1a81103e29883"
+  },
+  {
+   "service": 1,
+   "name": "BondParams",
+   "ok": true,
+   "fields": {
+    "encryptionCounter": 41,
+    "status": 1
+   },
+   "command": 15,
+   "tlv": "010101090400000029"
+  },
+  {
+   "service": 1,
+   "name": "BondParams counter high bit",
+   "ok": true,
+   "fields": {
+    "encryptionCounter": 4294967280,
+    "status": -1
+   },
+   "command": 15,
+   "tlv": "0101ff0904fffffff0"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "BondParams no status",
+   "ok": false,
+   "parseException": true,
+   "command": 15,
+   "tlv": "090400000001"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "BondParams no counter",
+   "ok": false,
+   "parseException": true,
+   "command": 15,
+   "tlv": "010101"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 1,
+   "name": "BondParams short counter",
+   "ok": false,
+   "parseException": false,
+   "command": 15,
+   "tlv": "0101010903010203"
+  },
+  {
+   "service": 1,
+   "name": "Auth response",
+   "ok": true,
+   "fields": {"challengeResponse": "8e50fdbfc1b0eecb6558104c7d2138c6c948ffbb39b95725d07602b52bf0173e"},
+   "command": 19,
+   "tlv": "01208e50fdbfc1b0eecb6558104c7d2138c6c948ffbb39b95725d07602b52bf0173e"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "Auth response missing",
+   "ok": false,
+   "parseException": true,
+   "command": 19,
+   "tlv": "020101"
+  },
+  {
+   "service": 1,
+   "name": "Battery level only",
+   "ok": true,
+   "fields": {
+    "level": 71,
+    "multi_level": null,
+    "status": null
+   },
+   "command": 8,
+   "tlv": "010147"
+  },
+  {
+   "service": 1,
+   "name": "Battery level 100 multi",
+   "ok": true,
+   "fields": {
+    "level": 100,
+    "multi_level": "585a",
+    "status": "0100"
+   },
+   "command": 8,
+   "tlv": "0101640202585a03020100"
+  },
+  {
+   "service": 1,
+   "name": "Battery push 27",
+   "ok": true,
+   "fields": {
+    "level": -56,
+    "multi_level": null,
+    "status": "02"
+   },
+   "command": 39,
+   "tlv": "0101c8030102"
+  },
+  {
+   "service": 1,
+   "name": "Battery empty multi",
+   "ok": true,
+   "fields": {
+    "level": 5,
+    "multi_level": "",
+    "status": null
+   },
+   "command": 8,
+   "tlv": "0101050200"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "Battery no level",
+   "ok": false,
+   "parseException": true,
+   "command": 8,
+   "tlv": "020105"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "Battery empty level",
+   "ok": false,
+   "parseException": false,
+   "command": 8,
+   "tlv": "0100"
+  },
+  {
+   "service": 1,
+   "name": "DeviceStatus 1",
+   "ok": true,
+   "fields": {"status": 1},
+   "command": 22,
+   "tlv": "010101"
+  },
+  {
+   "service": 1,
+   "name": "DeviceStatus -1",
+   "ok": true,
+   "fields": {"status": -1},
+   "command": 22,
+   "tlv": "0101ff"
+  },
+  {
+   "service": 1,
+   "name": "DeviceStatus absent",
+   "ok": true,
+   "fields": {"status": -1},
+   "command": 22,
+   "tlv": "020101"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "DeviceStatus empty value",
+   "ok": false,
+   "parseException": false,
+   "command": 22,
+   "tlv": "0100"
+  },
+  {
+   "authVersion": 1,
+   "service": 1,
+   "name": "PinCode authVersion 1",
+   "ok": true,
+   "fields": {"pinCode": "88064dc44827f3374e2c3b6c13a6232b3210b9845053646f34996fa3cbcf6c5f5f5d67831c207b19e0dd772c10c9cd44aec59bfa377d01ffec32adf99cc4507b"},
+   "command": 44,
+   "tlv": "01505790d93735cf63bcf6b9fecbd616e55bda1b658e835206b86fcafdd3010fc1c983bf641e8a3cbdc00fee7d95a053dc5f266f6dd9f53bb2fb91cfd3bbead12ff28bf3e9ad954ef0e6a68483d914e711cd02109b2747c4e872d27c436fa297e62e38f8"
+  },
+  {
+   "authVersion": 2,
+   "service": 1,
+   "name": "PinCode authVersion 2",
+   "ok": true,
+   "fields": {"pinCode": "88064dc44827f3374e2c3b6c13a6232b3210b9845053646f34996fa3cbcf6c5f5f5d67831c207b19e0dd772c10c9cd44aec59bfa377d01ffec32adf99cc4507b"},
+   "command": 44,
+   "tlv": "0150c8d8ed5694a704a323f69b3663e57195d7d00672118a144045eabd48df22c2f269550bf3047da05e371eed7d4ca477b657f643c69e8f8f2f35bfbd33d2557ce92de2696a1fb928b12fe38da0c47b974d02109b2747c4e872d27c436fa297e62e38f8"
+  },
+  {
+   "authVersion": 3,
+   "service": 1,
+   "name": "PinCode authVersion 3",
+   "ok": true,
+   "fields": {"pinCode": "88064dc44827f3374e2c3b6c13a6232b3210b9845053646f34996fa3cbcf6c5f5f5d67831c207b19e0dd772c10c9cd44aec59bfa377d01ffec32adf99cc4507b"},
+   "command": 44,
+   "tlv": "01500b755021ecfaa93c39c13063da97f8c5490d837df9ba96216c176268806f24ad0d27fe08b8d3898d969740b209d7a344630c7ce9b87d291dacf321cec798c92bc3053bc5f86d0e9fd924efc4b40d50df02109b2747c4e872d27c436fa297e62e38f8"
+  },
+  {
+   "authVersion": 1,
+   "encryptMethod": 1,
+   "service": 1,
+   "name": "PinCode gcm",
+   "ok": true,
+   "fields": {"pinCode": "88064dc44827f3374e2c3b6c13a6232b3210b9845053646f34996fa3cbcf6c5f5f5d67831c207b19e0dd772c10c9cd44aec59bfa377d01ffec32adf99cc4507b"},
+   "command": 44,
+   "tlv": "0150238f97f8e51c13a8174677157d74ce5e1ae9c2d28e3fe35c6be6a83a27d72a20f5381c1ad5ac87bbff7dded50c16c514ca2d60fae28eaea2da97d6240bc5e714dcab59989b4a09092b06fe64d4ab0e6f02109b2747c4e872d27c436fa297e62e38f8"
+  },
+  {
+   "exception": "CryptoException",
+   "authVersion": 1,
+   "service": 1,
+   "name": "PinCode garbage cipher",
+   "ok": false,
+   "parseException": true,
+   "command": 44,
+   "tlv": "012061c458c4099034ae63a66c156b94fa90260abb60e4c112fbd896e812170efe4902109b2747c4e872d27c436fa297e62e38f8"
+  },
+  {
+   "exception": "CryptoException",
+   "authVersion": 1,
+   "service": 1,
+   "name": "PinCode cipher not a block multiple",
+   "ok": false,
+   "parseException": true,
+   "command": 44,
+   "tlv": "011174e552c4a8db13f358e9d3403f1d0f5e2c02109b2747c4e872d27c436fa297e62e38f8"
+  },
+  {
+   "exception": "MissingTagException",
+   "authVersion": 1,
+   "service": 1,
+   "name": "PinCode no iv",
+   "ok": false,
+   "parseException": true,
+   "command": 44,
+   "tlv": "01505790d93735cf63bcf6b9fecbd616e55bda1b658e835206b86fcafdd3010fc1c983bf641e8a3cbdc00fee7d95a053dc5f266f6dd9f53bb2fb91cfd3bbead12ff28bf3e9ad954ef0e6a68483d914e711cd"
+  },
+  {
+   "exception": "CryptoException",
+   "authVersion": 1,
+   "service": 1,
+   "name": "PinCode iv 3 bytes",
+   "ok": false,
+   "parseException": true,
+   "command": 44,
+   "tlv": "01505790d93735cf63bcf6b9fecbd616e55bda1b658e835206b86fcafdd3010fc1c983bf641e8a3cbdc00fee7d95a053dc5f266f6dd9f53bb2fb91cfd3bbead12ff28bf3e9ad954ef0e6a68483d914e711cd0203010203"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated tag02=0",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": false,
+    "truSleepNewSync": false,
+    "rriNewSync": false
+   },
+   "command": 49,
+   "tlv": "010101020100"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated tag02=1",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": false,
+    "truSleepNewSync": false,
+    "rriNewSync": false
+   },
+   "command": 49,
+   "tlv": "010101020101"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated tag02=2",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": false,
+    "truSleepNewSync": true,
+    "rriNewSync": false
+   },
+   "command": 49,
+   "tlv": "010101020102"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated tag02=4",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": false,
+    "truSleepNewSync": false,
+    "rriNewSync": true
+   },
+   "command": 49,
+   "tlv": "010101020104"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated tag02=8",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": true,
+    "truSleepNewSync": false,
+    "rriNewSync": false
+   },
+   "command": 49,
+   "tlv": "010101020108"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated tag02=6",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": false,
+    "truSleepNewSync": true,
+    "rriNewSync": true
+   },
+   "command": 49,
+   "tlv": "010101020106"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated tag02=14",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": true,
+    "truSleepNewSync": true,
+    "rriNewSync": true
+   },
+   "command": 49,
+   "tlv": "01010102010e"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated tag02=254",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": true,
+    "truSleepNewSync": true,
+    "rriNewSync": true
+   },
+   "command": 49,
+   "tlv": "0101010201fe"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated tag02=255",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": true,
+    "truSleepNewSync": true,
+    "rriNewSync": true
+   },
+   "command": 49,
+   "tlv": "0101010201ff"
+  },
+  {
+   "service": 1,
+   "name": "SettingRelated without 02",
+   "ok": true,
+   "fields": {
+    "gpsNewSync": false,
+    "truSleepNewSync": false,
+    "rriNewSync": false
+   },
+   "command": 49,
+   "tlv": "010101"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "SettingRelated empty 02",
+   "ok": false,
+   "parseException": false,
+   "command": 49,
+   "tlv": "0200"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation real authMode 4 pairType 2",
+   "ok": true,
+   "fields": {
+    "responseNonce": "01",
+    "honorPairType": 2,
+    "authType": 6
+   },
+   "command": 51,
+   "tlv": "01010402010203010104010005403542334630413143373744324539343836414230433344343145354636303731383239413342344335443645374638303931413242334334443545364637303806120000000000000000000000000000000000000700080100091233303a41393a39383a46433a36343a3041000a0400000000"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation real authMode 4 pairType 1",
+   "ok": true,
+   "fields": {
+    "responseNonce": "01",
+    "honorPairType": 1,
+    "authType": 5
+   },
+   "command": 51,
+   "tlv": "01010402010103010104010005403542334630413143373744324539343836414230433344343145354636303731383239413342344335443645374638303931413242334334443545364637303806120000000000000000000000000000000000000700080100091233303a41393a39383a46433a36343a3041000a0400000000"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=-1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": ""
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=-1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "7f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=-1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "7f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=0 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 0
+   },
+   "command": 51,
+   "tlv": "020100"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=0 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0201007f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=0 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0201007f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 1
+   },
+   "command": 51,
+   "tlv": "020101"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0201017f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0201017f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=2 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 2
+   },
+   "command": 51,
+   "tlv": "020102"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=2 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0201027f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=2 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0201027f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=3 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "020103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=3 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0201037f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=3 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0201037f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=5 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 5
+   },
+   "command": 51,
+   "tlv": "020105"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=5 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0201057f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=5 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0201057f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=255 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0201ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=255 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0201ff7f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=-1 02=255 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0201ff7f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=-1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "010100"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=-1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101007f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=-1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101007f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=0 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 0
+   },
+   "command": 51,
+   "tlv": "010100020100"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=0 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101000201007f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=0 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101000201007f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 1
+   },
+   "command": 51,
+   "tlv": "010100020101"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101000201017f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101000201017f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=2 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 2
+   },
+   "command": 51,
+   "tlv": "010100020102"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=2 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101000201027f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=2 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101000201027f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=3 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "010100020103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=3 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101000201037f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=3 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101000201037f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=5 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 5
+   },
+   "command": 51,
+   "tlv": "010100020105"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=5 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101000201057f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=5 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101000201057f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=255 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101000201ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=255 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101000201ff7f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=0 02=255 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101000201ff7f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=-1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 100000
+   },
+   "command": 51,
+   "tlv": "010101"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=-1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101017f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=-1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101017f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=0 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 0
+   },
+   "command": 51,
+   "tlv": "010101020100"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=0 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101010201007f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=0 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101010201007f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 1
+   },
+   "command": 51,
+   "tlv": "010101020101"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101010201017f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101010201017f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=2 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 2
+   },
+   "command": 51,
+   "tlv": "010101020102"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=2 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101010201027f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=2 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101010201027f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=3 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "010101020103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=3 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101010201037f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=3 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101010201037f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=5 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 5
+   },
+   "command": 51,
+   "tlv": "010101020105"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=5 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101010201057f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=5 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101010201057f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=255 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101010201ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=255 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101010201ff7f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=1 02=255 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101010201ff7f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=-1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "010102"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=-1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101027f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=-1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101027f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=0 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 0
+   },
+   "command": 51,
+   "tlv": "010102020100"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=0 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101020201007f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=0 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101020201007f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 1
+   },
+   "command": 51,
+   "tlv": "010102020101"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101020201017f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101020201017f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=2 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 2
+   },
+   "command": 51,
+   "tlv": "010102020102"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=2 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101020201027f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=2 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101020201027f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=3 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "010102020103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=3 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101020201037f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=3 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101020201037f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=5 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 5
+   },
+   "command": 51,
+   "tlv": "010102020105"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=5 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101020201057f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=5 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101020201057f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=255 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101020201ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=255 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101020201ff7f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=2 02=255 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101020201ff7f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=-1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "010104"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=-1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101047f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=-1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101047f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=0 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 4
+   },
+   "command": 51,
+   "tlv": "010104020100"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=0 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101040201007f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=0 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101040201007f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 5
+   },
+   "command": 51,
+   "tlv": "010104020101"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101040201017f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101040201017f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=2 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 6
+   },
+   "command": 51,
+   "tlv": "010104020102"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=2 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101040201027f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=2 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101040201027f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=3 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 7
+   },
+   "command": 51,
+   "tlv": "010104020103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=3 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101040201037f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=3 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101040201037f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=5 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 1
+   },
+   "command": 51,
+   "tlv": "010104020105"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=5 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101040201057f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=5 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101040201057f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=255 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -5
+   },
+   "command": 51,
+   "tlv": "0101040201ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=255 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101040201ff7f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=4 02=255 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101040201ff7f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=-1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=-1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101ff7f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=-1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101ff7f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=0 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 0
+   },
+   "command": 51,
+   "tlv": "0101ff020100"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=0 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101ff0201007f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=0 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 0,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101ff0201007f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=1 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 1
+   },
+   "command": 51,
+   "tlv": "0101ff020101"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=1 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101ff0201017f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=1 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101ff0201017f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=2 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 2
+   },
+   "command": 51,
+   "tlv": "0101ff020102"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=2 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101ff0201027f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=2 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 2,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101ff0201027f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=3 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101ff020103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=3 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101ff0201037f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=3 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 3,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101ff0201037f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=5 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 5
+   },
+   "command": 51,
+   "tlv": "0101ff020105"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=5 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101ff0201057f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=5 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": 5,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101ff0201057f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=255 7f=-1",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101ff0201ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=255 7f=3",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": 3
+   },
+   "command": 51,
+   "tlv": "0101ff0201ff7f0103"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation 01=255 02=255 7f=255",
+   "ok": true,
+   "fields": {
+    "responseNonce": null,
+    "honorPairType": -1,
+    "authType": -1
+   },
+   "command": 51,
+   "tlv": "0101ff0201ff7f01ff"
+  },
+  {
+   "service": 1,
+   "name": "SecurityNegotiation with nonce",
+   "ok": true,
+   "fields": {
+    "responseNonce": "fef101c2c4b12c1f19549160bd182947",
+    "honorPairType": -1,
+    "authType": 100000
+   },
+   "command": 51,
+   "tlv": "0101010310fef101c2c4b12c1f19549160bd182947"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "SecurityNegotiation empty tag 01",
+   "ok": false,
+   "parseException": false,
+   "command": 51,
+   "tlv": "0100"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "SecurityNegotiation empty tag 02",
+   "ok": false,
+   "parseException": false,
+   "command": 51,
+   "tlv": "0101040200"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "SecurityNegotiation empty tag 7f",
+   "ok": false,
+   "parseException": false,
+   "command": 51,
+   "tlv": "7f00"
+  },
+  {
+   "service": 1,
+   "name": "ExpandCapability",
+   "ok": true,
+   "fields": {"expandCapabilities": "c0161aae211c49a4965bb08a4b06c9a0d47ffc90cd449b59450eb0e28a09"},
+   "command": 55,
+   "tlv": "011ec0161aae211c49a4965bb08a4b06c9a0d47ffc90cd449b59450eb0e28a09"
+  },
+  {
+   "service": 1,
+   "name": "ExpandCapability none",
+   "ok": true,
+   "fields": {"expandCapabilities": null},
+   "command": 55,
+   "tlv": "020101"
+  },
+  {
+   "service": 1,
+   "name": "ExpandCapability empty",
+   "ok": true,
+   "fields": {"expandCapabilities": ""},
+   "command": 55,
+   "tlv": "0100"
+  },
+  {
+   "service": 1,
+   "name": "WearStatus",
+   "ok": true,
+   "fields": {},
+   "command": 61,
+   "tlv": "010101"
+  },
+  {
+   "service": 1,
+   "name": "ReverseCapabilities",
+   "ok": true,
+   "fields": {},
+   "command": 63,
+   "tlv": "010101"
+  },
+  {
+   "service": 1,
+   "name": "HiChain step1",
+   "ok": true,
+   "fields": {
+    "step1Data": {
+     "isoSalt": "00112233445566778899aabbccddeeff",
+     "peerAuthId": "41424344",
+     "peerUserType": 0,
+     "token": "aabbcc"
+    },
+    "errorCode": 0,
+    "step": 1,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "0181487b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a223030313132323333343435353636373738383939414142424343444445454646222c2270656572417574684964223a223431343234333434222c22706565725573657254797065223a302c22746f6b656e223a22414142424343222c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain step1 lowercase hex and errorCode 0",
+   "ok": true,
+   "fields": {
+    "step1Data": {
+     "isoSalt": "00112233445566778899aabbccddeeff",
+     "peerAuthId": "41424344",
+     "peerUserType": 0,
+     "token": "aabbcc"
+    },
+    "errorCode": 0,
+    "step": 1,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "0181567b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a223030313132323333343435353636373738383939616162626363444445454646222c2270656572417574684964223a223431343234333434222c22706565725573657254797065223a302c226572726f72436f6465223a302c22746f6b656e223a22616162626363222c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain step1 errorCode 4",
+   "ok": true,
+   "fields": {
+    "step1Data": {
+     "isoSalt": "00112233445566778899aabbccddeeff",
+     "peerAuthId": "41424344",
+     "peerUserType": 0,
+     "token": "aabbcc"
+    },
+    "errorCode": 4,
+    "step": 1,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "0181567b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a223030313132323333343435353636373738383939414142424343444445454646222c2270656572417574684964223a223431343234333434222c22706565725573657254797065223a302c226572726f72436f6465223a342c22746f6b656e223a22414142424343222c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "exception": "JsonException",
+   "service": 1,
+   "name": "HiChain step1 missing peerUserType",
+   "ok": false,
+   "parseException": true,
+   "command": 40,
+   "tlv": "0181377b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a223030313132323333343435353636373738383939414142424343444445454646222c2270656572417574684964223a223431343234333434222c22746f6b656e223a22414142424343222c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "exception": "JsonException",
+   "service": 1,
+   "name": "HiChain step1 missing token",
+   "ok": false,
+   "parseException": true,
+   "command": 40,
+   "tlv": "0181377b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a223030313132323333343435353636373738383939414142424343444445454646222c2270656572417574684964223a223431343234333434222c22706565725573657254797065223a302c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain step1 empty hex",
+   "ok": true,
+   "fields": {
+    "step1Data": {
+     "isoSalt": "00112233445566778899ddeeff",
+     "peerAuthId": "41424344",
+     "peerUserType": 0,
+     "token": ""
+    },
+    "errorCode": 0,
+    "step": 1,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "01813c7b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a223030313132323333343435353636373738383939444445454646222c2270656572417574684964223a223431343234333434222c22706565725573657254797065223a302c22746f6b656e223a22222c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "exception": "StringIndexOutOfBoundsException",
+   "service": 1,
+   "name": "HiChain step1 odd hex",
+   "ok": false,
+   "parseException": false,
+   "command": 40,
+   "tlv": "0181467b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a2230303131323233333434353536363737383839394141424243444445454646222c2270656572417574684964223a223431343234333434222c22706565725573657254797065223a302c22746f6b656e223a224141424243222c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "exception": "StringIndexOutOfBoundsException",
+   "service": 1,
+   "name": "HiChain step1 hex with spaces",
+   "ok": false,
+   "parseException": false,
+   "command": 40,
+   "tlv": "0181467b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a2230303131323233333434353536363737383839394141205a5a444445454646222c2270656572417574684964223a223431343234333434222c22706565725573657254797065223a302c22746f6b656e223a224141205a5a222c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain step1 invalid hex digits",
+   "ok": true,
+   "fields": {
+    "step1Data": {
+     "isoSalt": "00112233445566778899aaefddeeff",
+     "peerAuthId": "41424344",
+     "peerUserType": 0,
+     "token": "aaef"
+    },
+    "errorCode": 0,
+    "step": 1,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "0181447b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a22303031313232333334343535363637373838393941415a5a444445454646222c2270656572417574684964223a223431343234333434222c22706565725573657254797065223a302c22746f6b656e223a2241415a5a222c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain step1 mixed case hex",
+   "ok": true,
+   "fields": {
+    "step1Data": {
+     "isoSalt": "00112233445566778899aabbccddeeff",
+     "peerAuthId": "41424344",
+     "peerUserType": 0,
+     "token": "aabbcc"
+    },
+    "errorCode": 0,
+    "step": 1,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "0181487b2261757468466f726d223a302c226d657373616765223a322c227061796c6f6164223a7b2269736f53616c74223a223030313132323333343435353636373738383939614162426343444445454646222c2270656572417574684964223a223431343234333434222c22706565725573657254797065223a302c22746f6b656e223a22614162426343222c2276657273696f6e223a7b2263757272656e7456657273696f6e223a22322e302e3136222c226d696e56657273696f6e223a22312e302e30227d7d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain step2",
+   "ok": true,
+   "fields": {
+    "errorCode": 0,
+    "step": 2,
+    "step2Data": {"returnCodeMac": "0f0e0d0c"},
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "01347b226d657373616765223a322c227061796c6f6164223a7b2272657475726e436f64654d6163223a223046304530443043227d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain step2 empty mac",
+   "ok": true,
+   "fields": {
+    "errorCode": 0,
+    "step": 2,
+    "step2Data": {"returnCodeMac": ""},
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "01207b227061796c6f6164223a7b2272657475726e436f64654d6163223a22227d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain step3",
+   "ok": true,
+   "fields": {
+    "step3Data": {
+     "nonce": "000102030405060708090a0b",
+     "encAuthToken": "a0a1a2a3"
+    },
+    "errorCode": 0,
+    "step": 3,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "014a7b227061796c6f6164223a7b226e6f6e6365223a22303030313032303330343035303630373038303930413042222c22656e6341757468546f6b656e223a224130413141324133227d7d040100"
+  },
+  {
+   "exception": "JsonException",
+   "service": 1,
+   "name": "HiChain step3 missing nonce",
+   "ok": false,
+   "parseException": true,
+   "command": 40,
+   "tlv": "01277b227061796c6f6164223a7b22656e6341757468546f6b656e223a224130413141324133227d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain payload has isoSalt and returnCodeMac",
+   "ok": true,
+   "fields": {
+    "step1Data": {
+     "isoSalt": "00",
+     "peerAuthId": "11",
+     "peerUserType": 1,
+     "token": "22"
+    },
+    "errorCode": 0,
+    "step": 1,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "01617b227061796c6f6164223a7b2269736f53616c74223a223030222c2270656572417574684964223a223131222c22706565725573657254797065223a312c22746f6b656e223a223232222c2272657475726e436f64654d6163223a223333227d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain only errorCode",
+   "ok": true,
+   "fields": {
+    "errorCode": 3,
+    "step": 0,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "011b7b227061796c6f6164223a7b226572726f72436f6465223a337d7d040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain no recognised key",
+   "ok": true,
+   "fields": {
+    "errorCode": 0,
+    "step": 0,
+    "type": 0
+   },
+   "command": 40,
+   "tlv": "01177b227061796c6f6164223a7b226f74686572223a317d7d040100"
+  },
+  {
+   "exception": "JsonException",
+   "service": 1,
+   "name": "HiChain no payload",
+   "ok": false,
+   "parseException": true,
+   "command": 40,
+   "tlv": "010d7b226d657373616765223a317d040100"
+  },
+  {
+   "exception": "JsonException",
+   "service": 1,
+   "name": "HiChain payload not an object",
+   "ok": false,
+   "parseException": true,
+   "command": 40,
+   "tlv": "010d7b227061796c6f6164223a357d040100"
+  },
+  {
+   "exception": "JsonException",
+   "service": 1,
+   "name": "HiChain not json",
+   "ok": false,
+   "parseException": true,
+   "command": 40,
+   "tlv": "010f6e6f74206a736f6e20617420616c6c040100"
+  },
+  {
+   "exception": "JsonException",
+   "service": 1,
+   "name": "HiChain empty json string",
+   "ok": false,
+   "parseException": true,
+   "command": 40,
+   "tlv": "0100040100"
+  },
+  {
+   "exception": "JsonException",
+   "service": 1,
+   "name": "HiChain errorCode not a number",
+   "ok": false,
+   "parseException": true,
+   "command": 40,
+   "tlv": "011d7b227061796c6f6164223a7b226572726f72436f6465223a2278227d7d040100"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 1,
+   "name": "HiChain no tag 01 with type 0",
+   "ok": false,
+   "parseException": true,
+   "command": 40,
+   "tlv": "040100"
+  },
+  {
+   "service": 1,
+   "name": "HiChain type 1 with data",
+   "ok": true,
+   "fields": {
+    "step4Data": {"data": "plain data"},
+    "errorCode": 0,
+    "step": 4,
+    "type": 1
+   },
+   "command": 40,
+   "tlv": "010a706c61696e2064617461040101"
+  },
+  {
+   "service": 1,
+   "name": "HiChain type 2 without data",
+   "ok": true,
+   "fields": {
+    "step4Data": {"data": null},
+    "errorCode": 0,
+    "step": 4,
+    "type": 2
+   },
+   "command": 40,
+   "tlv": "040102"
+  },
+  {
+   "service": 1,
+   "name": "HiChain type negative",
+   "ok": true,
+   "fields": {
+    "step4Data": {"data": "x"},
+    "errorCode": 0,
+    "step": 4,
+    "type": -1
+   },
+   "command": 40,
+   "tlv": "0101780401ff"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 1,
+   "name": "HiChain empty type",
+   "ok": false,
+   "parseException": false,
+   "command": 40,
+   "tlv": "0101780400"
+  }
+ ],
+ "requests": [
+  {
+   "sliced": false,
+   "encrypted": false,
+   "frames": ["5a000d000101010002000300040006000609"],
+   "service": 1,
+   "name": "LinkParams AW",
+   "command": 1,
+   "tlv": "01000200030004000600"
+  },
+  {
+   "sliced": false,
+   "encrypted": false,
+   "frames": ["5a000b0001010100020003000400f13b"],
+   "service": 1,
+   "name": "LinkParams BLE",
+   "command": 1,
+   "tlv": "0100020003000400"
+  },
+  {
+   "sliced": false,
+   "encrypted": false,
+   "frames": ["5a000b0001010100020003000400f13b"],
+   "service": 1,
+   "name": "LinkParams BR",
+   "command": 1,
+   "tlv": "0100020003000400"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0030000102012b02030405060708090a0b0c0d0e0f101112131415161718191a1b1d202223242526272a2b2d2e3032333435b3d1"],
+   "service": 1,
+   "name": "SupportedServices known",
+   "command": 2,
+   "tlv": "012b02030405060708090a0b0c0d0e0f101112131415161718191a1b1d202223242526272a2b2d2e3032333435"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0013000107010002000300070009000a000c001100bdee"],
+   "service": 1,
+   "name": "ProductInfo AW",
+   "command": 7,
+   "tlv": "010002000300070009000a000c001100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a002300010701000200070009000a001100120016001a001d001e001f002000210022002300db23"],
+   "service": 1,
+   "name": "ProductInfo BLE",
+   "command": 7,
+   "tlv": "01000200070009000a001100120016001a001d001e001f002000210022002300"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a002300010701000200070009000a001100120016001a001d001e001f002000210022002300db23"],
+   "service": 1,
+   "name": "ProductInfo BR",
+   "command": 7,
+   "tlv": "01000200070009000a001100120016001a001d001e001f002000210022002300"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a004400010e010003010005064142433132330620d69fd5b8b4db12bc45f3e93169e33eb767f8caaa74570c0798e647c751fa954d0710e9c0cfb85427f2003b36515d3d6c53840750"],
+   "service": 1,
+   "name": "Bond",
+   "command": 14,
+   "tlv": "010003010005064142433132330620d69fd5b8b4db12bc45f3e93169e33eb767f8caaa74570c0798e647c751fa954d0710e9c0cfb85427f2003b36515d3d6c5384"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a002700010f010003064142433132330401020500071146463a46463a46463a41423a43313a32330900adcd"],
+   "service": 1,
+   "name": "BondParams",
+   "command": 15,
+   "tlv": "010003064142433132330401020500071146463a46463a46463a41423a43313a32330900"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a003900011301204866b2b874a14e59058555365f18ba858c0ac516ba0b0164abeddc786f3fe28d02125b87acb814ed2d9efac7bc6132a1ce52930d26db"],
+   "service": 1,
+   "name": "Auth authMode 0",
+   "command": 19,
+   "tlv": "01204866b2b874a14e59058555365f18ba858c0ac516ba0b0164abeddc786f3fe28d02125b87acb814ed2d9efac7bc6132a1ce52930d"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a003c0001130120580a4bb935f3a05a1db8d8cde032a4b1eabbde4235a9dc7b05cf01224169427702126b2b45b9d53e809f12fb3ff9b4bbb87ef0be0301013f2f"],
+   "service": 1,
+   "name": "Auth authMode 2 algo 1",
+   "command": 19,
+   "tlv": "0120580a4bb935f3a05a1db8d8cde032a4b1eabbde4235a9dc7b05cf01224169427702126b2b45b9d53e809f12fb3ff9b4bbb87ef0be030101"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a003c000113012031c856b9f55be2d032320a7739217b17ddb5e01ec9178b07aacc7a918ca7d361021244e950b995a7c115287571a20daa8fe4e4b80301815331"],
+   "service": 1,
+   "name": "Auth authMode 2 algo 0x81",
+   "command": 19,
+   "tlv": "012031c856b9f55be2d032320a7739217b17ddb5e01ec9178b07aacc7a918ca7d361021244e950b995a7c115287571a20daa8fe4e4b8030181"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00050001080100f53d"],
+   "service": 1,
+   "name": "BatteryLevel",
+   "command": 8,
+   "tlv": "0100"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a00050001160100ad5f"],
+   "service": 1,
+   "name": "DeviceStatus ask",
+   "command": 22,
+   "tlv": "0100"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a000600011602010089a4"],
+   "service": 1,
+   "name": "DeviceStatus notify",
+   "command": 22,
+   "tlv": "020100"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a000500012c0100af3b"],
+   "service": 1,
+   "name": "PinCode",
+   "command": 44,
+   "tlv": "0100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000f0001310100020003000400050006007140"],
+   "service": 1,
+   "name": "SettingRelated",
+   "command": 49,
+   "tlv": "010002000300040005000600"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00060001350101016c47"],
+   "service": 1,
+   "name": "ConnectStatus",
+   "command": 53,
+   "tlv": "010101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000500013701001ca9"],
+   "service": 1,
+   "name": "ExpandCapability",
+   "command": 55,
+   "tlv": "0100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000500013d0100db68"],
+   "service": 1,
+   "name": "WearStatus",
+   "command": 61,
+   "tlv": "0100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a002500013e010101021a4855415745492057415443482046495420342050726f2d343041030100339c"],
+   "service": 1,
+   "name": "SetUpDeviceStatus main",
+   "command": 62,
+   "tlv": "010101021a4855415745492057415443482046495420342050726f2d343041030100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000b00013e0101000200030100d7b6"],
+   "service": 1,
+   "name": "SetUpDeviceStatus empty name",
+   "command": 62,
+   "tlv": "0101000200030100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001300013e01012c0208576174636820c3a9030100261b"],
+   "service": 1,
+   "name": "SetUpDeviceStatus relationship 300",
+   "command": 62,
+   "tlv": "01012c0208576174636820c3a9030100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000d00013f0108fdf773fa29bfff0f998c"],
+   "service": 1,
+   "name": "ReverseCapabilities",
+   "command": 63,
+   "tlv": "0108fdf773fa29bfff0f"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a003f000133010104020101052030313233343536373839414243444546303132333435363738394142434445460301010401000600070a6950686f6e6531372c31f0ae"],
+   "service": 1,
+   "name": "SecurityNegotiation mode 4 method 0",
+   "command": 51,
+   "tlv": "010104020101052030313233343536373839414243444546303132333435363738394142434445460301010401000600070a6950686f6e6531372c31"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a0042000133010104020101052030313233343536373839414243444546303132333435363738394142434445460301010401000600070a6950686f6e6531372c310d01011e0c"],
+   "service": 1,
+   "name": "SecurityNegotiation mode 4 method 1",
+   "command": 51,
+   "tlv": "010104020101052030313233343536373839414243444546303132333435363738394142434445460301010401000600070a6950686f6e6531372c310d0101"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a0031000133010102020101052030313233343536373839414243444546303132333435363738394142434445460301010401003dc9"],
+   "service": 1,
+   "name": "SecurityNegotiation mode 2 method 0",
+   "command": 51,
+   "tlv": "01010202010105203031323334353637383941424344454630313233343536373839414243444546030101040100"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a0034000133010102020101052030313233343536373839414243444546303132333435363738394142434445460301010401000d0101da37"],
+   "service": 1,
+   "name": "SecurityNegotiation mode 2 method 1",
+   "command": 51,
+   "tlv": "010102020101052030313233343536373839414243444546303132333435363738394142434445460301010401000d0101"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a002e000133010100052030313233343536373839414243444546303132333435363738394142434445460301010401002d78"],
+   "service": 1,
+   "name": "SecurityNegotiation mode 0 method 0",
+   "command": 51,
+   "tlv": "01010005203031323334353637383941424344454630313233343536373839414243444546030101040100"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a0031000133010100052030313233343536373839414243444546303132333435363738394142434445460301010401000d0101ff95"],
+   "service": 1,
+   "name": "SecurityNegotiation mode 0 method 1",
+   "command": 51,
+   "tlv": "010100052030313233343536373839414243444546303132333435363738394142434445460301010401000d0101"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a002e000133010101052030313233343536373839414243444546303132333435363738394142434445460301010401009598"],
+   "service": 1,
+   "name": "SecurityNegotiation mode 1 method 0",
+   "command": 51,
+   "tlv": "01010105203031323334353637383941424344454630313233343536373839414243444546030101040100"
+  },
+  {
+   "sliced": true,
+   "encrypted": false,
+   "frames": ["5a0031000133010101052030313233343536373839414243444546303132333435363738394142434445460301010401000d0101b879"],
+   "service": 1,
+   "name": "SecurityNegotiation mode 1 method 1",
+   "command": 51,
+   "tlv": "010101052030313233343536373839414243444546303132333435363738394142434445460301010401000d0101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006001a05010100b82a"],
+   "service": 26,
+   "name": "ExtendedAccount opt=false account=\"\"",
+   "command": 5,
+   "tlv": "010100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0015001a05011075736572406578616d706c652e636f6dd9be"],
+   "service": 26,
+   "name": "ExtendedAccount opt=false account=\"user@example.com\"",
+   "command": 5,
+   "tlv": "011075736572406578616d706c652e636f6d"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0009001a050101000301019282"],
+   "service": 26,
+   "name": "ExtendedAccount opt=true account=\"\"",
+   "command": 5,
+   "tlv": "010100030101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0018001a05011075736572406578616d706c652e636f6d030101f2e0"],
+   "service": 26,
+   "name": "ExtendedAccount opt=true account=\"user@example.com\"",
+   "command": 5,
+   "tlv": "011075736572406578616d706c652e636f6d030101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00e100013081815b824c0321736f6674776172655f7570646174655f736572766963655f73746174656d656e74040101051532303233303530382d32303233303530382d302d30060d313739323039313732343439328248031d6465766963655f696e666f726d6174696f6e5f6d616e6167656d656e74040101051532303233303530382d32303233303530382d302d30060d3137393230393137323434393282410316757365725f6c6963656e73655f61677265656d656e74040101051532303233303530382d32303233303530382d302d30060d313739323039313732343439321b8f"],
+   "service": 1,
+   "name": "AcceptAgreement",
+   "command": 48,
+   "tlv": "81815b824c0321736f6674776172655f7570646174655f736572766963655f73746174656d656e74040101051532303233303530382d32303233303530382d302d30060d313739323039313732343439328248031d6465766963655f696e666f726d6174696f6e5f6d616e6167656d656e74040101051532303233303530382d32303233303530382d302d30060d3137393230393137323434393282410316757365725f6c6963656e73655f61677265656d656e74040101051532303233303530382d32303233303530382d302d30060d31373932303931373234343932"
+  }
+ ],
+ "knownSupportedServices": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1d202223242526272a2b2d2e3032333435",
+ "timeRequests": [
+  {
+   "zone": "UTC",
+   "timeAndZoneId": "6955b9000000555443",
+   "millis": 1767225600000,
+   "tlv": "01046955b90002020000"
+  },
+  {
+   "zone": "UTC",
+   "timeAndZoneId": "6a4458800000555443",
+   "millis": 1782864000000,
+   "tlv": "01046a44588002020000"
+  },
+  {
+   "zone": "UTC",
+   "timeAndZoneId": "6acfc0000000555443",
+   "millis": 1792000000123,
+   "tlv": "01046acfc00002020000"
+  },
+  {
+   "zone": "Asia/Jakarta",
+   "timeAndZoneId": "6955b9000700417369612f4a616b61727461",
+   "millis": 1767225600000,
+   "tlv": "01046955b90002020700"
+  },
+  {
+   "zone": "Asia/Jakarta",
+   "timeAndZoneId": "6a4458800700417369612f4a616b61727461",
+   "millis": 1782864000000,
+   "tlv": "01046a44588002020700"
+  },
+  {
+   "zone": "Asia/Jakarta",
+   "timeAndZoneId": "6acfc0000700417369612f4a616b61727461",
+   "millis": 1792000000123,
+   "tlv": "01046acfc00002020700"
+  },
+  {
+   "zone": "America/New_York",
+   "timeAndZoneId": "6955b9008500416d65726963612f4e65775f596f726b",
+   "millis": 1767225600000,
+   "tlv": "01046955b90002028500"
+  },
+  {
+   "zone": "America/New_York",
+   "timeAndZoneId": "6a4458808400416d65726963612f4e65775f596f726b",
+   "millis": 1782864000000,
+   "tlv": "01046a44588002028400"
+  },
+  {
+   "zone": "America/New_York",
+   "timeAndZoneId": "6acfc0008400416d65726963612f4e65775f596f726b",
+   "millis": 1792000000123,
+   "tlv": "01046acfc00002028400"
+  },
+  {
+   "zone": "America/St_Johns",
+   "timeAndZoneId": "6955b90083e2416d65726963612f53745f4a6f686e73",
+   "millis": 1767225600000,
+   "tlv": "01046955b900020283e2"
+  },
+  {
+   "zone": "America/St_Johns",
+   "timeAndZoneId": "6a44588082e2416d65726963612f53745f4a6f686e73",
+   "millis": 1782864000000,
+   "tlv": "01046a445880020282e2"
+  },
+  {
+   "zone": "America/St_Johns",
+   "timeAndZoneId": "6acfc00082e2416d65726963612f53745f4a6f686e73",
+   "millis": 1792000000123,
+   "tlv": "01046acfc000020282e2"
+  },
+  {
+   "zone": "Asia/Kolkata",
+   "timeAndZoneId": "6955b900051e417369612f4b6f6c6b617461",
+   "millis": 1767225600000,
+   "tlv": "01046955b9000202051e"
+  },
+  {
+   "zone": "Asia/Kolkata",
+   "timeAndZoneId": "6a445880051e417369612f4b6f6c6b617461",
+   "millis": 1782864000000,
+   "tlv": "01046a4458800202051e"
+  },
+  {
+   "zone": "Asia/Kolkata",
+   "timeAndZoneId": "6acfc000051e417369612f4b6f6c6b617461",
+   "millis": 1792000000123,
+   "tlv": "01046acfc0000202051e"
+  },
+  {
+   "zone": "Pacific/Chatham",
+   "timeAndZoneId": "6955b9000d2d506163696669632f4368617468616d",
+   "millis": 1767225600000,
+   "tlv": "01046955b90002020d2d"
+  },
+  {
+   "zone": "Pacific/Chatham",
+   "timeAndZoneId": "6a4458800c2d506163696669632f4368617468616d",
+   "millis": 1782864000000,
+   "tlv": "01046a44588002020c2d"
+  },
+  {
+   "zone": "Pacific/Chatham",
+   "timeAndZoneId": "6acfc0000d2d506163696669632f4368617468616d",
+   "millis": 1792000000123,
+   "tlv": "01046acfc00002020d2d"
+  },
+  {
+   "zone": "Pacific/Kiritimati",
+   "timeAndZoneId": "6955b9000e00506163696669632f4b69726974696d617469",
+   "millis": 1767225600000,
+   "tlv": "01046955b90002020e00"
+  },
+  {
+   "zone": "Pacific/Kiritimati",
+   "timeAndZoneId": "6a4458800e00506163696669632f4b69726974696d617469",
+   "millis": 1782864000000,
+   "tlv": "01046a44588002020e00"
+  },
+  {
+   "zone": "Pacific/Kiritimati",
+   "timeAndZoneId": "6acfc0000e00506163696669632f4b69726974696d617469",
+   "millis": 1792000000123,
+   "tlv": "01046acfc00002020e00"
+  },
+  {
+   "zone": "Europe/Berlin",
+   "timeAndZoneId": "6955b90001004575726f70652f4265726c696e",
+   "millis": 1767225600000,
+   "tlv": "01046955b90002020100"
+  },
+  {
+   "zone": "Europe/Berlin",
+   "timeAndZoneId": "6a44588002004575726f70652f4265726c696e",
+   "millis": 1782864000000,
+   "tlv": "01046a44588002020200"
+  },
+  {
+   "zone": "Europe/Berlin",
+   "timeAndZoneId": "6acfc00002004575726f70652f4265726c696e",
+   "millis": 1792000000123,
+   "tlv": "01046acfc00002020200"
+  },
+  {
+   "zone": "Asia/Kathmandu",
+   "timeAndZoneId": "6955b900052d417369612f4b6174686d616e6475",
+   "millis": 1767225600000,
+   "tlv": "01046955b9000202052d"
+  },
+  {
+   "zone": "Asia/Kathmandu",
+   "timeAndZoneId": "6a445880052d417369612f4b6174686d616e6475",
+   "millis": 1782864000000,
+   "tlv": "01046a4458800202052d"
+  },
+  {
+   "zone": "Asia/Kathmandu",
+   "timeAndZoneId": "6acfc000052d417369612f4b6174686d616e6475",
+   "millis": 1792000000123,
+   "tlv": "01046acfc0000202052d"
+  },
+  {
+   "zone": "America/Sao_Paulo",
+   "timeAndZoneId": "6955b9008300416d65726963612f53616f5f5061756c6f",
+   "millis": 1767225600000,
+   "tlv": "01046955b90002028300"
+  },
+  {
+   "zone": "America/Sao_Paulo",
+   "timeAndZoneId": "6a4458808300416d65726963612f53616f5f5061756c6f",
+   "millis": 1782864000000,
+   "tlv": "01046a44588002028300"
+  },
+  {
+   "zone": "America/Sao_Paulo",
+   "timeAndZoneId": "6acfc0008300416d65726963612f53616f5f5061756c6f",
+   "millis": 1792000000123,
+   "tlv": "01046acfc00002028300"
+  },
+  {
+   "zone": "Pacific/Pago_Pago",
+   "timeAndZoneId": "6955b9008b00506163696669632f5061676f5f5061676f",
+   "millis": 1767225600000,
+   "tlv": "01046955b90002028b00"
+  },
+  {
+   "zone": "Pacific/Pago_Pago",
+   "timeAndZoneId": "6a4458808b00506163696669632f5061676f5f5061676f",
+   "millis": 1782864000000,
+   "tlv": "01046a44588002028b00"
+  },
+  {
+   "zone": "Pacific/Pago_Pago",
+   "timeAndZoneId": "6acfc0008b00506163696669632f5061676f5f5061676f",
+   "millis": 1792000000123,
+   "tlv": "01046acfc00002028b00"
+  }
+ ],
+ "hiChainRequests": [
+  {
+   "seed": "ca1a0cf9405eaea67d544218e3bc10458cc5821042346179cae884fc4bf82ee2",
+   "selfAuthId": "4142434445463031323334353637383941424344454630313233343536373839",
+   "operationCode": 1,
+   "groupId": "7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989",
+   "messageId": 1,
+   "nonce": "abd2daf7beba09a44dee3be9",
+   "command": 40,
+   "token": "d5e9b9f8ff80e46ae7fde7777638307ce3ef740c3b2e9ca74bf935f03d443678",
+   "sliced": true,
+   "entries": [
+    {
+     "tag": 1,
+     "value": "7b2267726f757054797065223a3235362c2267726f75704964223a2237423042433043424345343734463643323338443936363143363334303042373937423136364541373834394233413337304643373341394132333645393839222c226d657373616765223a312c22706565724465766963654964223a224142434445463031323334353637383941424344454630313233343536373839222c2267726f75704e616d65223a226865616c74685f67726f75705f6e616d65222c2267726f7570416e644d6f64756c6556657273696f6e223a22322e302e31222c2261757468466f726d223a302c226f776e65724e616d65223a22222c227061796c6f6164223a7b2269736f53616c74223a224242373637334638374630433543413536353231424638303632413232363139222c2273656564223a2243413141304346393430354541454136374435343432313845334243313034353843433538323130343233343631373943414538383446433442463832454532222c2270656572417574684964223a2234313432343334343435343633303331333233333334333533363337333833393431343234333434343534363330333133323333333433353336333733383339222c226f7065726174696f6e436f6465223a312c22706565725573657254797065223a302c2276657273696f6e223a7b226d696e56657273696f6e223a22312e302e30222c2263757272656e7456657273696f6e223a22322e302e3136227d7d2c22726571756573744964223a2231373030303030303030313233222c22636f6e6e4465766963654964223a224142434445463031323334353637383941424344454630313233343536373839222c226170704964223a22636f6d2e6875617765692e6865616c7468222c2267726f75704f70223a327d"
+    },
+    {
+     "tag": 2,
+     "value": "01"
+    },
+    {
+     "tag": 3,
+     "value": "0000018bcfe5687b"
+    }
+   ],
+   "isoSalt": "bb7673f87f0c5ca56521bf8062a22619",
+   "encrypted": false,
+   "requestId": 1700000000123,
+   "service": 1,
+   "name": "op1 StepOne",
+   "json": "{\"groupType\":256,\"groupId\":\"7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989\",\"message\":1,\"peerDeviceId\":\"ABCDEF0123456789ABCDEF0123456789\",\"groupName\":\"health_group_name\",\"groupAndModuleVersion\":\"2.0.1\",\"authForm\":0,\"ownerName\":\"\",\"payload\":{\"isoSalt\":\"BB7673F87F0C5CA56521BF8062A22619\",\"seed\":\"CA1A0CF9405EAEA67D544218E3BC10458CC5821042346179CAE884FC4BF82EE2\",\"peerAuthId\":\"4142434445463031323334353637383941424344454630313233343536373839\",\"operationCode\":1,\"peerUserType\":0,\"version\":{\"minVersion\":\"1.0.0\",\"currentVersion\":\"2.0.16\"}},\"requestId\":\"1700000000123\",\"connDeviceId\":\"ABCDEF0123456789ABCDEF0123456789\",\"appId\":\"com.huawei.health\",\"groupOp\":2}",
+   "step": "StepOne",
+   "enc": "537f44f87f6956cc0f39f9dbffe8ca81602c61747adccb32df107c954cd5894e"
+  },
+  {
+   "seed": "ca1a0cf9405eaea67d544218e3bc10458cc5821042346179cae884fc4bf82ee2",
+   "selfAuthId": "4142434445463031323334353637383941424344454630313233343536373839",
+   "operationCode": 1,
+   "groupId": "7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989",
+   "messageId": 2,
+   "nonce": "abd2daf7beba09a44dee3be9",
+   "command": 40,
+   "token": "d5e9b9f8ff80e46ae7fde7777638307ce3ef740c3b2e9ca74bf935f03d443678",
+   "sliced": true,
+   "entries": [
+    {
+     "tag": 1,
+     "value": "7b2267726f757054797065223a3235362c2267726f75704964223a2237423042433043424345343734463643323338443936363143363334303042373937423136364541373834394233413337304643373341394132333645393839222c226d657373616765223a322c22706565724465766963654964223a224142434445463031323334353637383941424344454630313233343536373839222c2267726f75704e616d65223a226865616c74685f67726f75705f6e616d65222c2267726f7570416e644d6f64756c6556657273696f6e223a22322e302e31222c2261757468466f726d223a302c226f776e65724e616d65223a22222c227061796c6f6164223a7b2270656572417574684964223a2234313432343334343435343633303331333233333334333533363337333833393431343234333434343534363330333133323333333433353336333733383339222c2276657273696f6e223a7b226d696e56657273696f6e223a22312e302e30222c2263757272656e7456657273696f6e223a22322e302e3136227d2c22746f6b656e223a2244354539423946384646383045343641453746444537373737363338333037434533454637343043334232453943413734424639333546303344343433363738227d2c22726571756573744964223a2231373030303030303030313233222c22636f6e6e4465766963654964223a224142434445463031323334353637383941424344454630313233343536373839222c226170704964223a22636f6d2e6875617765692e6865616c7468222c2267726f75704f70223a327d"
+    },
+    {
+     "tag": 2,
+     "value": "01"
+    },
+    {
+     "tag": 3,
+     "value": "0000018bcfe5687b"
+    }
+   ],
+   "isoSalt": "bb7673f87f0c5ca56521bf8062a22619",
+   "encrypted": false,
+   "requestId": 1700000000123,
+   "service": 1,
+   "name": "op1 StepTwo",
+   "json": "{\"groupType\":256,\"groupId\":\"7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989\",\"message\":2,\"peerDeviceId\":\"ABCDEF0123456789ABCDEF0123456789\",\"groupName\":\"health_group_name\",\"groupAndModuleVersion\":\"2.0.1\",\"authForm\":0,\"ownerName\":\"\",\"payload\":{\"peerAuthId\":\"4142434445463031323334353637383941424344454630313233343536373839\",\"version\":{\"minVersion\":\"1.0.0\",\"currentVersion\":\"2.0.16\"},\"token\":\"D5E9B9F8FF80E46AE7FDE7777638307CE3EF740C3B2E9CA74BF935F03D443678\"},\"requestId\":\"1700000000123\",\"connDeviceId\":\"ABCDEF0123456789ABCDEF0123456789\",\"appId\":\"com.huawei.health\",\"groupOp\":2}",
+   "step": "StepTwo",
+   "enc": "537f44f87f6956cc0f39f9dbffe8ca81602c61747adccb32df107c954cd5894e"
+  },
+  {
+   "seed": "ca1a0cf9405eaea67d544218e3bc10458cc5821042346179cae884fc4bf82ee2",
+   "selfAuthId": "4142434445463031323334353637383941424344454630313233343536373839",
+   "operationCode": 1,
+   "groupId": "7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989",
+   "messageId": 3,
+   "nonce": "abd2daf7beba09a44dee3be9",
+   "command": 40,
+   "token": "d5e9b9f8ff80e46ae7fde7777638307ce3ef740c3b2e9ca74bf935f03d443678",
+   "sliced": true,
+   "entries": [
+    {
+     "tag": 1,
+     "value": "7b2267726f757054797065223a3235362c2267726f75704964223a2237423042433043424345343734463643323338443936363143363334303042373937423136364541373834394233413337304643373341394132333645393839222c226d657373616765223a332c22706565724465766963654964223a224142434445463031323334353637383941424344454630313233343536373839222c2267726f75704e616d65223a226865616c74685f67726f75705f6e616d65222c2267726f7570416e644d6f64756c6556657273696f6e223a22322e302e31222c2261757468466f726d223a302c226f776e65724e616d65223a22222c227061796c6f6164223a7b22656e6344617461223a2235333746343446383746363935364343304633394639444246464538434138313630324336313734374144434342333244463130374339353443443538393445222c2276657273696f6e223a7b226d696e56657273696f6e223a22312e302e30222c2263757272656e7456657273696f6e223a22322e302e3136227d2c226e6f6e6365223a22414244324441463742454241303941343444454533424539227d2c22726571756573744964223a2231373030303030303030313233222c22636f6e6e4465766963654964223a224142434445463031323334353637383941424344454630313233343536373839222c226170704964223a22636f6d2e6875617765692e6865616c7468222c2267726f75704f70223a327d"
+    },
+    {
+     "tag": 2,
+     "value": "01"
+    },
+    {
+     "tag": 3,
+     "value": "0000018bcfe5687b"
+    }
+   ],
+   "isoSalt": "bb7673f87f0c5ca56521bf8062a22619",
+   "encrypted": false,
+   "requestId": 1700000000123,
+   "service": 1,
+   "name": "op1 StepThree",
+   "json": "{\"groupType\":256,\"groupId\":\"7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989\",\"message\":3,\"peerDeviceId\":\"ABCDEF0123456789ABCDEF0123456789\",\"groupName\":\"health_group_name\",\"groupAndModuleVersion\":\"2.0.1\",\"authForm\":0,\"ownerName\":\"\",\"payload\":{\"encData\":\"537F44F87F6956CC0F39F9DBFFE8CA81602C61747ADCCB32DF107C954CD5894E\",\"version\":{\"minVersion\":\"1.0.0\",\"currentVersion\":\"2.0.16\"},\"nonce\":\"ABD2DAF7BEBA09A44DEE3BE9\"},\"requestId\":\"1700000000123\",\"connDeviceId\":\"ABCDEF0123456789ABCDEF0123456789\",\"appId\":\"com.huawei.health\",\"groupOp\":2}",
+   "step": "StepThree",
+   "enc": "537f44f87f6956cc0f39f9dbffe8ca81602c61747adccb32df107c954cd5894e"
+  },
+  {
+   "seed": "ca1a0cf9405eaea67d544218e3bc10458cc5821042346179cae884fc4bf82ee2",
+   "selfAuthId": "4142434445463031323334353637383941424344454630313233343536373839",
+   "operationCode": 1,
+   "groupId": "7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989",
+   "messageId": 4,
+   "nonce": "abd2daf7beba09a44dee3be9",
+   "command": 40,
+   "token": "d5e9b9f8ff80e46ae7fde7777638307ce3ef740c3b2e9ca74bf935f03d443678",
+   "sliced": true,
+   "entries": [
+    {
+     "tag": 1,
+     "value": "7b2267726f757054797065223a3235362c2267726f75704964223a2237423042433043424345343734463643323338443936363143363334303042373937423136364541373834394233413337304643373341394132333645393839222c226d657373616765223a342c22706565724465766963654964223a224142434445463031323334353637383941424344454630313233343536373839222c2267726f75704e616d65223a226865616c74685f67726f75705f6e616d65222c2267726f7570416e644d6f64756c6556657273696f6e223a22322e302e31222c2261757468466f726d223a302c226f776e65724e616d65223a22222c227061796c6f6164223a7b226f7065726174696f6e436f6465223a312c22656e63526573756c74223a2235333746343446383746363935364343304633394639444246464538434138313630324336313734374144434342333244463130374339353443443538393445222c2276657273696f6e223a7b226d696e56657273696f6e223a22312e302e30222c2263757272656e7456657273696f6e223a22322e302e3136227d2c226e6f6e6365223a22414244324441463742454241303941343444454533424539227d2c22726571756573744964223a2231373030303030303030313233222c22636f6e6e4465766963654964223a224142434445463031323334353637383941424344454630313233343536373839222c226170704964223a22636f6d2e6875617765692e6865616c7468222c2267726f75704f70223a327d"
+    },
+    {
+     "tag": 2,
+     "value": "01"
+    },
+    {
+     "tag": 3,
+     "value": "0000018bcfe5687b"
+    }
+   ],
+   "isoSalt": "bb7673f87f0c5ca56521bf8062a22619",
+   "encrypted": false,
+   "requestId": 1700000000123,
+   "service": 1,
+   "name": "op1 StepFour",
+   "json": "{\"groupType\":256,\"groupId\":\"7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989\",\"message\":4,\"peerDeviceId\":\"ABCDEF0123456789ABCDEF0123456789\",\"groupName\":\"health_group_name\",\"groupAndModuleVersion\":\"2.0.1\",\"authForm\":0,\"ownerName\":\"\",\"payload\":{\"operationCode\":1,\"encResult\":\"537F44F87F6956CC0F39F9DBFFE8CA81602C61747ADCCB32DF107C954CD5894E\",\"version\":{\"minVersion\":\"1.0.0\",\"currentVersion\":\"2.0.16\"},\"nonce\":\"ABD2DAF7BEBA09A44DEE3BE9\"},\"requestId\":\"1700000000123\",\"connDeviceId\":\"ABCDEF0123456789ABCDEF0123456789\",\"appId\":\"com.huawei.health\",\"groupOp\":2}",
+   "step": "StepFour",
+   "enc": "537f44f87f6956cc0f39f9dbffe8ca81602c61747adccb32df107c954cd5894e"
+  },
+  {
+   "seed": "29c0eef860d80aff48a346f105697746abd47dead21f2d1caf6ed6e58fdcc397",
+   "selfAuthId": "4142434445463031323334353637383941424344454630313233343536373839",
+   "operationCode": 2,
+   "groupId": "7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989",
+   "messageId": 1,
+   "nonce": "0b78bdf7de3466fc183d40c2",
+   "command": 40,
+   "token": "9c86cbf8209e469c0735b2f5fb9df214d1e6775618d42179c2756b97ad2110d8",
+   "sliced": true,
+   "entries": [
+    {
+     "tag": 1,
+     "value": "7b2267726f7570416e644d6f64756c6556657273696f6e223a22322e302e31222c2261757468466f726d223a302c227061796c6f6164223a7b227365727669636554797065223a2237423042433043424345343734463643323338443936363143363334303042373937423136364541373834394233413337304643373341394132333645393839222c226b65794c656e677468223a33322c2269736f53616c74223a223831313338354638394632394245443638363538383946454537303745394231222c2273656564223a2232394330454546383630443830414646343841333436463130353639373734364142443437444541443231463244314341463645443645353846444343333937222c2270656572417574684964223a2234313432343334343435343633303331333233333334333533363337333833393431343234333434343534363330333133323333333433353336333733383339222c226f7065726174696f6e436f6465223a322c22706b674e616d65223a22636f6d2e6875617765692e64657669636567726f75706d616e616765222c22706565725573657254797065223a302c2276657273696f6e223a7b226d696e56657273696f6e223a22312e302e30222c2263757272656e7456657273696f6e223a22322e302e3136227d7d2c226d657373616765223a31372c2269734465766963654c6576656c223a66616c73657d"
+    },
+    {
+     "tag": 2,
+     "value": "02"
+    },
+    {
+     "tag": 3,
+     "value": "0000018bcfe5687b"
+    }
+   ],
+   "isoSalt": "811385f89f29bed6865889fee707e9b1",
+   "encrypted": false,
+   "requestId": 1700000000123,
+   "service": 1,
+   "name": "op2 StepOne",
+   "json": "{\"groupAndModuleVersion\":\"2.0.1\",\"authForm\":0,\"payload\":{\"serviceType\":\"7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989\",\"keyLength\":32,\"isoSalt\":\"811385F89F29BED6865889FEE707E9B1\",\"seed\":\"29C0EEF860D80AFF48A346F105697746ABD47DEAD21F2D1CAF6ED6E58FDCC397\",\"peerAuthId\":\"4142434445463031323334353637383941424344454630313233343536373839\",\"operationCode\":2,\"pkgName\":\"com.huawei.devicegroupmanage\",\"peerUserType\":0,\"version\":{\"minVersion\":\"1.0.0\",\"currentVersion\":\"2.0.16\"}},\"message\":17,\"isDeviceLevel\":false}",
+   "step": "StepOne",
+   "enc": "1a1c56f89f86b8fd3070c359844e8d1a4e2364be57825104558db13cbdb263ae"
+  },
+  {
+   "seed": "29c0eef860d80aff48a346f105697746abd47dead21f2d1caf6ed6e58fdcc397",
+   "selfAuthId": "4142434445463031323334353637383941424344454630313233343536373839",
+   "operationCode": 2,
+   "groupId": "7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989",
+   "messageId": 2,
+   "nonce": "0b78bdf7de3466fc183d40c2",
+   "command": 40,
+   "token": "9c86cbf8209e469c0735b2f5fb9df214d1e6775618d42179c2756b97ad2110d8",
+   "sliced": true,
+   "entries": [
+    {
+     "tag": 1,
+     "value": "7b2267726f7570416e644d6f64756c6556657273696f6e223a22322e302e31222c2261757468466f726d223a302c227061796c6f6164223a7b2270656572417574684964223a2234313432343334343435343633303331333233333334333533363337333833393431343234333434343534363330333133323333333433353336333733383339222c2276657273696f6e223a7b226d696e56657273696f6e223a22312e302e30222c2263757272656e7456657273696f6e223a22322e302e3136227d2c22746f6b656e223a2239433836434246383230394534363943303733354232463546423944463231344431453637373536313844343231373943323735364239374144323131304438227d2c226d657373616765223a31382c2269734465766963654c6576656c223a66616c73657d"
+    },
+    {
+     "tag": 2,
+     "value": "02"
+    },
+    {
+     "tag": 3,
+     "value": "0000018bcfe5687b"
+    }
+   ],
+   "isoSalt": "811385f89f29bed6865889fee707e9b1",
+   "encrypted": false,
+   "requestId": 1700000000123,
+   "service": 1,
+   "name": "op2 StepTwo",
+   "json": "{\"groupAndModuleVersion\":\"2.0.1\",\"authForm\":0,\"payload\":{\"peerAuthId\":\"4142434445463031323334353637383941424344454630313233343536373839\",\"version\":{\"minVersion\":\"1.0.0\",\"currentVersion\":\"2.0.16\"},\"token\":\"9C86CBF8209E469C0735B2F5FB9DF214D1E6775618D42179C2756B97AD2110D8\"},\"message\":18,\"isDeviceLevel\":false}",
+   "step": "StepTwo",
+   "enc": "1a1c56f89f86b8fd3070c359844e8d1a4e2364be57825104558db13cbdb263ae"
+  },
+  {
+   "seed": "29c0eef860d80aff48a346f105697746abd47dead21f2d1caf6ed6e58fdcc397",
+   "selfAuthId": "4142434445463031323334353637383941424344454630313233343536373839",
+   "operationCode": 2,
+   "groupId": "7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989",
+   "messageId": 3,
+   "nonce": "0b78bdf7de3466fc183d40c2",
+   "command": 40,
+   "token": "9c86cbf8209e469c0735b2f5fb9df214d1e6775618d42179c2756b97ad2110d8",
+   "sliced": true,
+   "entries": [
+    {
+     "tag": 1,
+     "value": "7b2267726f7570416e644d6f64756c6556657273696f6e223a22322e302e31222c2261757468466f726d223a302c227061796c6f6164223a7b22656e6344617461223a2231413143353646383946383642384644333037304333353938343445384431413445323336344245353738323531303435353844423133434244423236334145222c2276657273696f6e223a7b226d696e56657273696f6e223a22312e302e30222c2263757272656e7456657273696f6e223a22322e302e3136227d2c226e6f6e6365223a22304237384244463744453334363646433138334434304332227d2c226d657373616765223a31397d"
+    },
+    {
+     "tag": 2,
+     "value": "02"
+    },
+    {
+     "tag": 3,
+     "value": "0000018bcfe5687b"
+    }
+   ],
+   "isoSalt": "811385f89f29bed6865889fee707e9b1",
+   "encrypted": false,
+   "requestId": 1700000000123,
+   "service": 1,
+   "name": "op2 StepThree",
+   "json": "{\"groupAndModuleVersion\":\"2.0.1\",\"authForm\":0,\"payload\":{\"encData\":\"1A1C56F89F86B8FD3070C359844E8D1A4E2364BE57825104558DB13CBDB263AE\",\"version\":{\"minVersion\":\"1.0.0\",\"currentVersion\":\"2.0.16\"},\"nonce\":\"0B78BDF7DE3466FC183D40C2\"},\"message\":19}",
+   "step": "StepThree",
+   "enc": "1a1c56f89f86b8fd3070c359844e8d1a4e2364be57825104558db13cbdb263ae"
+  },
+  {
+   "seed": "29c0eef860d80aff48a346f105697746abd47dead21f2d1caf6ed6e58fdcc397",
+   "selfAuthId": "4142434445463031323334353637383941424344454630313233343536373839",
+   "operationCode": 2,
+   "groupId": "7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989",
+   "messageId": 3,
+   "nonce": "0b78bdf7de3466fc183d40c2",
+   "command": 40,
+   "token": "9c86cbf8209e469c0735b2f5fb9df214d1e6775618d42179c2756b97ad2110d8",
+   "sliced": true,
+   "entries": [
+    {
+     "tag": 1,
+     "value": "7b2267726f7570416e644d6f64756c6556657273696f6e223a22322e302e31222c2261757468466f726d223a302c227061796c6f6164223a7b226f7065726174696f6e436f6465223a322c22656e63526573756c74223a2231413143353646383946383642384644333037304333353938343445384431413445323336344245353738323531303435353844423133434244423236334145222c2276657273696f6e223a7b226d696e56657273696f6e223a22312e302e30222c2263757272656e7456657273696f6e223a22322e302e3136227d2c226e6f6e6365223a22304237384244463744453334363646433138334434304332227d2c226d657373616765223a31397d"
+    },
+    {
+     "tag": 2,
+     "value": "02"
+    },
+    {
+     "tag": 3,
+     "value": "0000018bcfe5687b"
+    }
+   ],
+   "isoSalt": "811385f89f29bed6865889fee707e9b1",
+   "encrypted": false,
+   "requestId": 1700000000123,
+   "service": 1,
+   "name": "op2 StepFour",
+   "json": "{\"groupAndModuleVersion\":\"2.0.1\",\"authForm\":0,\"payload\":{\"operationCode\":2,\"encResult\":\"1A1C56F89F86B8FD3070C359844E8D1A4E2364BE57825104558DB13CBDB263AE\",\"version\":{\"minVersion\":\"1.0.0\",\"currentVersion\":\"2.0.16\"},\"nonce\":\"0B78BDF7DE3466FC183D40C2\"},\"message\":19}",
+   "step": "StepFour",
+   "enc": "1a1c56f89f86b8fd3070c359844e8d1a4e2364be57825104558db13cbdb263ae"
+  }
+ ]
+}
