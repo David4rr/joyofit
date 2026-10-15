@@ -8,7 +8,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Meal list, ranges and config JSON against Huawei Health's rules (DietRecordHelper / HwSyncWeightManager). */
+/** Meal list, ranges and config JSON against Huawei Health's rules (meal list and weight config). */
 class DietSyncTest {
   private val today = "2026-10-14"
   private val midnight = 1_760_400_000L

@@ -188,7 +188,7 @@ you opened the editor. If the user edits the face on the watch, the watch's repo
   does not have is expected to be refused, and the apply result then lists it.
 - Needs ExpandCapability 84 (DataSync events). Without it the editor says so; the decision is logged as `FaceCustom: … ExpandCapability 84 …`.
 - Status: wire format **UNVERIFIED** (read from Huawei Health's `CustomConfigWatchFaceService`; `protocol/README.md` → *Editing a face's
-  options*, including the device test to run). Codec **VERIFIED by JVM tests** against the byte layout derived from `cqe`. The screen,
+  options*, including the device test to run). Codec **VERIFIED by JVM tests** against the byte layout documented in `protocol/README.md`. The screen,
   its hook and the native module compile and lint clean but were **not exercised on the watch**.
 
 *Install from file* opens Android's file picker. Pick a `.hwt` exported from **Huawei Theme Studio Pro**. The Watch Fit 4 and
@@ -225,7 +225,7 @@ capability, the reminder switches and, when the watch asks, the cycle list, dail
 ### Meals on the watch, body data and ring goals (DataSync, service `0x37`)
 
 All of these ride the DataSync framework (`DataSyncService`: the four "sample" commands `37/01..04`, an inbound dispatcher keyed by package and id, capability gates
-ExpandCapability 83 / 84 / 85 / 173). **None of it has been seen working on the Fit 4 Pro yet**: the layouts come from Huawei Health 17.0.8.300 static analysis (`protocol/README.md`
+ExpandCapability 83 / 84 / 85 / 173). **None of it has been seen working on the Fit 4 Pro yet**: the layouts follow the behaviour of Huawei Health 17.0.8.300 (`protocol/README.md`
 → Calorie intake, Body data, Activity goals). Every send, every watch request and every gate decision is in the Log (`adb logcat -d -s JoyoFit:V`, lines starting `DataSync`, `Diet:`, `Body:`, `Goals:`, `Health Glance:`).
 
 - **Meals on watch** (Settings → Meals on watch). JoyoRogo's `food.listByDate` (today's diary: kcal, macros, meal type), `profile.myProfile` (daily kcal target, BMR, goal weight) and
@@ -448,3 +448,5 @@ The upstream base is recorded in [`NOTICE`](NOTICE).
 
 [AGPL-3.0-or-later](LICENSE). The project is derived from Gadgetbridge; see [`NOTICE`](NOTICE).
 If you distribute this app, or modified versions of it, you must provide the source.
+
+See [`LEGAL.md`](LEGAL.md) for what JoyoFit is and is not (independent interoperability software, not affiliated with Huawei or Honor, not a medical device) and how rights holders can contact us.

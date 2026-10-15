@@ -217,7 +217,7 @@ function Footer() {
           </p>
           <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
             <ShieldCheck className="size-4" aria-hidden />
-            Dibuat di Malang oleh Dzulfikar. Turunan Gadgetbridge, lisensi AGPL-3.0.
+            Dibuat di Malang oleh Dzulfikar. Turunan Gadgetbridge, lisensi AGPL-3.0. Tidak berafiliasi dengan Huawei atau Honor.
           </p>
         </div>
         <nav aria-label="Tautan" className="flex flex-wrap gap-x-6 gap-y-1 text-sm font-semibold">
@@ -238,6 +238,9 @@ function Footer() {
           </a>
           <a href={PRIVASI_PATH} className={link}>
             Privasi
+          </a>
+          <a href={`${GITHUB_URL}/blob/master/LEGAL.md`} className={link} target="_blank" rel="noopener">
+            Hukum
           </a>
         </nav>
       </div>

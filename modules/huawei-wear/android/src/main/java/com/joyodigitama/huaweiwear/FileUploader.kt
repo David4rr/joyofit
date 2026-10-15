@@ -397,8 +397,7 @@ internal class FileUploader(
 
     /**
      * How long to wait for the 27/05 confirmation after the transfer finished. Huawei Health keeps its install
-     * state for 60 s (`HwWatchFaceManager.applyWatchFace` posts `mResetInstallState` after 60000 ms) and has no
-     * shorter limit; the watch unpacks and verifies the face after the last chunk.
+     * state for 60 s and has no shorter limit; the watch unpacks and verifies the face after the last chunk.
      */
     const val CONFIRM_WAIT_MS = 60_000L
 

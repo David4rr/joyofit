@@ -229,7 +229,7 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * goes silent. A resolved result with `listed: false` means the watch took the upload but dropped the face.
    *
    * Signature-replay experiment: watches with the signature capability (27/01 tag 0x11 bit 8) expect a
-   * Huawei `getresourcesign` response in the announcement (27/03 tag 0x08) and delete unsigned faces
+   * Huawei signature response in the announcement (27/03 tag 0x08) and delete unsigned faces
    * seconds after activation (100014). `signature` sends a captured signature string; `fileName`
    * (`<id>_<version>`) installs under the id and version that signature was issued for instead of a
    * random name.

@@ -196,7 +196,7 @@ internal object WatchfacePackages {
     }
   }
 
-  /** Huawei Health `HwWatchFaceManager.getRandomVersion`: three numbers from 1 to 10, joined by dots. */
+  /** Huawei Health random version: three numbers from 1 to 10, joined by dots. */
   fun randomVersion(random: Random = Random()): String =
     String.format(Locale.ROOT, "%d.%d.%d", random.nextInt(10) + 1, random.nextInt(10) + 1, random.nextInt(10) + 1)
 
@@ -223,7 +223,7 @@ internal object WatchfacePackages {
   }
 
   /**
-   * Huawei Health `f2.d` (`verifyWatchFaceVersion`) with the watch's other versions as its compatible list: the
+   * Huawei Health's face version check, with the watch's other versions as its compatible list: the
    * face's `<version>` has the watch's major version and a minor no higher than the watch's maximum, or is listed
    * among the other versions the watch accepts. A version that cannot be read on either side is left to the watch.
    */

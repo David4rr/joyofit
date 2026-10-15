@@ -3,9 +3,8 @@ package com.joyodigitama.huaweiwear
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
 
 /**
- * Huawei Health's "reverse linkage": a workout started on the watch, mirrored live on the phone. Read from Huawei Health
- * 17.0.8.300 (`ReverseLinkagePlatform` `fkf`, `nkp`/`nlc`/`nku`, `AppLinkageApiImpl`, `MirrorLinkDataSource`); notes in
- * `/home/dzul/re/huawei-health/LIVE_WORKOUT_PROTOCOL.md`. Everything is DataSync (0x37) between the watch's
+ * Huawei Health's "reverse linkage": a workout started on the watch, mirrored live on the phone. Modelled on the behaviour of Huawei Health
+ * 17.0.8.300. Everything is DataSync (0x37) between the watch's
  * `hw.sport.linkage.device` and the phone's `hw.sport.linkage.app`:
  *  - `37/02` events: [EVENT_CONTROL] (start / stop / resume / report, the phone answers start, stop and resume) and
  *    [EVENT_START] .. [EVENT_RESUME] (no answer),
@@ -42,7 +41,7 @@ internal object LiveWorkoutWire {
   /** Tag 02 of a start / stop / pause / resume event. */
   fun parseWorkoutType(data: ByteArray?): Int? = uint(HuaweiTLV().parse(data ?: ByteArray(0)), 0x02)?.toInt()
 
-  /** `nlf` / `nlh` / `nli`: `02 <operation> 04 <code>`, code 0 accepts. Huawei writes both as minimal-length ints. */
+  /** Control reply layout: `02 <operation> 04 <code>`, code 0 accepts. Huawei writes both as minimal-length ints. */
   fun reply(operation: Int, code: Int = 0): ByteArray = byteArrayOf(0x02, 0x01, operation.toByte(), 0x04, 0x01, code.toByte())
 
   // Live point keys (dictionary field ids; `olk.c` allow-list, units from `MirrorLinkDataSource` / `getLinkageBundle`).

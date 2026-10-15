@@ -33,14 +33,13 @@ internal class SleepNight(
 }
 
 /**
- * The morning sleep report (a notification card on the watch), after Huawei Health 17.0.8.300 `but`
- * (SleepNotificationManager) and `vgm` (CoreSleepEventHandler). DataSync event `80030001`, phone package
+ * The morning sleep report (a notification card on the watch), as Huawei Health 17.0.8.300 behaves on the wire. DataSync event `80030001`, phone package
  * `hw.unitedevice.sleepnotification`, watch package `hw.watch.health.sleep`, level 0, gated on ExpandCapability 84.
  *
- * The event data is a TLV of UTF-8 strings (`but.a(DeviceInfo, buu)` with `buu`'s getters mapped by `vgm.c`):
+ * The event data is a TLV of UTF-8 strings:
  * `06` title, `07` description, `08` label of the "open" button, `09` label of the "ignore" button, `0a` locale
  * (`xx-YY`), `0b` URI of the "open" action, `0c` URI of the "ignore" action. The watch answers the same event id
- * with data `01` when it showed the card (`but.onDataReceived`); anything else counts as not shown.
+ * with data `01` when it showed the card; anything else counts as not shown.
  */
 internal object SleepReport {
   const val EVENT_ID = 80030001
@@ -157,6 +156,6 @@ internal object SleepReport {
     .put(TAG_IGNORE_URI, message.ignoreUri)
     .serialize()
 
-  /** The watch's answer: shown when the data reads as the number 1 (`but.onDataReceived`: hex string, `CommonUtil.y(...) == 1`). */
+  /** The watch's answer: shown when the data reads as the number 1 (hex string that parses to 1). */
   fun acknowledged(data: ByteArray?): Boolean = DataSyncBytes.readInt32(data) == 1
 }

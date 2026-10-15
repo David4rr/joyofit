@@ -1,7 +1,6 @@
 package com.joyodigitama.huaweiwear
 
 import android.content.Context
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -9,26 +8,16 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
-import java.util.UUID
-import java.util.zip.GZIPInputStream
-import org.json.JSONArray
-import org.json.JSONException
 
 /** A download the watch asked for failed (no network, HTTP error, unreadable body); the message goes to the log. */
 internal class AgpsFetchException(message: String, cause: Throwable? = null) : IOException(message, cause)
 
 /**
- * The HTTP side of the watch's ephemeris requests, as Huawei Health makes them (see `AGPS_PROTOCOL.md`): blocking, so callers run it
- * on the IO dispatcher. Only https, bodies capped at [MAX_BYTES], no credentials of any kind.
+ * The HTTP side of the watch's ephemeris requests: blocking, so callers run it on the IO dispatcher. Only https, bodies capped
+ * at [MAX_BYTES], a plain GET with no credentials and no app identification.
  */
 internal object EphemerisNet {
-  /** GRS `getAgnssPluginUrl` for the "dra" region; the watch supplies the path of a `HW_AGNSS` entry. */
-  const val AGNSS_BASE = "https://geo-dra.platform.hicloud.com/"
-
-  /** GRS `getNewBatchPluginUrl`: version 1 and 2 config ids are appended to it. */
-  const val CONFIG_BASE = "https://configserver-dra.platform.hicloud.com/servicesupport/updateserver/data/"
-
-  /** GRS `domainbroadnewurl`; version 0 URLs ending in [LTO_PATH] are rewritten to it, like Huawei Health does. */
+  /** The public Broadcom LTO file (valid for 7 days) is the only thing downloaded. */
   const val LTO_HOST = "https://gllto.glpals.com"
   const val LTO_PATH = "/7day/v6/latest/lto.dat"
 
@@ -36,20 +25,7 @@ internal object EphemerisNet {
   private const val READ_TIMEOUT_MS = 30_000
   private const val MAX_BYTES = 8 * 1024 * 1024
 
-  /** `gty.d`: the three headers Huawei Health sends for `HW_AGNSS`. */
-  fun agnssHeaders(): Map<String, String> = mapOf(
-    "X-Request-ID" to UUID.randomUUID().toString(),
-    "Content-Type" to "application/json",
-    "X-Device-Type" to "SportsHealth",
-  )
-
-  /** `mtm.e` / `PgnssManager`: headers of the config-server lookup of versions 1 and 2. */
-  fun configHeaders(): Map<String, String> = mapOf(
-    "App-ID" to "HealthApp",
-    "traceId" to UUID.randomUUID().toString(),
-  )
-
-  fun get(url: String, headers: Map<String, String> = emptyMap()): ByteArray {
+  fun get(url: String): ByteArray {
     if (!url.startsWith("https://")) throw AgpsFetchException("refusing non-https url")
     val connection = try {
       URL(url).openConnection() as HttpURLConnection
@@ -60,7 +36,6 @@ internal object EphemerisNet {
       connection.connectTimeout = CONNECT_TIMEOUT_MS
       connection.readTimeout = READ_TIMEOUT_MS
       connection.requestMethod = "GET"
-      for ((name, value) in headers) connection.setRequestProperty(name, value)
       val status = connection.responseCode
       if (status != 200) {
         val reason = try {
@@ -95,47 +70,7 @@ internal object EphemerisNet {
     return out.toByteArray()
   }
 
-  /**
-   * The `HW_AGNSS` body is a gzip stream (`gts.a`). The platform's HttpURLConnection already unwraps a `Content-Encoding: gzip`
-   * response, so a body that still starts with the gzip magic is the payload's own layer; anything else is already plain.
-   */
-  fun gunzipIfNeeded(data: ByteArray): ByteArray {
-    if (data.size < 2 || data[0] != 0x1F.toByte() || data[1] != 0x8B.toByte()) return data
-    val out = ByteArrayOutputStream()
-    try {
-      GZIPInputStream(ByteArrayInputStream(data)).use { input ->
-        val buffer = ByteArray(8192)
-        while (true) {
-          val n = input.read(buffer)
-          if (n < 0) break
-          if (out.size() + n > MAX_BYTES) throw AgpsFetchException("unzipped response larger than $MAX_BYTES bytes")
-          out.write(buffer, 0, n)
-        }
-      }
-    } catch (e: AgpsFetchException) {
-      throw e
-    } catch (e: IOException) {
-      throw AgpsFetchException("gunzip failed: ${e.message}", e)
-    }
-    return out.toByteArray()
-  }
-
-  /**
-   * Version 1/2 config answer: a JSON array whose first element needs `ver`, `downloadUrl`, `signature` and `fileId` (`mts.a`);
-   * returns the download URL, or null when the answer is not usable. The signature is not checked: its salting is not known.
-   */
-  fun parseConfigDownloadUrl(body: ByteArray): String? =
-    try {
-      val first = JSONArray(String(body, Charsets.UTF_8)).optJSONObject(0)
-      if (first == null || !first.has("ver") || !first.has("signature") || !first.has("fileId")) null
-      else first.optString("downloadUrl", "").takeIf { it.isNotEmpty() }
-    } catch (e: JSONException) {
-      null
-    }
-
-  fun lastPathSegment(url: String): String = url.substringBefore('?').substringAfterLast('/')
-
-  /** `HuaweiEphemerisManager.getHexDigest`: SHA-256 of the watch address without colons, lowercase hex. */
+  /** SHA-256 of the watch address without colons, lowercase hex: part of the stored file name the watch's protocol expects. */
   fun addressDigest(address: String): String =
     MessageDigest.getInstance("SHA-256").digest(address.replace(":", "").toByteArray(Charsets.UTF_8)).toHex().lowercase()
 }

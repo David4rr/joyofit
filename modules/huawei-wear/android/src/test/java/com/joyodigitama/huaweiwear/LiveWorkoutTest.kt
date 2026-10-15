@@ -15,7 +15,7 @@ class LiveWorkoutTest {
 
   @Test
   fun acceptingAStartMatchesHuaweiHealthsReply() {
-    // LIVE_WORKOUT_PROTOCOL.md 2.2, built from nlf + SampleEventProducer.
+    // The reply layout of the control event (accepting a start).
     val packet = DataSyncWire.event(plain, LiveWorkoutWire.PHONE_PKG, LiveWorkoutWire.WATCH_PKG, LiveWorkoutWire.EVENT_CONTROL, 0, LiveWorkoutWire.reply(LiveWorkoutWire.OP_START))
     assertArrayEquals(
       hex("011468772e73706f72742e6c696e6b6167652e617070021768772e73706f72742e6c696e6b6167652e64657669636503042fb5228e0401000506020100040100"),

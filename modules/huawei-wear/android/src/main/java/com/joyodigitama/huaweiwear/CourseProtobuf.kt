@@ -4,13 +4,12 @@ import nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.p2p.utils.Hua
 
 /**
  * The running course that Huawei Health pushes to `in.huawei.fitness` (P2P module `fitness`):
- * `iiz.e(FitWorkout, ...)` writes `<messageId>courseInfo.bin` = a 36-byte little-endian message header
- * ([HuaweiP2PSubMsg]; `dft` in Huawei Health: businessType, version, totalLength, businessHeadLength, messageId) +
+ * Huawei Health writes `<messageId>courseInfo.bin` = a 36-byte little-endian message header
+ * ([HuaweiP2PSubMsg]: businessType, version, totalLength, businessHeadLength, messageId) +
  * a `CourseStorageInfo` protobuf, and sends it as a P2P file. EXPERIMENTAL and UNVERIFIED on the wire: everything here is
- * read from Huawei Health 17.0.8.300 (`iiz`, `BaseCoursePlanDataCustomer`, `CourseDataForDevice`, `CustomCourseActivity`,
- * `EditDialogBuilder`, `TypeConfig`); see `protocol/README.md` for what is missing.
+ * based on Huawei Health 17.0.8.300's observed behaviour; see `protocol/README.md` for what is missing.
  *
- * `course.proto` (proto2, every field `required`, extracted from the generated descriptor):
+ * `course.proto` (proto2, every field `required`, reconstructed to match the wire format):
  * ```
  * message CourseStorageInfo {
  *   required string exerciseId = 1;           repeated uint32 exerciseName = 2;   // the name's UTF-8 bytes, one varint each (dga.e)
@@ -23,9 +22,9 @@ import nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.p2p.utils.Hua
  *   message CombineInfo { required uint32 repeatNum = 1; required uint32 actionNum = 2; repeated ActionInfo actionInfo = 3; }
  * }
  * ```
- * (`instensity` is Huawei's spelling.) Values Huawei Health's custom-course editor writes (`CustomCourseActivity`): `courseType` 4
+ * (`instensity` is Huawei's spelling.) Values Huawei Health's custom-course editor writes: `courseType` 4
  * (a "new run course"), `defineType` 1 (custom), `exerciseVersion` "2.0", `usingType` 0 for a single course; target types
- * (`TypeConfig.getTargetTypeList`) 1 time (seconds), 0 distance (metres), 3 calories, 5 heart rate, 255 none; intensity types
+ * 1 time (seconds), 0 distance (metres), 3 calories, 5 heart rate, 255 none; intensity types
  * (`getIntensityTypeList`) 255 none, 13 pace zone, 15 pace, 16 cadence, 17 heart-rate zone, 1 heart-rate range; action ids
  * RD001 warm-up, RD002 run, RD003 walk, RD004 rest, RD005 relax (cool-down).
  */
@@ -182,7 +181,7 @@ internal object CourseProtobuf {
     return w.toByteArray()
   }
 
-  /** `CourseStorageInfo` (`BaseCoursePlanDataCustomer.convertFitWorkout`). [updateTimeSec] is the course's publish / modify time. */
+  /** `CourseStorageInfo`. [updateTimeSec] is the course's publish / modify time. */
   fun encode(course: RunningCourse, updateTimeSec: Int): ByteArray {
     val (totalType, totalValue) = total(course)
     val w = PbWriter()

@@ -170,7 +170,7 @@ function Indonesian() {
             "Cuaca memakai lokasi HP hanya bila kamu memilih mode lokasi HP.",
             "Saat olahraga luar ruang dimulai di jam, jam meminta GPS HP. JoyoFit membaca GPS HP selama olahraga itu dan mengirim posisi hanya ke jam lewat Bluetooth. HP tidak menyimpannya dan tidak mengunggahnya. JoyoFit menjelaskan hal ini sebelum meminta izin lokasi presisi. JoyoFit tidak meminta lokasi latar belakang.",
             "Jalur GPS yang direkam jam diunduh dari jam, disimpan di HP, ditampilkan sebagai rute, dan ikut diunggah bila kamu memakai cloud.",
-            "Saat jam meminta data bantuan satelit (AGPS), HP mengunduhnya dari server Huawei (hicloud.com) atau Broadcom (glpals.com) lewat HTTPS. Alamat unduhannya ditentukan jam; JoyoFit tidak menambahkan lokasi atau ID apa pun, tetapi server itu melihat alamat IP-mu, dan isi alamat dari jam tidak bisa kami periksa.",
+            "Saat jam meminta data bantuan satelit (AGPS), HP mengunduh berkas publik Broadcom dari gllto.glpals.com lewat HTTPS, alamat tetap. JoyoFit tidak menambahkan lokasi atau ID apa pun, tetapi server itu melihat alamat IP-mu. JoyoFit tidak menghubungi server Huawei untuk ini; jenis data bantuan lain yang diminta jam ditolak.",
           ]}
         />
       </Block>
@@ -221,7 +221,7 @@ function Indonesian() {
         <List
           items={[
             "Open-Meteo: prakiraan cuaca dan pencarian kota (bagian Cuaca).",
-            "Huawei (hicloud.com) dan Broadcom (glpals.com): data bantuan satelit (bagian Lokasi).",
+            "Broadcom (glpals.com): data bantuan satelit (bagian Lokasi).",
             "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan.",
             "JoyoRogo dan Google: login dan layanan JoyoRogo (bagian Cloud).",
           ]}
@@ -366,9 +366,9 @@ function English() {
           does not store or upload it. JoyoFit explains this before asking for precise location and does not ask for
           background location. The GPS track the watch recorded is downloaded to the phone, shown as a route and
           uploaded if you use the cloud. When the watch asks for satellite-assist (AGPS) data, the phone downloads
-          it over HTTPS from Huawei (<Code>hicloud.com</Code>) or Broadcom (<Code>glpals.com</Code>). The watch
-          decides the address; JoyoFit adds no location or ID, but those servers see your IP address, and we cannot
-          inspect what the watch puts in the address.
+          the public Broadcom file over HTTPS from <Code>gllto.glpals.com</Code>, a fixed address. JoyoFit adds no
+          location or ID, but that server sees your IP address. JoyoFit does not contact Huawei servers for this;
+          other kinds of assist data the watch may ask for are declined.
         </p>
       </Block>
 
@@ -401,7 +401,7 @@ function English() {
 
       <Block title="Third parties">
         <p>
-          Open-Meteo (weather), Huawei and Broadcom (satellite-assist data), Cloudflare (hosting of the cloud and this
+          Open-Meteo (weather), Broadcom (satellite-assist data), Cloudflare (hosting of the cloud and this
           site), JoyoRogo and Google (sign-in). No ads and no sale of data. Data is not used for advertising or
           ad profiling.
         </p>

@@ -2,9 +2,8 @@
 // (requestWatchfaceList, updateWatchfaceNames, setWatchface, deleteWatchface, getFullFileName) and
 // requests/{GetWatchfaceParams,GetWatchfacesList,GetWatchfacesNames,SendWatchfaceOperation}.
 //
-// The install flow follows Huawei Health 17.0.8.300 (RE of its "install from a .hwt file" path):
-// com.huawei.watchface.f2.{b,a} (local install), HwWatchFaceBtManager.{sendOperateType,handleApply,getDeviceInfo,
-// handleDeviceInfoTlv} and WatchFaceWearService.sendWatchFace. GB uploads without announcing the face; Huawei Health
+// The install flow follows Huawei Health 17.0.8.300 (its "install from a .hwt file" behaviour).
+// GB uploads without announcing the face; Huawei Health
 // always sends 27/03 first.
 package com.joyodigitama.huaweiwear
 
@@ -143,21 +142,20 @@ internal fun watchfaceOperationPacket(
   it.serviceId = Watchface.id
   it.commandId = Watchface.WatchfaceOperation.id
   val tlv = HuaweiTLV().put(0x01, id).put(0x02, version).put(0x03, operation)
-  // Huawei Health sends the whole getresourcesign response string in tag 0x08 of the announcement
-  // (HwWatchFaceBtManager.setWatchfaceSignature). The activation that follows carries no signature.
+  // Huawei Health sends the whole getresourcesign response string in tag 0x08 of the announcement. The activation that follows carries no signature.
   if (signature != null) tlv.put(0x08, signature)
   it.setTlv(tlv)
 }
 
-/** Huawei Health `WatchFaceWearService.isSignFailErrorCode`. */
+/** Announcement error codes Huawei Health treats as a signature failure. */
 internal val SIGNATURE_FAILURE_CODES = setOf(100007, 100014)
 
 /** The watch's answer to the 27/03 that announces a face before its upload; null for a field the watch did not send. */
 internal class Announcement(val code: Int?, val needReceive: Int?)
 
 /**
- * Huawei Health's reading of a refused announcement (`WatchFaceWearService.isSignFailErrorCode`: 100007 and 100014;
- * `HwWatchFaceBtManager.dealReport` passes 100015 on to its UI as well).
+ * Huawei Health's reading of a refused announcement (100007 and 100014 are signature failures;
+ * it passes 100015 on to its UI as well).
  */
 internal fun describeAnnounceCode(code: Int): String = when (code) {
   100007, 100014 ->
@@ -469,7 +467,7 @@ internal class WatchfaceController(
   suspend fun delete(id: String): Map<String, Any?> = withWatch { ops -> ops.delete(id).toJs() }
 
   /**
-   * [signature] is a Huawei `getresourcesign` response string (Huawei Health sends it in tag 0x08 of the
+   * [signature] is a Huawei signature response string (Huawei Health sends it in tag 0x08 of the
    * announcement). [fileName] overrides the random `<id>_<version>` install name; a replayed signature only
    * names the face id and version it was issued for, so both must match that face.
    */

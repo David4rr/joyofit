@@ -8,8 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The editable-face TLVs against the byte layout of `CustomConfigWatchFaceService.buildCustomConfigEventDataBytes` with the `cqe`
- * writer (hand-computed from its source in Huawei Health 17.0.8.300). The wire bytes of a watch reply are exercised separately on
+ * The editable-face TLVs against the byte layout of Huawei Health 17.0.8.300's custom-config event (hand-computed). The wire bytes of a watch reply are exercised separately on
  * the device; see protocol/README.md.
  */
 class FaceCustomCodecTest {

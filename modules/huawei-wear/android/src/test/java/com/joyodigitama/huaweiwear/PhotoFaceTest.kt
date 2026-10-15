@@ -19,8 +19,8 @@ import org.junit.Assert.fail
 import org.junit.Test
 
 /**
- * The photo face wire formats and flow. The `.bin` vectors were produced by running Huawei Health 17.0.8.300's own encoder
- * (`WatchFaceBitmapUtil`, decompiled and compiled unchanged) on the same pixels, so they pin the bytes the watch is sent.
+ * The photo face wire formats and flow. The `.bin` vectors are reference outputs generated outside this repository for the same pixels; they pin
+ * the bytes the watch is sent. No Huawei code is part of this project.
  */
 class PhotoFaceTest {
   private fun hex(bytes: ByteArray) = bytes.joinToString("") { "%02x".format(it.toInt() and 0xFF) }

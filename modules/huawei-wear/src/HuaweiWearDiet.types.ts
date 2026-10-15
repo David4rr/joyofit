@@ -1,6 +1,6 @@
 /**
  * Calorie intake, body metrics and activity-ring goals (DataSync service 0x37). UNVERIFIED on the watch: the layouts come from
- * Huawei Health 17.0.8.300 static analysis. Native code: `DietSync.kt`, `BodyMetrics.kt`, `ActivityGoals.kt`.
+ * Huawei Health 17.0.8.300 behaviour. Native code: `DietSync.kt`, `BodyMetrics.kt`, `ActivityGoals.kt`.
  */
 
 /**

@@ -1,4 +1,4 @@
-// Layouts from Huawei Health 17.0.8.300 (SportGoalMgr.a, mdn.d) and Gadgetbridge's HuaweiDataSyncGoals (ids, packages, the
+// Layouts as Huawei Health 17.0.8.300 behaves on the wire, and Gadgetbridge's HuaweiDataSyncGoals (ids, packages, the
 // per-goal `01 time, 02 goal` data, calories as kcal x 1000). UNVERIFIED on the Fit 4 Pro.
 package com.joyodigitama.huaweiwear
 
@@ -50,10 +50,10 @@ internal object ActivityGoalsCodec {
   const val REMINDER_PROGRESS = 900200010
   const val REMINDER_GOAL_REACHED = 900200011
 
-  /** SportGoalMgr.a / GB sendCommonData: `01 time int32 s, 02 goal int32`. */
+  /** As Huawei Health and GB sendCommonData do: `01 time int32 s, 02 goal int32`. */
   fun single(nowSec: Int, goal: Int): ByteArray = HuaweiTLV().put(0x01, nowSec).put(0x02, goal).serialize()
 
-  /** mdn.d(int[]): `01 time, 82{83{04 type, 05 value} x3}` with types 1 steps, 3 exercise minutes, 4 stand hours; type and value are minimal big-endian bytes. */
+  /** Three-goal ring set: `01 time, 82{83{04 type, 05 value} x3}` with types 1 steps, 3 exercise minutes, 4 stand hours; type and value are minimal big-endian bytes. */
   fun bundle(nowSec: Int, steps: Int, exerciseMinutes: Int, standHours: Int): ByteArray {
     val list = HuaweiTLV()
     for ((type, value) in listOf(1 to steps, 3 to exerciseMinutes, 4 to standHours)) {
@@ -179,7 +179,7 @@ internal class ActivityGoals(
   }
 
   override fun register(service: DataSyncService) {
-    // The watch writes goals back (SportGoalMgr listens on hw.sport.config; GB on in.huawei.motion). Match either side.
+    // The watch writes goals back (Huawei Health listens on hw.sport.config; GB on in.huawei.motion). Match either side.
     service.onConfig(null, ActivityGoalsCodec.WEAR_PKG, null) { onWatchConfig(it) }
     service.onConfig(ActivityGoalsCodec.SRC_PKG, null, null) { onWatchConfig(it) }
   }

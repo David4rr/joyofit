@@ -1,6 +1,5 @@
-// Wire layouts follow Huawei Health 17.0.8.300 (defpackage.yoq ConvertCommandUtil, cqe TLV writer, ynw SampleCommandManager),
-// read in /home/dzul/re/huawei-health/DIET_PROTOCOL.md and FEATURE_CANDIDATES.md. UNVERIFIED on the wire; the byte layouts
-// are checked against that analysis only (DataSyncCodecTest). Service 0x37 reuses GB's HuaweiPacket / HuaweiTLV.
+// Wire layouts follow Huawei Health 17.0.8.300's observed DataSync behaviour. UNVERIFIED on the wire; the byte layouts
+// are checked against reference examples only (DataSyncCodecTest). Service 0x37 reuses GB's HuaweiPacket / HuaweiTLV.
 package com.joyodigitama.huaweiwear
 
 import java.nio.charset.StandardCharsets
@@ -28,7 +27,7 @@ internal object DataSyncWire {
   /** `0x37/05` CompactDataDictionary; only logged. */
   const val CMD_COMPACT = 0x05
 
-  /** ExpandCapability bits Huawei Health checks (`ynw`): config, event, point, dictionary. */
+  /** ExpandCapability bits Huawei Health checks: config, event, point, dictionary. */
   const val CAP_CONFIG = 83
   const val CAP_EVENT = 84
   const val CAP_POINT = 85
@@ -68,7 +67,7 @@ internal object DataSyncWire {
 
   // Outbound
 
-  /** `83{84{05 id int32, 06 action byte, 07 data, 08 modify time int64 ms}...}` after `01 src`, `02 wear` (yoq.e(efy)). */
+  /** `83{84{05 id int32, 06 action byte, 07 data, 08 modify time int64 ms}...}` after `01 src`, `02 wear` */
   fun config(params: HuaweiPacket.ParamsProvider, srcPkg: String, wearPkg: String, items: List<ConfigItem>): HuaweiPacket {
     val list = HuaweiTLV()
     for (item in items) {
@@ -81,7 +80,7 @@ internal object DataSyncWire {
     return DataSyncPacket(params, DataSyncWire.CMD_CONFIG, tlv)
   }
 
-  /** `03 event id int32, 04 level byte, 05 data` (yoq.c(egd)). */
+  /** `03 event id int32, 04 level byte, 05 data` */
   fun event(params: HuaweiPacket.ParamsProvider, srcPkg: String, wearPkg: String, eventId: Int, level: Int, data: ByteArray?): HuaweiPacket {
     val tlv = HuaweiTLV().put(0x01, srcPkg).put(0x02, wearPkg).put(0x03, eventId).put(0x04, level.toByte())
     data?.let { tlv.put(0x05, it) }
@@ -89,7 +88,7 @@ internal object DataSyncWire {
   }
 
   /**
-   * `03 dict type int32, 04 start int32, 05 end int32, 86{87{08 key int32, 09 value}...}, 0A metadata` (yoq.e(egf)).
+   * `03 dict type int32, 04 start int32, 05 end int32, 86{87{08 key int32, 09 value}...}, 0A metadata`
    * Huawei sends the low 32 bits of a millisecond value for start and end; [startMs] / [endMs] null leaves the tag out.
    */
   fun samplePoint(
@@ -118,7 +117,7 @@ internal object DataSyncWire {
 
   /**
    * `03 dict type int32, 84{85{06 start int64 ms, 07 end int64 ms, 08 modify int64 ms, 89{8A{0B key int32, 0C value}...}, 0D empty}...}`
-   * (yoq.b(efw), `ega` rows). Huawei writes an empty tag `0D` for each row (its `ega.e()` metadata is null).
+   * Huawei Health writes an empty tag `0D` for each row (its metadata is null).
    */
   fun dictionary(params: HuaweiPacket.ParamsProvider, srcPkg: String, wearPkg: String, dictType: Int, rows: List<DictRow>): HuaweiPacket {
     val tlv = HuaweiTLV().put(0x01, srcPkg).put(0x02, wearPkg).put(0x03, dictType)
@@ -130,7 +129,7 @@ internal object DataSyncWire {
         val values = HuaweiTLV()
         for (value in row.values) {
           val item = HuaweiTLV().put(0x0B, value.key)
-          // cqe.a(tag, bytes): a null or empty value is written as the tag with length 0.
+          // A null or empty value is written as the tag with length 0.
           item.put(0x0C, value.value ?: ByteArray(0))
           values.put(0x8A, item)
         }
@@ -367,7 +366,7 @@ internal object DataSyncJson {
 internal object DataSyncBytes {
   fun int32(value: Int): ByteArray = byteArrayOf((value shr 24).toByte(), (value shr 16).toByte(), (value shr 8).toByte(), value.toByte())
 
-  /** `ego.e(double)`: the bytes of the IEEE-754 bits, **least significant first**. */
+  /** The bytes of the IEEE-754 bits, **least significant first**. */
   fun doubleLe(value: Double): ByteArray {
     var bits = java.lang.Double.doubleToLongBits(value)
     return ByteArray(8) { val b = bits.toByte(); bits = bits shr 8; b }

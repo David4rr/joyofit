@@ -1,6 +1,6 @@
-// Calorie intake on the watch. Layouts and rules from Huawei Health 17.0.8.300: DietRecordHelper (defpackage.fbj: meal list,
-// placeholders, 42 cap, extra slots with ExpandCapability 215, recommended ranges), HwSyncWeightManager (defpackage.nkj: config ids
-// 900300023 / 900300022, events 80030003 / 80030004) and the izd / wkr Gson classes. All in /home/dzul/re/huawei-health/DIET_PROTOCOL.md.
+// Calorie intake on the watch. Layouts and rules as Huawei Health 17.0.8.300 behaves: meal list,
+// placeholders, 42 cap, extra slots with ExpandCapability 215, recommended ranges, config ids
+// 900300023 / 900300022, events 80030003 / 80030004 and the JSON shapes.
 // UNVERIFIED on the Fit 4 Pro: nothing here was ever sent to a watch before JoyoFit.
 package com.joyodigitama.huaweiwear
 
@@ -58,7 +58,7 @@ internal data class DietMeal(
   }
 }
 
-/** The day's goals: izd (`900300023`) plus the weight goal (`900300022`). */
+/** The day's goals: the diet config (`900300023`) plus the weight goal (`900300022`). */
 internal data class DietGoals(
   val dailyKcal: Int,
   /** Planned daily kcal deficit (`caloricDeficitGoal`); 0 when maintaining. */
@@ -109,7 +109,7 @@ internal data class DietDay(
   val intakeKcal: Double get() = meals.sumOf { it.kcal }
 }
 
-/** One element of the meals array the watch gets (`wkr`, Gson field order). */
+/** One element of the meals array the watch gets (JSON field order). */
 internal class DietEntry(
   val eatTime: Long,
   val hasFood: Boolean,
@@ -138,7 +138,7 @@ internal object DietPlanner {
   const val MAX_ENTRIES = 42
 
   /**
-   * fbj.f35288a for region `it` (Huawei's default outside cn / de): key `<manager type>_<day has an extra meal of this group>_<meal>`.
+   * Table for region `it` (Huawei's default outside cn / de): key `<manager type>_<day has an extra meal of this group>_<meal>`.
    * The extra-slot ranges are (0, 0.05). There is no entry for 40; see [range].
    */
   private val RATIOS: Map<String, Pair<Float, Float>> = buildMap {
@@ -157,17 +157,17 @@ internal object DietPlanner {
 
   fun isMealType(which: Int) = which == 10 || which == 11 || which == 20 || which == 21 || which == 30 || which == 31 || which == 40
 
-  /** fbj.e(int): without ExpandCapability 215 the extra slots are folded into 40. */
+  /** Without ExpandCapability 215 the extra slots are folded into 40. */
   fun fold(which: Int, extraSlots: Boolean): Int = if (!extraSlots && (which == 11 || which == 21 || which == 31)) 40 else which
 
-  /** fbj.c(list, meal): does the day have an extra meal in the group of [meal]. */
+  /** Does the day have an extra meal in the group of [meal]. */
   private fun hasExtra(extras: Set<Int>, meal: Int): Boolean = when (meal) {
     10, 11 -> 11 in extras
     20, 21 -> 21 in extras
     else -> 31 in extras
   }
 
-  /** fbj.a(list, goal, meal, type, map): `[round(lo * goal), round(hi * goal)]`; empty when the goal is not positive. */
+  /** `[round(lo * goal), round(hi * goal)]`; empty when the goal is not positive. */
   fun range(goalKcal: Int, which: Int, managerType: Int, extras: Set<Int>): IntArray {
     if (goalKcal <= 0) return IntArray(0)
     val ratio = if (which == 40) SNACK_RATIO else RATIOS["${managerType}_${if (hasExtra(extras, which)) 1 else 0}_$which"] ?: return IntArray(0)
@@ -175,13 +175,13 @@ internal object DietPlanner {
     return intArrayOf(Math.round(ratio.first.toDouble() * goal).toInt(), Math.round(ratio.second.toDouble() * goal).toInt())
   }
 
-  /** fbj.getDeviceMealArray for one day: merged meals per type, the 40 sum, then placeholders for today. */
+  /** The meal array for one day: merged meals per type, the 40 sum, then placeholders for today. */
   fun entries(day: DietDay, extraSlots: Boolean, todayDate: String, todayStartSec: Long): List<DietEntry> {
     val goal = day.goals?.dailyKcal ?: 0
     val managerType = day.goals?.weightManagerType ?: 0
     val extras = day.meals.map { it.whichMeal }.filter { it == 11 || it == 21 || it == 31 }.toSet()
 
-    // fbj.d(wld): meals of the same type are one entry (kcal summed, first time kept).
+    // Meals of the same type are one entry (kcal summed, first time kept).
     val merged = LinkedHashMap<Int, Pair<Long, Double>>()
     for (meal in day.meals.sortedBy { it.whichMeal }) {
       val prior = merged[meal.whichMeal]
@@ -249,9 +249,9 @@ internal object DietPlanner {
   }
 
   /**
-   * izd in Gson order: onePointFull{dinner,lunch,breakfast}, caloricDeficitGoal, weightInit, activityCalGoal, fatLossRatio,
-   * weightManagerType. `onePointFull` is `round((min + max) / 14)` of each meal's range (fbj.c); fatLossRatio is the default
-   * nkj.e fills in when the user has none; proportionMeal is null and so left out.
+   * Config JSON in field order: onePointFull{dinner,lunch,breakfast}, caloricDeficitGoal, weightInit, activityCalGoal, fatLossRatio,
+   * weightManagerType. `onePointFull` is `round((min + max) / 14)` of each meal's range; fatLossRatio is the default
+   * Huawei Health fills in when the user has none; proportionMeal is null and so left out.
    */
   fun configJson(goals: DietGoals, activityCalGoal: Int, weightInitKg: Double?): ByteArray {
     fun onePoint(meal: Int): Int {
@@ -277,10 +277,10 @@ internal object DietPlanner {
     return DataSyncJson.bytes(out)
   }
 
-  /** nkj.d(device, double, time): `{"weightGoal":<double>}`. */
+  /** `{"weightGoal":<double>}`. */
   fun weightGoalJson(kg: Double): ByteArray = DataSyncJson.bytes(mapOf("weightGoal" to kg))
 
-  /** nkj.d(int, long): the reply to a quick-logged meal. */
+  /** The reply to a quick-logged meal. */
   fun punchReply(resultCode: Int, failTimeSec: Long): ByteArray {
     val out = LinkedHashMap<String, Any?>()
     out["punchResult"] = resultCode
@@ -301,7 +301,7 @@ internal object DietPlanner {
     for (i in 0 until array.length()) {
       val o = array.optJSONObject(i) ?: continue
       val which = o.optInt("whichMeal", 0)
-      // nkj.e(list): whichMeal 0 is an error and skipped.
+      // whichMeal 0 is an error and skipped.
       if (which == 0) continue
       var time = o.optLong("eatTime", 0L)
       if (time >= 1_000_000_000_000L) time /= 1000
@@ -547,7 +547,7 @@ internal class DietSync(
     val weightInit = goalsOfDay.weightInitKg ?: settings.profile?.weightKg
     val items = ArrayList<ConfigItem>()
     items += ConfigItem(DietPlanner.CONFIG_DIET, 1, DietPlanner.configJson(goalsOfDay, activityCal, weightInit), now)
-    // nkj.b: the weight goal is its own config.
+    // The weight goal is its own config.
     goalsOfDay.targetWeightKg?.let { items += ConfigItem(DietPlanner.CONFIG_WEIGHT_GOAL, 1, DietPlanner.weightGoalJson(it), now) }
     var ok = true
     for (item in items) {
@@ -588,7 +588,7 @@ internal class DietSync(
     push("connected", withConfig = true)
   }
 
-  /** nkj.c(egd) for 80030003: `{startTime, endTime, event}`. */
+  /** For 80030003: `{startTime, endTime, event}`. */
   private suspend fun onDietEvent(event: SampleEvent) {
     val json = event.json()
     if (json == null) {
@@ -599,7 +599,7 @@ internal class DietSync(
     val watch = event.watchPkg.ifEmpty { DietPlanner.WATCH_PKG }
     when (val kind = json.optInt("event", -1)) {
       1 -> {
-        // fbj.b(clamped start, end): the day's meals. We hold one day, so the window only becomes start / end of the point.
+        // The day's meals for the clamped start / end. We hold one day, so the window only becomes start / end of the point.
         val startMs = json.optLong("startTime", 0L)
         val endMs = json.optLong("endTime", 0L)
         val clamped = if (startMs > 0) startOfDaySec(startMs) * 1000 else 0L
@@ -641,7 +641,7 @@ internal class DietSync(
       result = 102
       failTime = meals.firstOrNull()?.eatTime ?: 0L
     }
-    // nkj.b(): the reply needs ExpandCapability 215.
+    // The reply needs ExpandCapability 215.
     val extra = service.supports(DietPlanner.CAP_EXTRA_MEALS)
     if (extra) {
       service.sendEvent(phone, watch, DietPlanner.EVENT_DIET, DietPlanner.punchReply(result, failTime), what = "diet quick-log reply")
@@ -651,7 +651,7 @@ internal class DietSync(
     if (result == 0 && meals.isNotEmpty()) push("watch quick-log", withConfig = false)
   }
 
-  /** fbj.a(device, egd) for 80030004: only a request byte of 1 is answered, here always with "not VIP" (0). */
+  /** For 80030004: only a request byte of 1 is answered, here always with "not VIP" (0). */
   private suspend fun onVipEvent(event: SampleEvent) {
     val asked = DataSyncBytes.readInt32(event.data)
     if (asked != 1) {

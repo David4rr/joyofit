@@ -1,8 +1,7 @@
 package com.joyodigitama.huaweiwear
 
 /**
- * The watch's cloud-config file check (Huawei Health 17.0.8.300 `mza` HwCloudFileConfigManager, `fft` FeatureConfigFileManager;
- * notes in the RE workspace, FEATURE_CONFIG_PROTOCOL.md). With Huawei Health's reverse capabilities the watch asks every 15 s,
+ * The watch's cloud-config file check (as Huawei Health 17.0.8.300 behaves). With Huawei Health's reverse capabilities the watch asks every 15 s,
  * as SampleConfig 900100007 action 2, whether `com.huawei.health_deviceFeature_config` (regional health features such as
  * ECG and blood pressure) has an update. JoyoFit has no newer file, so it answers "current" (action 2, data `"00"`, no
  * modify time), which is Huawei Health's answer when the watch is up to date; that ends the polling.

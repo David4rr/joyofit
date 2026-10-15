@@ -39,14 +39,14 @@ internal class HealthGoals(
 }
 
 /**
- * Builds the TaskBody the watch's Healthy Living app asks for (`bxc.getTaskData` / `ccj.b` in Huawei
- * Health 17.0.8.300). Task ids are `WearTaskEnum`'s wear ids; the cloud ids in brackets are what Huawei
+ * Builds the TaskBody the watch's Healthy Living app asks for as Huawei
+ * Health 17.0.8.300 builds it. Task ids are the wear ids; the cloud ids in brackets are what Huawei
  * calls them:
  *
  * | id | task | value / target |
  * |---|---|---|
  * | 1 | perfect clover (`status` = every other task done, `taskTarget` = their ids written one after the other) | |
- * | 2 | steps (`T100110`) | steps / goal; `progress` = `max(value / target, 0.1)` as `bxc.a(String, String)` |
+ * | 2 | steps (`T100110`) | steps / goal; `progress` = `max(value / target, 0.1)` |
  * | 3 | exercise minutes (`T100210`) | minutes / goal |
  * | 18 | sleep duration (`T121410`) | seconds / goal seconds |
  * | 17 | calorie intake (`T121310`) | kcal / goal |
@@ -146,7 +146,7 @@ internal object HealthModelBuilder {
       resultCode = 0,
       resultDes = "",
       recordDay = day.recordDay,
-      // bxc.a: allTasks is "1," + the wear id of every task of the day; completedTasks lists the finished ones.
+      // allTasks is "1," + the wear id of every task of the day; completedTasks lists the finished ones.
       allTasks = withClover.joinToString(",") { it.taskId.toString() },
       tasks = shown,
       completedTasks = all.filter { it.status > 0 }.joinToString(",") { it.taskId.toString() },
@@ -155,7 +155,7 @@ internal object HealthModelBuilder {
   }
 
   /**
-   * The three leaves of a watch without ExpandCapability 303 (`bxc.b(map, cloverProgress, list)`):
+   * The three leaves of a watch without ExpandCapability 303:
    * top = sport = steps value / target (capped at 1); left = sleep; right = mind.
    *
    * Huawei fills left from "wake up at the planned time" and right from the relaxation / average-pressure
@@ -170,7 +170,7 @@ internal object HealthModelBuilder {
   }
 
   /**
-   * Splits [body] into reports no bigger than the watch's `packageSize` (`ccj.d`): every page repeats the header
+   * Splits [body] into reports no bigger than the watch's `packageSize`: every page repeats the header
    * fields and clover, tasks fill the page until the next one would not fit. Huawei measures the size in hex
    * characters of the serialized bytes, so half of `packageSize` is used as the byte budget. `packageSize` <= 0
    * (old watches, or `msgVer` below 3) sends one report.

@@ -117,7 +117,7 @@ internal class P2pController(
     val service = current?.healthModel
     return mapOf(
       "supported" to (current != null && DeviceCaps.expandCapability(37)),
-      "gate" to "ExpandCapability 37 (Huawei Health HL_PolicyControl.initSupportCapability)",
+      "gate" to "ExpandCapability 37",
       "gateSet" to DeviceCaps.expandCapability(37),
       "enabled" to settings.healthLivingEnabled,
       "registered" to (service != null),
@@ -148,7 +148,7 @@ internal class P2pController(
 
   fun coursesStatus(): Map<String, Any?> = mapOf(
     "enabled" to settings.experimentalCourses,
-    // iix.e() / iix.d() of Huawei Health: ExpandCapability 41 (intelligent run plan) or 169 (AI fitness plan).
+    // Huawei Health gates on ExpandCapability 41 (intelligent run plan) or 169 (AI fitness plan).
     "gate41" to DeviceCaps.expandCapability(41),
     "gate169" to DeviceCaps.expandCapability(169),
     "gate295" to DeviceCaps.expandCapability(295),
@@ -157,7 +157,7 @@ internal class P2pController(
 
   /**
    * Pushes [course] to the watch's `in.huawei.fitness` app as `<messageId>courseInfo.bin` (see [CourseProtobuf]). The flow follows
-   * `iiz.e(FitWorkout, ...)`; nothing of it has been seen on a watch, so every step is logged and the result reports what the
+   * Huawei Health's behaviour; nothing of it has been seen on a watch, so every step is logged and the result reports what the
    * watch said, including the body of its answer message.
    */
   suspend fun pushCourse(course: RunningCourse): Map<String, Any?> {
@@ -169,7 +169,7 @@ internal class P2pController(
     val current = stack ?: throw WearException(ErrorCodes.UNSUPPORTED, "The watch does not list the P2P service (34/01)")
     val gate41 = DeviceCaps.expandCapability(41)
     val gate169 = DeviceCaps.expandCapability(169)
-    log("Courses: gates ExpandCapability 41=$gate41 169=$gate169 295=${DeviceCaps.expandCapability(295)} (Huawei Health iix.e()/iix.d(): 41 or 169)")
+    log("Courses: gates ExpandCapability 41=$gate41 169=$gate169 295=${DeviceCaps.expandCapability(295)} (Huawei Health: 41 or 169)")
     if (!gate41 && !gate169) {
       throw WearException(ErrorCodes.UNSUPPORTED, "The watch sets neither ExpandCapability 41 nor 169, the bits Huawei Health requires before it pushes a course")
     }

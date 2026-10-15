@@ -283,7 +283,7 @@ Answers to the other questions:
 
 Notes for you when answering:
 
-- Satellite-assist (AGPS) downloads go from the phone to Huawei (`hicloud.com`) and Broadcom (`glpals.com`) at the watch's request. JoyoFit adds no location or ID, but the watch chooses the path, so that is why approximate location is declared as shared above, and the server sees the IP address. If you would rather not declare that, the safe alternative is to say it is not collected only after you confirm what the watch puts in that path.
+- Satellite-assist (AGPS): at the watch's request the phone downloads the public Broadcom LTO file from the fixed address `https://gllto.glpals.com/7day/v6/latest/lto.dat` (plain GET, no location, no ID, no app identification). That server sees the IP address. JoyoFit does not contact Huawei servers; any other assist data the watch asks for is declined. The address is fixed in the app, so this download carries no location and does not change the declarations above.
 - Cloudflare Workers logs request metadata (URL, status, IP). This is operational logging by the infrastructure provider and not declared as a separate data type.
 - If you change what the app uploads, update this table, `site/src/Privasi.tsx` and the in-app Cloud text together.
 

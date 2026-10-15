@@ -1,4 +1,4 @@
-// Layouts from Huawei Health 17.0.8.300: HwSyncWeightManager (nkj.e / nkj.d / nkj.c(egd)), HealthGlanceHelper (irw.a, ird) and
+// Layouts as Huawei Health 17.0.8.300 behaves on the wire (weight sync rows, health glance JSON) and
 // the dictionary field ids from assets/dict_config.json (10006 bodyWeight 2004, bodyFatRate 2001, basalMetabolism 2024;
 // 500018 basalMetabolism 500018055). UNVERIFIED on the Fit 4 Pro.
 package com.joyodigitama.huaweiwear
@@ -51,7 +51,7 @@ internal object BodyMetricsCodec {
   const val GLANCE_WATCH_PKG = "hw.watch.health.healthcheck"
   const val EVENT_GLANCE = 80030006
 
-  /** nkj.e(list, data): one row, values are 8-byte little-endian doubles (`ego.e(double)`); unknown values are left out. */
+  /** One row; values are 8-byte little-endian doubles; unknown values are left out. */
   fun weightRow(weightKg: Double, tsMs: Long, bodyFatPct: Double?, basalKcal: Double?, modifyMs: Long): DictRow {
     val values = ArrayList<DictValue>()
     values += DictValue(KEY_BODY_WEIGHT, DataSyncBytes.doubleLe(weightKg))
@@ -60,14 +60,14 @@ internal object BodyMetricsCodec {
     return DictRow(tsMs, tsMs, modifyMs, values)
   }
 
-  /** nkj.d(efw): row with the 4-byte big-endian kcal (`ego.i(int)`). */
+  /** Row with the 4-byte big-endian kcal. */
   fun restingRow(kcal: Int, startMs: Long, endMs: Long, modifyMs: Long): DictRow =
     DictRow(startMs, endMs, modifyMs, listOf(DictValue(KEY_RESTING, DataSyncBytes.int32(kcal))))
 
   /**
-   * ird (Gson, declaration order, null fields omitted): bloodPressureSource, bloodPressureTimestamp, bodyMassIndex,
+   * Health glance JSON (declaration order, null fields omitted): bloodPressureSource, bloodPressureTimestamp, bodyMassIndex,
    * diastolicPressure, fatPercentageTimestamp, fatPercentage, systolicPressure, height, weight, weightTimestamp.
-   * BMI is weight / (height / 100)^2 rounded to one decimal, only when both are known (irw.i).
+   * BMI is weight / (height / 100)^2 rounded to one decimal, only when both are known.
    */
   fun glance(data: BodyMetricsData, weightKg: Double?, heightCm: Int?): Map<String, Any?> {
     val out = LinkedHashMap<String, Any?>()

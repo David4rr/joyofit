@@ -3,7 +3,7 @@
  * Wire layout and what was verified: protocol/README.md, "Editing a face's options".
  */
 
-/** The edit modes of Huawei Health's `DIAL_EDIT_MODE_*`. */
+/** The edit modes of Huawei Health's face editor. */
 export const FACE_EDIT_MODES = {
   style: 0,
   background: 1,

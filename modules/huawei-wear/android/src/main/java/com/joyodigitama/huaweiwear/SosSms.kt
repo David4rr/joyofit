@@ -22,7 +22,7 @@ internal class SosReadiness(
   /** False in the Google Play build, whose manifest has no SEND_SMS (see [Distribution]). */
   val buildCanSendSms: Boolean = true,
 ) {
-  /** Every reason the SMS cannot go out, in the order Huawei Health checks them (`nev.onDataReceived`) plus the user switch. */
+  /** Every reason the SMS cannot go out, in the order Huawei Health checks them plus the user switch. */
   fun blockers(): List<String> = buildList {
     if (!buildCanSendSms) add("this version of JoyoFit (Google Play) cannot send text messages")
     if (!relayEnabled) add("the SOS SMS relay is switched off in JoyoFit")
@@ -34,7 +34,7 @@ internal class SosReadiness(
   val ready: Boolean get() = blockers().isEmpty()
 }
 
-/** Collects the per-part results of a multipart SMS (`nev.2` waits for the last part; here every part must succeed). */
+/** Collects the per-part results of a multipart SMS (every part must succeed). */
 internal class SmsDispatchTracker(private val parts: Int, private val onDone: (Boolean) -> Unit) {
   private val reported = BooleanArray(parts)
   private var failed = false

@@ -5,9 +5,8 @@ import java.time.ZoneId
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
 
 /**
- * Byte level of service 0x32 (menstrual calendar), written from Huawei Health 17.0.8.300 `neh`
- * (HwMenstrualManager), `nec` (HwMenstrualHelper) and `nej`. Static analysis only: none of it has been
- * seen on the wire yet, so every send and receive is logged.
+ * Byte level of service 0x32 (menstrual calendar), modelled on the behaviour of Huawei Health 17.0.8.300.
+ * None of it has been on the wire yet, so every send and receive is logged.
  *
  * Commands (phone -> watch unless noted):
  *  - `01` switches: tag `01` one byte, a bitfield (bit 0 master, 1 period start, 2 period end, 3 fertile start,
@@ -39,13 +38,13 @@ internal object MenstrualCodec {
   /** Error value Huawei Health puts in tag `7F` when it has no data (`150001`). */
   const val ERROR_NO_DATA = 150001
 
-  /** ExpandCapability: menstrual flow as dictionary points (Huawei Health `neh.k`). */
+  /** ExpandCapability: menstrual flow as dictionary points. */
   const val CAP_DICTIONARY = 174
 
-  /** ExpandCapability gating the easy-pregnancy switch bit (`neh.o`, `OldToNewMotionPath.SPORT_TYPE_INDOOR_BIKE`). */
+  /** ExpandCapability gating the easy-pregnancy switch bit. */
   const val CAP_EASY_PREGNANCY_SWITCH = 265
 
-  /** Switches of `0x32/01`, bit `n` is `1 shl n` (`neh.c`). */
+  /** Switches of `0x32/01`, bit `n` is `1 shl n`. */
   data class Switches(
     val master: Boolean = false,
     val periodStart: Boolean = true,
@@ -111,7 +110,7 @@ internal object MenstrualCodec {
     )
   }
 
-  /** `0x32/03` answer, `neh.b(...)`. [entries] is `CycleModel.entries`, empty means "no data". */
+  /** `0x32/03` answer. [entries] is `CycleModel.entries`, empty means "no data". */
   fun cycleList(
     entries: List<CycleEntry>,
     request: CycleRequest,
@@ -127,7 +126,7 @@ internal object MenstrualCodec {
     val list = HuaweiTLV()
     for (e in entries) {
       val start = CycleModel.daySeconds(e.start, zone)
-      // nec.c: a cycle is finished when start + length < now, upcoming when start > now.
+      // A cycle is finished when start + length < now, upcoming when start > now.
       if (start + e.lengthDays * 86_400L < nowSec) finished++
       if (start > nowSec) future++
       val item = HuaweiTLV()
@@ -143,7 +142,7 @@ internal object MenstrualCodec {
       .put(0x01, byteArrayOf(finished.coerceAtMost(255).toByte(), future.coerceAtMost(255).toByte()))
       .put(0x82, list)
       .put(0x09, modifiedSec.toInt())
-    // neh.b(boolean[], int[], ...): zArr = {watch asked 0b, watch asked 0a}; 0a carries the cycle length, 0b the period length.
+    // zArr = {watch asked 0b, watch asked 0a}; 0a carries the cycle length, 0b the period length.
     if (request.tag0b) out.put(0x0A, averageCycleDays.toByte())
     if (request.tag0a) out.put(0x0B, averagePeriodDays.toByte())
     return out
@@ -169,14 +168,14 @@ internal object MenstrualCodec {
     return tlv.getAsInteger(0x01, 0)
   }
 
-  /** Frames needed for [count] days at [frameSize] per frame (`neh.d`: `ceil(size / frameSize)`). */
+  /** Frames needed for [count] days at [frameSize] per frame (`ceil(size / frameSize)`). */
   fun frameCount(count: Int, frameSize: Int): Int = if (frameSize <= 0) 0 else (count + frameSize - 1) / frameSize
 
   /** `0x32/06` answer: tag `04` = frame count, or the error tag when there is nothing to send. */
   fun frameCountAnswer(frames: Int): HuaweiTLV =
     if (frames <= 0) noData() else HuaweiTLV().put(0x04, frames.coerceAtMost(255).toByte())
 
-  /** `0x32/07` answer for frame [index] of [days] split into frames of [frameSize] (`neh.e(int)`); null when the index is out of range. */
+  /** `0x32/07` answer for frame [index] of [days] split into frames of [frameSize]; null when the index is out of range. */
   fun bodyStatusFrame(index: Int, days: List<Pair<LocalDate, Int>>, frameSize: Int, zone: ZoneId): HuaweiTLV? {
     if (index < 0 || frameSize <= 0) return null
     val from = index * frameSize
@@ -204,17 +203,17 @@ internal object MenstrualCodec {
   const val FIELD_FLOW = 400018149L
   const val FIELD_CRAMPS = 400018771L
 
-  /** Value of a dictionary field: a 4-byte big-endian int (`ego.i(int)` in `neb.d`). */
+  /** Value of a dictionary field: a 4-byte big-endian int. */
   fun dictValue(value: Int): ByteArray = byteArrayOf((value ushr 24).toByte(), (value ushr 16).toByte(), (value ushr 8).toByte(), value.toByte())
 
-  /** Most rows Huawei Health answers a dictionary query with (`neb.b`). */
+  /** Most rows Huawei Health answers a dictionary query with. */
   const val DICT_MAX_ROWS = 10
 
   private const val DAY_MS = 86_400_000L
 
   /**
    * Rows for logged days overlapping [startMs]..[endMs] (`endMs` 0 = open) and changed after [modifyMs] (unix ms), oldest first,
-   * at most [DICT_MAX_ROWS]. Like Huawei Health each (day, field) is its own row (`neb.d`: one `ege` per `HiHealthData`), the row
+   * at most [DICT_MAX_ROWS]. Like Huawei Health each (day, field) is its own row (one row per day and field), the row
    * spanning the local day; the day's end is `start + 24 h - 1 ms` [INFERENCE].
    */
   fun dictionaryRows(days: List<LoggedDay>, startMs: Long, endMs: Long, modifyMs: Long, zone: ZoneId): List<DictRow> {

@@ -30,7 +30,7 @@ internal class RawPacket(params: HuaweiPacket.ParamsProvider, service: Int, comm
  * linkage, but GpsAndTime `18/02` `{01: 1}` about every 20 s while the workout runs ("send me the phone's GPS").
  *  - Phone GPS (GB `AsynchronousResponse.handleGpsRequest`, `SendGpsDataRequest`): answer `18/02 {7F: 100000}`, read the
  *    watch's wanted fields once (`18/01`), then stream every phone fix as `18/03 81{82{...}}` until `{01: 0}`.
- *  - Live numbers (Huawei Health `HwHeartRateManager.openOrCloseReport`, `HwWorkoutServiceUtils.parseWorkoutReportPlayData`):
+ *  - Live numbers (as Huawei Health does):
  *    open the realtime report with `17/12 {01: 1}`; the watch pushes `17/11`, decoded into [LiveWorkout].
  */
 internal class WorkoutLink(
@@ -100,7 +100,7 @@ internal class WorkoutLink(
     }
   }
 
-  // Workout status poll (17/03, Huawei Health `HwLinkageServiceManager.getOperator`): the only signal an indoor workout
+  // Workout status poll (17/03, Huawei Health): the only signal an indoor workout
   // gives. Request `81 00`; the answer's 81 holds 02 trainMonitorState, 03 operatorType (1 start, 2 pause, 3 resume,
   // 4 stop), 04 sportType, 06 workoutType.
 
