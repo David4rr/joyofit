@@ -1,6 +1,10 @@
 {
-  "platforms": ["android"],
+  "platforms": ["android", "ios"],
   "android": {
     "modules": ["com.joyodigitama.huaweiwear.HuaweiWearModule"]
+  },
+  "ios": {
+    "modules": ["HuaweiWearModule"],
+    "appDelegateSubscribers": ["HuaweiWearAppDelegateSubscriber"]
   }
 }
