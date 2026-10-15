@@ -318,13 +318,14 @@ internal class WearLink(
     }
   }
 
+  /** Android's name for [device]; when it has none cached (it sometimes drops it), the name remembered for that watch's address. */
   @SuppressLint("MissingPermission")
   private fun bondedName(device: BluetoothDevice): String? =
     try {
       device.name
     } catch (e: SecurityException) {
       null
-    }
+    } ?: settings.watchName.takeIf { settings.watchAddress.equals(device.address, ignoreCase = true) }
 
   /** True when Android knows [device] as Bluetooth LE only, so it has no Classic side to open an RFCOMM socket on. */
   @SuppressLint("MissingPermission")

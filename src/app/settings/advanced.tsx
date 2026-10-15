@@ -6,7 +6,7 @@ import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { Section, Screen } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
-import { ensureBluetoothScan } from '@/features/device/useBluetoothPermission';
+import { ensureBluetoothConnect, ensureBluetoothScan } from '@/features/device/useBluetoothPermission';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage } from '@/format';
 import { useColors } from '@/theme';
@@ -31,7 +31,7 @@ export default function AdvancedScreen() {
   const toggleForceBle = async (enabled: boolean) => {
     setBleError(null);
     try {
-      if (enabled && (await ensureBluetoothScan()) !== 'granted') {
+      if (enabled && ((await ensureBluetoothConnect()) !== 'granted' || (await ensureBluetoothScan()) !== 'granted')) {
         setBleError('Nearby devices permission denied: the watch is tried at its paired address without a scan.');
       }
       await HuaweiWear.setForceBle(enabled);

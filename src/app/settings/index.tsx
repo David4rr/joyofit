@@ -98,6 +98,13 @@ const GROUPS: readonly SettingsGroup[] = [
     title: 'Advanced',
     data: [
       { title: 'Log', subtitle: 'Watch traffic and events', icon: 'terminal', href: '/settings/log' },
+      {
+        title: 'Experimental',
+        subtitle: 'Bluetooth LE link, running courses',
+        icon: 'flask',
+        tint: 'workouts',
+        href: '/settings/advanced',
+      },
       { title: 'About', icon: 'information-circle', href: '/settings/about' },
     ],
   },

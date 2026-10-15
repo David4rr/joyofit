@@ -30,6 +30,7 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -84,10 +85,13 @@ internal class BleTransport(
   /** ATT MTU in force; one write carries at most this minus the 3 byte ATT header. 23 until the watch agrees to more. */
   @Volatile private var attMtu = DEFAULT_ATT_MTU
 
-  // Connect phase: completed by the GATT callbacks, failed when the link drops or [close] runs.
-  private val linkUp = CompletableDeferred<Unit>()
-  private val mtuDone = CompletableDeferred<Unit>()
-  private val servicesDone = CompletableDeferred<Unit>()
+  // Connect phase of the current attempt: completed by the GATT callbacks, failed when the link drops or [close] runs.
+  @Volatile private var linkUp = CompletableDeferred<Unit>()
+  @Volatile private var mtuDone = CompletableDeferred<Unit>()
+  @Volatile private var servicesDone = CompletableDeferred<Unit>()
+
+  /** GATT clients of earlier attempts: whatever they still report must not touch the current attempt. */
+  private val staleClients = ConcurrentHashMap.newKeySet<BluetoothGatt>()
 
   /** The GATT status of the one write or descriptor write in flight; Android allows only one at a time. */
   private val operation = AtomicReference<CompletableDeferred<Int>?>(null)
@@ -102,6 +106,7 @@ internal class BleTransport(
 
   private val callback = object : BluetoothGattCallback() {
     override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
+      if (g in staleClients) return
       step("GATT connection state ${stateText(newState)}, ${statusText(status)}")
       if (newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS) {
         linkUp.complete(Unit)
@@ -111,12 +116,14 @@ internal class BleTransport(
     }
 
     override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
+      if (g in staleClients) return
       step("ATT MTU changed to $mtu, ${statusText(status)}")
       if (status == BluetoothGatt.GATT_SUCCESS) attMtu = mtu
       mtuDone.complete(Unit)
     }
 
     override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
+      if (g in staleClients) return
       step("GATT service discovery done, ${statusText(status)}")
       if (status == BluetoothGatt.GATT_SUCCESS) {
         servicesDone.complete(Unit)
@@ -184,17 +191,7 @@ internal class BleTransport(
   @SuppressLint("MissingPermission")
   private suspend fun open() {
     val target = findTarget()
-    step("GATT connect to ${target.address} (transport LE, autoConnect off)")
-    val client = target.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
-      ?: throw IOException("Android did not create a GATT client")
-    gatt.set(client)
-    // close() may have run before the client was published; it could not release it then.
-    if (closed.get()) {
-      release()
-      throw IOException("Disconnected while connecting")
-    }
-
-    linkUp.await()
+    val client = connectWithRetry(target)
     step("GATT connected")
 
     // Best effort: a watch that never answers must not hold the connect up. The frames are cut to what the ATT MTU carries
@@ -230,6 +227,42 @@ internal class BleTransport(
 
     enableNotifications(client, read)
     step("GATT notifications on")
+  }
+
+  /**
+   * Opens the GATT link, trying again when an attempt fails before the link is up: the first two without autoConnect (what
+   * nRF Connect does), the last with it, which waits for the watch to be connectable. Which variant connected is logged.
+   */
+  @SuppressLint("MissingPermission")
+  private suspend fun connectWithRetry(target: BluetoothDevice): BluetoothGatt {
+    var attempt = 0
+    while (true) {
+      attempt++
+      val autoConnect = attempt == CONNECT_ATTEMPTS
+      linkUp = CompletableDeferred()
+      mtuDone = CompletableDeferred()
+      servicesDone = CompletableDeferred()
+      synchronized(stateLock) { lostBeforeReady = null }
+      step("GATT connect to ${target.address}, attempt $attempt of $CONNECT_ATTEMPTS (transport LE, autoConnect ${if (autoConnect) "on" else "off"})")
+      val client = target.connectGatt(context, autoConnect, callback, BluetoothDevice.TRANSPORT_LE, BluetoothDevice.PHY_LE_1M_MASK)
+        ?: throw IOException("Android did not create a GATT client")
+      gatt.set(client)
+      // close() may have run before the client was published; it could not release it then.
+      if (closed.get()) {
+        release()
+        throw IOException("Disconnected while connecting")
+      }
+      try {
+        linkUp.await()
+        step("GATT link up on attempt $attempt: variant autoConnect ${if (autoConnect) "on" else "off"}, PHY LE 1M")
+        return client
+      } catch (e: IOException) {
+        if (closed.get() || attempt >= CONNECT_ATTEMPTS) throw e
+        step("GATT attempt $attempt failed (${e.message}); trying again in $RETRY_DELAY_MS ms")
+        releaseClient()
+        delay(RETRY_DELAY_MS)
+      }
+    }
   }
 
   /**
@@ -382,7 +415,7 @@ internal class BleTransport(
         for (frame in frames) {
           var offset = 0
           while (offset < frame.size) {
-            val size = minOf(frame.size - offset, maxOf(attMtu - ATT_HEADER_BYTES, DEFAULT_ATT_MTU - ATT_HEADER_BYTES))
+            val size = minOf(frame.size - offset, maxOf(attMtu - ATT_HEADER_BYTES, DEFAULT_ATT_MTU - ATT_HEADER_BYTES), MAX_ATTRIBUTE_BYTES)
             val chunk = if (offset == 0 && size == frame.size) frame else frame.copyOfRange(offset, offset + size)
             Log.i(LOGCAT_TAG, "TX ${chunk.size} bytes ${headHex(chunk)}")
             val status = gattOperation("write", WRITE_TIMEOUT_MS) {
@@ -453,7 +486,14 @@ internal class BleTransport(
   @SuppressLint("MissingPermission")
   private fun release() {
     reader.shutdown()
+    releaseClient()
+  }
+
+  /** Drops the GATT client only; the connect retry uses it between attempts. */
+  @SuppressLint("MissingPermission")
+  private fun releaseClient() {
     val client = gatt.getAndSet(null) ?: return
+    staleClients.add(client)
     try {
       client.disconnect()
     } catch (ignored: SecurityException) {
@@ -473,7 +513,14 @@ internal class BleTransport(
     const val LOGCAT_TAG = "JoyoFitBle"
 
     /** How long the LE scan waits for the watch before falling back to the bonded address. */
-    const val SCAN_MS = 12_000L
+    const val SCAN_MS = 6_000L
+
+    /** Attempts at opening the link (the last one with autoConnect), and the pause between two of them. */
+    const val CONNECT_ATTEMPTS = 3
+    const val RETRY_DELAY_MS = 1_500L
+
+    /** Android refuses a characteristic value longer than this, whatever the ATT MTU. */
+    const val MAX_ATTRIBUTE_BYTES = 512
 
     /** What Android asks for by default; the watch answers with what it supports. */
     const val REQUESTED_MTU = 512

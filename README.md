@@ -41,13 +41,14 @@ No watch to test with, or your model is not listed? The [Dukung jam](https://fit
 
 ## How it talks to the watch
 
-The Fit 4 Pro (and the other Classic watches) use **Bluetooth Classic RFCOMM**, not BLE GATT. This is why the earlier BLE explorer
-never found a usable channel. Huawei and Honor bands speak the same packet protocol over **Bluetooth LE GATT** (service `0xFE86`,
-write `FE01`, notifications `FE02`; Honor Band 7, 9 and 10 use Honor's own service), which `BleTransport` carries; that path is
-experimental and has not been tried on a real band. `WatchModels.kt` picks the transport per model. See [`protocol/README.md`](protocol/README.md) for the frame format,
+The Fit 4 Pro (and the other Classic watches) use **Bluetooth Classic RFCOMM** by default. Huawei and Honor bands speak the same packet
+protocol over **Bluetooth LE GATT** (service `0xFE86`, write `FE01`, notifications `FE02`; Honor Band 7, 9 and 10 use Honor's own
+service), which `BleTransport` carries. The Fit 4 Pro also exposes that service over LE: with the developer switch below, link params,
+HiChain3 auth, battery and an activity sync all ran over GATT on a real watch (see `protocol/README.md`, Observations). `WatchModels.kt`
+picks the transport per model. See [`protocol/README.md`](protocol/README.md) for the frame format,
 the commands used, and how the app picks an auth path.
 
-**Developer switch: Bluetooth LE link.** Settings, Advanced, Experimental has a switch that makes the next connect open GATT (`BleTransport`)
+**Developer switch: Bluetooth LE link.** Settings, Advanced, Experimental (the Experimental row is in the Advanced group) has a switch that makes the next connect open GATT (`BleTransport`)
 whatever the model's own link is. It exists to find out whether a Classic watch such as the Fit 4 Pro also speaks the protocol over LE, which
 an iOS port (CoreBluetooth only) would need. It scans for the watch's LE address (service `FE86`, the bonded name, the bonded address; needs
 the Nearby devices permission, which the switch asks for) and falls back to the bonded address. Default off. Every scan result, GATT step

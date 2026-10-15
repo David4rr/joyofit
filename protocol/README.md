@@ -758,16 +758,30 @@ in Android Bluetooth settings.
 
 So Gadgetbridge's HiChain3 path works unchanged on the Fit 4.
 
-### 2026-10-16: Bluetooth LE attempt, Watch Fit 4 Pro (`HUAWEI WATCH FIT 4 Pro-40A`)
+### 2026-10-16: Bluetooth LE, Watch Fit 4 Pro (`HUAWEI WATCH FIT 4 Pro-40A`), firmware 6.1.0.117(SP20C00M05): works
 
-Phone: Xiaomi 15T Pro, Android 16, JoyoFit's developer LE link (`BleTransport`, `JoyoFitBle` logcat tag). The watch was bonded over Classic
-and connected to the phone (HFP).
+Phone: Xiaomi 15T Pro, Android 16, JoyoFit's developer LE link (`BleTransport`, `JoyoFitBle` logcat tag). The watch was bonded over Classic.
+Android reports it as `DEVICE_TYPE_DUAL` with the identity address equal to the Classic one.
 
-- Android reports the bonded watch as `DEVICE_TYPE_DUAL` with identity address equal to its Classic address. Its cached UUIDs are Classic
-  only: `82ff3820-8411-400c-b85a-55bdb32cf060` (the Huawei SDP record) and `65847aa1-102a-05e1-43b6-e2a3965be547`; `0000fe86` is not there.
-- A GATT connect (`TRANSPORT_LE`, no autoConnect) to that address ended after 30 s with GATT status 147 (connection failed to establish),
-  three times: from JoyoFit, from an `app_process` helper, and after dropping the Classic link with `BluetoothDevice.disconnect()`. A
-  100 s `autoConnect` attempt never connected either. So at that address the watch answered no LE connection request in any of these states.
-- No LE scan could be read: JoyoFit's scan needs the Nearby devices permission, which `pm grant` refused on this phone (MIUI), and scan
-  callbacks never fired from the adb shell process. Whether the watch advertises `FE86` is therefore not established. Nothing past GATT
-  (link params, auth, battery, steps) ran over LE.
+- **Advertising.** An unfiltered scan (screen on) sees the watch at its Classic/identity address, connectable. Raw advertisement:
+  flags `18`, service data for 16-bit UUID `0xFDEE` (`0101010f01` at one sample, `0101000f01` at another), TX power 0, and the complete
+  local name `HUAWEI WATCH FIT 4 Pro-40A`. `FE86` is not advertised. It is only in the GATT database, so a scan has to match the name
+  (or the `FDEE` service data), not a service UUID filter.
+- **GATT** (`connectGatt` with `TRANSPORT_LE`, no autoConnect, PHY 1M, no Android LE bonding requested): connected in about
+  0.4 s, ATT MTU 517 after a request for 512. Services: `1801`, `1800`, `3802` (`4a02`), `180F` Battery (`2a19`), `FE86`, `180D` Heart Rate,
+  `1812` HID, `cc353442-be58-4ea2-876e-11d8d6976366` (`c551c36a-0377-4a29-9657-74ffb655a188`). `FE86` holds `FE01` (write without response,
+  0x04), `FE02` (notify, 0x10), and a second pair `FE05` (write without response) and `FE06` (notify) that nothing uses yet. Writing the
+  `FE02` CCCD worked with no encryption.
+- **Protocol over it.** LinkParams: protocolVersion 2, authVersion 1, authAlgo 0, encryptMethod 0 (AES-CBC), bondState 0, mtu 514,
+  sliceSize 1022. SecurityNegotiation returned authType 6 and the HiChain3 path ran with the key stored from the Classic bind: op2 steps 1 to 3,
+  bind finished in 0.35 s, with no prompt on the watch. ProductInfo, SetTime (drift 1 s), battery (37 %), SupportedServices (same 27 as over
+  RFCOMM), ExpandCapability, the P2P exchange, `sequence_data` and `rrisqi_data.bin` file downloads, and an activity sync (99 samples, 25 sleep
+  records) all worked. A first-time bind over LE (a watch that never bound with this phone) was not tried.
+- **Android write limit.** A 514-byte HiChain frame is one ATT write of `mtu - 3`, but Android rejects any characteristic value over 512
+  bytes (`value should not be longer than max length of an attribute value`), so writes are cut at 512.
+- **Earlier failures.** Before the owner connected to the watch with nRF Connect, `connectGatt` to the same address failed after 30 s with
+  GATT status 147 from JoyoFit, from an `app_process` helper, after dropping the Classic link, and with autoConnect for 100 s. After nRF
+  Connect had connected, the same call worked on every attempt (five connects, one of them right after waking the screen) with the Classic
+  link to the phone still up. What
+  changed in the stack is not known; it may be that Android had not yet seen the watch advertise. [INFERENCE] An iOS app always scans before
+  it connects, so it is not affected.
