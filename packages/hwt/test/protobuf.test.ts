@@ -125,7 +125,7 @@ describe("version 2 schema", () => {
       expect(problems).toEqual([]);
       expect(JSON.stringify(describeLayout(getLayout(wf)))).not.toContain("$unknown");
     }
-    expect(checked).toBeGreaterThanOrEqual(15);
+    expect(checked).toBeGreaterThanOrEqual(7);
   });
 
   test("named JSON -> protobuf reproduces every version 2 layout byte-for-byte", () => {

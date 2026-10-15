@@ -10,8 +10,10 @@ const all = parsedFixtures();
 
 describe("fixtures", () => {
   test("there are fixtures for every format generation we claim to support", () => {
-    expect(all.filter((f) => f.name.startsWith("fit4pro/")).length).toBeGreaterThanOrEqual(10);
-    expect(all.length).toBeGreaterThanOrEqual(18);
+    expect(all.filter((f) => f.name.startsWith("fit4pro/")).length).toBeGreaterThanOrEqual(4);
+    expect(all.length).toBeGreaterThanOrEqual(10);
+    const kinds = new Set(all.map((f) => `${f.pkg.description.screen}/v${f.pkg.watchface!.version}/${f.pkg.container}`));
+    expect([...kinds].sort()).toEqual(["HWHD02/v1/flat", "HWHD07/v2/flat", "HWHD09/v2/flat", "HWHD09/v2/nested", "HWHD13/v2/flat"]);
   });
 });
 
@@ -45,11 +47,11 @@ describe.each(all)("round trip $name", ({ bytes, pkg }) => {
 
 describe("editing keeps everything else", () => {
   test("changing the title rewrites only description.xml", () => {
-    const sample = all.find((f) => f.name === "fit4pro/NikeCombo.hwt")!;
+    const sample = all.find((f) => f.name === "fit4pro/FunctionalForHikes.hwt")!;
     const pkg = readHwt(sample.bytes);
-    pkg.description.title = "NikeCombo edited";
+    pkg.description.title = "FunctionalForHikes edited";
     const out = readHwt(writeHwt(pkg));
-    expect(out.description.title).toBe("NikeCombo edited");
+    expect(out.description.title).toBe("FunctionalForHikes edited");
     expect(out.description.titleCn).toBe(sample.pkg.description.titleCn);
     for (const e of sample.pkg.archive.entries) {
       if (e.name === "description.xml") continue;
@@ -66,8 +68,8 @@ describe("editing keeps everything else", () => {
 });
 
 describe("container kinds", () => {
-  test("GT3 samples are nested zips whose watchface.bin parses", () => {
-    const nested = all.filter((f) => f.name.includes("gt3"));
+  test("nested samples are zips whose watchface.bin parses", () => {
+    const nested = all.filter((f) => f.pkg.container === "nested");
     expect(nested.length).toBeGreaterThan(0);
     for (const f of nested) {
       expect(f.pkg.container).toBe("nested");

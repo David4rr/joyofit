@@ -11,19 +11,19 @@ function list(value: unknown): NamedObject[] {
 }
 
 describe("version 1 layouts (typed elements)", () => {
-  test("SimpleItalic: 2 static images, 8 glyph tables, 1 hand", () => {
-    const els = readV1Elements(getLayout(sample("unlicensed/SimpleItalic.hwt").watchface!));
+  test("SynthV1Glyphs: 2 static images, 8 glyph tables, 1 hand", () => {
+    const els = readV1Elements(getLayout(sample("synthetic/SynthV1Glyphs.hwhd02.hwt").watchface!));
     expect(els.map((e) => e.kind)).toEqual(["image", "image", "glyphs", "glyphs", "glyphs", "glyphs", "glyphs", "glyphs", "glyphs", "glyphs", "hand"]);
     expect(els[0]).toEqual({ type: 0, kind: "image", image: "002", x: 0, y: 0 });
     const hourHigh = els[2]!;
     expect(hourHigh).toMatchObject({ kind: "glyphs", x: 136, y: 100, valueType: 59 });
     if (hourHigh.kind === "glyphs") expect(hourHigh.table.slice(0, 4)).toEqual(["004", "005", "006", ""]);
     const hand = els[10]!;
-    expect(hand).toMatchObject({ kind: "hand", image: "055", valueType: 154, startAngle: 0, endAngle: 360, pivot: { x: 13, y: 226 } });
+    expect(hand).toMatchObject({ kind: "hand", image: "014", valueType: 154, startAngle: 0, endAngle: 360, pivot: { x: 13, y: 226 } });
   });
 
-  test("Carrera: static background, 4 text labels, 6 hands with float angles", () => {
-    const els = readV1Elements(getLayout(sample("unlicensed/Carrera.hwt").watchface!));
+  test("SynthV1Hands: static background, 4 text labels, 6 hands with float angles", () => {
+    const els = readV1Elements(getLayout(sample("synthetic/SynthV1Hands.hwhd02.hwt").watchface!));
     expect(els.filter((e) => e.kind === "text")).toHaveLength(4);
     const hands = els.filter((e) => e.kind === "hand");
     expect(hands).toHaveLength(6);
@@ -49,9 +49,9 @@ describe("version 1 layouts (typed elements)", () => {
   });
 
   test("v1 root repeats the title strings after every element", () => {
-    const named = describeLayout(getLayout(sample("unlicensed/SimpleItalic.hwt").watchface!));
+    const named = describeLayout(getLayout(sample("synthetic/SynthV1Glyphs.hwhd02.hwt").watchface!));
     expect(list(named.element)).toHaveLength(11);
-    expect(named.title_en).toEqual(Array(11).fill("SimpleItalic"));
+    expect(named.title_en).toEqual(Array(11).fill("SynthGlyphs"));
   });
 });
 
@@ -69,10 +69,10 @@ describe("version 2 layouts (named view)", () => {
   });
 
   test("negative coordinates stored as uint32 read back signed", () => {
-    const named = describeLayout(getLayout(sample("fit4pro/NikeCombo.hwt").watchface!));
+    const named = describeLayout(getLayout(sample("other/FocusWGTru.gt6_46_pro.hwt").watchface!));
     const json = JSON.stringify(named);
-    expect(json).toContain('"x":-6');
-    expect(json).not.toContain("4294967290");
+    expect(json).toContain('"x":-108');
+    expect(json).not.toContain("4294967188");
   });
 
   test("every sample uses AMBIENT_ONLY layers for the always-on display and never AMBIENT_NORMAL", () => {
@@ -107,7 +107,7 @@ describe("image references", () => {
   });
 
   test("remapImageRefs rewrites every reference and keeps the layout decodable", () => {
-    const wf = sample("fit4pro/NikeCombo.hwt").watchface!;
+    const wf = sample("fit4pro/FunctionalForHikes.hwt").watchface!;
     const layout = decodeLayout(wf.layout, wf.version);
     const before = collectImageRefs(layout).map((r) => r.ref);
     remapImageRefs(layout, (i) => i + 1);
