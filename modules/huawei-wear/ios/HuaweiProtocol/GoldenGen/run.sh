@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 HERE=$PWD
 PKG=$(cd .. && pwd)
-JAVA_SRC=$(cd "$PKG/../../android/src/main/java" && pwd)
+JAVA_SRC=${JAVA_SRC:-$(cd "$PKG/../../android/src/main/java" && pwd)}
 OUT=${GOLDEN_OUT:-${TMPDIR:-/tmp}/huawei-golden-build}
 FIXTURES=$PKG/Tests/HuaweiProtocolTests/Fixtures
 

@@ -76,3 +76,11 @@ extension UInt8 {
     /// `0x%02x`, Kotlin `hex2()`.
     public var hex2: String { "0x" + (self < 16 ? "0" : "") + String(self, radix: 16) }
 }
+
+/// GB `HuaweiCoordinator.HuaweiDeviceType`. The Fit 4 Pro over Bluetooth LE is `.ble`.
+public enum HuaweiDeviceType: Int, Sendable {
+    case aw = 0
+    case br = 1
+    case ble = 2
+    case smart = 5
+}
