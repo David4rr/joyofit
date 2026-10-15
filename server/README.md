@@ -14,10 +14,10 @@ D1, with a raw-file endpoint into R2 for the future Huawei-export importer.
 All endpoints need `Cookie: <JoyoRogo session cookies>`; without a live session they answer `401`
 (`503` when JoyoRogo itself cannot be reached).
 
-Uploading is a JoyoRogo Founder benefit. `POST /v1/sync` and `POST /v1/imports` ask JoyoRogo's oRPC
+Uploading is a JoyoRogo Pro benefit. `POST /v1/sync` and `POST /v1/imports` ask JoyoRogo's oRPC
 `fitness/cloudAccess` (with the forwarded session cookies) and answer `402 {"error":"founder_required","paywall":true}`
-unless the account is Founder, or the JoyoRogo server has no paywall (self-host: the same `premiumUnlocked` rule
-JoyoRogo uses for its own Founder features). Reads (`GET`) stay open, so existing data is never locked away. If
+unless the account is Pro, or the JoyoRogo server has no paywall (self-host: the same `premiumUnlocked` rule
+JoyoRogo uses for its own Pro features). Reads (`GET`) stay open, so existing data is never locked away. If
 JoyoRogo cannot answer (including a `404` from a JoyoRogo that predates the procedure) the answer is `503`, never
 a guess. Deploy JoyoRogo with `fitness.cloudAccess` before this Worker.
 
@@ -84,7 +84,7 @@ for the service-binding path).
 ## Notes
 
 - Sessions are cached per isolate for 60 s; a session revoked in JoyoRogo keeps working here for up to
-  that long. Failures are never cached. The Founder answer is cached the same way (60 s when unlocked, 10 s
+  that long. Failures are never cached. The Pro answer is cached the same way (60 s when unlocked, 10 s
   when locked, so a fresh purchase is noticed quickly).
 - Deletions are not synced: the app never deletes rows, and the server has no delete endpoint yet.
 - The importer for the Huawei export does not exist yet; `imports.r2_key` and `status` are where it will

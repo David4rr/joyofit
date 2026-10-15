@@ -939,7 +939,7 @@ function Options() {
             </p>
             <ul className="mt-5 space-y-2.5 text-sm">
               {[
-                "Termasuk di JoyoRogo Premium (paket Founder)",
+                "Termasuk di JoyoRogo Premium (paket Pro)",
                 "Server kami yang urus, tanpa setup",
                 "Masuk dengan akun JoyoRogo yang sama",
               ].map((line) => (

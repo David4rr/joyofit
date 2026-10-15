@@ -10,7 +10,7 @@ import { useCloud } from '@/state/CloudProvider';
 import { HuaweiWear } from '@/wear';
 
 /** Where a sideloaded build sends someone to become Founder. */
-const FOUNDER_URL = 'https://joyorogo.com/founder?from=joyofit';
+const FOUNDER_URL = 'https://joyorogo.com/pro?from=joyofit';
 /**
  * The Play build shows no purchase link: Google Play's payments policy does not allow pointing to an external
  * checkout from inside the app. JoyoRogo's own Play build does the same (billing off, no checkout, no price).
@@ -28,9 +28,9 @@ export function CloudSection() {
   return (
     <Section title="Cloud" icon="cloud-upload">
       <AppText variant="caption" muted>
-        Cloud backup is part of JoyoRogo Founder. It backs up your steps, heart rate, SpO2, sleep and
+        Cloud backup is part of JoyoRogo Pro. It backs up your steps, heart rate, SpO2, sleep and
         workouts, including GPS tracks and the watch&apos;s Bluetooth address, to the JoyoFit cloud with
-        your JoyoRogo account. Off until you sign in with a Founder account; after that it uploads on
+        your JoyoRogo account. Off until you sign in with a Pro account; after that it uploads on
         its own, starting with your whole history. While signed
         in, JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. To delete cloud
         data, email dzulfikar@joyorogo.com (see fit.joyorogo.com/privasi). The app never reads from
@@ -47,12 +47,12 @@ export function CloudSection() {
           icon="lock-closed"
           action={
             CAN_LINK_TO_FOUNDER
-              ? { label: 'Become a Founder', onPress: () => void Linking.openURL(FOUNDER_URL) }
+              ? { label: 'Get Pro', onPress: () => void Linking.openURL(FOUNDER_URL) }
               : undefined
           }>
           {CAN_LINK_TO_FOUNDER
-            ? 'Cloud backup is part of JoyoRogo Founder. This account is not Founder yet, so nothing is uploaded. Your data stays on this phone, and anything already in the cloud stays readable.'
-            : 'Cloud backup is part of JoyoRogo Founder, which you can get in JoyoRogo. This account is not Founder yet, so nothing is uploaded. Your data stays on this phone, and anything already in the cloud stays readable.'}
+            ? 'Cloud backup is part of JoyoRogo Pro. This account is not Pro yet, so nothing is uploaded. Your data stays on this phone, and anything already in the cloud stays readable.'
+            : 'Cloud backup is part of JoyoRogo Pro, which you can get in JoyoRogo. This account is not Pro yet, so nothing is uploaded. Your data stays on this phone, and anything already in the cloud stays readable.'}
         </Notice>
       ) : null}
       {cloud.error ? <Notice tone="danger">{cloud.error}</Notice> : null}

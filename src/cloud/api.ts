@@ -36,7 +36,7 @@ export class CloudHttpError extends Error {
 export class CloudLockedError extends CloudHttpError {
   constructor() {
     super(402, 'founder_required', null);
-    this.message = 'Cloud backup is part of JoyoRogo Founder.';
+    this.message = 'Cloud backup is part of JoyoRogo Pro.';
   }
 }
 

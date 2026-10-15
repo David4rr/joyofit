@@ -341,11 +341,11 @@ separate Cloudflare Worker you deploy yourself ([`server/`](server/README.md): H
 app does not read from the cloud yet, and the Huawei-export importer is not written (the server already
 has `POST /v1/imports`, which stores a raw file in R2 and records an `imports` row for it).
 
-Uploading is a **JoyoRogo Founder** benefit. The Worker asks JoyoRogo (`fitness.cloudAccess`, with your session) and
-answers `402` with `paywall: true` to accounts that are not Founder; JoyoRogo servers without a paywall (self-host)
-count everyone as unlocked. Reads stay open. The app then shows that backup is part of Founder and stops uploading
+Uploading is a **JoyoRogo Pro** benefit. The Worker asks JoyoRogo (`fitness.cloudAccess`, with your session) and
+answers `402` with `paywall: true` to accounts that are not Pro; JoyoRogo servers without a paywall (self-host)
+count everyone as unlocked. Reads stay open. The app then shows that backup is part of Pro and stops uploading
 (no retry loop; coming back to the app or **Sync now** asks again). The sideload APK links to
-`joyorogo.com/founder`; the Play build shows the same text without a purchase link, as JoyoRogo's own Play build
+`joyorogo.com/pro`; the Play build shows the same text without a purchase link, as JoyoRogo's own Play build
 does.
 
 ```mermaid
