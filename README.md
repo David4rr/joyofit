@@ -63,6 +63,21 @@ adb logcat -s JoyoFitBle
 The probe pauses background mode, connects over LE, reads the battery and runs an activity sync, then restores the switch and background
 mode. The receiver requires `android.permission.DUMP`, so only the adb shell and the system can send it.
 
+**Bind lab.** The same receiver can authenticate over LE as a phone the watch has never seen, to learn what a first bind (an iPhone's) looks like
+without touching the binding the app holds. It uses its own session and a throwaway identity in separate preferences (`huawei_wear_lab_TAG_*`):
+
+```bash
+adb shell am broadcast -n com.joyodigitama.joyofit/com.joyodigitama.huaweiwear.BleProbeReceiver \
+  -a com.joyodigitama.joyofit.BLE_PROBE --es lab t1 --es stop negotiation   # or pin, step2
+adb shell am broadcast ... --es lab real                                      # the stored identity, reconnect only, every frame in full
+adb shell am broadcast ... --es lab t1 --ez commit true --ez adopt true      # a REAL bind
+```
+
+`stop negotiation` and `stop pin` only ask the watch questions. `step2` also sends HiChain operationCode 1 steps 1 and 2 and stops before the auth token
+is delivered. Without a stop, a lab identity that never bound completes the bind, which makes the watch drop the binding the app holds (it keeps one),
+so the lab refuses without `--ez commit true`; `--ez adopt true` then makes the lab identity the app's stored one so the app keeps working. Frames and the
+session's secrets are logged in full under `JoyoFitBle`.
+
 ```mermaid
 flowchart LR
   UI[Expo screens<br/>src/app] -- HuaweiWear JS API --> MOD[HuaweiWearModule.kt]

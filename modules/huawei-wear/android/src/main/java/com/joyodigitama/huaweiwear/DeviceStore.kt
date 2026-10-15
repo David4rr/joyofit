@@ -19,6 +19,23 @@ internal class DeviceStore(context: Context) {
 
   fun forDevice(address: String): DeviceIdentity = DeviceIdentity(address, prefs(address))
 
+  /** A throwaway client identity for the developer bind lab: its own auth key, fake MAC and android id, so the watch sees a new phone. */
+  fun forLab(address: String, tag: String): DeviceIdentity =
+    DeviceIdentity(address, appContext.getSharedPreferences("huawei_wear_lab_${tag}_" + address.uppercase().replace(":", ""), Context.MODE_PRIVATE))
+
+  /** Makes a bound lab identity the stored one: the watch keeps one credential, so after the lab bound it the old key is dead. */
+  fun adoptLab(address: String, tag: String) {
+    val lab = appContext.getSharedPreferences("huawei_wear_lab_${tag}_" + address.uppercase().replace(":", ""), Context.MODE_PRIVATE)
+    val editor = prefs(address).edit().clear()
+    for ((key, value) in lab.all) {
+      when (value) {
+        is String -> editor.putString(key, value)
+        is Boolean -> editor.putBoolean(key, value)
+      }
+    }
+    editor.commit()
+  }
+
   /** Drops the auth key, fake identity and bond flag so the next connect is a first-time bind. */
   fun forget(address: String) {
     prefs(address).edit().clear().commit()

@@ -41,6 +41,27 @@ internal object Timeouts {
   const val SYNC_DATA_MS = 15_000L
 }
 
+/** Where the developer bind lab ([BindLab]) ends an authentication on purpose; the steps after it are never sent. */
+internal enum class BindStop {
+  /** After LinkParams and SecurityNegotiation: only queries that change nothing on the watch. */
+  SECURITY_NEGOTIATION,
+
+  /** After the PinCode query, before the first HiChain message. */
+  PIN_CODE,
+
+  /** After HiChain operationCode 1 step 2 (the watch's returnCodeMac verified), before step 3 delivers the auth token. */
+  ISO_MAC_VERIFIED,
+}
+
+/** Bind lab options: [stopAfter] ends the authentication with an ERR_PROTOCOL; a lab also traces this session's secrets to the log. */
+internal class AuthLab(val stopAfter: BindStop?) {
+  fun reached(stage: BindStop) {
+    if (stage == stopAfter) throw WearException(ErrorCodes.PROTOCOL, "Bind lab stopped after $stage on purpose")
+  }
+
+  fun trace(events: WearEvents, message: String) = events.log(LogDirection.INFO, null, null, null, "Lab: $message")
+}
+
 /**
  * Port of the HuaweiSupportProvider.initializeDevice* chain:
  * LinkParams -> DeviceStatus -> SecurityNegotiation -> HiChain / HiChain Lite / normal auth.
@@ -54,6 +75,7 @@ internal class HuaweiAuthenticator(
   private val identity: DeviceIdentity,
   private val events: WearEvents,
   private val deviceType: HuaweiDeviceType = HuaweiDeviceType.BR,
+  private val lab: AuthLab? = null,
 ) {
   private val params get() = session.params
   private val random = SecureRandom()
@@ -113,6 +135,7 @@ internal class HuaweiAuthenticator(
 
     params.setAuthMode(if (params.deviceSupportType.toInt() == 4) 4.toByte() else 2.toByte())
     val authType = securityNegotiation(authTimeout)
+    lab?.reached(BindStop.SECURITY_NEGOTIATION)
 
     val mode: AuthMode
     if (authType == 0x0186A0 || isHiChain3(authType)) {
@@ -188,6 +211,7 @@ internal class HuaweiAuthenticator(
     val response = session
       .request(request, timeoutMs, "SecurityNegotiation")
       .expect<DeviceConfig.SecurityNegotiation.Response>("SecurityNegotiation")
+    lab?.trace(events, "SecurityNegotiation: authType=${response.authType} honorPairType=${response.honorPairType} tlv=${response.tlv}")
     return response.authType
   }
 
@@ -198,6 +222,7 @@ internal class HuaweiAuthenticator(
       .request(DeviceConfig.PinCode.Request(params), timeoutMs, "PinCode")
       .expect<DeviceConfig.PinCode.Response>("PinCode")
     params.setPinCode(response.pinCode)
+    lab?.trace(events, "PinCode: ${response.pinCode.size} bytes ${response.pinCode.toHex()}")
   }
 
   // initializeDeviceHiChainMode
@@ -205,6 +230,7 @@ internal class HuaweiAuthenticator(
   private suspend fun hiChainMode(firstConnection: Boolean, authTimeout: Long) {
     if (firstConnection) {
       pinCode(authTimeout)
+      lab?.reached(BindStop.PIN_CODE)
       // operationCode 1 (GB logs it as the "auth operation": PIN-derived key, the user confirms on the
       // watch, stores the auth token), then operationCode 2 (GB's "bind operation").
       hiChain(operationCode = 0x01)
@@ -356,6 +382,11 @@ internal class HuaweiAuthenticator(
               "tokenCheck: ${tokenCheck.toHex()} is different than ${peerToken.toHex()}",
             )
           }
+          lab?.trace(
+            events,
+            "op$operationCode step 1 verified: peerAuthId=${authIdPeer.toHex()} (${String(authIdPeer, StandardCharsets.UTF_8)}) " +
+              "isoSalt=${randPeer.toHex()} token=${peerToken.toHex()} psk=${psk.toHex()}",
+          )
         } else if (step == 0x02) {
           val returnCodeMac = response.step2Data.returnCodeMac
           val returnCodeMacCheck = CryptoUtils.calcHmacSha256(psk, byteArrayOf(0x00, 0x00, 0x00, 0x00))
@@ -365,6 +396,7 @@ internal class HuaweiAuthenticator(
               "returnCodeMacCheck: ${returnCodeMacCheck.toHex()} is different than ${returnCodeMac.toHex()}",
             )
           }
+          if (pairing) lab?.reached(BindStop.ISO_MAC_VERIFIED)
         } else if (step == 0x03) {
           if (operationCode == 0x01) {
             val nonce = response.step3Data.nonce

@@ -785,3 +785,22 @@ Android reports it as `DEVICE_TYPE_DUAL` with the identity address equal to the 
   link to the phone still up. What
   changed in the stack is not known; it may be that Android had not yet seen the watch advertise. [INFERENCE] An iOS app always scans before
   it connects, so it is not affected.
+
+### 2026-10-16: first bind from a client the watch does not know, over LE (bind lab; stopped before the bind completes)
+
+`BindLab` (see the README) presented a throwaway identity (fresh android id `6F2F0768…`, own empty key store) from the same phone, on a session of its own, while the
+binding the app holds stayed untouched (the app's op2 reconnect worked right after each run).
+
+- **LinkParams** answers an unknown client the same as the known one: protocolVersion 2, deviceSupportType 4, authVersion 1, authAlgo 0, encryptMethod 0, bondState 0, mtu 514, sliceSize 1022.
+- **SecurityNegotiation says whether the watch knows the client's authId.** Request (deviceSupportType 4 gives authMode 4): TLV `01=04`, `02=01`, `05=<the 32 ASCII characters of the android id>`, `03=01`,
+  `04=00`, `06=` (empty), `07=<phone model>`. Response tag `02` is `02` (authType 6, GB's `honorPairType` RECONNECT) for the identity the watch is bound to and `01` (authType 5,
+  FIRST_PAIR) for a new one; the other tags are the same either way (`01=04`, `03=01`, `04=00`, `05` the watch's own authId, 64 ASCII hex characters, constant, `06` 18 zero bytes, `07` empty,
+  `08=00`, `09` the watch's address as a C string, `0a=00000000`). The app decides bind or reconnect from its own stored flag; the watch's answer is the better signal (a key lost or replaced
+  by another app shows as authType 5).
+- **PinCode** (`01/2c`, request TLV `01` empty) is answered for an unknown client in about 100 ms with no interaction on the watch. Response TLV `01` = 80 bytes (AES-128-CBC, PKCS5,
+  key `DIGEST_SECRET_v1` because authVersion is 1), `02` = the 16-byte IV. The plaintext is 64 bytes and a fresh one comes with every request; every nibble of it is a decimal digit, so its
+  upper-case hex string is 128 digits and the case of the hex does not matter for this watch. The HiChain op1 key is SHA-256 of that string as UTF-8.
+- **Not done:** HiChain op1 steps 1 to 4 over LE. The watch holds one credential: binding from any identity (Huawei Health, another Gadgetbridge install, this app) invalidates the previous one
+  (Gadgetbridge issues 4148 and 4300: "HH resets the connection keys so you'll need to re-pair the device again with GB"; Huawei's own guide: a watch connects to one phone at a time). So
+  completing a bind from a throwaway identity would have cost the app its binding; the lab refuses that without `--ez commit true`. Which op1 step makes the watch drop the old credential is not known.
+- **Not tested:** a central the watch has no Classic bond with (the phone that ran the lab is bonded; the host's BlueZ adapter scanned nothing at all at the time).
