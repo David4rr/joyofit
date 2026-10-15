@@ -190,14 +190,23 @@ internal class WearLink(
     val callback = object : ScanCallback() {
       override fun onScanResult(callbackType: Int, result: ScanResult?) {
         val device = result?.device ?: return
-        val rawName = try { device.name } catch (e: SecurityException) { null }
+        var rawName = try { device.name } catch (e: SecurityException) { null }
           ?: result.scanRecord?.deviceName
         val address = device.address
+
+        val serviceUuids = result.scanRecord?.serviceUuids?.map { it.uuid.toString().lowercase() } ?: emptyList()
+        val isHuaweiService = serviceUuids.any { it.contains("fe86") || it.contains("3802") }
+        val manufacturerData = result.scanRecord?.manufacturerSpecificData
+        val isHuaweiManufacturer = manufacturerData != null && (manufacturerData.get(0x027D) != null || manufacturerData.get(0x0079) != null)
+
+        if (rawName.isNullOrBlank() && (isHuaweiService || isHuaweiManufacturer)) {
+          rawName = "Huawei Wearable (${address.takeLast(5)})"
+        }
 
         if (!rawName.isNullOrBlank()) {
           discoveredNames[address] = rawName
           val match = WatchModels.match(rawName)
-          if (match.connectable) {
+          if (match.connectable || isHuaweiService || isHuaweiManufacturer) {
             discoveredTransports[address] = ModelTransport.LE
             val item = mapOf(
               "address" to address,

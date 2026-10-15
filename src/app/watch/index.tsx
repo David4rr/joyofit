@@ -19,9 +19,9 @@ import { useWatch } from '@/state/WatchProvider';
 import { fonts, spacing, useColors } from '@/theme';
 
 const CONNECT_STEPS = [
-  'Unbind it from Huawei Health first (or reset the band), so it is ready to pair.',
-  'Grant Bluetooth permissions. The app automatically scans for nearby Huawei and Honor bands.',
-  'On the first connect, tap Connect, keep the watch awake, and accept the checkmark prompt on its screen.',
+  'Reset or Disconnect the band (Settings > System > Disconnect on the band) until it shows "Pairing..." or QR code.',
+  'Keep the band screen awake and ensure phone Bluetooth & Location (GPS) toggles are turned ON.',
+  'Tap "Scan nearby devices" below. When your band appears, tap Connect and tap the checkmark on its screen.',
 ];
 
 /** The three things that have to be true before the first connect, in the order they happen. */
