@@ -215,6 +215,15 @@ class HuaweiWearModule : Module() {
       runtime().setNotificationsEnabled(enabled)
     }
 
+    // Developer switch: connect over Bluetooth LE GATT (BleTransport) whatever the model's own link is.
+    Function("getForceBle") {
+      runtime().forceBle()
+    }
+
+    AsyncFunction("setForceBle") { enabled: Boolean ->
+      runtime().setForceBle(enabled)
+    }
+
     Function("getMorningSummaryEnabled") {
       runtime().morningSummaryEnabled()
     }

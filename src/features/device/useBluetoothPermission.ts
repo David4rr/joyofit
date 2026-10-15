@@ -37,3 +37,15 @@ export function useBluetoothPermission() {
 
   return { status, request };
 }
+
+/** BLUETOOTH_SCAN, only for the developer Bluetooth LE mode, which scans for the watch's LE address. */
+export async function ensureBluetoothScan(): Promise<Exclude<PermissionStatus, 'checking'>> {
+  if (Platform.OS !== 'android' || Number(Platform.Version) < RUNTIME_BLUETOOTH_API) {
+    return 'granted';
+  }
+  const permission = PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN;
+  if (await PermissionsAndroid.check(permission)) return 'granted';
+  const result = await PermissionsAndroid.request(permission);
+  if (result === PermissionsAndroid.RESULTS.GRANTED) return 'granted';
+  return result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN ? 'blocked' : 'denied';
+}

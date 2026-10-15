@@ -75,7 +75,10 @@ internal class WearLink(
     lateinit var session: HuaweiSession
 
     /** A listed model uses its Gadgetbridge coordinator's link; for other names Android's view of the device decides. */
-    val transportKind: ModelTransport = model.transportFor(isLeOnly(device))
+    val transportKind: ModelTransport = if (settings.forceBle) ModelTransport.LE else model.transportFor(isLeOnly(device))
+
+    /** Every event of an LE link is also written to logcat under the JoyoFitBle tag; RFCOMM links log as before. */
+    val linkEvents: WearEvents = if (transportKind == ModelTransport.LE) LogcatMirrorEvents(events) else events
 
     /** GB's HuaweiDeviceType for the link: BR, or BLE / AW over GATT. */
     val deviceType: HuaweiDeviceType = model.deviceType(transportKind)
@@ -92,6 +95,7 @@ internal class WearLink(
         context = appContext,
         device = device,
         newHonorProtocol = model.newHonorProtocol,
+        watchName = bondedName(device),
         onData = { chunk -> session.onData(chunk) },
         onRemoteClosed = { cause -> onRemoteClosed(this, cause) },
         log = { line -> events.log(LogDirection.INFO, null, null, null, line) },
@@ -99,7 +103,7 @@ internal class WearLink(
     }
 
     init {
-      session = HuaweiSession(transport, events)
+      session = HuaweiSession(transport, linkEvents)
       session.params.setTransactionsCrypted(model.crypted)
       // GB HuaweiSupportProvider: the AW70 bands send their workout records with their own layout.
       session.params.setAW(deviceType == HuaweiDeviceType.AW)
@@ -225,28 +229,28 @@ internal class WearLink(
       ModelTransport.LE ->
         "Bluetooth LE GATT (${if (model.newHonorProtocol) "Honor service" else "service 0xFE86"}), device type ${connection.deviceType}"
     }
-    events.log(
+    connection.linkEvents.log(
       LogDirection.INFO,
       null,
       null,
       null,
       "Connecting to $address \"${lastAttemptName ?: "no name"}\": ${model.model?.name ?: "unknown model"} (${model.support.wire}), " +
-        "$link, encrypted ${model.crypted}",
+        "$link${if (settings.forceBle) " (forced by the developer switch)" else ""}, encrypted ${model.crypted}",
     )
 
     try {
       connection.transport.connect(Timeouts.CONNECT_MS)
-      events.log(LogDirection.INFO, null, null, null, "${connection.transportKind.label} connected")
+      connection.linkEvents.log(LogDirection.INFO, null, null, null, "${connection.transportKind.label} connected")
 
       setState(connection, LinkState.AUTHENTICATING)
       val identity = store.forDevice(address)
-      val authenticator = HuaweiAuthenticator(connection.session, identity, events, connection.deviceType)
+      val authenticator = HuaweiAuthenticator(connection.session, identity, connection.linkEvents, connection.deviceType)
       val authMode = authenticator.authenticate()
 
       setState(connection, LinkState.INITIALIZING)
       val init = HuaweiInitializer(
         session = connection.session,
-        events = events,
+        events = connection.linkEvents,
         bondedName = bondedName(connection.device),
         protocolVersion = authenticator.protocolVersion,
         profile = settings.profile,
@@ -297,7 +301,7 @@ internal class WearLink(
         t is IOException -> WearException(ErrorCodes.CONNECT_FAILED, "Connect failed: ${t.message}", t)
         else -> WearException(ErrorCodes.CONNECT_FAILED, "Connect failed: ${t.message ?: t.javaClass.simpleName}", t)
       }
-      events.log(LogDirection.ERROR, null, null, null, "Connect failed [${failure.errorCode}]: ${failure.message}")
+      connection.linkEvents.log(LogDirection.ERROR, null, null, null, "Connect failed [${failure.errorCode}]: ${failure.message}")
       teardown(connection, failure, failure.message)
       throw failure
     }
@@ -513,5 +517,19 @@ internal class WearLink(
     } catch (e: Exception) {
       events.log(LogDirection.ERROR, null, null, null, "Night HRV failed: ${e.message ?: e.javaClass.simpleName}")
     }
+  }
+}
+
+/** Developer LE mode: every log line of the link (packets, auth and init steps, errors) also goes to logcat under the JoyoFitBle tag. */
+private class LogcatMirrorEvents(private val delegate: WearEvents) : WearEvents by delegate {
+  override fun log(direction: LogDirection, serviceId: Int?, commandId: Int?, hex: String?, message: String) {
+    val command = if (serviceId != null && commandId != null) " %02x/%02x".format(serviceId, commandId) else ""
+    val packet = if (hex != null) " ${hex.take(HEX_CHARS)}${if (hex.length > HEX_CHARS) "..." else ""}" else ""
+    android.util.Log.i("JoyoFitBle", "[${direction.wire}]$command $message$packet")
+    delegate.log(direction, serviceId, commandId, hex, message)
+  }
+
+  private companion object {
+    const val HEX_CHARS = 96
   }
 }

@@ -86,6 +86,12 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   openNotificationAccess(): Promise<void>;
   getNotificationAccess(): NotificationAccessStatus;
   setNotificationsEnabled(enabled: boolean): Promise<void>;
+  /**
+   * Developer switch: the next connect opens Bluetooth LE GATT (service 0xFE86) instead of the model's own link (RFCOMM for the
+   * Fit 4 Pro). Off by default; needs BLUETOOTH_SCAN to find the watch's LE address, else it tries the bonded address.
+   */
+  getForceBle(): boolean;
+  setForceBle(enabled: boolean): Promise<void>;
   /** The once-a-day "Morning summary" notification, posted after the first sync that stored last night's sleep. Off by default. */
   getMorningSummaryEnabled(): boolean;
   setMorningSummaryEnabled(enabled: boolean): Promise<void>;

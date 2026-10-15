@@ -47,6 +47,21 @@ write `FE01`, notifications `FE02`; Honor Band 7, 9 and 10 use Honor's own servi
 experimental and has not been tried on a real band. `WatchModels.kt` picks the transport per model. See [`protocol/README.md`](protocol/README.md) for the frame format,
 the commands used, and how the app picks an auth path.
 
+**Developer switch: Bluetooth LE link.** Settings, Advanced, Experimental has a switch that makes the next connect open GATT (`BleTransport`)
+whatever the model's own link is. It exists to find out whether a Classic watch such as the Fit 4 Pro also speaks the protocol over LE, which
+an iOS port (CoreBluetooth only) would need. It scans for the watch's LE address (service `FE86`, the bonded name, the bonded address; needs
+the Nearby devices permission, which the switch asks for) and falls back to the bonded address. Default off. Every scan result, GATT step
+and packet of an LE link is logged under logcat tag `JoyoFitBle`. Without touching the app, from a computer:
+
+```bash
+adb shell am broadcast -n com.joyodigitama.joyofit/com.joyodigitama.huaweiwear.BleProbeReceiver \
+  -a com.joyodigitama.joyofit.BLE_PROBE [--es address AA:BB:CC:DD:EE:FF] [--ez sync false] [--ez restore false]
+adb logcat -s JoyoFitBle
+```
+
+The probe pauses background mode, connects over LE, reads the battery and runs an activity sync, then restores the switch and background
+mode. The receiver requires `android.permission.DUMP`, so only the adb shell and the system can send it.
+
 ```mermaid
 flowchart LR
   UI[Expo screens<br/>src/app] -- HuaweiWear JS API --> MOD[HuaweiWearModule.kt]

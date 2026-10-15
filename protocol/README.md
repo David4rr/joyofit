@@ -757,3 +757,17 @@ in Android Bluetooth settings.
   32 34 35`. `07` (FitnessData) is present.
 
 So Gadgetbridge's HiChain3 path works unchanged on the Fit 4.
+
+### 2026-10-16: Bluetooth LE attempt, Watch Fit 4 Pro (`HUAWEI WATCH FIT 4 Pro-40A`)
+
+Phone: Xiaomi 15T Pro, Android 16, JoyoFit's developer LE link (`BleTransport`, `JoyoFitBle` logcat tag). The watch was bonded over Classic
+and connected to the phone (HFP).
+
+- Android reports the bonded watch as `DEVICE_TYPE_DUAL` with identity address equal to its Classic address. Its cached UUIDs are Classic
+  only: `82ff3820-8411-400c-b85a-55bdb32cf060` (the Huawei SDP record) and `65847aa1-102a-05e1-43b6-e2a3965be547`; `0000fe86` is not there.
+- A GATT connect (`TRANSPORT_LE`, no autoConnect) to that address ended after 30 s with GATT status 147 (connection failed to establish),
+  three times: from JoyoFit, from an `app_process` helper, and after dropping the Classic link with `BluetoothDevice.disconnect()`. A
+  100 s `autoConnect` attempt never connected either. So at that address the watch answered no LE connection request in any of these states.
+- No LE scan could be read: JoyoFit's scan needs the Nearby devices permission, which `pm grant` refused on this phone (MIUI), and scan
+  callbacks never fired from the adb shell process. Whether the watch advertises `FE86` is therefore not established. Nothing past GATT
+  (link params, auth, battery, steps) ran over LE.

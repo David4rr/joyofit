@@ -43,6 +43,14 @@ internal class WearSettings(context: Context) {
     get() = prefs.getBoolean(KEY_BACKGROUND, false)
     set(value) = prefs.edit().putBoolean(KEY_BACKGROUND, value).apply()
 
+  /**
+   * Developer switch: open every watch over Bluetooth LE GATT (service 0xFE86) instead of the link its model uses, to find out whether
+   * a Classic watch also answers the Huawei protocol over LE (what an iOS port would need). Off by default.
+   */
+  var forceBle: Boolean
+    get() = prefs.getBoolean(KEY_FORCE_BLE, false)
+    set(value) = prefs.edit().putBoolean(KEY_FORCE_BLE, value).apply()
+
   var syncIntervalMinutes: Int
     get() = prefs.getInt(KEY_INTERVAL, DEFAULT_SYNC_INTERVAL_MIN)
     set(value) = prefs.edit().putInt(KEY_INTERVAL, value).apply()
@@ -144,6 +152,7 @@ internal class WearSettings(context: Context) {
     private const val KEY_ADDRESS = "watch_address"
     private const val KEY_NAME = "watch_name"
     private const val KEY_BACKGROUND = "background_enabled"
+    private const val KEY_FORCE_BLE = "force_ble"
     private const val KEY_INTERVAL = "sync_interval_min"
     private const val KEY_NOTIFICATIONS = "notifications_enabled"
     private const val KEY_MORNING_SUMMARY = "morning_summary_enabled"

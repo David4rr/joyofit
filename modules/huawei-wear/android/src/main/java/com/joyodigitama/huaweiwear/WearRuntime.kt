@@ -328,6 +328,13 @@ internal class WearRuntime private constructor(context: Context) {
     }
   }
 
+  fun forceBle(): Boolean = settings.forceBle
+
+  /** Takes effect on the next connect; a live link keeps the transport it was opened with. */
+  fun setForceBle(enabled: Boolean) {
+    settings.forceBle = enabled
+  }
+
   fun morningSummaryEnabled(): Boolean = settings.morningSummaryEnabled
 
   /** Turning it on lets the next sync post today's summary if it has not been posted yet. */

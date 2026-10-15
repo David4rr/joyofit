@@ -6,6 +6,7 @@ import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { Section, Screen } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { ensureBluetoothScan } from '@/features/device/useBluetoothPermission';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage } from '@/format';
 import { useColors } from '@/theme';
@@ -17,8 +18,29 @@ export default function AdvancedScreen() {
   const [courses, setCourses] = useState(() => HuaweiWear.getCourses());
   const [coursesBusy, setCoursesBusy] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
+  const [forceBle, setForceBle] = useState(() => HuaweiWear.getForceBle());
+  const [bleError, setBleError] = useState<string | null>(null);
 
-  useNativeRefresh(useCallback(() => setCourses(HuaweiWear.getCourses()), []));
+  useNativeRefresh(
+    useCallback(() => {
+      setCourses(HuaweiWear.getCourses());
+      setForceBle(HuaweiWear.getForceBle());
+    }, []),
+  );
+
+  const toggleForceBle = async (enabled: boolean) => {
+    setBleError(null);
+    try {
+      if (enabled && (await ensureBluetoothScan()) !== 'granted') {
+        setBleError('Nearby devices permission denied: the watch is tried at its paired address without a scan.');
+      }
+      await HuaweiWear.setForceBle(enabled);
+    } catch (e) {
+      setBleError(errorMessage(e));
+    } finally {
+      setForceBle(HuaweiWear.getForceBle());
+    }
+  };
 
   const toggleCourses = async (enabled: boolean) => {
     setCoursesBusy(true);
@@ -59,6 +81,13 @@ export default function AdvancedScreen() {
           onValueChange={(enabled) => void toggleCourses(enabled)}
         />
         {coursesError ? <Notice tone="danger">{coursesError}</Notice> : null}
+        <SwitchRow
+          label="Bluetooth LE link (developer)"
+          hint="Connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle."
+          value={forceBle}
+          onValueChange={(enabled) => void toggleForceBle(enabled)}
+        />
+        {bleError ? <Notice tone="danger">{bleError}</Notice> : null}
       </Section>
       {courses.enabled ? (
         <NavRow
