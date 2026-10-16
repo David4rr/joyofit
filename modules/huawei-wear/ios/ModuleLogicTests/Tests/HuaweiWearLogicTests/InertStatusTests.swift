@@ -30,11 +30,6 @@ final class InertStatusTests: XCTestCase {
         XCTAssertTrue(Inert.healthSensors()["supported"] is NSNull)
         XCTAssertEqual(keys(Inert.stress()), ["enabled", "lastCalibratedAt", "supported"])
         XCTAssertEqual(
-            keys(Inert.weather()),
-            ["enabled", "unit", "locationMode", "intervalMinutes", "city", "locationPermission", "watchSupported", "lastPushAt", "lastError", "lastTemperatureC", "lastCondition", "lastLocationName"]
-        )
-        XCTAssertEqual(Inert.weather()["enabled"] as? Bool, false)
-        XCTAssertEqual(
             keys(Inert.safety()),
             ["fallSupported", "fallNote", "fallSwitch", "fallUpdatedMs", "sosRelayEnabled", "smsSupported", "smsPermission", "telephony", "simReady", "sosReady", "sosBlockers", "sosListedByWatch", "sleepReportEnabled", "sleepReportSupported"]
         )
@@ -80,13 +75,22 @@ final class InertStatusTests: XCTestCase {
             address: "6B1C2A55-3E21-4A7B-9D6E-5F1A0C0C9B77", name: "HUAWEI WATCH FIT 4 Pro-40A", productModel: nil, softwareVersion: "6.1", hardwareVersion: nil,
             serialNumber: nil, batteryLevel: 50, authMode: .hichain3, model: "Huawei Watch Fit 4 Pro", support: .tested
         )
+        let events = RecordingEvents()
+        let weather = WeatherController(settings: WeatherSettings(defaults: ephemeralDefaults()), link: FakeLink(events: events), events: events, location: UnavailableLocationSource())
+        let populatedWeather: [String: Any] = [
+            "enabled": true, "unit": "fahrenheit", "locationMode": "city", "intervalMinutes": 30,
+            "city": WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6, detail: "West Java, Indonesia").toJS(),
+            "locationPermission": true, "watchSupported": true, "lastPushAt": Int64(1_792_110_700), "lastError": "x", "lastTemperatureC": -3,
+            "lastCondition": "LIGHT_RAIN", "lastLocationName": "Bandung",
+        ]
         let shapes: [String: Any] = [
             "PhoneFeatures": Inert.phoneFeatures(),
             "NotificationAccessStatus": Inert.notificationAccess(),
             "WatchAlarms": Inert.alarms(),
             "HealthSensorsStatus": Inert.healthSensors(),
             "StressStatus": Inert.stress(),
-            "WeatherStatus": Inert.weather(),
+            "WeatherStatus": weather.status(),
+            "WeatherStatus#populated": populatedWeather,
             "SafetyStatus": Inert.safety(),
             "SosRelayTest": Inert.sosRelayTest(),
             "CycleOverview": Inert.cycle(today: "2026-10-16", watchConnected: false),

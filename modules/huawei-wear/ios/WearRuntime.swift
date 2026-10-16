@@ -44,6 +44,8 @@ public final class WearRuntime: @unchecked Sendable {
     public let linkObservers = LinkObservers()
     /// Find my watch.
     public private(set) var features: PhoneFeatures!
+    /// Weather push (settings, the watch's weather requests, the refresh timer).
+    public private(set) var weather: WeatherController!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -74,7 +76,10 @@ public final class WearRuntime: @unchecked Sendable {
         nearby: @escaping @Sendable (_ timeoutMs: Int) async throws -> [NearbyWatch] = { _ in [] },
         expiring: @escaping ExpiringWork = { _, work in await work() },
         now: @escaping @Sendable () -> Date = { Date() },
-        clock: @escaping @Sendable () -> Int = BackgroundController.uptimeMs
+        clock: @escaping @Sendable () -> Int = BackgroundController.uptimeMs,
+        weatherLocation: LocationSource = UnavailableLocationSource(),
+        weatherFetch: @escaping WeatherFetch = WeatherNetwork.fetch,
+        weatherDefaults: UserDefaults? = nil
     ) {
         self.settings = settings
         self.syncStore = syncStore
@@ -89,6 +94,10 @@ public final class WearRuntime: @unchecked Sendable {
         controller = BackgroundController(runtime: self, expiring: expiring, clock: clock)
         features = PhoneFeatures(link: link, events: fanOut)
         linkObservers.add(features)
+        weather = WeatherController(
+            settings: WeatherSettings(defaults: weatherDefaults), link: link, events: fanOut, location: weatherLocation, fetch: weatherFetch, expiring: expiring, now: now
+        )
+        linkObservers.add(weather)
     }
 
     // MARK: events

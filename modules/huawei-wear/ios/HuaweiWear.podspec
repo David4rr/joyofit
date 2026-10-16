@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
-  s.frameworks = 'CoreBluetooth', 'HealthKit', 'Security', 'UIKit'
+  s.frameworks = 'CoreBluetooth', 'CoreLocation', 'HealthKit', 'Security', 'UIKit'
   s.libraries  = 'sqlite3'
 
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'SWIFT_COMPILATION_MODE' => 'wholemodule' }

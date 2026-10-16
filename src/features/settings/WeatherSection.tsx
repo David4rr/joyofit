@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { Linking, PermissionsAndroid, Platform } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -35,7 +35,16 @@ const INTERVALS: readonly { value: number; label: string }[] = [
   { value: 240, label: '4 h' },
 ];
 
-/** Asks for the coarse location; true when granted. The native side also accepts the fine one. */
+const LOCATION_DENIED_ANDROID =
+  'Location permission was denied. Weather for this phone cannot be fetched until it is allowed; choose a city instead.';
+const LOCATION_DENIED_IOS =
+  'Location is not allowed for JoyoFit. Turn it on in Settings > JoyoFit > Location (While Using the App), or choose a city instead.';
+
+/**
+ * Asks for the coarse location; true when granted. The native side also accepts the fine one.
+ * Android only: on iOS the native module shows the system prompt itself, once, when the weather
+ * switch or "This phone" is set (`setWeatherEnabled`, `setWeatherLocationMode`).
+ */
 async function ensureCoarseLocation(): Promise<boolean> {
   if (Platform.OS !== 'android') return false;
   const permission = PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION;
@@ -54,6 +63,8 @@ export function WeatherSection() {
   const [city, setCity] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; danger: boolean } | null>(null);
+  /** iOS asks only once: after a refusal the only way to allow location is the Settings app. */
+  const [needsSettings, setNeedsSettings] = useState(false);
 
   const refresh = useCallback(() => setStatus(HuaweiWear.getWeatherStatus()), []);
   useNativeRefresh(refresh);
@@ -74,24 +85,45 @@ export function WeatherSection() {
 
   /** Selecting or enabling `current` needs the permission; without it the watch is told so. */
   const askLocation = async () => {
+    if (Platform.OS === 'ios') return;
     if (!(await ensureCoarseLocation())) {
-      setMessage({
-        text: 'Location permission was denied. Weather for this phone cannot be fetched until it is allowed; choose a city instead.',
-        danger: true,
-      });
+      setMessage({ text: LOCATION_DENIED_ANDROID, danger: true });
     }
+  };
+
+  /** iOS: the native call above has shown the prompt (if it was due); say so when location is still off. */
+  const reportIosDenial = () => {
+    if (Platform.OS !== 'ios' || HuaweiWear.getWeatherStatus().locationPermission) return;
+    setNeedsSettings(true);
+    setMessage({ text: LOCATION_DENIED_IOS, danger: true });
   };
 
   const toggle = (enabled: boolean) =>
     run(async () => {
       if (enabled && status.locationMode === 'current') await askLocation();
       await HuaweiWear.setWeatherEnabled(enabled);
+      if (enabled && status.locationMode === 'current') reportIosDenial();
     });
 
   const chooseMode = (mode: WeatherLocationMode) =>
     run(async () => {
       if (mode === 'current') await askLocation();
       await HuaweiWear.setWeatherLocationMode(mode);
+      if (mode === 'current') reportIosDenial();
+    });
+
+  const allowLocation = () =>
+    run(async () => {
+      if (Platform.OS === 'ios') {
+        if (needsSettings) {
+          await Linking.openSettings();
+          return;
+        }
+        await HuaweiWear.setWeatherLocationMode('current');
+        reportIosDenial();
+        return;
+      }
+      await askLocation();
     });
 
   const search = () =>
@@ -140,20 +172,17 @@ export function WeatherSection() {
           />
           {!status.locationPermission ? (
             <Button
-              label="Allow location"
+              label={Platform.OS === 'ios' && needsSettings ? 'Open Settings' : 'Allow location'}
               variant="secondary"
               icon="location-outline"
-              onPress={() =>
-                run(async () => {
-                  await askLocation();
-                })
-              }
+              onPress={allowLocation}
               disabled={busy}
             />
           ) : null}
           <AppText variant="caption" muted>
-            Uses the last known coarse location. In the background Android may not give a fresh one,
-            so the last position is reused.
+            {Platform.OS === 'ios'
+              ? 'Uses your approximate location while the app is open. When the watch asks in the background, iOS gives the app no fresh position, so the last one is reused.'
+              : 'Uses the last known coarse location. In the background Android may not give a fresh one, so the last position is reused.'}
           </AppText>
         </>
       ) : (
