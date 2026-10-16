@@ -1,0 +1,625 @@
+import XCTest
+@testable import HuaweiWearLogic
+
+/// Collects what LiveWorkout publishes and what the heart-rate sensor was asked.
+private final class LiveEvents: WearEvents, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _payloads: [[String: Any]] = []
+    private var _logs: [LogEntry] = []
+    var payloads: [[String: Any]] { lock.locked { _payloads } }
+    var last: [String: Any]? { payloads.last }
+    func state(_ state: LinkState, error: String?) {}
+    func battery(_ level: Int) {}
+    func syncComplete(_ summary: SyncSummary) {}
+    func log(_ entry: LogEntry) { lock.locked { _logs.append(entry) } }
+    func liveWorkout(_ payload: [String: Any]) { lock.locked { _payloads.append(payload) } }
+    func contains(_ fragment: String) -> Bool { lock.locked { _logs.contains { $0.message.contains(fragment) } } }
+}
+
+private final class Counter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _toggles: [Bool] = []
+    private var _now: Int64 = 1_760_000_000_000
+    var toggles: [Bool] { lock.locked { _toggles } }
+    func toggle(_ on: Bool) { lock.locked { _toggles.append(on) } }
+    var now: Int64 { lock.locked { _now } }
+    func advance(_ ms: Int64) { lock.locked { _now += ms } }
+}
+
+private final class FakeGps: LiveGpsSource, @unchecked Sendable {
+    private let lock = NSLock()
+    private var handler: (@Sendable (WorkoutLinkWire.Fix) -> Void)?
+    private var _started = 0
+    private var _stopped = 0
+    var auth: LocationAuthorization = .granted
+    var asked = 0
+    var authorization: LocationAuthorization { auth }
+    func requestAuthorization() async -> LocationAuthorization {
+        asked += 1
+        if auth == .notDetermined { auth = .granted }
+        return auth
+    }
+    func start(_ onFix: @escaping @Sendable (WorkoutLinkWire.Fix) -> Void) -> Bool {
+        lock.locked {
+            handler = onFix
+            _started += 1
+        }
+        return true
+    }
+    func stop() { lock.locked { handler = nil; _stopped += 1 } }
+    var started: Int { lock.locked { _started } }
+    var stopped: Int { lock.locked { _stopped } }
+    func emit(_ fix: WorkoutLinkWire.Fix) {
+        let h = lock.locked { handler }
+        h?(fix)
+    }
+}
+
+/// An unsliced, unencrypted watch frame of any service.
+private func frame(_ service: UInt8, _ command: UInt8, _ tlv: HuaweiTLV) -> Bytes {
+    var body = Bytes([huaweiMagic])
+    let inner = Bytes([service, command]) + tlv.serialize()
+    body.appendBE(UInt16(inner.count + 1))
+    body.append(0)
+    body += inner
+    body.appendBE(CRC16.checksum(body))
+    return body
+}
+
+private func statusAnswer(operatorType: Int, workoutType: Int) -> Bytes {
+    var body = HuaweiTLV()
+    body.put(0x03, byte: UInt8(operatorType))
+    body.put(0x06, byte: UInt8(workoutType))
+    var t = HuaweiTLV()
+    t.put(0x81, tlv: body)
+    return frame(0x17, 0x03, t)
+}
+
+final class LiveWorkoutTests: XCTestCase {
+    private func hex(_ s: String) -> Bytes { Bytes(hex: s.replacingOccurrences(of: " ", with: ""))! }
+
+    private struct Rig {
+        let rig: DataSyncRig
+        let events: LiveEvents
+        let counter: Counter
+        let live: LiveWorkout
+        let settings: WearSettings
+    }
+
+    private func make(watchdogEveryMs: Int = 10_000, profile: UserProfileData? = nil, connected: Bool = true) -> Rig {
+        let rig = DataSyncRig(bits: [83, 84], connected: connected)
+        let events = LiveEvents()
+        let counter = Counter()
+        let settings = WearSettings(defaults: ephemeralDefaults())
+        settings.profile = profile
+        let live = LiveWorkout(
+            dataSync: rig.service, events: events, settings: settings, setHeartRateActive: { counter.toggle($0) }, nowMs: { counter.now },
+            watchdogEveryMs: watchdogEveryMs
+        )
+        rig.service.register(live)
+        return Rig(rig: rig, events: events, counter: counter, live: live, settings: settings)
+    }
+
+    private func control(op: Int, type: Int, status: Int) -> Bytes {
+        DataSyncRig.eventFrame(
+            src: LiveWorkoutWire.watchPkg, wear: LiveWorkoutWire.phonePkg, id: LiveWorkoutWire.eventControl,
+            data: Bytes([0x01, 0x01, UInt8(type), 0x02, 0x01, UInt8(op), 0x05, 0x01, UInt8(status)])
+        )
+    }
+
+    private func point(_ values: [(Int, String)]) -> Bytes {
+        var list = HuaweiTLV()
+        for (key, value) in values {
+            var e = HuaweiTLV()
+            e.put(0x08, int: Int32(key))
+            e.put(0x09, bytes: hex(value))
+            list.put(0x87, tlv: e)
+        }
+        var t = HuaweiTLV()
+        t.put(0x01, string: LiveWorkoutWire.watchPkg)
+        t.put(0x02, string: LiveWorkoutWire.phonePkg)
+        t.put(0x03, int: 1)
+        t.put(0x86, tlv: list)
+        return DataSyncRig.frame(0x03, t)
+    }
+
+    // MARK: the watch announces the workout (reverse linkage)
+
+    func testAStartControlOpensASessionAndIsAnswered() async {
+        let r = make()
+        await r.rig.attach()
+        r.rig.watch.responder = { _ in [] }
+        r.rig.session.onData(control(op: LiveWorkoutWire.opStart, type: 2, status: 1))
+        await eventually("session published") { r.events.last != nil }
+        let s = r.events.last!
+        XCTAssertEqual(s["status"] as? String, "running")
+        XCTAssertEqual(s["source"] as? String, "watch")
+        XCTAssertEqual(s["sportType"] as? Int, 2)
+        XCTAssertEqual(s["sportName"] as? String, WorkoutSportTypes.name(2))
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+        await eventually("reply sent") { !r.rig.watch.sent.isEmpty }
+        let sent = r.rig.watch.sent[0]
+        XCTAssertEqual(sent.service, 0x37)
+        XCTAssertEqual(sent.command, 0x02)
+        XCTAssertEqual(try? sent.tlv.string(0x01), LiveWorkoutWire.phonePkg)
+        XCTAssertEqual(try? sent.tlv.string(0x02), LiveWorkoutWire.watchPkg)
+        XCTAssertEqual(Int((try? sent.tlv.int(0x03)) ?? 0), LiveWorkoutWire.eventControl)
+        XCTAssertEqual(try? sent.tlv.bytes(0x05), LiveWorkoutWire.reply(LiveWorkoutWire.opStart))
+    }
+
+    func testAPreparingWatchStatusShowsAsPreparing() async {
+        let r = make()
+        await r.rig.attach()
+        r.rig.session.onData(control(op: LiveWorkoutWire.opStart, type: 1, status: 0))
+        await eventually { r.events.last != nil }
+        XCTAssertEqual(r.events.last?["status"] as? String, "preparing")
+    }
+
+    func testPointsFillTheNumbersAndTheFatAndCarbEstimate() async {
+        let r = make()
+        await r.rig.attach()
+        r.rig.session.onData(control(op: LiveWorkoutWire.opStart, type: 1, status: 1))
+        await eventually { r.events.last != nil }
+        r.rig.session.onData(point([(LiveWorkoutWire.keyHeartRate, "78"), (LiveWorkoutWire.keyCalories, "00C350"), (LiveWorkoutWire.keyDistance, "05DC")])) // 120 bpm, 50 kcal, 150 m
+        await eventually("hr") { r.events.last?["heartRate"] as? Int == 120 }
+        r.rig.session.onData(point([(LiveWorkoutWire.keyCalories, "00EA60")])) // 60 kcal
+        await eventually("kcal") { (r.events.last?["calories"] as? Double) == 60.0 }
+        let s = r.events.last!
+        XCTAssertEqual(s["distanceM"] as? Double, 150.0)
+        XCTAssertEqual(s["maxHeartRate"] as? Int, 185)
+        let share = SubstrateEstimator.fatShare(heartRate: 120, maxHeartRate: 185)
+        XCTAssertEqual(s["fatShare"] as? Double ?? -1, share, accuracy: 1e-12)
+        XCTAssertEqual(s["fatGrams"] as? Double ?? -1, 10.0 * share / 9.0, accuracy: 1e-9)
+        XCTAssertEqual(s["carbGrams"] as? Double ?? -1, 10.0 * (1 - share) / 4.0, accuracy: 1e-9)
+    }
+
+    func testAStopControlEndsTheWorkoutReleasesTheSensorOnceAndIsAnswered() async {
+        let r = make()
+        await r.rig.attach()
+        r.rig.session.onData(control(op: LiveWorkoutWire.opStart, type: 1, status: 1))
+        await eventually { r.events.last != nil }
+        r.rig.session.onData(control(op: LiveWorkoutWire.opStop, type: 1, status: 1))
+        await eventually("ended") { r.events.last?["status"] as? String == "ended" }
+        XCTAssertNotNil(r.events.last?["endedAt"] as? Double)
+        await eventually("stop reply") { r.rig.watch.sent.count == 2 }
+        XCTAssertEqual(try? r.rig.watch.sent[1].tlv.bytes(0x05), LiveWorkoutWire.reply(LiveWorkoutWire.opStop))
+        // A late point does not reopen the ended workout's sensor again.
+        r.rig.session.onData(point([(LiveWorkoutWire.keyHeartRate, "50")]))
+        await sleepMs(100)
+        XCTAssertEqual(r.counter.toggles.filter { !$0 }.count, 1)
+    }
+
+    func testPauseAndResumeEventsFollowTheWatch() async {
+        let r = make()
+        await r.rig.attach()
+        func event(_ id: Int) -> Bytes {
+            DataSyncRig.eventFrame(src: LiveWorkoutWire.watchPkg, wear: LiveWorkoutWire.phonePkg, id: id, data: [0x02, 0x01, 0x03])
+        }
+        r.rig.session.onData(event(LiveWorkoutWire.eventStart))
+        await eventually { r.events.last?["status"] as? String == "running" }
+        XCTAssertEqual(r.events.last?["sportType"] as? Int, 3)
+        r.rig.session.onData(event(LiveWorkoutWire.eventPause))
+        await eventually { r.events.last?["status"] as? String == "paused" }
+        r.rig.session.onData(event(LiveWorkoutWire.eventResume))
+        await eventually { r.events.last?["status"] as? String == "running" }
+        r.rig.session.onData(event(LiveWorkoutWire.eventStop))
+        await eventually { r.events.last?["status"] as? String == "ended" }
+        // A stop that arrives again changes nothing; a new start opens a fresh session.
+        let count = r.events.payloads.count
+        r.rig.session.onData(event(LiveWorkoutWire.eventStop))
+        await sleepMs(80)
+        XCTAssertEqual(r.events.payloads.count, count)
+        r.counter.advance(5_000)
+        r.rig.session.onData(event(LiveWorkoutWire.eventStart))
+        await eventually("fresh") { r.events.last?["status"] as? String == "running" }
+        XCTAssertNotEqual(r.events.last?["id"] as? Double, r.events.payloads.first?["id"] as? Double)
+    }
+
+    func testAPointStreamStateOfStoppedEndsTheWorkout() async {
+        let r = make()
+        await r.rig.attach()
+        r.rig.session.onData(point([(LiveWorkoutWire.keyState, "02")]))
+        await eventually { r.events.last?["status"] as? String == "paused" }
+        r.rig.session.onData(point([(LiveWorkoutWire.keyState, "03")]))
+        await eventually { r.events.last?["status"] as? String == "ended" }
+    }
+
+    func testAResumeControlLinksAgainWithTheWatchsState() async {
+        let r = make()
+        await r.rig.attach()
+        r.rig.session.onData(control(op: LiveWorkoutWire.opResume, type: 2, status: LiveWorkoutWire.watchPaused))
+        await eventually { r.events.last?["status"] as? String == "paused" }
+        await eventually("resume reply") { !r.rig.watch.sent.isEmpty }
+        XCTAssertEqual(try? r.rig.watch.sent[0].tlv.bytes(0x05), LiveWorkoutWire.reply(LiveWorkoutWire.opResume))
+    }
+
+    func testAReportControlOnlyLogs() async {
+        let r = make()
+        await r.rig.attach()
+        r.rig.session.onData(control(op: LiveWorkoutWire.opReport, type: 1, status: 1))
+        await eventually("logged") { r.events.contains("watch reports linkage status 1") }
+        XCTAssertNil(r.live.snapshot())
+        XCTAssertTrue(r.rig.watch.sent.isEmpty)
+    }
+
+    // MARK: JoyoFit's own session on the heart rate
+
+    func testManualStartRunsOnHeartRateAndFinishes() {
+        // 40 years old on the test clock (October 2025).
+        let profile = UserProfileData(heightCm: 175, weightKg: 80, birthYear: 1985, sex: "male", dailyStepGoal: 8000)
+        let r = make(profile: profile)
+        r.live.startManual()
+        XCTAssertEqual(r.counter.toggles, [true])
+        XCTAssertEqual(r.events.last?["source"] as? String, "manual")
+        XCTAssertEqual(r.events.last?["maxHeartRate"] as? Int, 180)
+        // A second Start while one runs does nothing.
+        r.live.startManual()
+        XCTAssertEqual(r.counter.toggles, [true])
+
+        r.live.onHeartRate(130)
+        XCTAssertEqual(r.events.last?["heartRate"] as? Int, 130)
+        XCTAssertEqual(r.events.last?["calories"] as? Double, 0.0) // the first reading has no interval yet
+        r.counter.advance(6_000)
+        r.live.onHeartRate(130)
+        let kcal = HeartRateEnergy.kcalPerMinute(heartRate: 130, weightKg: 80, age: 40, sex: "male") * 6_000 / 60_000.0
+        XCTAssertEqual(r.events.last?["calories"] as? Double ?? -1, kcal, accuracy: 1e-9)
+        XCTAssertEqual(r.events.last?["durationSec"] as? Int, 6)
+        // A gap longer than 10 s counts as 10 s.
+        r.counter.advance(60_000)
+        r.live.onHeartRate(130)
+        let capped = kcal + HeartRateEnergy.kcalPerMinute(heartRate: 130, weightKg: 80, age: 40, sex: "male") * 10_000 / 60_000.0
+        XCTAssertEqual(r.events.last?["calories"] as? Double ?? -1, capped, accuracy: 1e-9)
+        XCTAssertGreaterThan(r.events.last?["fatGrams"] as? Double ?? 0, 0)
+
+        r.live.finish()
+        XCTAssertEqual(r.events.last?["status"] as? String, "ended")
+        XCTAssertEqual(r.counter.toggles, [true, false])
+        // Readings after the end change nothing.
+        let n = r.events.payloads.count
+        r.live.onHeartRate(150)
+        XCTAssertEqual(r.events.payloads.count, n)
+        r.live.finish()
+        XCTAssertEqual(r.events.payloads.count, n)
+
+        // Dismissing closes the ended workout; Start works again.
+        r.live.dismiss()
+        XCTAssertNil(r.live.snapshot())
+        r.live.startManual()
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+    }
+
+    func testDismissKeepsARunningWorkout() {
+        let r = make()
+        r.live.startManual()
+        r.live.dismiss()
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+    }
+
+    func testHeartRateDoesNotDriveAWatchFedSession() async {
+        let r = make()
+        await r.rig.attach()
+        r.rig.session.onData(control(op: LiveWorkoutWire.opStart, type: 1, status: 1))
+        await eventually { r.events.last != nil }
+        let n = r.events.payloads.count
+        r.live.onHeartRate(150)
+        XCTAssertEqual(r.events.payloads.count, n)
+    }
+
+    func testDefaultsWithoutAProfile() {
+        let r = make()
+        r.live.startManual()
+        XCTAssertEqual(r.events.last?["maxHeartRate"] as? Int, 185)
+        r.live.onHeartRate(100)
+        r.counter.advance(6_000)
+        r.live.onHeartRate(100)
+        let kcal = HeartRateEnergy.kcalPerMinute(heartRate: 100, weightKg: 70, age: 35, sex: "unknown") * 0.1
+        XCTAssertEqual(r.events.last?["calories"] as? Double ?? -1, kcal, accuracy: 1e-9)
+    }
+
+    // MARK: the 17/03 status poll and the GPS requests
+
+    func testTheStatusPollStartsFollowsAndEndsAPhoneSideSession() {
+        let r = make()
+        r.live.watchStatus(running: true, paused: false, workoutType: 7)
+        XCTAssertEqual(r.events.last?["source"] as? String, "status")
+        XCTAssertEqual(r.events.last?["sportType"] as? Int, 7)
+        XCTAssertEqual(r.counter.toggles, [true])
+        r.live.onHeartRate(120)
+        r.live.watchStatus(running: true, paused: true, workoutType: 7)
+        XCTAssertEqual(r.events.last?["status"] as? String, "paused")
+        r.live.onHeartRate(120) // paused: not counted
+        XCTAssertEqual(r.events.last?["status"] as? String, "paused")
+        r.live.watchStatus(running: true, paused: false, workoutType: nil)
+        XCTAssertEqual(r.events.last?["status"] as? String, "running")
+        // One idle answer is not enough; the second ends it (no GPS request ever came, so the silence has elapsed).
+        r.counter.advance(LiveWorkout.gpsSilenceMs + 1_000)
+        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        XCTAssertEqual(r.events.last?["status"] as? String, "running")
+        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        XCTAssertEqual(r.events.last?["status"] as? String, "ended")
+        XCTAssertEqual(r.counter.toggles, [true, false])
+        XCTAssertTrue(r.events.contains("no workout 2 times in a row"))
+    }
+
+    func testARunningAnswerResetsTheIdleCountAndGpsRequestsKeepASessionAlive() {
+        let r = make()
+        r.live.watchStatus(running: true, paused: false, workoutType: nil)
+        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        r.live.watchStatus(running: true, paused: false, workoutType: nil)
+        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        XCTAssertEqual(r.events.last?["status"] as? String, "running")
+        // Two idle answers but a GPS request a moment ago: the watch is still running a workout.
+        r.live.gpsPing()
+        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        XCTAssertEqual(r.events.last?["status"] as? String, "running")
+        r.counter.advance(LiveWorkout.gpsSilenceMs + 1)
+        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        XCTAssertEqual(r.events.last?["status"] as? String, "ended")
+    }
+
+    func testAnIdleAnswerNeverEndsAWatchFedOrManualSession() async {
+        let r = make()
+        r.live.startManual()
+        r.counter.advance(LiveWorkout.gpsSilenceMs * 2)
+        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+    }
+
+    func testGpsPingOpensASessionOnceAndTheWatchdogEndsItOnSilence() async {
+        let r = make(watchdogEveryMs: 20)
+        r.live.gpsPing()
+        XCTAssertEqual(r.events.last?["source"] as? String, "gps")
+        XCTAssertEqual(r.counter.toggles, [true])
+        let n = r.events.payloads.count
+        r.live.gpsPing()
+        XCTAssertEqual(r.events.payloads.count, n)
+        XCTAssertEqual(r.counter.toggles, [true])
+        // Silence for longer than the limit and no status answer ever: the watchdog ends the session.
+        r.counter.advance(LiveWorkout.gpsSilenceMs + LiveWorkout.statusStaleMs)
+        await eventually("watchdog end") { r.events.last?["status"] as? String == "ended" }
+        XCTAssertTrue(r.events.contains("does not answer the status poll"))
+        XCTAssertEqual(r.counter.toggles, [true, false])
+    }
+
+    func testTheWatchdogLeavesASessionAloneWhileTheStatusPollAnswers() async {
+        let r = make(watchdogEveryMs: 20)
+        r.live.gpsPing()
+        r.counter.advance(LiveWorkout.gpsSilenceMs + 1_000)
+        r.live.watchStatus(running: true, paused: false, workoutType: nil) // a fresh answer
+        await sleepMs(150)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+        r.live.finish()
+    }
+
+    // MARK: the realtime report and the switch from phone-side to watch-fed
+
+    func testAReportReplacesAPhoneSideSessionKeepingItsId() {
+        let r = make()
+        r.live.startManual()
+        let id = r.events.last?["id"] as? Double
+        r.live.onHeartRate(100)
+        var t = HuaweiTLV()
+        t.put(0x02, bytes: hex("0100"))
+        t.put(0x03, bytes: hex("8C"))
+        t.put(0x09, bytes: hex("00C350"))
+        t.put(0x11, bytes: hex("01"))
+        r.live.onReport(WorkoutReport.parse(t))
+        let s = r.events.last!
+        XCTAssertEqual(s["source"] as? String, "watch")
+        XCTAssertEqual(s["id"] as? Double, id)
+        XCTAssertEqual(s["heartRate"] as? Int, 140)
+        XCTAssertEqual(s["durationSec"] as? Int, 256)
+        XCTAssertEqual(s["calories"] as? Double, 50.0)
+        XCTAssertTrue(r.events.contains("using them instead of the heart-rate estimate"))
+        var stop = HuaweiTLV()
+        stop.put(0x11, bytes: hex("04"))
+        r.live.onReport(WorkoutReport.parse(stop))
+        XCTAssertEqual(r.events.last?["status"] as? String, "ended")
+        XCTAssertEqual(r.counter.toggles.last, false)
+    }
+
+    // MARK: JS shape
+
+    func testTheSnapshotHasEveryFieldOfTheTypeScriptInterface() {
+        let r = make()
+        r.live.startManual()
+        let keys = Set(r.live.snapshot()!.keys)
+        let expected: Set<String> = [
+            "id", "status", "source", "sportType", "sportName", "updatedAt", "endedAt", "durationSec", "heartRate", "heartRateZone", "maxHeartRate",
+            "distanceM", "calories", "activeCalories", "speedKmh", "paceSecPerKm", "stepRate", "steps", "cadence", "altitudeM", "riseM", "descentM",
+            "aerobicTe", "anaerobicTe", "fatGrams", "carbGrams", "fatShare",
+        ]
+        XCTAssertEqual(keys, expected)
+        XCTAssertTrue(r.live.snapshot()!["heartRate"] is NSNull)
+    }
+
+    // MARK: WorkoutLink: GPS, status poll and report against a scripted watch
+
+    private struct LinkRig {
+        let r: Rig
+        let gps: FakeGps
+        let link: WorkoutLink
+    }
+
+    private func makeLink(statusFirstMs: Int = 20, statusEveryMs: Int = 40, gpsBitmap: Int = 0xD7, poll: @escaping @Sendable () -> Bytes? = { nil }) -> LinkRig {
+        let r = make()
+        let gps = FakeGps()
+        let link = WorkoutLink(link: r.rig.source, events: r.events, live: r.live, gps: gps, statusFirstMs: statusFirstMs, statusEveryMs: statusEveryMs, nowMs: { r.counter.now })
+        r.rig.watch.responder = { sent in
+            switch (sent.service, sent.command) {
+            case (0x18, 0x01):
+                var inner = HuaweiTLV()
+                inner.put(0x02, byte: UInt8(gpsBitmap))
+                var t = HuaweiTLV()
+                t.put(0x81, tlv: inner)
+                return [frame(0x18, 0x01, t)]
+            case (0x17, 0x12): return [frame(0x17, 0x12, HuaweiTLV())]
+            case (0x17, 0x03): return poll().map { [$0] } ?? []
+            default: return []
+            }
+        }
+        return LinkRig(r: r, gps: gps, link: link)
+    }
+
+    private func gpsRequest(_ on: Bool) -> Bytes {
+        var t = HuaweiTLV()
+        t.put(0x01, byte: on ? 1 : 0)
+        return frame(0x18, 0x02, t)
+    }
+
+    func testTheWatchAsksForGpsAndGetsFixesUntilItStops() async throws {
+        let l = makeLink()
+        let h = l.r.rig.source.current!
+        await l.link.linkConnected(h)
+        l.r.rig.session.onData(gpsRequest(true))
+
+        await eventually("gps started") { l.gps.started == 1 }
+        // The answer (18/02 {7F: 100000}), the parameter read (18/01) and the report open (17/12) went out; a session follows the workout.
+        let sent = l.r.rig.watch.sent
+        let answer = try XCTUnwrap(sent.first { $0.service == 0x18 && $0.command == 0x02 })
+        XCTAssertEqual(WorkoutLinkWire.gpsAnswer().tlv?.serialize(), answer.tlv.serialize())
+        XCTAssertTrue(sent.contains { $0.service == 0x18 && $0.command == 0x01 })
+        XCTAssertTrue(sent.contains { $0.service == 0x17 && $0.command == 0x12 })
+        XCTAssertEqual(l.r.live.snapshot()?["source"] as? String, "gps")
+        XCTAssertEqual(l.r.counter.toggles, [true])
+        XCTAssertTrue(l.r.events.contains("watch takes GPS fields bitmap 0xd7"))
+
+        // Fixes: the first has no distance, the second the metres since the first.
+        let t0 = l.r.counter.now
+        let first = WorkoutLinkWire.Fix(latitude: -6.9147, longitude: 107.6098, timeMs: t0, speed: 2.9, altitude: 712.6, bearing: 271.5, accuracy: 4.5)
+        let second = WorkoutLinkWire.Fix(latitude: -6.9146, longitude: 107.6099, timeMs: t0 + 1000, speed: 3.1, altitude: 713.0, bearing: 90, accuracy: 5)
+        l.gps.emit(first)
+        await eventually("first fix") { l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x03 }.count == 1 }
+        l.gps.emit(second)
+        await eventually("second fix") { l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x03 }.count == 2 }
+        let fixes = l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x03 }
+        let params = WorkoutLinkWire.GpsParams(bitmap: 0xD7)
+        let nowMs = l.r.counter.now
+        XCTAssertEqual(
+            fixes[0].tlv.serialize(), WorkoutLinkWire.gpsFix(params, fix: first, previous: nil, distanceFromPrevious: nil, nowMs: nowMs).tlv?.serialize()
+        )
+        XCTAssertEqual(
+            fixes[1].tlv.serialize(),
+            WorkoutLinkWire.gpsFix(params, fix: second, previous: first, distanceFromPrevious: second.distance(to: first), nowMs: nowMs).tlv?.serialize()
+        )
+
+        // A second request while streaming does not start a second stream; "off" stops it and further fixes are not sent.
+        l.r.rig.session.onData(gpsRequest(true))
+        await sleepMs(100)
+        XCTAssertEqual(l.gps.started, 1)
+        l.r.rig.session.onData(gpsRequest(false))
+        await eventually("gps stopped") { l.gps.stopped == 1 }
+        l.gps.emit(first)
+        await sleepMs(80)
+        XCTAssertEqual(l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x03 }.count, 2)
+        XCTAssertTrue(l.r.events.contains("phone GPS stopped"))
+    }
+
+    func testGpsWithoutLocationPermissionIsAnsweredAndLogged() async {
+        let l = makeLink()
+        l.gps.auth = .denied
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually("logged") { l.r.events.contains("no location permission") }
+        XCTAssertEqual(l.gps.started, 0)
+        XCTAssertTrue(l.r.rig.watch.sent.contains { $0.service == 0x18 && $0.command == 0x02 })
+        // The live session still follows the workout on the heart rate.
+        XCTAssertEqual(l.r.live.snapshot()?["source"] as? String, "gps")
+    }
+
+    func testTheFirstGpsRequestShowsTheSystemPromptOnce() async {
+        let l = makeLink()
+        l.gps.auth = .notDetermined
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually("started after the answer") { l.gps.started == 1 }
+        XCTAssertEqual(l.gps.asked, 1)
+        // The user said no earlier in this process: the watch's next request does not ask again.
+        l.gps.auth = .notDetermined
+        l.r.rig.session.onData(gpsRequest(false))
+        await eventually { l.gps.stopped == 1 }
+        l.r.rig.session.onData(gpsRequest(true))
+        await sleepMs(150)
+        XCTAssertEqual(l.gps.asked, 1)
+    }
+
+    func testFieldsTheWatchDoesNotTakeAreLeftOut() async throws {
+        let l = makeLink(gpsBitmap: 0x10)
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually { l.gps.started == 1 }
+        l.gps.emit(WorkoutLinkWire.Fix(latitude: 1, longitude: 2, timeMs: l.r.counter.now, speed: 3, altitude: 4, bearing: 5, accuracy: 6))
+        await eventually { l.r.rig.watch.sent.contains { $0.service == 0x18 && $0.command == 0x03 } }
+        let fix = try XCTUnwrap(l.r.rig.watch.sent.first { $0.service == 0x18 && $0.command == 0x03 })
+        let point = try fix.tlv.object(0x81).object(0x82)
+        XCTAssertTrue(point.contains(0x09) && point.contains(0x0A) && point.contains(0x07) && point.contains(0x08))
+        XCTAssertFalse(point.contains(0x03) || point.contains(0x04) || point.contains(0x05) || point.contains(0x0D) || point.contains(0x0E))
+    }
+
+    func testTheStatusPollStartsASessionForAnIndoorWorkoutAndEndsIt() async {
+        let idle = Counter()
+        let l = makeLink(poll: { statusAnswer(operatorType: idle.toggles.isEmpty ? 1 : 4, workoutType: 13) })
+        await l.link.linkConnected(l.r.rig.source.current!)
+        await eventually("session from the poll") { l.r.live.snapshot()?["source"] as? String == "status" }
+        XCTAssertEqual(l.r.live.snapshot()?["sportType"] as? Int, 13)
+        XCTAssertEqual(l.r.counter.toggles, [true])
+        // The watch reports the workout over: two idle answers in a row end it (the clock is past the GPS silence).
+        idle.toggle(true)
+        l.r.counter.advance(LiveWorkout.gpsSilenceMs + 1_000)
+        await eventually("ended by the poll") { l.r.live.snapshot()?["status"] as? String == "ended" }
+        XCTAssertTrue(l.r.rig.watch.sent.contains { $0.service == 0x17 && $0.command == 0x03 })
+        l.link.linkDisconnected()
+    }
+
+    func testAWatchThatDoesNotAnswerTheStatusPollStopsTheProbe() async {
+        let l = makeLink(poll: { nil })
+        // The request times out after 5 s in production; here the session closing is what ends it, so only check that the probe is logged
+        // and nothing else starts.
+        await l.link.linkConnected(l.r.rig.source.current!)
+        await eventually("probing logged") { l.r.events.contains("does not list 17/03; probing it") }
+        XCTAssertNil(l.r.live.snapshot())
+        l.link.linkDisconnected()
+    }
+
+    func testRealtimeReportsFeedTheWatchSession() async {
+        let l = makeLink()
+        await l.link.linkConnected(l.r.rig.source.current!)
+        var body = HuaweiTLV()
+        body.put(0x02, bytes: hex("003C"))
+        body.put(0x03, bytes: hex("96"))
+        body.put(0x08, bytes: hex("03E8"))
+        body.put(0x11, bytes: hex("01"))
+        var t = HuaweiTLV()
+        t.put(0x81, tlv: body)
+        l.r.rig.session.onData(frame(0x17, 0x11, t))
+        await eventually("report") { l.r.live.snapshot()?["heartRate"] as? Int == 150 }
+        let s = l.r.live.snapshot()!
+        XCTAssertEqual(s["source"] as? String, "watch")
+        XCTAssertEqual(s["durationSec"] as? Int, 60)
+        XCTAssertEqual(s["distanceM"] as? Double, 1000)
+        XCTAssertEqual(s["status"] as? String, "running")
+        // A flat report (no 81 wrapper) is read too.
+        var flat = HuaweiTLV()
+        flat.put(0x03, bytes: hex("A0"))
+        l.r.rig.session.onData(frame(0x17, 0x11, flat))
+        await eventually("flat report") { l.r.live.snapshot()?["heartRate"] as? Int == 160 }
+    }
+
+    func testALinkLossStopsGpsAndTheNextSessionSubscribesAgain() async {
+        let l = makeLink()
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually { l.gps.started == 1 }
+        l.link.linkDisconnected()
+        XCTAssertEqual(l.gps.stopped, 1)
+        // The same session announced again is not subscribed twice; a request on it is still handled once.
+        await l.link.linkConnected(l.r.rig.source.current!)
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually { l.gps.started == 2 }
+        let answers = l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x02 }.count
+        XCTAssertEqual(answers, 2)
+        l.link.linkDisconnected()
+    }
+}

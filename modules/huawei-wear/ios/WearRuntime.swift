@@ -58,6 +58,9 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var dataSync: DataSyncService!
     /// Editable watch-face options over DataSync.
     public private(set) var faceCustomizer: WatchfaceCustomizer!
+    /// A workout started on the watch, followed live (and the phone's GPS for it).
+    public private(set) var liveWorkout: LiveWorkout!
+    public private(set) var workoutLink: WorkoutLink!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -91,7 +94,8 @@ public final class WearRuntime: @unchecked Sendable {
         clock: @escaping @Sendable () -> Int = BackgroundController.uptimeMs,
         weatherLocation: LocationSource = UnavailableLocationSource(),
         weatherFetch: @escaping WeatherFetch = WeatherNetwork.fetch,
-        weatherDefaults: UserDefaults? = nil
+        weatherDefaults: UserDefaults? = nil,
+        liveGps: LiveGpsSource = UnavailableLiveGps()
     ) {
         self.settings = settings
         self.syncStore = syncStore
@@ -119,6 +123,12 @@ public final class WearRuntime: @unchecked Sendable {
         faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
         dataSync.register(faceCustomizer)
         linkObservers.add(dataSync)
+        liveWorkout = LiveWorkout(
+            dataSync: dataSync, events: fanOut, settings: settings, setHeartRateActive: { [watchSettings] in watchSettings?.liveHeartRate.setWorkoutActive($0) }
+        )
+        dataSync.register(liveWorkout)
+        workoutLink = WorkoutLink(link: link, events: fanOut, live: liveWorkout, gps: liveGps)
+        linkObservers.add(workoutLink)
     }
 
     // MARK: events
@@ -158,7 +168,10 @@ public final class WearRuntime: @unchecked Sendable {
         currentListeners().forEach { $0.syncComplete(summary) }
     }
 
-    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) { currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) } }
+    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) {
+        liveWorkout?.onHeartRate(bpm)
+        currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) }
+    }
 
     fileprivate func handleHrvProgress(_ secondsLeft: Int, _ beats: Int) { currentListeners().forEach { $0.hrvProgress(secondsLeft: secondsLeft, beats: beats) } }
 
@@ -190,6 +203,7 @@ public final class WearRuntime: @unchecked Sendable {
             runtime?.currentListeners().forEach { $0.uploadResult(ok: ok, fileName: fileName, code: code, message: message) }
         }
         func faceCustomization(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.faceCustomization(payload) } }
+        func liveWorkout(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.liveWorkout(payload) } }
     }
 
     // MARK: bonded devices

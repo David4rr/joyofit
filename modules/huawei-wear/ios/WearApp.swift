@@ -22,6 +22,15 @@ public enum WearApp {
         #endif
     }
 
+    /// The phone's precise position while a workout started on the watch asks for it (when-in-use, foreground).
+    private static var liveGpsSource: LiveGpsSource {
+        #if canImport(CoreLocation)
+        return CoreLocationStream()
+        #else
+        return UnavailableLiveGps()
+        #endif
+    }
+
     /// The one runtime. Creating it touches nothing on the radio: the central starts on the first connect or scan, or at launch when
     /// background mode is on (`HuaweiWearAppDelegateSubscriber`).
     public static let runtime: WearRuntime = {
@@ -41,7 +50,8 @@ public enum WearApp {
                 return await central.nearbyWatches(timeoutMs: timeoutMs).map { NearbyWatch(identifier: $0.identifier.uuidString, name: $0.name) }
             },
             expiring: expiringWork,
-            weatherLocation: weatherLocationSource
+            weatherLocation: weatherLocationSource,
+            liveGps: liveGpsSource
         )
         // Bluetooth coming back on is the moment a waiting background connect can be retried.
         _ = central.addObserver { state in
