@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -58,25 +58,28 @@ export default function WatchScreen() {
   // Measured row heights, so the list shows exactly VISIBLE_BONDED rows before it scrolls.
   const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
 
-  const showEmpty = bonded.devices.length === 0 && !bonded.loading && !bonded.error;
   const linked = watch.linkState === 'connected' || watch.linkState === 'syncing';
 
-  // Auto-stop scanning as soon as a connection is initiated or established
-  useEffect(() => {
-    if ((watch.linkState === 'connecting' || watch.linkState === 'connected' || watch.linkState === 'syncing') && bonded.scanning) {
-      void bonded.stopScan();
+  // The watch in use first (including active BLE device even before scan), then the ones this app can talk to best.
+  const devices = useMemo(() => {
+    const list = [...bonded.devices];
+    if (watch.activeAddress && !list.some((d) => d.address === watch.activeAddress)) {
+      list.unshift({
+        address: watch.activeAddress,
+        name: watch.device?.name || watch.activeAddress,
+        model: watch.device?.model ?? null,
+        support: watch.device?.support ?? 'tested',
+        reason: null,
+      });
     }
-  }, [watch.linkState, bonded.scanning, bonded]);
-  // The watch in use first, then the ones this app can talk to best.
-  const devices = useMemo(
-    () =>
-      [...bonded.devices].sort(
-        (a, b) =>
-          Number(b.address === watch.activeAddress) - Number(a.address === watch.activeAddress) ||
-          supportRank(a.support) - supportRank(b.support),
-      ),
-    [bonded.devices, watch.activeAddress],
-  );
+    return list.sort(
+      (a, b) =>
+        Number(b.address === watch.activeAddress) - Number(a.address === watch.activeAddress) ||
+        supportRank(a.support) - supportRank(b.support),
+    );
+  }, [bonded.devices, watch.activeAddress, watch.device]);
+
+  const showEmpty = devices.length === 0 && !bonded.loading && !bonded.error;
   const listMaxHeight = useMemo(() => {
     if (devices.length <= VISIBLE_BONDED) return undefined;
     const heights = devices.slice(0, VISIBLE_BONDED).map((d) => rowHeights[d.address]);
@@ -155,7 +158,9 @@ export default function WatchScreen() {
                         void watch.connect(address);
                       }}
                       onDisconnect={() => void watch.disconnect()}
-                      onForget={(address) => void watch.forget(address)}
+                      onForget={(address) => {
+                        void watch.forget(address).then(() => void bonded.reload());
+                      }}
                     />
                   </View>
                 ))}

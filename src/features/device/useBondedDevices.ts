@@ -34,10 +34,20 @@ export function useBondedDevices(enabled: boolean) {
     try {
       const bonded = await HuaweiWear.getBondedDevices();
       const discovered = HuaweiWear.getDiscoveredDevices();
+      const activeDev = HuaweiWear.getDevice();
       const map = new Map<string, BondedDevice>();
       for (const d of bonded) map.set(d.address, d);
       for (const d of discovered) {
         if (!map.has(d.address)) map.set(d.address, d);
+      }
+      if (activeDev && !map.has(activeDev.address)) {
+        map.set(activeDev.address, {
+          address: activeDev.address,
+          name: activeDev.name || activeDev.address,
+          model: activeDev.model ?? null,
+          support: activeDev.support,
+          reason: null,
+        });
       }
       deviceMapRef.current = map;
       setState((s) => ({

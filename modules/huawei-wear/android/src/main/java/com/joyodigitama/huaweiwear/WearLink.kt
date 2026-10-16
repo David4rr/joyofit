@@ -158,12 +158,27 @@ internal class WearLink(
   fun bondedDevices(): List<Map<String, Any?>> {
     val adapter = requireAdapter()
     try {
-      return adapter.bondedDevices
-        .map { device ->
-          val name = device.name ?: device.address
-          mapOf("address" to device.address, "name" to name) + WatchModels.match(device.name).toJs()
+      val map = mutableMapOf<String, Map<String, Any?>>()
+      for (device in adapter.bondedDevices) {
+        val name = device.name ?: device.address
+        map[device.address] = mapOf("address" to device.address, "name" to name) + WatchModels.match(device.name).toJs()
+      }
+      synchronized(lock) {
+        val conn = current
+        if (conn != null && !map.containsKey(conn.address)) {
+          val name = conn.info?.get("name") as? String ?: lastAttemptName ?: conn.address
+          map[conn.address] = mapOf("address" to conn.address, "name" to name) + conn.model.toJs()
         }
-        .sortedBy { (it["name"] as String).lowercase(Locale.ROOT) }
+      }
+      for ((addr, name) in discoveredNames) {
+        if (!map.containsKey(addr)) {
+          val match = WatchModels.match(name)
+          if (match.connectable) {
+            map[addr] = mapOf("address" to addr, "name" to name) + match.toJs()
+          }
+        }
+      }
+      return map.values.sortedBy { (it["name"] as? String)?.lowercase(Locale.ROOT) ?: "" }
     } catch (e: SecurityException) {
       throw WearException(ErrorCodes.BLUETOOTH_PERMISSION, "BLUETOOTH_CONNECT permission denied: ${e.message}", e)
     }
