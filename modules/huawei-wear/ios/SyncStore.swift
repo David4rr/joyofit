@@ -175,13 +175,14 @@ public final class SyncStore: @unchecked Sendable {
                       distance = excluded.distance,
                       heart_rate = excluded.heart_rate,
                       spo2 = excluded.spo2,
-                      resting_heart_rate = excluded.resting_heart_rate
+                      resting_heart_rate = excluded.resting_heart_rate,
+                      imported = 0
                     """
                 )
                 let segment = try db.prepare(
                     """
                     INSERT INTO sleep_segments (start, end, type, stage) VALUES (?, ?, ?, ?)
-                    ON CONFLICT(start, type) DO UPDATE SET end = excluded.end, stage = excluded.stage
+                    ON CONFLICT(start, type) DO UPDATE SET end = excluded.end, stage = excluded.stage, imported = 0
                     """
                 )
                 for s in result.samples {

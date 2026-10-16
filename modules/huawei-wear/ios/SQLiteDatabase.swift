@@ -121,6 +121,12 @@ public final class SQLiteDatabase {
 
     public func prepare(_ sql: String) throws -> SQLiteStatement { try SQLiteStatement(owner: self, sql: sql) }
 
+    /// Rows the most recently completed INSERT, UPDATE or DELETE changed (`executeUpdateDelete`'s result on Android).
+    public var changes: Int { Int(sqlite3_changes(handle)) }
+
+    /// The rowid of the most recent successful INSERT on this connection.
+    public var lastInsertRowId: Int64 { sqlite3_last_insert_rowid(handle) }
+
     /// Prepares, binds and runs a statement that returns no rows.
     public func run(_ sql: String, _ values: [SQLValue] = []) throws {
         let statement = try prepare(sql)

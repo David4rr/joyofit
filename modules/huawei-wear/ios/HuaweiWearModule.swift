@@ -115,6 +115,8 @@ public final class HuaweiWearModule: Module {
             emit("onUploadResult", ["ok": ok, "fileName": fileName, "code": code, "message": message])
         }
         func faceCustomization(_ payload: [String: Any]) { emit("onFaceCustomization", payload) }
+        /// `onHuaweiImportProgress`: not part of `WearEvents`; the import controller reports to the module that started it.
+        func huaweiImportProgress(_ payload: [String: Any]) { emit("onHuaweiImportProgress", payload) }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -132,6 +134,7 @@ public final class HuaweiWearModule: Module {
 
     public func definition() -> ModuleDefinition {
         let runtime = self.runtime
+        let bridge = self.bridge
 
         Name("HuaweiWear")
 
@@ -140,7 +143,7 @@ public final class HuaweiWearModule: Module {
 
         Events(
             "onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged",
-            "onFaceCustomization", "onLiveWorkout", "onHrvProgress"
+            "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress"
         )
 
         OnCreate {
@@ -402,6 +405,17 @@ public final class HuaweiWearModule: Module {
 
         AsyncFunction("setPhotoFaceActive") { () async throws -> [String: Any] in
             try await wearCall { try await runtime.photoFaces.setActive() }
+        }
+
+        // MARK: Huawei Health history import
+
+        // The ZIP is opened in place from the picker's file URL; progress goes out as `onHuaweiImportProgress` through the module that started it.
+        AsyncFunction("importHuaweiExport") { (uri: String, password: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.huaweiImport.run(uri: uri, password: password) { bridge.huaweiImportProgress($0) } }
+        }
+
+        Function("cancelHuaweiImport") { () -> Void in
+            runtime.huaweiImport.cancel()
         }
 
         // MARK: switches of phone-side features that are always off here

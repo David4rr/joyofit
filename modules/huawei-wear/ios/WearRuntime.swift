@@ -58,6 +58,8 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var dataSync: DataSyncService!
     /// Editable watch-face options over DataSync.
     public private(set) var faceCustomizer: WatchfaceCustomizer!
+    /// The Huawei Health history import (one at a time; the module forwards its progress as `onHuaweiImportProgress`).
+    public private(set) var huaweiImport: HuaweiImportController!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -119,6 +121,7 @@ public final class WearRuntime: @unchecked Sendable {
         faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
         dataSync.register(faceCustomizer)
         linkObservers.add(dataSync)
+        huaweiImport = HuaweiImportController(syncStore: syncStore)
     }
 
     // MARK: events

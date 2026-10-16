@@ -79,11 +79,12 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   forgetDevice(address: string): Promise<void>;
 
   /**
-   * Android only. One-time import of the history in a Huawei Privacy Centre "Request Your Data - Health" ZIP, read on the
-   * phone and written to the database; nothing is sent anywhere. `uri` is a `content://` or `file://` URI of the ZIP,
-   * `password` the one set when the data was requested (it is held in memory for the run only). Progress arrives as
+   * One-time import of the history in a Huawei Privacy Centre "Request Your Data - Health" ZIP, read on the
+   * phone and written to the database; nothing is sent anywhere. `uri` is a `content://` (Android) or `file://` URI of
+   * the ZIP, opened in place (on iOS: a security-scoped URL from the document picker), `password` the one set when the
+   * data was requested (it is held in memory for the run only). Progress arrives as
    * `onHuaweiImportProgress`. Watch data already on the phone is never overwritten and importing the same file again adds
-   * nothing; imported rows carry `imported = 1` and stay out of the cloud upload, Health Connect and Strava. Rejects with
+   * nothing; imported rows carry `imported = 1` and stay out of the cloud upload, Health Connect / Apple Health and Strava. Rejects with
    * ERR_IMPORT_PASSWORD (wrong or missing password), ERR_IMPORT_FORMAT (not a ZIP, or no Health data folders), ERR_BUSY
    * (an import is running) or ERR_STORAGE.
    */

@@ -7,13 +7,18 @@
 // Each shape becomes an object literal assigned to its interface, so a missing field, a misnamed field, an extra field and a wrong literal type
 // (`fallSwitch: -1 | 0 | 1`) are all compile errors.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..', '..', '..');
-const shapes = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+// A feature's own tests may dump their shapes next to the main file as `<name>.<feature>.json` (shapes.json -> shapes.huawei-import.json);
+// they are checked together with it.
+const main = process.argv[2];
+const stem = basename(main, '.json');
+const extras = readdirSync(dirname(main)).filter((f) => f.startsWith(`${stem}.`) && f.endsWith('.json')).map((f) => join(dirname(main), f));
+const shapes = Object.assign({}, ...[main, ...extras].map((f) => JSON.parse(readFileSync(f, 'utf8'))));
 
 const sources = {
   PhoneFeatures: 'HuaweiWearPhone.types',
@@ -26,6 +31,8 @@ const sources = {
   DietStatus: 'HuaweiWearDiet.types',
   HealthyLivingStatus: 'HuaweiWearP2p.types',
   CoursesStatus: 'HuaweiWearP2p.types',
+  HuaweiImportSummary: 'HuaweiWearImport.types',
+  HuaweiImportProgressEvent: 'HuaweiWearImport.types',
 };
 const core = 'HuaweiWear.types';
 

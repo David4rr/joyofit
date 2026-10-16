@@ -278,7 +278,7 @@ public final class HealthExporter: @unchecked Sendable {
     private func exportAll(granted: Set<HealthRecordType>, version: Int64, device: HealthDevice) async throws -> HealthExportCounts {
         var counts = HealthExportCounts()
         let bounds: (Int64, Int64)? = try syncStore.read { db in
-            try db.query("SELECT MIN(timestamp), MAX(timestamp) FROM step_samples") { s in s.isNull(0) ? nil : (s.int64(0), s.int64(1)) }.first ?? nil
+            try db.query("SELECT MIN(timestamp), MAX(timestamp) FROM step_samples WHERE imported = 0") { s in s.isNull(0) ? nil : (s.int64(0), s.int64(1)) }.first ?? nil
         }
         if let bounds {
             var calendar = Calendar(identifier: .gregorian)
@@ -300,7 +300,7 @@ public final class HealthExporter: @unchecked Sendable {
             try db.query(
                 """
                 SELECT timestamp, steps, calories, distance, heart_rate, spo2, resting_heart_rate
-                FROM step_samples WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp
+                FROM step_samples WHERE imported = 0 AND timestamp >= ? AND timestamp < ? ORDER BY timestamp
                 """,
                 [.int(fromSec), .int(toSec)]
             ) { s in
@@ -352,7 +352,7 @@ public final class HealthExporter: @unchecked Sendable {
         guard granted.contains(.sleepSession) else { return }
         // Read a day before the window so a night that began before it is seen whole.
         let segments: [SleepSegment] = try syncStore.read { db in
-            try db.query("SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start", [.int(fromSec - 24 * 3600)]) { s in
+            try db.query("SELECT start, end, type, stage FROM sleep_segments WHERE imported = 0 AND end >= ? ORDER BY start", [.int(fromSec - 24 * 3600)]) { s in
                 SleepSegment(start: s.int64(0), end: s.int64(1), type: s.int(2), stage: s.text(3))
             }
         }
@@ -385,7 +385,7 @@ public final class HealthExporter: @unchecked Sendable {
                 SELECT w.start, w.end, w.duration, w.sport_type, w.sport_name, w.distance, w.calories, w.avg_hr, w.max_hr, w.id,
                   (SELECT COUNT(*) FROM workout_points p WHERE p.workout_id = w.id AND p.hr IS NOT NULL),
                   (SELECT COUNT(*) FROM workout_points p WHERE p.workout_id = w.id AND p.lat IS NOT NULL AND p.lon IS NOT NULL)
-                FROM workouts w WHERE w.complete = 1 ORDER BY w.start
+                FROM workouts w WHERE w.imported = 0 AND w.complete = 1 ORDER BY w.start
                 """
             ) { s -> (row: WorkoutRow, id: Int64)? in
                 let start = s.int64(0)

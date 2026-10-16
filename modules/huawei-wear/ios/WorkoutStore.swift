@@ -45,7 +45,8 @@ public final class WorkoutStore: WorkoutSink {
                       max_hr = excluded.max_hr,
                       steps = excluded.steps,
                       summary_json = excluded.summary_json,
-                      complete = excluded.complete
+                      complete = excluded.complete,
+                      imported = 0
                     """,
                     [
                         .int(Int64(record.number)), .int(record.start), .int(record.end), .int(Int64(record.sportType)), .text(record.sportName),
@@ -72,10 +73,11 @@ public final class WorkoutStore: WorkoutSink {
     }
 
     /// Start of the next workout window, unix seconds. GB asks for everything after the newest stored workout (and from 2022-06-10 when there
-    /// is none); the start of the oldest incomplete workout wins over that so it is downloaded again.
+    /// is none); the start of the oldest incomplete workout wins over that so it is downloaded again. Workouts imported from a Huawei export say
+    /// nothing about what the watch still holds, so they do not count.
     public func syncStart() throws -> Int {
         let (newestEnd, oldestIncomplete): (Int64?, Int64?) = try store.read { db in
-            let newest = try db.query("SELECT MAX(end) FROM workouts") { $0.isNull(0) ? nil : $0.int64(0) }.first ?? nil
+            let newest = try db.query("SELECT MAX(end) FROM workouts WHERE imported = 0") { $0.isNull(0) ? nil : $0.int64(0) }.first ?? nil
             let incomplete = try db.query("SELECT MIN(start) FROM workouts WHERE complete = 0") { $0.isNull(0) ? nil : $0.int64(0) }.first ?? nil
             return (newest, incomplete)
         }
