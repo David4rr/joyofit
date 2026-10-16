@@ -19,9 +19,9 @@ import { useWatch } from '@/state/WatchProvider';
 import { fonts, spacing, useColors } from '@/theme';
 
 const CONNECT_STEPS = [
-  'Reset or Disconnect the band (Settings > System > Disconnect on the band) until it shows "Pairing..." or QR code.',
-  'Keep the band screen awake and ensure phone Bluetooth & Location (GPS) toggles are turned ON.',
-  'Tap "Scan nearby devices" below. When your band appears, tap Connect and tap the checkmark on its screen.',
+  'Disconnect the watch/band (Settings > System > Disconnect on the device) until it enters pairing mode or shows a QR code.',
+  'Keep the device screen awake and ensure phone Bluetooth and Location are turned on.',
+  'Tap "Scan nearby devices" below. When your device appears, tap Connect and accept the prompt on its screen.',
 ];
 
 /** The three things that have to be true before the first connect, in the order they happen. */
