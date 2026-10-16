@@ -313,8 +313,9 @@ export function StravaPage() {
             <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted-foreground">
               JoyoFit membuat berkas FIT dari angka yang dicatat jam, bukan perkiraan Strava: total jarak, waktu aktif,
               kalori, jumlah langkah, detak jantung, dan titik rute, termasuk jeda yang dicatat jam. Berkasnya diuji dengan
-              membacanya balik memakai SDK FIT resmi Garmin. Strava menghitung waktu bergerak dan pace-nya sendiri dari
-              berkas, jadi angka di Strava bisa selisih sedikit dari layar jam.
+              membacanya balik memakai SDK FIT resmi Garmin. Di uji coba kami, Strava menampilkan jarak, waktu bergerak,
+              pace, kalori, dan langkah yang sama dengan jam. Detak jantung rata-rata bisa selisih sekitar 1 bpm, karena
+              Strava merata-ratakan sampelnya sendiri.
             </p>
 
             <h2 className="mt-8 text-lg font-extrabold tracking-tight">Kenapa masih lewat undangan</h2>
