@@ -59,6 +59,8 @@ internal class WearLink(
   private val discoveredNames = ConcurrentHashMap<String, String>()
   private val discoveredTransports = ConcurrentHashMap<String, ModelTransport>()
   private var scanCallback: ScanCallback? = null
+  private val scanHandler = android.os.Handler(android.os.Looper.getMainLooper())
+  private val scanTimeoutRunnable = Runnable { stopScan() }
   @Volatile var isScanning: Boolean = false
     private set
 
@@ -184,6 +186,8 @@ internal class WearLink(
     synchronized(this) {
       if (isScanning) return
       isScanning = true
+      scanHandler.removeCallbacks(scanTimeoutRunnable)
+      scanHandler.postDelayed(scanTimeoutRunnable, 12_000L)
     }
     events.scanState(true, null)
 
@@ -254,6 +258,7 @@ internal class WearLink(
     val cb = synchronized(this) {
       if (!isScanning) return
       isScanning = false
+      scanHandler.removeCallbacks(scanTimeoutRunnable)
       val c = scanCallback
       scanCallback = null
       c
@@ -295,6 +300,7 @@ internal class WearLink(
 
   @SuppressLint("MissingPermission")
   suspend fun connect(rawAddress: String): Map<String, Any?> {
+    stopScan()
     val address = rawAddress.trim().uppercase(Locale.ROOT)
     val adapter = requireAdapter()
     if (!BluetoothAdapter.checkBluetoothAddress(address)) {

@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -61,6 +61,12 @@ export default function WatchScreen() {
   const showEmpty = bonded.devices.length === 0 && !bonded.loading && !bonded.error;
   const linked = watch.linkState === 'connected' || watch.linkState === 'syncing';
 
+  // Auto-stop scanning as soon as a connection is initiated or established
+  useEffect(() => {
+    if ((watch.linkState === 'connecting' || watch.linkState === 'connected' || watch.linkState === 'syncing') && bonded.scanning) {
+      void bonded.stopScan();
+    }
+  }, [watch.linkState, bonded.scanning, bonded]);
   // The watch in use first, then the ones this app can talk to best.
   const devices = useMemo(
     () =>
@@ -144,7 +150,10 @@ export default function WatchScreen() {
                       device={d}
                       linkState={watch.linkState}
                       activeAddress={watch.activeAddress}
-                      onConnect={(address) => void watch.connect(address)}
+                      onConnect={(address) => {
+                        void bonded.stopScan();
+                        void watch.connect(address);
+                      }}
                       onDisconnect={() => void watch.disconnect()}
                       onForget={(address) => void watch.forget(address)}
                     />
@@ -152,7 +161,7 @@ export default function WatchScreen() {
                 ))}
               </ScrollView>
               <Button
-                label={bonded.scanning ? 'Stop scanning' : 'Scan nearby devices'}
+                label={bonded.scanning ? 'Stop scanning' : linked ? 'Scan for other devices' : 'Scan nearby devices'}
                 icon={bonded.scanning ? 'close' : 'refresh'}
                 loading={bonded.loading}
                 onPress={() => {

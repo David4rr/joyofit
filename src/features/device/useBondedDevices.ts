@@ -28,7 +28,7 @@ export function useBondedDevices(enabled: boolean) {
     error: null,
   });
   const deviceMapRef = useRef<Map<string, BondedDevice>>(new Map());
-
+  const scanTimeoutRef = useRef<number | null>(null);
   const reload = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }));
     try {
@@ -51,16 +51,9 @@ export function useBondedDevices(enabled: boolean) {
     }
   }, []);
 
-  const startScan = useCallback(async () => {
-    try {
-      setState((s) => ({ ...s, scanning: true, error: null }));
-      await HuaweiWear.startScan();
-    } catch (e) {
-      setState((s) => ({ ...s, scanning: false, error: errorMessage(e) }));
-    }
-  }, []);
-
   const stopScan = useCallback(async () => {
+    clearTimeout(scanTimeoutRef.current ?? undefined);
+    scanTimeoutRef.current = null;
     try {
       await HuaweiWear.stopScan();
       setState((s) => ({ ...s, scanning: false }));
@@ -69,6 +62,18 @@ export function useBondedDevices(enabled: boolean) {
     }
   }, []);
 
+  const startScan = useCallback(async () => {
+    try {
+      clearTimeout(scanTimeoutRef.current ?? undefined);
+      setState((s) => ({ ...s, scanning: true, error: null }));
+      await HuaweiWear.startScan();
+      scanTimeoutRef.current = setTimeout(() => {
+        void stopScan();
+      }, 12000) as unknown as number;
+    } catch (e) {
+      setState((s) => ({ ...s, scanning: false, error: errorMessage(e) }));
+    }
+  }, [stopScan]);
   useEventListener(HuaweiWear, 'onDeviceDiscovered', (device) => {
     const map = deviceMapRef.current;
     if (!map.has(device.address) || map.get(device.address)?.name !== device.name) {
@@ -92,12 +97,11 @@ export function useBondedDevices(enabled: boolean) {
     useCallback(() => {
       if (enabled) {
         void reload();
-        void startScan();
       }
       return () => {
         void stopScan();
       };
-    }, [enabled, reload, startScan, stopScan]),
+    }, [enabled, reload, stopScan]),
   );
 
   return { ...state, reload, startScan, stopScan };
