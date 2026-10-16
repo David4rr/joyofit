@@ -124,6 +124,12 @@ screenshots and how athlete data is handled). Before sending:
   `curl 'https://api.fit.joyorogo.com/strava/webhook?hub.mode=subscribe&hub.challenge=x&hub.verify_token=<token>'`.
 - Connected but nothing uploads: only workouts that **ended after** the connect time go up automatically; older ones need
   **Send to Strava**. Imported (Huawei export) workouts are never sent automatically.
+- iOS: connecting opens Strava in an `ASWebAuthenticationSession` (`WebBrowser.openAuthSessionAsync`, which takes the
+  callback scheme `joyofit` from `joyofit://settings/strava`). The Worker's 302 to that URL ends the session and returns to
+  the app; the Strava app is not opened from inside the session, the web page is used. Automatic uploads on iOS only run
+  while the app is in front (and each time it comes back): iOS suspends the app, and the keychain item holding the JoyoRogo
+  session cannot be read while the phone is locked. A workout the watch synced in the background is therefore sent when
+  JoyoFit is opened.
 - A workout shows "Strava refused the file": the message is Strava's; the button retries after you fix the cause.
 
 ## 5. Tests

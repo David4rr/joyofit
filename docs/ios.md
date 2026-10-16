@@ -18,7 +18,7 @@ modules/huawei-wear/
       Tests/HuaweiProtocolTests/  479 tests; Fixtures/*.json are generated from the Java the Android app runs
       GoldenGen/                  run.sh + Golden*.java: regenerates the fixtures (JDK 17, no Android SDK needed)
     BleTransport.swift ...        CoreBluetooth central, Keychain store, SQLite sync store, HealthKit writer, Expo module
-    ModuleLogicTests/             SwiftPM package compiling the same sources as one module; 257 logic tests on Linux
+    ModuleLogicTests/             SwiftPM package compiling the same sources as one module; 259 logic tests on Linux
     scripts/                      check-api.mjs (JS API coverage), gen-migrations.mjs (embeds schema/joyofit-db-migrations.json)
 ```
 
@@ -45,6 +45,7 @@ with 16-byte IVs) is written out in the package because CryptoKit rejects what t
 | Alarms (08/01-04), health sensor switches (continuous HR, SpO2, TruSleep, alerts), heart-rate zones, live heart rate, automatic stress, HRV spot measure | `Alarms.swift`, `HealthSensors.swift`, `HeartRateZones.swift`, `StressSwitch.swift`, `HrvSpotCodec.swift`, `ios/WatchSettingsFeatures.swift` | Java golden (the stress model bit for bit), Kotlin test translations, scripted watch |
 | Weather (0x0F, current + 24 h + 8 days, GPS, unit) over Open-Meteo, CoreLocation, URLSession | `Packets/WeatherPackets.swift`, `HuaweiWeather.swift`, `OpenMeteo.swift`, `ios/WeatherController.swift`, `ios/CoreLocationSource.swift` | Java golden, recorded Open-Meteo answers, scripted watch |
 | Notifications: the watch's own switch (02/04) and `CBPeripheral.ancsAuthorized` | `Packets/NotificationPackets.swift`, `ios/WatchNotifications.swift`, `BleTransport.swift` | Java golden, scripted watch |
+| Strava (Settings → Strava, Send to Strava, automatic upload): JS only, no native call; the native side is the shared SQLite schema: `workouts.imported`, `strava_upload` (migrations 10 and 11) | `WearMigrations.swift`, `ios/WorkoutStore.swift` | SQLite tests: the JS candidate query on rows the Swift store wrote, upgrade of the build 202610160151 database |
 
 Not ported (the Android module has them; the iOS module reports them as unsupported or inert, see below): cycle, diet and body metrics,
 activity-ring goals, P2P (healthy living, courses), fall detection, the morning sleep report, live workouts (phone GPS to the watch),
@@ -95,7 +96,7 @@ reject `ERR_UNSUPPORTED` ("not available on iOS yet"). The screens of the last t
 export PATH=$HOME/.local/swift-6.4/usr/bin:$HOME/jdk17/bin:$PATH
 bun run test:ios-protocol            # swift test in HuaweiProtocol (479 tests)
 bun run golden:ios                   # regenerate the Java golden fixtures (then re-run the tests)
-cd modules/huawei-wear/ios/ModuleLogicTests && ./link-sources.sh && JOYOFIT_REPO_ROOT=$PWD/../../../.. swift test   # 257 tests
+cd modules/huawei-wear/ios/ModuleLogicTests && ./link-sources.sh && JOYOFIT_REPO_ROOT=$PWD/../../../.. swift test   # 259 tests
 scripts/build-ios-linux.sh --dev     # signed JoyoFit-dev.ipa (docs/ios-linux.md)
 ```
 
@@ -116,6 +117,9 @@ The package also type-checks against the iPhoneOS SDK (`swiftc -typecheck -sdk <
   seen, from Android, which loses the 514-byte reply on Android 14+).
 - State restoration and the background wake path; the Keychain after reinstall; HealthKit replacement on a repeated sync identifier; expo-sqlite
   sharing the database file with the native writer (the connection is kept open for the process lifetime because expo-sqlite links its own SQLite).
+- Strava: the connect page in `ASWebAuthenticationSession` and its return to `joyofit://settings/strava` (the Worker side was probed over HTTP,
+  the in-app part never ran on an iPhone); an upload of a Swift-written workout to Strava (the TCX builder and the rows are checked, Strava's
+  answer is not); that the automatic pass sends a workout the watch synced while the app was in the background once the app is opened.
 - `ITSAppUsesNonExemptEncryption=false` is set; the protocol link implements AES/HMAC itself (not through Apple's OS crypto), so the owner has to
   confirm that answer before App Store submission. The prebuild also adds default camera, microphone, photo library and Face ID strings from
   expo-image-picker and expo-secure-store, which JoyoFit does not need.

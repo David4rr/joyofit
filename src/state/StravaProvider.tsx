@@ -12,6 +12,7 @@ import {
   fetchStravaAuthorizeUrl,
   syncStravaStatus,
 } from '@/cloud/strava';
+import { isIos } from '@/components/IosUnavailable';
 import { getStravaSettings, setStravaAddLink, type StravaSettings } from '@/db/strava';
 import { errorMessage } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
@@ -69,6 +70,8 @@ export function StravaProvider({ children }: { children: ReactNode }) {
   const [serverReady, setServerReady] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Counts returns to the foreground, so the upload pass runs again each time. */
+  const [foreground, setForeground] = useState(0);
 
   const reload = useCallback(async () => setSettings(await getStravaSettings(db)), [db]);
 
@@ -98,21 +101,27 @@ export function StravaProvider({ children }: { children: ReactNode }) {
   // Come back to the foreground: Strava may have been connected in the browser, or revoked on strava.com.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void refresh().catch(() => {});
+      if (state !== 'active') return;
+      setForeground((n) => n + 1);
+      void refresh().catch(() => {});
     });
     return () => subscription.remove();
   }, [refresh]);
 
-  // New workouts arrive with each sync; send the ones that finished after connecting.
+  // New workouts arrive with each sync; send the ones that finished after connecting. On iOS the pass only runs while
+  // the app is in front: iOS suspends the app mid-upload and locks the keychain item that holds the JoyoRogo session
+  // while the phone is locked, so a background pass would fail and use up the workout's automatic attempts. What a
+  // background sync stored is sent when the app comes back (`foreground`).
   useEffect(() => {
     if (!signedIn || !CLOUD_CONFIGURED || settings.connectedAt === null) return;
     const timer = setTimeout(() => {
+      if (isIos && AppState.currentState !== 'active') return;
       void autoUploadNewWorkouts(db)
         .then(() => reload())
         .catch(() => {});
     }, AUTO_UPLOAD_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [db, signedIn, settings.connectedAt, dataVersion, reload]);
+  }, [db, signedIn, settings.connectedAt, dataVersion, foreground, reload]);
 
   const connect = useCallback(async () => {
     setError(null);

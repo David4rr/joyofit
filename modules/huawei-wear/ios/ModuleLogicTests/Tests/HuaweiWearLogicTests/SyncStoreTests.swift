@@ -40,13 +40,21 @@ final class SyncStoreTests: XCTestCase {
         let (store, url) = store()
         let user = try store.read { db in try db.userVersion }
         XCTAssertEqual(user, try SyncStore.sharedMigrations().count)
-        XCTAssertEqual(user, 9)
+        XCTAssertEqual(user, 11)
         let tables: [String] = try store.read { db in
             try db.query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") { $0.text(0)! }
         }
-        for expected in ["step_samples", "sleep_segments", "sleep_scores", "device", "workouts", "workout_points", "cloud_cursor", "hrv_readings", "rri_samples", "diet_day", "cycle_periods"] {
+        for expected in ["step_samples", "sleep_segments", "sleep_scores", "device", "workouts", "workout_points", "cloud_cursor", "hrv_readings", "rri_samples", "diet_day", "cycle_periods", "strava_upload"] {
             XCTAssertTrue(tables.contains(expected), "missing table \(expected)")
         }
+        // Migration 10: rows the Huawei export importer writes (Android) are marked; the native writer's rows never are.
+        for table in ["step_samples", "sleep_segments", "workouts"] {
+            let columns: [String] = try store.read { db in try db.query("PRAGMA table_info(\(table))") { $0.text(1)! } }
+            XCTAssertTrue(columns.contains("imported"), "\(table) has no imported column")
+        }
+        // Migration 11: what the Strava upload of the JS app records per workout.
+        let strava: [String] = try store.read { db in try db.query("PRAGMA table_info(strava_upload)") { $0.text(1)! } }
+        XCTAssertEqual(strava, ["workout_start", "status", "upload_id", "activity_id", "error", "attempts", "updated_at"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
         // WAL, as JS sets it.
         let mode: String = try store.read { db in try db.query("PRAGMA journal_mode") { $0.text(0)! }.first! }
@@ -73,7 +81,7 @@ final class SyncStoreTests: XCTestCase {
         try js.run("INSERT INTO device (address, name, last_sync) VALUES ('X', 'watch', 42)")
         let native = SyncStore(url: url)
         XCTAssertEqual(try native.lastSync(address: "X"), 42)
-        XCTAssertEqual(try native.read { try $0.userVersion }, 9)
+        XCTAssertEqual(try native.read { try $0.userVersion }, try SyncStore.sharedMigrations().count)
     }
 
     func testAPartiallyMigratedDatabaseIsBroughtForward() throws {
@@ -83,8 +91,31 @@ final class SyncStoreTests: XCTestCase {
         for s in try SyncStore.sharedMigrations()[0] { try first.exec(s) }
         try first.setUserVersion(1)
         let native = SyncStore(url: url)
-        XCTAssertEqual(try native.read { try $0.userVersion }, 9)
+        XCTAssertEqual(try native.read { try $0.userVersion }, try SyncStore.sharedMigrations().count)
         XCTAssertTrue(try native.read { try $0.query("PRAGMA table_info(sleep_segments)") { $0.text(1)! } }.contains("stage"))
+    }
+
+    /// TestFlight build 202610160151 shipped nine migrations. An iPhone with that database (and a workout the watch synced) must come out with
+    /// migrations 10 and 11 applied and the workout still counted as a watch row.
+    func testTheDatabaseOfTheLastTestFlightBuildIsUpgradedForStrava() throws {
+        let url = temporaryDatabaseURL()
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let old = try SQLiteDatabase(path: url.path)
+        let shared = try SyncStore.sharedMigrations()
+        for (i, statements) in shared.prefix(9).enumerated() {
+            for s in statements { try old.exec(s) }
+            try old.setUserVersion(i + 1)
+        }
+        try old.run("""
+            INSERT INTO workouts (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete)
+            VALUES (1, 1700000000, 1700000600, 1, 'Running', 600, 5000, 321, 135, NULL, 100, '{}', 1)
+            """)
+
+        let native = SyncStore(url: url)
+        XCTAssertEqual(try native.read { try $0.userVersion }, shared.count)
+        let imported: [Int] = try native.read { try $0.query("SELECT imported FROM workouts") { $0.int(0) } }
+        XCTAssertEqual(imported, [0])
+        XCTAssertTrue(try native.read { try $0.tableExists("strava_upload") })
     }
 
     func testADatabaseNewerThanTheAppIsRefused() throws {

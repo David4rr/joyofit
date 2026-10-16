@@ -161,6 +161,49 @@ final class WorkoutStoreTests: XCTestCase {
         XCTAssertGreaterThan(second, first)
     }
 
+    // MARK: what the JS Strava code reads from the rows this store writes
+
+    /// `listAutoUploadCandidates` in src/db/strava.ts, verbatim: the JS app decides on its own what to send after a sync.
+    private static let autoUploadCandidates = """
+        SELECT w.id AS id, w.start AS start
+        FROM workouts w LEFT JOIN strava_upload u ON u.workout_start = w.start
+        WHERE w.complete != 0 AND w.imported = 0 AND w."end" > ?
+          AND (u.workout_start IS NULL OR u.status = 'processing' OR (u.status = 'failed' AND u.attempts < ?))
+        ORDER BY w.start
+        """
+
+    func testAWorkoutThisStoreWritesIsAnAutomaticStravaCandidateUntilTheJsAppSettlesItAndAReSyncKeepsThat() throws {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let workouts = WorkoutStore(store)
+        _ = try workouts.save(record(start: 1_700_000_000, end: 1_700_000_600))
+        _ = try workouts.save(record(start: 1_700_001_000, end: 1_700_001_600, complete: false))
+        func candidates(connectedAt: Int64, maxAttempts: Int64 = 3) throws -> [Int64] {
+            try store.read { try $0.query(WorkoutStoreTests.autoUploadCandidates, [.int(connectedAt), .int(maxAttempts)]) { $0.int64(1) } }
+        }
+
+        XCTAssertEqual(try rows(store, "SELECT imported FROM workouts ORDER BY start") { $0.int(0) }, [0, 0], "the native writer never marks a row as imported")
+        XCTAssertEqual(try candidates(connectedAt: 1_699_999_999), [1_700_000_000], "complete, from the watch, ended after connecting; the incomplete one waits")
+        XCTAssertEqual(try candidates(connectedAt: 1_700_000_600), [], "ended before the account connected: only the button sends it")
+
+        // What the JS app records after an attempt (saveStravaUpload), in the same file.
+        let upsert = """
+            INSERT INTO strava_upload (workout_start, status, upload_id, activity_id, error, attempts, updated_at) VALUES (1700000000, ?, 7, ?, NULL, ?, 1)
+            ON CONFLICT(workout_start) DO UPDATE SET status = excluded.status, activity_id = excluded.activity_id, attempts = excluded.attempts
+            """
+        try store.read { try $0.run(upsert, [.text("failed"), .null, .int(1)]) }
+        XCTAssertEqual(try candidates(connectedAt: 1_699_999_999), [1_700_000_000], "a failed upload is retried while it has attempts left")
+        XCTAssertEqual(try candidates(connectedAt: 1_699_999_999, maxAttempts: 1), [], "and not after that")
+        try store.read { try $0.run(upsert, [.text("done"), .int(8), .int(2)]) }
+        XCTAssertEqual(try candidates(connectedAt: 1_699_999_999), [])
+
+        // The watch's next sync sends the same workout again with a later end and other points: the id, the upload record and the "done" stay.
+        let id = try rows(store, "SELECT id FROM workouts WHERE start = 1700000000") { $0.int(0) }
+        _ = try workouts.save(record(start: 1_700_000_000, end: 1_700_000_700, points: [WorkoutPoint(ts: 1_700_000_005, lat: -6.2, lon: 106.8, alt: nil, hr: nil)]))
+        XCTAssertEqual(try rows(store, "SELECT id FROM workouts WHERE start = 1700000000") { $0.int(0) }, id)
+        XCTAssertEqual(try rows(store, "SELECT status, activity_id FROM strava_upload") { [$0.text(0), $0.optionalInt(1).map(String.init)] }, [["done", "8"]])
+        XCTAssertEqual(try candidates(connectedAt: 1_699_999_999), [])
+    }
+
     func testIsCompleteNeedsStartEndAndTheCompleteFlag() throws {
         let workouts = WorkoutStore(SyncStore(url: temporaryDatabaseURL()))
         _ = try workouts.save(record(complete: true))

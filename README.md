@@ -439,6 +439,8 @@ and the client secret against that account; the phone only ever receives the sho
 - **When.** Workouts that **end after the account connected** are sent after each sync; Huawei-export imports and
   history are never sent automatically. **Send to Strava** on a workout's screen sends any workout, and **View on
   Strava** links to the activity.
+  On iOS the automatic pass runs while the app is in front and each time it comes back to the foreground (iOS suspends the app and
+  locks the session's keychain item while the phone is locked); the connect page is an `ASWebAuthenticationSession`.
 - **Description.** Off by default: **Add fit.joyorogo.com to the description** puts that text (plain, never the title)
   in the activity description.
 - **Strava's API Agreement.** Strava data is never read back, stored, or used for analytics or AI; the Worker keeps only
