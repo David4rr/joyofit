@@ -58,6 +58,10 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var dataSync: DataSyncService!
     /// Editable watch-face options over DataSync.
     public private(set) var faceCustomizer: WatchfaceCustomizer!
+    /// Activity-ring goals and reminders.
+    public private(set) var activityGoals: ActivityGoals!
+    /// Weight, body fat, resting metabolism and the Health Glance card.
+    public private(set) var bodyMetrics: BodyMetrics!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -91,7 +95,8 @@ public final class WearRuntime: @unchecked Sendable {
         clock: @escaping @Sendable () -> Int = BackgroundController.uptimeMs,
         weatherLocation: LocationSource = UnavailableLocationSource(),
         weatherFetch: @escaping WeatherFetch = WeatherNetwork.fetch,
-        weatherDefaults: UserDefaults? = nil
+        weatherDefaults: UserDefaults? = nil,
+        goalsDefaults: UserDefaults? = nil
     ) {
         self.settings = settings
         self.syncStore = syncStore
@@ -118,6 +123,10 @@ public final class WearRuntime: @unchecked Sendable {
         dataSync = DataSyncService(link: link, events: fanOut)
         faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
         dataSync.register(faceCustomizer)
+        activityGoals = ActivityGoals(defaults: goalsDefaults, service: dataSync, events: fanOut, settings: settings)
+        dataSync.register(activityGoals)
+        bodyMetrics = BodyMetrics(store: syncStore, service: dataSync, events: fanOut, settings: settings)
+        dataSync.register(bodyMetrics)
         linkObservers.add(dataSync)
     }
 
@@ -331,6 +340,20 @@ public final class WearRuntime: @unchecked Sendable {
         }
         settings.syncIntervalMinutes = minutes
         controller.reschedule()
+    }
+
+    // MARK: activity goals
+
+    /// Stores the goals and reminders and sends them; true when they all reached the watch. The steps goal and the profile's daily step goal are
+    /// one number: the profile (which goes out as MotionGoal 07/01) follows the ring's goal.
+    public func setActivityGoals(_ goals: ActivityGoalsData) async throws -> Bool {
+        try ActivityGoalsCodec.validate(goals)
+        if let profile = settings.profile, profile.dailyStepGoal != goals.steps {
+            var next = profile
+            next.dailyStepGoal = goals.steps
+            _ = try await setUserProfile(next)
+        }
+        return try await activityGoals.set(goals)
     }
 
     // MARK: profile

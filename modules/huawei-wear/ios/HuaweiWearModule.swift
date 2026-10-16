@@ -198,6 +198,10 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.link.syncActivity().toJS() }
         }
 
+        AsyncFunction("syncFullHistory") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.link.syncActivity(fullHistory: true).toJS() }
+        }
+
         AsyncFunction("forgetDevice") { (address: String) async throws -> Void in
             runtime.forget(address)
         }
@@ -238,6 +242,21 @@ public final class HuaweiWearModule: Module {
             return try await wearCall { try await runtime.setUserProfile(parsed) }
         }
 
+        // MARK: activity-ring goals and body metrics
+
+        AsyncFunction("setBodyMetrics") { (update: [String: Any]) async throws -> [String: Any] in
+            try await wearCall { try await runtime.bodyMetrics.set(BodyMetricsData.parse(update)).toJS() }
+        }
+
+        // Stores the goals and reminders and sends them; true when they all reached the watch. The steps goal also goes into the profile's.
+        AsyncFunction("setActivityGoals") { (goals: [String: Any]) async throws -> Bool in
+            try await wearCall { try await runtime.setActivityGoals(ActivityGoalsData.parse(goals)) }
+        }
+
+        AsyncFunction("sendActivityGoals") { () async throws -> Bool in
+            try await wearCall { try await runtime.activityGoals.send("manual") }
+        }
+
         // MARK: Apple Health (the HealthKit counterpart of the Health Connect export)
 
         AsyncFunction("getHealthConnectStatus") { () async throws -> [String: Any] in
@@ -276,8 +295,8 @@ public final class HuaweiWearModule: Module {
         Function("getSafety") { () -> [String: Any] in Inert.safety() }
         Function("testSosRelay") { () -> [String: Any] in Inert.sosRelayTest() }
         Function("getDietStatus") { () -> [String: Any] in Inert.diet() }
-        Function("getBodyMetrics") { () -> [String: Any] in Inert.bodyMetrics() }
-        Function("getActivityGoals") { () -> [String: Any] in Inert.activityGoals(dailyStepGoal: runtime.settings.profile?.dailyStepGoal) }
+        Function("getBodyMetrics") { () -> [String: Any] in runtime.bodyMetrics.load().toJS() }
+        Function("getActivityGoals") { () -> [String: Any] in runtime.activityGoals.status() }
         Function("getHealthyLiving") { () -> [String: Any] in Inert.healthyLiving() }
         Function("getCourses") { () -> [String: Any] in Inert.courses() }
 
@@ -431,12 +450,8 @@ public final class HuaweiWearModule: Module {
         rejects("logCycleDay", String.self, Int.self, Int.self)
         rejects("setDietDay", [String: Any].self)
         rejects("pushDietNow")
-        rejects("setBodyMetrics", [String: Any].self)
-        rejects("setActivityGoals", [String: Any].self)
-        rejects("sendActivityGoals")
         rejects("pushHealthyLiving")
         rejects("pushRunningCourse", [String: Any].self)
-        rejects("syncFullHistory")
     }
 }
 

@@ -31,19 +31,8 @@ final class InertStatusTests: XCTestCase {
         )
         XCTAssertEqual(keys(Inert.cycle(today: "x", watchConnected: true)["switches"] as! [String: Any]), ["master", "periodStart", "periodEnd", "fertileStart", "fertileEnd", "easyPregnancy"])
         XCTAssertEqual(keys(Inert.diet()), ["date", "mealCount", "intakeKcal", "goals", "updatedAt", "pushedAt", "lastResult", "unsyncedWatchMeals", "pendingWatchMeals", "supported"])
-        XCTAssertEqual(keys(Inert.bodyMetrics()), ["weightKg", "weightTs", "bodyFatPct", "bodyFatTs", "restingKcal", "systolic", "diastolic", "bpTs"])
         XCTAssertEqual(keys(Inert.healthyLiving()), ["supported", "gate", "gateSet", "enabled", "registered", "pingCode", "msgVer", "packageSize", "lastRequestAt", "lastReportAt", "lastReport"])
         XCTAssertEqual(keys(Inert.courses()), ["enabled", "gate41", "gate169", "gate295", "p2p"])
-    }
-
-    func testActivityGoalsDefaultsFollowTheProfileGoal() {
-        XCTAssertEqual(Inert.activityGoals(dailyStepGoal: nil)["steps"] as? Int, 10_000)
-        XCTAssertEqual(Inert.activityGoals(dailyStepGoal: 7_500)["steps"] as? Int, 7_500)
-        XCTAssertEqual(
-            keys(Inert.activityGoals(dailyStepGoal: nil)),
-            ["steps", "calories", "exerciseMinutes", "standHours", "remindStand", "remindProgress", "remindGoalReached", "configSupported", "lastSentAt"]
-        )
-        XCTAssertTrue(Inert.activityGoals(dailyStepGoal: nil)["configSupported"] is NSNull)
     }
 
     func testTodayIsALocalIsoDay() {
@@ -74,6 +63,15 @@ final class InertStatusTests: XCTestCase {
             "locationPermission": true, "watchSupported": true, "lastPushAt": Int64(1_792_110_700), "lastError": "x", "lastTemperatureC": -3,
             "lastCondition": "LIGHT_RAIN", "lastLocationName": "Bandung",
         ]
+        let rig = DataSyncRig(connected: false)
+        let goals = ActivityGoals(defaults: ephemeralDefaults(), service: rig.service, events: rig.events, settings: WearSettings(defaults: ephemeralDefaults()))
+        let body = BodyMetrics(store: SyncStore(url: temporaryDatabaseURL()), service: rig.service, events: rig.events, settings: WearSettings(defaults: ephemeralDefaults()))
+        var populatedGoals = goals.status()
+        populatedGoals["configSupported"] = true
+        populatedGoals["lastSentAt"] = Int64(1_792_110_700_000)
+        let populatedBody = BodyMetricsData(
+            weightKg: 70.5, weightTsMs: 1_760_400_000_000, bodyFatPct: 22.5, bodyFatTsMs: 1_760_400_000_000, restingKcal: 1650, systolic: 120, diastolic: 80, bpTsMs: 5
+        ).toJS()
         let shapes: [String: Any] = [
             "PhoneFeatures": Inert.phoneFeatures(),
             "NotificationAccessStatus": Inert.notificationAccess(),
@@ -88,8 +86,10 @@ final class InertStatusTests: XCTestCase {
             "SosRelayTest": Inert.sosRelayTest(),
             "CycleOverview": Inert.cycle(today: "2026-10-16", watchConnected: false),
             "DietStatus": Inert.diet(),
-            "BodyMetrics": Inert.bodyMetrics(),
-            "ActivityGoalsStatus": Inert.activityGoals(dailyStepGoal: nil),
+            "BodyMetrics": body.load().toJS(),
+            "BodyMetrics#populated": populatedBody,
+            "ActivityGoalsStatus": goals.status(),
+            "ActivityGoalsStatus#populated": populatedGoals,
             "HealthyLivingStatus": Inert.healthyLiving(),
             "CoursesStatus": Inert.courses(),
             "DeviceInfo": info.toJS(),

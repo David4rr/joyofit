@@ -91,29 +91,6 @@ public enum Inert {
         ]
     }
 
-    /// `BodyMetrics`: nothing stored.
-    public static func bodyMetrics() -> [String: Any] {
-        [
-            "weightKg": NSNull(), "weightTs": NSNull(), "bodyFatPct": NSNull(), "bodyFatTs": NSNull(),
-            "restingKcal": NSNull(), "systolic": NSNull(), "diastolic": NSNull(), "bpTs": NSNull(),
-        ]
-    }
-
-    /// `ActivityGoalsStatus`: Huawei Health's defaults (the steps goal is the profile's daily goal when one is saved), nothing sent.
-    public static func activityGoals(dailyStepGoal: Int?) -> [String: Any] {
-        [
-            "steps": dailyStepGoal ?? 10_000,
-            "calories": 300,
-            "exerciseMinutes": 30,
-            "standHours": 12,
-            "remindStand": true,
-            "remindProgress": true,
-            "remindGoalReached": true,
-            "configSupported": NSNull(),
-            "lastSentAt": NSNull(),
-        ]
-    }
-
     /// `HealthyLivingStatus`: off.
     public static func healthyLiving() -> [String: Any] {
         [
