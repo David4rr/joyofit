@@ -82,8 +82,8 @@ public final class SafetyFeatures: DataSyncFeature, @unchecked Sendable {
         )
         if sent {
             // Huawei Health stores what it sent as well; the watch's own report (onFallConfig) overwrites it.
-            settings.fallSwitch = enabled ? 1 : 0
             settings.fallUpdatedMs = nowMs
+            settings.fallSwitch = enabled ? 1 : 0
         }
         return sent
     }
@@ -97,8 +97,8 @@ public final class SafetyFeatures: DataSyncFeature, @unchecked Sendable {
             log("Fall detection: config from the watch (action \(item.action)) carries no readable fallDetectionSwitch: \(DataSyncWire.describe(item.data))")
             return
         }
-        settings.fallSwitch = state.switchState
         settings.fallUpdatedMs = state.timeStampMs > 0 ? state.timeStampMs : Int64(now().timeIntervalSince1970 * 1000)
+        settings.fallSwitch = state.switchState
         log("Fall detection: the watch reports \(state.switchState == 1 ? "ON" : "OFF") (action \(item.action), timeStamp \(state.timeStampMs))")
     }
 
