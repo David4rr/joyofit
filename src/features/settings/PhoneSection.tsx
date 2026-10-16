@@ -3,6 +3,7 @@ import { Linking, PermissionsAndroid, type Permission } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { KeyValue } from '@/components/KeyValue';
+import { IosUnavailable, isIos } from '@/components/IosUnavailable';
 import { Divider, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -25,6 +26,28 @@ async function ask(required: Permission[], optional: Permission[]) {
 
 /** Find my phone, incoming calls on the watch and call control from the watch. */
 export function PhoneSection() {
+  return isIos ? <PhoneSectionIos /> : <PhoneSectionAndroid />;
+}
+
+/** What iOS does not allow, said once per feature instead of three switches that cannot work. */
+function PhoneSectionIos() {
+  return (
+    <>
+      <IosUnavailable
+        title="Find my phone from the watch"
+        icon="locate"
+        reason="iOS suspends JoyoFit when it is not on screen and does not let it ring the phone on request, so the watch button cannot find this iPhone. Use Find My on another Apple device or iCloud.com instead."
+      />
+      <IosUnavailable
+        title="Calls on the watch"
+        icon="call"
+        reason="iOS does not let an app see, answer or reject phone calls. If the watch shows incoming calls at all, it does so itself through the notifications iOS shares with it (Notifications settings); answering from the watch is not possible."
+      />
+    </>
+  );
+}
+
+function PhoneSectionAndroid() {
   const [features, setFeatures] = useState(() => HuaweiWear.getPhoneFeatures());
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);

@@ -5,6 +5,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { IconChip } from '@/components/IconChip';
+import { isIos } from '@/components/IosUnavailable';
 import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { Card, Screen, Section } from '@/components/Screen';
@@ -39,12 +40,20 @@ export function LiveWorkoutScreen() {
     return (
       <Screen>
         <HiddenTabHeader title="Live workout" />
-        <EmptyState
-          icon="walk"
-          title="No workout running"
-          description="An outdoor walk, run or ride started on the watch opens this screen by itself. For an indoor workout, start it on the watch and tap Start here."
-          action={{ label: 'Start', icon: 'play', onPress: () => HuaweiWear.startLiveWorkout() }}
-        />
+        {isIos ? (
+          <EmptyState
+            icon="walk"
+            title="Live workouts are not available on iOS yet"
+            description="Workouts you finish on the watch appear in Workouts after the next sync."
+          />
+        ) : (
+          <EmptyState
+            icon="walk"
+            title="No workout running"
+            description="An outdoor walk, run or ride started on the watch opens this screen by itself. For an indoor workout, start it on the watch and tap Start here."
+            action={{ label: 'Start', icon: 'play', onPress: () => HuaweiWear.startLiveWorkout() }}
+          />
+        )}
       </Screen>
     );
   }

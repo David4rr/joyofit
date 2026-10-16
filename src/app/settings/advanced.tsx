@@ -4,6 +4,7 @@ import { View } from 'react-native';
 
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { Section, Screen } from '@/components/Screen';
+import { isIos } from '@/components/IosUnavailable';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
 import { ensureBluetoothConnect, ensureBluetoothScan } from '@/features/device/useBluetoothPermission';
@@ -73,13 +74,17 @@ export default function AdvancedScreen() {
         />
       </View>
       <Section title="Experimental" icon="flask" tint="workouts">
-        <SwitchRow
-          label="Running courses (experimental)"
-          hint="Unverified: the course format comes from static analysis of Huawei Health. The watch may refuse it."
-          value={courses.enabled}
-          disabled={coursesBusy}
-          onValueChange={(enabled) => void toggleCourses(enabled)}
-        />
+        {isIos ? (
+          <Notice>Running courses are not available on iOS yet.</Notice>
+        ) : (
+          <SwitchRow
+            label="Running courses (experimental)"
+            hint="Unverified: the course format comes from static analysis of Huawei Health. The watch may refuse it."
+            value={courses.enabled}
+            disabled={coursesBusy}
+            onValueChange={(enabled) => void toggleCourses(enabled)}
+          />
+        )}
         {coursesError ? <Notice tone="danger">{coursesError}</Notice> : null}
         {__DEV__ ? (
           <SwitchRow

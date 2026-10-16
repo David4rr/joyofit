@@ -6,7 +6,9 @@ import { KeyValue } from '@/components/KeyValue';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { isIos } from '@/components/IosUnavailable';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
+import { NotificationsSectionIos } from '@/features/settings/NotificationsSectionIos';
 import { errorMessage } from '@/format';
 import { HuaweiWear } from '@/wear';
 
@@ -20,6 +22,10 @@ const DISCLOSURE =
   'You can choose which apps are forwarded, and turn this off at any time.';
 
 export function NotificationsSection() {
+  return isIos ? <NotificationsSectionIos /> : <NotificationsSectionAndroid />;
+}
+
+function NotificationsSectionAndroid() {
   const [access, setAccess] = useState(() => HuaweiWear.getNotificationAccess());
   const [morning, setMorning] = useState(() => HuaweiWear.getMorningSummaryEnabled());
   const [morningDenied, setMorningDenied] = useState(false);

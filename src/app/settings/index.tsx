@@ -3,6 +3,7 @@ import { SectionList, StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import type { IconName } from '@/components/IconChip';
+import { isIos } from '@/components/IosUnavailable';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { PageHeader, useContentPadding } from '@/components/Screen';
 import { spacing, useColors, type Tint } from '@/theme';
@@ -32,13 +33,13 @@ const GROUPS: readonly SettingsGroup[] = [
       },
       {
         title: 'Notifications and calls',
-        subtitle: 'Forwarding, find my phone, call control',
+        subtitle: isIos ? 'iPhone notifications on the watch, find my phone, calls' : 'Forwarding, find my phone, call control',
         icon: 'notifications',
         href: '/settings/notifications',
       },
       {
         title: 'Notification apps',
-        subtitle: 'Choose which apps notify the watch',
+        subtitle: isIos ? 'Chosen in iPhone Settings' : 'Choose which apps notify the watch',
         icon: 'apps',
         href: '/settings/notification-apps',
       },

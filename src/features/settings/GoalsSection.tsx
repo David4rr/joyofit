@@ -4,6 +4,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Input';
 import { KeyValue } from '@/components/KeyValue';
+import { IosUnavailable, isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -104,6 +105,16 @@ export function GoalsSection() {
     setFields(toFields(HUAWEI_DEFAULTS));
     void apply(HUAWEI_DEFAULTS);
   };
+
+  if (isIos) {
+    return (
+      <IosUnavailable
+        title="Activity goals"
+        icon="flag"
+        reason="Sending activity-ring goals and reminders to the watch is not available on iOS yet. Your daily step goal in Profile and goal still reaches the watch."
+      />
+    );
+  }
 
   return (
     <>

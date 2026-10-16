@@ -4,6 +4,7 @@ import { Linking, PermissionsAndroid } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { KeyValue } from '@/components/KeyValue';
+import { isIos } from '@/components/IosUnavailable';
 import { Divider, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -143,6 +144,13 @@ export function SafetySection() {
             <Button label="Open app settings" variant="secondary" icon="settings-outline" onPress={() => void Linking.openSettings()} />
           ) : null}
         </Section>
+      ) : isIos ? (
+        <Section title="SOS text messages" icon="alert-circle" tint="heart">
+          <AppText variant="caption" muted>
+            Not possible on iOS: iOS does not let an app send a text message by itself, so JoyoFit cannot text your contacts when the
+            watch starts an SOS. JoyoFit tells the watch that nothing was sent. Do not rely on the watch to text your contacts.
+          </AppText>
+        </Section>
       ) : (
         <Section title="SOS text messages" icon="alert-circle" tint="heart">
           <AppText variant="caption" muted>
@@ -160,7 +168,9 @@ export function SafetySection() {
           hint={
             safety.sleepReportSupported
               ? 'Once each morning, after the first sync that holds last night, the watch shows how long you slept and the stages.'
-              : 'Not available: the watch does not report the event channel it needs.'
+              : isIos
+                ? 'Not available on iOS yet.'
+                : 'Not available: the watch does not report the event channel it needs.'
           }
           value={safety.sleepReportEnabled}
           disabled={!safety.sleepReportSupported || busy}

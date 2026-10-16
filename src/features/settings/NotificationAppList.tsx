@@ -4,6 +4,7 @@ import { FlatList, StyleSheet, Switch, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Chip } from '@/components/Chip';
 import { IconChip } from '@/components/IconChip';
+import { isIos } from '@/components/IosUnavailable';
 import { Field } from '@/components/Input';
 import { groupedRowStyle } from '@/components/NavRow';
 import { useContentPadding } from '@/components/Screen';
@@ -17,6 +18,18 @@ const SKELETON_ROWS = 8;
 
 /** Per-app forwarding switches: searchable, windowed, with a sticky header. Loads the apps once. */
 export function NotificationAppList() {
+  return isIos ? (
+    <EmptyState
+      icon="apps"
+      title="iOS chooses the apps"
+      description="JoyoFit does not forward notifications on iOS. The watch reads them from the iPhone, and which apps appear is set in iPhone Settings, Notifications."
+    />
+  ) : (
+    <NotificationAppListAndroid />
+  );
+}
+
+function NotificationAppListAndroid() {
   const colors = useColors();
   const padding = useContentPadding(false);
   const [apps, setApps] = useState<NotificationApp[] | null>(null);

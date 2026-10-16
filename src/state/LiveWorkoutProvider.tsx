@@ -2,7 +2,7 @@ import { useEventListener } from 'expo';
 import { useRootNavigationState, useRouter } from 'expo-router';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import Storage from 'expo-sqlite/kv-store';
-import { Alert, AppState, PermissionsAndroid } from 'react-native';
+import { Alert, AppState, PermissionsAndroid, Platform } from 'react-native';
 
 import { isActive } from '@/features/live/liveWorkout';
 import { HuaweiWear, type LiveWorkout } from '@/wear';
@@ -46,6 +46,8 @@ export function LiveWorkoutProvider({ children }: { children: ReactNode }) {
   // The watch asks for the phone's GPS during outdoor workouts; that needs precise location. Explain it once before
   // Android's dialog; Settings > Phone and calls can ask again.
   useEffect(() => {
+    // Android only: iOS has no live workout screen yet and no phone-GPS handover to the watch.
+    if (Platform.OS !== 'android') return;
     const fine = PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION;
     void (async () => {
       if (await PermissionsAndroid.check(fine)) return;

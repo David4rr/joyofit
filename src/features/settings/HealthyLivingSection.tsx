@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { KeyValue } from '@/components/KeyValue';
+import { IosUnavailable, isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -49,6 +50,10 @@ export function HealthyLivingSection() {
       refresh();
     }
   };
+
+  if (isIos) {
+    return <IosUnavailable title="Healthy Living" icon="leaf" tint="link" reason="Answering the watch's Healthy Living tasks is not available on iOS yet." />;
+  }
 
   return (
     <Section title="Healthy Living" icon="leaf" tint="link">
