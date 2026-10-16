@@ -35,7 +35,7 @@ export function goal(name: string, location: string) {
  * testers. While false, the site shows no iPhone beta and still says there
  * is no iPhone version.
  */
-export const IOS_TESTFLIGHT_LIVE = false;
+export const IOS_TESTFLIGHT_LIVE = true;
 export const IOS_TESTFLIGHT_URL = "https://testflight.apple.com/join/GXzrQ8GJ";
 
 export const STRAVA_PATH = "/strava";
