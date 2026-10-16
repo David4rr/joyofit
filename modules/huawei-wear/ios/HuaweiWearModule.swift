@@ -258,7 +258,7 @@ public final class HuaweiWearModule: Module {
 
         // MARK: no iOS counterpart or protocol layer not ported: inert getters
 
-        Function("getNotificationAccess") { () -> [String: Any] in Inert.notificationAccess() }
+        Function("getNotificationAccess") { () -> [String: Any] in runtime.notifications.access() }
         Function("getMorningSummaryEnabled") { () -> Bool in false }
         Function("getHealthSensors") { () -> [String: Any] in Inert.healthSensors() }
         Function("getStressStatus") { () -> [String: Any] in Inert.stress() }
@@ -290,13 +290,16 @@ public final class HuaweiWearModule: Module {
         }
         Function("startLiveWorkout") { () throws -> Void in throw iosUnsupported("startLiveWorkout") }
 
+        AsyncFunction("setNotificationsEnabled") { (enabled: Bool) async throws -> Void in
+            try await wearCall { try await runtime.notifications.setEnabled(enabled) }
+        }
+
         AsyncFunction("findWatch") { (start: Bool) async throws -> Void in
             try await wearCall { try await runtime.features.findWatch(start) }
         }
 
         // MARK: switches of phone-side features that are always off here
 
-        switchRejectingOn("setNotificationsEnabled")
         switchRejectingOn("setMorningSummaryEnabled")
         switchRejectingOn("setFindPhoneEnabled")
         switchRejectingOn("setCallsEnabled")

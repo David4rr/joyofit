@@ -125,6 +125,14 @@ public final class WearLink: @unchecked Sendable {
         }
     }
 
+    /// Whether iOS shares the iPhone's notifications with the connected watch (ANCS); nil unless connected or unknown.
+    public func ancsAuthorized() -> Bool? {
+        lock.locked {
+            guard let connection = current, !connection.closed, state == .connected || state == .syncing else { return nil }
+            return connection.transport?.ancsAuthorized
+        }
+    }
+
     /// True until a HiChain bind with `address` has completed; a first bind needs the user to confirm on the watch.
     public func needsBind(_ address: String) -> Bool {
         store.forDevice(address).isFirstConnection

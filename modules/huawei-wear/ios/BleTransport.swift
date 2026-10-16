@@ -207,6 +207,12 @@ public final class BleCentral: NSObject, CBCentralManagerDelegate, BluetoothGate
         route(peripheral)?.didDisconnect(error)
     }
 
+    /// The user answered iOS's "share notifications with this accessory" question (or changed Settings > Bluetooth > the watch >
+    /// Show Notifications): the watch reads the iPhone's notifications over ANCS only while this is true.
+    public func centralManager(_ central: CBCentralManager, didUpdateANCSAuthorizationFor peripheral: CBPeripheral) {
+        route(peripheral)?.ancsChanged(peripheral.ancsAuthorized)
+    }
+
     private func route(_ peripheral: CBPeripheral) -> BleTransport? { lock.locked { routes[peripheral.identifier] } }
 
     // MARK: used by BleTransport (always on `queue` unless noted)
@@ -390,6 +396,8 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
 
     private let nameLock = NSLock()
     private var name: String?
+    /// `CBPeripheral.ancsAuthorized` as last seen; read under `nameLock`.
+    private var ancs: Bool?
 
     public init(request: TransportRequest, delegate: WatchTransportDelegate, central: BleCentral = .shared) {
         self.request = request
@@ -405,6 +413,13 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
     }
 
     public var peripheralName: String? { nameLock.locked { name } }
+
+    public var ancsAuthorized: Bool? { nameLock.locked { ancs } }
+
+    func ancsChanged(_ authorized: Bool) {
+        nameLock.locked { ancs = authorized }
+        step("ANCS (iPhone notifications to the watch) authorization changed: \(authorized ? "authorized" : "not authorized")")
+    }
 
     /// Every connect step goes to the support report (through the delegate) and to the console under the JoyoFitBle tag.
     private func step(_ message: String) {
@@ -491,7 +506,11 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
 
         try await discover(target)
         try await enableNotifications(target)
-        nameLock.locked { name = target.name ?? name }
+        nameLock.locked {
+            name = target.name ?? name
+            ancs = target.ancsAuthorized
+        }
+        step("ANCS (iPhone notifications to the watch) authorized: \(target.ancsAuthorized ? "yes" : "no")")
     }
 
     /// Registers this transport for connection callbacks of its peripheral; `queue` only.

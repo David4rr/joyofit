@@ -44,6 +44,8 @@ public final class WearRuntime: @unchecked Sendable {
     public let linkObservers = LinkObservers()
     /// Find my watch.
     public private(set) var features: PhoneFeatures!
+    /// The watch's notification switch and iOS's ANCS state.
+    public private(set) var notifications: WatchNotifications!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -89,6 +91,8 @@ public final class WearRuntime: @unchecked Sendable {
         controller = BackgroundController(runtime: self, expiring: expiring, clock: clock)
         features = PhoneFeatures(link: link, events: fanOut)
         linkObservers.add(features)
+        notifications = WatchNotifications(link: link, events: fanOut)
+        linkObservers.add(notifications)
     }
 
     // MARK: events

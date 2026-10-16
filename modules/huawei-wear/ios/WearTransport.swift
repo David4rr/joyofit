@@ -54,6 +54,14 @@ public protocol WatchTransport: FrameSink {
 
     /// Idempotent; does not call the delegate's `transportDidClose`.
     func close()
+
+    /// Whether iOS lets the watch read the iPhone's notifications over ANCS (`CBPeripheral.ancsAuthorized`); nil when the transport has no
+    /// such notion or before the link is open.
+    var ancsAuthorized: Bool? { get }
+}
+
+extension WatchTransport {
+    public var ancsAuthorized: Bool? { nil }
 }
 
 /// The Bluetooth radio as the link sees it before a connect: ready, or a coded error (off, not permitted, missing).
