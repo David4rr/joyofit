@@ -273,7 +273,7 @@ public final class HuaweiWearModule: Module {
         Function("getLiveWorkout") { () -> [String: Any]? in nil }
         Function("getPhoneFeatures") { () -> [String: Any] in runtime.features.status() }
         Function("getAlarms") { () -> [String: Any] in runtime.watchSettings.cachedAlarms() }
-        Function("getSafety") { () -> [String: Any] in Inert.safety() }
+        Function("getSafety") { () -> [String: Any] in runtime.safety.status() }
         Function("testSosRelay") { () -> [String: Any] in Inert.sosRelayTest() }
         Function("getDietStatus") { () -> [String: Any] in Inert.diet() }
         Function("getBodyMetrics") { () -> [String: Any] in Inert.bodyMetrics() }
@@ -325,6 +325,24 @@ public final class HuaweiWearModule: Module {
 
         AsyncFunction("setAlarms") { (alarms: [String: Any]) async throws -> [String: Any] in
             try await wearCall { try await runtime.watchSettings.setAlarms(try WatchAlarms.fromJS(alarms)) }
+        }
+
+        // MARK: fall detection and the morning sleep report
+
+        AsyncFunction("setFallDetection") { (enabled: Bool) async throws -> Bool in
+            try await wearCall { try await runtime.safety.setFall(enabled) }
+        }
+
+        AsyncFunction("queryFallDetection") { () async throws -> Bool in
+            try await wearCall { try await runtime.safety.queryFall() }
+        }
+
+        AsyncFunction("setSleepReportEnabled") { (enabled: Bool) async throws -> Void in
+            runtime.safety.settings.sleepReportEnabled = enabled
+        }
+
+        AsyncFunction("sendSleepReportNow") { () async throws -> String in
+            try await wearCall { try await runtime.sleepReport.push(force: true) }
         }
 
         AsyncFunction("findWatch") { (start: Bool) async throws -> Void in
@@ -411,7 +429,6 @@ public final class HuaweiWearModule: Module {
         switchRejectingOn("setCallsEnabled")
         switchRejectingOn("setCallControlEnabled")
         switchRejectingOn("setSosRelayEnabled")
-        switchRejectingOn("setSleepReportEnabled")
         switchRejectingOn("setCycleEnabled")
         switchRejectingOn("setHealthyLivingEnabled")
         switchRejectingOn("setCoursesEnabled")
@@ -420,9 +437,6 @@ public final class HuaweiWearModule: Module {
 
         rejects("openNotificationAccess")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
-        rejects("setFallDetection", Bool.self)
-        rejects("queryFallDetection")
-        rejects("sendSleepReportNow")
         rejects("setCycleSwitches", [String: Any].self)
         rejects("startPeriod", String.self)
         rejects("endPeriod", String.self)

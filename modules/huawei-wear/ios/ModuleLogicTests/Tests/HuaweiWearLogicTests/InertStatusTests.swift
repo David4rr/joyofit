@@ -68,6 +68,10 @@ final class InertStatusTests: XCTestCase {
         )
         let events = RecordingEvents()
         let weather = WeatherController(settings: WeatherSettings(defaults: ephemeralDefaults()), link: FakeLink(events: events), events: events, location: UnavailableLocationSource())
+        let extras = WatchExtrasSettings(defaults: ephemeralDefaults())
+        extras.fallSwitch = 1
+        extras.fallUpdatedMs = 1_792_110_700_000
+        let liveSafety = SafetyFeatures(link: RigSource(), settings: extras, events: RecordingEvents()).status()
         let populatedWeather: [String: Any] = [
             "enabled": true, "unit": "fahrenheit", "locationMode": "city", "intervalMinutes": 30,
             "city": WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6, detail: "West Java, Indonesia").toJS(),
@@ -85,6 +89,7 @@ final class InertStatusTests: XCTestCase {
             "WeatherStatus": weather.status(),
             "WeatherStatus#populated": populatedWeather,
             "SafetyStatus": Inert.safety(),
+            "SafetyStatus#live": liveSafety,
             "SosRelayTest": Inert.sosRelayTest(),
             "CycleOverview": Inert.cycle(today: "2026-10-16", watchConnected: false),
             "DietStatus": Inert.diet(),
