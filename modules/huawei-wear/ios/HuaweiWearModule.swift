@@ -263,7 +263,7 @@ public final class HuaweiWearModule: Module {
         Function("getNotificationAccess") { () -> [String: Any] in Inert.notificationAccess() }
         Function("getMorningSummaryEnabled") { () -> Bool in false }
         Function("getHealthSensors") { () -> [String: Any] in runtime.watchSettings.healthSensorsStatus() }
-        Function("getStressStatus") { () -> [String: Any] in Inert.stress() }
+        Function("getStressStatus") { () -> [String: Any] in runtime.watchSettings.stress.status() }
         Function("getLiveWorkout") { () -> [String: Any]? in nil }
         Function("getPhoneFeatures") { () -> [String: Any] in runtime.features.status() }
         Function("getAlarms") { () -> [String: Any] in runtime.watchSettings.cachedAlarms() }
@@ -282,7 +282,9 @@ public final class HuaweiWearModule: Module {
         }
 
         // Nothing to do where Android's own call is a no-op with nothing running or stored.
-        AsyncFunction("cancelHrvMeasurement") { () async throws -> Void in }
+        AsyncFunction("cancelHrvMeasurement") { () async throws -> Void in
+            runtime.watchSettings.hrv.cancel()
+        }
         Function("dismissLiveWorkout") { () -> Void in }
         Function("finishLiveWorkout") { () -> Void in }
         AsyncFunction("markWatchMealsSynced") { (ids: [String]) async throws -> Void in }
@@ -298,6 +300,14 @@ public final class HuaweiWearModule: Module {
 
         AsyncFunction("setHealthSensors") { (sensors: [String: Any]) async throws -> Bool in
             try await wearCall { try await runtime.watchSettings.setHealthSensors(try HealthSensorConfig.fromJS(sensors)) }
+        }
+
+        AsyncFunction("measureHrv") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchSettings.hrv.measure().toJS() }
+        }
+
+        AsyncFunction("setAutomaticStress") { (enabled: Bool) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchSettings.stress.setEnabled(enabled) }
         }
 
         AsyncFunction("refreshAlarms") { () async throws -> [String: Any] in
@@ -330,8 +340,6 @@ public final class HuaweiWearModule: Module {
 
         rejects("openNotificationAccess")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
-        rejects("measureHrv")
-        rejects("setAutomaticStress", Bool.self)
         rejects("setWeatherUnit", String.self)
         rejects("setWeatherLocationMode", String.self)
         rejects("setWeatherIntervalMinutes", Int.self)

@@ -16,9 +16,13 @@ public final class WatchSettingsFeatures: LinkObserver, @unchecked Sendable {
 
     /// The live heart rate on Today and during a live workout; also what an HRV measurement pauses.
     public let liveHeartRate: LiveHeartRate
+    /// The 1-minute HRV measurement.
+    public let hrv: HrvSpot
+    /// The automatic stress switch.
+    public let stress: StressFeature
 
     public init(
-        handle: @escaping @Sendable () -> LinkHandle?, settings: WearSettings, events: WearEvents,
+        handle: @escaping @Sendable () -> LinkHandle?, settings: WearSettings, syncStore: SyncStore, events: WearEvents,
         nowMs: @escaping @Sendable () -> Int64 = { Int64(Date().timeIntervalSince1970 * 1000) }
     ) {
         self.handle = handle
@@ -26,11 +30,17 @@ public final class WatchSettingsFeatures: LinkObserver, @unchecked Sendable {
         self.events = events
         self.nowMs = nowMs
         self.liveHeartRate = LiveHeartRate(handle: handle, settings: settings, events: events, nowMs: nowMs)
+        self.hrv = HrvSpot(handle: handle, liveHeartRate: liveHeartRate, syncStore: syncStore, events: events)
+        self.stress = StressFeature(handle: handle, settings: settings, hrv: hrv, events: events)
     }
 
     // MARK: LinkObserver
 
-    public func linkConnected(_ handle: LinkHandle) async { await liveHeartRate.linkConnected(handle) }
+    public func linkConnected(_ handle: LinkHandle) async {
+        // The stress switch waits for the watch's answer (up to 5 s); the live heart rate must not wait for it.
+        Task { await self.stress.linkConnected(handle) }
+        await liveHeartRate.linkConnected(handle)
+    }
 
     public func linkDisconnected() { liveHeartRate.linkDisconnected() }
 

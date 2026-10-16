@@ -91,7 +91,7 @@ public final class WearRuntime: @unchecked Sendable {
         controller = BackgroundController(runtime: self, expiring: expiring, clock: clock)
         features = PhoneFeatures(link: link, events: fanOut)
         linkObservers.add(features)
-        watchSettings = WatchSettingsFeatures(handle: { [link] in link?.handle() }, settings: settings, events: fanOut)
+        watchSettings = WatchSettingsFeatures(handle: { [link] in link?.handle() }, settings: settings, syncStore: syncStore, events: fanOut)
         linkObservers.add(watchSettings)
     }
 
@@ -245,6 +245,8 @@ public final class WearRuntime: @unchecked Sendable {
 
     /// JS reload with background off: nothing keeps the link, so it is closed as before.
     public func onModuleDestroyed() {
+        watchSettings.liveHeartRate.setActive(false)
+        watchSettings.hrv.cancel()
         if !settings.backgroundEnabled { link.shutdown() }
     }
 

@@ -57,8 +57,10 @@ final class WatchSettingsTests: XCTestCase {
     private var settings: WearSettings!
     private var watch: ScriptedWatch!
     private var handle: LinkHandle?
+    private var syncStore: SyncStore!
 
     override func setUp() {
+        syncStore = SyncStore(url: temporaryDatabaseURL())
         events = RecordingEvents()
         settings = WearSettings(defaults: ephemeralDefaults())
         watch = ScriptedWatch()
@@ -68,7 +70,7 @@ final class WatchSettingsTests: XCTestCase {
     private func features(connected caps: DeviceCaps? = nil) -> WatchSettingsFeatures {
         if let caps { handle = watch.makeHandle(caps: caps) }
         let current = handle
-        return WatchSettingsFeatures(handle: { current }, settings: settings, events: events)
+        return WatchSettingsFeatures(handle: { current }, settings: settings, syncStore: syncStore, events: events)
     }
 
     private func alarmCaps() -> DeviceCaps {
@@ -147,7 +149,7 @@ final class WatchSettingsTests: XCTestCase {
         XCTAssertNotNil(settings.alarmsJson)
 
         // A later app start reads the stored list without a watch.
-        let offline = WatchSettingsFeatures(handle: { nil }, settings: settings, events: events).cachedAlarms()
+        let offline = WatchSettingsFeatures(handle: { nil }, settings: settings, syncStore: syncStore, events: events).cachedAlarms()
         XCTAssertEqual((offline["event"] as! [[String: Any]]).count, 1)
         XCTAssertEqual(offline["supported"] as? Bool, false, "nothing is known about the watch while disconnected")
     }
@@ -215,7 +217,7 @@ final class WatchSettingsTests: XCTestCase {
         XCTAssertEqual(js["highHeartRateAlert"] as? Int, 0)
         XCTAssertEqual(js["lowHeartRateAlert"] as? Int, 0)
         XCTAssertTrue(js["supported"] is NSNull)
-        XCTAssertEqual(Set(js.keys), Set(Inert.healthSensors().keys), "same shape as HealthSensorsStatus")
+        XCTAssertEqual(Set(js.keys), ["automaticHeartRate", "automaticSpo2", "truSleep", "highHeartRateAlert", "lowHeartRateAlert", "supported"], "same shape as HealthSensorsStatus")
     }
 
     func testSupportListsWhatTheConnectedWatchHas() {
