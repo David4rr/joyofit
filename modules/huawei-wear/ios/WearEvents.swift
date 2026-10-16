@@ -17,11 +17,20 @@ public protocol WearEvents: AnyObject, Sendable {
     func heartRate(bpm: Int, tsMs: Int64)
     /// `onHrvProgress`: the minute counts down while the watch sends intervals; `beats` are the ones with a usable signal.
     func hrvProgress(secondsLeft: Int, beats: Int)
+    /// File upload progress (`onUploadProgress`): `bytes` acknowledged by the watch of `total`.
+    func uploadProgress(bytes: Int, total: Int)
+    /// A watch face install finished (`onUploadResult`); `code` is the watch's status when it gave one.
+    func uploadResult(ok: Bool, fileName: String, code: Int?, message: String)
+    /// The watch pushed a face configuration nobody asked for, e.g. the user edited the face on the watch (`onFaceCustomization`).
+    func faceCustomization(_ payload: [String: Any])
 }
 
 extension WearEvents {
     public func heartRate(bpm: Int, tsMs: Int64) {}
     public func hrvProgress(secondsLeft: Int, beats: Int) {}
+    public func uploadProgress(bytes: Int, total: Int) {}
+    public func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {}
+    public func faceCustomization(_ payload: [String: Any]) {}
 
     public func info(_ message: String) { log(LogEntry(.info, message)) }
     public func error(_ message: String) { log(LogEntry(.error, message)) }

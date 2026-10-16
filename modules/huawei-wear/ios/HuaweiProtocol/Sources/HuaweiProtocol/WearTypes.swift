@@ -56,12 +56,15 @@ public struct WearError: Error, CustomStringConvertible, @unchecked Sendable {
     public let underlying: Error?
     /// True when the response arrived but could not be read (GB `ParseException`): `ActivitySync` skips such a response.
     public let isParseFailure: Bool
+    /// The watch's own status code when the failure is its answer (`ERR_UPLOAD_REJECTED`), like the Android `WearException.statusCode`.
+    public let statusCode: Int?
 
-    public init(_ code: ErrorCode, _ message: String, underlying: Error? = nil, isParseFailure: Bool = false) {
+    public init(_ code: ErrorCode, _ message: String, underlying: Error? = nil, isParseFailure: Bool = false, statusCode: Int? = nil) {
         self.code = code
         self.message = message
         self.underlying = underlying
         self.isParseFailure = isParseFailure
+        self.statusCode = statusCode
     }
 
     public var description: String { "\(code.rawValue): \(message)" }

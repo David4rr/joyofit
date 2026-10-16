@@ -113,7 +113,7 @@ public actor HuaweiSession {
         let waiter = Waiter(serviceId: packet.serviceId, commandId: packet.commandId, label: label)
         waiters.append(waiter)
         do {
-            try await transmit(packet, frames: frames, label: label, logFrames: true)
+            try await transmit(service: packet.serviceId, command: packet.commandId, frames: frames, label: label, logFrames: true)
         } catch {
             waiters.removeAll { $0 === waiter }
             throw error
@@ -154,7 +154,13 @@ public actor HuaweiSession {
     public func send(_ packet: HuaweiPacket, label: String, logFrames: Bool = true) async throws {
         let frames = try serialize(packet, label: label)
         if let closedBy { throw closedBy }
-        try await transmit(packet, frames: frames, label: label, logFrames: logFrames)
+        try await transmit(service: packet.serviceId, command: packet.commandId, frames: frames, label: label, logFrames: logFrames)
+    }
+
+    /// Sends frames that are already serialized (a file chunk, see `HuaweiPacket.serializeFileChunk`), without waiting for an answer.
+    public func sendFrames(_ frames: [Bytes], service: UInt8, command: UInt8, label: String, logFrames: Bool = true) async throws {
+        if let closedBy { throw closedBy }
+        try await transmit(service: service, command: command, frames: frames, label: label, logFrames: logFrames)
     }
 
     /// Routes complete packets that no pending request waits for to `handler` until the returned id is passed to `unsubscribe`.
@@ -190,14 +196,14 @@ public actor HuaweiSession {
         }
     }
 
-    private func transmit(_ packet: HuaweiPacket, frames: [Bytes], label: String, logFrames: Bool) async throws {
+    private func transmit(service: UInt8, command: UInt8, frames: [Bytes], label: String, logFrames: Bool) async throws {
         let mtu = params.mtu
         var wire = [Bytes]()
         wire.reserveCapacity(frames.count)
         for (index, f) in frames.enumerated() {
             if logFrames {
                 log(LogEntry(
-                    .tx, service: Int(packet.serviceId), command: Int(packet.commandId), hex: f.hexUpper,
+                    .tx, service: Int(service), command: Int(command), hex: f.hexUpper,
                     frames.count > 1 ? "\(label) (frame \(index + 1)/\(frames.count))" : label
                 ))
             }
@@ -205,7 +211,7 @@ public actor HuaweiSession {
         }
         if !logFrames {
             log(LogEntry(
-                .tx, service: Int(packet.serviceId), command: Int(packet.commandId), hex: nil,
+                .tx, service: Int(service), command: Int(command), hex: nil,
                 "\(label) (\(frames.count) frames, \(frames.reduce(0) { $0 + $1.count }) bytes, hex not logged)"
             ))
         }

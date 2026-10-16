@@ -50,6 +50,14 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var watchSettings: WatchSettingsFeatures!
     /// Weather push (settings, the watch's weather requests, the refresh timer).
     public private(set) var weather: WeatherController!
+    /// Watch face list, install, activate and delete.
+    public private(set) var watchfaces: WatchfaceController!
+    /// The watch's photo face and its photos.
+    public private(set) var photoFaces: PhotoFaceController!
+    /// The one subscriber of DataSync (service 0x37); features register their handlers on it.
+    public private(set) var dataSync: DataSyncService!
+    /// Editable watch-face options over DataSync.
+    public private(set) var faceCustomizer: WatchfaceCustomizer!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -97,7 +105,6 @@ public final class WearRuntime: @unchecked Sendable {
         )
         controller = BackgroundController(runtime: self, expiring: expiring, clock: clock)
         features = PhoneFeatures(link: link, events: fanOut)
-        linkObservers.add(features)
         notifications = WatchNotifications(link: link, events: fanOut)
         linkObservers.add(notifications)
         watchSettings = WatchSettingsFeatures(handle: { [link] in link?.handle() }, settings: settings, syncStore: syncStore, events: fanOut)
@@ -106,6 +113,12 @@ public final class WearRuntime: @unchecked Sendable {
             settings: WeatherSettings(defaults: weatherDefaults), link: link, events: fanOut, location: weatherLocation, fetch: weatherFetch, expiring: expiring, now: now
         )
         linkObservers.add(weather)
+        watchfaces = WatchfaceController(link: link, events: fanOut)
+        photoFaces = PhotoFaceController(link: link, events: fanOut)
+        dataSync = DataSyncService(link: link, events: fanOut)
+        faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
+        dataSync.register(faceCustomizer)
+        linkObservers.add(dataSync)
     }
 
     // MARK: events
@@ -172,6 +185,11 @@ public final class WearRuntime: @unchecked Sendable {
         func log(_ entry: LogEntry) { runtime?.handleLog(entry) }
         func heartRate(bpm: Int, tsMs: Int64) { runtime?.handleHeartRate(bpm, tsMs) }
         func hrvProgress(secondsLeft: Int, beats: Int) { runtime?.handleHrvProgress(secondsLeft, beats) }
+        func uploadProgress(bytes: Int, total: Int) { runtime?.currentListeners().forEach { $0.uploadProgress(bytes: bytes, total: total) } }
+        func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {
+            runtime?.currentListeners().forEach { $0.uploadResult(ok: ok, fileName: fileName, code: code, message: message) }
+        }
+        func faceCustomization(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.faceCustomization(payload) } }
     }
 
     // MARK: bonded devices

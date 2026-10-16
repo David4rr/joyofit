@@ -110,6 +110,11 @@ public final class HuaweiWearModule: Module {
         func syncComplete(_ summary: SyncSummary) { emit("onSyncComplete", summary.toJS()) }
         func heartRate(bpm: Int, tsMs: Int64) { emit("onHeartRate", ["bpm": bpm, "ts": tsMs]) }
         func hrvProgress(secondsLeft: Int, beats: Int) { emit("onHrvProgress", ["secondsLeft": secondsLeft, "beats": beats]) }
+        func uploadProgress(bytes: Int, total: Int) { emit("onUploadProgress", ["bytes": bytes, "total": total]) }
+        func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {
+            emit("onUploadResult", ["ok": ok, "fileName": fileName, "code": code, "message": message])
+        }
+        func faceCustomization(_ payload: [String: Any]) { emit("onFaceCustomization", payload) }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -354,6 +359,51 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.weather.refreshNow() }
         }
 
+        // MARK: watch faces
+
+        AsyncFunction("listWatchfaces") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchfaces.list() }
+        }
+
+        AsyncFunction("installWatchface") { (uri: String, signature: String?, fileName: String?) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchfaces.install(uri: uri, signature: signature, fileName: fileName) }
+        }
+
+        AsyncFunction("setActiveWatchface") { (id: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchfaces.setActive(id) }
+        }
+
+        AsyncFunction("deleteWatchface") { (id: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchfaces.delete(id) }
+        }
+
+        AsyncFunction("getFaceCustomization") { (faceId: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.faceCustomizer.query(faceId).toJS() }
+        }
+
+        AsyncFunction("applyFaceCustomization") { (faceId: String, config: [String: Any]) async throws -> [String: Any] in
+            guard let parsed = FaceCustomization(js: config) else {
+                throw WearException(.invalidArgument, "The configuration needs marketId, styles [{mode, index}], colourIndex, customColour and widgets")
+            }
+            return try await wearCall { try await runtime.faceCustomizer.apply(faceId, parsed).toJS() }
+        }
+
+        AsyncFunction("getPhotoFace") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.photoFaces.info() }
+        }
+
+        AsyncFunction("addPhoto") { (uri: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.photoFaces.add(uri: uri) }
+        }
+
+        AsyncFunction("deletePhoto") { (name: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.photoFaces.delete(name: name) }
+        }
+
+        AsyncFunction("setPhotoFaceActive") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.photoFaces.setActive() }
+        }
+
         // MARK: switches of phone-side features that are always off here
 
         switchRejectingOn("setMorningSummaryEnabled")
@@ -370,16 +420,6 @@ public final class HuaweiWearModule: Module {
 
         rejects("openNotificationAccess")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
-        rejects("listWatchfaces")
-        rejects("installWatchface", String.self, String?.self, String?.self)
-        rejects("setActiveWatchface", String.self)
-        rejects("deleteWatchface", String.self)
-        rejects("getFaceCustomization", String.self)
-        rejects("applyFaceCustomization", String.self, [String: Any].self)
-        rejects("getPhotoFace")
-        rejects("addPhoto", String.self)
-        rejects("deletePhoto", String.self)
-        rejects("setPhotoFaceActive")
         rejects("setFallDetection", Bool.self)
         rejects("queryFallDetection")
         rejects("sendSleepReportNow")

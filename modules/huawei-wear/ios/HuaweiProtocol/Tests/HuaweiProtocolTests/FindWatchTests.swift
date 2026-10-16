@@ -59,42 +59,4 @@ final class FindWatchTests: XCTestCase {
             XCTAssertTrue(h.watch.requests.isEmpty)
         }
     }
-
-    func testTheWatchReplyIsLogged() async throws {
-        let h = SleepFilesHarness()
-        _ = await FindWatch.attach(session: h.session, log: h.log.sink)
-        h.watch.responder = { request in
-            guard request.service == 0x37 else { return [] }
-            var reply = HuaweiTLV()
-            reply.put(0x01, string: "findDevice")
-            reply.put(0x02, string: "hw.unitedevice.finddevice")
-            var item = HuaweiTLV()
-            item.put(0x05, int: 900_100_002)
-            item.put(0x06, byte: 2)
-            var list = HuaweiTLV()
-            list.put(0x84, tlv: item)
-            reply.put(0x83, tlv: list)
-            return [SleepFilesFakeWatch.tlvFrame(service: 0x37, command: 0x01, reply)]
-        }
-        try await FindWatch.send(session: h.session, caps: caps(bits: [79, 83]), log: h.log.sink, start: true)
-        for _ in 0..<50 where !h.log.contains("DataSync config from watch") { try await Task.sleep(nanoseconds: 20_000_000) }
-        XCTAssertTrue(h.log.contains("DataSync config from watch: src=findDevice wear=hw.unitedevice.finddevice code=100000"))
-        XCTAssertTrue(h.log.contains("id=900100002 action=2"))
-    }
-
-    func testAWatchErrorReplyIsAnError() async throws {
-        let h = SleepFilesHarness()
-        _ = await FindWatch.attach(session: h.session, log: h.log.sink)
-        h.watch.responder = { request in
-            guard request.service == 0x37 else { return [] }
-            var reply = HuaweiTLV()
-            reply.put(0x01, string: "findDevice")
-            reply.put(0x02, string: "hw.unitedevice.finddevice")
-            reply.put(0x7F, int: 100_001)
-            return [SleepFilesFakeWatch.tlvFrame(service: 0x37, command: 0x01, reply)]
-        }
-        try await FindWatch.send(session: h.session, caps: caps(bits: [79, 83]), log: h.log.sink, start: true)
-        for _ in 0..<50 where !h.log.containsError("code=100001") { try await Task.sleep(nanoseconds: 20_000_000) }
-        XCTAssertTrue(h.log.containsError("code=100001"))
-    }
 }

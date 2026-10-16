@@ -135,7 +135,8 @@ final class WearRuntimeTests: XCTestCase {
         XCTAssertEqual(runtime.status.lastSyncSec, 99)
         XCTAssertEqual(runtime.status.state, .disconnected)
 
-        let lines = runtime.supportLog.lines().map(\.text)
+        // The DataSync features announce themselves while the runtime is built (as on Android); those lines are not what this test is about.
+        let lines = runtime.supportLog.lines().map(\.text).filter { !$0.hasPrefix("INFO DataSync: feature ") }
         XCTAssertEqual(lines, ["STATE connecting", "TX svc=01 cmd=03 LinkParams", "INFO plain", "STATE disconnected: gone"])
         XCTAssertFalse(lines.joined().contains("5A00"), "frame hex stays out of the support log")
 
