@@ -58,6 +58,8 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var dataSync: DataSyncService!
     /// Editable watch-face options over DataSync.
     public private(set) var faceCustomizer: WatchfaceCustomizer!
+    /// The menstrual calendar: the log, the watch's 0x32 requests and the flow dictionary.
+    public private(set) var cycle: MenstrualFeature!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -91,7 +93,8 @@ public final class WearRuntime: @unchecked Sendable {
         clock: @escaping @Sendable () -> Int = BackgroundController.uptimeMs,
         weatherLocation: LocationSource = UnavailableLocationSource(),
         weatherFetch: @escaping WeatherFetch = WeatherNetwork.fetch,
-        weatherDefaults: UserDefaults? = nil
+        weatherDefaults: UserDefaults? = nil,
+        cycleDefaults: UserDefaults? = nil
     ) {
         self.settings = settings
         self.syncStore = syncStore
@@ -118,6 +121,9 @@ public final class WearRuntime: @unchecked Sendable {
         dataSync = DataSyncService(link: link, events: fanOut)
         faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
         dataSync.register(faceCustomizer)
+        cycle = MenstrualFeature(settings: CycleSettings(defaults: cycleDefaults), store: CycleStore(store: syncStore), link: link, events: fanOut)
+        dataSync.register(cycle)
+        linkObservers.add(cycle)
         linkObservers.add(dataSync)
     }
 

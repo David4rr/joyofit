@@ -283,7 +283,7 @@ public final class HuaweiWearModule: Module {
 
         AsyncFunction("getNotificationApps") { () async throws -> [[String: Any]] in [] }
         AsyncFunction("getCycle") { () async throws -> [String: Any] in
-            Inert.cycle(today: Inert.today(), watchConnected: runtime.link.deviceInfo() != nil)
+            try await wearCall { try runtime.cycle.overview() }
         }
 
         // Nothing to do where Android's own call is a no-op with nothing running or stored.
@@ -404,6 +404,36 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.photoFaces.setActive() }
         }
 
+        // MARK: cycle calendar
+
+        AsyncFunction("setCycleEnabled") { (enabled: Bool) async throws -> Void in
+            runtime.cycle.setEnabled(enabled)
+        }
+
+        AsyncFunction("setCycleSwitches") { (switches: [String: Any]) async throws -> Void in
+            try await wearCall { runtime.cycle.setSwitches(try MenstrualCodec.Switches(js: switches)) }
+        }
+
+        AsyncFunction("startPeriod") { (day: String) async throws -> Void in
+            try await wearCall { try runtime.cycle.startPeriod(day) }
+        }
+
+        AsyncFunction("endPeriod") { (day: String) async throws -> Void in
+            try await wearCall { try runtime.cycle.endPeriod(day) }
+        }
+
+        AsyncFunction("addPeriod") { (start: String, end: String) async throws -> Void in
+            try await wearCall { try runtime.cycle.addPeriod(start: start, end: end) }
+        }
+
+        AsyncFunction("deletePeriod") { (start: String) async throws -> Void in
+            try await wearCall { try runtime.cycle.deletePeriod(start) }
+        }
+
+        AsyncFunction("logCycleDay") { (day: String, flow: Int, cramps: Int) async throws -> Void in
+            try await wearCall { try runtime.cycle.logDay(day, flow: flow, cramps: cramps) }
+        }
+
         // MARK: switches of phone-side features that are always off here
 
         switchRejectingOn("setMorningSummaryEnabled")
@@ -412,7 +442,6 @@ public final class HuaweiWearModule: Module {
         switchRejectingOn("setCallControlEnabled")
         switchRejectingOn("setSosRelayEnabled")
         switchRejectingOn("setSleepReportEnabled")
-        switchRejectingOn("setCycleEnabled")
         switchRejectingOn("setHealthyLivingEnabled")
         switchRejectingOn("setCoursesEnabled")
 
@@ -423,12 +452,6 @@ public final class HuaweiWearModule: Module {
         rejects("setFallDetection", Bool.self)
         rejects("queryFallDetection")
         rejects("sendSleepReportNow")
-        rejects("setCycleSwitches", [String: Any].self)
-        rejects("startPeriod", String.self)
-        rejects("endPeriod", String.self)
-        rejects("addPeriod", String.self, String.self)
-        rejects("deletePeriod", String.self)
-        rejects("logCycleDay", String.self, Int.self, Int.self)
         rejects("setDietDay", [String: Any].self)
         rejects("pushDietNow")
         rejects("setBodyMetrics", [String: Any].self)

@@ -1,0 +1,165 @@
+{
+ "capabilityRequest": {
+  "sliced": true,
+  "encrypted": true,
+  "frames": ["5a000600320501010292f1"],
+  "service": 50,
+  "name": "CapabilityRequest",
+  "command": 5,
+  "tlv": "010102"
+ },
+ "messages": [
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000600320101010bc929"],
+   "service": 50,
+   "kind": "switches",
+   "name": "switches 0b00001011",
+   "command": 1,
+   "tlv": "01010b",
+   "bitfield": 11
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000600320101013fbffe"],
+   "service": 50,
+   "kind": "switches",
+   "name": "switches 0b111111",
+   "command": 1,
+   "tlv": "01013f",
+   "bitfield": 63
+  },
+  {
+   "sliced": true,
+   "dictionary": true,
+   "encrypted": true,
+   "frames": ["5a000600320501010382d0"],
+   "service": 50,
+   "kind": "capability",
+   "name": "capability dictionary",
+   "command": 5,
+   "tlv": "010103"
+  },
+  {
+   "sliced": true,
+   "dictionary": false,
+   "encrypted": true,
+   "frames": ["5a000600320501010292f1"],
+   "service": 50,
+   "kind": "capability",
+   "name": "capability classic",
+   "command": 5,
+   "tlv": "010102"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00030032044e39"],
+   "service": 50,
+   "kind": "updateNotice",
+   "name": "update notice",
+   "command": 4,
+   "tlv": ""
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00090032027f04000249f15456"],
+   "service": 50,
+   "kind": "noData",
+   "name": "no data",
+   "command": 2,
+   "tlv": "7f04000249f1"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0009003202010469c6c0c04689"],
+   "service": 50,
+   "kind": "modifyTime",
+   "name": "modify time",
+   "modified": 1774633152,
+   "command": 2,
+   "tlv": "010469c6c0c0"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0075003203010201018260831e04046a8e2c8005046a93728006040000000007040000000008011c120101831e04046ab3168005046ab85c8006046abef40007046ac6dd0008011c120101831e04046ad8008005046add468006046ae3de0007046aebc70008011c12010009046acec6000a011c0b01059e86"],
+   "service": 50,
+   "kind": "cycleList",
+   "name": "cycle list all flags",
+   "modified": 1791936000,
+   "tag0a": true,
+   "tag0b": true,
+   "tag0c": true,
+   "command": 3,
+   "tlv": "010201018260831e04046a8e2c8005046a93728006040000000007040000000008011c120101831e04046ab3168005046ab85c8006046abef40007046ac6dd0008011c120101831e04046ad8008005046add468006046ae3de0007046aebc70008011c12010009046acec6000a011c0b0105"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0066003203010201018257831b04046a8e2c8005046a93728006040000000007040000000008011c831b04046ab3168005046ab85c8006046abef40007046ac6dd0008011c831b04046ad8008005046add468006046ae3de0007046aebc70008011c090400000005090c"],
+   "service": 50,
+   "kind": "cycleList",
+   "name": "cycle list no flags",
+   "modified": 5,
+   "tag0a": false,
+   "tag0b": false,
+   "tag0c": false,
+   "command": 3,
+   "tlv": "010201018257831b04046a8e2c8005046a93728006040000000007040000000008011c831b04046ab3168005046ab85c8006046abef40007046ac6dd0008011c831b04046ad8008005046add468006046ae3de0007046aebc70008011c090400000005"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0069003203010201018257831b04046a8e2c8005046a93728006040000000007040000000008011c831b04046ab3168005046ab85c8006046abef40007046ac6dd0008011c831b04046ad8008005046add468006046ae3de0007046aebc70008011c09040000004d0a011c9894"],
+   "service": 50,
+   "kind": "cycleList",
+   "name": "cycle list only 0b",
+   "modified": 77,
+   "tag0a": false,
+   "tag0b": true,
+   "tag0c": false,
+   "command": 3,
+   "tlv": "010201018257831b04046a8e2c8005046a93728006040000000007040000000008011c831b04046ab3168005046ab85c8006046abef40007046ac6dd0008011c831b04046ad8008005046add468006046ae3de0007046aebc70008011c09040000004d0a011c"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006003206040103f2fc"],
+   "service": 50,
+   "kind": "frameCount",
+   "name": "frame count 3",
+   "count": 3,
+   "command": 6,
+   "tlv": "040103"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0047003207010100020103833c841205046ab31680060200650802000009020000841205046ab85c80060200660802000009020000841205046abef400060201910802000009020000558a"],
+   "size": 3,
+   "service": 50,
+   "kind": "bodyStatus",
+   "name": "body status frame 0",
+   "index": 0,
+   "command": 7,
+   "tlv": "010100020103833c841205046ab31680060200650802000009020000841205046ab85c80060200660802000009020000841205046abef400060201910802000009020000"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001f0032070101030201018314841205046aebc7000602019208020000090200004285"],
+   "size": 3,
+   "service": 50,
+   "kind": "bodyStatus",
+   "name": "body status frame 3",
+   "index": 3,
+   "command": 7,
+   "tlv": "0101030201018314841205046aebc700060201920802000009020000"
+  }
+ ]
+}

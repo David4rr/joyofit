@@ -25,11 +25,6 @@ final class InertStatusTests: XCTestCase {
         XCTAssertEqual(keys(Inert.sosRelayTest()), ["ready", "blockers"])
         XCTAssertEqual(Inert.sosRelayTest()["ready"] as? Bool, false)
         XCTAssertEqual((Inert.sosRelayTest()["blockers"] as? [String])?.count, 1)
-        XCTAssertEqual(
-            keys(Inert.cycle(today: "2026-10-16", watchConnected: false)),
-            ["today", "enabled", "periods", "days", "predictions", "averageCycleDays", "averagePeriodDays", "periodOngoing", "daysLate", "switches", "watchConnected", "watchSupported", "watchNote", "easyPregnancySwitch"]
-        )
-        XCTAssertEqual(keys(Inert.cycle(today: "x", watchConnected: true)["switches"] as! [String: Any]), ["master", "periodStart", "periodEnd", "fertileStart", "fertileEnd", "easyPregnancy"])
         XCTAssertEqual(keys(Inert.diet()), ["date", "mealCount", "intakeKcal", "goals", "updatedAt", "pushedAt", "lastResult", "unsyncedWatchMeals", "pendingWatchMeals", "supported"])
         XCTAssertEqual(keys(Inert.bodyMetrics()), ["weightKg", "weightTs", "bodyFatPct", "bodyFatTs", "restingKcal", "systolic", "diastolic", "bpTs"])
         XCTAssertEqual(keys(Inert.healthyLiving()), ["supported", "gate", "gateSet", "enabled", "registered", "pingCode", "msgVer", "packageSize", "lastRequestAt", "lastReportAt", "lastReport"])
@@ -74,6 +69,22 @@ final class InertStatusTests: XCTestCase {
             "locationPermission": true, "watchSupported": true, "lastPushAt": Int64(1_792_110_700), "lastError": "x", "lastTemperatureC": -3,
             "lastCondition": "LIGHT_RAIN", "lastLocationName": "Bandung",
         ]
+        // The real overview: a fresh install, and one with an open period, symptoms and the watch connected.
+        let cycleStore = CycleStore(store: SyncStore(url: temporaryDatabaseURL()))
+        let cycle = MenstrualFeature(settings: CycleSettings(defaults: ephemeralDefaults()), store: cycleStore, link: RigSource(), events: events)
+        let populatedStore = CycleStore(store: SyncStore(url: temporaryDatabaseURL()))
+        try populatedStore.addPeriod(start: CivilDate("2026-08-26")!, end: CivilDate("2026-08-30")!, nowSec: 1)
+        try populatedStore.startPeriod(CivilDate("2026-09-23")!, nowSec: 2)
+        try populatedStore.logDay(CivilDate("2026-09-24")!, flow: 2, cramps: 1, nowSec: 3)
+        let populatedLink = DataSyncRig()
+        var bitmap = Bytes(repeating: 0, count: 40)
+        for bit in [173, 174, 265] { bitmap[bit / 8] |= UInt8(1 << (bit % 8)) }
+        populatedLink.caps.expandCapabilities = bitmap
+        populatedLink.caps.supportedCommands = [0x32: [0x01]]
+        let populatedSettings = CycleSettings(defaults: ephemeralDefaults())
+        populatedSettings.enabled = true
+        populatedSettings.switches = MenstrualCodec.Switches(master: true)
+        let populatedCycle = MenstrualFeature(settings: populatedSettings, store: populatedStore, link: populatedLink.source, events: events)
         let shapes: [String: Any] = [
             "PhoneFeatures": Inert.phoneFeatures(),
             "NotificationAccessStatus": Inert.notificationAccess(),
@@ -86,7 +97,8 @@ final class InertStatusTests: XCTestCase {
             "WeatherStatus#populated": populatedWeather,
             "SafetyStatus": Inert.safety(),
             "SosRelayTest": Inert.sosRelayTest(),
-            "CycleOverview": Inert.cycle(today: "2026-10-16", watchConnected: false),
+            "CycleOverview": try cycle.overview(),
+            "CycleOverview#populated": try populatedCycle.overview(),
             "DietStatus": Inert.diet(),
             "BodyMetrics": Inert.bodyMetrics(),
             "ActivityGoalsStatus": Inert.activityGoals(dailyStepGoal: nil),
