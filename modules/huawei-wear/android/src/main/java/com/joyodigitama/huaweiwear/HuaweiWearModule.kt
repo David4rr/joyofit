@@ -93,6 +93,14 @@ class HuaweiWearModule : Module() {
       emit("onHrvProgress", mapOf("secondsLeft" to secondsLeft, "beats" to beats))
     }
 
+    override fun deviceDiscovered(device: DiscoveredDevice) {
+      emit("onDeviceDiscovered", device.toJs())
+    }
+
+    override fun scanState(scanning: Boolean, error: String?) {
+      emit("onScanStateChange", mapOf("scanning" to scanning, "error" to error))
+    }
+
     fun emit(name: String, payload: Map<String, Any?>) {
       if (destroyed) return
       try {
@@ -125,7 +133,7 @@ class HuaweiWearModule : Module() {
     // "play" for the Google Play build, "sideload" otherwise (see Distribution.kt).
     Constant("distribution") { Distribution.name }
 
-    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress")
+    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange")
 
     OnCreate {
       val runtime = runtime()
@@ -153,6 +161,18 @@ class HuaweiWearModule : Module() {
 
     AsyncFunction("getBondedDevices") {
       runtime().link.bondedDevices()
+    }
+
+    AsyncFunction("startScan") {
+      runtime().link.startScan()
+    }
+
+    AsyncFunction("stopScan") {
+      runtime().link.stopScan()
+    }
+
+    Function("getDiscoveredDevices") {
+      runtime().link.getDiscoveredDevices()
     }
 
     AsyncFunction("connect") Coroutine { address: String ->

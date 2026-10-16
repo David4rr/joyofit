@@ -46,6 +46,12 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   readonly distribution: 'play' | 'sideload';
   /** Bonded Bluetooth devices, each with the support level of its model. Requires BLUETOOTH_CONNECT on Android 12+. */
   getBondedDevices(): Promise<BondedDevice[]>;
+  /** Scans for nearby Huawei and Honor BLE devices in pairing mode. */
+  startScan(): Promise<void>;
+  /** Stops any ongoing Bluetooth LE scan. */
+  stopScan(): Promise<void>;
+  /** Returns devices discovered during the latest BLE scan session. */
+  getDiscoveredDevices(): BondedDevice[];
   /**
    * RFCOMM or BLE GATT connect (by model) + LinkParams + auth + init. Resolves when `connected`. There is one link per
    * process: if the background service is already connecting to or connected with this watch, this

@@ -131,6 +131,14 @@ internal class WearRuntime private constructor(context: Context) {
     override fun hrvProgress(secondsLeft: Int, beats: Int) {
       listeners.forEach { it.hrvProgress(secondsLeft, beats) }
     }
+
+    override fun deviceDiscovered(device: DiscoveredDevice) {
+      listeners.forEach { it.deviceDiscovered(device) }
+    }
+
+    override fun scanState(scanning: Boolean, error: String?) {
+      listeners.forEach { it.scanState(scanning, error) }
+    }
   }
 
   /** Same fan-out the link reports through; background code logs here so the Log tab shows it. */

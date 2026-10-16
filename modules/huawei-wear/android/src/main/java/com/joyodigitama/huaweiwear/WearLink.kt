@@ -8,6 +8,10 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteException
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
+import java.util.concurrent.ConcurrentHashMap
 import android.os.Build
 import java.io.IOException
 import java.util.Locale
@@ -50,7 +54,25 @@ internal class WearLink(
    */
   internal val syncExtensions = java.util.concurrent.CopyOnWriteArrayList<suspend (HuaweiSession) -> Unit>()
 
+
+
+  companion object {
+    private const val HUAWEI_MANUFACTURER_ID = 0x027D
+    private const val HONOR_MANUFACTURER_ID = 0x0079
+    private const val SERVICE_FE86 = "fe86"
+    private const val SERVICE_3802 = "3802"
+    private const val SCAN_TIMEOUT_MS = 12_000L
+  }
+
   private val lock = Any()
+  private val discoveredDevices = ConcurrentHashMap<String, DiscoveredDevice>()
+  private val discoveredNames = ConcurrentHashMap<String, String>()
+  private val discoveredTransports = ConcurrentHashMap<String, ModelTransport>()
+  private var scanCallback: ScanCallback? = null
+  private val scanHandler = android.os.Handler(android.os.Looper.getMainLooper())
+  private val scanTimeoutRunnable = Runnable { stopScan() }
+  @Volatile var isScanning: Boolean = false
+    private set
   private var current: Connection? = null
 
   @Volatile
@@ -149,15 +171,165 @@ internal class WearLink(
   fun bondedDevices(): List<Map<String, Any?>> {
     val adapter = requireAdapter()
     try {
-      return adapter.bondedDevices
-        .map { device ->
-          val name = device.name ?: device.address
-          mapOf("address" to device.address, "name" to name) + WatchModels.match(device.name).toJs()
+      val map = mutableMapOf<String, DiscoveredDevice>()
+      for (device in adapter.bondedDevices) {
+        val name = device.name ?: device.address
+        val match = WatchModels.match(device.name)
+        map[device.address] = DiscoveredDevice(
+          address = device.address,
+          name = name,
+          model = match.model?.name,
+          support = match.support.wire,
+          reason = match.reason,
+        )
+      }
+      synchronized(lock) {
+        val conn = current
+        if (conn != null && !map.containsKey(conn.address)) {
+          val name = conn.info?.get("name") as? String ?: lastAttemptName ?: conn.address
+          map[conn.address] = DiscoveredDevice(
+            address = conn.address,
+            name = name,
+            model = conn.model.model?.name,
+            support = conn.model.support.wire,
+            reason = conn.model.reason,
+          )
         }
-        .sortedBy { (it["name"] as String).lowercase(Locale.ROOT) }
+      }
+      for ((addr, name) in discoveredNames) {
+        if (!map.containsKey(addr)) {
+          val match = WatchModels.match(name)
+          if (match.connectable) {
+            map[addr] = DiscoveredDevice(
+              address = addr,
+              name = name,
+              model = match.model?.name,
+              support = match.support.wire,
+              reason = match.reason,
+            )
+          }
+        }
+      }
+      return map.values.sortedBy { it.name.lowercase(Locale.ROOT) }.map { it.toJs() }
     } catch (e: SecurityException) {
       throw WearException(ErrorCodes.BLUETOOTH_PERMISSION, "BLUETOOTH_CONNECT permission denied: ${e.message}", e)
     }
+  }
+
+  @SuppressLint("MissingPermission")
+  fun startScan() {
+    val adapter = requireAdapter()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+      appContext.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED
+    ) {
+      throw WearException(
+        ErrorCodes.BLUETOOTH_PERMISSION,
+        "BLUETOOTH_SCAN permission is not granted; request it before scanning",
+      )
+    }
+
+    val scanner = adapter.bluetoothLeScanner
+      ?: throw WearException(ErrorCodes.BLUETOOTH_UNAVAILABLE, "Bluetooth LE scanner unavailable")
+
+    synchronized(this) {
+      if (isScanning) return
+      isScanning = true
+      scanHandler.removeCallbacks(scanTimeoutRunnable)
+      scanHandler.postDelayed(scanTimeoutRunnable, SCAN_TIMEOUT_MS)
+    }
+    events.scanState(true, null)
+
+    val callback = object : ScanCallback() {
+      override fun onScanResult(callbackType: Int, result: ScanResult?) {
+        val device = result?.device ?: return
+        var rawName = try { device.name } catch (e: SecurityException) { null }
+          ?: result.scanRecord?.deviceName
+        val address = device.address
+
+        val serviceUuids = result.scanRecord?.serviceUuids?.map { it.uuid.toString().lowercase(Locale.ROOT) } ?: emptyList()
+        val isHuaweiService = serviceUuids.any { it.contains(SERVICE_FE86) || it.contains(SERVICE_3802) }
+        val manufacturerData = result.scanRecord?.manufacturerSpecificData
+        val isHuaweiManufacturer = manufacturerData != null &&
+          (manufacturerData.get(HUAWEI_MANUFACTURER_ID) != null || manufacturerData.get(HONOR_MANUFACTURER_ID) != null)
+
+        if (rawName.isNullOrBlank() && (isHuaweiService || isHuaweiManufacturer)) {
+          rawName = "Huawei Wearable (${address.takeLast(5)})"
+        }
+
+        if (!rawName.isNullOrBlank()) {
+          discoveredNames[address] = rawName
+          val match = WatchModels.match(rawName)
+          if (match.connectable || isHuaweiService || isHuaweiManufacturer) {
+            discoveredTransports[address] = ModelTransport.LE
+            val entry = DiscoveredDevice(
+              address = address,
+              name = rawName,
+              model = match.model?.name,
+              support = match.support.wire,
+              reason = match.reason,
+              rssi = result.rssi,
+            )
+            discoveredDevices[address] = entry
+            events.deviceDiscovered(entry)
+          }
+        }
+      }
+
+      override fun onBatchScanResults(results: List<ScanResult?>) {
+        results.forEach { it?.let { res -> onScanResult(0, res) } }
+      }
+
+      override fun onScanFailed(errorCode: Int) {
+        synchronized(this@WearLink) {
+          isScanning = false
+          scanCallback = null
+          scanHandler.removeCallbacks(scanTimeoutRunnable)
+        }
+        events.scanState(false, "BLE Scan failed with code $errorCode")
+      }
+    }
+
+    scanCallback = callback
+    val settings = ScanSettings.Builder()
+      .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+      .build()
+
+    try {
+      scanner.startScan(null, settings, callback)
+    } catch (e: Exception) {
+      synchronized(this) {
+        isScanning = false
+        scanCallback = null
+        scanHandler.removeCallbacks(scanTimeoutRunnable)
+      }
+      events.scanState(false, e.message)
+      throw WearException(ErrorCodes.CONNECT_FAILED, "Could not start BLE scan: ${e.message}", e)
+    }
+  }
+
+  @SuppressLint("MissingPermission")
+  fun stopScan() {
+    val cb = synchronized(this) {
+      if (!isScanning) return
+      isScanning = false
+      scanHandler.removeCallbacks(scanTimeoutRunnable)
+      val c = scanCallback
+      scanCallback = null
+      c
+    } ?: return
+
+    try {
+      val adapter = appContext.getSystemService(BluetoothManager::class.java)?.adapter
+      adapter?.bluetoothLeScanner?.stopScan(cb)
+    } catch (e: Exception) {
+      // ignore
+    } finally {
+      events.scanState(false, null)
+    }
+  }
+
+  fun getDiscoveredDevices(): List<Map<String, Any?>> {
+    return discoveredDevices.values.sortedBy { it.name.lowercase(Locale.ROOT) }.map { it.toJs() }
   }
 
   private fun requireAdapter(): BluetoothAdapter {
@@ -181,6 +353,7 @@ internal class WearLink(
 
   @SuppressLint("MissingPermission")
   suspend fun connect(rawAddress: String): Map<String, Any?> {
+    stopScan()
     val address = rawAddress.trim().uppercase(Locale.ROOT)
     val adapter = requireAdapter()
     if (!BluetoothAdapter.checkBluetoothAddress(address)) {
