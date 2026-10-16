@@ -28,32 +28,6 @@ public enum Inert {
     /// `NotificationAccessStatus`: iOS has no notification listener for third-party apps.
     public static func notificationAccess() -> [String: Any] { ["granted": false, "enabled": false] }
 
-    /// `WatchAlarms`: nothing read from or pushed to the watch.
-    public static func alarms() -> [String: Any] {
-        [
-            "event": [Any](),
-            "smart": NSNull(),
-            "updatedAt": NSNull(),
-            "supported": false,
-            "smartSupported": false,
-        ]
-    }
-
-    /// `HealthSensorsStatus`: switches off, `supported` null (nothing is known about the watch).
-    public static func healthSensors() -> [String: Any] {
-        [
-            "automaticHeartRate": false,
-            "automaticSpo2": false,
-            "truSleep": false,
-            "highHeartRateAlert": 0,
-            "lowHeartRateAlert": 0,
-            "supported": NSNull(),
-        ]
-    }
-
-    /// `StressStatus`.
-    public static func stress() -> [String: Any] { ["enabled": false, "lastCalibratedAt": NSNull(), "supported": false] }
-
     /// `WeatherStatus`: off, nothing pushed.
     public static func weather() -> [String: Any] {
         [

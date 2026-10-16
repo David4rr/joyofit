@@ -46,6 +46,8 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var features: PhoneFeatures!
     /// The watch's notification switch and iOS's ANCS state.
     public private(set) var notifications: WatchNotifications!
+    /// Alarms, health sensor switches, live heart rate, HRV and stress (the watch settings that are plain protocol commands).
+    public private(set) var watchSettings: WatchSettingsFeatures!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -93,6 +95,8 @@ public final class WearRuntime: @unchecked Sendable {
         linkObservers.add(features)
         notifications = WatchNotifications(link: link, events: fanOut)
         linkObservers.add(notifications)
+        watchSettings = WatchSettingsFeatures(handle: { [link] in link?.handle() }, settings: settings, syncStore: syncStore, events: fanOut)
+        linkObservers.add(watchSettings)
     }
 
     // MARK: events
@@ -132,6 +136,10 @@ public final class WearRuntime: @unchecked Sendable {
         currentListeners().forEach { $0.syncComplete(summary) }
     }
 
+    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) { currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) } }
+
+    fileprivate func handleHrvProgress(_ secondsLeft: Int, _ beats: Int) { currentListeners().forEach { $0.hrvProgress(secondsLeft: secondsLeft, beats: beats) } }
+
     fileprivate func handleLog(_ entry: LogEntry) {
         let ids = entry.serviceId.map { " svc=\(SupportReport.hex2($0)) cmd=\(SupportReport.hex2(entry.commandId ?? 0))" } ?? ""
         let hexForConsole = entry.hex.map { " \($0)" } ?? ""
@@ -153,6 +161,8 @@ public final class WearRuntime: @unchecked Sendable {
         func battery(_ level: Int) { runtime?.handleBattery(level) }
         func syncComplete(_ summary: SyncSummary) { runtime?.handleSyncComplete(summary) }
         func log(_ entry: LogEntry) { runtime?.handleLog(entry) }
+        func heartRate(bpm: Int, tsMs: Int64) { runtime?.handleHeartRate(bpm, tsMs) }
+        func hrvProgress(secondsLeft: Int, beats: Int) { runtime?.handleHrvProgress(secondsLeft, beats) }
     }
 
     // MARK: bonded devices
@@ -239,6 +249,8 @@ public final class WearRuntime: @unchecked Sendable {
 
     /// JS reload with background off: nothing keeps the link, so it is closed as before.
     public func onModuleDestroyed() {
+        watchSettings.liveHeartRate.setActive(false)
+        watchSettings.hrv.cancel()
         if !settings.backgroundEnabled { link.shutdown() }
     }
 

@@ -32,6 +32,14 @@ public enum ErrorCode: String, Sendable {
     case storage = "ERR_STORAGE"
     case invalidArgument = "ERR_INVALID_ARGUMENT"
     case unsupported = "ERR_UNSUPPORTED"
+    /// A 1-minute HRV measurement gave too few clean beats to compute a reading.
+    case hrvTooFewBeats = "ERR_HRV_TOO_FEW_BEATS"
+    /// The measurement was cancelled with `cancelHrvMeasurement`.
+    case hrvCancelled = "ERR_HRV_CANCELLED"
+    /// The calibration minute of the automatic stress switch could not be scored.
+    case stressCalibration = "ERR_STRESS_CALIBRATION"
+    /// The watch answered the automatic stress setting with an error code.
+    case stressRejected = "ERR_STRESS_REJECTED"
     case uploadRejected = "ERR_UPLOAD_REJECTED"
 }
 

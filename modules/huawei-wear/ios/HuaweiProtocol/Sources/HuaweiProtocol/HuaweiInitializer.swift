@@ -1,7 +1,8 @@
 // Port of the connection-essential part of HuaweiInitializer.kt (GB HuaweiSupportProvider.initializeDeviceConfigure): ProductInfo,
 // SetTime, BatteryLevel, SupportedServices -> SupportedCommands, ExpandCapability, ExtendedAccount, SettingRelated, AcceptAgreement,
-// ReverseCapabilities, SetUpDeviceStatus (+ WearStatus), ConnectStatus and the saved profile.
-// Not ported on purpose: notification capabilities/constraints/state, health sensor switches, heart-rate zones.
+// ReverseCapabilities, SetUpDeviceStatus (+ WearStatus), ConnectStatus, the saved profile, the heart-rate zones (FitnessData branch) and the
+// saved health sensor switches.
+// Not ported on purpose: notification capabilities/constraints/state; the P2P (Track) branch of the heart-rate zones.
 import Foundation
 
 public struct InitResult: Sendable {
@@ -35,6 +36,8 @@ public final class HuaweiInitializer {
     /// LinkParams protocolVersion (GB `getProtocolVersion()`); read only by the notification layer, which is not part of this class.
     let protocolVersion: Int
     private let profile: UserProfileData?
+    /// The sensor switches the user saved (continuous heart rate, SpO2, TruSleep, alerts); sent on every connect.
+    private let healthSensors: HealthSensorConfig
     private let deviceType: HuaweiDeviceType
 
     /// Replaced by tests: the phase timeouts, the clock SetTime reads and the zone it reports.
@@ -46,7 +49,7 @@ public final class HuaweiInitializer {
 
     public init(
         session: HuaweiSession, caps: DeviceCaps, log: @escaping LogSink, bondedName: String?, protocolVersion: Int,
-        profile: UserProfileData? = nil, deviceType: HuaweiDeviceType = .ble
+        profile: UserProfileData? = nil, healthSensors: HealthSensorConfig = HealthSensorConfig(), deviceType: HuaweiDeviceType = .ble
     ) {
         self.session = session
         self.caps = caps
@@ -54,6 +57,7 @@ public final class HuaweiInitializer {
         self.bondedName = bondedName
         self.protocolVersion = protocolVersion
         self.profile = profile
+        self.healthSensors = healthSensors
         self.deviceType = deviceType
     }
 
@@ -216,6 +220,30 @@ public final class HuaweiInitializer {
             try await soft("FitnessProfile") {
                 try await ProfileSender.sendProfile(session: session, caps: caps, log: log, profile: saved, now: now(), timeoutMs: timeouts.initMs)
             }
+        }
+
+        // SendHeartRateZonesConfig: the zones the workout screen shows (FitnessData 07/13|21; Track watches take them over P2P).
+        info(HeartRateZonesSync.capsLine(caps))
+        try await soft("HeartRateZones") {
+            _ = try await HeartRateZonesSync.sendFitnessData(
+                session: session, caps: caps, log: log, age: HeartRateZonesSync.age(profile: profile, now: now()), timeoutMs: timeouts.initMs
+            )
+        }
+
+        // The heart-rate capability notifications and the sensor switches. GB sends none of these at init (only when a setting changes, all
+        // off by default), so a wiped watch never records heart rate.
+        try await soft("HealthSensors") {
+            let gates = HealthSensorSupport.of(caps.supports)
+            info(
+                "HealthSensors gates: heartRate(07/17)=\(gates.heartRate) realtime(07/1c)=\(gates.realtimeHeartRate) "
+                    + "spo2(07/24)=\(gates.spo2) truSleep(07/16)=\(gates.truSleep) highAlert(07/1d)=\(gates.highHeartRateAlert) "
+                    + "lowAlert(07/22)=\(gates.lowHeartRateAlert) restHeartRateNotify(07/23)=\(caps.supports(0x07, 0x23)) "
+                    + "workoutHeartRateNotify(17/17)=\(caps.supports(0x17, 0x17)) zones(07/13)=\(caps.supports(0x07, 0x13)) "
+                    + "zonesExtended(07/21)=\(caps.supports(0x07, 0x21)) lowSpo2Alert(07/25)=\(caps.supports(0x07, 0x25))"
+            )
+            let plan = HealthSensors.plan(supports: caps.supports, config: healthSensors, previous: nil)
+            let acknowledged = try await HealthSensors.send(session: session, log: log, plan: plan, timeoutMs: timeouts.initMs)
+            info("HealthSensors: \(acknowledged) of \(plan.count) requests acknowledged")
         }
 
         return InitResult(

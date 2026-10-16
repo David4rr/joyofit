@@ -16,19 +16,7 @@ final class InertStatusTests: XCTestCase {
         XCTAssertEqual(Inert.notificationAccess() as NSDictionary, ["granted": false, "enabled": false] as NSDictionary)
     }
 
-    func testAlarmsAreEmptyAndUnsupported() {
-        let a = Inert.alarms()
-        XCTAssertEqual(keys(a), ["event", "smart", "updatedAt", "supported", "smartSupported"])
-        XCTAssertEqual((a["event"] as? [Any])?.count, 0)
-        XCTAssertTrue(a["smart"] is NSNull)
-        XCTAssertTrue(a["updatedAt"] is NSNull)
-        XCTAssertEqual(a["supported"] as? Bool, false)
-    }
-
     func testStatusObjectsHaveTheirTypeScriptFields() {
-        XCTAssertEqual(keys(Inert.healthSensors()), ["automaticHeartRate", "automaticSpo2", "truSleep", "highHeartRateAlert", "lowHeartRateAlert", "supported"])
-        XCTAssertTrue(Inert.healthSensors()["supported"] is NSNull)
-        XCTAssertEqual(keys(Inert.stress()), ["enabled", "lastCalibratedAt", "supported"])
         XCTAssertEqual(
             keys(Inert.weather()),
             ["enabled", "unit", "locationMode", "intervalMinutes", "city", "locationPermission", "watchSupported", "lastPushAt", "lastError", "lastTemperatureC", "lastCondition", "lastLocationName"]
@@ -80,12 +68,17 @@ final class InertStatusTests: XCTestCase {
             address: "6B1C2A55-3E21-4A7B-9D6E-5F1A0C0C9B77", name: "HUAWEI WATCH FIT 4 Pro-40A", productModel: nil, softwareVersion: "6.1", hardwareVersion: nil,
             serialNumber: nil, batteryLevel: 50, authMode: .hichain3, model: "Huawei Watch Fit 4 Pro", support: .tested
         )
+        let features = WatchSettingsFeatures(
+            handle: { nil }, settings: WearSettings(defaults: ephemeralDefaults()), syncStore: SyncStore(url: temporaryDatabaseURL()), events: RecordingEvents()
+        )
         let shapes: [String: Any] = [
             "PhoneFeatures": Inert.phoneFeatures(),
             "NotificationAccessStatus": Inert.notificationAccess(),
-            "WatchAlarms": Inert.alarms(),
-            "HealthSensorsStatus": Inert.healthSensors(),
-            "StressStatus": Inert.stress(),
+            // The live watch settings with nothing connected and nothing stored: the same objects the module returns at launch.
+            "WatchAlarms": features.cachedAlarms(),
+            "HealthSensorsStatus": features.healthSensorsStatus(),
+            "StressStatus": features.stress.status(),
+            "HrvReading": HrvReadingData(start: 1, end: 61, rmssd: 42.5, sdnn: 50.1, meanRr: 850.2, beats: 70, heartRate: 71).toJS(),
             "WeatherStatus": Inert.weather(),
             "SafetyStatus": Inert.safety(),
             "SosRelayTest": Inert.sosRelayTest(),

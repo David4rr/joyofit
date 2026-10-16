@@ -1,0 +1,461 @@
+{
+ "requests": [
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00060007160101010d50"],
+   "service": 7,
+   "kind": "truSleep",
+   "name": "truSleep on",
+   "command": 22,
+   "enabled": true,
+   "tlv": "010101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00060007170101017be4"],
+   "service": 7,
+   "kind": "automaticHeartRate",
+   "name": "automaticHeartRate on",
+   "command": 23,
+   "enabled": true,
+   "tlv": "010101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000600071c01010165fb"],
+   "service": 7,
+   "kind": "realtimeHeartRate",
+   "name": "realtimeHeartRate on",
+   "command": 28,
+   "enabled": true,
+   "tlv": "010101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006000724010101ccd1"],
+   "service": 7,
+   "kind": "automaticSpo2",
+   "name": "automaticSpo2 on",
+   "command": 36,
+   "enabled": true,
+   "tlv": "010101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00060007160101001d71"],
+   "service": 7,
+   "kind": "truSleep",
+   "name": "truSleep off",
+   "command": 22,
+   "enabled": false,
+   "tlv": "010100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00060007170101006bc5"],
+   "service": 7,
+   "kind": "automaticHeartRate",
+   "name": "automaticHeartRate off",
+   "command": 23,
+   "enabled": false,
+   "tlv": "010100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000600071c01010075da"],
+   "service": 7,
+   "kind": "realtimeHeartRate",
+   "name": "realtimeHeartRate off",
+   "command": 28,
+   "enabled": false,
+   "tlv": "010100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006000724010100dcf0"],
+   "service": 7,
+   "kind": "automaticSpo2",
+   "name": "automaticSpo2 off",
+   "command": 36,
+   "enabled": false,
+   "tlv": "010100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000900071d010101020178f3be"],
+   "service": 7,
+   "kind": "highAlert",
+   "name": "highAlert true 120",
+   "threshold": 120,
+   "command": 29,
+   "enabled": true,
+   "tlv": "010101020178"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000600071d010100036e"],
+   "service": 7,
+   "kind": "highAlert",
+   "name": "highAlert false 0",
+   "threshold": 0,
+   "command": 29,
+   "enabled": false,
+   "tlv": "010100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000600071d010100036e"],
+   "service": 7,
+   "kind": "highAlert",
+   "name": "highAlert false 140",
+   "threshold": 140,
+   "command": 29,
+   "enabled": false,
+   "tlv": "010100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000900071d010101020196ef5e"],
+   "service": 7,
+   "kind": "highAlert",
+   "name": "highAlert true 150",
+   "threshold": 150,
+   "command": 29,
+   "enabled": true,
+   "tlv": "010101020196"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000900072201010102012d2a8a"],
+   "service": 7,
+   "kind": "lowAlert",
+   "name": "lowAlert true 45",
+   "threshold": 45,
+   "command": 34,
+   "enabled": true,
+   "tlv": "01010102012d"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0006000722010100fb69"],
+   "service": 7,
+   "kind": "lowAlert",
+   "name": "lowAlert false 0",
+   "threshold": 0,
+   "command": 34,
+   "enabled": false,
+   "tlv": "010100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00090007220101010201287a2f"],
+   "service": 7,
+   "kind": "lowAlert",
+   "name": "lowAlert true 40",
+   "threshold": 40,
+   "command": 34,
+   "enabled": true,
+   "tlv": "010101020128"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00090007230104000000017fb7"],
+   "service": 7,
+   "kind": "notifyRest",
+   "name": "notifyRestHeartRate",
+   "command": 35,
+   "tlv": "010400000001"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0009001717010400000003fa0a"],
+   "service": 23,
+   "kind": "workoutNotify",
+   "name": "workoutNotifyHeartRate",
+   "command": 23,
+   "tlv": "010400000003"
+  }
+ ],
+ "zones": [
+  {
+   "frames": ["5a0020000713811b0801010901b902015d03016f0401820501940601a70701b90b01b9c384"],
+   "method": 0,
+   "hrr": null,
+   "command": 19,
+   "extended": false,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": [
+    93,
+    111,
+    130,
+    148,
+    167,
+    185
+   ],
+   "name": "simple age 35",
+   "limit": 185,
+   "warning": true,
+   "tlv": "811b0801010901b902015d03016f0401820501940601a70701b90b01b9"
+  },
+  {
+   "frames": ["5a000800071381030801016ee6"],
+   "method": 0,
+   "hrr": null,
+   "command": 19,
+   "extended": false,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": null,
+   "name": "simple without mhr",
+   "limit": 185,
+   "warning": true,
+   "tlv": "8103080101"
+  },
+  {
+   "frames": ["5a000800071381030801016ee6"],
+   "method": 0,
+   "hrr": null,
+   "command": 19,
+   "extended": false,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": [
+    93,
+    111,
+    130,
+    148,
+    167,
+    185
+   ],
+   "name": "simple no limit",
+   "limit": 0,
+   "warning": true,
+   "tlv": "8103080101"
+  },
+  {
+   "frames": ["5a000800071381030801007ec7"],
+   "method": 0,
+   "hrr": null,
+   "command": 19,
+   "extended": false,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": [
+    93,
+    111,
+    130,
+    148,
+    167,
+    0
+   ],
+   "name": "simple zero threshold",
+   "limit": 185,
+   "warning": false,
+   "tlv": "8103080100"
+  },
+  {
+   "frames": ["5a0020000713811b0801010901c80201820301960401aa0501be0601d20701ff0b01ff2af5"],
+   "method": 0,
+   "hrr": null,
+   "command": 19,
+   "extended": false,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": [
+    130,
+    150,
+    170,
+    190,
+    210,
+    255
+   ],
+   "name": "simple bytes above 127",
+   "limit": 200,
+   "warning": true,
+   "tlv": "811b0801010901c80201820301960401aa0501be0601d20701ff0b01ff"
+  },
+  {
+   "frames": ["5a0020000713811b0801010901b902015d03016f0401820501940601a70701b90b01b9c384"],
+   "method": 1,
+   "hrr": [
+    134,
+    153,
+    165,
+    170,
+    179,
+    60
+   ],
+   "command": 19,
+   "extended": false,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": [
+    93,
+    111,
+    130,
+    148,
+    167,
+    185
+   ],
+   "name": "simple ignores hrr",
+   "limit": 185,
+   "warning": true,
+   "tlv": "811b0801010901b902015d03016f0401820501940601a70701b90b01b9"
+  },
+  {
+   "frames": ["5a003500072181300801010901b902015d03016f0401820501940601a70701b90b01b90d01860e01990f01a51001aa1101b30a01000c013c1890"],
+   "method": 0,
+   "hrr": [
+    134,
+    153,
+    165,
+    170,
+    179,
+    60
+   ],
+   "command": 33,
+   "extended": true,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": [
+    93,
+    111,
+    130,
+    148,
+    167,
+    185
+   ],
+   "name": "extended age 35",
+   "limit": 185,
+   "warning": true,
+   "tlv": "81300801010901b902015d03016f0401820501940601a70701b90b01b90d01860e01990f01a51001aa1101b30a01000c013c"
+  },
+  {
+   "frames": ["5a003500072181300801010901b902015d03016f0401820501940601a70701b90b01b90d01860e01990f01a51001aa1101b30a01010c013c6e24"],
+   "method": 1,
+   "hrr": [
+    134,
+    153,
+    165,
+    170,
+    179,
+    60
+   ],
+   "command": 33,
+   "extended": true,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": [
+    93,
+    111,
+    130,
+    148,
+    167,
+    185
+   ],
+   "name": "extended method hrr",
+   "limit": 185,
+   "warning": true,
+   "tlv": "81300801010901b902015d03016f0401820501940601a70701b90b01b90d01860e01990f01a51001aa1101b30a01010c013c"
+  },
+  {
+   "frames": ["5a0020000721811b0801010901b902015d03016f0401820501940601a70701b90b01b9738b"],
+   "method": 0,
+   "hrr": null,
+   "command": 33,
+   "extended": true,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": [
+    93,
+    111,
+    130,
+    148,
+    167,
+    185
+   ],
+   "name": "extended without hrr",
+   "limit": 185,
+   "warning": true,
+   "tlv": "811b0801010901b902015d03016f0401820501940601a70701b90b01b9"
+  },
+  {
+   "frames": ["5a001d00072181180801000d01860e01990f01a51001aa1101b30a01000c013c0f6b"],
+   "method": 0,
+   "hrr": [
+    134,
+    153,
+    165,
+    170,
+    179,
+    60
+   ],
+   "command": 33,
+   "extended": true,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": null,
+   "name": "extended without mhr",
+   "limit": 0,
+   "warning": false,
+   "tlv": "81180801000d01860e01990f01a51001aa1101b30a01000c013c"
+  },
+  {
+   "frames": ["5a0035000721813008010109012c02012c0301010401020501030601040701050b01050d01ff0e01000f01011001001101010a01030c0102386d"],
+   "method": 3,
+   "hrr": [
+    -1,
+    256,
+    257,
+    0,
+    1,
+    2
+   ],
+   "command": 33,
+   "extended": true,
+   "sliced": true,
+   "encrypted": true,
+   "service": 7,
+   "mhr": [
+    300,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "name": "extended wraps bytes",
+   "limit": 300,
+   "warning": true,
+   "tlv": "813008010109012c02012c0301010401020501030601040701050b01050d01ff0e01000f01011001001101010a01030c0102"
+  }
+ ]
+}

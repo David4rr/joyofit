@@ -24,6 +24,14 @@ public final class WearSettings: @unchecked Sendable {
         static let profileBirthYear = "profile_birth_year"
         static let profileSex = "profile_sex"
         static let profileGoal = "profile_step_goal"
+        static let alarmsJson = "alarms_json"
+        static let autoHeartRate = "auto_heart_rate"
+        static let autoSpo2 = "auto_spo2"
+        static let truSleep = "trusleep"
+        static let highHrAlert = "high_hr_alert"
+        static let lowHrAlert = "low_hr_alert"
+        static let stressEnabled = "stress_enabled"
+        static let stressCalibration = "stress_calibration"
     }
 
     public init(defaults: UserDefaults? = nil) {
@@ -78,6 +86,44 @@ public final class WearSettings: @unchecked Sendable {
                 }
             }
         }
+    }
+
+    /// The alarms last read from or pushed to the watch as `WatchAlarms.toJson` (Android `alarmsJson`); nil before the first exchange.
+    public var alarmsJson: String? {
+        get { defaults.string(forKey: Key.alarmsJson) }
+        set { set(newValue, forKey: Key.alarmsJson) }
+    }
+
+    /// The watch-side health sensor switches (see `HealthSensorConfig`); defaults match Huawei Health.
+    public var healthSensors: HealthSensorConfig {
+        get {
+            HealthSensorConfig(
+                automaticHeartRate: defaults.object(forKey: Key.autoHeartRate) == nil ? true : defaults.bool(forKey: Key.autoHeartRate),
+                automaticSpo2: defaults.object(forKey: Key.autoSpo2) == nil ? true : defaults.bool(forKey: Key.autoSpo2),
+                truSleep: defaults.object(forKey: Key.truSleep) == nil ? true : defaults.bool(forKey: Key.truSleep),
+                highHeartRateAlert: defaults.integer(forKey: Key.highHrAlert),
+                lowHeartRateAlert: defaults.integer(forKey: Key.lowHrAlert)
+            )
+        }
+        set {
+            defaults.set(newValue.automaticHeartRate, forKey: Key.autoHeartRate)
+            defaults.set(newValue.automaticSpo2, forKey: Key.autoSpo2)
+            defaults.set(newValue.truSleep, forKey: Key.truSleep)
+            defaults.set(newValue.highHeartRateAlert, forKey: Key.highHrAlert)
+            defaults.set(newValue.lowHeartRateAlert, forKey: Key.lowHrAlert)
+        }
+    }
+
+    /// The watch's automatic stress switch as the user last set it here (GB PREF_HUAWEI_STRESS_SWITCH).
+    public var stressEnabled: Bool {
+        get { defaults.bool(forKey: Key.stressEnabled) }
+        set { defaults.set(newValue, forKey: Key.stressEnabled) }
+    }
+
+    /// The last stress calibration as `StressData.toJsonString` (GB PREF_HUAWEI_STRESS_LAST_DATA), so it can be sent again on reconnect.
+    public var stressCalibration: String? {
+        get { defaults.string(forKey: Key.stressCalibration) }
+        set { set(newValue, forKey: Key.stressCalibration) }
     }
 
     private func set(_ value: String?, forKey key: String) {

@@ -1,0 +1,431 @@
+{
+ "requests": [
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000a0008018105820303010176bf"],
+   "service": 8,
+   "alarms": [],
+   "name": "event none clears with bare index 1",
+   "command": 1,
+   "tlv": "81058203030101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001a000801811582130301010401010502071e06011f0704576f726b3707"],
+   "service": 8,
+   "alarms": [{
+    "startHour": 7,
+    "repeat": 31,
+    "name": "Work",
+    "index": 1,
+    "startMinute": 30,
+    "status": true
+   }],
+   "name": "event one",
+   "command": 1,
+   "tlv": "811582130301010401010502071e06011f0704576f726b"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0075000801817082100301010401010502060006017f070141820f0301020401000502173b0601000700821403010304010105020c0506014107054c756e636882170301040401000502000006010107084d69646e69676874821c0301050401010502122d060160070d5765656b656e6420c3a9e4b8ad76f1"],
+   "service": 8,
+   "alarms": [
+    {
+     "startHour": 6,
+     "repeat": 127,
+     "name": "A",
+     "index": 1,
+     "startMinute": 0,
+     "status": true
+    },
+    {
+     "startHour": 23,
+     "repeat": 0,
+     "name": "",
+     "index": 2,
+     "startMinute": 59,
+     "status": false
+    },
+    {
+     "startHour": 12,
+     "repeat": 65,
+     "name": "Lunch",
+     "index": 3,
+     "startMinute": 5,
+     "status": true
+    },
+    {
+     "startHour": 0,
+     "repeat": 1,
+     "name": "Midnight",
+     "index": 4,
+     "startMinute": 0,
+     "status": false
+    },
+    {
+     "startHour": 18,
+     "repeat": 96,
+     "name": "Weekend é中",
+     "index": 5,
+     "startMinute": 45,
+     "status": true
+    }
+   ],
+   "name": "event five",
+   "command": 1,
+   "tlv": "817082100301010401010502060006017f070141820f0301020401000502173b0601000700821403010304010105020c0506014107054c756e636882170301040401000502000006010107084d69646e69676874821c0301050401010502122d060160070d5765656b656e6420c3a9e4b8ad"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001700080181128210030102040101050217c806010307017895b6"],
+   "service": 8,
+   "alarms": [{
+    "startHour": 23,
+    "repeat": 3,
+    "name": "x",
+    "index": 2,
+    "startMinute": -56,
+    "status": true
+   }],
+   "name": "event minute above 127 and hour sign",
+   "command": 1,
+   "tlv": "81128210030102040101050217c8060103070178"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0019000801811482120301090401010502c8460601ff07034f7574255b"],
+   "service": 8,
+   "alarms": [{
+    "startHour": -56,
+    "repeat": -1,
+    "name": "Out",
+    "index": 9,
+    "startMinute": 70,
+    "status": true
+   }],
+   "name": "event out of range bytes",
+   "command": 1,
+   "tlv": "811482120301090401010502c8460601ff07034f7574"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0017000802811282100301010401010502062d06017f07010a3e9f"],
+   "service": 8,
+   "name": "smart on",
+   "alarm": {
+    "aheadTime": 10,
+    "startHour": 6,
+    "repeat": 127,
+    "index": 1,
+    "startMinute": 45,
+    "status": true
+   },
+   "command": 2,
+   "tlv": "811282100301010401010502062d06017f07010a"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001700080281128210030101040100050200000601000701058595"],
+   "service": 8,
+   "name": "smart off",
+   "alarm": {
+    "aheadTime": 5,
+    "startHour": 0,
+    "repeat": 0,
+    "index": 1,
+    "startMinute": 0,
+    "status": false
+   },
+   "command": 2,
+   "tlv": "8112821003010104010005020000060100070105"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001700080281128210030101040101050217c806010107017feba1"],
+   "service": 8,
+   "name": "smart minute above 127",
+   "alarm": {
+    "aheadTime": 127,
+    "startHour": 23,
+    "repeat": 1,
+    "index": 1,
+    "startMinute": -56,
+    "status": true
+   },
+   "command": 2,
+   "tlv": "81128210030101040101050217c806010107017f"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00050008030100f6bb"],
+   "service": 8,
+   "name": "event list",
+   "command": 3,
+   "tlv": "0100"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00050008040100732b"],
+   "service": 8,
+   "name": "smart list",
+   "command": 4,
+   "tlv": "0100"
+  }
+ ],
+ "eventResponses": [
+  {
+   "service": 8,
+   "name": "event two alarms",
+   "ok": true,
+   "fields": {"eventAlarms": [
+    {
+     "startHour": 7,
+     "repeat": 31,
+     "name": "Work",
+     "index": 1,
+     "startMinute": 30,
+     "status": true
+    },
+    {
+     "startHour": 23,
+     "repeat": 0,
+     "name": "",
+     "index": 2,
+     "startMinute": 2,
+     "status": false
+    }
+   ]},
+   "command": 3,
+   "tlv": "812682130301010401010502071e06011f0704576f726b820f030102040100050217020601000700"
+  },
+  {
+   "service": 8,
+   "name": "event disabled without time",
+   "ok": true,
+   "fields": {"eventAlarms": [{
+    "startHour": -1,
+    "repeat": 0,
+    "name": "Alarm",
+    "index": 3,
+    "startMinute": -1,
+    "status": false
+   }]},
+   "command": 3,
+   "tlv": "81058203030103"
+  },
+  {
+   "service": 8,
+   "name": "event disabled with explicit false",
+   "ok": true,
+   "fields": {"eventAlarms": [{
+    "startHour": -1,
+    "repeat": 5,
+    "name": "Off",
+    "index": 4,
+    "startMinute": -1,
+    "status": false
+   }]},
+   "command": 3,
+   "tlv": "8110820e03010404010006010507034f6666"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 8,
+   "name": "event enabled without time",
+   "ok": false,
+   "parseException": true,
+   "command": 3,
+   "tlv": "810e820c030101040101060101070178"
+  },
+  {
+   "service": 8,
+   "name": "event time with high minute",
+   "ok": true,
+   "fields": {"eventAlarms": [{
+    "startHour": 23,
+    "repeat": 127,
+    "name": "Late",
+    "index": 5,
+    "startMinute": -56,
+    "status": true
+   }]},
+   "command": 3,
+   "tlv": "81158213030105040101050217c806017f07044c617465"
+  },
+  {
+   "service": 8,
+   "name": "event negative time",
+   "ok": true,
+   "fields": {"eventAlarms": [{
+    "startHour": -1,
+    "repeat": 0,
+    "name": "neg",
+    "index": 1,
+    "startMinute": -1,
+    "status": false
+   }]},
+   "command": 3,
+   "tlv": "811482120301010401000502ffff06010007036e6567"
+  },
+  {
+   "service": 8,
+   "name": "event unicode name",
+   "ok": true,
+   "fields": {"eventAlarms": [{
+    "startHour": 8,
+    "repeat": 96,
+    "name": "Weekend é中",
+    "index": 2,
+    "startMinute": 0,
+    "status": true
+   }]},
+   "command": 3,
+   "tlv": "811e821c03010204010105020800060160070d5765656b656e6420c3a9e4b8ad"
+  },
+  {
+   "service": 8,
+   "name": "event empty 81",
+   "ok": true,
+   "fields": {"eventAlarms": []},
+   "command": 3,
+   "tlv": "8100"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 8,
+   "name": "event no 81",
+   "ok": false,
+   "parseException": true,
+   "command": 3,
+   "tlv": "010101"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 8,
+   "name": "event entry without index",
+   "ok": false,
+   "parseException": true,
+   "command": 3,
+   "tlv": "81058203040101"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 8,
+   "name": "event short time",
+   "ok": false,
+   "parseException": false,
+   "command": 3,
+   "tlv": "810b8209030101040101050107"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 8,
+   "name": "event long boolean",
+   "ok": false,
+   "parseException": true,
+   "command": 3,
+   "tlv": "8109820703010104020101"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 8,
+   "name": "event malformed 81",
+   "ok": false,
+   "parseException": false,
+   "command": 3,
+   "tlv": "81028209"
+  }
+ ],
+ "smartResponses": [
+  {
+   "service": 8,
+   "name": "smart present",
+   "ok": true,
+   "fields": {"smartAlarm": {
+    "aheadTime": 10,
+    "startHour": 6,
+    "repeat": 127,
+    "index": 1,
+    "startMinute": 45,
+    "status": true
+   }},
+   "command": 4,
+   "tlv": "811282100301010401010502062d06017f07010a"
+  },
+  {
+   "service": 8,
+   "name": "smart minimal",
+   "ok": true,
+   "fields": {"smartAlarm": {
+    "aheadTime": 0,
+    "startHour": 0,
+    "repeat": 0,
+    "index": 1,
+    "startMinute": 0,
+    "status": false
+   }},
+   "command": 4,
+   "tlv": "81058203030101"
+  },
+  {
+   "service": 8,
+   "name": "smart none",
+   "ok": true,
+   "fields": {"smartAlarm": null},
+   "command": 4,
+   "tlv": "8100"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 8,
+   "name": "smart no 81",
+   "ok": false,
+   "parseException": true,
+   "command": 4,
+   "tlv": "010101"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 8,
+   "name": "smart without index",
+   "ok": false,
+   "parseException": true,
+   "command": 4,
+   "tlv": "81058203040101"
+  },
+  {
+   "service": 8,
+   "name": "smart high minute",
+   "ok": true,
+   "fields": {"smartAlarm": {
+    "aheadTime": -1,
+    "startHour": 23,
+    "repeat": 0,
+    "index": 1,
+    "startMinute": -56,
+    "status": false
+   }},
+   "command": 4,
+   "tlv": "810c820a030101050217c80701ff"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 8,
+   "name": "smart bad sized fields use defaults",
+   "ok": false,
+   "parseException": false,
+   "command": 4,
+   "tlv": "81148212030101040201010501070602010207020102"
+  }
+ ]
+}
