@@ -328,6 +328,22 @@ public final class HuaweiWearModule: Module {
             return try await wearCall { try await runtime.faceCustomizer.apply(faceId, parsed).toJS() }
         }
 
+        AsyncFunction("getPhotoFace") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.photoFaces.info() }
+        }
+
+        AsyncFunction("addPhoto") { (uri: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.photoFaces.add(uri: uri) }
+        }
+
+        AsyncFunction("deletePhoto") { (name: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.photoFaces.delete(name: name) }
+        }
+
+        AsyncFunction("setPhotoFaceActive") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.photoFaces.setActive() }
+        }
+
         // MARK: switches of phone-side features that are always off here
 
         switchRejectingOn("setNotificationsEnabled")
@@ -356,10 +372,6 @@ public final class HuaweiWearModule: Module {
         rejects("setWeatherIntervalMinutes", Int.self)
         rejects("setWeatherCity", String.self)
         rejects("refreshWeather")
-        rejects("getPhotoFace")
-        rejects("addPhoto", String.self)
-        rejects("deletePhoto", String.self)
-        rejects("setPhotoFaceActive")
         rejects("setFallDetection", Bool.self)
         rejects("queryFallDetection")
         rejects("sendSleepReportNow")

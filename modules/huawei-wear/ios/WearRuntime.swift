@@ -46,6 +46,8 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var features: PhoneFeatures!
     /// Watch face list, install, activate and delete.
     public private(set) var watchfaces: WatchfaceController!
+    /// The watch's photo face and its photos.
+    public private(set) var photoFaces: PhotoFaceController!
     /// The one subscriber of DataSync (service 0x37); features register their handlers on it.
     public private(set) var dataSync: DataSyncService!
     /// Editable watch-face options over DataSync.
@@ -95,6 +97,7 @@ public final class WearRuntime: @unchecked Sendable {
         controller = BackgroundController(runtime: self, expiring: expiring, clock: clock)
         features = PhoneFeatures(link: link, events: fanOut)
         watchfaces = WatchfaceController(link: link, events: fanOut)
+        photoFaces = PhotoFaceController(link: link, events: fanOut)
         dataSync = DataSyncService(link: link, events: fanOut)
         faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
         dataSync.register(faceCustomizer)

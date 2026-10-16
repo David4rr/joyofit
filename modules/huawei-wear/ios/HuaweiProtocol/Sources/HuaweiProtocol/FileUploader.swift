@@ -102,7 +102,6 @@ public final class FileUploader: @unchecked Sendable {
     public static let confirmWaitMs = 60_000
     /// How long to keep listening after the confirmation for the watch to report the face deleted; it took about 3.4 s.
     public static let settleMs = 8_000
-    private static let pollMs = 500
 
     private let session: HuaweiSession
     private let caps: DeviceCaps?
@@ -392,16 +391,7 @@ public final class FileUploader: @unchecked Sendable {
 
     /// The next watch message, or nil after `limitMs` without one. A closed session fails at once.
     private func next(_ inbox: FileBlockInbox, _ limitMs: Int) async throws -> HuaweiPacket? {
-        var waited = 0
-        while waited < limitMs {
-            if let cause = await session.closeCause { throw cause }
-            try Task.checkCancellation()
-            let slice = min(Self.pollMs, limitMs - waited)
-            if let packet = await inbox.receive(timeoutMs: slice) { return packet }
-            waited += slice
-        }
-        if let cause = await session.closeCause { throw cause }
-        return nil
+        try await inbox.next(session: session, limitMs: limitMs)
     }
 
     private func stalled(_ state: UploadState) -> WearError {
@@ -445,5 +435,24 @@ public final class FileUploader: @unchecked Sendable {
         case 140009: return "The watch does not have enough free space (code 140009)."
         default: return "The watch rejected the file at the \(stage) step with code \(code). This is the status it returned; its meaning is not documented."
         }
+    }
+}
+
+extension FileBlockInbox {
+    /// How often a wait looks at the session: the inbox does not hear of a closed session, only of packets.
+    static let pollMs = 500
+
+    /// The next packet pushed to this inbox, or nil after `limitMs` without one. A closed session or a cancelled task fails at once.
+    func next(session: HuaweiSession, limitMs: Int) async throws -> HuaweiPacket? {
+        var waited = 0
+        while waited < limitMs {
+            if let cause = await session.closeCause { throw cause }
+            try Task.checkCancellation()
+            let slice = min(Self.pollMs, limitMs - waited)
+            if let packet = await receive(timeoutMs: slice) { return packet }
+            waited += slice
+        }
+        if let cause = await session.closeCause { throw cause }
+        return nil
     }
 }

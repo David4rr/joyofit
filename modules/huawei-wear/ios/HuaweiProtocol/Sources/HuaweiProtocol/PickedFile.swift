@@ -3,8 +3,12 @@
 import Foundation
 
 public enum PickedFile {
-    /// The bytes of `uri` (a `file://` URL or an absolute path), at most `maxBytes`. Failures are `ERR_INVALID_ARGUMENT`.
-    public static func read(uri: String, maxBytes: Int = WatchfacePackages.maxPackageBytes) throws -> Bytes {
+    /// The bytes of `uri` (a `file://` URL or an absolute path), at most `maxBytes`. Failures are `ERR_INVALID_ARGUMENT`; `tooLarge` words
+    /// the one for a file over the limit.
+    public static func read(
+        uri: String, maxBytes: Int = WatchfacePackages.maxPackageBytes,
+        tooLarge: String? = nil
+    ) throws -> Bytes {
         guard let url = fileURL(uri) else { throw WearError(.invalidArgument, "Could not open \(uri)") }
         #if canImport(Darwin)
         let scoped = url.startAccessingSecurityScopedResource()
@@ -23,7 +27,7 @@ public enum PickedFile {
                 guard let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty else { break }
                 out += chunk
                 if out.count > maxBytes {
-                    throw WearError(.invalidArgument, "That file is larger than \(maxBytes / 1024 / 1024) MiB, too big for a watch face")
+                    throw WearError(.invalidArgument, tooLarge ?? "That file is larger than \(maxBytes / 1024 / 1024) MiB, too big for a watch face")
                 }
             }
         } catch let e as WearError {
