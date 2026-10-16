@@ -126,7 +126,7 @@ internal class ActivitySync(
     var count = 0
     while (true) {
       val label = "SleepData ${count + 1}/$maxCount"
-      val response = skippable(label) {
+      val response = dataFrame(label) {
         session
           .request(
             FitnessData.MessageData.Request(params, FitnessData.MessageData.sleepId, count.toShort()),
@@ -177,7 +177,7 @@ internal class ActivitySync(
     var requests = 0
     while (true) {
       val label = "StepData ${count + 1}/$maxCount"
-      val response = skippable(label) {
+      val response = dataFrame(label) {
         session
           .request(
             FitnessData.MessageData.Request(params, FitnessData.MessageData.stepId, count.toShort()),
@@ -264,6 +264,24 @@ internal class ActivitySync(
       null
     }
 
+  /** Consecutive data frames the watch left unanswered; reset by any answer. */
+  private var frameTimeouts = 0
+
+  /**
+   * [skippable] for one sleep or step data frame, which also skips a frame that got no answer. Over LE on Android 14+ the
+   * stack discards a 514-byte notification, so a reply longer than that loses its head and only its tail arrives (logged as
+   * "Magic mismatch"); without this one such frame aborts a whole history pull. A second unanswered frame in a row means the
+   * link is gone, and that still aborts.
+   */
+  private suspend fun <T> dataFrame(label: String, block: suspend () -> T): T? =
+    try {
+      skippable(label, block).also { frameTimeouts = 0 }
+    } catch (e: WearException) {
+      if (e.errorCode != ErrorCodes.TIMEOUT || ++frameTimeouts > MAX_SKIPPED_FRAMES) throw e
+      events.log(LogDirection.ERROR, null, null, null, "$label: ${e.message}; skipping this frame")
+      null
+    }
+
   /** GB casts to short and maps -1 (field absent / 0xFFFF) to 0. */
   private fun nonNegative(value: Int): Int {
     val asShort = value.toShort().toInt()
@@ -278,5 +296,6 @@ internal class ActivitySync(
 
   private companion object {
     const val MIN_START_SEC = 946684800L
+    const val MAX_SKIPPED_FRAMES = 1
   }
 }

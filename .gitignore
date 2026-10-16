@@ -47,3 +47,4 @@ yarn-error.*
 # Keystore backup lives outside the repo (~/.config/joyofit/keystore.tar.gpg)
 /secrets/
 /site/public/play/
+.tmp/

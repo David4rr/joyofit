@@ -45,10 +45,12 @@ internal class WearSettings(context: Context) {
 
   /**
    * Developer switch: open every watch over Bluetooth LE GATT (service 0xFE86) instead of the link its model uses, to find out whether
-   * a Classic watch also answers the Huawei protocol over LE (what an iOS port would need). Off by default.
+   * a Classic watch also answers the Huawei protocol over LE (what an iOS port would need). Off by default, and ignored outside debug
+   * builds: the switch is hidden there, and a value saved by an earlier debug install must not move a Classic watch onto LE, where
+   * Android 14+ discards the watch's 514-byte notifications and any longer reply is lost.
    */
   var forceBle: Boolean
-    get() = prefs.getBoolean(KEY_FORCE_BLE, false)
+    get() = BuildConfig.DEBUG && prefs.getBoolean(KEY_FORCE_BLE, false)
     set(value) = prefs.edit().putBoolean(KEY_FORCE_BLE, value).apply()
 
   var syncIntervalMinutes: Int

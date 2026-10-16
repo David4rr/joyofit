@@ -75,17 +75,48 @@ internal class WearLink(
     lateinit var session: HuaweiSession
 
     /** A listed model uses its Gadgetbridge coordinator's link; for other names Android's view of the device decides. */
-    val transportKind: ModelTransport = if (settings.forceBle) ModelTransport.LE else model.transportFor(isLeOnly(device))
+    @Volatile
+    var transportKind: ModelTransport = if (settings.forceBle) ModelTransport.LE else model.transportFor(isLeOnly(device))
+      private set
 
     /** Every event of an LE link is also written to logcat under the JoyoFitBle tag; RFCOMM links log as before. */
-    val linkEvents: WearEvents = if (transportKind == ModelTransport.LE) LogcatMirrorEvents(events) else events
+    var linkEvents: WearEvents = if (transportKind == ModelTransport.LE) LogcatMirrorEvents(events) else events
+      private set
 
     /** GB's HuaweiDeviceType for the link: BR, or BLE / AW over GATT. */
-    val deviceType: HuaweiDeviceType = model.deviceType(transportKind)
+    var deviceType: HuaweiDeviceType = model.deviceType(transportKind)
+      private set
 
-    val transport: WatchTransport = when (transportKind) {
+    var transport: WatchTransport = openTransport(adapter)
+      private set
+
+    init {
+      bindSession()
+    }
+
+    /**
+     * Moves a Classic watch whose RFCOMM link did not open onto LE GATT (service 0xFE86), before any protocol traffic. Seen on
+     * the Fit 4 Pro after a phone's Classic pairing went stale: SDP fails (`SDP_CFG_FAILED`) while LE still answers.
+     */
+    fun fallBackToLe() {
+      transport.close()
+      transportKind = ModelTransport.LE
+      linkEvents = LogcatMirrorEvents(events)
+      deviceType = model.deviceType(ModelTransport.LE)
+      transport = openTransport(null)
+      bindSession()
+    }
+
+    private fun bindSession() {
+      session = HuaweiSession(transport, linkEvents)
+      session.params.setTransactionsCrypted(model.crypted)
+      // GB HuaweiSupportProvider: the AW70 bands send their workout records with their own layout.
+      session.params.setAW(deviceType == HuaweiDeviceType.AW)
+    }
+
+    private fun openTransport(adapter: BluetoothAdapter?): WatchTransport = when (transportKind) {
       ModelTransport.BR -> RfcommTransport(
-        adapter = adapter,
+        adapter = checkNotNull(adapter),
         device = device,
         sdp = model.sdp,
         onData = { chunk -> session.onData(chunk) },
@@ -100,13 +131,6 @@ internal class WearLink(
         onRemoteClosed = { cause -> onRemoteClosed(this, cause) },
         log = { line -> events.log(LogDirection.INFO, null, null, null, line) },
       )
-    }
-
-    init {
-      session = HuaweiSession(transport, linkEvents)
-      session.params.setTransactionsCrypted(model.crypted)
-      // GB HuaweiSupportProvider: the AW70 bands send their workout records with their own layout.
-      session.params.setAW(deviceType == HuaweiDeviceType.AW)
     }
   }
 
@@ -239,7 +263,15 @@ internal class WearLink(
     )
 
     try {
-      connection.transport.connect(Timeouts.CONNECT_MS)
+      try {
+        connection.transport.connect(Timeouts.CONNECT_MS)
+      } catch (e: Exception) {
+        if (e is CancellationException || connection.transportKind != ModelTransport.BR || connection.closed.get()) throw e
+        events.log(LogDirection.ERROR, null, null, null, "RFCOMM did not open (${e.message}); trying Bluetooth LE GATT")
+        connection.fallBackToLe()
+        synchronized(lock) { lastAttemptTransport = ModelTransport.LE }
+        connection.transport.connect(Timeouts.CONNECT_MS)
+      }
       connection.linkEvents.log(LogDirection.INFO, null, null, null, "${connection.transportKind.label} connected")
 
       setState(connection, LinkState.AUTHENTICATING)

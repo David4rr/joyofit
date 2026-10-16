@@ -169,6 +169,11 @@ pull is cut into slices (everything older than 8 weeks as one, then 14 days at a
 pull resumes from the last finished slice. Later syncs only fetch what is new. **Settings → Background and sync → Fetch all history from
 watch** (Android) runs the full pull again; rows already stored are upserted by timestamp, so only what is missing is added.
 
+Over Bluetooth LE on Android 14 and newer the phone discards any 514-byte notification, so a watch reply longer than that loses its head
+(the log shows "Magic mismatch" and the request times out). A step or sleep frame that gets no answer is skipped and logged as
+`... skipping this frame`; a second unanswered frame in a row aborts the pull. Classic (RFCOMM) watches are not affected; the developer LE
+switch only applies in debug builds.
+
 To read how far back the watch actually reaches, run a sync and read the `History:` lines (logcat tag `JoyoFit`):
 
 ```
