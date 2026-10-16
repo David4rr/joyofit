@@ -244,9 +244,14 @@ public final class HuaweiExportImporter: HuaweiImportCollector {
 
     public func run(_ source: HuaweiExportSource) throws -> HuaweiImportSummary {
         let entries = source.entries()
-        let files = entries.enumerated()
-            .compactMap { index, entry in HuaweiExportKind.of(entry.name).map { (kind: $0, entry: entry, index: index) } }
-            .sorted { $0.kind.rawValue != $1.kind.rawValue ? $0.kind.rawValue < $1.kind.rawValue : $0.index < $1.index }
+        var files: [(kind: HuaweiExportKind, entry: HuaweiExportEntry, index: Int)] = []
+        for (index, entry) in entries.enumerated() {
+            if let kind = HuaweiExportKind.of(entry.name) { files.append((kind: kind, entry: entry, index: index)) }
+        }
+        files.sort { (a: (kind: HuaweiExportKind, entry: HuaweiExportEntry, index: Int), b: (kind: HuaweiExportKind, entry: HuaweiExportEntry, index: Int)) -> Bool in
+            if a.kind.rawValue != b.kind.rawValue { return a.kind.rawValue < b.kind.rawValue }
+            return a.index < b.index
+        }
         summary.filesIgnored = entries.count - files.count
         if files.isEmpty {
             throw HuaweiImportException(
@@ -260,7 +265,9 @@ public final class HuaweiExportImporter: HuaweiImportCollector {
             for (index, file) in files.enumerated() {
                 fileIndex = index + 1
                 let name = file.entry.name
-                fileName = String(name[(name.lastIndex(where: { $0 == "/" || $0 == "\\" }).map { name.index(after: $0) } ?? name.startIndex)...])
+                var baseStart: String.Index = name.startIndex
+                if let slash = name.lastIndex(where: { (c: Character) -> Bool in c == "/" || c == "\\" }) { baseStart = name.index(after: slash) }
+                fileName = String(name[baseStart...])
                 let before = doneBytes
                 do {
                     try readFile(file.kind, file.entry, source)
