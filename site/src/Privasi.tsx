@@ -183,7 +183,7 @@ function Indonesian() {
       <Block title="Strava (opsional, gratis)">
         <p>
           Bila kamu menyambungkan Strava di Pengaturan, Strava (masuk dengan akun JoyoRogo dulu), JoyoFit
-          mengirim olahraga dari jammu ke akun Strava-mu sendiri. Izin yang diminta hanya satu: mengunggah
+          mengirim olahraga dari jam-mu ke akun Strava-mu sendiri. Izin yang diminta hanya satu: mengunggah
           aktivitas (<Code>activity:write</Code>).
         </p>
         <List

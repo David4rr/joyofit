@@ -149,7 +149,7 @@ const FAQ = [
   },
   {
     q: "Jam apa saja yang didukung?",
-    a: `Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jammu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas. ${IOS_TESTFLIGHT_LIVE ? "Versi iPhone ada sebagai beta lewat TestFlight, baru diuji dengan Huawei Watch Fit 4 Pro." : "Belum ada versi iPhone."}`,
+    a: `Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jam-mu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas. ${IOS_TESTFLIGHT_LIVE ? "Versi iPhone ada sebagai beta lewat TestFlight, baru diuji dengan Huawei Watch Fit 4 Pro." : "Belum ada versi iPhone."}`,
   },
   {
     q: "Sudah stabil dipakai?",
@@ -303,7 +303,9 @@ function Hero() {
     >
       <div>
         <h1 className="max-w-xl text-[2.625rem] leading-[1.04] font-extrabold tracking-tight text-balance md:text-[4rem]">
-          Jammu. Datamu. HP-mu.
+          <span className="block">Jam-mu.</span>
+          <span className="block">Data-mu.</span>
+          <span className="block">HP-mu.</span>
         </h1>
         <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted-foreground md:text-xl">
           Pendamping jam Huawei yang jalan di HP sendiri. Langkah, detak jantung, tidur, dan olahraga
@@ -347,7 +349,7 @@ function Hero() {
             className="font-semibold text-foreground underline underline-offset-4"
             {...goal("dukung_jam_click", "hero")}
           >
-            Jammu belum diuji? Bantu kami mendukungnya.
+            Jam-mu belum diuji? Bantu kami mendukungnya.
           </a>
         </p>
       </div>
@@ -427,7 +429,7 @@ function Basics() {
       className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 py-20 md:px-6 md:py-28"
     >
       <div className="max-w-2xl">
-        <SectionTitle>Semua data jammu, di HP-mu.</SectionTitle>
+        <SectionTitle>Semua data jam-mu, di HP-mu.</SectionTitle>
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
           Sinkron pertama menarik 7 hari terakhir, sinkron berikutnya lanjut dari terakhir. Mode
           latar belakang menjaga jam tetap terhubung dan menyinkron tiap 30 menit.
@@ -598,7 +600,7 @@ function Scores() {
           <SectionTitle>Recovery, Strain, dan Readiness</SectionTitle>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
             Tiga skor harian gaya aplikasi pelatih kebugaran, terinspirasi dari WHOOP tapi bukan
-            produk WHOOP. Semuanya dihitung di HP dari data jammu dengan metode yang dipublikasikan.
+            produk WHOOP. Semuanya dihitung di HP dari data jam-mu dengan metode yang dipublikasikan.
           </p>
         </div>
         <ul className="mt-10 grid gap-4 md:grid-cols-3">
@@ -1076,7 +1078,7 @@ function OpenSource() {
             </h2>
             <p className="mt-1 max-w-xl text-[0.9375rem] leading-relaxed text-muted-foreground">
               Seluruh kode JoyoFit ada di GitHub dengan lisensi AGPL-3.0-or-later, termasuk modul
-              protokol yang porting dari Gadgetbridge. Ada yang salah di jammu? Buka issue dan
+              protokol yang porting dari Gadgetbridge. Ada yang salah di jam-mu? Buka issue dan
               lampirkan log dari Pengaturan.
             </p>
           </div>
@@ -1112,10 +1114,10 @@ function Closing() {
     <section data-section="signup" className="mx-auto w-full max-w-6xl px-4 pb-16 md:px-6">
       <div className="rounded-[2rem] bg-primary px-6 py-12 text-center text-primary-foreground md:px-14 md:py-16">
         <h2 className="mx-auto max-w-xl text-3xl font-extrabold tracking-tight text-balance md:text-[2.75rem] md:leading-[1.1]">
-          Pindahkan data jammu ke HP hari ini
+          Pindahkan data jam-mu ke HP hari ini
         </h2>
         <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-primary-foreground/80">
-          Pasang JoyoFit, sambungkan jam lewat Bluetooth, dan data jammu ada di HP-mu hari ini juga.
+          Pasang JoyoFit, sambungkan jam lewat Bluetooth, dan data jam-mu ada di HP-mu hari ini juga.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <ButtonLink
@@ -1379,7 +1381,7 @@ function DukungJamPage() {
           Daftar jam yang didukung
         </a>
         <h1 className="mt-4 max-w-3xl text-3xl font-extrabold tracking-tight text-balance md:text-[2.75rem] md:leading-[1.1]">
-          Bantu kami mendukung jammu
+          Bantu kami mendukung jam-mu
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           JoyoFit dibuat dan diuji dengan satu jam, Huawei Watch Fit 4 Pro. Jam lain masuk daftar karena
@@ -1420,7 +1422,7 @@ function DukungJamPage() {
             </span>
             <h2 className="mt-4 text-xl font-extrabold tracking-tight">Pinjamkan atau kirim jam</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Kalau jammu belum ada di daftar uji dan kamu rela meminjamkannya, kirim email dulu. Kami meminjam
+              Kalau jam-mu belum ada di daftar uji dan kamu rela meminjamkannya, kirim email dulu. Kami meminjam
               hanya untuk menguji dan mengembalikannya. Lama pinjam dan siapa yang menanggung ongkos kirim pulang
               kita sepakati tertulis lewat email sebelum kamu mengirim apa pun, jadi jangan kirim paket tanpa
               balasan dari kami.
@@ -1429,7 +1431,7 @@ function DukungJamPage() {
               {[
                 "Reset pabrik jam dan keluarkan dari akun Huawei dan Huawei Health sebelum dikirim.",
                 "Paket bisa hilang atau rusak di jalan. Pertimbangkan itu sebelum mengirim.",
-                "Kami tidak menjanjikan jammu akan berfungsi penuh setelah dicoba.",
+                "Kami tidak menjanjikan jam-mu akan berfungsi penuh setelah dicoba.",
               ].map((line) => (
                 <li key={line} className="flex gap-2">
                   <Dot />
@@ -1452,7 +1454,7 @@ function DukungJamPage() {
             <h2 className="mt-4 text-xl font-extrabold tracking-tight">Patungan lewat Trakteer</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Dana patungan dipakai untuk membeli atau meminjam jam uji dan ongkos kirimnya, dimulai dari model yang
-              paling banyak diminta. Tulis nama model jammu di pesan Trakteer supaya kami tahu. Belum ada target
+              paling banyak diminta. Tulis nama model jam-mu di pesan Trakteer supaya kami tahu. Belum ada target
               atau jumlah terkumpul yang kami tampilkan di sini, dan dukungan tidak menjamin model tertentu akan
               didukung.
             </p>
