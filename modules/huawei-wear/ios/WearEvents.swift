@@ -13,9 +13,16 @@ public protocol WearEvents: AnyObject, Sendable {
     /// A sync finished and its rows are committed to the database.
     func syncComplete(_ summary: SyncSummary)
     func log(_ entry: LogEntry)
+    /// File upload progress (`onUploadProgress`): `bytes` acknowledged by the watch of `total`.
+    func uploadProgress(bytes: Int, total: Int)
+    /// A watch face install finished (`onUploadResult`); `code` is the watch's status when it gave one.
+    func uploadResult(ok: Bool, fileName: String, code: Int?, message: String)
 }
 
 extension WearEvents {
+    public func uploadProgress(bytes: Int, total: Int) {}
+    public func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {}
+
     public func info(_ message: String) { log(LogEntry(.info, message)) }
     public func error(_ message: String) { log(LogEntry(.error, message)) }
 

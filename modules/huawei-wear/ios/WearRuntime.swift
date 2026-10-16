@@ -44,6 +44,8 @@ public final class WearRuntime: @unchecked Sendable {
     public let linkObservers = LinkObservers()
     /// Find my watch.
     public private(set) var features: PhoneFeatures!
+    /// Watch face list, install, activate and delete.
+    public private(set) var watchfaces: WatchfaceController!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -88,6 +90,7 @@ public final class WearRuntime: @unchecked Sendable {
         )
         controller = BackgroundController(runtime: self, expiring: expiring, clock: clock)
         features = PhoneFeatures(link: link, events: fanOut)
+        watchfaces = WatchfaceController(link: link, events: fanOut)
         linkObservers.add(features)
     }
 
@@ -149,6 +152,11 @@ public final class WearRuntime: @unchecked Sendable {
         func battery(_ level: Int) { runtime?.handleBattery(level) }
         func syncComplete(_ summary: SyncSummary) { runtime?.handleSyncComplete(summary) }
         func log(_ entry: LogEntry) { runtime?.handleLog(entry) }
+        func uploadProgress(bytes: Int, total: Int) { runtime?.currentListeners().forEach { $0.uploadProgress(bytes: bytes, total: total) } }
+        func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {
+            runtime?.currentListeners().forEach { $0.uploadResult(ok: ok, fileName: fileName, code: code, message: message) }
+        }
+
     }
 
     // MARK: bonded devices

@@ -108,6 +108,10 @@ public final class HuaweiWearModule: Module {
         func state(_ state: LinkState, error: String?) { emit("onStateChange", ["state": state.rawValue, "error": error]) }
         func battery(_ level: Int) { emit("onBattery", ["level": level]) }
         func syncComplete(_ summary: SyncSummary) { emit("onSyncComplete", summary.toJS()) }
+        func uploadProgress(bytes: Int, total: Int) { emit("onUploadProgress", ["bytes": bytes, "total": total]) }
+        func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {
+            emit("onUploadResult", ["ok": ok, "fileName": fileName, "code": code, "message": message])
+        }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -294,6 +298,24 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.features.findWatch(start) }
         }
 
+        // MARK: watch faces
+
+        AsyncFunction("listWatchfaces") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchfaces.list() }
+        }
+
+        AsyncFunction("installWatchface") { (uri: String, signature: String?, fileName: String?) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchfaces.install(uri: uri, signature: signature, fileName: fileName) }
+        }
+
+        AsyncFunction("setActiveWatchface") { (id: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchfaces.setActive(id) }
+        }
+
+        AsyncFunction("deleteWatchface") { (id: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchfaces.delete(id) }
+        }
+
         // MARK: switches of phone-side features that are always off here
 
         switchRejectingOn("setNotificationsEnabled")
@@ -322,10 +344,6 @@ public final class HuaweiWearModule: Module {
         rejects("setWeatherIntervalMinutes", Int.self)
         rejects("setWeatherCity", String.self)
         rejects("refreshWeather")
-        rejects("listWatchfaces")
-        rejects("installWatchface", String.self, String?.self, String?.self)
-        rejects("setActiveWatchface", String.self)
-        rejects("deleteWatchface", String.self)
         rejects("getFaceCustomization", String.self)
         rejects("applyFaceCustomization", String.self, [String: Any].self)
         rejects("getPhotoFace")
