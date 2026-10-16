@@ -47,6 +47,10 @@ public enum ErrorCode: String, Sendable {
     case weatherNetwork = "ERR_WEATHER_NETWORK"
     /// Weather: the switch is off. Sent to the watch as WEATHER_DISABLED.
     case weatherDisabled = "ERR_WEATHER_DISABLED"
+    /// Huawei import: the ZIP password is wrong or missing.
+    case importPassword = "ERR_IMPORT_PASSWORD"
+    /// Huawei import: the file is not a ZIP, or not a Huawei Health export.
+    case importFormat = "ERR_IMPORT_FORMAT"
 }
 
 /// Every failure that reaches JS: a coded error like the Android `WearException`.

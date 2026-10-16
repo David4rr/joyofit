@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Regenerates Tests/HuaweiProtocolTests/Fixtures/*.json from the vendored Gadgetbridge Java (the code the Android app runs).
 # Compiles modules/huawei-wear/android/src/main/java/nodomain/** on a plain JDK with three tiny Android stubs, then runs every
-# Golden*.java main in src/. Needs: JDK 17+ (JAVA_HOME or ~/jdk17), slf4j-api and org.json jars (found in ~/.gradle or ~/.m2, or
+# Golden*.java main in src/. Needs: JDK 17+ (JAVA_HOME or ~/jdk17), slf4j-api and org.json jars (and zip4j for GoldenImportZip; found in ~/.gradle or ~/.m2, or
 # set SLF4J_JAR / JSON_JAR).
 #   ./run.sh               regenerate all fixtures
 #   ./run.sh GoldenPrimitives   regenerate one
@@ -20,10 +20,11 @@ JAVA=${JAVA_BIN:+$JAVA_BIN/}java
 find_jar() { find "$HOME/.gradle" "$HOME/.m2" -name "$1" 2>/dev/null | head -1 || true; }
 SLF4J_JAR=${SLF4J_JAR:-$(find_jar 'slf4j-api-2*.jar')}
 JSON_JAR=${JSON_JAR:-$(find_jar 'json-2025*.jar')}
+ZIP4J_JAR=${ZIP4J_JAR:-$(find_jar 'zip4j-2*.jar')}
 [ -f "$SLF4J_JAR" ] && [ -f "$JSON_JAR" ] || { echo "need slf4j-api-2.x and org.json jars (SLF4J_JAR, JSON_JAR)" >&2; exit 1; }
 
 rm -rf "$OUT" && mkdir -p "$OUT/classes" "$FIXTURES"
-CP="$SLF4J_JAR:$JSON_JAR"
+CP="$SLF4J_JAR:$JSON_JAR${ZIP4J_JAR:+:$ZIP4J_JAR}"
 "$JAVAC" -nowarn -d "$OUT/classes" -cp "$CP" \
   $(find "$HERE/stubs" -name '*.java') \
   $(find "$JAVA_SRC/nodomain" -name '*.java') \

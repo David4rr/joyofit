@@ -36,16 +36,16 @@ public enum InflateError: Error, Equatable, CustomStringConvertible {
 
 /// RFC 1951 DEFLATE.
 public enum Inflate {
-    private static let lengthBase: [Int] = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258]
-    private static let lengthExtra: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0]
-    private static let distBase: [Int] = [
+    static let lengthBase: [Int] = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258]
+    static let lengthExtra: [Int] = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0]
+    static let distBase: [Int] = [
         1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577,
     ]
-    private static let distExtra: [Int] = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13]
-    private static let codeLengthOrder = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]
+    static let distExtra: [Int] = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13]
+    static let codeLengthOrder = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]
 
     /// A canonical Huffman code as a lookup table indexed by the next `maxBits` input bits (LSB first): `symbol << 4 | length`, 0 = unused.
-    private struct Table {
+    struct Table {
         var entries: [UInt16]
         var maxBits: Int
 
@@ -140,14 +140,14 @@ public enum Inflate {
         var consumedUpTo: Int { position - count / 8 }
     }
 
-    private static let fixedLiteral: Table = {
+    static let fixedLiteral: Table = {
         var lengths = [UInt8](repeating: 8, count: 288)
         for i in 144..<256 { lengths[i] = 9 }
         for i in 256..<280 { lengths[i] = 7 }
         return try! Table(lengths: lengths)
     }()
 
-    private static let fixedDistance: Table = try! Table(lengths: [UInt8](repeating: 5, count: 30))
+    static let fixedDistance: Table = try! Table(lengths: [UInt8](repeating: 5, count: 30))
 
     /// Inflates the deflate stream that starts at `start`. Returns the data and the offset just after the stream's last byte.
     public static func inflate(_ input: Bytes, at start: Int, limit: Int) throws -> (data: Bytes, end: Int) {
