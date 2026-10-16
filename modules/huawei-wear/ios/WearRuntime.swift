@@ -61,6 +61,8 @@ public final class WearRuntime: @unchecked Sendable {
     /// Fall detection (DataSync config) and the morning sleep report (DataSync event); the SOS relay is not possible on iOS.
     public private(set) var safety: SafetyFeatures!
     public private(set) var sleepReport: SleepReportFeature!
+    /// Calorie intake on the watch (meals, goals, the watch's quick-log).
+    public private(set) var diet: DietSync!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -121,6 +123,8 @@ public final class WearRuntime: @unchecked Sendable {
         dataSync = DataSyncService(link: link, events: fanOut)
         faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
         dataSync.register(faceCustomizer)
+        diet = DietSync(store: syncStore, events: fanOut, settings: settings, now: now)
+        dataSync.register(diet)
         linkObservers.add(dataSync)
         let extrasSettings = WatchExtrasSettings(defaults: weatherDefaults)
         safety = SafetyFeatures(link: link, settings: extrasSettings, events: fanOut)
@@ -199,6 +203,7 @@ public final class WearRuntime: @unchecked Sendable {
             runtime?.currentListeners().forEach { $0.uploadResult(ok: ok, fileName: fileName, code: code, message: message) }
         }
         func faceCustomization(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.faceCustomization(payload) } }
+        func watchMealLogged(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.watchMealLogged(payload) } }
     }
 
     // MARK: bonded devices
