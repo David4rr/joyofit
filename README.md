@@ -427,14 +427,19 @@ flowchart LR
 ## Strava
 
 Settings → **Strava** sends watch workouts to the wearer's own Strava account. It is **free**: no JoyoRogo Pro, no gate
-in the Worker. It does need the JoyoRogo sign-in, because the Worker (`server/src/strava.ts`) keeps the Strava tokens
-and the client secret against that account; the phone only ever receives the short-lived access token.
+in the Worker. It does need the JoyoRogo sign-in, because the Strava tokens are kept against that account. JoyoFit shares
+its Strava API application with JoyoRogo (which reads the athlete's activities for its burned-calorie diary), and Strava
+keeps one token per athlete and application, so **JoyoRogo's Worker owns the tokens** and this Worker (`server/src/strava.ts`)
+asks it for them; the phone only ever receives the short-lived access token. The design and its Strava-docs reasoning
+are in [`docs/strava.md`](docs/strava.md) section 1.
 
 - **Connect.** The **Connect with Strava** button (Strava's official artwork, `assets/strava/`) asks the Worker for the
-  `oauth/mobile/authorize` URL (scope `activity:write`), opens it in the browser, and Strava redirects to the Worker's
-  `/strava/callback`, which exchanges the code and redirects to `joyofit://settings/strava`. **Disconnect** revokes the
-  grant at Strava (`oauth/revoke`) and deletes the stored tokens. If the athlete removes JoyoFit on strava.com, Strava's
-  deauthorization webhook makes the Worker delete the tokens too.
+  `oauth/mobile/authorize` URL (scope `activity:write`, plus whatever the athlete already granted JoyoRogo, so connecting
+  never narrows that grant), opens it in the browser, and Strava redirects to the Worker's `/strava/callback`, which has
+  JoyoRogo exchange the code and redirects to `joyofit://settings/strava`. **Disconnect** unlinks JoyoFit; the grant is
+  revoked at Strava (`oauth/revoke`) only when JoyoRogo is not using it either. If the athlete removes the app on strava.com,
+  Strava's deauthorization webhook (one subscription per application, it points at this Worker) is forwarded to JoyoRogo,
+  which deletes the tokens of both products.
 - **What is uploaded.** A FIT activity file built on the phone from `workouts`, `workout_points` and the workout's
   `summary_json` (`src/features/strava/activityFile.ts`, binary writer in `fitEncoder.ts`, no dependency): a record for
   every sample from start to end (GPS position, heart rate, altitude, and a cumulative distance that is the watch's
@@ -458,8 +463,10 @@ and the client secret against that account; the phone only ever receives the sho
   locks the session's keychain item while the phone is locked); the connect page is an `ASWebAuthenticationSession`.
 - **Description.** Off by default: **Add fit.joyorogo.com to the description** puts that text (plain, never the title)
   in the activity description.
-- **Strava's API Agreement.** Strava data is never read back, stored, or used for analytics or AI; the Worker keeps only
-  the athlete id and tokens. Owner setup and the Strava review checklist: [`docs/strava.md`](docs/strava.md).
+- **Strava's API Agreement.** Strava data is never read back, stored, or used for analytics or AI by JoyoFit; JoyoRogo's
+  database holds only the athlete id and tokens on its behalf. A workout uploaded here is not imported again by JoyoRogo's Strava
+  sync (its `external_id` starts with `joyofit-`); JoyoRogo gets it through Health Connect / Apple Health. Owner setup and
+  the Strava review checklist: [`docs/strava.md`](docs/strava.md).
 
 ## Import from Huawei Health (Settings → Import from Huawei Health, Android, free)
 

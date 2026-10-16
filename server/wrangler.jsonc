@@ -15,8 +15,9 @@
     "JOYOROGO_AUTH_URL": "https://api.joyorogo.com",
     // Largest accepted POST /v1/imports body, in bytes (100 MiB).
     "MAX_IMPORT_BYTES": "104857600",
-    // JoyoFit's own Strava API application (client id is public). The matching STRAVA_CLIENT_SECRET and
-    // STRAVA_WEBHOOK_VERIFY_TOKEN are Worker secrets: `bunx wrangler secret put <NAME>`.
+    // The Strava API application shared with JoyoRogo (client id is public; docs/strava.md). The matching
+    // STRAVA_CLIENT_SECRET (the same value JoyoRogo's Worker has) and STRAVA_WEBHOOK_VERIFY_TOKEN are Worker
+    // secrets: `bunx wrangler secret put <NAME>`.
     "STRAVA_CLIENT_ID": "287873"
   },
   "d1_databases": [

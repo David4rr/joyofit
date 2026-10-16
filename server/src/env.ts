@@ -5,7 +5,7 @@
  */
 export type AppEnv = Env & {
   AUTH_SERVICE?: Fetcher;
-  /** JoyoFit's own Strava API application secret. Unset = Strava is not configured and its routes answer 503. */
+  /** The Strava application's secret, shared with JoyoRogo's Worker (which owns the tokens). Unset = Strava is not configured and its routes answer 503. */
   STRAVA_CLIENT_SECRET?: string;
   /** The `verify_token` chosen when creating the Strava webhook subscription; checked on the validation GET. */
   STRAVA_WEBHOOK_VERIFY_TOKEN?: string;

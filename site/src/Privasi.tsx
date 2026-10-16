@@ -189,10 +189,10 @@ function Indonesian() {
         <List
           items={[
             "Yang dikirim: berkas olahraga (waktu, jenis, rute GPS, jarak, kalori, detak jantung) langsung dari HP-mu ke Strava, hanya untuk olahraga yang selesai setelah kamu menyambung, atau yang kamu kirim sendiri dengan Kirim ke Strava. Riwayat yang diimpor dari Huawei Health tidak dikirim otomatis.",
-            "Server JoyoFit hanya menyimpan token akses Strava-mu dan ID atlet, supaya HP bisa mengunggah. Berkas olahraga tidak melewati atau disimpan di server JoyoFit.",
+            "Token akses Strava-mu dan ID atlet disimpan di server JoyoRogo (akun yang sama dengan masuk di JoyoFit), supaya HP bisa mengunggah. JoyoFit dan JoyoRogo memakai satu aplikasi Strava, jadi kalau kamu juga menyambungkan Strava di JoyoRogo, sambungan itu dipakai bersama; memutus satu tidak memutus yang lain. Berkas olahraga tidak melewati atau disimpan di server JoyoFit.",
             "JoyoFit tidak membaca data dari Strava, tidak menampilkan data Strava ke orang lain, dan tidak memakainya untuk analitik, iklan, atau AI.",
             "Tambahan teks fit.joyorogo.com di deskripsi aktivitas mati secara bawaan dan hanya muncul bila kamu menyalakannya.",
-            "Putuskan Strava di aplikasi, atau cabut JoyoFit di strava.com (Pengaturan, Aplikasi Saya), dan token langsung dihapus dari server JoyoFit. Aktivitas yang sudah ada di Strava tetap milikmu dan diatur di Strava.",
+            "Putuskan Strava di aplikasi, dan JoyoFit berhenti memakai sambunganmu; token dihapus dan izin dicabut di Strava saat JoyoRogo juga tidak memakainya. Cabut aplikasi di strava.com (Pengaturan, Aplikasi Saya), dan token untuk JoyoFit dan JoyoRogo langsung dihapus. Aktivitas yang sudah ada di Strava tetap milikmu dan diatur di Strava.",
           ]}
         />
       </Block>
@@ -323,7 +323,7 @@ function Indonesian() {
           items={[
             "Di HP: hapus instalasi JoyoFit atau pilih Pengaturan Android, Aplikasi, JoyoFit, Penyimpanan, Hapus data. Semua data lokal terhapus. Lepas jam dengan Forget pairing di aplikasi.",
             "Di Health Connect (Android) atau Apple Health (iPhone): hapus data yang ditulis JoyoFit lewat aplikasi Health Connect atau aplikasi Kesehatan.",
-            "Di Strava: Putuskan Strava di aplikasi atau cabut JoyoFit di strava.com; token dihapus dari server JoyoFit saat itu juga.",
+            "Di Strava: Putuskan Strava di aplikasi, atau cabut aplikasi di strava.com; token dihapus dari server JoyoRogo saat itu juga (bila JoyoRogo masih memakai sambungan yang sama, izin di Strava baru dicabut saat keduanya diputus).",
             "Daftar tunggu Strava atau iPhone: email ke alamat kontak di halaman ini dengan subjek Hapus daftar tunggu JoyoFit (lihat bagian Daftar undangan).",
             "Akun dan cloud: di aplikasi, Pengaturan, Kesehatan dan cloud, ketuk Delete JoyoRogo account (Hapus akun JoyoRogo) lalu konfirmasi. Ini langsung menghapus data cloud JoyoFit-mu (langkah, tidur, olahraga dan rutenya, jam, berkas impor, token Strava) dan akun JoyoRogo-mu beserta datanya di JoyoRogo. Akun JoyoRogo dipakai bersama, jadi akun itu juga hilang di JoyoRogo. Akun yang masuk dengan Apple diminta konfirmasi Apple dulu, lalu izin Masuk dengan Apple dicabut. Data di HP-mu tidak ikut terhapus.",
             <>
@@ -474,12 +474,15 @@ function English() {
           activities (<Code>activity:write</Code>). The workout file (time, type, GPS route, distance, calories,
           heart rate) goes straight from your phone to Strava, only for workouts that finish after you connect or
           that you send yourself with Send to Strava; history imported from Huawei Health is never sent
-          automatically. The JoyoFit server keeps only your Strava tokens and athlete ID so the phone can upload;
-          workout files do not pass through or stay on the JoyoFit server. JoyoFit does not read data from Strava,
-          does not show Strava data to anyone else, and does not use it for analytics, ads or AI. The
-          fit.joyorogo.com line in the activity description is off by default. Disconnect Strava in the app, or
-          revoke JoyoFit on strava.com (Settings, My Apps), and the tokens are deleted from the JoyoFit server
-          immediately; activities already on Strava stay yours and are managed on Strava.
+          automatically. Your Strava tokens and athlete ID are kept on the JoyoRogo server (the same account you
+          sign in with in JoyoFit) so the phone can upload; JoyoFit and JoyoRogo use one Strava application, so if you
+          also connect Strava in JoyoRogo the connection is shared, and disconnecting in one does not disconnect the
+          other. Workout files do not pass through or stay on the JoyoFit server. JoyoFit does not read data from
+          Strava, does not show Strava data to anyone else, and does not use it for analytics, ads or AI. The
+          fit.joyorogo.com line in the activity description is off by default. Disconnect Strava in the app and
+          JoyoFit stops using your connection; the tokens are deleted and the access revoked on Strava once JoyoRogo
+          is not using it either. Revoke the app on strava.com (Settings, My Apps) and the tokens for both JoyoFit and
+          JoyoRogo are deleted immediately; activities already on Strava stay yours and are managed on Strava.
         </p>
       </Block>
 
@@ -583,7 +586,7 @@ function English() {
           items={[
             "On the phone: uninstall JoyoFit, or Android Settings, Apps, JoyoFit, Storage, Clear data. Use Forget pairing in the app to release the watch.",
             "In Health Connect (Android) or Apple Health (iPhone): delete what JoyoFit wrote in the Health Connect or Health app.",
-            "Strava: Disconnect Strava in the app or revoke JoyoFit on strava.com; the tokens are deleted from the JoyoFit server at once.",
+            "Strava: Disconnect Strava in the app, or revoke the app on strava.com; the tokens are deleted from the JoyoRogo server at once (if JoyoRogo still uses the same connection, the access on Strava is revoked when both are disconnected).",
             "Strava or iPhone waitlist: email the contact address on this page with the subject Hapus daftar tunggu JoyoFit (see the invite lists section).",
             "Account and cloud: in the app, Settings, Health & cloud, tap Delete JoyoRogo account and confirm. It immediately deletes your JoyoFit cloud data (steps, sleep, workouts and their routes, watch, imported files, Strava tokens) and your JoyoRogo account with its JoyoRogo data. The JoyoRogo account is shared, so it is gone in JoyoRogo as well. An account that signs in with Apple asks you to confirm with Apple first, and the Sign in with Apple grant is revoked. Data on your phone is not deleted.",
             <>

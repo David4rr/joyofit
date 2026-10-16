@@ -29,13 +29,12 @@ export const IMPORT_LIST_LIMIT = 50;
 export const ACCESS_CACHE_TTL_MS = 60_000;
 export const ACCESS_LOCKED_CACHE_TTL_MS = 10_000;
 
-/** The one Strava scope JoyoFit asks for: create uploads (and edit what it uploaded). */
-export const STRAVA_REQUIRED_SCOPE = "activity:write";
-/** A token that expires within this many seconds is refreshed before it is handed to the phone. */
-export const STRAVA_REFRESH_MARGIN_S = 600;
 /** How long the signed `state` of a Strava authorization stays valid. */
 export const STRAVA_STATE_TTL_S = 600;
-export const STRAVA_TIMEOUT_MS = 5_000;
+/** A call to JoyoRogo's Strava grant API; a code exchange or token refresh inside it waits for Strava (5 s). */
+export const STRAVA_BROKER_TIMEOUT_MS = 12_000;
+/** The deauthorization forward must finish inside Strava's two-second webhook deadline. */
+export const STRAVA_WEBHOOK_BROKER_TIMEOUT_MS = 1_500;
 
 /** POST /v1/waitlist: submissions per IP per clock hour (invalid ones count), and the largest body read. */
 export const WAITLIST_MAX_PER_HOUR = 5;

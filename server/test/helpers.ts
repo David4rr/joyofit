@@ -24,10 +24,13 @@ export const upstream = {
   accessFailWith: null as number | null,
 };
 
-/** What the fake Strava saw, and how it answers: set `handler` per test; it receives the URL and the request init. */
-export const stravaUpstream = {
-  calls: [] as { url: string; method: string; headers: Headers; body: string }[],
-  handler: null as ((url: string, init: RequestInit) => Response) | null,
+/**
+ * What JoyoRogo's Strava grant API (`/internal/joyofit/strava/<action>`) saw, and how it answers: set `handler` per
+ * test; it receives the action and the parsed JSON body. The real logic is tested in the joyorogo repo.
+ */
+export const grantApi = {
+  calls: [] as { action: string; headers: Headers; body: Record<string, unknown> }[],
+  handler: null as ((action: string, body: Record<string, unknown>) => Response) | null,
 };
 
 let counter = 0;
@@ -74,19 +77,17 @@ beforeEach(() => {
   upstream.calls = [];
   upstream.failWith = null;
   upstream.accessFailWith = null;
-  stravaUpstream.calls = [];
-  stravaUpstream.handler = null;
+  grantApi.calls = [];
+  grantApi.handler = null;
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
-    if (String(input).startsWith("https://www.strava.com/")) {
-      stravaUpstream.calls.push({
-        url: String(input),
-        method: init?.method ?? "GET",
-        headers: new Headers(init?.headers),
-        body: String(init?.body ?? ""),
-      });
-      if (!stravaUpstream.handler) throw new Error(`unexpected Strava call: ${String(input)}`);
-      return stravaUpstream.handler(String(input), init ?? {});
+    const grantCall = /\/internal\/joyofit\/strava\/(\w+)$/.exec(String(input));
+    if (grantCall?.[1]) {
+      const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      grantApi.calls.push({ action: grantCall[1], headers: new Headers(init?.headers), body });
+      if (!grantApi.handler) throw new Error(`unexpected grant API call: ${String(input)}`);
+      return grantApi.handler(grantCall[1], body);
     }
+    if (String(input).startsWith("https://www.strava.com/")) throw new Error(`JoyoFit's Worker must not call Strava itself: ${String(input)}`);
     const headers = new Headers(init?.headers);
     upstream.calls.push({ url: String(input), cookie: headers.get("cookie") });
     return fakeJoyorogo(String(input), headers.get("cookie"));

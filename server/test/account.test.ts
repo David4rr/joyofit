@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { call, env, signUp, stravaUpstream } from "./helpers";
+import { call, env, grantApi, signUp } from "./helpers";
 
 async function seed(userId: string) {
   await env.DB.batch([
@@ -20,9 +20,6 @@ async function seed(userId: string) {
     env.DB.prepare(
       "INSERT INTO imports (id, user_id, r2_key, status, created_at) VALUES (?1, ?2, ?3, 'uploaded', 1)",
     ).bind(`import-${userId}`, userId, `imports/${userId}/file`),
-    env.DB.prepare(
-      "INSERT INTO strava_connection (user_id, athlete_id, access_token, refresh_token, expires_at, scope, connected_at, updated_at) VALUES (?1, 7, 'a', 'r', 1, 'activity:write', 1, 1)",
-    ).bind(userId),
   ]);
   await env.IMPORTS.put(`imports/${userId}/file`, "zip");
 }
@@ -32,7 +29,7 @@ async function rows(table: string, userId: string): Promise<number> {
   return row?.n ?? 0;
 }
 
-const TABLES = ["user_state", "step_samples", "sleep_segments", "workouts", "workout_points", "device", "imports", "strava_connection"];
+const TABLES = ["user_state", "step_samples", "sleep_segments", "workouts", "workout_points", "device", "imports"];
 
 describe("DELETE /v1/account", () => {
   it("requires a session", async () => {
@@ -44,9 +41,10 @@ describe("DELETE /v1/account", () => {
     const bob = signUp("bob");
     await seed(alice.user.id);
     await seed(bob.user.id);
-    stravaUpstream.handler = () => new Response("{}", { status: 200 });
+    grantApi.handler = () => Response.json({ revoked: true });
 
     const response = await call("/v1/account", { method: "DELETE", cookie: alice.cookie });
+    expect(grantApi.calls.map((c) => [c.action, c.body.userId])).toEqual([["disconnect", alice.user.id]]);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ deleted: true });
 
@@ -60,6 +58,7 @@ describe("DELETE /v1/account", () => {
 
   it("works for an account with nothing stored", async () => {
     const { cookie } = signUp("carol");
+    grantApi.handler = () => Response.json({ revoked: true });
     expect((await call("/v1/account", { method: "DELETE", cookie })).status).toBe(200);
   });
 });
