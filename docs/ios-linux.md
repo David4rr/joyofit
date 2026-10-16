@@ -81,6 +81,14 @@ Present on this machine; see the header of `scripts/build-ios-linux.sh` for the 
 - Bluetooth Classic does not exist on iOS: the iOS module is Bluetooth LE only.
 - `ITSAppUsesNonExemptEncryption` is `false` (as in JoyoRogo): true only while the app's encryption stays
   inside Apple's OS crypto (CryptoKit, CommonCrypto, HTTPS), which is the owner's call to confirm.
+- Building from a git worktree (so other sessions' uncommitted edits cannot leak in): symlink the main checkout's `node_modules`
+  into the worktree, then run the script there. Metro's cache in `TMPDIR` from a build of a different checkout path used to
+  give a JS bundle with no app screens (1027 modules instead of 1618, no error, a blank app that still passed `asc.py
+  validate`); `assemble-app.py` now bundles with a cache directory of its own and refuses a bundle without app code.
+- ninja runs a script phase once: it is a stamp file with no inputs. The EXConstants phase writes the `app.config` the app
+  reads as `Constants.expoConfig` (the cloud URL in `extra`), so builds shipped the config of the first build for ever, and a
+  changed `cloudUrl` never reached the phone. Step 6 now removes that stamp every run and `assemble-app.py` refuses an
+  `app.config` whose `extra` differs from `app.json`.
 - `expo-image-picker` and `expo-secure-store` add default camera, microphone, photo library and Face ID
   usage strings to Info.plist even though JoyoFit uses neither camera nor microphone (`app.json` has no
   plugin entries to set or drop them).

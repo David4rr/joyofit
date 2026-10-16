@@ -130,6 +130,9 @@ screenshots and how athlete data is handled). Before sending:
   while the app is in front (and each time it comes back): iOS suspends the app, and the keychain item holding the JoyoRogo
   session cannot be read while the phone is locked. A workout the watch synced in the background is therefore sent when
   JoyoFit is opened.
+- iOS: Strava says `redirect_uri invalid` although the callback domain is right: that build still carries the old cloud host
+  (`joyofit-api.dzulfikar-at.workers.dev`) in its embedded `app.config` (TestFlight builds up to 202610160308 did, because the
+  pipeline never regenerated it; see `docs/ios-linux.md`). Install a newer build.
 - A workout shows "Strava refused the file": the message is Strava's; the button retries after you fix the cause.
 
 ## 5. Tests

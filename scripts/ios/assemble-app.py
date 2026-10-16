@@ -150,9 +150,26 @@ for lib in sorted(needed):
 entry = subprocess.run(["node", "-e", "require('expo/scripts/resolveAppEntry')", str(NATIVE), "ios", "absolute"],
                        cwd=NATIVE, check=True, capture_output=True, text=True).stdout.strip().splitlines()[-1]
 plain = OUT / "main.jsbundle"
+# Metro keeps its transform and file-map caches in TMPDIR, and a cache left by a build of another checkout (a git worktree
+# has another path) makes it bundle the router with no routes: about 1000 modules instead of 1600, no error, a blank app.
+# `--reset-cache` does not prevent that, so every bundling gets a cache directory of its own.
+metro_tmp = OUT / "metro-tmp"
+shutil.rmtree(metro_tmp, ignore_errors=True)
+metro_tmp.mkdir()
 subprocess.run(["bunx", "expo", "export:embed", "--platform", "ios", "--dev", "false", "--reset-cache",
                 "--entry-file", entry, "--bundle-output", str(plain), "--assets-dest", str(app)],
-               cwd=NATIVE, check=True)
+               cwd=NATIVE, check=True, env={**os.environ, "TMPDIR": str(metro_tmp)})
+shutil.rmtree(metro_tmp, ignore_errors=True)
+# The watch module's name is in app code only (requireNativeModule): a bundle without it has no app in it.
+if b"HuaweiWear" not in plain.read_bytes():
+    sys.exit(f"{plain} holds no app code (Metro bundled without the routes); not packaging it")
+# `Constants.expoConfig` reads this embedded app.config at run time (the cloud URL is in `extra`): one left over from an
+# earlier build would ship that build's URLs.
+embedded_extra = json.loads((app / "EXConstants.bundle" / "app.config").read_text()).get("extra", {})
+wanted_extra = json.loads((NATIVE / "app.json").read_text())["expo"].get("extra", {})
+stale = sorted(key for key, value in wanted_extra.items() if embedded_extra.get(key) != value)
+if stale:
+    sys.exit(f"EXConstants.bundle/app.config is out of date with app.json (extra: {', '.join(stale)}); not packaging it")
 hermesc = subprocess.run(["node", "-p", "require('path').dirname(require.resolve('hermes-compiler/package.json',"
                           " {paths: [require.resolve('react-native/package.json')]}))"],
                          cwd=NATIVE, check=True, capture_output=True, text=True).stdout.strip()

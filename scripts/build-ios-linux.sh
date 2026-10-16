@@ -127,6 +127,11 @@ EOF
 fi
 
 if step 6 "Compile and link"; then
+  # Script phases are stamp files without inputs: ninja runs each once and never again. The one that writes app.config
+  # (app.json's `extra` with the cloud URL, the scheme) has to run every build, or the first config ships for ever.
+  for phase in $(grep -l get-app-config-ios.sh "$OUT"/phases/*.sh 2>/dev/null); do
+    rm -f "$OUT/stamps/$(basename "$phase" .sh).stamp"
+  done
   (cd "$IOS" && bash -l -c "./Pods/Target\ Support\ Files/Pods-JoyoFit/expo-configure-project.sh" > /dev/null)
   ninja -C "$OUT" ${NINJA_ARGS:-}
 fi
