@@ -116,7 +116,7 @@ final class AuthFlowTests: XCTestCase {
         let initRequests = Array(rig.watch.seen[authCount...])
         XCTAssertEqual(
             initRequests.map { $0.label },
-            ["01/07", "01/05", "01/05", "01/08", "01/02", "01/03", "01/37", "1a/05", "01/31", "01/30", "01/3f", "01/3e", "01/3d", "01/35", "07/01"]
+            ["01/07", "01/05", "01/05", "01/08", "01/02", "01/03", "01/37", "1a/05", "01/31", "01/30", "01/3f", "01/3e", "01/3d", "01/35", "07/01", "07/16"]
         )
         XCTAssertTrue(initRequests.allSatisfy { $0.encrypted }, "after the bind every TLV is encrypted with the session key")
         // SetTime: the watch is one second ahead, so the time is sent again (the Kotlin 'apply').
@@ -541,6 +541,61 @@ final class AuthFlowTests: XCTestCase {
         XCTAssertEqual(try rig.watch.requests("01/3e").first?.tlv.string(0x02), "MyWatch", "the bonded name wins over the ProductInfo name")
         XCTAssertTrue(rig.watch.labels.contains("01/35"))
         XCTAssertNil(rig.watch.motionGoal, "no profile, no profile request")
+    }
+
+    /// The sensor switches the user saved reach the watch on every connect, after the profile, in GB's order and only for the commands the
+    /// watch lists; the zones go over FitnessData 07/21 on a watch without Track.
+    func testInitSendsTheSavedSensorSwitchesAndTheZonesAfterTheProfile() async throws {
+        var config = PacketsAuthFakeWatch.Config()
+        config.commands[0x07] = [0x01, 0x03, 0x13, 0x16, 0x17, 0x1C, 0x1D, 0x21, 0x22, 0x23, 0x24]
+        config.commands[0x17] = [0x17]
+        let rig = makeRig(config)
+        _ = try await rig.authenticator.authenticate()
+        let authCount = rig.watch.seen.count
+        let profile = UserProfileData(heightCm: 175, weightKg: 70, birthYear: 1990, sex: "male", dailyStepGoal: 8000)
+        let sensors = HealthSensorConfig(automaticHeartRate: true, automaticSpo2: false, truSleep: true, highHeartRateAlert: 140, lowHeartRateAlert: 0)
+        let initializer = HuaweiInitializer(
+            session: rig.session, caps: DeviceCaps(), log: rig.log.sink, bondedName: nil, protocolVersion: 2, profile: profile, healthSensors: sensors
+        )
+        initializer.timeouts = fastTimeouts()
+        initializer.now = { self.now }
+        _ = try await initializer.run()
+
+        let after = Array(rig.watch.seen[authCount...].map(\.label).drop { $0 != "07/01" })
+        XCTAssertEqual(
+            after, ["07/01", "07/21", "17/17", "07/23", "07/16", "07/17", "07/24", "07/1d"],
+            "profile, zones, capability notifications, TruSleep, heart rate, SpO2, high alert (the low alert is off, so not overwritten)"
+        )
+        XCTAssertEqual(try rig.watch.requests("07/17").first?.tlv.bool(0x01), true)
+        XCTAssertEqual(try rig.watch.requests("07/24").first?.tlv.bool(0x01), false)
+        XCTAssertEqual(try rig.watch.requests("07/16").first?.tlv.bool(0x01), true)
+        let alert = try XCTUnwrap(rig.watch.requests("07/1d").first).tlv
+        XCTAssertEqual(try alert.bool(0x01), true)
+        XCTAssertEqual(try alert.byte(0x02), Int8(truncatingIfNeeded: 140))
+        let zones = try XCTUnwrap(rig.watch.requests("07/21").first).tlv.object(0x81)
+        XCTAssertEqual(try zones.byte(0x09), Int8(truncatingIfNeeded: 220 - (2026 - 1990)), "the age comes from the saved profile")
+        XCTAssertTrue(rig.watch.seen.allSatisfy { $0.encrypted || $0.service == 0x01 })
+        XCTAssertTrue(rig.log.contains("HealthSensors: 6 of 6 requests acknowledged"))
+        XCTAssertTrue(rig.log.contains("HR zones: ExpandCapability 0x36 (Track)=false, FitnessData 07/13=true, 07/21=true"))
+        XCTAssertTrue(rig.log.contains("HR zones: sent 07/21 for age 36"))
+    }
+
+    func testInitSendsNothingForSensorsAWatchDoesNotList() async throws {
+        let rig = makeRig()  // lists 07/16 only
+        _ = try await rig.authenticator.authenticate()
+        let authCount = rig.watch.seen.count
+        let initializer = HuaweiInitializer(
+            session: rig.session, caps: DeviceCaps(), log: rig.log.sink, bondedName: nil, protocolVersion: 2,
+            healthSensors: HealthSensorConfig(truSleep: false, highHeartRateAlert: 120)
+        )
+        initializer.timeouts = fastTimeouts()
+        initializer.now = { self.now }
+        _ = try await initializer.run()
+        let sensorLabels = rig.watch.seen[authCount...].map(\.label).filter { $0.hasPrefix("07/1") || $0.hasPrefix("07/2") || $0 == "17/17" || $0 == "07/16" }
+        XCTAssertEqual(sensorLabels, ["07/16"])
+        XCTAssertEqual(try rig.watch.requests("07/16").first?.tlv.bool(0x01), false, "the saved TruSleep switch, not a default")
+        XCTAssertTrue(rig.log.contains("HealthSensors: 1 of 1 requests acknowledged"))
+        XCTAssertTrue(rig.log.contains("branch=none"))
     }
 
     func testInitWithoutDriftSendsTheTimeOnce() async throws {

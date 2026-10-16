@@ -108,6 +108,8 @@ public final class HuaweiWearModule: Module {
         func state(_ state: LinkState, error: String?) { emit("onStateChange", ["state": state.rawValue, "error": error]) }
         func battery(_ level: Int) { emit("onBattery", ["level": level]) }
         func syncComplete(_ summary: SyncSummary) { emit("onSyncComplete", summary.toJS()) }
+        func heartRate(bpm: Int, tsMs: Int64) { emit("onHeartRate", ["bpm": bpm, "ts": tsMs]) }
+        func hrvProgress(secondsLeft: Int, beats: Int) { emit("onHrvProgress", ["secondsLeft": secondsLeft, "beats": beats]) }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -260,7 +262,7 @@ public final class HuaweiWearModule: Module {
 
         Function("getNotificationAccess") { () -> [String: Any] in Inert.notificationAccess() }
         Function("getMorningSummaryEnabled") { () -> Bool in false }
-        Function("getHealthSensors") { () -> [String: Any] in Inert.healthSensors() }
+        Function("getHealthSensors") { () -> [String: Any] in runtime.watchSettings.healthSensorsStatus() }
         Function("getStressStatus") { () -> [String: Any] in Inert.stress() }
         Function("getLiveWorkout") { () -> [String: Any]? in nil }
         Function("getPhoneFeatures") { () -> [String: Any] in runtime.features.status() }
@@ -284,11 +286,19 @@ public final class HuaweiWearModule: Module {
         Function("dismissLiveWorkout") { () -> Void in }
         Function("finishLiveWorkout") { () -> Void in }
         AsyncFunction("markWatchMealsSynced") { (ids: [String]) async throws -> Void in }
+        // Realtime heart rate drains the watch: it never outlives the app being on screen.
         AsyncFunction("setLiveHeartRate") { (active: Bool) async throws -> Void in
-            // Android does nothing when no watch is connected; with one connected, starting is a command that cannot be honoured.
-            if active && runtime.link.deviceInfo() != nil { throw iosUnsupported("setLiveHeartRate") }
+            runtime.watchSettings.liveHeartRate.setActive(active)
+        }
+
+        OnAppEntersBackground {
+            runtime.watchSettings.liveHeartRate.setActive(false)
         }
         Function("startLiveWorkout") { () throws -> Void in throw iosUnsupported("startLiveWorkout") }
+
+        AsyncFunction("setHealthSensors") { (sensors: [String: Any]) async throws -> Bool in
+            try await wearCall { try await runtime.watchSettings.setHealthSensors(try HealthSensorConfig.fromJS(sensors)) }
+        }
 
         AsyncFunction("refreshAlarms") { () async throws -> [String: Any] in
             try await wearCall { try await runtime.watchSettings.refreshAlarms() }
@@ -320,7 +330,6 @@ public final class HuaweiWearModule: Module {
 
         rejects("openNotificationAccess")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
-        rejects("setHealthSensors", [String: Any].self)
         rejects("measureHrv")
         rejects("setAutomaticStress", Bool.self)
         rejects("setWeatherUnit", String.self)

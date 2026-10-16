@@ -132,6 +132,10 @@ public final class WearRuntime: @unchecked Sendable {
         currentListeners().forEach { $0.syncComplete(summary) }
     }
 
+    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) { currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) } }
+
+    fileprivate func handleHrvProgress(_ secondsLeft: Int, _ beats: Int) { currentListeners().forEach { $0.hrvProgress(secondsLeft: secondsLeft, beats: beats) } }
+
     fileprivate func handleLog(_ entry: LogEntry) {
         let ids = entry.serviceId.map { " svc=\(SupportReport.hex2($0)) cmd=\(SupportReport.hex2(entry.commandId ?? 0))" } ?? ""
         let hexForConsole = entry.hex.map { " \($0)" } ?? ""
@@ -153,6 +157,8 @@ public final class WearRuntime: @unchecked Sendable {
         func battery(_ level: Int) { runtime?.handleBattery(level) }
         func syncComplete(_ summary: SyncSummary) { runtime?.handleSyncComplete(summary) }
         func log(_ entry: LogEntry) { runtime?.handleLog(entry) }
+        func heartRate(bpm: Int, tsMs: Int64) { runtime?.handleHeartRate(bpm, tsMs) }
+        func hrvProgress(secondsLeft: Int, beats: Int) { runtime?.handleHrvProgress(secondsLeft, beats) }
     }
 
     // MARK: bonded devices

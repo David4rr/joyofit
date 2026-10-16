@@ -25,6 +25,11 @@ public final class WearSettings: @unchecked Sendable {
         static let profileSex = "profile_sex"
         static let profileGoal = "profile_step_goal"
         static let alarmsJson = "alarms_json"
+        static let autoHeartRate = "auto_heart_rate"
+        static let autoSpo2 = "auto_spo2"
+        static let truSleep = "trusleep"
+        static let highHrAlert = "high_hr_alert"
+        static let lowHrAlert = "low_hr_alert"
     }
 
     public init(defaults: UserDefaults? = nil) {
@@ -85,6 +90,26 @@ public final class WearSettings: @unchecked Sendable {
     public var alarmsJson: String? {
         get { defaults.string(forKey: Key.alarmsJson) }
         set { set(newValue, forKey: Key.alarmsJson) }
+    }
+
+    /// The watch-side health sensor switches (see `HealthSensorConfig`); defaults match Huawei Health.
+    public var healthSensors: HealthSensorConfig {
+        get {
+            HealthSensorConfig(
+                automaticHeartRate: defaults.object(forKey: Key.autoHeartRate) == nil ? true : defaults.bool(forKey: Key.autoHeartRate),
+                automaticSpo2: defaults.object(forKey: Key.autoSpo2) == nil ? true : defaults.bool(forKey: Key.autoSpo2),
+                truSleep: defaults.object(forKey: Key.truSleep) == nil ? true : defaults.bool(forKey: Key.truSleep),
+                highHeartRateAlert: defaults.integer(forKey: Key.highHrAlert),
+                lowHeartRateAlert: defaults.integer(forKey: Key.lowHrAlert)
+            )
+        }
+        set {
+            defaults.set(newValue.automaticHeartRate, forKey: Key.autoHeartRate)
+            defaults.set(newValue.automaticSpo2, forKey: Key.autoSpo2)
+            defaults.set(newValue.truSleep, forKey: Key.truSleep)
+            defaults.set(newValue.highHeartRateAlert, forKey: Key.highHrAlert)
+            defaults.set(newValue.lowHeartRateAlert, forKey: Key.lowHrAlert)
+        }
     }
 
     private func set(_ value: String?, forKey key: String) {

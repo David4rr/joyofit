@@ -9,17 +9,23 @@ final class RecordingEvents: WearEvents, @unchecked Sendable {
     private var _logs: [LogEntry] = []
     private var _batteries: [Int] = []
     private var _syncs: [SyncSummary] = []
+    private var _heartRates: [(bpm: Int, tsMs: Int64)] = []
+    private var _hrvProgress: [(secondsLeft: Int, beats: Int)] = []
 
     var states: [(LinkState, String?)] { lock.locked { _states } }
     var stateNames: [String] { states.map { $0.0.rawValue } }
     var logs: [LogEntry] { lock.locked { _logs } }
     var batteries: [Int] { lock.locked { _batteries } }
     var syncs: [SyncSummary] { lock.locked { _syncs } }
+    var heartRates: [(bpm: Int, tsMs: Int64)] { lock.locked { _heartRates } }
+    var hrvProgress: [(secondsLeft: Int, beats: Int)] { lock.locked { _hrvProgress } }
 
     func state(_ state: LinkState, error: String?) { lock.locked { _states.append((state, error)) } }
     func battery(_ level: Int) { lock.locked { _batteries.append(level) } }
     func syncComplete(_ summary: SyncSummary) { lock.locked { _syncs.append(summary) } }
     func log(_ entry: LogEntry) { lock.locked { _logs.append(entry) } }
+    func heartRate(bpm: Int, tsMs: Int64) { lock.locked { _heartRates.append((bpm, tsMs)) } }
+    func hrvProgress(secondsLeft: Int, beats: Int) { lock.locked { _hrvProgress.append((secondsLeft, beats)) } }
 
     func messages(_ direction: LogDirection? = nil) -> [String] {
         logs.filter { direction == nil || $0.direction == direction }.map(\.message)

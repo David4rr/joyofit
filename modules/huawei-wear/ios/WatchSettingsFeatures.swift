@@ -14,6 +14,9 @@ public final class WatchSettingsFeatures: LinkObserver, @unchecked Sendable {
     private let events: WearEvents
     private let nowMs: @Sendable () -> Int64
 
+    /// The live heart rate on Today and during a live workout; also what an HRV measurement pauses.
+    public let liveHeartRate: LiveHeartRate
+
     public init(
         handle: @escaping @Sendable () -> LinkHandle?, settings: WearSettings, events: WearEvents,
         nowMs: @escaping @Sendable () -> Int64 = { Int64(Date().timeIntervalSince1970 * 1000) }
@@ -22,13 +25,14 @@ public final class WatchSettingsFeatures: LinkObserver, @unchecked Sendable {
         self.settings = settings
         self.events = events
         self.nowMs = nowMs
+        self.liveHeartRate = LiveHeartRate(handle: handle, settings: settings, events: events, nowMs: nowMs)
     }
 
     // MARK: LinkObserver
 
-    public func linkConnected(_ handle: LinkHandle) async {}
+    public func linkConnected(_ handle: LinkHandle) async { await liveHeartRate.linkConnected(handle) }
 
-    public func linkDisconnected() {}
+    public func linkDisconnected() { liveHeartRate.linkDisconnected() }
 
     // MARK: alarms
 
@@ -54,6 +58,34 @@ public final class WatchSettingsFeatures: LinkObserver, @unchecked Sendable {
         guard let h = handle() else { throw WearError(.notConnected, "Not connected to a watch") }
         try await AlarmSync.write(session: h.session, caps: h.caps, log: events.sink, alarms: alarms)
         return try await refreshAlarms()
+    }
+
+    // MARK: health sensors
+
+    /// `getHealthSensors`: the stored switches and, while connected, which of them the watch supports (null when not connected).
+    public func healthSensorsStatus() -> [String: Any] {
+        let config = settings.healthSensors
+        let supported: Any = handle().map { HealthSensorSupport.of($0.caps.supports).toJS() as Any } ?? NSNull()
+        return [
+            "automaticHeartRate": config.automaticHeartRate,
+            "automaticSpo2": config.automaticSpo2,
+            "truSleep": config.truSleep,
+            "highHeartRateAlert": config.highHeartRateAlert,
+            "lowHeartRateAlert": config.lowHeartRateAlert,
+            "supported": supported,
+        ]
+    }
+
+    /// `setHealthSensors`: stores the switches and, when the watch is connected, sends what changed; true when it was all acknowledged.
+    public func setHealthSensors(_ config: HealthSensorConfig) async throws -> Bool {
+        if let message = config.validationError() { throw WearError(.invalidArgument, message) }
+        let previous = settings.healthSensors
+        settings.healthSensors = config
+        guard let h = handle() else { return false }
+        let plan = HealthSensors.plan(supports: h.caps.supports, config: config, previous: previous)
+        if plan.isEmpty { return true }
+        let acknowledged = try await h.operationLock.withLock { try await HealthSensors.send(session: h.session, log: events.sink, plan: plan) }
+        return acknowledged == plan.count
     }
 }
 

@@ -13,9 +13,16 @@ public protocol WearEvents: AnyObject, Sendable {
     /// A sync finished and its rows are committed to the database.
     func syncComplete(_ summary: SyncSummary)
     func log(_ entry: LogEntry)
+    /// A live heart-rate reading the watch pushed (`onHeartRate`); `tsMs` is the phone's receive time.
+    func heartRate(bpm: Int, tsMs: Int64)
+    /// `onHrvProgress`: the minute counts down while the watch sends intervals; `beats` are the ones with a usable signal.
+    func hrvProgress(secondsLeft: Int, beats: Int)
 }
 
 extension WearEvents {
+    public func heartRate(bpm: Int, tsMs: Int64) {}
+    public func hrvProgress(secondsLeft: Int, beats: Int) {}
+
     public func info(_ message: String) { log(LogEntry(.info, message)) }
     public func error(_ message: String) { log(LogEntry(.error, message)) }
 
