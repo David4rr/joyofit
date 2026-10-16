@@ -293,7 +293,8 @@ public enum HealthKitPlan {
     }
 }
 
-/// A completed workout as stored in the `workouts` table.
+/// A completed workout as stored in the `workouts` table. `hrPoints` and `routePoints` count its stored `workout_points` with a heart rate
+/// and with a position, so a workout that gains a route or a heart-rate series after it was exported is exported again.
 public struct WorkoutRow: Equatable, Sendable {
     public let start: Int64
     public let end: Int64
@@ -303,8 +304,12 @@ public struct WorkoutRow: Equatable, Sendable {
     public let calories: Int?
     public let avgHr: Int?
     public let maxHr: Int?
+    public let hrPoints: Int
+    public let routePoints: Int
 
-    public init(start: Int64, end: Int64, sportType: Int, name: String?, distance: Int?, calories: Int?, avgHr: Int?, maxHr: Int?) {
+    public init(
+        start: Int64, end: Int64, sportType: Int, name: String?, distance: Int?, calories: Int?, avgHr: Int?, maxHr: Int?, hrPoints: Int = 0, routePoints: Int = 0
+    ) {
         self.start = start
         self.end = end
         self.sportType = sportType
@@ -313,10 +318,18 @@ public struct WorkoutRow: Equatable, Sendable {
         self.calories = calories
         self.avgHr = avgHr
         self.maxHr = maxHr
+        self.hrPoints = hrPoints
+        self.routePoints = routePoints
     }
 
-    /// `start|end|calories|distance` of a workout, so each is exported once and again only if it changes.
-    public var signature: String { "\(start)|\(end)|\(calories ?? 0)|\(distance ?? 0)" }
+    /// `start|end|calories|distance` of a workout (plus `|h<n>` / `|r<n>` for its heart-rate and route points), so each is exported once and
+    /// again only if it changes.
+    public var signature: String {
+        var s = "\(start)|\(end)|\(calories ?? 0)|\(distance ?? 0)"
+        if hrPoints > 0 { s += "|h\(hrPoints)" }
+        if routePoints > 0 { s += "|r\(routePoints)" }
+        return s
+    }
 
     public func notes() -> String? {
         var parts = [String]()
@@ -325,5 +338,104 @@ public struct WorkoutRow: Equatable, Sendable {
         if let a = avgHr, a > 0 { parts.append("avg HR \(a)") }
         if let m = maxHr, m > 0 { parts.append("max HR \(m)") }
         return parts.isEmpty ? nil : "JoyoFit: " + parts.joined(separator: ", ")
+    }
+}
+
+/// HealthKit's per-type write authorization (`HKAuthorizationStatus`), as the plan needs to reason about it.
+public enum HealthAuthStatus: Sendable {
+    case notDetermined, denied, authorized
+}
+
+/// One heart-rate reading attached to a workout, written under `id`.
+public struct WorkoutHeartReading: Equatable, Sendable {
+    public let id: String
+    public let timeSec: Int64
+    public let bpm: Int
+}
+
+/// One position of a workout's route.
+public struct WorkoutRoutePoint: Equatable, Sendable {
+    public let timeSec: Int64
+    public let latitude: Double
+    public let longitude: Double
+    /// Metres; nil when the watch gave none or a value that cannot be an altitude.
+    public let altitude: Double?
+}
+
+/// Everything written for one workout: the session, the heart-rate readings attached to it and the GPS route. Every part carries an id built
+/// from the workout's start, so writing the workout again replaces it.
+public struct WorkoutPlan: Equatable, Sendable {
+    public let id: String
+    public let start: Int64
+    public let end: Int64
+    public let sportType: Int
+    public let kind: WorkoutKind
+    public let name: String?
+    public let notes: String?
+    /// Readings inside the workout.
+    public let heartRate: [WorkoutHeartReading]
+    public let route: [WorkoutRoutePoint]
+    public let routeId: String
+
+    /// The same workout without its heart-rate readings (the user did not allow writing heart rate).
+    public func withoutHeartRate() -> WorkoutPlan {
+        WorkoutPlan(id: id, start: start, end: end, sportType: sportType, kind: kind, name: name, notes: notes, heartRate: [], route: route, routeId: routeId)
+    }
+}
+
+extension HealthKitPlan {
+    /// A route needs at least this many positions to be a route.
+    public static let minRoutePoints = 2
+
+    /// Positions further than this outside the workout's own span are garbage (a garbled GPS file), not part of the route.
+    public static let routeSlackSec: Int64 = 300
+
+    /// Metres: the range the altitude of a position can have; anything else is a broken reading (modern watches send absent or broken GPS
+    /// altitudes, see HuaweiGpsParser).
+    public static let altitudeRange: ClosedRange<Double> = -500...9_000
+
+    /// Oldest first; points of the same second keep their stored order.
+    private static func byTime(_ points: [WorkoutPoint]) -> [WorkoutPoint] {
+        points.enumerated().sorted { a, b in a.element.ts != b.element.ts ? a.element.ts < b.element.ts : a.offset < b.offset }.map { $0.element }
+    }
+
+    /// The workout's heart-rate readings: valid values inside [start, end], one per second at most (the first wins), oldest first.
+    public static func workoutHeartRate(_ points: [WorkoutPoint], start: Int64, end: Int64) -> [WorkoutHeartReading] {
+        var seen = Set<Int64>()
+        var out = [WorkoutHeartReading]()
+        for p in byTime(points) {
+            guard let hr = p.hr, (minBpm...maxBpm).contains(hr), p.ts >= start, p.ts <= end, seen.insert(p.ts).inserted else { continue }
+            out.append(WorkoutHeartReading(id: id("workout-hr", "\(start):\(p.ts)"), timeSec: p.ts, bpm: hr))
+        }
+        return out
+    }
+
+    /// The GPS route: valid positions within `routeSlackSec` of the workout, oldest first, one per second at most. Empty when fewer than
+    /// `minRoutePoints` remain.
+    public static func workoutRoute(_ points: [WorkoutPoint], start: Int64, end: Int64) -> [WorkoutRoutePoint] {
+        var seen = Set<Int64>()
+        var out = [WorkoutRoutePoint]()
+        for p in byTime(points) {
+            guard let lat = p.lat, let lon = p.lon, lat.isFinite, lon.isFinite, (-90.0...90.0).contains(lat), (-180.0...180.0).contains(lon),
+                  p.ts >= start - routeSlackSec, p.ts <= end + routeSlackSec, seen.insert(p.ts).inserted else { continue }
+            let altitude = p.alt.flatMap { altitudeRange.contains($0) ? $0 : nil }
+            out.append(WorkoutRoutePoint(timeSec: p.ts, latitude: lat, longitude: lon, altitude: altitude))
+        }
+        return out.count >= minRoutePoints ? out : []
+    }
+
+    public static func workoutPlan(_ row: WorkoutRow, points: [WorkoutPoint]) -> WorkoutPlan {
+        WorkoutPlan(
+            id: id("workout", row.start), start: row.start, end: row.end, sportType: row.sportType, kind: workoutKind(huaweiType: row.sportType),
+            name: row.name, notes: row.notes(), heartRate: workoutHeartRate(points, start: row.start, end: row.end),
+            route: workoutRoute(points, start: row.start, end: row.end), routeId: id("workout-route", row.start)
+        )
+    }
+
+    /// The ExerciseSession record type stands for workouts and their routes: it is granted once workouts may be written and the user has
+    /// decided about routes (allowed or not), so a route type that was never asked shows as missing and "Allow more types" asks for it. A
+    /// workout is written without its route when the route was declined.
+    public static func exerciseSessionGranted(workout: HealthAuthStatus, route: HealthAuthStatus) -> Bool {
+        workout == .authorized && route != .notDetermined
     }
 }

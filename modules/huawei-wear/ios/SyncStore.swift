@@ -35,7 +35,7 @@ public struct SyncSummary: Equatable, Sendable {
     public let totalSteps: Int
     public let totalCalories: Int
     public let totalDistance: Int
-    /// Workouts written (new or completed) by this sync's workout phase; the iOS module has no workout sync yet, so always 0.
+    /// Workouts written (new or completed) by this sync's workout phase.
     public let workouts: Int
 
     public init(from: Int64, to: Int64, samples: Int, sleep: Int, totalSteps: Int, totalCalories: Int, totalDistance: Int, workouts: Int = 0) {

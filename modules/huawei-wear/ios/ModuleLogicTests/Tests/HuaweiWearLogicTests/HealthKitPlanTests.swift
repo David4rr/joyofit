@@ -130,6 +130,67 @@ final class HealthKitPlanTests: XCTestCase {
         XCTAssertEqual(WorkoutRow(start: 1, end: 2, sportType: 1, name: nil, distance: nil, calories: nil, avgHr: nil, maxHr: nil).signature, "1|2|0|0")
     }
 
+    func testWorkoutSignatureCountsHeartRateAndRoutePointsOnlyWhenThereAreSome() {
+        let w = WorkoutRow(start: 100, end: 700, sportType: 1, name: nil, distance: 5_250, calories: 320, avgHr: nil, maxHr: nil, hrPoints: 40, routePoints: 12)
+        XCTAssertEqual(w.signature, "100|700|320|5250|h40|r12")
+        XCTAssertEqual(WorkoutRow(start: 100, end: 700, sportType: 1, name: nil, distance: 5_250, calories: 320, avgHr: nil, maxHr: nil, routePoints: 3).signature, "100|700|320|5250|r3")
+    }
+
+    private func point(_ ts: Int64, lat: Double? = nil, lon: Double? = nil, alt: Double? = nil, hr: Int? = nil) -> WorkoutPoint {
+        WorkoutPoint(ts: ts, lat: lat, lon: lon, alt: alt, hr: hr)
+    }
+
+    func testWorkoutHeartRateKeepsValidReadingsInsideTheWorkoutOnePerSecond() {
+        let points = [
+            point(1_030, hr: 130), point(1_010, hr: 120), point(1_010, hr: 125), point(1_020, hr: 0), point(999, hr: 90), point(1_601, hr: 95),
+            point(1_050, hr: 301), point(1_060),
+        ]
+
+        let readings = HealthKitPlan.workoutHeartRate(points, start: 1_000, end: 1_600)
+
+        XCTAssertEqual(readings.map(\.timeSec), [1_010, 1_030])
+        XCTAssertEqual(readings.map(\.bpm), [120, 130], "the first reading of a second wins (the points are stable-sorted by time only)")
+        XCTAssertEqual(readings.first?.id, "joyofit:workout-hr:1000:1010")
+    }
+
+    func testWorkoutRouteDropsBrokenPositionsAndStrayTimestampsAndNeedsTwoPoints() {
+        let points = [
+            point(1_100, lat: -6.2, lon: 106.8, alt: 12), point(1_101, lat: 91, lon: 0), point(1_102, lat: 0, lon: 181), point(1_103, lat: .nan, lon: 1),
+            point(1_104, lat: -6.21, lon: 106.81, alt: 20_000), point(1_100, lat: -6.5, lon: 106.5), point(5_000, lat: -6.3, lon: 106.9),
+            point(900, lat: -6.19, lon: 106.79, alt: nil), point(1_105, hr: 100),
+        ]
+
+        let route = HealthKitPlan.workoutRoute(points, start: 1_000, end: 1_600)
+
+        XCTAssertEqual(route.map(\.timeSec), [900, 1_100, 1_104], "900 is within the 300 s slack, 5000 is not, a repeated second is dropped")
+        XCTAssertEqual(route.map(\.altitude), [nil, 12, nil], "20 km is no altitude")
+        XCTAssertEqual(HealthKitPlan.workoutRoute([point(1_100, lat: 1, lon: 1)], start: 1_000, end: 1_600), [])
+        XCTAssertEqual(HealthKitPlan.workoutRoute([], start: 1_000, end: 1_600), [])
+    }
+
+    func testWorkoutPlanCombinesTheRowTheReadingsAndTheRoute() {
+        let row = WorkoutRow(start: 1_000, end: 1_600, sportType: 5, name: "Indoor Running", distance: 3_000, calories: 200, avgHr: 140, maxHr: 160)
+        let plan = HealthKitPlan.workoutPlan(row, points: [point(1_010, hr: 120), point(1_100, lat: 1, lon: 2), point(1_101, lat: 1.1, lon: 2.1)])
+
+        XCTAssertEqual(plan.id, "joyofit:workout:1000")
+        XCTAssertEqual(plan.routeId, "joyofit:workout-route:1000")
+        XCTAssertEqual(plan.kind, .runningTreadmill)
+        XCTAssertEqual(plan.name, "Indoor Running")
+        XCTAssertEqual(plan.notes, "JoyoFit: 3.00 km, 200 kcal, avg HR 140, max HR 160")
+        XCTAssertEqual(plan.heartRate.count, 1)
+        XCTAssertEqual(plan.route.count, 2)
+        XCTAssertTrue(plan.withoutHeartRate().heartRate.isEmpty)
+        XCTAssertEqual(plan.withoutHeartRate().route, plan.route)
+    }
+
+    func testExerciseSessionNeedsWorkoutWriteAndADecisionAboutRoutes() {
+        XCTAssertTrue(HealthKitPlan.exerciseSessionGranted(workout: .authorized, route: .authorized))
+        XCTAssertTrue(HealthKitPlan.exerciseSessionGranted(workout: .authorized, route: .denied), "workouts are written without a route")
+        XCTAssertFalse(HealthKitPlan.exerciseSessionGranted(workout: .authorized, route: .notDetermined), "so the route is asked for")
+        XCTAssertFalse(HealthKitPlan.exerciseSessionGranted(workout: .denied, route: .authorized))
+        XCTAssertFalse(HealthKitPlan.exerciseSessionGranted(workout: .notDetermined, route: .notDetermined))
+    }
+
     func testRecordTypeNamesAreTheJsNames() {
         XCTAssertEqual(
             HealthRecordType.allCases.map(\.rawValue),

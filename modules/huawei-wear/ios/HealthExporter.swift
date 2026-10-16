@@ -36,7 +36,7 @@ public enum HealthBatch: Sendable {
     /// HealthKit has no sleep session to replace as a whole: the writer first deletes this app's sleep samples in [`replaceFromSec`,
     /// `replaceToSec`), then saves the stages of every session.
     case sleep([HealthKitPlan.SleepPlan], replaceFromSec: Int64, replaceToSec: Int64)
-    case workouts([WorkoutRow])
+    case workouts([WorkoutPlan])
 
     public struct RestingReading: Sendable, Equatable {
         public let id: String
@@ -361,34 +361,53 @@ public final class HealthExporter: @unchecked Sendable {
         counts.sleep += try await writer.write(.sleep(sessions, replaceFromSec: first, replaceToSec: last), device: device, version: version)
     }
 
-    /// Completed workouts not written yet (or changed since: the signature covers the end, energy and distance), keyed by the workout's
-    /// start time. Skipped when the table does not exist.
+    /// Completed workouts not written yet (or changed since: the signature covers the end, energy, distance and the number of stored heart-rate
+    /// and route points), keyed by the workout's start time. Skipped when the table does not exist. Without write permission for heart rate
+    /// the workout goes without its readings.
     private func exportWorkouts(_ granted: Set<HealthRecordType>, _ version: Int64, _ device: HealthDevice, _ counts: inout HealthExportCounts) async throws {
         guard granted.contains(.exerciseSession) else { return }
         let written = settings.exportedWorkouts
-        let rows = try loadWorkouts().filter { !written.contains($0.signature) }
-        if rows.isEmpty { return }
-        counts.workouts += try await writer.write(.workouts(rows), device: device, version: version)
-        settings.exportedWorkouts = written.union(rows.map(\.signature))
+        let pending = try loadWorkouts().filter { !written.contains($0.row.signature) }
+        if pending.isEmpty { return }
+        let plans = try pending.map { entry -> WorkoutPlan in
+            let plan = HealthKitPlan.workoutPlan(entry.row, points: try loadWorkoutPoints(workoutId: entry.id))
+            return granted.contains(.heartRate) ? plan : plan.withoutHeartRate()
+        }
+        counts.workouts += try await writer.write(.workouts(plans), device: device, version: version)
+        settings.exportedWorkouts = written.union(pending.map(\.row.signature))
     }
 
-    private func loadWorkouts() throws -> [WorkoutRow] {
+    private func loadWorkouts() throws -> [(row: WorkoutRow, id: Int64)] {
         try syncStore.read { db in
             guard try db.tableExists("workouts") else { return [] }
             return try db.query(
                 """
-                SELECT start, end, duration, sport_type, sport_name, distance, calories, avg_hr, max_hr
-                FROM workouts WHERE complete = 1 ORDER BY start
+                SELECT w.start, w.end, w.duration, w.sport_type, w.sport_name, w.distance, w.calories, w.avg_hr, w.max_hr, w.id,
+                  (SELECT COUNT(*) FROM workout_points p WHERE p.workout_id = w.id AND p.hr IS NOT NULL),
+                  (SELECT COUNT(*) FROM workout_points p WHERE p.workout_id = w.id AND p.lat IS NOT NULL AND p.lon IS NOT NULL)
+                FROM workouts w WHERE w.complete = 1 ORDER BY w.start
                 """
-            ) { s -> WorkoutRow? in
+            ) { s -> (row: WorkoutRow, id: Int64)? in
                 let start = s.int64(0)
                 let end = (!s.isNull(1) && s.int64(1) > start) ? s.int64(1) : start + Int64(s.optionalInt(2) ?? 0)
                 if end <= start { return nil }
-                return WorkoutRow(
+                let row = WorkoutRow(
                     start: start, end: end, sportType: s.optionalInt(3) ?? 255, name: s.text(4), distance: s.optionalInt(5),
-                    calories: s.optionalInt(6), avgHr: s.optionalInt(7), maxHr: s.optionalInt(8)
+                    calories: s.optionalInt(6), avgHr: s.optionalInt(7), maxHr: s.optionalInt(8), hrPoints: s.int(10), routePoints: s.int(11)
                 )
+                return (row, s.int64(9))
             }.compactMap { $0 }
+        }
+    }
+
+    private func loadWorkoutPoints(workoutId: Int64) throws -> [WorkoutPoint] {
+        try syncStore.read { db in
+            try db.query("SELECT ts, lat, lon, alt, hr FROM workout_points WHERE workout_id = ? ORDER BY ts", [.int(workoutId)]) { s in
+                WorkoutPoint(
+                    ts: s.int64(0), lat: s.isNull(1) ? nil : s.double(1), lon: s.isNull(2) ? nil : s.double(2), alt: s.isNull(3) ? nil : s.double(3),
+                    hr: s.optionalInt(4)
+                )
+            }
         }
     }
 

@@ -33,7 +33,7 @@ final class FakeHealthWriter: HealthWriter, @unchecked Sendable {
     }
 
     func steps() -> [HealthKitPlan.Interval] { batches.flatMap { if case .steps(let v) = $0 { return v } else { return [] } } }
-    func workouts() -> [WorkoutRow] { batches.flatMap { if case .workouts(let v) = $0 { return v } else { return [] } } }
+    func workouts() -> [WorkoutPlan] { batches.flatMap { if case .workouts(let v) = $0 { return v } else { return [] } } }
     func sleeps() -> [(sessions: [HealthKitPlan.SleepPlan], from: Int64, to: Int64)] {
         batches.compactMap { if case .sleep(let s, let f, let t) = $0 { return (s, f, t) } else { return nil } }
     }
@@ -273,6 +273,85 @@ final class HealthExporterTests: XCTestCase {
         // ...a backfill starts from scratch (idempotent on the HealthKit side by its sync id).
         _ = try await exporter.backfill()
         XCTAssertEqual(writer.workouts().count, 2)
+    }
+
+    private func insertWorkoutWithPoints(start: Int64 = 1_000, end: Int64 = 1_600) throws -> Int64 {
+        try store.read { db in
+            try db.run(
+                """
+                INSERT INTO workouts (workout_number, start, end, sport_type, sport_name, distance, calories, avg_hr, max_hr, duration, steps, summary_json, complete)
+                VALUES (1, ?, ?, 1, 'Running', 5000, 300, 150, 170, 600, 0, '{}', 1)
+                """,
+                [.int(start), .int(end)]
+            )
+            let id = try db.query("SELECT id FROM workouts WHERE start = ?", [.int(start)]) { $0.int64(0) }[0]
+            let points: [(Int64, Double?, Double?, Double?, Int?)] = [
+                (start + 10, nil, nil, 5, 120), (start + 20, nil, nil, nil, 0), (start + 30, nil, nil, nil, 130),
+                (start + 12, -6.2, 106.8, 12, nil), (start + 25, -6.201, 106.801, nil, nil), (start + 9_999, -6.3, 106.9, nil, nil),
+            ]
+            for p in points {
+                try db.run(
+                    "INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr) VALUES (?, ?, ?, ?, ?, ?)",
+                    [.int(id), .int(p.0), p.1.map { .double($0) } ?? .null, p.2.map { .double($0) } ?? .null, p.3.map { .double($0) } ?? .null, .integer(p.4)]
+                )
+            }
+            return id
+        }
+    }
+
+    func testAWorkoutIsWrittenWithItsHeartRateReadingsAndItsRoute() async throws {
+        _ = try insertWorkoutWithPoints()
+
+        let counts = try await exporter.backfill()
+
+        XCTAssertEqual(counts.workouts, 1)
+        let plan = try XCTUnwrap(writer.workouts().first)
+        XCTAssertEqual(plan.id, "joyofit:workout:1000")
+        XCTAssertEqual(plan.routeId, "joyofit:workout-route:1000")
+        XCTAssertEqual(plan.kind, .running)
+        XCTAssertEqual(plan.heartRate.map(\.timeSec), [1_010, 1_030], "the 0 is no reading")
+        XCTAssertEqual(plan.heartRate.map(\.bpm), [120, 130])
+        XCTAssertEqual(plan.route.map(\.timeSec), [1_012, 1_025], "a position 2.7 hours after the workout is garbage")
+        XCTAssertEqual(plan.route.first?.altitude, 12)
+        XCTAssertNil(plan.route.last?.altitude)
+        XCTAssertEqual(settings.exportedWorkouts, ["1000|1600|300|5000|h3|r3"], "the signature counts the stored points that carry a heart rate and a position")
+    }
+
+    func testWithoutHeartRatePermissionTheWorkoutGoesWithoutReadingsButWithItsRoute() async throws {
+        _ = try insertWorkoutWithPoints()
+        writer.allowed.remove(.heartRate)
+
+        _ = try await exporter.backfill()
+
+        let plan = try XCTUnwrap(writer.workouts().first)
+        XCTAssertTrue(plan.heartRate.isEmpty)
+        XCTAssertEqual(plan.route.count, 2)
+    }
+
+    func testAWorkoutThatGainsARouteAfterItWasExportedIsExportedAgain() async throws {
+        try store.read { db in
+            try db.run(
+                """
+                INSERT INTO workouts (workout_number, start, end, sport_type, sport_name, distance, calories, duration, steps, summary_json, complete)
+                VALUES (1, 1000, 1600, 1, 'Running', 5000, 300, 600, 0, '{}', 1)
+                """
+            )
+        }
+        settings.enabled = true
+        _ = try await exporter.backfill()
+        XCTAssertEqual(writer.workouts().count, 1)
+        XCTAssertTrue(try XCTUnwrap(writer.workouts().first).route.isEmpty)
+
+        // The workout is downloaded again, now with its GPS file.
+        try store.read { db in
+            let id = try db.query("SELECT id FROM workouts") { $0.int64(0) }[0]
+            for (i, lat) in [-6.2, -6.21].enumerated() {
+                try db.run("INSERT INTO workout_points (workout_id, ts, lat, lon) VALUES (?, ?, ?, 106.8)", [.int(id), .int(1_100 + Int64(i)), .double(lat)])
+            }
+        }
+        exporter.onSyncComplete(SyncSummary(from: 0, to: 10, samples: 0, sleep: 0, totalSteps: 0, totalCalories: 0, totalDistance: 0))
+        await eventually("the second write") { writer.workouts().count == 2 }
+        XCTAssertEqual(writer.workouts().last?.route.count, 2)
     }
 
     func testWorkoutWithoutTheTableOrWithoutRowsWritesNothing() async throws {
