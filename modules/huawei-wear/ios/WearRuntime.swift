@@ -44,6 +44,8 @@ public final class WearRuntime: @unchecked Sendable {
     public let linkObservers = LinkObservers()
     /// Find my watch.
     public private(set) var features: PhoneFeatures!
+    /// Alarms, health sensor switches, live heart rate, HRV and stress (the watch settings that are plain protocol commands).
+    public private(set) var watchSettings: WatchSettingsFeatures!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -89,6 +91,8 @@ public final class WearRuntime: @unchecked Sendable {
         controller = BackgroundController(runtime: self, expiring: expiring, clock: clock)
         features = PhoneFeatures(link: link, events: fanOut)
         linkObservers.add(features)
+        watchSettings = WatchSettingsFeatures(handle: { [link] in link?.handle() }, settings: settings, events: fanOut)
+        linkObservers.add(watchSettings)
     }
 
     // MARK: events

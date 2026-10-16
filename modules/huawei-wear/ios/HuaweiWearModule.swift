@@ -264,7 +264,7 @@ public final class HuaweiWearModule: Module {
         Function("getStressStatus") { () -> [String: Any] in Inert.stress() }
         Function("getLiveWorkout") { () -> [String: Any]? in nil }
         Function("getPhoneFeatures") { () -> [String: Any] in runtime.features.status() }
-        Function("getAlarms") { () -> [String: Any] in Inert.alarms() }
+        Function("getAlarms") { () -> [String: Any] in runtime.watchSettings.cachedAlarms() }
         Function("getWeatherStatus") { () -> [String: Any] in Inert.weather() }
         Function("getSafety") { () -> [String: Any] in Inert.safety() }
         Function("testSosRelay") { () -> [String: Any] in Inert.sosRelayTest() }
@@ -289,6 +289,14 @@ public final class HuaweiWearModule: Module {
             if active && runtime.link.deviceInfo() != nil { throw iosUnsupported("setLiveHeartRate") }
         }
         Function("startLiveWorkout") { () throws -> Void in throw iosUnsupported("startLiveWorkout") }
+
+        AsyncFunction("refreshAlarms") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchSettings.refreshAlarms() }
+        }
+
+        AsyncFunction("setAlarms") { (alarms: [String: Any]) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchSettings.setAlarms(try WatchAlarms.fromJS(alarms)) }
+        }
 
         AsyncFunction("findWatch") { (start: Bool) async throws -> Void in
             try await wearCall { try await runtime.features.findWatch(start) }
@@ -315,8 +323,6 @@ public final class HuaweiWearModule: Module {
         rejects("setHealthSensors", [String: Any].self)
         rejects("measureHrv")
         rejects("setAutomaticStress", Bool.self)
-        rejects("refreshAlarms")
-        rejects("setAlarms", [String: Any].self)
         rejects("setWeatherUnit", String.self)
         rejects("setWeatherLocationMode", String.self)
         rejects("setWeatherIntervalMinutes", Int.self)

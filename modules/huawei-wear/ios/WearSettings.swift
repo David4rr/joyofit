@@ -24,6 +24,7 @@ public final class WearSettings: @unchecked Sendable {
         static let profileBirthYear = "profile_birth_year"
         static let profileSex = "profile_sex"
         static let profileGoal = "profile_step_goal"
+        static let alarmsJson = "alarms_json"
     }
 
     public init(defaults: UserDefaults? = nil) {
@@ -78,6 +79,12 @@ public final class WearSettings: @unchecked Sendable {
                 }
             }
         }
+    }
+
+    /// The alarms last read from or pushed to the watch as `WatchAlarms.toJson` (Android `alarmsJson`); nil before the first exchange.
+    public var alarmsJson: String? {
+        get { defaults.string(forKey: Key.alarmsJson) }
+        set { set(newValue, forKey: Key.alarmsJson) }
     }
 
     private func set(_ value: String?, forKey key: String) {
