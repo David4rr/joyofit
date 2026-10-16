@@ -89,7 +89,7 @@ const GROUPS: readonly SettingsGroup[] = [
       },
       {
         title: 'Import from Huawei Health',
-        subtitle: isIos ? 'Android only for now' : 'Bring your Huawei history into JoyoFit, free',
+        subtitle: 'Bring your Huawei history into JoyoFit, free',
         icon: 'cloud-download',
         tint: 'heart',
         href: '/settings/import-huawei',

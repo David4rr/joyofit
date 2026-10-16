@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Input';
-import { IosUnavailable, isIos } from '@/components/IosUnavailable';
+import { isIos } from '@/components/IosUnavailable';
 import { KeyValue } from '@/components/KeyValue';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
@@ -14,27 +14,14 @@ import { radius, spacing, useColors } from '@/theme';
 import type { HuaweiImportSummary } from '@/wear';
 
 const REQUEST_URL = 'privacy.consumer.huawei.com';
+const HEALTH_APP = isIos ? 'Apple Health' : 'Health Connect';
 
 /**
  * One-time import of the history Huawei Health holds in your Huawei account: you ask Huawei for your data, pick the
  * ZIP it sends and the import reads it on the phone. Free. Nothing is uploaded, and the imported days stay on the
- * phone: they are not sent to the cloud, Health Connect or Strava.
+ * phone: they are not sent to the cloud, Apple Health / Health Connect or Strava.
  */
 export function HuaweiImportSection() {
-  if (isIos) {
-    return (
-      <IosUnavailable
-        title="Import from Huawei Health"
-        icon="cloud-download"
-        tint="heart"
-        reason="Importing a Huawei Health export is only available on Android for now."
-      />
-    );
-  }
-  return <AndroidImport />;
-}
-
-function AndroidImport() {
   const { file, password, setPassword, running, progress, summary, error, pick, start, cancel } = useHuaweiImport();
   const ready = file !== null && password.length > 0;
 
@@ -58,7 +45,11 @@ function AndroidImport() {
             Before you unbind the watch from Huawei Health, open Huawei Health and pull down to sync once more. What is
             only on the watch and not yet in your account is lost when you unbind it.
           </Step>
-          <Step n={4}>Download the ZIP, then choose it below and enter the password.</Step>
+          <Step n={4}>
+            {isIos
+              ? 'Download the ZIP (on iPhone it ends up in the Files app), then choose it below and enter the password.'
+              : 'Download the ZIP, then choose it below and enter the password.'}
+          </Step>
         </View>
       </Section>
 
@@ -100,7 +91,7 @@ function AndroidImport() {
         )}
         <AppText variant="caption" muted>
           Data the watch already stored on this phone is never replaced. Importing the same file twice adds nothing the
-          second time. Imported days stay on this phone: they are not uploaded to the cloud, written to Health Connect
+          second time. Imported days stay on this phone: they are not uploaded to the cloud, written to {HEALTH_APP}
           or sent to Strava.
         </AppText>
       </Section>
