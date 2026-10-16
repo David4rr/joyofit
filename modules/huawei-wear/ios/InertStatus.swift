@@ -75,22 +75,6 @@ public enum Inert {
         ]
     }
 
-    /// `DietStatus`: nothing stored, nothing pushed, no watch-logged meals.
-    public static func diet() -> [String: Any] {
-        [
-            "date": NSNull(),
-            "mealCount": NSNull(),
-            "intakeKcal": NSNull(),
-            "goals": NSNull(),
-            "updatedAt": NSNull(),
-            "pushedAt": NSNull(),
-            "lastResult": NSNull(),
-            "unsyncedWatchMeals": 0,
-            "pendingWatchMeals": [Any](),
-            "supported": NSNull(),
-        ]
-    }
-
     /// `BodyMetrics`: nothing stored.
     public static func bodyMetrics() -> [String: Any] {
         [

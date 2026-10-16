@@ -30,7 +30,6 @@ final class InertStatusTests: XCTestCase {
             ["today", "enabled", "periods", "days", "predictions", "averageCycleDays", "averagePeriodDays", "periodOngoing", "daysLate", "switches", "watchConnected", "watchSupported", "watchNote", "easyPregnancySwitch"]
         )
         XCTAssertEqual(keys(Inert.cycle(today: "x", watchConnected: true)["switches"] as! [String: Any]), ["master", "periodStart", "periodEnd", "fertileStart", "fertileEnd", "easyPregnancy"])
-        XCTAssertEqual(keys(Inert.diet()), ["date", "mealCount", "intakeKcal", "goals", "updatedAt", "pushedAt", "lastResult", "unsyncedWatchMeals", "pendingWatchMeals", "supported"])
         XCTAssertEqual(keys(Inert.bodyMetrics()), ["weightKg", "weightTs", "bodyFatPct", "bodyFatTs", "restingKcal", "systolic", "diastolic", "bpTs"])
         XCTAssertEqual(keys(Inert.healthyLiving()), ["supported", "gate", "gateSet", "enabled", "registered", "pingCode", "msgVer", "packageSize", "lastRequestAt", "lastReportAt", "lastReport"])
         XCTAssertEqual(keys(Inert.courses()), ["enabled", "gate41", "gate169", "gate295", "p2p"])
@@ -74,6 +73,24 @@ final class InertStatusTests: XCTestCase {
             "locationPermission": true, "watchSupported": true, "lastPushAt": Int64(1_792_110_700), "lastError": "x", "lastTemperatureC": -3,
             "lastCondition": "LIGHT_RAIN", "lastLocationName": "Bandung",
         ]
+        // The live meals status: nothing stored, and a day with a goal, a watch-logged meal, a push and its result.
+        let diet = DietSync(store: SyncStore(url: temporaryDatabaseURL()), events: events, settings: WearSettings(defaults: ephemeralDefaults()), defaults: ephemeralDefaults())
+        let dietStore = SyncStore(url: temporaryDatabaseURL())
+        let dietDefaults = ephemeralDefaults()
+        dietDefaults.set(1_792_110_700_000, forKey: "pushed_at")
+        dietDefaults.set("sent (set)", forKey: "last_result")
+        try DietStore(dietStore).put(
+            DietDay(
+                date: Inert.today(),
+                meals: [
+                    DietMeal(id: "app-1", eatTime: 1_792_100_000, kcal: 350.5, whichMeal: 10, carbs: 40, protein: 12.5, fat: 9),
+                    DietMeal(id: "watch-1792105000-20-0", eatTime: 1_792_105_000, kcal: 600, whichMeal: 20, src: "watch", synced: false),
+                ],
+                goals: DietGoals(dailyKcal: 2000, deficitKcal: 500, weightInitKg: 70, targetWeightKg: 65, weightManagerType: 1, activityCalGoal: 300),
+                updatedAt: 1_792_110_600_000
+            )
+        )
+        let populatedDiet = DietSync(store: dietStore, events: events, settings: WearSettings(defaults: ephemeralDefaults()), defaults: dietDefaults)
         let shapes: [String: Any] = [
             "PhoneFeatures": Inert.phoneFeatures(),
             "NotificationAccessStatus": Inert.notificationAccess(),
@@ -87,7 +104,8 @@ final class InertStatusTests: XCTestCase {
             "SafetyStatus": Inert.safety(),
             "SosRelayTest": Inert.sosRelayTest(),
             "CycleOverview": Inert.cycle(today: "2026-10-16", watchConnected: false),
-            "DietStatus": Inert.diet(),
+            "DietStatus": diet.status(),
+            "DietStatus#populated": populatedDiet.status(),
             "BodyMetrics": Inert.bodyMetrics(),
             "ActivityGoalsStatus": Inert.activityGoals(dailyStepGoal: nil),
             "HealthyLivingStatus": Inert.healthyLiving(),

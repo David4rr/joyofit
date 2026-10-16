@@ -115,6 +115,7 @@ public final class HuaweiWearModule: Module {
             emit("onUploadResult", ["ok": ok, "fileName": fileName, "code": code, "message": message])
         }
         func faceCustomization(_ payload: [String: Any]) { emit("onFaceCustomization", payload) }
+        func watchMealLogged(_ payload: [String: Any]) { emit("onWatchMealLogged", payload) }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -275,7 +276,7 @@ public final class HuaweiWearModule: Module {
         Function("getAlarms") { () -> [String: Any] in runtime.watchSettings.cachedAlarms() }
         Function("getSafety") { () -> [String: Any] in Inert.safety() }
         Function("testSosRelay") { () -> [String: Any] in Inert.sosRelayTest() }
-        Function("getDietStatus") { () -> [String: Any] in Inert.diet() }
+        Function("getDietStatus") { () -> [String: Any] in runtime.diet.status() }
         Function("getBodyMetrics") { () -> [String: Any] in Inert.bodyMetrics() }
         Function("getActivityGoals") { () -> [String: Any] in Inert.activityGoals(dailyStepGoal: runtime.settings.profile?.dailyStepGoal) }
         Function("getHealthyLiving") { () -> [String: Any] in Inert.healthyLiving() }
@@ -292,7 +293,6 @@ public final class HuaweiWearModule: Module {
         }
         Function("dismissLiveWorkout") { () -> Void in }
         Function("finishLiveWorkout") { () -> Void in }
-        AsyncFunction("markWatchMealsSynced") { (ids: [String]) async throws -> Void in }
         // Realtime heart rate drains the watch: it never outlives the app being on screen.
         AsyncFunction("setLiveHeartRate") { (active: Bool) async throws -> Void in
             runtime.watchSettings.liveHeartRate.setActive(active)
@@ -329,6 +329,23 @@ public final class HuaweiWearModule: Module {
 
         AsyncFunction("findWatch") { (start: Bool) async throws -> Void in
             try await wearCall { try await runtime.features.findWatch(start) }
+        }
+
+        // MARK: meals on the watch's calorie card
+
+        AsyncFunction("setDietDay") { (day: [String: Any]) async throws -> Bool in
+            guard let parsed = DietDayArgument(js: day) else {
+                throw WearException(.invalidArgument, "Each meal of the day must be an object")
+            }
+            return try await wearCall { try await runtime.diet.setDay(date: parsed.date, meals: parsed.meals, goals: parsed.goals) }
+        }
+
+        AsyncFunction("pushDietNow") { () async throws -> Bool in
+            try await wearCall { try await runtime.diet.push("manual", withConfig: true) }
+        }
+
+        AsyncFunction("markWatchMealsSynced") { (ids: [String]) async throws -> Void in
+            try await wearCall { try runtime.diet.markWatchMealsSynced(ids) }
         }
 
         // MARK: weather
@@ -429,8 +446,6 @@ public final class HuaweiWearModule: Module {
         rejects("addPeriod", String.self, String.self)
         rejects("deletePeriod", String.self)
         rejects("logCycleDay", String.self, Int.self, Int.self)
-        rejects("setDietDay", [String: Any].self)
-        rejects("pushDietNow")
         rejects("setBodyMetrics", [String: Any].self)
         rejects("setActivityGoals", [String: Any].self)
         rejects("sendActivityGoals")
