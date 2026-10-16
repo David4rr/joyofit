@@ -9,12 +9,39 @@ import org.json.JSONArray
 /** Re-request this much already-stored history on every sync; upserts make the overlap idempotent. */
 internal const val SYNC_OVERLAP_SEC = 3600L
 
-/** The first sync of a watch (no `last_sync` yet) asks for this much history. */
-internal const val FIRST_SYNC_LOOKBACK_SEC = 7 * 24 * 3600L
+/** One request chain covers at most this much of a long pull, so a full history never becomes a single endless request. */
+internal const val SYNC_SLICE_SEC = 14 * 24 * 3600L
 
-/** Start of the next sync window, unix seconds: 7 days back on the first sync, else 1 h before the last one. */
-internal fun syncWindowStart(lastSyncSec: Long?, nowSec: Long): Long =
-  if (lastSyncSec == null) nowSec - FIRST_SYNC_LOOKBACK_SEC else maxOf(0L, lastSyncSec - SYNC_OVERLAP_SEC)
+/** History older than this is requested as one slice by [syncSlices]. */
+internal const val SYNC_HEAD_SEC = 8 * 7 * 24 * 3600L
+
+/**
+ * Start of the next sync window, unix seconds: 0 (everything the watch still holds) on the first sync, else 1 h before
+ * the last one.
+ */
+internal fun syncWindowStart(lastSyncSec: Long?): Long =
+  if (lastSyncSec == null) 0L else maxOf(0L, lastSyncSec - SYNC_OVERLAP_SEC)
+
+/**
+ * Consecutive `[from, to]` slices from [fromSec] up to [nowSec], oldest first. Everything older than [SYNC_HEAD_SEC]
+ * is one slice (the watch pages it itself, and an empty stretch costs one count request, not hundreds), the recent
+ * part is cut into [SYNC_SLICE_SEC] pieces.
+ */
+internal fun syncSlices(fromSec: Long, nowSec: Long): List<Pair<Long, Long>> {
+  val slices = ArrayList<Pair<Long, Long>>()
+  var start = fromSec
+  val headEnd = nowSec - SYNC_HEAD_SEC
+  if (start < headEnd) {
+    slices.add(start to headEnd)
+    start = headEnd
+  }
+  while (start < nowSec - SYNC_SLICE_SEC) {
+    slices.add(start to start + SYNC_SLICE_SEC)
+    start += SYNC_SLICE_SEC
+  }
+  slices.add(start to nowSec)
+  return slices
+}
 
 /** What one stored sync reports to JS (`SyncSummary` in `HuaweiWear.types.ts`). */
 internal class SyncSummary(
@@ -144,11 +171,12 @@ internal class SyncStore(context: Context) {
              distance = excluded.distance,
              heart_rate = excluded.heart_rate,
              spo2 = excluded.spo2,
-             resting_heart_rate = excluded.resting_heart_rate""",
+             resting_heart_rate = excluded.resting_heart_rate,
+             imported = 0""",
       )
       val segment = db.compileStatement(
         """INSERT INTO sleep_segments (start, end, type, stage) VALUES (?, ?, ?, ?)
-           ON CONFLICT(start, type) DO UPDATE SET end = excluded.end, stage = excluded.stage""",
+           ON CONFLICT(start, type) DO UPDATE SET end = excluded.end, stage = excluded.stage, imported = 0""",
       )
       try {
         for (s in result.samples) {

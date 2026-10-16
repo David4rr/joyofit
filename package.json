@@ -42,6 +42,7 @@
     "android": "expo run:android",
     "prebuild": "expo prebuild -p android",
     "typecheck": "tsc --noEmit",
+    "test": "bun test ./src/",
     "lint": "expo lint",
     "test:native": "cd android && ./gradlew :huawei-wear:testDebugUnitTest",
     "test:ios-protocol": "cd modules/huawei-wear/ios/HuaweiProtocol && swift test",

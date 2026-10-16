@@ -16,13 +16,28 @@ class BackgroundPlanningTest {
   }
 
   @Test
-  fun firstSyncLooksBackSevenDays() {
-    assertEquals(1_000_000L - 7 * 24 * 3600, syncWindowStart(null, 1_000_000L))
+  fun firstSyncAsksForEverythingTheWatchHolds() {
+    assertEquals(0L, syncWindowStart(null))
   }
 
   @Test
   fun laterSyncsOverlapByOneHour() {
-    assertEquals(500_000L - 3600, syncWindowStart(500_000L, 1_000_000L))
-    assertEquals(0L, syncWindowStart(100L, 1_000_000L))
+    assertEquals(500_000L - 3600, syncWindowStart(500_000L))
+    assertEquals(0L, syncWindowStart(100L))
+  }
+
+  @Test
+  fun shortWindowIsOneSlice() {
+    assertEquals(listOf(900_000L to 1_000_000L), syncSlices(900_000L, 1_000_000L))
+  }
+
+  @Test
+  fun longHistoryIsOneHeadSliceThenFortnights() {
+    val now = 100_000_000L
+    val slices = syncSlices(0L, now)
+    assertEquals(0L to now - SYNC_HEAD_SEC, slices.first())
+    assertEquals(now, slices.last().second)
+    for (i in 1 until slices.size) assertEquals(slices[i - 1].second, slices[i].first)
+    assertEquals(true, slices.drop(1).all { it.second - it.first <= SYNC_SLICE_SEC })
   }
 }

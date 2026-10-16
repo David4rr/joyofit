@@ -1,6 +1,7 @@
 import type { WatchMealLoggedEvent } from './HuaweiWearDiet.types';
 import type { UploadProgressEvent, UploadResultEvent } from './HuaweiWearWatchface.types';
 import type { FaceCustomization } from './HuaweiWearFaceCustom.types';
+import type { HuaweiImportProgressEvent } from './HuaweiWearImport.types';
 
 export type LinkState =
   | 'disconnected'
@@ -397,4 +398,6 @@ export type HuaweiWearModuleEvents = {
   onLiveWorkout: (event: LiveWorkout) => void;
   /** Once a second while `measureHrv` or the calibration of `setAutomaticStress` runs. */
   onHrvProgress: (event: HrvProgressEvent) => void;
+  /** While `importHuaweiExport` runs: at most four times a second, then once with `phase: 'done'`. */
+  onHuaweiImportProgress: (event: HuaweiImportProgressEvent) => void;
 };

@@ -93,7 +93,7 @@ class HuaweiWearModule : Module() {
       emit("onHrvProgress", mapOf("secondsLeft" to secondsLeft, "beats" to beats))
     }
 
-    private fun emit(name: String, payload: Map<String, Any?>) {
+    fun emit(name: String, payload: Map<String, Any?>) {
       if (destroyed) return
       try {
         sendEvent(name, payload)
@@ -125,7 +125,7 @@ class HuaweiWearModule : Module() {
     // "play" for the Google Play build, "sideload" otherwise (see Distribution.kt).
     Constant("distribution") { Distribution.name }
 
-    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress")
+    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress")
 
     OnCreate {
       val runtime = runtime()
@@ -185,6 +185,10 @@ class HuaweiWearModule : Module() {
 
     AsyncFunction("syncActivity") Coroutine { ->
       runtime().link.syncActivity().toJs()
+    }
+
+    AsyncFunction("syncFullHistory") Coroutine { ->
+      runtime().link.syncActivity(fullHistory = true).toJs()
     }
 
     AsyncFunction("forgetDevice") { address: String ->
@@ -277,6 +281,9 @@ class HuaweiWearModule : Module() {
 
     // Health Connect export: status, permission request, enable + backfill (HealthConnectModuleApi.kt).
     healthConnectApi { runtime() }
+
+    // One-time import of the Huawei Privacy Centre health export (HuaweiImportModuleApi.kt).
+    huaweiImportApi({ runtime() }) { name, payload -> listener.emit(name, payload) }
 
     // Weather: settings, status, refresh (WeatherModuleApi.kt).
     weatherApi { runtime() }

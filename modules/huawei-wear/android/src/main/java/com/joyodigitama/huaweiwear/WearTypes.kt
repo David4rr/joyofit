@@ -57,6 +57,12 @@ internal object ErrorCodes {
 
   /** The watch answered the automatic-stress switch with an error code. */
   const val STRESS_REJECTED = "ERR_STRESS_REJECTED"
+
+  /** The Huawei export ZIP asked for a password and the one given did not open it. */
+  const val IMPORT_PASSWORD = "ERR_IMPORT_PASSWORD"
+
+  /** The file is not a readable ZIP, or has none of the Health data folders of a Huawei export. */
+  const val IMPORT_FORMAT = "ERR_IMPORT_FORMAT"
 }
 
 /** Every failure surfaced to JS is a [CodedException] with one of [ErrorCodes]. */

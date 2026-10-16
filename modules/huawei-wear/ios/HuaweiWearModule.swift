@@ -436,6 +436,7 @@ public final class HuaweiWearModule: Module {
         rejects("sendActivityGoals")
         rejects("pushHealthyLiving")
         rejects("pushRunningCourse", [String: Any].self)
+        rejects("syncFullHistory")
     }
 }
 

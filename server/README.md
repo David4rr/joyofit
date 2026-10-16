@@ -28,6 +28,12 @@ a guess. Deploy JoyoRogo with `fitness.cloudAccess` before this Worker.
 | `GET /v1/sync?since=<rev>&limit=<n>` | Pull for other devices: rows changed after `since`, oldest change first, across all tables (`limit` ≤ 1 000, workouts ≤ 25 per page). Answers the four arrays plus `cursor` (the next `since`) and `hasMore`. |
 | `POST /v1/imports?filename=<name>` | The request body is the file, streamed straight into R2 at `imports/<userId>/<uuid>` (needs `Content-Length`, at most `MAX_IMPORT_BYTES`, default 100 MiB). Records an `imports` row (`uploading` → `uploaded`, or `failed`). Answers `201 {id, status, size, ...}`. |
 | `GET /v1/imports` | The caller's 50 newest imports. |
+| `GET /v1/strava`, `GET /v1/strava/authorize`, `POST /v1/strava/token`, `POST /v1/strava/disconnect` | Strava connection of the signed-in user, **free (no Pro gate)**: status, authorize URL (scope `activity:write`), a fresh short-lived access token (refreshed here; the refresh token and client secret never reach the phone), revoke + delete. Table `strava_connection` ([`migrations/0002_strava.sql`](migrations/0002_strava.sql)). |
+| `GET /strava/callback`, `GET\|POST /strava/webhook` | Public, called by Strava: the OAuth redirect (stores tokens, redirects to `joyofit://settings/strava`) and the webhook (subscription validation; a deauthorization event deletes that athlete's tokens). |
+
+Strava needs the `STRAVA_CLIENT_ID` var (in `wrangler.jsonc`) and two secrets, `STRAVA_CLIENT_SECRET` and
+`STRAVA_WEBHOOK_VERIFY_TOKEN`; without the client secret the Strava routes answer `503 strava_not_configured`. Owner setup
+(callback domain, webhook registration, review): [`../docs/strava.md`](../docs/strava.md).
 
 `rev` is a per-user change counter: each row a request creates or changes gets its own increasing value,
 which is what `since` filters on. D1 schema: [`migrations/0001_init.sql`](migrations/0001_init.sql)

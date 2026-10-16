@@ -36,6 +36,7 @@ import type { WatchfaceInstallResult, WatchfaceList } from './HuaweiWearWatchfac
 import type { FaceApplyResult, FaceCustomization } from './HuaweiWearFaceCustom.types';
 import type { PhotoFace } from './HuaweiWearPhotoFace.types';
 import type { CoursesStatus, HealthyLivingStatus, RunningCourse, RunningCoursePushResult } from './HuaweiWearP2p.types';
+import type { HuaweiImportSummary } from './HuaweiWearImport.types';
 
 declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   /**
@@ -65,12 +66,30 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   getSupportReport(): Promise<SupportReport>;
   refreshBattery(): Promise<number>;
   /**
-   * Pulls sleep, steps and today's totals since the last stored sync (7 days on the first sync,
-   * otherwise 1 h before `device.last_sync`), writes them to the database and resolves with a summary.
+   * Pulls sleep, steps and today's totals since the last stored sync (everything the watch still holds on the first
+   * sync, otherwise 1 h before `device.last_sync`), writes them to the database and resolves with a summary.
    */
   syncActivity(): Promise<SyncSummary>;
+  /**
+   * Android only. Pulls everything the watch still holds (activity, sleep, night HRV, workouts) again, regardless of
+   * `device.last_sync`. Rows already stored are upserted, so only what is missing is added.
+   */
+  syncFullHistory(): Promise<SyncSummary>;
   /** Drops the stored auth key / fake identity so the next connect performs a first-time bind. */
   forgetDevice(address: string): Promise<void>;
+
+  /**
+   * Android only. One-time import of the history in a Huawei Privacy Centre "Request Your Data - Health" ZIP, read on the
+   * phone and written to the database; nothing is sent anywhere. `uri` is a `content://` or `file://` URI of the ZIP,
+   * `password` the one set when the data was requested (it is held in memory for the run only). Progress arrives as
+   * `onHuaweiImportProgress`. Watch data already on the phone is never overwritten and importing the same file again adds
+   * nothing; imported rows carry `imported = 1` and stay out of the cloud upload, Health Connect and Strava. Rejects with
+   * ERR_IMPORT_PASSWORD (wrong or missing password), ERR_IMPORT_FORMAT (not a ZIP, or no Health data folders), ERR_BUSY
+   * (an import is running) or ERR_STORAGE.
+   */
+  importHuaweiExport(uri: string, password: string): Promise<HuaweiImportSummary>;
+  /** Stops a running import between two records; the promise resolves with `cancelled: true`. Rows written so far stay. */
+  cancelHuaweiImport(): void;
 
   /**
    * Starts the foreground service for `address` (auto-connect, auto-reconnect, periodic sync), or

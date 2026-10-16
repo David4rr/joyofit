@@ -158,12 +158,14 @@ class NightHrvTest {
   @Test
   fun windowStartReachesBackFromTheLastNight() {
     val now = 1_000_000_000L
-    assertEquals(now - 7 * 24 * 3600, NightHrv.windowStart(null, now))
+    // No stored night, or a full pull: everything the watch holds.
+    assertEquals(946684800L, NightHrv.windowStart(null, now))
+    assertEquals(946684800L, NightHrv.windowStart(now - 8 * 3600, now, fullHistory = true))
     // Last night ended 8 h ago: still ask for 48 h so the whole night is inside the window.
     assertEquals(now - 48 * 3600, NightHrv.windowStart(now - 8 * 3600, now))
     // Last stored night is 4 days old: 12 h before its end.
     assertEquals(now - 4 * 24 * 3600 - 12 * 3600, NightHrv.windowStart(now - 4 * 24 * 3600, now))
-    // Older than a week: never more than 7 days.
-    assertEquals(now - 7 * 24 * 3600, NightHrv.windowStart(now - 30 * 24 * 3600, now))
+    // Older than a week: no cap, 12 h before its end.
+    assertEquals(now - 30 * 24 * 3600 - 12 * 3600, NightHrv.windowStart(now - 30 * 24 * 3600, now))
   }
 }

@@ -74,10 +74,12 @@ internal class ActivitySync(
 ) {
   private val params get() = session.params
 
-  suspend fun sync(fromSec: Long): SyncResult {
+  /** Pulls `[fromSec, toSec]`; `toSec` defaults to now. A 0 `fromSec` means everything the watch still holds. */
+  suspend fun sync(fromSec: Long, toSec: Long? = null): SyncResult {
     // "Some bands don't work with zero timestamp, so starting later" (GB: 01/01/2000).
     val start = if (fromSec <= 0L) MIN_START_SEC else minOf(fromSec, Int.MAX_VALUE.toLong())
-    val end = (System.currentTimeMillis() / 1000).toInt()
+    val now = (System.currentTimeMillis() / 1000).toInt()
+    val end = if (toSec == null) now else minOf(toSec, now.toLong()).toInt()
     events.log(LogDirection.INFO, null, null, null, "Sync: from=$start to=$end")
 
     val frameSleep = fetchSleep(start.toInt(), end)
@@ -85,12 +87,13 @@ internal class ActivitySync(
 
     // GetFitnessTotalsRequest. The Fit 4 can answer without the 0x81 container; then today's
     // totals are summed from the synced per-minute samples since local midnight.
-    val totals = skippable("FitnessTotals") {
+    // Only the window that reaches today needs the watch's totals; older slices of a history pull skip the request.
+    val midnight = java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toEpochSecond()
+    val totals = if (end < midnight) null else skippable("FitnessTotals") {
       session
         .request(FitnessData.FitnessTotals.Request(params), Timeouts.SYNC_COUNT_MS, "FitnessTotals")
         .expect<FitnessData.FitnessTotals.Response>("FitnessTotals")
     }
-    val midnight = java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toEpochSecond()
     val today = samples.filter { it.timestamp >= midnight }
     val totalSteps = totals?.totalSteps ?: today.sumOf { it.steps }
     val totalCalories = totals?.totalCalories ?: (today.sumOf { it.calories } / 1000)

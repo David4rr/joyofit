@@ -7,11 +7,17 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "routes": [{ "pattern": "api.fit.joyorogo.com", "custom_domain": true }],
+  // Kept on so already-installed builds that call the workers.dev host keep working.
+  "workers_dev": true,
   "vars": {
     // JoyoRogo's better-auth origin. Sessions are verified against `${JOYOROGO_AUTH_URL}/api/auth/get-session`.
     "JOYOROGO_AUTH_URL": "https://api.joyorogo.com",
     // Largest accepted POST /v1/imports body, in bytes (100 MiB).
-    "MAX_IMPORT_BYTES": "104857600"
+    "MAX_IMPORT_BYTES": "104857600",
+    // JoyoFit's own Strava API application (client id is public). The matching STRAVA_CLIENT_SECRET and
+    // STRAVA_WEBHOOK_VERIFY_TOKEN are Worker secrets: `bunx wrangler secret put <NAME>`.
+    "STRAVA_CLIENT_ID": "287873"
   },
   "d1_databases": [
     {

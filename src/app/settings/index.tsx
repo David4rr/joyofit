@@ -81,6 +81,20 @@ const GROUPS: readonly SettingsGroup[] = [
         href: '/settings/health',
       },
       {
+        title: 'Strava',
+        subtitle: 'Send watch workouts to Strava, free',
+        icon: 'fitness',
+        tint: 'workouts',
+        href: '/settings/strava',
+      },
+      {
+        title: 'Import from Huawei Health',
+        subtitle: isIos ? 'Android only for now' : 'Bring your Huawei history into JoyoFit, free',
+        icon: 'cloud-download',
+        tint: 'heart',
+        href: '/settings/import-huawei',
+      },
+      {
         title: 'Profile and goal',
         subtitle: 'Height, weight, daily step goal',
         icon: 'person',

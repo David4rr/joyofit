@@ -102,7 +102,8 @@ internal object NightHrv {
   /** Header of a version 3 file; records of 66 bytes follow (GB `parseRri`). */
   const val HEADER_BYTES = 48
 
-  private const val FIRST_WINDOW_SEC = 7 * 24 * 3600L
+  /** The file window of a first or full pull starts here (2000-01-01), as the activity sync does for a 0 start. */
+  private const val MIN_START_SEC = 946684800L
   private const val MIN_WINDOW_SEC = 48 * 3600L
   private const val REWIND_SEC = 12 * 3600L
 
@@ -127,13 +128,13 @@ internal object NightHrv {
   }
 
   /**
-   * Start of the file window: a week back when no night was stored yet, else 12 h before the last stored night's end,
-   * but never later than 48 h ago, so a night that ended yesterday morning is still fully inside it.
+   * Start of the file window: the start of everything the watch holds when no night was stored yet or [fullHistory] asks
+   * for it, else 12 h before the last stored night's end, but never later than 48 h ago, so a night that ended yesterday
+   * morning is still fully inside it.
    */
-  fun windowStart(lastNightEndSec: Long?, nowSec: Long): Long {
-    val earliest = nowSec - FIRST_WINDOW_SEC
-    if (lastNightEndSec == null) return earliest
-    return maxOf(earliest, minOf(nowSec - MIN_WINDOW_SEC, lastNightEndSec - REWIND_SEC))
+  fun windowStart(lastNightEndSec: Long?, nowSec: Long, fullHistory: Boolean = false): Long {
+    if (fullHistory || lastNightEndSec == null) return MIN_START_SEC
+    return minOf(nowSec - MIN_WINDOW_SEC, lastNightEndSec - REWIND_SEC)
   }
 
   /**
@@ -206,7 +207,7 @@ internal class NightHrvSync(
 ) {
   private val downloader = FileDownloader(session, events)
 
-  suspend fun sync(nowSec: Long) {
+  suspend fun sync(nowSec: Long, fullHistory: Boolean = false) {
     val autoStress = DeviceCaps.supports(NightHrv.GATE_SERVICE, NightHrv.GATE_COMMAND)
     val newSync = DeviceCaps.rriNewSync
     log(
@@ -225,7 +226,7 @@ internal class NightHrvSync(
         }
       }
     }
-    val from = NightHrv.windowStart(lastEnd, nowSec)
+    val from = NightHrv.windowStart(lastEnd, nowSec, fullHistory)
     val request = FileRequest.rri(newSync, from.toInt(), nowSec.toInt())
     log("Night HRV: requesting $request (last stored night ends ${lastEnd ?: "never"})")
     val data = try {

@@ -8,6 +8,7 @@ import type { AppContext } from "./env";
 import { imports } from "./imports";
 import { MAX_SYNC_BODY_BYTES, PULL_DEFAULT_LIMIT, PULL_MAX_LIMIT } from "./limits";
 import { syncBodySchema } from "./schemas";
+import { strava, stravaPublic } from "./strava";
 import { applySync, pullSync } from "./sync";
 
 const app = new Hono<AppContext>();
@@ -85,7 +86,9 @@ v1.get("/sync", async (c) => {
 });
 
 v1.route("/imports", imports);
+v1.route("/strava", strava);
 app.route("/v1", v1);
+app.route("/strava", stravaPublic);
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 

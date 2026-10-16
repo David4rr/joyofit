@@ -28,3 +28,11 @@ export const IMPORT_LIST_LIMIT = 50;
  */
 export const ACCESS_CACHE_TTL_MS = 60_000;
 export const ACCESS_LOCKED_CACHE_TTL_MS = 10_000;
+
+/** The one Strava scope JoyoFit asks for: create uploads (and edit what it uploaded). */
+export const STRAVA_REQUIRED_SCOPE = "activity:write";
+/** A token that expires within this many seconds is refreshed before it is handed to the phone. */
+export const STRAVA_REFRESH_MARGIN_S = 600;
+/** How long the signed `state` of a Strava authorization stays valid. */
+export const STRAVA_STATE_TTL_S = 600;
+export const STRAVA_TIMEOUT_MS = 5_000;

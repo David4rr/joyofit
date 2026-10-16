@@ -24,6 +24,12 @@ export const upstream = {
   accessFailWith: null as number | null,
 };
 
+/** What the fake Strava saw, and how it answers: set `handler` per test; it receives the URL and the request init. */
+export const stravaUpstream = {
+  calls: [] as { url: string; method: string; headers: Headers; body: string }[],
+  handler: null as ((url: string, init: RequestInit) => Response) | null,
+};
+
 let counter = 0;
 /** Registers a user and returns the Cookie header the app would send for them. Founder unless `founder` is false. */
 export function signUp(name: string, { founder = true }: { founder?: boolean } = {}): { user: FakeUser; cookie: string } {
@@ -68,7 +74,19 @@ beforeEach(() => {
   upstream.calls = [];
   upstream.failWith = null;
   upstream.accessFailWith = null;
+  stravaUpstream.calls = [];
+  stravaUpstream.handler = null;
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input).startsWith("https://www.strava.com/")) {
+      stravaUpstream.calls.push({
+        url: String(input),
+        method: init?.method ?? "GET",
+        headers: new Headers(init?.headers),
+        body: String(init?.body ?? ""),
+      });
+      if (!stravaUpstream.handler) throw new Error(`unexpected Strava call: ${String(input)}`);
+      return stravaUpstream.handler(String(input), init ?? {});
+    }
     const headers = new Headers(init?.headers);
     upstream.calls.push({ url: String(input), cookie: headers.get("cookie") });
     return fakeJoyorogo(String(input), headers.get("cookie"));

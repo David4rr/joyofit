@@ -412,10 +412,12 @@ internal class WearLink(
   }
 
   /**
-   * Pulls sleep, steps and totals since the last stored sync, commits them to the shared database
-   * and reports a summary (also as `onSyncComplete`).
+   * Pulls sleep, steps and totals since the last stored sync (everything the watch holds on the first sync), commits
+   * them to the shared database slice by slice and reports a summary (also as `onSyncComplete`). [fullHistory] pulls
+   * everything again; stored rows upsert, so it only adds what is missing. Logs a `History:` summary with the oldest
+   * stored timestamps (logcat tag `JoyoFit`) so the watch's real retention can be read off it.
    */
-  suspend fun syncActivity(): SyncSummary {
+  suspend fun syncActivity(fullHistory: Boolean = false): SyncSummary {
     val connection = requireConnected()
     if (state == LinkState.SYNCING) {
       throw WearException(ErrorCodes.BUSY, "A sync is already running")
@@ -429,12 +431,51 @@ internal class WearLink(
       }
       events.state(LinkState.SYNCING, null)
       try {
-        val last = storage { syncStore.lastSync(connection.address) }
-        val from = syncWindowStart(last, System.currentTimeMillis() / 1000)
-        val result = ActivitySync(connection.session, events).sync(from)
-        val stored = storage { syncStore.save(connection.address, result) }
-        val summary = stored.withWorkouts(syncWorkouts(connection))
-        syncNightHrv(connection)
+        val last = if (fullHistory) null else storage { syncStore.lastSync(connection.address) }
+        val nowSec = System.currentTimeMillis() / 1000
+        val slices = syncSlices(syncWindowStart(last), nowSec)
+        events.log(LogDirection.INFO, null, null, null, "History: ${if (fullHistory) "full" else "incremental"} pull in ${slices.size} slices from ${slices.first().first}")
+        var stored: SyncSummary? = null
+        var samples = 0
+        var sleep = 0
+        var oldestSample: Long? = null
+        var oldestSleep: Long? = null
+        for ((index, slice) in slices.withIndex()) {
+          val result = ActivitySync(connection.session, events).sync(slice.first, slice.second)
+          val slicePart = storage { syncStore.save(connection.address, result) }
+          samples += slicePart.samples
+          sleep += slicePart.sleep
+          result.samples.minOfOrNull { it.timestamp }?.let { oldestSample = minOf(oldestSample ?: it, it) }
+          result.sleep.minOfOrNull { it.start }?.let { oldestSleep = minOf(oldestSleep ?: it, it) }
+          events.log(
+            LogDirection.INFO, null, null, null,
+            "History: slice ${index + 1}/${slices.size} ${slice.first}..${slice.second}: ${slicePart.samples} step samples, ${slicePart.sleep} sleep segments",
+          )
+          stored = slicePart
+        }
+        val finalSlice = stored!!
+        val workoutsSynced = syncWorkouts(connection, fullHistory)
+        val summary = SyncSummary(
+          from = slices.first().first,
+          to = finalSlice.to,
+          samples = samples,
+          sleep = sleep,
+          totalSteps = finalSlice.totalSteps,
+          totalCalories = finalSlice.totalCalories,
+          totalDistance = finalSlice.totalDistance,
+          workouts = workoutsSynced,
+        )
+        val oldestWorkout = storage {
+          syncStore.read { db ->
+            db.rawQuery("SELECT MIN(start) FROM workouts", null).use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null }
+          }
+        }
+        events.log(
+          LogDirection.INFO, null, null, null,
+          "History: summary oldest step sample ${oldestSample ?: "none"}, oldest sleep ${oldestSleep ?: "none"}, " +
+            "oldest stored workout ${oldestWorkout ?: "none"}; $samples step samples, $sleep sleep segments, $workoutsSynced workouts written",
+        )
+        syncNightHrv(connection, fullHistory)
         postMorningSummary()
         for (extension in syncExtensions) {
           try {
@@ -477,12 +518,12 @@ internal class WearLink(
    * Workout sessions and their GPS tracks, after the activity data is stored. Whatever fails here is logged and
    * does not fail the sync: the steps, sleep and totals are already committed.
    */
-  private suspend fun syncWorkouts(connection: Connection): Int {
+  private suspend fun syncWorkouts(connection: Connection, fullHistory: Boolean): Int {
     val workouts = WorkoutStore(syncStore)
     val sync = WorkoutSync(connection.session, events)
     try {
       val now = (System.currentTimeMillis() / 1000).toInt()
-      sync.sync(workouts.syncStart(), now, workouts)
+      sync.sync(workouts.syncStart(fullHistory), now, workouts)
     } catch (e: CancellationException) {
       throw e
     } catch (e: Exception) {
@@ -507,9 +548,9 @@ internal class WearLink(
    * Nightly HRV from the watch's stress records, after the sleep is stored. Whatever fails here is logged and does not fail
    * the sync; only a lost link ends it.
    */
-  private suspend fun syncNightHrv(connection: Connection) {
+  private suspend fun syncNightHrv(connection: Connection, fullHistory: Boolean) {
     try {
-      NightHrvSync(connection.session, events, syncStore).sync(System.currentTimeMillis() / 1000)
+      NightHrvSync(connection.session, events, syncStore).sync(System.currentTimeMillis() / 1000, fullHistory)
     } catch (e: CancellationException) {
       throw e
     } catch (e: WearException) {

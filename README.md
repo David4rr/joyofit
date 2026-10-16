@@ -162,6 +162,23 @@ Sync results are written to the database by native code, so data accumulates whi
   runs but its notification is hidden.
 - Battery optimisation: if your phone kills the service, exempt JoyoFit from battery restrictions.
 
+### Watch history and how long the watch keeps it
+
+The first sync after binding pulls everything the watch still holds (steps and heart rate, sleep, night HRV, workouts), not a fixed week. The
+pull is cut into slices (everything older than 8 weeks as one, then 14 days at a time) and each slice is committed on its own, so a cut-off
+pull resumes from the last finished slice. Later syncs only fetch what is new. **Settings → Background and sync → Fetch all history from
+watch** (Android) runs the full pull again; rows already stored are upserted by timestamp, so only what is missing is added.
+
+To read how far back the watch actually reaches, run a sync and read the `History:` lines (logcat tag `JoyoFit`):
+
+```
+adb logcat -d -s JoyoFit:V | grep "History:"
+```
+
+`History: summary oldest step sample <unix s>, oldest sleep <unix s>, oldest stored workout <unix s>; N step samples, ...` is the retention:
+convert with `date -d @<unix s>`. Per-slice counts are logged as `History: slice i/n from..to`. The watch's step, sleep and workout counts per
+request are in the neighbouring `Sync:`, `StepDataCount` and `Workout` lines.
+
 ### Notifications
 
 In Settings, grant **notification access** (on Android 13+ a sideloaded app must first be allowed
@@ -357,8 +374,8 @@ The export needs Health Connect: built into Android 14+, a Play Store app on And
 
 Settings → Health & cloud → **Cloud** signs in with your **JoyoRogo account** and uploads the local database to a
 separate Cloudflare Worker you deploy yourself ([`server/`](server/README.md): Hono, D1, R2). Upload only: the
-app does not read from the cloud yet, and the Huawei-export importer is not written (the server already
-has `POST /v1/imports`, which stores a raw file in R2 and records an `imports` row for it).
+app does not read from the cloud yet. The Huawei history import (below) runs on the phone and does not use the server's
+`POST /v1/imports` endpoint; imported rows are never uploaded.
 
 Uploading is a **JoyoRogo Pro** benefit. The Worker asks JoyoRogo (`fitness.cloudAccess`, with your session) and
 answers `402` with `paywall: true` to accounts that are not Pro; JoyoRogo servers without a paywall (self-host)
@@ -401,6 +418,73 @@ flowchart LR
   overlap of each watch sync cost nothing. A workout is replaced as a whole with its points; a track over
   30 000 points is thinned evenly before upload.
 - **Not synced:** deletions, the profile, alarms and settings.
+
+## Strava
+
+Settings → **Strava** sends watch workouts to the wearer's own Strava account. It is **free**: no JoyoRogo Pro, no gate
+in the Worker. It does need the JoyoRogo sign-in, because the Worker (`server/src/strava.ts`) keeps the Strava tokens
+and the client secret against that account; the phone only ever receives the short-lived access token.
+
+- **Connect.** The **Connect with Strava** button (Strava's official artwork, `assets/strava/`) asks the Worker for the
+  `oauth/mobile/authorize` URL (scope `activity:write`), opens it in the browser, and Strava redirects to the Worker's
+  `/strava/callback`, which exchanges the code and redirects to `joyofit://settings/strava`. **Disconnect** revokes the
+  grant at Strava (`oauth/revoke`) and deletes the stored tokens. If the athlete removes JoyoFit on strava.com, Strava's
+  deauthorization webhook makes the Worker delete the tokens too.
+- **What is uploaded.** A TCX built on the phone from `workouts` + `workout_points` (`src/features/strava/tcx.ts`): every
+  sample from start to end (GPS and heart-rate-only), a cumulative distance scaled to the watch's total, the watch's
+  calories, heart rate and a mapped `sport_type`. Strava then keeps the watch's distance and calories. The upload goes
+  straight from the phone to `https://www.strava.com/api/v3/uploads` with `external_id = joyofit-<workout start>`, so a
+  workout can never be created twice. Per-workout state is in `strava_upload` (`processing`, `done`, `failed`,
+  `rejected`).
+- **When.** Workouts that **end after the account connected** are sent after each sync; Huawei-export imports and
+  history are never sent automatically. **Send to Strava** on a workout's screen sends any workout, and **View on
+  Strava** links to the activity.
+- **Description.** Off by default: **Add fit.joyorogo.com to the description** puts that text (plain, never the title)
+  in the activity description.
+- **Strava's API Agreement.** Strava data is never read back, stored, or used for analytics or AI; the Worker keeps only
+  the athlete id and tokens. Owner setup and the Strava review checklist: [`docs/strava.md`](docs/strava.md).
+
+## Import from Huawei Health (Settings → Import from Huawei Health, Android, free)
+
+A one-time import of the history Huawei Health holds in your Huawei account, so you do not start from an empty
+JoyoFit after switching. It reads Huawei's own **Privacy Centre export**, on the phone, and calls no Huawei server.
+
+1. At `privacy.consumer.huawei.com` (or Huawei Health → Me → your account → Privacy Center) choose **Request Your Data**,
+   tick **Health**, set a **ZIP password**, and wait for the email (up to 7 days; the link works 21 days).
+2. Before unbinding the watch from Huawei Health, sync it there once more (data only on the watch is lost on unbind).
+3. In JoyoFit pick the ZIP, type the password (kept in memory only), tap **Import**.
+
+What is read (`HuaweiExportImporter.kt` and the parsers beside it; the file is streamed, one bad record is skipped and
+counted, never fatal):
+
+| Huawei export | JoyoFit |
+| --- | --- |
+| `Health detail data`: `DATA_POINT_DYNAMIC_HEARTRATE` | `step_samples.heart_rate` of that minute |
+| `DATA_POINT_REST_HEARTRATE`, `DATA_POINT_NEW_REST_HEARTRATE` | `step_samples.resting_heart_rate` |
+| `BLOOD_OXYGEN_SATURATION` (`avgSaturation`) | `step_samples.spo2` |
+| `PROFESSIONAL_SLEEP_SHALLOW`/`DEEP`/`DREAM`/`WAKE`/`NOON` | `sleep_segments` (raw kinds 0x06, 0x07, 0x5656, 0x5658, 0x5659) |
+| `STRESS_DATA` (`score`) | `health_metrics` type `emotion` |
+| `Sport per minute merged data`: `steps`, `distance` | `step_samples.steps` / `distance` (largest value per minute) |
+| `Motion path detail data`: one object per workout, `attribute` track (`lbs` GPS, `h-r` heart rate, `alti` altitude) | `workouts` (`complete = 1`) and `workout_points` |
+
+Not imported: per-minute calories (the scale differs by firmware, so imported minutes keep `calories = 0`), weight and
+body composition, exercise intensity, water, anything else. Workout calories are imported (kcal; a total that cannot be
+kcal is read as small calories and divided by 1000). Only sport ids 3 (cycling), 4 (running) and 5 (walking) are named;
+other workouts import as unnamed workouts with the Huawei id in `summary_json`.
+
+How imported data is kept apart: migration `imported` adds `imported INTEGER NOT NULL DEFAULT 0` to `step_samples`,
+`sleep_segments` and `workouts`; the importer inserts with `imported = 1`.
+
+- **Watch data wins.** Nothing existing is replaced. A minute the watch stored only gets heart rate, SpO2 and resting heart
+  rate filled in where they are NULL; sleep segments that overlap a watch-synced one and workouts starting within two
+  minutes of an existing one are skipped. The same export imported twice adds nothing.
+- **No upload burst, no Health Connect, no Strava.** The cloud upload (`src/db/cloud.ts`), the Health Connect exporter
+  and the Strava upload read `imported = 0` only. The watch's own sync sets `imported = 0` again on any row it writes, so
+  a minute, sleep segment or workout the watch later syncs travels like a watch row. `WorkoutStore.syncStart` ignores
+  imported workouts when it decides what to ask the watch for.
+
+The format is undocumented and was written from what community converters report (`NOTICE` credits them); it has not
+been checked against a real export yet. The first real file may need field-name or scale adjustments.
 
 ## Where data lives
 

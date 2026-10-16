@@ -43,6 +43,8 @@ export interface WatchContextValue {
   forget: (address: string) => Promise<void>;
   refreshBattery: () => Promise<void>;
   sync: () => Promise<void>;
+  /** Android only: pulls everything the watch still holds again; rows already stored are kept. */
+  syncFullHistory: () => Promise<void>;
 }
 
 const WatchContext = createContext<WatchContextValue | null>(null);
@@ -172,18 +174,24 @@ export function WatchProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const sync = useCallback(async () => {
-    if (!device || syncing.current) return;
-    syncing.current = true;
-    setError(null);
-    try {
-      applySummary(await HuaweiWear.syncActivity());
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      syncing.current = false;
-    }
-  }, [device, applySummary]);
+  const runSync = useCallback(
+    async (pull: () => Promise<SyncSummary>) => {
+      if (!device || syncing.current) return;
+      syncing.current = true;
+      setError(null);
+      try {
+        applySummary(await pull());
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        syncing.current = false;
+      }
+    },
+    [device, applySummary],
+  );
+
+  const sync = useCallback(() => runSync(() => HuaweiWear.syncActivity()), [runSync]);
+  const syncFullHistory = useCallback(() => runSync(() => HuaweiWear.syncFullHistory()), [runSync]);
 
   const value = useMemo<WatchContextValue>(
     () => ({
@@ -200,6 +208,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       forget,
       refreshBattery,
       sync,
+      syncFullHistory,
     }),
     [
       linkState,
@@ -215,6 +224,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       forget,
       refreshBattery,
       sync,
+      syncFullHistory,
     ],
   );
 

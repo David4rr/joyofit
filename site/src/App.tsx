@@ -58,7 +58,7 @@ import { PRIVASI_PATH, PrivasiPage } from "./Privasi";
 import { ButtonLink, GithubMark, Phone, Ring } from "./ui";
 
 /** Harga paket Founder JoyoRogo, sama dengan joyorogo.com/harga (api.joyorogo.com/api/config). */
-const PRICE = { monthly: "Rp15.000", yearly: "Rp150.000" };
+const PRICE = { monthly: "Rp15.000", yearly: "Rp199.000" };
 
 const FACTS = [
   { value: `${JAM_BISA_DICOBA} model`, label: "jam dan band Huawei dan Honor bisa dicoba", href: "/jam" },
@@ -953,6 +953,12 @@ function Options() {
                 </li>
               ))}
             </ul>
+            <p className="mt-3 flex items-center gap-2 text-sm">
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                Segera
+              </span>
+              Gratis: olahraga otomatis terkirim ke Strava
+            </p>
             <div className="mt-auto pt-6">
               <ButtonLink variant="secondary" className="w-full" href={GITHUB_URL} target="_blank" rel="noopener">
                 <GithubMark className="size-4" />
@@ -1002,7 +1008,7 @@ function Options() {
             <p className="mt-3 text-4xl font-extrabold tracking-tight tabular-nums">{PRICE.monthly}</p>
             <p className="text-sm text-muted-foreground">per bulan</p>
             <p className="mt-0.5 text-xs font-semibold text-makan-ink">
-              atau {PRICE.yearly}/tahun, hemat 2 bulan
+              atau {PRICE.yearly}/tahun (~Rp16.600/bulan), lebih hemat dari Rp29.000/bulan setelah promo
             </p>
             <ul className="mt-5 space-y-2.5 text-sm">
               {[
@@ -1016,12 +1022,6 @@ function Options() {
                 </li>
               ))}
             </ul>
-            <p className="mt-3 flex items-center gap-2 text-sm">
-              <span className="rounded-full bg-card px-2 py-0.5 text-xs font-bold text-makan-ink">
-                Segera
-              </span>
-              Olahraga otomatis terkirim ke Strava
-            </p>
             <div className="mt-auto pt-6">
               <ButtonLink className="w-full" href={HARGA_URL} {...goal("founder_cta_click", "cara")}>
                 Langganan JoyoRogo Premium

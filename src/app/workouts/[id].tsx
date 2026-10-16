@@ -22,6 +22,7 @@ import { BurnFigure, FuelBar } from '@/features/live/FuelBar';
 import { formatGrams } from '@/features/live/liveWorkout';
 import { startOfLocalDay } from '@/features/today/stats';
 import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/strain';
+import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
 import { HeartRateChart } from '@/features/workouts/HeartRateChart';
 import { RouteView } from '@/features/workouts/RouteView';
 import { sportIcon } from '@/features/workouts/sportIcon';
@@ -269,6 +270,8 @@ export default function WorkoutDetailScreen() {
           </AppText>
         </Section>
       ) : null}
+
+      <StravaWorkoutSection workout={workout} />
 
       <Section title="Details" icon="list">
         <KeyValue

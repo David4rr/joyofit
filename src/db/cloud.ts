@@ -58,13 +58,16 @@ export async function resetCloudCursors(db: SQLiteDatabase): Promise<void> {
   await db.runAsync('UPDATE cloud_cursor SET uploaded = 0');
 }
 
-/** Rows written locally that the cloud does not have yet, across all synced tables. */
+/**
+ * Rows written locally that the cloud does not have yet, across all synced tables. Rows imported from a Huawei
+ * export (`imported = 1`) stay on the phone and are never pending.
+ */
 export async function countPending(db: SQLiteDatabase): Promise<number> {
   const row = await db.getFirstAsync<{ n: number }>(
     `SELECT
-       (SELECT COUNT(*) FROM step_samples WHERE rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'step_samples')) +
-       (SELECT COUNT(*) FROM sleep_segments WHERE rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'sleep_segments')) +
-       (SELECT COUNT(*) FROM workouts WHERE rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'workouts')) AS n`,
+       (SELECT COUNT(*) FROM step_samples WHERE imported = 0 AND rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'step_samples')) +
+       (SELECT COUNT(*) FROM sleep_segments WHERE imported = 0 AND rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'sleep_segments')) +
+       (SELECT COUNT(*) FROM workouts WHERE imported = 0 AND rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'workouts')) AS n`,
   );
   return row?.n ?? 0;
 }
@@ -84,7 +87,7 @@ export function listStepSamplesAfter(db: SQLiteDatabase, rev: number, limit: num
   return db.getAllAsync<PendingStepSample>(
     `SELECT rev, timestamp, steps, calories, distance, heart_rate AS heartRate, spo2,
             resting_heart_rate AS restingHeartRate
-     FROM step_samples WHERE rev > ? ORDER BY rev LIMIT ?`,
+     FROM step_samples WHERE imported = 0 AND rev > ? ORDER BY rev LIMIT ?`,
     rev,
     limit,
   );
@@ -100,7 +103,7 @@ export interface PendingSleepSegment {
 
 export function listSleepAfter(db: SQLiteDatabase, rev: number, limit: number): Promise<PendingSleepSegment[]> {
   return db.getAllAsync<PendingSleepSegment>(
-    'SELECT rev, start, end, type, stage FROM sleep_segments WHERE rev > ? ORDER BY rev LIMIT ?',
+    'SELECT rev, start, end, type, stage FROM sleep_segments WHERE imported = 0 AND rev > ? ORDER BY rev LIMIT ?',
     rev,
     limit,
   );
@@ -129,7 +132,7 @@ export async function listWorkoutsAfter(db: SQLiteDatabase, rev: number, limit: 
     `SELECT rev, id, workout_number AS workoutNumber, start, end, sport_type AS sportType,
             sport_name AS sportName, duration, distance, calories, avg_hr AS avgHr, max_hr AS maxHr,
             steps, summary_json AS summaryJson, complete
-     FROM workouts WHERE rev > ? ORDER BY rev LIMIT ?`,
+     FROM workouts WHERE imported = 0 AND rev > ? ORDER BY rev LIMIT ?`,
     rev,
     limit,
   );

@@ -287,7 +287,7 @@ internal class HealthConnectExporter(
     val counts = HealthConnectCounts()
     val bounds = withContext(Dispatchers.IO) {
       syncStore.read { db ->
-        db.rawQuery("SELECT MIN(timestamp), MAX(timestamp) FROM step_samples", null).use {
+        db.rawQuery("SELECT MIN(timestamp), MAX(timestamp) FROM step_samples WHERE imported = 0", null).use {
           if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) to it.getLong(1) else null
         }
       }
@@ -309,7 +309,7 @@ internal class HealthConnectExporter(
   private fun loadSamples(db: SQLiteDatabase, fromSec: Long, toSec: Long): List<StepSample> =
     db.rawQuery(
       """SELECT timestamp, steps, calories, distance, heart_rate, spo2, resting_heart_rate
-         FROM step_samples WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp""",
+         FROM step_samples WHERE imported = 0 AND timestamp >= ? AND timestamp < ? ORDER BY timestamp""",
       arrayOf(fromSec.toString(), toSec.toString()),
     ).use { c ->
       val out = ArrayList<StepSample>(c.count)
@@ -422,7 +422,7 @@ internal class HealthConnectExporter(
     val segments = withContext(Dispatchers.IO) {
       syncStore.read { db ->
         db.rawQuery(
-          "SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start",
+          "SELECT start, end, type, stage FROM sleep_segments WHERE imported = 0 AND end >= ? ORDER BY start",
           arrayOf((fromSec - 24 * 3600L).toString()),
         ).use { c ->
           val out = ArrayList<SleepSegment>(c.count)
@@ -507,7 +507,7 @@ internal class HealthConnectExporter(
     if (!exists) return emptyList()
     return db.rawQuery(
       """SELECT start, end, duration, sport_type, sport_name, distance, calories, avg_hr, max_hr
-         FROM workouts WHERE complete = 1 ORDER BY start""",
+         FROM workouts WHERE imported = 0 AND complete = 1 ORDER BY start""",
       null,
     ).use { c ->
       fun int(i: Int): Int? = if (c.isNull(i)) null else c.getInt(i)

@@ -14,6 +14,8 @@ export default function SettingsLayout() {
       <Stack.Screen name="weather" options={{ title: 'Weather' }} />
       <Stack.Screen name="safety" options={{ title: 'Safety' }} />
       <Stack.Screen name="health" options={{ title: 'Health & cloud' }} />
+      <Stack.Screen name="strava" options={{ title: 'Strava' }} />
+      <Stack.Screen name="import-huawei" options={{ title: 'Import from Huawei Health' }} />
       <Stack.Screen name="profile" options={{ title: 'Profile and goal' }} />
       <Stack.Screen name="meals" options={{ title: 'Meals on watch' }} />
       <Stack.Screen name="goals" options={{ title: 'Goals & reminders' }} />

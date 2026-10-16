@@ -39,7 +39,8 @@ internal class WorkoutStore(private val store: SyncStore) : WorkoutSink {
              max_hr = excluded.max_hr,
              steps = excluded.steps,
              summary_json = excluded.summary_json,
-             complete = excluded.complete""",
+             complete = excluded.complete,
+             imported = 0""",
         arrayOf(
           record.number,
           record.start,
@@ -84,13 +85,15 @@ internal class WorkoutStore(private val store: SyncStore) : WorkoutSink {
   }
 
   /**
-   * Start of the next workout window, unix seconds. GB asks for everything after the newest stored workout
-   * (and from 2022-06-10 when there is none); the start of the oldest incomplete workout wins over that so it
-   * is downloaded again.
+   * Start of the next workout window, unix seconds: everything after the newest stored workout (from 2000-01-01, so
+   * everything the watch holds, when there is none); the start of the oldest incomplete workout wins over that so it
+   * is downloaded again. [fullHistory] always starts from 2000-01-01; stored workouts upsert by start.
    */
-  suspend fun syncStart(): Int = withContext(Dispatchers.IO) {
+  suspend fun syncStart(fullHistory: Boolean = false): Int = withContext(Dispatchers.IO) {
+    if (fullHistory) return@withContext DEFAULT_START_SEC.toInt()
     val db = store.db()
-    val newestEnd = db.rawQuery("SELECT MAX(end) FROM workouts", null).use {
+    // Workouts imported from a Huawei export say nothing about what the watch still holds.
+    val newestEnd = db.rawQuery("SELECT MAX(end) FROM workouts WHERE imported = 0", null).use {
       if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else null
     }
     val oldestIncomplete = db.rawQuery("SELECT MIN(start) FROM workouts WHERE complete = 0", null).use {
@@ -105,7 +108,7 @@ internal class WorkoutStore(private val store: SyncStore) : WorkoutSink {
   }
 
   companion object {
-    /** GB HuaweiWorkoutSyncManager.getStartTimeFromDb fallback: 2022-06-10 00:00:00 UTC. */
-    const val DEFAULT_START_SEC = 1654819200L
+    /** 2000-01-01 00:00:00 UTC; GB's own fallback (2022-06-10) is an app-imposed limit this app does not keep. */
+    const val DEFAULT_START_SEC = 946684800L
   }
 }

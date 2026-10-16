@@ -14,5 +14,14 @@ upstream commit bb7a1e83a29837153bf0c3a50e9869dec3dac0dd, licensed AGPL-3.0-or-l
 Original copyright notices are retained in each ported file; modified files carry a
 "Modified for watch-fit" line.
 
+The importer for Huawei's Privacy Centre health export (HuaweiExport*.kt, HuaweiHealthDetailParser.kt,
+HuaweiMotionPathParser.kt in modules/huawei-wear/android/) was written for this project. Its idea of the export
+layout (folders, record keys, the motion-path track records, the pause marker and the invalid-JSON quirks) comes from
+reading what these MIT-licensed community tools document; no code was copied from them:
+  m1ty/huawei2gpx (https://github.com/m1ty/huawei2gpx),
+  JordyThien/Huawei-Health-Importer (https://github.com/JordyThien/Huawei-Health-Importer),
+  driemekasten/hhealth2zepp (https://github.com/driemekasten/hhealth2zepp).
+It uses zip4j (https://github.com/srikanth-lingala/zip4j, Apache-2.0) to read the AES-encrypted ZIP.
+
 Huawei and HUAWEI WATCH FIT are trademarks of Huawei Technologies Co., Ltd. This project is not
 affiliated with or endorsed by Huawei.
