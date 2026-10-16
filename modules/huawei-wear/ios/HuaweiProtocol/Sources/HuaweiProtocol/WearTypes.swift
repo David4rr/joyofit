@@ -33,6 +33,12 @@ public enum ErrorCode: String, Sendable {
     case invalidArgument = "ERR_INVALID_ARGUMENT"
     case unsupported = "ERR_UNSUPPORTED"
     case uploadRejected = "ERR_UPLOAD_REJECTED"
+    /// Weather: no position (permission missing, no fix yet, no city chosen). Sent to the watch as GPS_PERMISSION_ERROR.
+    case weatherLocation = "ERR_WEATHER_LOCATION"
+    /// Weather: Open-Meteo unreachable or answering garbage. Sent to the watch as NETWORK_ERROR.
+    case weatherNetwork = "ERR_WEATHER_NETWORK"
+    /// Weather: the switch is off. Sent to the watch as WEATHER_DISABLED.
+    case weatherDisabled = "ERR_WEATHER_DISABLED"
 }
 
 /// Every failure that reaches JS: a coded error like the Android `WearException`.
