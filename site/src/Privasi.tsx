@@ -6,13 +6,13 @@ import { GITHUB_URL, setMeta } from "./lib";
 export const PRIVASI_PATH = "/privasi";
 
 const CONTACT = "dzulfikar@joyorogo.com";
-const UPDATED = "15 Oktober 2026";
-const UPDATED_EN = "15 October 2026";
+const UPDATED = "16 Oktober 2026";
+const UPDATED_EN = "16 October 2026";
 
 const META = {
   title: "Kebijakan privasi JoyoFit",
   description:
-    "Data apa yang JoyoFit simpan di HP-mu, apa yang keluar dari HP (cloud opsional, cuaca, Health Connect), dan cara menghapusnya. Privacy policy in English below.",
+    "Data apa yang JoyoFit simpan di HP-mu, apa yang keluar dari HP (cloud opsional, Strava, cuaca, Health Connect), dan cara menghapusnya. Privacy policy in English below.",
 };
 
 function Code({ children }: { children: React.ReactNode }) {
@@ -150,6 +150,23 @@ function Indonesian() {
         />
       </Block>
 
+      <Block title="Strava (opsional, gratis)">
+        <p>
+          Bila kamu menyambungkan Strava di Pengaturan, Strava (masuk dengan akun JoyoRogo dulu), JoyoFit
+          mengirim olahraga dari jammu ke akun Strava-mu sendiri. Izin yang diminta hanya satu: mengunggah
+          aktivitas (<Code>activity:write</Code>).
+        </p>
+        <List
+          items={[
+            "Yang dikirim: berkas olahraga (waktu, jenis, rute GPS, jarak, kalori, detak jantung) langsung dari HP-mu ke Strava, hanya untuk olahraga yang selesai setelah kamu menyambung, atau yang kamu kirim sendiri dengan Kirim ke Strava. Riwayat yang diimpor dari Huawei Health tidak dikirim otomatis.",
+            "Server JoyoFit hanya menyimpan token akses Strava-mu dan ID atlet, supaya HP bisa mengunggah. Berkas olahraga tidak melewati atau disimpan di server JoyoFit.",
+            "JoyoFit tidak membaca data dari Strava, tidak menampilkan data Strava ke orang lain, dan tidak memakainya untuk analitik, iklan, atau AI.",
+            "Tambahan teks fit.joyorogo.com di deskripsi aktivitas mati secara bawaan dan hanya muncul bila kamu menyalakannya.",
+            "Putuskan Strava di aplikasi, atau cabut JoyoFit di strava.com (Pengaturan, Aplikasi Saya), dan token langsung dihapus dari server JoyoFit. Aktivitas yang sudah ada di Strava tetap milikmu dan diatur di Strava.",
+          ]}
+        />
+      </Block>
+
       <Block title="Cuaca">
         <p>
           Cuaca di jam mati secara bawaan. Bila kamu menyalakannya, JoyoFit meminta prakiraan cuaca ke Open-Meteo
@@ -235,6 +252,7 @@ function Indonesian() {
             "Broadcom (glpals.com): data bantuan satelit (bagian Lokasi).",
             "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan.",
             "JoyoRogo dan Google: login dan layanan JoyoRogo (bagian Cloud).",
+            "Strava: tujuan unggahan olahraga bila kamu menyambungkannya (bagian Strava).",
             "RevKlik: statistik pengunjung situs ini (bagian Statistik situs).",
           ]}
         />
@@ -246,6 +264,7 @@ function Indonesian() {
           items={[
             "Di HP: hapus instalasi JoyoFit atau pilih Pengaturan Android, Aplikasi, JoyoFit, Penyimpanan, Hapus data. Semua data lokal terhapus. Lepas jam dengan Forget pairing di aplikasi.",
             "Di Health Connect: hapus data yang ditulis JoyoFit lewat aplikasi Health Connect.",
+            "Di Strava: Putuskan Strava di aplikasi atau cabut JoyoFit di strava.com; token dihapus dari server JoyoFit saat itu juga.",
             <>
               Di cloud JoyoFit: kirim email dari alamat akun Google yang kamu pakai ke <Mail /> dengan subjek{" "}
               <span className="font-semibold">Hapus data cloud JoyoFit</span>. Aplikasi belum punya tombol hapus
@@ -360,6 +379,22 @@ function English() {
         </p>
       </Block>
 
+      <Block title="Strava (optional, free)">
+        <p>
+          If you connect Strava under Settings, Strava (after signing in with your JoyoRogo account), JoyoFit sends
+          workouts from your watch to your own Strava account. It asks for one permission only: uploading
+          activities (<Code>activity:write</Code>). The workout file (time, type, GPS route, distance, calories,
+          heart rate) goes straight from your phone to Strava, only for workouts that finish after you connect or
+          that you send yourself with Send to Strava; history imported from Huawei Health is never sent
+          automatically. The JoyoFit server keeps only your Strava tokens and athlete ID so the phone can upload;
+          workout files do not pass through or stay on the JoyoFit server. JoyoFit does not read data from Strava,
+          does not show Strava data to anyone else, and does not use it for analytics, ads or AI. The
+          fit.joyorogo.com line in the activity description is off by default. Disconnect Strava in the app, or
+          revoke JoyoFit on strava.com (Settings, My Apps), and the tokens are deleted from the JoyoFit server
+          immediately; activities already on Strava stay yours and are managed on Strava.
+        </p>
+      </Block>
+
       <Block title="Weather">
         <p>
           Off by default. When on, JoyoFit requests a forecast from Open-Meteo when the watch connects and
@@ -424,7 +459,8 @@ function English() {
       <Block title="Third parties">
         <p>
           Open-Meteo (weather), Broadcom (satellite-assist data), Cloudflare (hosting of the cloud and this
-          site), JoyoRogo and Google (sign-in), RevKlik (visitor statistics for this site). No ads and no sale of data. Data is not used for advertising or
+          site), JoyoRogo and Google (sign-in), Strava (upload destination when you connect it), RevKlik (visitor
+          statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling.
         </p>
       </Block>
@@ -434,6 +470,7 @@ function English() {
           items={[
             "On the phone: uninstall JoyoFit, or Android Settings, Apps, JoyoFit, Storage, Clear data. Use Forget pairing in the app to release the watch.",
             "In Health Connect: delete what JoyoFit wrote in the Health Connect app.",
+            "Strava: Disconnect Strava in the app or revoke JoyoFit on strava.com; the tokens are deleted from the JoyoFit server at once.",
             <>
               JoyoFit cloud: email <Mail /> from the Google account you signed in with, subject{" "}
               <span className="font-semibold">Hapus data cloud JoyoFit</span> (delete JoyoFit cloud data). The app
