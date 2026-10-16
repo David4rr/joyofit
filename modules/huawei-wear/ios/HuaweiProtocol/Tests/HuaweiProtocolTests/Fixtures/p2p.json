@@ -1,0 +1,1982 @@
+{
+ "sequence": [
+  [
+   1,
+   2
+  ],
+  [
+   2,
+   3
+  ],
+  [
+   3,
+   4
+  ],
+  [
+   32763,
+   32764
+  ],
+  [
+   32764,
+   32765
+  ],
+  [
+   32765,
+   0
+  ],
+  [
+   32766,
+   1
+  ],
+  [
+   32767,
+   2
+  ],
+  [
+   32768,
+   3
+  ],
+  [
+   32769,
+   4
+  ],
+  [
+   32770,
+   5
+  ]
+ ],
+ "subMessages": [
+  {
+   "data": "01020304",
+   "bytes": "03000000010000002800000000000000393000000000000000000000000000000000000001020304",
+   "parsedData": "01020304",
+   "parsedMessageId": 12345,
+   "messageId": 12345,
+   "type": 3,
+   "parsedLength": 40,
+   "parsedVersion": 1,
+   "parsedType": 3
+  },
+  {
+   "data": "820105",
+   "bytes": "020000000100000027000000000000000100000000000000000000000000000000000000820105",
+   "parsedData": "820105",
+   "parsedMessageId": 1,
+   "messageId": 1,
+   "type": 2,
+   "parsedLength": 39,
+   "parsedVersion": 1,
+   "parsedType": 2
+  },
+  {
+   "data": "",
+   "bytes": "030000000100000024000000000000003f420f0000000000000000000000000000000000",
+   "parsedData": null,
+   "parsedMessageId": 999999,
+   "messageId": 999999,
+   "type": 3,
+   "parsedLength": 36,
+   "parsedVersion": 1,
+   "parsedType": 3
+  },
+  {
+   "parsedData": null,
+   "parsedMessageId": 0,
+   "raw": "00000000000000000000",
+   "parsedLength": 0,
+   "parsedVersion": 1,
+   "parsedType": 0
+  },
+  {
+   "parsedData": null,
+   "parsedMessageId": 0,
+   "raw": null,
+   "parsedLength": 0,
+   "parsedVersion": 1,
+   "parsedType": 0
+  },
+  {
+   "parsedData": null,
+   "parsedMessageId": 5,
+   "raw": "030000000100000024000000000000000500000000000000000000000000000000000000",
+   "parsedLength": 36,
+   "parsedVersion": 1,
+   "parsedType": 3
+  },
+  {
+   "raw": "bf5903bb58cb352d441a9816e01ca09c15d9287dcadbe9f19cf63a76470989d33458d772",
+   "throws": true
+  }
+ ],
+ "dictionary": [
+  {
+   "do": "register",
+   "sent": [{
+    "code": 0,
+    "dst": "hw.watch.health.filesync",
+    "data": null,
+    "src": "com.huawei.health",
+    "srcFp": null,
+    "dstFp": null,
+    "cmd": 1,
+    "seq": 2,
+    "tlv": "010101020200020311636f6d2e6875617765692e6865616c7468041868772e77617463682e6865616c74682e66696c6573796e63"
+   }]
+  },
+  {
+   "do": "start while unavailable",
+   "sent": [],
+   "events": ["complete:false"]
+  },
+  {
+   "pings": [202],
+   "do": "ping answered 0xca",
+   "sent": []
+  },
+  {
+   "do": "start three classes",
+   "sent": [{
+    "code": 0,
+    "dst": "hw.watch.health.filesync",
+    "data": "01010101020307a14c05080000018bcfe56be80608000001a14392cdd10d0101",
+    "src": "hw.unitedevice.datadictionarysync",
+    "srcFp": "UniteDeviceManagement",
+    "dstFp": "SystemApp",
+    "cmd": 2,
+    "seq": 3,
+    "tlv": "01010202020003032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630515556e6974654465766963654d616e6167656d656e74060953797374656d417070072001010101020307a14c05080000018bcfe56be80608000001a14392cdd10d0101"
+   }],
+   "events": ["last:500044"]
+  },
+  {
+   "do": "page 1",
+   "sent": [
+    {
+     "code": 207,
+     "dst": "hw.watch.health.filesync",
+     "data": null,
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 60,
+     "tlv": "0101030202003c032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630804000000cf"
+    },
+    {
+     "code": 0,
+     "dst": "hw.watch.health.filesync",
+     "data": "01010101020307a14c05080000018bcfe963880608000001a14392cdd60d0101",
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": "UniteDeviceManagement",
+     "dstFp": "SystemApp",
+     "cmd": 2,
+     "seq": 4,
+     "tlv": "01010202020004032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630515556e6974654465766963654d616e6167656d656e74060953797374656d417070072001010101020307a14c05080000018bcfe963880608000001a14392cdd60d0101"
+    }
+   ],
+   "events": [{
+    "onData": 500044,
+    "entries": [
+     {
+      "modify": 0,
+      "values": [{
+       "tag": 10,
+       "type": 500044831,
+       "value": "4046f33333333333"
+      }],
+      "start": 1700000100000,
+      "end": 1700000160000
+     },
+     {
+      "modify": 1700000260000,
+      "values": [{
+       "tag": 10,
+       "type": 500044831,
+       "value": "4046f33333333333"
+      }],
+      "start": 1700000200000,
+      "end": 0
+     }
+    ]
+   }]
+  },
+  {
+   "do": "empty page",
+   "sent": [
+    {
+     "code": 207,
+     "dst": "hw.watch.health.filesync",
+     "data": null,
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 61,
+     "tlv": "0101030202003d032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630804000000cf"
+    },
+    {
+     "code": 0,
+     "dst": "hw.watch.health.filesync",
+     "data": "010101010203061a8c05080000018bcfe56be80608000001a14392cdd80d0101",
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": "UniteDeviceManagement",
+     "dstFp": "SystemApp",
+     "cmd": 2,
+     "seq": 5,
+     "tlv": "01010202020005032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630515556e6974654465766963654d616e6167656d656e74060953797374656d4170700720010101010203061a8c05080000018bcfe56be80608000001a14392cdd80d0101"
+    }
+   ],
+   "events": [
+    {
+     "onData": 500044,
+     "entries": []
+    },
+    "last:400012"
+   ]
+  },
+  {
+   "do": "temperature page",
+   "sent": [
+    {
+     "code": 207,
+     "dst": "hw.watch.health.filesync",
+     "data": null,
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 62,
+     "tlv": "0101030202003e032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630804000000cf"
+    },
+    {
+     "code": 0,
+     "dst": "hw.watch.health.filesync",
+     "data": "010101010203061a8c05080000018bcfe9ffc80608000001a14392cddb0d0101",
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": "UniteDeviceManagement",
+     "dstFp": "SystemApp",
+     "cmd": 2,
+     "seq": 6,
+     "tlv": "01010202020006032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630515556e6974654465766963654d616e6167656d656e74060953797374656d4170700720010101010203061a8c05080000018bcfe9ffc80608000001a14392cddb0d0101"
+    }
+   ],
+   "events": [{
+    "onData": 400012,
+    "entries": [{
+     "modify": 0,
+     "values": [{
+      "tag": 10,
+      "type": 400012430,
+      "value": "40424ccccccccccd"
+     }],
+     "start": 1700000300000,
+     "end": 1700000300000
+    }]
+   }]
+  },
+  {
+   "do": "empty temperature page",
+   "sent": [
+    {
+     "code": 207,
+     "dst": "hw.watch.health.filesync",
+     "data": null,
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 63,
+     "tlv": "0101030202003f032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630804000000cf"
+    },
+    {
+     "code": 0,
+     "dst": "hw.watch.health.filesync",
+     "data": "01010101020307a13f05080000018bcfe56be80608000001a14392cddd0d0101",
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": "UniteDeviceManagement",
+     "dstFp": "SystemApp",
+     "cmd": 2,
+     "seq": 7,
+     "tlv": "01010202020007032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630515556e6974654465766963654d616e6167656d656e74060953797374656d417070072001010101020307a13f05080000018bcfe56be80608000001a14392cddd0d0101"
+    }
+   ],
+   "events": [
+    {
+     "onData": 400012,
+     "entries": []
+    },
+    "last:500031"
+   ]
+  },
+  {
+   "do": "unknown operation",
+   "sent": [{
+    "code": 207,
+    "dst": "hw.watch.health.filesync",
+    "data": null,
+    "src": "hw.unitedevice.datadictionarysync",
+    "srcFp": null,
+    "dstFp": null,
+    "cmd": 3,
+    "seq": 64,
+    "tlv": "01010302020040032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630804000000cf"
+   }],
+   "events": ["complete:false"]
+  },
+  {
+   "do": "unrequested class",
+   "sent": [{
+    "code": 207,
+    "dst": "hw.watch.health.filesync",
+    "data": null,
+    "src": "hw.unitedevice.datadictionarysync",
+    "srcFp": null,
+    "dstFp": null,
+    "cmd": 3,
+    "seq": 65,
+    "tlv": "01010302020041032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630804000000cf"
+   }],
+   "events": []
+  },
+  {
+   "do": "class in progress",
+   "sent": [{
+    "code": 0,
+    "dst": "hw.watch.health.filesync",
+    "data": "01010101020307a12205080000018bcfe56be80608000001a14392cddf0d0101",
+    "src": "hw.unitedevice.datadictionarysync",
+    "srcFp": "UniteDeviceManagement",
+    "dstFp": "SystemApp",
+    "cmd": 2,
+    "seq": 8,
+    "tlv": "01010202020008032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630515556e6974654465766963654d616e6167656d656e74060953797374656d417070072001010101020307a12205080000018bcfe56be80608000001a14392cddf0d0101"
+   }],
+   "events": [
+    "last:500002",
+    "complete:false"
+   ]
+  },
+  {
+   "do": "empty list",
+   "sent": [],
+   "events": ["complete:false"]
+  },
+  {
+   "do": "negative start",
+   "sent": [],
+   "events": [
+    "last:500002",
+    "complete:false"
+   ]
+  },
+  {
+   "do": "ignored data",
+   "sent": [
+    {
+     "code": 207,
+     "dst": "hw.watch.health.filesync",
+     "data": null,
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 66,
+     "tlv": "01010302020042032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630804000000cf"
+    },
+    {
+     "code": 207,
+     "dst": "hw.watch.health.filesync",
+     "data": null,
+     "src": "hw.unitedevice.datadictionarysync",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 67,
+     "tlv": "01010302020043032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630804000000cf"
+    }
+   ],
+   "events": []
+  },
+  {
+   "do": "missing start time",
+   "sent": [{
+    "code": 207,
+    "dst": "hw.watch.health.filesync",
+    "data": null,
+    "src": "hw.unitedevice.datadictionarysync",
+    "srcFp": null,
+    "dstFp": null,
+    "cmd": 3,
+    "seq": 68,
+    "tlv": "01010302020044032168772e756e6974656465766963652e6461746164696374696f6e61727973796e63041868772e77617463682e6865616c74682e66696c6573796e630804000000cf"
+   }],
+   "events": [
+    "last:500044",
+    "complete:false"
+   ]
+  }
+ ],
+ "manager": {
+  "secondEvents": [
+   "registered",
+   "unregister"
+  ],
+  "steps": [
+   {
+    "do": "sendPing",
+    "sent": [{
+     "code": 0,
+     "dst": "probe.package",
+     "data": null,
+     "src": "com.huawei.health",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 1,
+     "seq": 2,
+     "tlv": "010101020200020311636f6d2e6875617765692e6865616c7468040d70726f62652e7061636b616765"
+    }]
+   },
+   {
+    "callback": 202,
+    "do": "answer ping 0xca",
+    "sent": []
+   },
+   {
+    "do": "sendCommand",
+    "sent": [{
+     "code": 0,
+     "dst": "probe.package",
+     "data": "070809",
+     "src": "probe.module",
+     "srcFp": "UniteDeviceManagement",
+     "dstFp": "ProbeFp",
+     "cmd": 2,
+     "seq": 3,
+     "tlv": "01010202020003030c70726f62652e6d6f64756c65040d70726f62652e7061636b6167650515556e6974654465766963654d616e6167656d656e74060750726f626546700703070809"
+    }]
+   },
+   {
+    "data": "55",
+    "callback": 207,
+    "do": "answer command",
+    "sent": []
+   },
+   {
+    "do": "sendGetVersion",
+    "sent": [{
+     "code": 0,
+     "dst": "probe.package",
+     "data": null,
+     "src": "probe.module",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 4,
+     "seq": 4,
+     "tlv": "01010402020004030c70726f62652e6d6f64756c65040d70726f62652e7061636b616765"
+    }]
+   },
+   {
+    "do": "sendGetVersion without bit 14",
+    "sent": []
+   },
+   {
+    "do": "watch ping",
+    "sent": [{
+     "code": 207,
+     "dst": "probe.package",
+     "data": null,
+     "src": "probe.module",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 40,
+     "tlv": "01010302020028030c70726f62652e6d6f64756c65040d70726f62652e7061636b6167650804000000cf"
+    }]
+   },
+   {
+    "do": "watch ping, answer 0xca",
+    "sent": [{
+     "code": 202,
+     "dst": "probe.package",
+     "data": null,
+     "src": "probe.module",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 41,
+     "tlv": "01010302020029030c70726f62652e6d6f64756c65040d70726f62652e7061636b6167650804000000ca"
+    }]
+   },
+   {
+    "do": "watch data",
+    "sent": [{
+     "code": 207,
+     "dst": "probe.package",
+     "data": null,
+     "src": "probe.module",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 42,
+     "tlv": "0101030202002a030c70726f62652e6d6f64756c65040d70726f62652e7061636b6167650804000000cf"
+    }]
+   },
+   {
+    "do": "watch data without payload",
+    "sent": [{
+     "code": 207,
+     "dst": "probe.package",
+     "data": null,
+     "src": "probe.module",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 43,
+     "tlv": "0101030202002b030c70726f62652e6d6f64756c65040d70726f62652e7061636b6167650804000000cf"
+    }]
+   },
+   {
+    "do": "watch data of another package",
+    "sent": []
+   },
+   {
+    "do": "watch ack nobody waits for",
+    "sent": []
+   },
+   {
+    "do": "wakeapp without data",
+    "sent": [{
+     "code": 204,
+     "dst": "w.watch",
+     "data": null,
+     "src": "a.b.wakeapp",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 50,
+     "tlv": "01010302020032030b612e622e77616b656170700407772e77617463680804000000cc"
+    }]
+   },
+   {
+    "do": "wakeapp with link",
+    "sent": [{
+     "code": 210,
+     "dst": "w.watch",
+     "data": null,
+     "src": "a.b.wakeapp",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 51,
+     "tlv": "01010302020033030b612e622e77616b656170700407772e77617463680804000000d2"
+    }]
+   },
+   {
+    "do": "wakeapp without link",
+    "sent": [{
+     "code": 205,
+     "dst": "w.watch",
+     "data": null,
+     "src": "a.b.wakeapp",
+     "srcFp": null,
+     "dstFp": null,
+     "cmd": 3,
+     "seq": 52,
+     "tlv": "01010302020034030b612e622e77616b656170700407772e77617463680804000000cd"
+    }]
+   },
+   {
+    "do": "short destination",
+    "sent": []
+   }
+  ],
+  "probeEvents": [
+   "registered",
+   "data:0102",
+   "file:f.bin:01",
+   "unregister"
+  ]
+ },
+ "responses": [
+  {
+   "service": 52,
+   "name": "ack with byte code",
+   "ok": true,
+   "fields": {
+    "cmdId": 3,
+    "srcFingerprint": null,
+    "dstPackage": "b",
+    "respData": null,
+    "srcPackage": "a",
+    "dstFingerprint": null,
+    "sequenceId": 5,
+    "respCode": 202
+   },
+   "command": 1,
+   "tlv": "010103020200050301610401620801ca"
+  },
+  {
+   "service": 52,
+   "name": "ack with int code",
+   "ok": true,
+   "fields": {
+    "cmdId": 3,
+    "srcFingerprint": null,
+    "dstPackage": "b",
+    "respData": null,
+    "srcPackage": "a",
+    "dstFingerprint": null,
+    "sequenceId": 5,
+    "respCode": 207
+   },
+   "command": 1,
+   "tlv": "010103020200050301610401620804000000cf"
+  },
+  {
+   "service": 52,
+   "name": "data with fingerprints",
+   "ok": true,
+   "fields": {
+    "cmdId": 2,
+    "srcFingerprint": "srcFp",
+    "dstPackage": "hw.unitedevice.datadictionarysync",
+    "respData": "012233",
+    "srcPackage": "hw.watch.health.filesync",
+    "dstFingerprint": "dstFp",
+    "sequenceId": 6,
+    "respCode": 0
+   },
+   "command": 1,
+   "tlv": "01010202020006031868772e77617463682e6865616c74682e66696c6573796e63042168772e756e6974656465766963652e6461746164696374696f6e61727973796e6305057372634670060564737446700703012233"
+  },
+  {
+   "service": 52,
+   "name": "ping",
+   "ok": true,
+   "fields": {
+    "cmdId": 1,
+    "srcFingerprint": null,
+    "dstPackage": "b",
+    "respData": null,
+    "srcPackage": "a",
+    "dstFingerprint": null,
+    "sequenceId": 7,
+    "respCode": 0
+   },
+   "command": 1,
+   "tlv": "01010102020007030161040162"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 52,
+   "name": "missing cmd",
+   "ok": false,
+   "parseException": true,
+   "command": 1,
+   "tlv": "02020001030161040162"
+  }
+ ],
+ "requests": [
+  {
+   "code": 0,
+   "frames": ["5a0037003401010101020200020311636f6d2e6875617765692e6865616c7468041868772e77617463682e6865616c74682e66696c6573796e631629"],
+   "dst": "hw.watch.health.filesync",
+   "data": null,
+   "src": "com.huawei.health",
+   "srcFp": null,
+   "command": 1,
+   "sliced": true,
+   "encrypted": true,
+   "service": 52,
+   "name": "ping",
+   "dstFp": null,
+   "cmd": 1,
+   "seq": 2,
+   "tlv": "010101020200020311636f6d2e6875617765692e6865616c7468041868772e77617463682e6865616c74682e66696c6573796e63"
+  },
+  {
+   "code": 0,
+   "frames": ["5a006e00340101010202020003031a68772e756e6974656465766963652e6865616c74686d6f64656c041f636f6d2e6875617765692e6865616c74682e6865616c7468796c6976696e670515556e6974654465766963654d616e6167656d656e74060953797374656d417070070301020357b9"],
+   "dst": "com.huawei.health.healthyliving",
+   "data": "010203",
+   "src": "hw.unitedevice.healthmodel",
+   "srcFp": "UniteDeviceManagement",
+   "command": 1,
+   "sliced": true,
+   "encrypted": true,
+   "service": 52,
+   "name": "data",
+   "dstFp": "SystemApp",
+   "cmd": 2,
+   "seq": 3,
+   "tlv": "01010202020003031a68772e756e6974656465766963652e6865616c74686d6f64656c041f636f6d2e6875617765692e6865616c74682e6865616c7468796c6976696e670515556e6974654465766963654d616e6167656d656e74060953797374656d4170700703010203"
+  },
+  {
+   "code": 0,
+   "frames": ["5a00160034010101020202000403016d040170050161060162105e"],
+   "dst": "p",
+   "data": "",
+   "src": "m",
+   "srcFp": "a",
+   "command": 1,
+   "sliced": true,
+   "encrypted": true,
+   "service": 52,
+   "name": "data empty payload",
+   "dstFp": "b",
+   "cmd": 2,
+   "seq": 4,
+   "tlv": "0101020202000403016d040170050161060162"
+  },
+  {
+   "code": 0,
+   "frames": ["5a00160034010101020202000503016d040170050161060162553d"],
+   "dst": "p",
+   "data": null,
+   "src": "m",
+   "srcFp": "a",
+   "command": 1,
+   "sliced": true,
+   "encrypted": true,
+   "service": 52,
+   "name": "data no payload",
+   "dstFp": "b",
+   "cmd": 2,
+   "seq": 5,
+   "tlv": "0101020202000503016d040170050161060162"
+  },
+  {
+   "code": 207,
+   "frames": ["5a00160034010101030202012c03017004016d0804000000cf3b97"],
+   "dst": "m",
+   "data": null,
+   "src": "p",
+   "srcFp": null,
+   "command": 1,
+   "sliced": true,
+   "encrypted": true,
+   "service": 52,
+   "name": "ack",
+   "dstFp": null,
+   "cmd": 3,
+   "seq": 300,
+   "tlv": "0101030202012c03017004016d0804000000cf"
+  },
+  {
+   "code": 210,
+   "frames": ["5a001600340101010302027ffd03017004016d0804000000d2d427"],
+   "dst": "m",
+   "data": null,
+   "src": "p",
+   "srcFp": null,
+   "command": 1,
+   "sliced": true,
+   "encrypted": true,
+   "service": 52,
+   "name": "ack d2",
+   "dstFp": null,
+   "cmd": 3,
+   "seq": 32765,
+   "tlv": "01010302027ffd03017004016d0804000000d2"
+  },
+  {
+   "code": 5,
+   "frames": ["5a00130034010101010202000703016d0401700701092809"],
+   "dst": "p",
+   "data": "09",
+   "src": "m",
+   "srcFp": "ignored",
+   "command": 1,
+   "sliced": true,
+   "encrypted": true,
+   "service": 52,
+   "name": "ack ignores payload on ping",
+   "dstFp": "ignored",
+   "cmd": 1,
+   "seq": 7,
+   "tlv": "0101010202000703016d040170070109"
+  },
+  {
+   "code": 0,
+   "frames": ["5a003500340101010402020008031668772e756e6974656465766963652e6669746e6573730411696e2e6875617765692e6669746e65737334cc"],
+   "dst": "in.huawei.fitness",
+   "data": null,
+   "src": "hw.unitedevice.fitness",
+   "srcFp": null,
+   "command": 1,
+   "sliced": true,
+   "encrypted": true,
+   "service": 52,
+   "name": "get version",
+   "dstFp": null,
+   "cmd": 4,
+   "seq": 8,
+   "tlv": "01010402020008031668772e756e6974656465766963652e6669746e6573730411696e2e6875617765692e6669746e657373"
+  }
+ ],
+ "dictToBytes": [
+  [
+   0,
+   "00"
+  ],
+  [
+   1,
+   "01"
+  ],
+  [
+   255,
+   "ff"
+  ],
+  [
+   256,
+   "0100"
+  ],
+  [
+   700004,
+   "0aae64"
+  ],
+  [
+   500044,
+   "07a14c"
+  ],
+  [
+   65535,
+   "ffff"
+  ],
+  [
+   65536,
+   "010000"
+  ],
+  [
+   16777215,
+   "ffffff"
+  ],
+  [
+   16777216,
+   "01000000"
+  ]
+ ],
+ "handlerGates": [
+  {
+   "supportsNone": false,
+   "supportsOnly": [
+    [
+     14,
+     false
+    ],
+    [
+     29,
+     true
+    ],
+    [
+     59,
+     false
+    ],
+    [
+     72,
+     false
+    ],
+    [
+     75,
+     false
+    ],
+    [
+     107,
+     false
+    ],
+    [
+     113,
+     false
+    ],
+    [
+     168,
+     false
+    ],
+    [
+     206,
+     false
+    ],
+    [
+     235,
+     false
+    ],
+    [
+     255,
+     false
+    ]
+   ],
+   "gate": "ExpandCapability 29 (GB supportsTemperature)",
+   "type": "skin_temperature",
+   "title": "Skin temperature",
+   "class": 400012
+  },
+  {
+   "supportsNone": false,
+   "supportsOnly": [
+    [
+     14,
+     false
+    ],
+    [
+     29,
+     false
+    ],
+    [
+     59,
+     false
+    ],
+    [
+     72,
+     false
+    ],
+    [
+     75,
+     false
+    ],
+    [
+     107,
+     false
+    ],
+    [
+     113,
+     false
+    ],
+    [
+     168,
+     false
+    ],
+    [
+     206,
+     false
+    ],
+    [
+     235,
+     true
+    ],
+    [
+     255,
+     false
+    ]
+   ],
+   "gate": "ExpandCapability 235 (GB supportsHRV)",
+   "type": "hrv",
+   "title": "Heart rate variability",
+   "class": 500044
+  },
+  {
+   "supportsNone": false,
+   "supportsOnly": [
+    [
+     14,
+     false
+    ],
+    [
+     29,
+     false
+    ],
+    [
+     59,
+     false
+    ],
+    [
+     72,
+     false
+    ],
+    [
+     75,
+     false
+    ],
+    [
+     107,
+     false
+    ],
+    [
+     113,
+     false
+    ],
+    [
+     168,
+     false
+    ],
+    [
+     206,
+     true
+    ],
+    [
+     235,
+     false
+    ],
+    [
+     255,
+     false
+    ]
+   ],
+   "gate": "ExpandCapability 206 (GB supportsEmotion)",
+   "type": "emotion",
+   "title": "Emotion / stress",
+   "class": 500031
+  },
+  {
+   "supportsNone": false,
+   "supportsOnly": [
+    [
+     14,
+     false
+    ],
+    [
+     29,
+     false
+    ],
+    [
+     59,
+     false
+    ],
+    [
+     72,
+     false
+    ],
+    [
+     75,
+     false
+    ],
+    [
+     107,
+     true
+    ],
+    [
+     113,
+     false
+    ],
+    [
+     168,
+     false
+    ],
+    [
+     206,
+     false
+    ],
+    [
+     235,
+     false
+    ],
+    [
+     255,
+     false
+    ]
+   ],
+   "gate": "ExpandCapability 107 (GB supportsSleepApnea)",
+   "type": "sleep_apnea",
+   "title": "Sleep apnea",
+   "class": 500002
+  },
+  {
+   "supportsNone": false,
+   "supportsOnly": [
+    [
+     14,
+     false
+    ],
+    [
+     29,
+     false
+    ],
+    [
+     59,
+     false
+    ],
+    [
+     72,
+     false
+    ],
+    [
+     75,
+     true
+    ],
+    [
+     107,
+     false
+    ],
+    [
+     113,
+     false
+    ],
+    [
+     168,
+     false
+    ],
+    [
+     206,
+     false
+    ],
+    [
+     235,
+     false
+    ],
+    [
+     255,
+     false
+    ]
+   ],
+   "gate": "ExpandCapability 75 (GB supportsArterialStiffnessDetection, commented out in GB)",
+   "type": "arterial_stiffness",
+   "title": "Arterial stiffness",
+   "class": 400017
+  },
+  {
+   "supportsNone": false,
+   "supportsOnly": [
+    [
+     14,
+     false
+    ],
+    [
+     29,
+     false
+    ],
+    [
+     59,
+     false
+    ],
+    [
+     72,
+     true
+    ],
+    [
+     75,
+     false
+    ],
+    [
+     107,
+     false
+    ],
+    [
+     113,
+     false
+    ],
+    [
+     168,
+     false
+    ],
+    [
+     206,
+     false
+    ],
+    [
+     235,
+     false
+    ],
+    [
+     255,
+     false
+    ]
+   ],
+   "gate": "ExpandCapability 72 (GB supportsAltitude, commented out in GB)",
+   "type": "altitude",
+   "title": "Altitude",
+   "class": 200003
+  },
+  {
+   "supportsNone": false,
+   "supportsOnly": [
+    [
+     14,
+     false
+    ],
+    [
+     29,
+     false
+    ],
+    [
+     59,
+     true
+    ],
+    [
+     72,
+     false
+    ],
+    [
+     75,
+     false
+    ],
+    [
+     107,
+     false
+    ],
+    [
+     113,
+     false
+    ],
+    [
+     168,
+     false
+    ],
+    [
+     206,
+     false
+    ],
+    [
+     235,
+     false
+    ],
+    [
+     255,
+     false
+    ]
+   ],
+   "gate": "ExpandCapability 59 (GB supportsBloodPressure, commented out in GB)",
+   "type": "blood_pressure",
+   "title": "Blood pressure",
+   "class": 10002
+  },
+  {
+   "supportsNone": false,
+   "supportsOnly": [
+    [
+     14,
+     false
+    ],
+    [
+     29,
+     false
+    ],
+    [
+     59,
+     false
+    ],
+    [
+     72,
+     true
+    ],
+    [
+     75,
+     false
+    ],
+    [
+     107,
+     false
+    ],
+    [
+     113,
+     false
+    ],
+    [
+     168,
+     false
+    ],
+    [
+     206,
+     false
+    ],
+    [
+     235,
+     false
+    ],
+    [
+     255,
+     false
+    ]
+   ],
+   "gate": "ExpandCapability 72 (GB supportsAltitude, commented out in GB)",
+   "type": "ams",
+   "title": "Acute mountain sickness (Lake Louise)",
+   "class": 500006
+  },
+  {
+   "supportsNone": false,
+   "supportsOnly": [
+    [
+     14,
+     false
+    ],
+    [
+     29,
+     false
+    ],
+    [
+     59,
+     false
+    ],
+    [
+     72,
+     false
+    ],
+    [
+     75,
+     false
+    ],
+    [
+     107,
+     false
+    ],
+    [
+     113,
+     true
+    ],
+    [
+     168,
+     true
+    ],
+    [
+     206,
+     false
+    ],
+    [
+     235,
+     false
+    ],
+    [
+     255,
+     true
+    ]
+   ],
+   "gate": "ExpandCapability 113, 255 or 168 (GB supportsArrhythmia)",
+   "type": "arrhythmia",
+   "title": "Arrhythmia (PPG)",
+   "class": 700004
+  }
+ ],
+ "handlerCases": [
+  {
+   "onData": 400012,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 400012430,
+     "value": "40424ccccccccccd"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"temperature": 36.599998474121094},
+    "type": "skin_temperature",
+    "value": 36.599998474121094,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 400012,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 400012430,
+     "value": "4033e66666666666"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 400012,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 400012430,
+     "value": "4045000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"temperature": 42},
+    "type": "skin_temperature",
+    "value": 42,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 400012,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 400012430,
+     "value": "40450ccccccccccd"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 400012,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 400012430,
+     "value": "7ff8000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 400012,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 1,
+     "value": "40424ccccccccccd"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 500044,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500044831,
+     "value": "4046f33333333333"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"rmssd": 45},
+    "type": "hrv",
+    "value": 45,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500044,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500044831,
+     "value": "4069000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"rmssd": 200},
+    "type": "hrv",
+    "value": 200,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500044,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500044831,
+     "value": "4069100000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 500044,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500044831,
+     "value": "bff0000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 500031,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500031195,
+     "value": "4042800000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"status": 37},
+    "type": "emotion",
+    "value": 37,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500031,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500031195,
+     "value": "4058f9999999999a"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"status": 99},
+    "type": "emotion",
+    "value": 99,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500031,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500031195,
+     "value": "4059000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 500031,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500031347,
+     "value": "4029000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {
+     "valence": 12.5,
+     "status": 0
+    },
+    "type": "emotion",
+    "value": 0,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500031,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500031347,
+     "value": "4059000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {
+     "valence": 100,
+     "status": 0
+    },
+    "type": "emotion",
+    "value": 0,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500031,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500031347,
+     "value": "4059200000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 500031,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500031160,
+     "value": "4014000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {
+     "originStatus": 5,
+     "status": 0
+    },
+    "type": "emotion",
+    "value": 0,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500031,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500031842,
+     "value": "4054100000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {
+     "status": 0,
+     "arousal": 80.25
+    },
+    "type": "emotion",
+    "value": 0,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500002,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500002847,
+     "value": "3ff0000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"level": 1},
+    "type": "sleep_apnea",
+    "value": 1,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500002,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500002847,
+     "value": "4012cccccccccccd"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"level": 4},
+    "type": "sleep_apnea",
+    "value": 4,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500002,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500002847,
+     "value": "4014000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 500002,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500002847,
+     "value": "7ff8000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": []
+  },
+  {
+   "onData": 400017,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 400017001,
+     "value": "400c000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"400017001": 3.5},
+    "type": "arterial_stiffness",
+    "value": null,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 200003,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 200003001,
+     "value": "4097700000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"200003001": 1500},
+    "type": "altitude",
+    "value": null,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 10002,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 10002001,
+     "value": "405e000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"10002001": 120},
+    "type": "blood_pressure",
+    "value": null,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500006,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 500006001,
+     "value": "4000000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"500006001": 2},
+    "type": "ams",
+    "value": null,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 700004,
+   "entries": [{
+    "modify": 1700000090000,
+    "values": [{
+     "tag": 10,
+     "type": 700004001,
+     "value": "3fe0000000000000"
+    }],
+    "start": 1700000000000,
+    "end": 1700000060000
+   }],
+   "rows": [{
+    "lastTimestamp": 1700000090000,
+    "valuesJson": {"700004001": 0.5},
+    "type": "arrhythmia",
+    "value": null,
+    "timestamp": 1700000000000
+   }]
+  },
+  {
+   "onData": 500031,
+   "entries": [{
+    "modify": 0,
+    "values": [
+     {
+      "tag": 10,
+      "type": 500031195,
+      "value": "4008000000000000"
+     },
+     {
+      "tag": 10,
+      "type": 500031347,
+      "value": "404bc00000000000"
+     },
+     {
+      "tag": 10,
+      "type": 500031160,
+      "value": "4000000000000000"
+     },
+     {
+      "tag": 10,
+      "type": 500031842,
+      "value": "4051800000000000"
+     },
+     {
+      "tag": 10,
+      "type": 500031999,
+      "value": "4051800000000000"
+     },
+     {
+      "tag": 11,
+      "type": 500031195,
+      "value": "74657874"
+     }
+    ],
+    "start": 1000,
+    "end": 2000
+   }],
+   "rows": [{
+    "lastTimestamp": 2000,
+    "valuesJson": {
+     "originStatus": 2,
+     "valence": 55.5,
+     "status": 3,
+     "arousal": 70
+    },
+    "type": "emotion",
+    "value": 3,
+    "timestamp": 1000
+   }]
+  },
+  {
+   "onData": 400012,
+   "entries": [{
+    "modify": 0,
+    "values": [{
+     "tag": 10,
+     "type": 400012430,
+     "value": "010203"
+    }],
+    "start": 1000,
+    "end": 0
+   }],
+   "rows": []
+  },
+  {
+   "onData": 400012,
+   "entries": [{
+    "modify": 0,
+    "values": [{
+     "tag": 11,
+     "type": 400012430,
+     "value": "4042400000000000"
+    }],
+    "start": 1000,
+    "end": 0
+   }],
+   "rows": []
+  },
+  {
+   "onData": 400017,
+   "entries": [{
+    "modify": 0,
+    "values": [
+     {
+      "tag": 10,
+      "type": 1,
+      "value": "401c000000000000"
+     },
+     {
+      "tag": 10,
+      "type": 2,
+      "value": "7ff8000000000000"
+     },
+     {
+      "tag": 10,
+      "type": 3,
+      "value": "0a0b"
+     },
+     {
+      "tag": 11,
+      "type": 4,
+      "value": "6865207361696420226869220ac3a9"
+     },
+     {
+      "tag": 12,
+      "type": 5,
+      "value": "ff"
+     },
+     {
+      "tag": 10,
+      "type": 6,
+      "value": "7ff0000000000000"
+     },
+     {
+      "tag": 10,
+      "type": 7,
+      "value": "bfc0000000000000"
+     }
+    ],
+    "start": 1000,
+    "end": 0
+   }],
+   "rows": [{
+    "lastTimestamp": 0,
+    "valuesJson": {
+     "1": 7,
+     "2": "hex:7ff8000000000000",
+     "3": "hex:0a0b",
+     "4": "he said \"hi\"\né",
+     "6": "hex:7ff0000000000000",
+     "7": -0.125,
+     "5.t12": "hex:ff"
+    },
+    "type": "arterial_stiffness",
+    "value": null,
+    "timestamp": 1000
+   }]
+  },
+  {
+   "onData": 400017,
+   "entries": [{
+    "modify": 0,
+    "values": [],
+    "start": 1000,
+    "end": 0
+   }],
+   "rows": []
+  }
+ ]
+}
