@@ -435,12 +435,17 @@ and the client secret against that account; the phone only ever receives the sho
   `/strava/callback`, which exchanges the code and redirects to `joyofit://settings/strava`. **Disconnect** revokes the
   grant at Strava (`oauth/revoke`) and deletes the stored tokens. If the athlete removes JoyoFit on strava.com, Strava's
   deauthorization webhook makes the Worker delete the tokens too.
-- **What is uploaded.** A TCX built on the phone from `workouts` + `workout_points` (`src/features/strava/tcx.ts`): every
-  sample from start to end (GPS and heart-rate-only), a cumulative distance scaled to the watch's total, the watch's
-  calories, heart rate and a mapped `sport_type`. Strava then keeps the watch's distance and calories. The upload goes
-  straight from the phone to `https://www.strava.com/api/v3/uploads` with `external_id = joyofit-<workout start>`, so a
-  workout can never be created twice. Per-workout state is in `strava_upload` (`processing`, `done`, `failed`,
-  `rejected`).
+- **What is uploaded.** A FIT activity file built on the phone from `workouts`, `workout_points` and the workout's
+  `summary_json` (`src/features/strava/activityFile.ts`, binary writer in `fitEncoder.ts`, no dependency): a record for
+  every sample from start to end (GPS position, heart rate, altitude, and a cumulative distance scaled so the last
+  record is exactly the watch's total), a timer start and stop event, one lap and one session with the watch's elapsed
+  time, **active time** (`total_timer_time`), distance, calories, average and maximum heart rate, elevation gain and
+  loss, average and maximum speed, and, for running, walking and hiking, the step count as strides plus the average
+  cadence over the active time, then a mapped FIT sport/sub-sport and `sport_type`. The watch gives no per-sample speed or
+  cadence and no list of pauses, so the file has none. Strava then keeps the watch's numbers. The upload goes
+  straight from the phone to `https://www.strava.com/api/v3/uploads` (`data_type=fit`, a binary multipart body) with
+  `external_id = joyofit-<workout start>`, so a workout can never be created twice. Per-workout state is in
+  `strava_upload` (`processing`, `done`, `failed`, `rejected`).
 - **When.** Workouts that **end after the account connected** are sent after each sync; Huawei-export imports and
   history are never sent automatically. **Send to Strava** on a workout's screen sends any workout, and **View on
   Strava** links to the activity.

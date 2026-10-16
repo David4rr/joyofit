@@ -7,7 +7,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
-import { DESCRIPTION_LINK } from '@/features/strava/tcx';
+import { DESCRIPTION_LINK } from '@/features/strava/activityFile';
 import { formatDateTime } from '@/format';
 import { spacing } from '@/theme';
 import { useCloud } from '@/state/CloudProvider';

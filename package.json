@@ -35,6 +35,7 @@
     "react-native-svg": "15.15.4"
   },
   "devDependencies": {
+    "@garmin/fitsdk": "^21.218.0",
     "@types/react": "~19.2.2",
     "sharp": "^0.35.5",
     "typescript": "~6.0.3"

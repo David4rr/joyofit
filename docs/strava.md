@@ -86,10 +86,17 @@ The refresh token and client secret never leave the Worker; the phone receives o
 | Tokens in the Authorization header | Uploads and polling use `Authorization: Bearer`; the client secret only appears in the Worker's server-to-server calls. |
 | Brand | Official "Connect with Strava" button and "Compatible with Strava" logo, unmodified (`assets/strava/`), linking to `oauth/mobile/authorize`; "View on Strava" text link in `#FC5200`, bold, underlined; the app name does not contain "Strava". |
 
-Upload details (so the numbers on Strava are the watch's): TCX with every sample from start to end, per-sample cumulative
-distance scaled to the watch's distance, lap calories, heart rate, `sport_type` mapped from the Huawei sport type,
-`external_id = joyofit-<workout start>` (a second upload of the same workout is refused by Strava as a duplicate and the
-app then links the existing activity). Strava's own auto-pause decides the moving time.
+Upload details (so the numbers on Strava are the watch's): a FIT activity file (`data_type=fit`, binary multipart body;
+<https://developers.strava.com/docs/uploads/#fit-flexible-and-interoperable-data-transfer>) with every sample from start
+to end as a `record` (position, heart rate, altitude, per-record cumulative distance scaled to the watch's distance), a timer
+start and stop `event`, one `lap` and one `session` carrying `total_elapsed_time`, `total_timer_time` (the watch's active
+time), `total_distance`, `total_calories`, heart rate, `total_ascent`/`total_descent`, speeds and, for running, walking and
+hiking, `total_cycles` (strides = steps / 2) and `avg_cadence`, and an `activity`. The sport comes from the FIT
+`session.sport`/`sub_sport` mapped from the Huawei sport type; the form's `sport_type` overrides what Strava detects from the
+file. `file_id.manufacturer` is 255 (development): Strava only maps a device name to a manufacturer ANT+ assigned, so the
+activity shows no device. `external_id = joyofit-<workout start>` (a second upload of the same workout is refused by Strava
+as a duplicate and the app then links the existing activity). The watch provides no per-sample speed or cadence and no
+list of pauses, so the file has none; the pause shows only as the difference between elapsed and timer time.
 
 ## 3. Review submission checklist
 
@@ -137,7 +144,9 @@ screenshots and how athlete data is handled). Before sending:
 
 ## 5. Tests
 
-- `bun test ./src/` (also `bun run test`): the file builder in `src/features/strava/tcx.test.ts` (distance scaling, full-span
-  samples, calories, sport mapping, duplicate detection, upload form).
+- `bun test ./src/` (also `bun run test`): `src/features/strava/fitEncoder.test.ts` (CRC, header, every field type, buffer
+  growth) and `activityFile.test.ts` (the file built from workouts, decoded back with Garmin's `@garmin/fitsdk`, a devDependency
+  used only by the tests: totals, record count, positions, heart rate, distance scaling, full-span samples, sport mapping,
+  duplicate detection, upload form).
 - `cd server && bun run test`: `server/test/strava.test.ts` (signed state, code exchange, refresh and rotation, revoke,
   webhook validation and deauthorization, token isolation between users).

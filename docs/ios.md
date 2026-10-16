@@ -118,7 +118,7 @@ The package also type-checks against the iPhoneOS SDK (`swiftc -typecheck -sdk <
 - State restoration and the background wake path; the Keychain after reinstall; HealthKit replacement on a repeated sync identifier; expo-sqlite
   sharing the database file with the native writer (the connection is kept open for the process lifetime because expo-sqlite links its own SQLite).
 - Strava: the connect page in `ASWebAuthenticationSession` and its return to `joyofit://settings/strava` (the Worker side was probed over HTTP,
-  the in-app part never ran on an iPhone); an upload of a Swift-written workout to Strava (the TCX builder and the rows are checked, Strava's
+  the in-app part never ran on an iPhone); an upload of a Swift-written workout to Strava (the FIT builder and the rows are checked, Strava's
   answer is not); that the automatic pass sends a workout the watch synced while the app was in the background once the app is opened.
 - `ITSAppUsesNonExemptEncryption=false` is set; the protocol link implements AES/HMAC itself (not through Apple's OS crypto), so the owner has to
   confirm that answer before App Store submission. The prebuild also adds default camera, microphone, photo library and Face ID strings from

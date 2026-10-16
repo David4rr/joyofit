@@ -10,7 +10,8 @@ import {
   type StravaUploadRow,
 } from '@/db/strava';
 import { getWorkout, listWorkoutPoints } from '@/db/queries';
-import { buildTcx, buildUploadForm, duplicateOf } from '@/features/strava/tcx';
+import { buildFit, buildUploadForm, duplicateOf } from '@/features/strava/activityFile';
+import { parseSummary } from '@/features/workouts/summary';
 import { errorMessage } from '@/format';
 import { pushLog } from '@/state/logStore';
 
@@ -104,7 +105,7 @@ interface UploadStatus {
 
 async function stravaFetch(
   path: string,
-  init: { method: 'GET' | 'POST'; headers?: Record<string, string>; body?: string },
+  init: { method: 'GET' | 'POST'; headers?: Record<string, string>; body?: Uint8Array<ArrayBuffer> },
 ): Promise<UploadStatus> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -163,7 +164,7 @@ export function sendWorkoutToStrava(db: SQLiteDatabase, workoutId: number): Prom
 async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUploadRow> {
   const found = await getWorkout(db, workoutId);
   if (!found) throw new Error('This workout is no longer stored.');
-  const { workout } = found;
+  const { workout, summaryJson } = found;
   const previous = await getStravaUpload(db, workout.start);
   if (previous?.status === 'done') return previous;
   const attempts = (previous?.attempts ?? 0) + 1;
@@ -175,7 +176,12 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
     if (uploadId === null) {
       const points = await listWorkoutPoints(db, workoutId);
       const { addLink } = await getStravaSettings(db);
-      const form = buildUploadForm(workout, buildTcx(workout, points).xml, { addLink });
+      const summary = parseSummary(summaryJson);
+      const fit = buildFit(
+        { ...workout, elevationGain: summary.elevationGain, elevationLoss: summary.elevationLoss, maxSpeed: summary.maxSpeed },
+        points,
+      );
+      const form = buildUploadForm(workout, fit.bytes, { addLink });
       try {
         status = await stravaFetch('/uploads', { method: 'POST', headers: { 'Content-Type': form.contentType }, body: form.body });
       } catch (error) {
