@@ -398,7 +398,7 @@ public final class WearLink: @unchecked Sendable {
     }
 
     /// Pulls sleep, steps and totals since the last stored sync, commits them to the shared database and reports a summary (also as
-    /// `onSyncComplete`). The workout, night-HRV and P2P phases of the Android sync are not ported.
+    /// `onSyncComplete`). The night-HRV and P2P phases of the Android sync are not ported.
     public func syncActivity() async throws -> SyncSummary {
         let connection = try requireConnected()
         if currentState() == .syncing { throw WearError(.busy, "A sync is already running") }
@@ -451,8 +451,10 @@ public final class WearLink: @unchecked Sendable {
         )
         let result = try await sync.sync(fromSec: from)
         let stored = try storage { try syncStore.save(address: address, result: result) }
-        events.info("Workout sync: not available on iOS yet, 0 workouts stored")
-        return stored.withWorkouts(0)
+        let workouts = try await WorkoutPhase.run(
+            session: session, caps: caps, syncStore: syncStore, events: events, nowSec: Int64(now().timeIntervalSince1970)
+        )
+        return stored.withWorkouts(workouts)
     }
 
     /// Database access; a failed read or write surfaces as ERR_STORAGE.

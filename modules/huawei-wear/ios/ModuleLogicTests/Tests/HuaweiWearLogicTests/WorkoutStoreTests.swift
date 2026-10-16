@@ -1,0 +1,289 @@
+import XCTest
+@testable import HuaweiWearLogic
+
+/// A watch that answers the 0x17 workout commands for one workout over the real `HuaweiSession` wire format (requests are decrypted with the
+/// session's key like the watch does). The GPS file (service 0x2C) is covered by the protocol package's tests; this watch reports no trajectory.
+final class ScriptedWorkoutWatch: FrameSink, @unchecked Sendable {
+    private let lock = NSLock()
+    private var assembler = PacketAssembler()
+    private var session: HuaweiSession?
+    private var _requests: [(service: UInt8, command: UInt8)] = []
+    /// Commands that get no answer.
+    var silent: Set<UInt8> = []
+    var workouts: [(number: Int16, start: Int32, end: Int32, type: UInt8, hr: [UInt8])] = []
+
+    func attach(_ session: HuaweiSession) { lock.locked { self.session = session } }
+    var requests: [(service: UInt8, command: UInt8)] { lock.locked { _requests } }
+
+    func write(_ frames: [Bytes]) async throws {
+        for f in frames { handle(f) }
+    }
+
+    private func frame(command: UInt8, _ tlv: HuaweiTLV) -> Bytes {
+        var buffer = Bytes([huaweiMagic])
+        let body = tlv.serialize()
+        buffer.appendBE(UInt16(2 + body.count + 1))
+        buffer.append(0)
+        buffer.append(0x17)
+        buffer.append(command)
+        buffer += body
+        buffer.appendBE(CRC16.checksum(buffer))
+        return buffer
+    }
+
+    private func handle(_ f: Bytes) {
+        guard let session = lock.locked({ self.session }) else { return }
+        var local = lock.locked { assembler }
+        guard let packet = try? local.feed(f, params: session.params).packet else { return }
+        lock.locked { assembler = local }
+        guard let tlv = packet.tlv else { return }
+        lock.locked { _requests.append((packet.serviceId, packet.commandId)) }
+        if packet.serviceId != 0x17 || silent.contains(packet.commandId) { return }
+        let c = (try? tlv.object(0x81)) ?? HuaweiTLV()
+        func answer(_ t: HuaweiTLV) { session.onData(frame(command: packet.commandId, t)) }
+        func box(_ build: (inout HuaweiTLV) -> Void) -> HuaweiTLV {
+            var inner = HuaweiTLV()
+            build(&inner)
+            var out = HuaweiTLV()
+            out.put(0x81, tlv: inner)
+            return out
+        }
+        switch packet.commandId {
+        case 0x07:
+            answer(box { inner in
+                inner.put(0x02, short: Int16(workouts.count))
+                for w in workouts {
+                    var e = HuaweiTLV()
+                    e.put(0x06, short: w.number)
+                    e.put(0x07, short: 1)
+                    e.put(0x08, short: 0)
+                    e.put(0x0e, byte: 0)
+                    inner.put(0x85, tlv: e)
+                }
+            })
+        case 0x08:
+            guard let n = try? c.short(0x02), let w = workouts.first(where: { $0.number == n }) else { return }
+            answer(box {
+                $0.put(0x02, short: w.number)
+                $0.put(0x04, int: w.start)
+                $0.put(0x05, int: w.end)
+                $0.put(0x06, int: 300)
+                $0.put(0x07, int: 4200)
+                $0.put(0x08, int: 5000)
+                $0.put(0x12, int: w.end - w.start)
+                $0.put(0x14, byte: w.type)
+            })
+        case 0x0a:
+            guard let n = try? c.short(0x02), let w = workouts.first(where: { $0.number == n }) else { return }
+            var header = Bytes()
+            header.appendBE(UInt16(bitPattern: n))
+            header.appendBE(UInt16(0))
+            header.appendBE(UInt32(bitPattern: w.start))
+            header.append(5)
+            header.appendBE(UInt16(w.hr.count))
+            header.append(1)
+            header.appendBE(UInt16(0x0001))
+            answer(box {
+                $0.put(0x02, short: n)
+                $0.put(0x03, short: 0)
+                $0.put(0x04, bytes: header)
+                $0.put(0x05, bytes: w.hr)
+            })
+        default:
+            return
+        }
+    }
+}
+
+final class WorkoutStoreTests: XCTestCase {
+    private let start: Int32 = 1_700_000_000
+
+    private func record(start: Int64 = 1_700_000_000, end: Int64 = 1_700_000_600, complete: Bool = true, points: [WorkoutPoint] = [], steps: Int = 100) -> WorkoutRecord {
+        WorkoutRecord(
+            number: 5, start: start, end: end, sportType: 1, sportName: "Running", duration: 600, distance: 5000, calories: 321, steps: steps, avgHr: 135, maxHr: nil,
+            summaryJson: "{\"kind\":\"RUNNING\"}", points: points, complete: complete
+        )
+    }
+
+    private func rows<T>(_ store: SyncStore, _ sql: String, _ map: @escaping (SQLiteStatement) -> T) throws -> [T] {
+        try store.read { try $0.query(sql, [], map) }
+    }
+
+    // MARK: WorkoutStore
+
+    func testSavesTheRowAndItsPointsWithNullsWhereASourceHadNone() throws {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let workouts = WorkoutStore(store)
+        let points = [
+            WorkoutPoint(ts: 1_700_000_000, lat: nil, lon: nil, alt: 5.5, hr: 120),
+            WorkoutPoint(ts: 1_700_000_010, lat: -6.2, lon: 106.8, alt: nil, hr: nil),
+        ]
+
+        XCTAssertTrue(try workouts.save(record(points: points)))
+
+        let row = try rows(store, "SELECT workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete FROM workouts") {
+            [$0.int(0), $0.int(1), $0.int(2), $0.int(3), $0.int(5), $0.int(6), $0.int(7), $0.int(10), $0.int(12)]
+        }
+        XCTAssertEqual(row, [[5, 1_700_000_000, 1_700_000_600, 1, 600, 5000, 321, 100, 1]])
+        let strings = try rows(store, "SELECT sport_name, summary_json, avg_hr, max_hr FROM workouts") { [$0.text(0), $0.text(1), $0.optionalInt(2).map(String.init), $0.optionalInt(3).map(String.init)] }
+        XCTAssertEqual(strings.first ?? [], ["Running", "{\"kind\":\"RUNNING\"}", "135", nil])
+        let stored = try rows(store, "SELECT ts, lat, lon, alt, hr FROM workout_points ORDER BY ts") { s in
+            [s.isNull(1) ? nil : s.double(1), s.isNull(2) ? nil : s.double(2), s.isNull(3) ? nil : s.double(3), s.isNull(4) ? nil : Double(s.int(4))]
+        }
+        XCTAssertEqual(stored.count, 2)
+        XCTAssertEqual(stored[0], [nil, nil, 5.5, 120])
+        XCTAssertEqual(stored[1], [-6.2, 106.8, nil, nil])
+    }
+
+    func testSavingAgainReplacesTheWorkoutAndItsPointsKeepingTheId() throws {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let workouts = WorkoutStore(store)
+        XCTAssertTrue(try workouts.save(record(complete: false, points: [WorkoutPoint(ts: 1, lat: nil, lon: nil, alt: nil, hr: 90)])))
+        let id = try rows(store, "SELECT id FROM workouts") { $0.int(0) }
+
+        // Incomplete before: finishing it counts as stored.
+        XCTAssertTrue(try workouts.save(record(end: 1_700_000_900, complete: true, points: [WorkoutPoint(ts: 2, lat: nil, lon: nil, alt: nil, hr: 95), WorkoutPoint(ts: 3, lat: nil, lon: nil, alt: nil, hr: 96)], steps: 222)))
+        // Complete before: not new.
+        XCTAssertFalse(try workouts.save(record(end: 1_700_000_900, complete: true, points: [WorkoutPoint(ts: 4, lat: nil, lon: nil, alt: nil, hr: 99)], steps: 333)))
+
+        XCTAssertEqual(try rows(store, "SELECT id FROM workouts") { $0.int(0) }, id)
+        XCTAssertEqual(try rows(store, "SELECT end, steps, complete FROM workouts") { [$0.int(0), $0.int(1), $0.int(2)] }, [[1_700_000_900, 333, 1]])
+        XCTAssertEqual(try rows(store, "SELECT ts FROM workout_points") { $0.int(0) }, [4])
+    }
+
+    func testRevColumnAdvancesOnEveryReplaceForTheCloudCursor() throws {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let workouts = WorkoutStore(store)
+        _ = try workouts.save(record())
+        let first = try rows(store, "SELECT rev FROM workouts") { $0.int(0) }[0]
+        _ = try workouts.save(record(steps: 7))
+        let second = try rows(store, "SELECT rev FROM workouts") { $0.int(0) }[0]
+        XCTAssertGreaterThan(second, first)
+    }
+
+    func testIsCompleteNeedsStartEndAndTheCompleteFlag() throws {
+        let workouts = WorkoutStore(SyncStore(url: temporaryDatabaseURL()))
+        _ = try workouts.save(record(complete: true))
+        _ = try workouts.save(record(start: 5_000, end: 5_600, complete: false))
+
+        XCTAssertTrue(try workouts.isComplete(start: 1_700_000_000, end: 1_700_000_600))
+        XCTAssertFalse(try workouts.isComplete(start: 1_700_000_000, end: 1_700_000_601))
+        XCTAssertFalse(try workouts.isComplete(start: 5_000, end: 5_600))
+        XCTAssertFalse(try workouts.isComplete(start: 9, end: 9))
+    }
+
+    func testSyncStartIsTheGbDefaultThenAfterTheNewestWorkoutOrTheOldestIncomplete() throws {
+        let workouts = WorkoutStore(SyncStore(url: temporaryDatabaseURL()))
+        XCTAssertEqual(try workouts.syncStart(), 1_654_819_200)
+
+        _ = try workouts.save(record(start: 1_700_000_000, end: 1_700_000_600))
+        XCTAssertEqual(try workouts.syncStart(), 1_700_000_601)
+
+        _ = try workouts.save(record(start: 1_690_000_000, end: 1_690_000_100, complete: false))
+        _ = try workouts.save(record(start: 1_695_000_000, end: 1_695_000_100, complete: false))
+        XCTAssertEqual(try workouts.syncStart(), 1_690_000_000, "the oldest incomplete workout is asked for again")
+
+        _ = try workouts.save(record(start: 1_800_000_000, end: 1_800_000_100, complete: false))
+        _ = try workouts.save(record(start: 1_690_000_000, end: 1_690_000_100, complete: true))
+        _ = try workouts.save(record(start: 1_695_000_000, end: 1_695_000_100, complete: true))
+        XCTAssertEqual(try workouts.syncStart(), 1_800_000_000, "incomplete again, and it is also the newest")
+    }
+
+    func testSyncStartIsClampedToTheWireRange() throws {
+        let workouts = WorkoutStore(SyncStore(url: temporaryDatabaseURL()))
+        _ = try workouts.save(record(start: 5_000_000_000, end: 5_000_000_100))
+        XCTAssertEqual(try workouts.syncStart(), Int(Int32.max))
+    }
+
+    // MARK: the phase over a scripted watch
+
+    private struct Rig {
+        let session: HuaweiSession
+        let watch: ScriptedWorkoutWatch
+        let events = RecordingEvents()
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let caps = DeviceCaps()
+
+        init(_ workouts: [(number: Int16, start: Int32, end: Int32, type: UInt8, hr: [UInt8])]) {
+            watch = ScriptedWorkoutWatch()
+            watch.workouts = workouts
+            session = HuaweiSession(sink: watch, log: { _ in })
+            session.params.secretKey = Bytes(repeating: 0, count: 16)
+            session.params.encryptMethod = 0
+            session.params.deviceSupportType = 1
+            watch.attach(session)
+        }
+
+        func run(nowSec: Int64) async throws -> Int {
+            try await WorkoutPhase.run(session: session, caps: caps, syncStore: store, events: events, nowSec: nowSec)
+        }
+    }
+
+    func testPhaseStoresTheWatchsWorkoutsAndReportsTheCount() async throws {
+        let rig = Rig([(5, start, start + 600, 1, [120, 0, 150]), (6, start + 7200, start + 7800, 3, [100, 110])])
+
+        let saved = try await rig.run(nowSec: Int64(start) + 10_000)
+
+        XCTAssertEqual(saved, 2)
+        let stored = try rows(rig.store, "SELECT workout_number, sport_name, avg_hr, max_hr, distance, complete FROM workouts ORDER BY start") {
+            [$0.text(1) ?? "", String($0.int(0)), String($0.int(2)), String($0.int(3)), String($0.int(4)), String($0.int(5))]
+        }
+        XCTAssertEqual(stored, [["Running", "5", "135", "150", "4200", "1"], ["Biking", "6", "105", "110", "4200", "1"]])
+        XCTAssertEqual(try rows(rig.store, "SELECT COUNT(*) FROM workout_points WHERE hr IS NOT NULL") { $0.int(0) }, [4])
+        XCTAssertTrue(rig.events.messages(.info).contains("Workout sync: 2 workouts stored"))
+    }
+
+    func testTheSummaryCarriesTheWorkoutCountToJs() async throws {
+        let rig = Rig([(5, start, start + 600, 1, [120])])
+        let saved = try await rig.run(nowSec: Int64(start) + 10_000)
+        let summary = SyncSummary(from: 1, to: 2, samples: 3, sleep: 4, totalSteps: 5, totalCalories: 6, totalDistance: 7).withWorkouts(saved)
+
+        XCTAssertEqual(summary.workouts, 1)
+        XCTAssertEqual(summary.toJS()["workouts"] as? Int, 1)
+    }
+
+    func testASecondPhaseAsksOnlyForWhatCameAfterAndStoresNothingTwice() async throws {
+        let rig = Rig([(5, start, start + 600, 1, [120, 130])])
+        _ = try await rig.run(nowSec: Int64(start) + 10_000)
+        let before = rig.watch.requests.count
+
+        let again = try await rig.run(nowSec: Int64(start) + 20_000)
+
+        XCTAssertEqual(again, 0)
+        XCTAssertEqual(try rows(rig.store, "SELECT COUNT(*) FROM workouts") { $0.int(0) }, [1])
+        // The count request is repeated (the fake lists the workout again), but it is complete in the database, so neither its totals' data
+        // nor its points are asked for a second time.
+        let newRequests = rig.watch.requests.dropFirst(before).map { $0.command }
+        XCTAssertFalse(newRequests.contains(0x0a))
+    }
+
+    func testAWatchThatStopsAnsweringKeepsTheWorkoutIncompleteForTheNextSync() async throws {
+        let rig = Rig([(5, start, start + 600, 1, [120, 130])])
+        rig.watch.silent = [0x0c, 0x0a]
+
+        // Every request waits 10 s like GB's; shorten the wait on the sync object the phase would use.
+        let sync = WorkoutSync(session: rig.session, caps: rig.caps, log: rig.events.sink)
+        sync.requestTimeoutMs = 100
+        let sink = WorkoutStore(rig.store)
+        do {
+            try await sync.sync(startSec: Int(start) - 10, endSec: Int(start) + 10_000, sink: sink)
+            XCTFail("expected a timeout")
+        } catch let e as WearError {
+            XCTAssertEqual(e.code, .timeout)
+        }
+
+        XCTAssertEqual(try rows(rig.store, "SELECT complete FROM workouts") { $0.int(0) }, [0])
+        XCTAssertEqual(try sink.syncStart(), Int(start), "the incomplete workout's start beats the end of the newest one")
+    }
+
+    func testALostLinkIsLoggedAndDoesNotFailTheSyncThatAlreadyStoredItsData() async throws {
+        let rig = Rig([(5, start, start + 600, 1, [120])])
+        await rig.session.close(WearError(.disconnected, "link closed"))
+
+        let saved = try await rig.run(nowSec: Int64(start) + 10_000)
+
+        XCTAssertEqual(saved, 0)
+        XCTAssertTrue(rig.events.messages(.error).contains { $0.hasPrefix("Workout sync failed:") && $0.contains("link closed") })
+        XCTAssertTrue(rig.events.messages(.info).contains("Workout sync: 0 workouts stored"))
+    }
+}
