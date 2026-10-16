@@ -172,7 +172,7 @@ export function WeatherSection() {
           />
           {!status.locationPermission ? (
             <Button
-              label={Platform.OS === 'ios' && needsSettings ? 'Open Settings' : 'Allow location'}
+              label={Platform.OS === 'ios' && needsSettings ? 'Open Settings' : 'Continue'}
               variant="secondary"
               icon="location-outline"
               onPress={allowLocation}

@@ -147,7 +147,7 @@ function PhoneSectionAndroid() {
       <KeyValue icon="navigate" label="Phone GPS for outdoor workouts" value={gps === null ? null : gps ? 'Granted' : 'Not granted'} />
       {gps === false ? (
         <Button
-          label="Allow precise location"
+          label="Continue"
           variant="secondary"
           icon="location"
           onPress={() =>

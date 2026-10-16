@@ -103,7 +103,7 @@ export default function WatchScreen() {
           {permission.status === 'blocked' ? (
             <Button label="Open app settings" icon="settings" onPress={() => void Linking.openSettings()} />
           ) : (
-            <Button label="Allow Bluetooth" variant="primary" icon="bluetooth" onPress={() => void permission.request()} />
+            <Button label="Continue" variant="primary" icon="bluetooth" onPress={() => void permission.request()} />
           )}
         </>
       ) : (

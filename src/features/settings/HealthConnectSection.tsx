@@ -118,7 +118,7 @@ export function HealthConnectSection() {
       ) : null}
       {status && !unavailable && grantedCount < RECORD_TYPE_COUNT ? (
         <Button
-          label="Allow more types"
+          label="Continue"
           variant="secondary"
           icon="add-circle-outline"
           onPress={() =>
