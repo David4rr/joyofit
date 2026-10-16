@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { KeyValue } from '@/components/KeyValue';
 import { NavRow } from '@/components/NavRow';
 import { Divider, Screen, Section } from '@/components/Screen';
+import { isIos } from '@/components/IosUnavailable';
 import { EmptyState, LoadingState, Notice } from '@/components/States';
 import { BondedRow } from '@/features/device/BondedRow';
 import { FindWatchSection } from '@/features/device/FindWatchSection';
@@ -18,11 +19,17 @@ import { useBondedDevices } from '@/features/device/useBondedDevices';
 import { useWatch } from '@/state/WatchProvider';
 import { fonts, spacing, useColors } from '@/theme';
 
-const CONNECT_STEPS = [
-  'Pair the watch in Android Bluetooth settings. It has to appear in the list below.',
-  'Unbind it from Huawei Health first, or the watch will refuse this app.',
-  'On the first connect, keep the watch awake and accept the prompt on its screen.',
-];
+const CONNECT_STEPS = isIos
+  ? [
+      'Keep the watch close to the iPhone with Bluetooth on. It shows up in the list below.',
+      'Unbind it from Huawei Health first, or the watch will refuse this app.',
+      'On the first connect, keep the watch awake, accept the prompt on its screen, then tap Pair on the iPhone.',
+    ]
+  : [
+      'Pair the watch in Android Bluetooth settings. It has to appear in the list below.',
+      'Unbind it from Huawei Health first, or the watch will refuse this app.',
+      'On the first connect, keep the watch awake and accept the prompt on its screen.',
+    ];
 
 /** The three things that have to be true before the first connect, in the order they happen. */
 function ConnectSteps() {
@@ -106,7 +113,11 @@ export default function WatchScreen() {
             <EmptyState
               icon="bluetooth"
               title="No paired devices"
-              description="Pair the watch in Android Bluetooth settings, then refresh."
+              description={
+                isIos
+                  ? 'Keep the watch close to the iPhone with Bluetooth on, then refresh.'
+                  : 'Pair the watch in Android Bluetooth settings, then refresh.'
+              }
               action={{ label: 'Refresh list', icon: 'refresh', onPress: () => void bonded.reload() }}
             />
           ) : (
