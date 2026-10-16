@@ -11,6 +11,8 @@ import HuaweiProtocol
 public final class WorkoutStore: WorkoutSink {
     /// GB HuaweiWorkoutSyncManager.getStartTimeFromDb fallback: 2022-06-10 00:00:00 UTC.
     public static let defaultStartSec: Int64 = 1_654_819_200
+    /// A full-history pull starts here (2000-01-01, the Kotlin `DEFAULT_START_SEC`): everything the watch still holds.
+    public static let fullHistoryStartSec: Int64 = 946_684_800
 
     private let store: SyncStore
 
@@ -75,7 +77,9 @@ public final class WorkoutStore: WorkoutSink {
     /// Start of the next workout window, unix seconds. GB asks for everything after the newest stored workout (and from 2022-06-10 when there
     /// is none); the start of the oldest incomplete workout wins over that so it is downloaded again. Workouts imported from a Huawei export say
     /// nothing about what the watch still holds, so they do not count.
-    public func syncStart() throws -> Int {
+    /// `fullHistory` always starts from 2000-01-01; stored workouts upsert by start.
+    public func syncStart(fullHistory: Bool = false) throws -> Int {
+        if fullHistory { return Int(WorkoutStore.fullHistoryStartSec) }
         let (newestEnd, oldestIncomplete): (Int64?, Int64?) = try store.read { db in
             let newest = try db.query("SELECT MAX(end) FROM workouts WHERE imported = 0") { $0.isNull(0) ? nil : $0.int64(0) }.first ?? nil
             let incomplete = try db.query("SELECT MIN(start) FROM workouts WHERE complete = 0") { $0.isNull(0) ? nil : $0.int64(0) }.first ?? nil
@@ -95,11 +99,11 @@ public final class WorkoutStore: WorkoutSink {
 public enum WorkoutPhase {
     /// Workout sessions and their GPS tracks. Whatever fails here is logged and does not fail the sync: the steps, sleep and totals are already
     /// committed. Returns the workouts newly stored (or completed). Only cancellation propagates.
-    public static func run(session: HuaweiSession, caps: DeviceCaps, syncStore: SyncStore, events: WearEvents, nowSec: Int64) async throws -> Int {
+    public static func run(session: HuaweiSession, caps: DeviceCaps, syncStore: SyncStore, events: WearEvents, nowSec: Int64, fullHistory: Bool = false) async throws -> Int {
         let workouts = WorkoutStore(syncStore)
         let sync = WorkoutSync(session: session, caps: caps, log: events.sink)
         do {
-            let start = try workouts.syncStart()
+            let start = try workouts.syncStart(fullHistory: fullHistory)
             try await sync.sync(startSec: start, endSec: Int(Int32(truncatingIfNeeded: nowSec)), sink: workouts)
         } catch is CancellationError {
             throw CancellationError()

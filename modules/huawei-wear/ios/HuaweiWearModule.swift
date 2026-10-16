@@ -117,6 +117,8 @@ public final class HuaweiWearModule: Module {
         func faceCustomization(_ payload: [String: Any]) { emit("onFaceCustomization", payload) }
         /// `onHuaweiImportProgress`: not part of `WearEvents`; the import controller reports to the module that started it.
         func huaweiImportProgress(_ payload: [String: Any]) { emit("onHuaweiImportProgress", payload) }
+        func watchMealLogged(_ payload: [String: Any]) { emit("onWatchMealLogged", payload) }
+        func liveWorkout(_ payload: [String: Any]) { emit("onLiveWorkout", payload) }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -201,6 +203,10 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.link.syncActivity().toJS() }
         }
 
+        AsyncFunction("syncFullHistory") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.link.syncActivity(fullHistory: true).toJS() }
+        }
+
         AsyncFunction("forgetDevice") { (address: String) async throws -> Void in
             runtime.forget(address)
         }
@@ -241,6 +247,21 @@ public final class HuaweiWearModule: Module {
             return try await wearCall { try await runtime.setUserProfile(parsed) }
         }
 
+        // MARK: activity-ring goals and body metrics
+
+        AsyncFunction("setBodyMetrics") { (update: [String: Any]) async throws -> [String: Any] in
+            try await wearCall { try await runtime.bodyMetrics.set(BodyMetricsData.parse(update)).toJS() }
+        }
+
+        // Stores the goals and reminders and sends them; true when they all reached the watch. The steps goal also goes into the profile's.
+        AsyncFunction("setActivityGoals") { (goals: [String: Any]) async throws -> Bool in
+            try await wearCall { try await runtime.setActivityGoals(ActivityGoalsData.parse(goals)) }
+        }
+
+        AsyncFunction("sendActivityGoals") { () async throws -> Bool in
+            try await wearCall { try await runtime.activityGoals.send("manual") }
+        }
+
         // MARK: Apple Health (the HealthKit counterpart of the Health Connect export)
 
         AsyncFunction("getHealthConnectStatus") { () async throws -> [String: Any] in
@@ -273,29 +294,28 @@ public final class HuaweiWearModule: Module {
         Function("getMorningSummaryEnabled") { () -> Bool in false }
         Function("getHealthSensors") { () -> [String: Any] in runtime.watchSettings.healthSensorsStatus() }
         Function("getStressStatus") { () -> [String: Any] in runtime.watchSettings.stress.status() }
-        Function("getLiveWorkout") { () -> [String: Any]? in nil }
+        Function("getLiveWorkout") { () -> [String: Any]? in runtime.liveWorkout.snapshot() }
         Function("getPhoneFeatures") { () -> [String: Any] in runtime.features.status() }
         Function("getAlarms") { () -> [String: Any] in runtime.watchSettings.cachedAlarms() }
-        Function("getSafety") { () -> [String: Any] in Inert.safety() }
+        Function("getSafety") { () -> [String: Any] in runtime.safety.status() }
         Function("testSosRelay") { () -> [String: Any] in Inert.sosRelayTest() }
-        Function("getDietStatus") { () -> [String: Any] in Inert.diet() }
-        Function("getBodyMetrics") { () -> [String: Any] in Inert.bodyMetrics() }
-        Function("getActivityGoals") { () -> [String: Any] in Inert.activityGoals(dailyStepGoal: runtime.settings.profile?.dailyStepGoal) }
-        Function("getHealthyLiving") { () -> [String: Any] in Inert.healthyLiving() }
-        Function("getCourses") { () -> [String: Any] in Inert.courses() }
+        Function("getDietStatus") { () -> [String: Any] in runtime.diet.status() }
+        Function("getBodyMetrics") { () -> [String: Any] in runtime.bodyMetrics.load().toJS() }
+        Function("getActivityGoals") { () -> [String: Any] in runtime.activityGoals.status() }
+        Function("getHealthyLiving") { () -> [String: Any] in runtime.p2p.healthLivingStatus() }
+        Function("getCourses") { () -> [String: Any] in runtime.p2p.coursesStatus() }
 
         AsyncFunction("getNotificationApps") { () async throws -> [[String: Any]] in [] }
         AsyncFunction("getCycle") { () async throws -> [String: Any] in
-            Inert.cycle(today: Inert.today(), watchConnected: runtime.link.deviceInfo() != nil)
+            try await wearCall { try runtime.cycle.overview() }
         }
 
         // Nothing to do where Android's own call is a no-op with nothing running or stored.
         AsyncFunction("cancelHrvMeasurement") { () async throws -> Void in
             runtime.watchSettings.hrv.cancel()
         }
-        Function("dismissLiveWorkout") { () -> Void in }
-        Function("finishLiveWorkout") { () -> Void in }
-        AsyncFunction("markWatchMealsSynced") { (ids: [String]) async throws -> Void in }
+        Function("dismissLiveWorkout") { () -> Void in runtime.liveWorkout.dismiss() }
+        Function("finishLiveWorkout") { () -> Void in runtime.liveWorkout.finish() }
         // Realtime heart rate drains the watch: it never outlives the app being on screen.
         AsyncFunction("setLiveHeartRate") { (active: Bool) async throws -> Void in
             runtime.watchSettings.liveHeartRate.setActive(active)
@@ -304,7 +324,7 @@ public final class HuaweiWearModule: Module {
         OnAppEntersBackground {
             runtime.watchSettings.liveHeartRate.setActive(false)
         }
-        Function("startLiveWorkout") { () throws -> Void in throw iosUnsupported("startLiveWorkout") }
+        Function("startLiveWorkout") { () -> Void in runtime.liveWorkout.startManual() }
 
         AsyncFunction("setNotificationsEnabled") { (enabled: Bool) async throws -> Void in
             try await wearCall { try await runtime.notifications.setEnabled(enabled) }
@@ -330,8 +350,43 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.watchSettings.setAlarms(try WatchAlarms.fromJS(alarms)) }
         }
 
+        // MARK: fall detection and the morning sleep report
+
+        AsyncFunction("setFallDetection") { (enabled: Bool) async throws -> Bool in
+            try await wearCall { try await runtime.safety.setFall(enabled) }
+        }
+
+        AsyncFunction("queryFallDetection") { () async throws -> Bool in
+            try await wearCall { try await runtime.safety.queryFall() }
+        }
+
+        AsyncFunction("setSleepReportEnabled") { (enabled: Bool) async throws -> Void in
+            runtime.safety.settings.sleepReportEnabled = enabled
+        }
+
+        AsyncFunction("sendSleepReportNow") { () async throws -> String in
+            try await wearCall { try await runtime.sleepReport.push(force: true) }
+        }
+
         AsyncFunction("findWatch") { (start: Bool) async throws -> Void in
             try await wearCall { try await runtime.features.findWatch(start) }
+        }
+
+        // MARK: meals on the watch's calorie card
+
+        AsyncFunction("setDietDay") { (day: [String: Any]) async throws -> Bool in
+            guard let parsed = DietDayArgument(js: day) else {
+                throw WearException(.invalidArgument, "Each meal of the day must be an object")
+            }
+            return try await wearCall { try await runtime.diet.setDay(date: parsed.date, meals: parsed.meals, goals: parsed.goals) }
+        }
+
+        AsyncFunction("pushDietNow") { () async throws -> Bool in
+            try await wearCall { try await runtime.diet.push("manual", withConfig: true) }
+        }
+
+        AsyncFunction("markWatchMealsSynced") { (ids: [String]) async throws -> Void in
+            try await wearCall { try runtime.diet.markWatchMealsSynced(ids) }
         }
 
         // MARK: weather
@@ -418,6 +473,54 @@ public final class HuaweiWearModule: Module {
             runtime.huaweiImport.cancel()
         }
 
+        // MARK: P2P (service 0x34): Healthy Living and the experimental running courses
+
+        AsyncFunction("setHealthyLivingEnabled") { (enabled: Bool) async throws -> Void in
+            runtime.p2p.setHealthLivingEnabled(enabled)
+        }
+
+        AsyncFunction("pushHealthyLiving") { () async throws -> Bool in
+            try await wearCall { try await runtime.p2p.pushHealthLiving() }
+        }
+
+        AsyncFunction("setCoursesEnabled") { (enabled: Bool) async throws -> Void in
+            runtime.p2p.settings.experimentalCourses = enabled
+        }
+
+        AsyncFunction("pushRunningCourse") { (course: [String: Any]) async throws -> [String: Any] in
+            try await wearCall { try await runtime.p2p.pushCourse(P2pController.parseCourse(course)) }
+        }
+
+        // MARK: cycle calendar
+
+        AsyncFunction("setCycleEnabled") { (enabled: Bool) async throws -> Void in
+            runtime.cycle.setEnabled(enabled)
+        }
+
+        AsyncFunction("setCycleSwitches") { (switches: [String: Any]) async throws -> Void in
+            try await wearCall { runtime.cycle.setSwitches(try MenstrualCodec.Switches(js: switches)) }
+        }
+
+        AsyncFunction("startPeriod") { (day: String) async throws -> Void in
+            try await wearCall { try runtime.cycle.startPeriod(day) }
+        }
+
+        AsyncFunction("endPeriod") { (day: String) async throws -> Void in
+            try await wearCall { try runtime.cycle.endPeriod(day) }
+        }
+
+        AsyncFunction("addPeriod") { (start: String, end: String) async throws -> Void in
+            try await wearCall { try runtime.cycle.addPeriod(start: start, end: end) }
+        }
+
+        AsyncFunction("deletePeriod") { (start: String) async throws -> Void in
+            try await wearCall { try runtime.cycle.deletePeriod(start) }
+        }
+
+        AsyncFunction("logCycleDay") { (day: String, flow: Int, cramps: Int) async throws -> Void in
+            try await wearCall { try runtime.cycle.logDay(day, flow: flow, cramps: cramps) }
+        }
+
         // MARK: switches of phone-side features that are always off here
 
         switchRejectingOn("setMorningSummaryEnabled")
@@ -425,32 +528,11 @@ public final class HuaweiWearModule: Module {
         switchRejectingOn("setCallsEnabled")
         switchRejectingOn("setCallControlEnabled")
         switchRejectingOn("setSosRelayEnabled")
-        switchRejectingOn("setSleepReportEnabled")
-        switchRejectingOn("setCycleEnabled")
-        switchRejectingOn("setHealthyLivingEnabled")
-        switchRejectingOn("setCoursesEnabled")
 
         // MARK: commands that would reach the watch or Android-only screens: ERR_UNSUPPORTED
 
         rejects("openNotificationAccess")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
-        rejects("setFallDetection", Bool.self)
-        rejects("queryFallDetection")
-        rejects("sendSleepReportNow")
-        rejects("setCycleSwitches", [String: Any].self)
-        rejects("startPeriod", String.self)
-        rejects("endPeriod", String.self)
-        rejects("addPeriod", String.self, String.self)
-        rejects("deletePeriod", String.self)
-        rejects("logCycleDay", String.self, Int.self, Int.self)
-        rejects("setDietDay", [String: Any].self)
-        rejects("pushDietNow")
-        rejects("setBodyMetrics", [String: Any].self)
-        rejects("setActivityGoals", [String: Any].self)
-        rejects("sendActivityGoals")
-        rejects("pushHealthyLiving")
-        rejects("pushRunningCourse", [String: Any].self)
-        rejects("syncFullHistory")
     }
 }
 

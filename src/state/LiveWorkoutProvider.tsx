@@ -46,7 +46,7 @@ export function LiveWorkoutProvider({ children }: { children: ReactNode }) {
   // The watch asks for the phone's GPS during outdoor workouts; that needs precise location. Explain it once before
   // Android's dialog; Settings > Phone and calls can ask again.
   useEffect(() => {
-    // Android only: iOS has no live workout screen yet and no phone-GPS handover to the watch.
+    // Android only: iOS asks for location itself (the system prompt, when-in-use) the first time the watch wants the phone's GPS.
     if (Platform.OS !== 'android') return;
     const fine = PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION;
     void (async () => {

@@ -33,23 +33,29 @@ public final class ActivitySync {
     /// "Some bands don't work with zero timestamp, so starting later" (GB: 01/01/2000).
     private static let minStartSec: Int64 = 946_684_800
 
-    public func sync(fromSec: Int64, now: Date = Date(), calendar: Calendar = .current) async throws -> SyncResult {
+    /// `toSec` ends the window early (one slice of a long pull); nil or later than now means now.
+    public func sync(fromSec: Int64, toSec: Int64? = nil, now: Date = Date(), calendar: Calendar = .current) async throws -> SyncResult {
         let start = fromSec <= 0 ? ActivitySync.minStartSec : min(fromSec, Int64(Int32.max))
-        let end = Int(Int32(truncatingIfNeeded: Int64(now.timeIntervalSince1970)))
+        let nowSec = Int(Int32(truncatingIfNeeded: Int64(now.timeIntervalSince1970)))
+        let end = toSec.map { Int(min($0, Int64(nowSec))) } ?? nowSec
         info("Sync: from=\(start) to=\(end)")
 
         let frameSleep = try await fetchSleep(start: Int(start), end: end)
         let samples = try await fetchSteps(start: Int(start), end: end)
 
         // GetFitnessTotalsRequest. The Fit 4 can answer without the 0x81 container; then today's totals are summed from the synced
-        // per-minute samples since local midnight.
-        let totals = try await skippable("FitnessTotals") {
-            try await session.request(
-                FitnessData.FitnessTotals.request(), as: FitnessData.FitnessTotals.Response.self,
-                timeoutMs: timeouts.syncCountMs, label: "FitnessTotals"
-            )
-        }
+        // per-minute samples since local midnight. Only the window that reaches today needs the watch's totals; older slices of a history
+        // pull skip the request.
         let midnight = Int64(calendar.startOfDay(for: now).timeIntervalSince1970)
+        var totals: FitnessData.FitnessTotals.Response?
+        if Int64(end) >= midnight {
+            totals = try await skippable("FitnessTotals") {
+                try await session.request(
+                    FitnessData.FitnessTotals.request(), as: FitnessData.FitnessTotals.Response.self,
+                    timeoutMs: timeouts.syncCountMs, label: "FitnessTotals"
+                )
+            }
+        }
         let today = samples.filter { $0.timestamp >= midnight }
         let totalSteps = totals.map { Int($0.totalSteps) } ?? today.reduce(0) { $0 + $1.steps }
         let totalCalories = totals.map { Int($0.totalCalories) } ?? (today.reduce(0) { $0 + $1.calories } / 1000)

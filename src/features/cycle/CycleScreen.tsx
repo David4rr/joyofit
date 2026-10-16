@@ -5,7 +5,6 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { Field } from '@/components/Input';
-import { IosUnavailable, isIos } from '@/components/IosUnavailable';
 import { KeyValue } from '@/components/KeyValue';
 import { Divider, Section } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
@@ -91,10 +90,6 @@ export function CycleScreen() {
       await load();
     }
   };
-
-  if (isIos) {
-    return <IosUnavailable title="Cycle" icon="calendar" tint="heart" reason="The cycle log and the calendar on the watch are not available on iOS yet." />;
-  }
 
   if (!cycle) {
     return error ? <Notice tone="danger">{error}</Notice> : <LoadingState label="Loading your cycle log" />;

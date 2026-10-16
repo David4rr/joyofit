@@ -11,7 +11,7 @@ import {
   type StravaWorkout,
 } from './activityFile';
 import { FIT_EPOCH_OFFSET, toSemicircles } from './fitEncoder';
-import { decodeFit } from './testDecode';
+import { decodeFit, estimateMovingTime } from './testDecode';
 
 const START = 1_792_058_016;
 const FIT_START = START - FIT_EPOCH_OFFSET;
@@ -69,20 +69,34 @@ describe('buildFit distance', () => {
   });
 
   it('is cumulative and never decreases, with HR-only samples interpolated between fixes', () => {
-    const { records } = roundTrip(walk, points);
+    // No pause here: 600 s active over 500 m is 5/6 m/s, and every stretch of the stream moves at it.
+    const { records } = roundTrip({ ...walk, duration: 600 }, points);
     const d = distances(records) as number[];
     for (let i = 1; i < d.length; i++) expect(d[i]).toBeGreaterThanOrEqual(d[i - 1] ?? 0);
     const at = (offset: number) => d[offsets(records).indexOf(offset)] ?? Number.NaN;
     expect(at(0)).toBe(0);
-    expect(at(100)).toBe(0);
-    expect(at(200)).toBeCloseTo(250, 0);
-    expect(at(150)).toBeCloseTo(125, 0);
-    expect(at(300)).toBe(500);
+    expect(at(100)).toBeCloseTo(500 / 6, 1);
+    expect(at(150)).toBeCloseTo((500 / 6) * 1.5, 1);
+    expect(at(200)).toBeCloseTo((500 / 6) * 2, 1);
+    expect(at(300)).toBeCloseTo((500 / 6) * 3, 1);
+    expect(at(600)).toBe(500);
+  });
+
+  it('moves before the first fix at the speed of the whole active time, so the file never reads as stopped there', () => {
+    // Fixes only from 100 s to 300 s of 600 s; the watch walked 500 m in 540 s active, the other 60 s it was paused.
+    const { records } = roundTrip(walk, points);
+    const d = distances(records) as number[];
+    const at = (offset: number) => d[offsets(records).indexOf(offset)] ?? Number.NaN;
+    expect(at(0)).toBe(0);
+    expect(at(100) / 100).toBeCloseTo(500 / 540, 3);
+    // The same speed on the fixes' own stretch, minus the pause (centred on the 100..200 gap, 60 s): the GPS path only
+    // shares the distance out.
+    expect((at(300) - at(100)) / 140).toBeCloseTo(500 / 540, 3);
     expect(at(600)).toBe(500);
   });
 
   it('grows linearly over the whole workout when there is no GPS', () => {
-    const { records } = roundTrip({ ...walk, sportType: 5 }, [hrOnly(0, 90), hrOnly(300, 100), hrOnly(600, 110)]);
+    const { records } = roundTrip({ ...walk, sportType: 5, duration: 600 }, [hrOnly(0, 90), hrOnly(300, 100), hrOnly(600, 110)]);
     expect(distances(records)).toEqual([0, 250, 500]);
     expect(records.some((r) => r.positionLat !== undefined)).toBe(false);
   });
@@ -97,7 +111,7 @@ describe('buildFit distance', () => {
 
 describe('buildFit records', () => {
   it('covers start to end even when GPS only exists in the middle', () => {
-    const { records, events } = roundTrip(walk, [fix(100, 10), fix(200, 10.001), hrOnly(10, 88), hrOnly(550, 95)]);
+    const { records, events } = roundTrip({ ...walk, duration: 600 }, [fix(100, 10), fix(200, 10.001), hrOnly(10, 88), hrOnly(550, 95)]);
     const times = offsets(records);
     expect(times[0]).toBe(0);
     expect(times[times.length - 1]).toBe(600);
@@ -107,6 +121,38 @@ describe('buildFit records', () => {
       [0, 0],
       [4, 600],
     ]);
+  });
+
+  it('writes the watch pause as timer stop and start events around the empty stretch, as long as the watch says', () => {
+    // 600 s elapsed, 540 s active: a 60 s pause, centred on the longest gap between the two fixes (100..200).
+    const { records, events, session } = roundTrip(walk, [fix(100, 10), fix(200, 10.001), hrOnly(10, 88), hrOnly(550, 95)]);
+    expect(events.map((e) => [e.eventType, (e.timestamp ?? 0) - FIT_START])).toEqual([
+      [0, 0],
+      [4, 120],
+      [0, 180],
+      [4, 600],
+    ]);
+    expect(estimateMovingTime(records, events)).toEqual({ seconds: 540, from: 'timer events' });
+    expect(session?.totalTimerTime).toBe(540);
+  });
+
+  it('centres the pause on the empty stretch and keeps it inside the workout', () => {
+    const offsetsOf = (points: StravaPoint[]) => roundTrip(walk, points).events.map((e) => (e.timestamp ?? 0) - FIT_START);
+    // Empty stretch 40..600: its middle is 320.
+    expect(offsetsOf([hrOnly(20, 91), hrOnly(40, 92)])).toEqual([0, 290, 350, 600]);
+    // Empty stretch 10..590: its middle is 300.
+    expect(offsetsOf([hrOnly(10, 90), hrOnly(590, 91)])).toEqual([0, 270, 330, 600]);
+    // A 35 s stretch at the very start cannot hold a 60 s pause centred on it, so the pause is moved to start at 0.
+    const dense = Array.from({ length: 113 }, (_, i) => hrOnly(35 + i * 5, 90));
+    expect(offsetsOf(dense)).toEqual([0, 0, 60, 600]);
+  });
+
+  it('writes no pause when the watch reports none, or when no gap could hold it', () => {
+    expect(roundTrip({ ...walk, duration: 600 }, [hrOnly(100, 90)]).events.length).toBe(2);
+    expect(roundTrip({ ...walk, duration: 590 }, [hrOnly(100, 90)]).events.length).toBe(2);
+    expect(roundTrip({ ...walk, duration: 0 }, [hrOnly(100, 90)]).events.length).toBe(2);
+    const dense = Array.from({ length: 119 }, (_, i) => hrOnly((i + 1) * 5, 90));
+    expect(roundTrip(walk, dense).events.length).toBe(2);
   });
 
   it('keeps HR-only samples and merges samples of the same second', () => {
@@ -366,19 +412,18 @@ describe('sport mapping and upload form', () => {
 /**
  * A walk shaped like a stored `workouts` + `workout_points` pair of the Huawei watch (the owner's real one is not committed:
  * its route is a home address): 50 minutes elapsed, 36 active, GPS from the fourth minute at one fix per second, a data
- * sample (heart rate and barometric altitude, no position) every 5 seconds, and a 12 minute pause in which neither
- * stream has a point.
+ * sample (heart rate and barometric altitude, no position) every 5 seconds, and a 14 minute pause in which the GPS stops
+ * at +2069 s and the data samples stop at +2151 s, both resuming around +2900 s, as in the stored walk.
  */
 function storedWalk(): { workout: StravaWorkout; points: StravaPoint[] } {
   const points: StravaPoint[] = [];
-  const paused = (t: number) => t > 2069 && t < 2902;
-  for (let t = 5; t <= 3003; t++) {
-    if (paused(t)) continue;
+  for (let t = 10; t <= 3003; t++) {
     if (t % 5 === 0 && !(t > 2151 && t < 2989)) {
       points.push({ ts: START + t, lat: null, lon: null, alt: 6 + Math.sin(t / 300), hr: 105 + ((t * 7) % 35) });
     }
-    if (t >= 219) {
-      const angle = t / 400;
+    if (t >= 219 && !(t > 2069 && t < 2902)) {
+      // Standing still while paused: the walk resumes where it stopped.
+      const angle = (t <= 2069 ? t : t - 833) / 400;
       points.push({ ts: START + t, lat: -6.2 + 0.002 * Math.sin(angle), lon: 106.8 + 0.002 * Math.cos(angle), alt: 5 + Math.sin(t / 200), hr: null });
     }
   }
@@ -404,7 +449,7 @@ function storedWalk(): { workout: StravaWorkout; points: StravaPoint[] } {
 
 describe('a stored workout', () => {
   const { workout, points } = storedWalk();
-  const { built, records, session, lap, activity } = roundTrip(workout, points);
+  const { built, records, session, lap, activity, events } = roundTrip(workout, points);
 
   it('decodes without errors and gives the watch totals back', () => {
     expect(session?.totalElapsedTime).toBe(3005);
@@ -461,12 +506,40 @@ describe('a stored workout', () => {
     expect(positions).toBeGreaterThan(1500);
   });
 
-  it('has a distance that only grows, is 0 before the first fix and ends on the watch total', () => {
+  it('has a distance that only grows from 0 to the watch total, and moves from the first second', () => {
     const d = distances(records) as number[];
     for (let i = 1; i < d.length; i++) expect(d[i]).toBeGreaterThanOrEqual(d[i - 1] ?? 0);
     const times = offsets(records);
-    expect(d[times.indexOf(215)]).toBe(0);
+    expect(d[0]).toBe(0);
     expect(d[d.length - 1]).toBe(2270);
+    // The 219 s before the first fix are walked at the speed of the whole active time (2270 m / 2169 s).
+    const firstFixAt = times.indexOf(219);
+    expect((d[firstFixAt] as number) / 219).toBeCloseTo(2270 / 2169, 2);
     expect(Math.max(...(records.map((r) => r.heartRate ?? 0) as number[]))).toBeLessThanOrEqual(139);
+  });
+
+  it('stands still for the pause: the timer stops for exactly the watch pause and the distance is flat across it', () => {
+    // The GPS gap 2069..2902 (833 s) widened to the watch's 836 s pause.
+    const stops = events.map((e) => [e.eventType, (e.timestamp ?? 0) - FIT_START]);
+    expect(stops).toEqual([
+      [0, 0],
+      [4, 2068],
+      [0, 2904],
+      [4, 3005],
+    ]);
+    const times = offsets(records);
+    const d = distances(records) as number[];
+    const inside = times.flatMap((t, i) => (t >= 2069 && t <= 2902 ? [d[i] as number] : []));
+    expect(inside.length).toBeGreaterThan(5);
+    expect(new Set(inside).size).toBe(1);
+    expect(estimateMovingTime(records, events)).toEqual({ seconds: 2169, from: 'timer events' });
+  });
+
+  it('reads as moving for the whole active time even to a reader that ignores the timer events', () => {
+    // Strava measures moving time from the record stream when a file has no pause events; the estimate must not drop the
+    // time before the first fix (the first FIT lost 3:36 there: 32:33 shown for 36:09 walked).
+    const { seconds, from } = estimateMovingTime(records, []);
+    expect(from).toBe('record stream');
+    expect(Math.abs(seconds - 2169)).toBeLessThanOrEqual(60);
   });
 });

@@ -1,7 +1,6 @@
-import { Platform } from 'react-native';
-
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { useWatch } from '@/state/WatchProvider';
@@ -12,15 +11,15 @@ import { useWatch } from '@/state/WatchProvider';
  */
 export function HistorySection() {
   const { linkState, device, error, syncFullHistory } = useWatch();
-  if (Platform.OS !== 'android') return null;
   const syncing = linkState === 'syncing';
   const canSync = linkState === 'connected' && device !== null;
 
   return (
     <Section title="Watch history" icon="time" tint="heart">
       <AppText variant="caption" muted>
-        Pulls every day of steps, heart rate, sleep, HRV and workouts the watch still holds, not only what is new since
-        the last sync. It can take a few minutes. Data already on the phone is kept.
+        {isIos
+          ? 'Pulls every day of steps, heart rate, sleep and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept.'
+          : 'Pulls every day of steps, heart rate, sleep, HRV and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept.'}
       </AppText>
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <Button

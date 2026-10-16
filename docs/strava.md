@@ -88,15 +88,21 @@ The refresh token and client secret never leave the Worker; the phone receives o
 
 Upload details (so the numbers on Strava are the watch's): a FIT activity file (`data_type=fit`, binary multipart body;
 <https://developers.strava.com/docs/uploads/#fit-flexible-and-interoperable-data-transfer>) with every sample from start
-to end as a `record` (position, heart rate, altitude, per-record cumulative distance scaled to the watch's distance), a timer
-start and stop `event`, one `lap` and one `session` carrying `total_elapsed_time`, `total_timer_time` (the watch's active
+to end as a `record` (position, heart rate, altitude, per-record cumulative distance: the watch's distance spread over the
+active time, so the stretches before the first and after the last GPS fix move at the average speed instead of reading as
+stopped), timer start and stop `event`s, one `lap` and one `session` carrying `total_elapsed_time`, `total_timer_time` (the watch's active
 time), `total_distance`, `total_calories`, heart rate, `total_ascent`/`total_descent`, speeds and, for running, walking and
 hiking, `total_cycles` (strides = steps / 2) and `avg_cadence`, and an `activity`. The sport comes from the FIT
 `session.sport`/`sub_sport` mapped from the Huawei sport type; the form's `sport_type` overrides what Strava detects from the
 file. `file_id.manufacturer` is 255 (development): Strava only maps a device name to a manufacturer ANT+ assigned, so the
 activity shows no device. `external_id = joyofit-<workout start>` (a second upload of the same workout is refused by Strava
 as a duplicate and the app then links the existing activity). The watch provides no per-sample speed or cadence and no
-list of pauses, so the file has none; the pause shows only as the difference between elapsed and timer time.
+list of pauses. Strava's moving time (<https://support.strava.com/en-us/articles/15401804-moving-time-speed-and-pace-calculations>)
+comes from the file's timer events when it has any and is otherwise recomputed from the GPS and distance stream (it ignores
+`total_timer_time`: the first FIT showed 32:33 for 36:09 walked). So when the watch's elapsed time exceeds its active time by
+30 s or more, the file gets a timer stop and start `elapsed - active` long, centred on the longest gap between GPS fixes
+(else between samples), and the record distance is flat across it. The pause's length is the watch's; its exact position is
+not stored by the watch, so it can be off by the difference between the GPS gap and the pause (seconds).
 
 ## 3. Review submission checklist
 

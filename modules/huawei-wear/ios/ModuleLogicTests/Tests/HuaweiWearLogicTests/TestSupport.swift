@@ -32,11 +32,43 @@ final class RecordingEvents: WearEvents, @unchecked Sendable {
     }
 }
 
-/// A UserDefaults that exists only for one test.
+/// Suites handed out by `ephemeralDefaults`; their domains (and, on Linux, the `~/.config/<suite>.plist` files Foundation writes) are removed when
+/// the test process exits.
+private let ephemeralSuites = EphemeralSuites()
+
+private final class EphemeralSuites: @unchecked Sendable {
+    private let lock = NSLock()
+    private var names: [String] = []
+    private var registered = false
+
+    func add(_ name: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        names.append(name)
+        if !registered {
+            registered = true
+            atexit { ephemeralSuites.cleanUp() }
+        }
+    }
+
+    func cleanUp() {
+        let all = lock.locked { names }
+        for name in all {
+            UserDefaults(suiteName: name)?.removePersistentDomain(forName: name)
+            #if os(Linux)
+            let home = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
+            try? FileManager.default.removeItem(atPath: "\(home)/.config/\(name).plist")
+            #endif
+        }
+    }
+}
+
+/// A UserDefaults that exists only for one test (and is cleaned up when the test process exits).
 func ephemeralDefaults(_ name: String = #function) -> UserDefaults {
     let suite = "joyofit-test-\(name)-\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: suite)!
     defaults.removePersistentDomain(forName: suite)
+    ephemeralSuites.add(suite)
     return defaults
 }
 

@@ -220,6 +220,48 @@ final class AuthFlowTests: XCTestCase {
         XCTAssertTrue(rig.log.contains("(summed from samples)"))
     }
 
+    func testASliceEndingBeforeTodayEndsItsRequestsThereAndSkipsTheTotals() async throws {
+        var config = PacketsAuthFakeWatch.Config()
+        config.stepPages = []
+        config.sleepPages = []
+        config.totals = (5000, 200, 3800)
+        let rig = makeRig(config)
+        _ = try await rig.authenticator.authenticate()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let before = rig.watch.seen.count
+        let sync = ActivitySync(session: rig.session, caps: DeviceCaps(), log: rig.log.sink, trueSleep: { since, end in
+            XCTAssertEqual(since, 1_700_000_000)
+            XCTAssertEqual(end, 1_710_000_000)
+            return .empty
+        })
+        sync.timeouts = fastTimeouts()
+        let result = try await sync.sync(fromSec: 1_700_000_000, toSec: 1_710_000_000, now: now, calendar: calendar)
+        XCTAssertEqual(result.from, 1_700_000_000)
+        XCTAssertEqual(result.to, 1_710_000_000)
+        // No totals request for a window that ends before today, and nothing summed.
+        let labels = Array(rig.watch.seen[before...]).map { $0.label }
+        XCTAssertFalse(labels.contains("07/03"))
+        XCTAssertEqual(result.totalSteps, 0)
+        let sleepCount = try XCTUnwrap(rig.watch.seen[before...].first).tlv
+        XCTAssertEqual(try sleepCount.int(0x03), 1_700_000_000)
+        XCTAssertEqual(try sleepCount.int(0x04), 1_710_000_000)
+    }
+
+    func testASliceEndingAfterNowIsCutAtNow() async throws {
+        var config = PacketsAuthFakeWatch.Config()
+        config.stepPages = []
+        config.sleepPages = []
+        config.totals = (1, 2, 3)
+        let rig = makeRig(config)
+        _ = try await rig.authenticator.authenticate()
+        let sync = ActivitySync(session: rig.session, caps: DeviceCaps(), log: rig.log.sink, trueSleep: { _, _ in .empty })
+        sync.timeouts = fastTimeouts()
+        let result = try await sync.sync(fromSec: 1_791_000_000, toSec: 1_999_999_999, now: now)
+        XCTAssertEqual(result.to, 1_792_000_000)
+        XCTAssertEqual(result.totalSteps, 1)
+    }
+
     func testStepPagingFollowsTheWatchsCounterAndSkipsUnreadableSubcontainers() async throws {
         var config = PacketsAuthFakeWatch.Config()
         config.stepPages = [

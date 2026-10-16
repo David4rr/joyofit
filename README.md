@@ -437,12 +437,17 @@ and the client secret against that account; the phone only ever receives the sho
   deauthorization webhook makes the Worker delete the tokens too.
 - **What is uploaded.** A FIT activity file built on the phone from `workouts`, `workout_points` and the workout's
   `summary_json` (`src/features/strava/activityFile.ts`, binary writer in `fitEncoder.ts`, no dependency): a record for
-  every sample from start to end (GPS position, heart rate, altitude, and a cumulative distance scaled so the last
-  record is exactly the watch's total), a timer start and stop event, one lap and one session with the watch's elapsed
+  every sample from start to end (GPS position, heart rate, altitude, and a cumulative distance that is the watch's
+  total spread over the active time: the GPS path shares it out, and the stretches before the first and after the last
+  fix move at the average speed, so nothing but the pause reads as stopped; the last record is exactly the watch's
+  total), timer start and stop events, one lap and one session with the watch's elapsed
   time, **active time** (`total_timer_time`), distance, calories, average and maximum heart rate, elevation gain and
   loss, average and maximum speed, and, for running, walking and hiking, the step count as strides plus the average
   cadence over the active time, then a mapped FIT sport/sub-sport and `sport_type`. The watch gives no per-sample speed or
-  cadence and no list of pauses, so the file has none. Strava then keeps the watch's numbers. The upload goes
+  cadence and no list of pauses: when its elapsed time exceeds its active time by 30 s or more, the pause is written as a
+  timer stop and start (`elapsed - active` long, centred on the longest gap between GPS fixes, else between samples),
+  because Strava takes a run's moving time from the file's timer events and otherwise recomputes it from the distance
+  stream. Strava then keeps the watch's numbers. The upload goes
   straight from the phone to `https://www.strava.com/api/v3/uploads` (`data_type=fit`, a binary multipart body) with
   `external_id = joyofit-<workout start>`, so a workout can never be created twice. Per-workout state is in
   `strava_upload` (`processing`, `done`, `failed`, `rejected`).

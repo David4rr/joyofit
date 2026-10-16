@@ -25,25 +25,6 @@ final class InertStatusTests: XCTestCase {
         XCTAssertEqual(keys(Inert.sosRelayTest()), ["ready", "blockers"])
         XCTAssertEqual(Inert.sosRelayTest()["ready"] as? Bool, false)
         XCTAssertEqual((Inert.sosRelayTest()["blockers"] as? [String])?.count, 1)
-        XCTAssertEqual(
-            keys(Inert.cycle(today: "2026-10-16", watchConnected: false)),
-            ["today", "enabled", "periods", "days", "predictions", "averageCycleDays", "averagePeriodDays", "periodOngoing", "daysLate", "switches", "watchConnected", "watchSupported", "watchNote", "easyPregnancySwitch"]
-        )
-        XCTAssertEqual(keys(Inert.cycle(today: "x", watchConnected: true)["switches"] as! [String: Any]), ["master", "periodStart", "periodEnd", "fertileStart", "fertileEnd", "easyPregnancy"])
-        XCTAssertEqual(keys(Inert.diet()), ["date", "mealCount", "intakeKcal", "goals", "updatedAt", "pushedAt", "lastResult", "unsyncedWatchMeals", "pendingWatchMeals", "supported"])
-        XCTAssertEqual(keys(Inert.bodyMetrics()), ["weightKg", "weightTs", "bodyFatPct", "bodyFatTs", "restingKcal", "systolic", "diastolic", "bpTs"])
-        XCTAssertEqual(keys(Inert.healthyLiving()), ["supported", "gate", "gateSet", "enabled", "registered", "pingCode", "msgVer", "packageSize", "lastRequestAt", "lastReportAt", "lastReport"])
-        XCTAssertEqual(keys(Inert.courses()), ["enabled", "gate41", "gate169", "gate295", "p2p"])
-    }
-
-    func testActivityGoalsDefaultsFollowTheProfileGoal() {
-        XCTAssertEqual(Inert.activityGoals(dailyStepGoal: nil)["steps"] as? Int, 10_000)
-        XCTAssertEqual(Inert.activityGoals(dailyStepGoal: 7_500)["steps"] as? Int, 7_500)
-        XCTAssertEqual(
-            keys(Inert.activityGoals(dailyStepGoal: nil)),
-            ["steps", "calories", "exerciseMinutes", "standHours", "remindStand", "remindProgress", "remindGoalReached", "configSupported", "lastSentAt"]
-        )
-        XCTAssertTrue(Inert.activityGoals(dailyStepGoal: nil)["configSupported"] is NSNull)
     }
 
     func testTodayIsALocalIsoDay() {
@@ -68,12 +49,82 @@ final class InertStatusTests: XCTestCase {
         )
         let events = RecordingEvents()
         let weather = WeatherController(settings: WeatherSettings(defaults: ephemeralDefaults()), link: FakeLink(events: events), events: events, location: UnavailableLocationSource())
+        let runtime = WearRuntime(
+            settings: WearSettings(defaults: ephemeralDefaults()), syncStore: SyncStore(url: temporaryDatabaseURL()),
+            deviceStore: DeviceStore(secrets: MemorySecretStore()), gate: AlwaysReadyGate(), environment: .init(app: "app 1 (1)", phone: "Apple test"),
+            phoneModel: "test", transportFactory: { request, delegate in FakeTransport(.hangConnect, request: request, delegate: delegate) },
+            p2pDefaults: ephemeralDefaults()
+        )
+        let p2p = runtime.p2p!
+        let populatedHealthyLiving: [String: Any] = {
+            p2p.settings.healthLivingMsgVer = 3.0
+            p2p.settings.healthLivingPackageSize = 8192
+            p2p.settings.healthLivingLastRequestMs = 1_792_110_700_000
+            p2p.settings.healthLivingLastReportMs = 1_792_110_701_000
+            p2p.settings.healthLivingLastSummary = "day 20261016: #1=-/23✓"
+            return p2p.healthLivingStatus()
+        }()
+        let extras = WatchExtrasSettings(defaults: ephemeralDefaults())
+        extras.fallSwitch = 1
+        extras.fallUpdatedMs = 1_792_110_700_000
+        let liveSafety = SafetyFeatures(link: RigSource(), settings: extras, events: RecordingEvents()).status()
+        // A phone-side live workout with and without readings: the objects `getLiveWorkout` and `onLiveWorkout` carry.
+        let liveSettings = WearSettings(defaults: ephemeralDefaults())
+        let live = LiveWorkout(dataSync: DataSyncService(link: RigSource(), events: events), events: events, settings: liveSettings, setHeartRateActive: { _ in })
+        live.startManual()
+        let emptyLive = live.snapshot()!
+        live.onHeartRate(120)
+        live.onHeartRate(121)
+        live.finish()
         let populatedWeather: [String: Any] = [
             "enabled": true, "unit": "fahrenheit", "locationMode": "city", "intervalMinutes": 30,
             "city": WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6, detail: "West Java, Indonesia").toJS(),
             "locationPermission": true, "watchSupported": true, "lastPushAt": Int64(1_792_110_700), "lastError": "x", "lastTemperatureC": -3,
             "lastCondition": "LIGHT_RAIN", "lastLocationName": "Bandung",
         ]
+        // The real overview: a fresh install, and one with an open period, symptoms and the watch connected.
+        let cycleStore = CycleStore(store: SyncStore(url: temporaryDatabaseURL()))
+        let cycle = MenstrualFeature(settings: CycleSettings(defaults: ephemeralDefaults()), store: cycleStore, link: RigSource(), events: events)
+        let populatedStore = CycleStore(store: SyncStore(url: temporaryDatabaseURL()))
+        try populatedStore.addPeriod(start: CivilDate("2026-08-26")!, end: CivilDate("2026-08-30")!, nowSec: 1)
+        try populatedStore.startPeriod(CivilDate("2026-09-23")!, nowSec: 2)
+        try populatedStore.logDay(CivilDate("2026-09-24")!, flow: 2, cramps: 1, nowSec: 3)
+        let populatedLink = DataSyncRig()
+        var bitmap = Bytes(repeating: 0, count: 40)
+        for bit in [173, 174, 265] { bitmap[bit / 8] |= UInt8(1 << (bit % 8)) }
+        populatedLink.caps.expandCapabilities = bitmap
+        populatedLink.caps.supportedCommands = [0x32: [0x01]]
+        let populatedSettings = CycleSettings(defaults: ephemeralDefaults())
+        populatedSettings.enabled = true
+        populatedSettings.switches = MenstrualCodec.Switches(master: true)
+        let populatedCycle = MenstrualFeature(settings: populatedSettings, store: populatedStore, link: populatedLink.source, events: events)
+        // The live meals status: nothing stored, and a day with a goal, a watch-logged meal, a push and its result.
+        let diet = DietSync(store: SyncStore(url: temporaryDatabaseURL()), events: events, settings: WearSettings(defaults: ephemeralDefaults()), defaults: ephemeralDefaults())
+        let dietStore = SyncStore(url: temporaryDatabaseURL())
+        let dietDefaults = ephemeralDefaults()
+        dietDefaults.set(1_792_110_700_000, forKey: "pushed_at")
+        dietDefaults.set("sent (set)", forKey: "last_result")
+        try DietStore(dietStore).put(
+            DietDay(
+                date: Inert.today(),
+                meals: [
+                    DietMeal(id: "app-1", eatTime: 1_792_100_000, kcal: 350.5, whichMeal: 10, carbs: 40, protein: 12.5, fat: 9),
+                    DietMeal(id: "watch-1792105000-20-0", eatTime: 1_792_105_000, kcal: 600, whichMeal: 20, src: "watch", synced: false),
+                ],
+                goals: DietGoals(dailyKcal: 2000, deficitKcal: 500, weightInitKg: 70, targetWeightKg: 65, weightManagerType: 1, activityCalGoal: 300),
+                updatedAt: 1_792_110_600_000
+            )
+        )
+        let populatedDiet = DietSync(store: dietStore, events: events, settings: WearSettings(defaults: ephemeralDefaults()), defaults: dietDefaults)
+        let rig = DataSyncRig(connected: false)
+        let goals = ActivityGoals(defaults: ephemeralDefaults(), service: rig.service, events: rig.events, settings: WearSettings(defaults: ephemeralDefaults()))
+        let body = BodyMetrics(store: SyncStore(url: temporaryDatabaseURL()), service: rig.service, events: rig.events, settings: WearSettings(defaults: ephemeralDefaults()))
+        var populatedGoals = goals.status()
+        populatedGoals["configSupported"] = true
+        populatedGoals["lastSentAt"] = Int64(1_792_110_700_000)
+        let populatedBody = BodyMetricsData(
+            weightKg: 70.5, weightTsMs: 1_760_400_000_000, bodyFatPct: 22.5, bodyFatTsMs: 1_760_400_000_000, restingKcal: 1650, systolic: 120, diastolic: 80, bpTsMs: 5
+        ).toJS()
         let shapes: [String: Any] = [
             "PhoneFeatures": Inert.phoneFeatures(),
             "NotificationAccessStatus": Inert.notificationAccess(),
@@ -84,14 +135,25 @@ final class InertStatusTests: XCTestCase {
             "HrvReading": HrvReadingData(start: 1, end: 61, rmssd: 42.5, sdnn: 50.1, meanRr: 850.2, beats: 70, heartRate: 71).toJS(),
             "WeatherStatus": weather.status(),
             "WeatherStatus#populated": populatedWeather,
+            "LiveWorkout": emptyLive,
+            "LiveWorkout#ended": live.snapshot()!,
             "SafetyStatus": Inert.safety(),
+            "SafetyStatus#live": liveSafety,
             "SosRelayTest": Inert.sosRelayTest(),
-            "CycleOverview": Inert.cycle(today: "2026-10-16", watchConnected: false),
-            "DietStatus": Inert.diet(),
-            "BodyMetrics": Inert.bodyMetrics(),
-            "ActivityGoalsStatus": Inert.activityGoals(dailyStepGoal: nil),
-            "HealthyLivingStatus": Inert.healthyLiving(),
-            "CoursesStatus": Inert.courses(),
+            "CycleOverview": try cycle.overview(),
+            "CycleOverview#populated": try populatedCycle.overview(),
+            "DietStatus": diet.status(),
+            "DietStatus#populated": populatedDiet.status(),
+            "BodyMetrics": body.load().toJS(),
+            "BodyMetrics#populated": populatedBody,
+            "ActivityGoalsStatus": goals.status(),
+            "ActivityGoalsStatus#populated": populatedGoals,
+            // The P2P statuses of the real controller, nothing connected, and with what a watch's request leaves behind.
+            "HealthyLivingStatus": p2p.healthLivingStatus(),
+            "HealthyLivingStatus#populated": populatedHealthyLiving,
+            "CoursesStatus": p2p.coursesStatus(),
+            "RunningCoursePushResult": P2pController.pushResultJS(messageId: 12, fileName: "12courseInfo.bin", bytes: 80, uploadStatus: nil, answer: nil),
+            "RunningCoursePushResult#answered": P2pController.pushResultJS(messageId: 12, fileName: "12courseInfo.bin", bytes: 80, uploadStatus: 1, answer: [0x01, 0xAB]),
             "DeviceInfo": info.toJS(),
             "BondedDevice": ["address": info.address, "name": info.name].merging(WatchModels.match(info.name).toJS()) { a, _ in a },
             "UserProfile": UserProfileData(heightCm: 170, weightKg: 65.5, birthYear: 1990, sex: "male", dailyStepGoal: 8000).toJS(),

@@ -26,6 +26,30 @@ public func syncWindowStart(lastSyncSec: Int64?, nowSec: Int64) -> Int64 {
     return max(0, last - syncOverlapSec)
 }
 
+/// One request chain covers at most this much of a long pull, so a full history never becomes a single endless request.
+public let syncSliceSec: Int64 = 14 * 24 * 3600
+
+/// History older than this is requested as one slice by `syncSlices`.
+public let syncHeadSec: Int64 = 8 * 7 * 24 * 3600
+
+/// Consecutive `(from, to)` slices from `fromSec` up to `nowSec`, oldest first. Everything older than `syncHeadSec` is one slice (the watch
+/// pages it itself, and an empty stretch costs one count request, not hundreds), the recent part is cut into `syncSliceSec` pieces.
+public func syncSlices(fromSec: Int64, nowSec: Int64) -> [(from: Int64, to: Int64)] {
+    var slices = [(from: Int64, to: Int64)]()
+    var start = fromSec
+    let headEnd = nowSec - syncHeadSec
+    if start < headEnd {
+        slices.append((start, headEnd))
+        start = headEnd
+    }
+    while start < nowSec - syncSliceSec {
+        slices.append((start, start + syncSliceSec))
+        start += syncSliceSec
+    }
+    slices.append((start, nowSec))
+    return slices
+}
+
 /// What one stored sync reports to JS (`SyncSummary` in HuaweiWear.types.ts).
 public struct SyncSummary: Equatable, Sendable {
     public let from: Int64

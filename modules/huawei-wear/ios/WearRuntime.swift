@@ -60,6 +60,22 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var faceCustomizer: WatchfaceCustomizer!
     /// The Huawei Health history import (one at a time; the module forwards its progress as `onHuaweiImportProgress`).
     public private(set) var huaweiImport: HuaweiImportController!
+    /// The P2P service (0x34): Healthy Living, running courses, heart-rate zones of Track watches and the health dictionary sync.
+    public private(set) var p2p: P2pController!
+    /// Activity-ring goals and reminders.
+    public private(set) var activityGoals: ActivityGoals!
+    /// Weight, body fat, resting metabolism and the Health Glance card.
+    public private(set) var bodyMetrics: BodyMetrics!
+    /// The menstrual calendar: the log, the watch's 0x32 requests and the flow dictionary.
+    public private(set) var cycle: MenstrualFeature!
+    /// Fall detection (DataSync config) and the morning sleep report (DataSync event); the SOS relay is not possible on iOS.
+    public private(set) var safety: SafetyFeatures!
+    public private(set) var sleepReport: SleepReportFeature!
+    /// Calorie intake on the watch (meals, goals, the watch's quick-log).
+    public private(set) var diet: DietSync!
+    /// A workout started on the watch, followed live (and the phone's GPS for it).
+    public private(set) var liveWorkout: LiveWorkout!
+    public private(set) var workoutLink: WorkoutLink!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -93,7 +109,11 @@ public final class WearRuntime: @unchecked Sendable {
         clock: @escaping @Sendable () -> Int = BackgroundController.uptimeMs,
         weatherLocation: LocationSource = UnavailableLocationSource(),
         weatherFetch: @escaping WeatherFetch = WeatherNetwork.fetch,
-        weatherDefaults: UserDefaults? = nil
+        weatherDefaults: UserDefaults? = nil,
+        goalsDefaults: UserDefaults? = nil,
+        cycleDefaults: UserDefaults? = nil,
+        liveGps: LiveGpsSource = UnavailableLiveGps(),
+        p2pDefaults: UserDefaults? = nil
     ) {
         self.settings = settings
         self.syncStore = syncStore
@@ -120,8 +140,33 @@ public final class WearRuntime: @unchecked Sendable {
         dataSync = DataSyncService(link: link, events: fanOut)
         faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
         dataSync.register(faceCustomizer)
+        activityGoals = ActivityGoals(defaults: goalsDefaults, service: dataSync, events: fanOut, settings: settings)
+        dataSync.register(activityGoals)
+        bodyMetrics = BodyMetrics(store: syncStore, service: dataSync, events: fanOut, settings: settings)
+        dataSync.register(bodyMetrics)
+        cycle = MenstrualFeature(settings: CycleSettings(defaults: cycleDefaults), store: CycleStore(store: syncStore), link: link, events: fanOut)
+        dataSync.register(cycle)
+        linkObservers.add(cycle)
+        diet = DietSync.wired(store: syncStore, events: fanOut, settings: settings, now: now, goals: activityGoals, body: bodyMetrics)
+        dataSync.register(diet)
         linkObservers.add(dataSync)
         huaweiImport = HuaweiImportController(syncStore: syncStore)
+        let extrasSettings = WatchExtrasSettings(defaults: weatherDefaults)
+        safety = SafetyFeatures(link: link, settings: extrasSettings, events: fanOut)
+        dataSync.register(safety)
+        sleepReport = SleepReportFeature(settings: extrasSettings, syncStore: syncStore, events: fanOut)
+        dataSync.register(sleepReport)
+        liveWorkout = LiveWorkout(
+            dataSync: dataSync, events: fanOut, settings: settings, setHeartRateActive: { [watchSettings] in watchSettings?.liveHeartRate.setWorkoutActive($0) }
+        )
+        dataSync.register(liveWorkout)
+        workoutLink = WorkoutLink(link: link, events: fanOut, live: liveWorkout, gps: liveGps)
+        linkObservers.add(workoutLink)
+        p2p = P2pController(
+            settings: P2pSettings(defaults: p2pDefaults), link: link, addSyncExtension: { [link] in link?.addSyncExtension($0) }, wearSettings: settings,
+            syncStore: syncStore, events: fanOut
+        )
+        linkObservers.add(p2p)
     }
 
     // MARK: events
@@ -158,10 +203,14 @@ public final class WearRuntime: @unchecked Sendable {
     fileprivate func handleSyncComplete(_ summary: SyncSummary) {
         lock.locked { _status.lastSyncSec = summary.to }
         onSyncComplete?(summary)
+        sleepReport?.onSyncComplete(summary)
         currentListeners().forEach { $0.syncComplete(summary) }
     }
 
-    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) { currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) } }
+    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) {
+        liveWorkout?.onHeartRate(bpm)
+        currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) }
+    }
 
     fileprivate func handleHrvProgress(_ secondsLeft: Int, _ beats: Int) { currentListeners().forEach { $0.hrvProgress(secondsLeft: secondsLeft, beats: beats) } }
 
@@ -193,6 +242,8 @@ public final class WearRuntime: @unchecked Sendable {
             runtime?.currentListeners().forEach { $0.uploadResult(ok: ok, fileName: fileName, code: code, message: message) }
         }
         func faceCustomization(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.faceCustomization(payload) } }
+        func watchMealLogged(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.watchMealLogged(payload) } }
+        func liveWorkout(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.liveWorkout(payload) } }
     }
 
     // MARK: bonded devices
@@ -336,6 +387,20 @@ public final class WearRuntime: @unchecked Sendable {
         controller.reschedule()
     }
 
+    // MARK: activity goals
+
+    /// Stores the goals and reminders and sends them; true when they all reached the watch. The steps goal and the profile's daily step goal are
+    /// one number: the profile (which goes out as MotionGoal 07/01) follows the ring's goal.
+    public func setActivityGoals(_ goals: ActivityGoalsData) async throws -> Bool {
+        try ActivityGoalsCodec.validate(goals)
+        if let profile = settings.profile, profile.dailyStepGoal != goals.steps {
+            var next = profile
+            next.dailyStepGoal = goals.steps
+            _ = try await setUserProfile(next)
+        }
+        return try await activityGoals.set(goals)
+    }
+
     // MARK: profile
 
     /// Stores the profile; true when it also reached the connected watch.
@@ -350,6 +415,20 @@ public final class WearRuntime: @unchecked Sendable {
             events.error("Profile not sent: \(e.message)")
             return false
         }
+    }
+}
+
+extension DietSync {
+    /// The meals feature as the runtime runs it: the ring's calories goal is the activity-calorie goal of the diet config (Android passes
+    /// `{ activityGoals.goals.calories }`), and the watch's request for the latest weight (event 5) is answered by `BodyMetrics`.
+    static func wired(
+        store: SyncStore, events: WearEvents, settings: WearSettings, defaults: UserDefaults? = nil, now: @escaping @Sendable () -> Date,
+        goals: ActivityGoals, body: BodyMetrics
+    ) -> DietSync {
+        DietSync(
+            store: store, events: events, settings: settings, defaults: defaults, now: now, activityCalories: { goals.goals.calories },
+            sendWeight: { phone, watch, reason in (try? await body.sendWeight(phonePkg: phone, watchPkg: watch, reason: reason)) ?? false }
+        )
     }
 }
 
