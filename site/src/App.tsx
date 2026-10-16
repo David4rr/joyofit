@@ -57,6 +57,8 @@ import {
   JAM_SUDAH_DIUJI,
 } from "./jam";
 import { PRIVASI_PATH, PrivasiPage } from "./Privasi";
+import { Testimonials } from "./testimonials-section";
+import { TESTIMONIALS } from "./testimonials";
 import { ButtonLink, GithubMark, Phone, Ring } from "./ui";
 import { IphonePage, StravaPage } from "./Waitlist";
 
@@ -1637,6 +1639,7 @@ export function App() {
             <Scores />
             <Features />
             <WatchSection />
+            <Testimonials items={TESTIMONIALS} />
             <JamTeaser />
             <Promises />
             <Options />
