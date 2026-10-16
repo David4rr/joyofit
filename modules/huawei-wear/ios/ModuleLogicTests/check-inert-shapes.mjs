@@ -26,6 +26,7 @@ const sources = {
   DietStatus: 'HuaweiWearDiet.types',
   HealthyLivingStatus: 'HuaweiWearP2p.types',
   CoursesStatus: 'HuaweiWearP2p.types',
+  RunningCoursePushResult: 'HuaweiWearP2p.types',
 };
 const core = 'HuaweiWear.types';
 

@@ -114,28 +114,6 @@ public enum Inert {
         ]
     }
 
-    /// `HealthyLivingStatus`: off.
-    public static func healthyLiving() -> [String: Any] {
-        [
-            "supported": false,
-            "gate": "ExpandCapability 37",
-            "gateSet": false,
-            "enabled": false,
-            "registered": false,
-            "pingCode": NSNull(),
-            "msgVer": NSNull(),
-            "packageSize": 0,
-            "lastRequestAt": NSNull(),
-            "lastReportAt": NSNull(),
-            "lastReport": NSNull(),
-        ]
-    }
-
-    /// `CoursesStatus`: off, no gate seen.
-    public static func courses() -> [String: Any] {
-        ["enabled": false, "gate41": false, "gate169": false, "gate295": false, "p2p": false]
-    }
-
     /// Local calendar day, `YYYY-MM-DD`.
     public static func today(now: Date = Date(), calendar: Calendar = .current) -> String {
         let c = calendar.dateComponents([.year, .month, .day], from: now)

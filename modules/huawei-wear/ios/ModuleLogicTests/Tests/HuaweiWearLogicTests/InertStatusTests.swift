@@ -32,8 +32,6 @@ final class InertStatusTests: XCTestCase {
         XCTAssertEqual(keys(Inert.cycle(today: "x", watchConnected: true)["switches"] as! [String: Any]), ["master", "periodStart", "periodEnd", "fertileStart", "fertileEnd", "easyPregnancy"])
         XCTAssertEqual(keys(Inert.diet()), ["date", "mealCount", "intakeKcal", "goals", "updatedAt", "pushedAt", "lastResult", "unsyncedWatchMeals", "pendingWatchMeals", "supported"])
         XCTAssertEqual(keys(Inert.bodyMetrics()), ["weightKg", "weightTs", "bodyFatPct", "bodyFatTs", "restingKcal", "systolic", "diastolic", "bpTs"])
-        XCTAssertEqual(keys(Inert.healthyLiving()), ["supported", "gate", "gateSet", "enabled", "registered", "pingCode", "msgVer", "packageSize", "lastRequestAt", "lastReportAt", "lastReport"])
-        XCTAssertEqual(keys(Inert.courses()), ["enabled", "gate41", "gate169", "gate295", "p2p"])
     }
 
     func testActivityGoalsDefaultsFollowTheProfileGoal() {
@@ -68,6 +66,21 @@ final class InertStatusTests: XCTestCase {
         )
         let events = RecordingEvents()
         let weather = WeatherController(settings: WeatherSettings(defaults: ephemeralDefaults()), link: FakeLink(events: events), events: events, location: UnavailableLocationSource())
+        let runtime = WearRuntime(
+            settings: WearSettings(defaults: ephemeralDefaults()), syncStore: SyncStore(url: temporaryDatabaseURL()),
+            deviceStore: DeviceStore(secrets: MemorySecretStore()), gate: AlwaysReadyGate(), environment: .init(app: "app 1 (1)", phone: "Apple test"),
+            phoneModel: "test", transportFactory: { request, delegate in FakeTransport(.hangConnect, request: request, delegate: delegate) },
+            p2pDefaults: ephemeralDefaults()
+        )
+        let p2p = runtime.p2p!
+        let populatedHealthyLiving: [String: Any] = {
+            p2p.settings.healthLivingMsgVer = 3.0
+            p2p.settings.healthLivingPackageSize = 8192
+            p2p.settings.healthLivingLastRequestMs = 1_792_110_700_000
+            p2p.settings.healthLivingLastReportMs = 1_792_110_701_000
+            p2p.settings.healthLivingLastSummary = "day 20261016: #1=-/23✓"
+            return p2p.healthLivingStatus()
+        }()
         let populatedWeather: [String: Any] = [
             "enabled": true, "unit": "fahrenheit", "locationMode": "city", "intervalMinutes": 30,
             "city": WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6, detail: "West Java, Indonesia").toJS(),
@@ -90,8 +103,12 @@ final class InertStatusTests: XCTestCase {
             "DietStatus": Inert.diet(),
             "BodyMetrics": Inert.bodyMetrics(),
             "ActivityGoalsStatus": Inert.activityGoals(dailyStepGoal: nil),
-            "HealthyLivingStatus": Inert.healthyLiving(),
-            "CoursesStatus": Inert.courses(),
+            // The P2P statuses of the real controller, nothing connected, and with what a watch's request leaves behind.
+            "HealthyLivingStatus": p2p.healthLivingStatus(),
+            "HealthyLivingStatus#populated": populatedHealthyLiving,
+            "CoursesStatus": p2p.coursesStatus(),
+            "RunningCoursePushResult": P2pController.pushResultJS(messageId: 12, fileName: "12courseInfo.bin", bytes: 80, uploadStatus: nil, answer: nil),
+            "RunningCoursePushResult#answered": P2pController.pushResultJS(messageId: 12, fileName: "12courseInfo.bin", bytes: 80, uploadStatus: 1, answer: [0x01, 0xAB]),
             "DeviceInfo": info.toJS(),
             "BondedDevice": ["address": info.address, "name": info.name].merging(WatchModels.match(info.name).toJS()) { a, _ in a },
             "UserProfile": UserProfileData(heightCm: 170, weightKg: 65.5, birthYear: 1990, sex: "male", dailyStepGoal: 8000).toJS(),

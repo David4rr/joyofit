@@ -278,8 +278,8 @@ public final class HuaweiWearModule: Module {
         Function("getDietStatus") { () -> [String: Any] in Inert.diet() }
         Function("getBodyMetrics") { () -> [String: Any] in Inert.bodyMetrics() }
         Function("getActivityGoals") { () -> [String: Any] in Inert.activityGoals(dailyStepGoal: runtime.settings.profile?.dailyStepGoal) }
-        Function("getHealthyLiving") { () -> [String: Any] in Inert.healthyLiving() }
-        Function("getCourses") { () -> [String: Any] in Inert.courses() }
+        Function("getHealthyLiving") { () -> [String: Any] in runtime.p2p.healthLivingStatus() }
+        Function("getCourses") { () -> [String: Any] in runtime.p2p.coursesStatus() }
 
         AsyncFunction("getNotificationApps") { () async throws -> [[String: Any]] in [] }
         AsyncFunction("getCycle") { () async throws -> [String: Any] in
@@ -404,6 +404,24 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.photoFaces.setActive() }
         }
 
+        // MARK: P2P (service 0x34): Healthy Living and the experimental running courses
+
+        AsyncFunction("setHealthyLivingEnabled") { (enabled: Bool) async throws -> Void in
+            runtime.p2p.setHealthLivingEnabled(enabled)
+        }
+
+        AsyncFunction("pushHealthyLiving") { () async throws -> Bool in
+            try await wearCall { try await runtime.p2p.pushHealthLiving() }
+        }
+
+        AsyncFunction("setCoursesEnabled") { (enabled: Bool) async throws -> Void in
+            runtime.p2p.settings.experimentalCourses = enabled
+        }
+
+        AsyncFunction("pushRunningCourse") { (course: [String: Any]) async throws -> [String: Any] in
+            try await wearCall { try await runtime.p2p.pushCourse(P2pController.parseCourse(course)) }
+        }
+
         // MARK: switches of phone-side features that are always off here
 
         switchRejectingOn("setMorningSummaryEnabled")
@@ -413,8 +431,6 @@ public final class HuaweiWearModule: Module {
         switchRejectingOn("setSosRelayEnabled")
         switchRejectingOn("setSleepReportEnabled")
         switchRejectingOn("setCycleEnabled")
-        switchRejectingOn("setHealthyLivingEnabled")
-        switchRejectingOn("setCoursesEnabled")
 
         // MARK: commands that would reach the watch or Android-only screens: ERR_UNSUPPORTED
 
@@ -434,8 +450,6 @@ public final class HuaweiWearModule: Module {
         rejects("setBodyMetrics", [String: Any].self)
         rejects("setActivityGoals", [String: Any].self)
         rejects("sendActivityGoals")
-        rejects("pushHealthyLiving")
-        rejects("pushRunningCourse", [String: Any].self)
         rejects("syncFullHistory")
     }
 }

@@ -30,10 +30,17 @@ public final class WearLink: @unchecked Sendable {
 
     private let lock = NSLock()
     private var current: Connection?
+    private var syncExtensionList: [SyncExtension] = []
     private var state: LinkState = .disconnected
     private var _lastDeviceInfo: WatchDeviceInfo?
     private var _lastAttemptName: String?
     private var _lastCaps: DeviceCaps?
+
+    /// A step that runs at the end of every stored sync, under the operation lock (the P2P health metrics): isolated and logged, so a failing one
+    /// never fails the sync whose rows are already committed; a lost link or a cancellation still stops the sync.
+    public typealias SyncExtension = @Sendable (HuaweiSession) async throws -> Void
+
+    public func addSyncExtension(_ step: @escaping SyncExtension) { lock.locked { syncExtensionList.append(step) } }
 
     /// The last watch this process connected to, as `connect` returned it; kept after it disconnects (support report).
     public var lastDeviceInfo: WatchDeviceInfo? { lock.locked { _lastDeviceInfo } }
@@ -407,7 +414,7 @@ public final class WearLink: @unchecked Sendable {
     }
 
     /// Pulls sleep, steps and totals since the last stored sync, commits them to the shared database and reports a summary (also as
-    /// `onSyncComplete`). The night-HRV and P2P phases of the Android sync are not ported.
+    /// `onSyncComplete`). The night-HRV phase of the Android sync is not ported; the P2P health metrics run as a sync extension.
     public func syncActivity() async throws -> SyncSummary {
         let connection = try requireConnected()
         if currentState() == .syncing { throw WearError(.busy, "A sync is already running") }
@@ -463,6 +470,18 @@ public final class WearLink: @unchecked Sendable {
         let workouts = try await WorkoutPhase.run(
             session: session, caps: caps, syncStore: syncStore, events: events, nowSec: Int64(now().timeIntervalSince1970)
         )
+        for step in lock.locked({ syncExtensionList }) {
+            do {
+                try await step(session)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch let e as WearError {
+                if e.code == .disconnected { throw e }
+                events.error("Sync extension failed: \(e.message)")
+            } catch {
+                events.error("Sync extension failed: \(error)")
+            }
+        }
         return stored.withWorkouts(workouts)
     }
 

@@ -58,6 +58,8 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var dataSync: DataSyncService!
     /// Editable watch-face options over DataSync.
     public private(set) var faceCustomizer: WatchfaceCustomizer!
+    /// The P2P service (0x34): Healthy Living, running courses, heart-rate zones of Track watches and the health dictionary sync.
+    public private(set) var p2p: P2pController!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -91,7 +93,8 @@ public final class WearRuntime: @unchecked Sendable {
         clock: @escaping @Sendable () -> Int = BackgroundController.uptimeMs,
         weatherLocation: LocationSource = UnavailableLocationSource(),
         weatherFetch: @escaping WeatherFetch = WeatherNetwork.fetch,
-        weatherDefaults: UserDefaults? = nil
+        weatherDefaults: UserDefaults? = nil,
+        p2pDefaults: UserDefaults? = nil
     ) {
         self.settings = settings
         self.syncStore = syncStore
@@ -119,6 +122,11 @@ public final class WearRuntime: @unchecked Sendable {
         faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
         dataSync.register(faceCustomizer)
         linkObservers.add(dataSync)
+        p2p = P2pController(
+            settings: P2pSettings(defaults: p2pDefaults), link: link, addSyncExtension: { [link] in link?.addSyncExtension($0) }, wearSettings: settings,
+            syncStore: syncStore, events: fanOut
+        )
+        linkObservers.add(p2p)
     }
 
     // MARK: events
