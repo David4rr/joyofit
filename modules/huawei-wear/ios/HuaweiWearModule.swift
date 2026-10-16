@@ -294,7 +294,6 @@ public final class HuaweiWearModule: Module {
         }
         Function("dismissLiveWorkout") { () -> Void in runtime.liveWorkout.dismiss() }
         Function("finishLiveWorkout") { () -> Void in runtime.liveWorkout.finish() }
-        AsyncFunction("markWatchMealsSynced") { (ids: [String]) async throws -> Void in }
         // Realtime heart rate drains the watch: it never outlives the app being on screen.
         AsyncFunction("setLiveHeartRate") { (active: Bool) async throws -> Void in
             runtime.watchSettings.liveHeartRate.setActive(active)
