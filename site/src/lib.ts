@@ -29,3 +29,11 @@ export function setMeta(selector: string, attr: string, value: string) {
 export function goal(name: string, location: string) {
   return { "data-revklik-goal": name, "data-revklik-goal-location": location } as const;
 }
+
+/**
+ * Flip to true once Apple approves the JoyoFit TestFlight beta for external
+ * testers. While false, the site shows no iPhone beta and still says there
+ * is no iPhone version.
+ */
+export const IOS_TESTFLIGHT_LIVE = false;
+export const IOS_TESTFLIGHT_URL = "https://testflight.apple.com/join/GXzrQ8GJ";

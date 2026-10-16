@@ -24,6 +24,7 @@ import {
   Route,
   Server,
   ShieldCheck,
+  Smartphone,
   Users,
   Watch,
   type LucideIcon,
@@ -35,6 +36,8 @@ import {
   GITHUB_URL,
   HARGA_URL,
   JOYOROGO_URL,
+  IOS_TESTFLIGHT_LIVE,
+  IOS_TESTFLIGHT_URL,
   TESTER_GROUP_URL,
   TESTER_OPTIN_URL,
   TRAKTEER_URL,
@@ -146,7 +149,7 @@ const FAQ = [
   },
   {
     q: "Jam apa saja yang didukung?",
-    a: "Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jammu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas. Belum ada versi iPhone.",
+    a: `Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jammu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas. ${IOS_TESTFLIGHT_LIVE ? "Versi iPhone ada sebagai beta lewat TestFlight, baru diuji dengan Huawei Watch Fit 4 Pro." : "Belum ada versi iPhone."}`,
   },
   {
     q: "Sudah stabil dipakai?",
@@ -850,6 +853,69 @@ function TesterJoin() {
   );
 }
 
+const IOS_STEPS = [
+  "Pasang TestFlight dari App Store, kalau belum ada di iPhone-mu.",
+  "Buka link undangan di iPhone, ketuk Terima, lalu Pasang JoyoFit.",
+] as const;
+
+const IOS_LIMITS = [
+  "Baru diuji dengan Huawei Watch Fit 4 Pro; jam lain belum dicoba di iPhone.",
+  "Watch face dan sebagian fitur belum ada di iPhone.",
+  "Memasangkan jam ke iPhone menggantikan pairing yang sudah ada di Android, jadi satu jam hanya bisa dipakai di satu HP dalam satu waktu.",
+] as const;
+
+function IosBeta() {
+  return (
+    <div
+      id="iphone"
+      data-section="iphone-beta"
+      className="mt-6 scroll-mt-20 rounded-[1.75rem] bg-card p-6 md:p-8"
+    >
+      <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-start">
+        <div>
+          <h3 className="text-2xl font-extrabold tracking-tight md:text-3xl">JoyoFit di iPhone (beta)</h3>
+          <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-muted-foreground">
+            Versi iPhone masih beta dan dibagikan lewat TestFlight. Gratis, dan masukanmu membantu kami
+            merapikannya.
+          </p>
+          <div className="mt-6">
+            <ButtonLink
+              href={IOS_TESTFLIGHT_URL}
+              target="_blank"
+              rel="noopener"
+              {...goal("ios_testflight_click", "cara")}
+            >
+              <Smartphone aria-hidden />
+              Buka undangan TestFlight
+            </ButtonLink>
+          </div>
+        </div>
+        <div>
+          <ol className="space-y-4">
+            {IOS_STEPS.map((step, i) => (
+              <li key={step} className="flex gap-3.5">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-extrabold tabular-nums">
+                  {i + 1}
+                </span>
+                <p className="pt-0.5 text-[0.9375rem] leading-relaxed">{step}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-6 text-sm font-bold">Yang perlu kamu tahu</p>
+          <ul className="mt-2 space-y-2">
+            {IOS_LIMITS.map((line) => (
+              <li key={line} className="flex gap-2 text-sm leading-relaxed text-muted-foreground">
+                <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Options() {
   return (
     <section id="cara" data-section="options" className="scroll-mt-16 border-t border-border/70 py-20 md:py-24">
@@ -862,6 +928,7 @@ function Options() {
         </div>
 
         <TesterJoin />
+        {IOS_TESTFLIGHT_LIVE && <IosBeta />}
 
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {/* 1. Open source */}
