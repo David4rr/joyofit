@@ -19,9 +19,9 @@ import { useWatch } from '@/state/WatchProvider';
 import { fonts, spacing, useColors } from '@/theme';
 
 const CONNECT_STEPS = [
-  'Disconnect the watch/band (Settings > System > Disconnect on the device) until it enters pairing mode or shows a QR code.',
-  'Keep the device screen awake and ensure phone Bluetooth and Location are turned on.',
-  'Tap "Scan nearby devices" below. When your device appears, tap Connect and accept the prompt on its screen.',
+  'Unbind the watch from Huawei Health first, or the watch will refuse this app.',
+  'Pair it in Android Bluetooth settings, or tap "Scan nearby devices" below to find it.',
+  'On the first connect, keep the watch awake and accept the prompt on its screen.',
 ];
 
 /** The three things that have to be true before the first connect, in the order they happen. */
@@ -121,8 +121,8 @@ export default function WatchScreen() {
               title={bonded.scanning ? 'Scanning for devices...' : 'No devices found'}
               description={
                 bonded.scanning
-                  ? 'Looking for nearby Huawei and Honor bands or watches. Make sure your band is turned on and ready to pair.'
-                  : 'No paired or nearby devices found. Make sure your band is turned on and disconnected from Huawei Health, then tap Scan.'
+                  ? 'Looking for nearby Huawei and Honor watches or bands. Make sure your device is ready to connect.'
+                  : 'Pair the watch in Android Bluetooth settings, or tap Scan nearby devices.'
               }
               action={{
                 label: bonded.scanning ? 'Scanning...' : 'Scan nearby devices',
