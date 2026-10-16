@@ -3,8 +3,10 @@
 The iOS side of `modules/huawei-wear` speaks the same protocol as the Android module, over CoreBluetooth, and exposes the same
 JS API (`modules/huawei-wear/src/HuaweiWearModule.ts`). Building the app is in [ios-linux.md](ios-linux.md). Status: pairing, connect,
 battery and the activity/sleep sync were run on a real iPhone with the Huawei Watch Fit 4 Pro. **Everything added after that (find my
-watch, notifications through ANCS, watch faces, workouts, alarms, health sensor switches, stress, HRV, weather) is tested only on this
-Linux box (Java golden vectors, fake watches, SDK type-check) until it is run on the iPhone**; see the last section.
+watch, notifications through ANCS, watch faces, workouts, alarms, health sensor switches, stress, HRV, weather, and the second parity round:
+activity goals, body metrics, full history, morning sleep report, fall detection, meals, cycle, live workout, Healthy Living, running courses,
+the Huawei Health export import) is tested only on this Linux box (Java golden vectors, Kotlin test vectors, fake watches, SDK type-check)
+until it is run on the iPhone**; see the last section.
 
 ## Layout
 
@@ -15,10 +17,10 @@ modules/huawei-wear/
     HuaweiWear.podspec            ONE pod, ONE Swift module `HuaweiWear`: ios/*.swift + HuaweiProtocol/Sources/**
     HuaweiProtocol/               SwiftPM package, pure Swift, no dependencies, builds on Linux and macOS/iOS
       Sources/HuaweiProtocol/     crypto, TLV, framing, session, packets, authenticator, initializer, syncs
-      Tests/HuaweiProtocolTests/  479 tests; Fixtures/*.json are generated from the Java the Android app runs
+      Tests/HuaweiProtocolTests/  716 tests; Fixtures/*.json are generated from the Java the Android app runs
       GoldenGen/                  run.sh + Golden*.java: regenerates the fixtures (JDK 17, no Android SDK needed)
     BleTransport.swift ...        CoreBluetooth central, Keychain store, SQLite sync store, HealthKit writer, Expo module
-    ModuleLogicTests/             SwiftPM package compiling the same sources as one module; 259 logic tests on Linux
+    ModuleLogicTests/             SwiftPM package compiling the same sources as one module; 414 logic tests on Linux
     scripts/                      check-api.mjs (JS API coverage), gen-migrations.mjs (embeds schema/joyofit-db-migrations.json)
 ```
 
@@ -47,9 +49,22 @@ with 16-byte IVs) is written out in the package because CryptoKit rejects what t
 | Notifications: the watch's own switch (02/04) and `CBPeripheral.ancsAuthorized` | `Packets/NotificationPackets.swift`, `ios/WatchNotifications.swift`, `BleTransport.swift` | Java golden, scripted watch |
 | Strava (Settings → Strava, Send to Strava, automatic upload): JS only, no native call; the native side is the shared SQLite schema: `workouts.imported`, `strava_upload` (migrations 10 and 11) | `WearMigrations.swift`, `ios/WorkoutStore.swift` | SQLite tests: the JS candidate query on rows the Swift store wrote, upgrade of the build 202610160151 database |
 
-Not ported (the Android module has them; the iOS module reports them as unsupported or inert, see below): cycle, diet and body metrics,
-activity-ring goals, P2P (healthy living, courses), fall detection, the morning sleep report, live workouts (phone GPS to the watch),
-and what iOS cannot do at all: forwarding other apps' notifications, find my phone, calls and call control, SOS text messages.
+Second round (every row: Java golden where the Java has the packet, Kotlin test vectors translated where only the Kotlin has it, fake or scripted watches):
+
+| Layer | Swift | Evidence |
+|---|---|---|
+| Activity-ring goals (8 DataSync configs, also the profile step goal) and body metrics (weight, resting metabolism, the watch's weight and Health Glance requests, `body_metrics` table) | `ActivityGoalsCodec.swift`, `BodyMetricsCodec.swift`, `ios/ActivityGoals.swift`, `ios/BodyMetrics.swift` | Java golden, Kotlin `BodyAndGoalsTest`, fake watch |
+| `syncFullHistory`: activity, sleep and workouts pulled again from the beginning, sliced; not night HRV (iOS has no night HRV sync) | `WearLink.runSync(fullHistory:)`, `SyncStore.syncSlices` | fake watch |
+| Morning sleep report (event 80030001) and fall detection (config 900500038, query on connect); the watch's SOS event is answered "not sent" | `SleepReport.swift`, `SafetyPayloads.swift`, `ios/SleepReportFeature.swift`, `ios/SafetyFeatures.swift` | Kotlin test translation, scripted watch |
+| Meals / calorie intake (configs 900300023/22, meal slots, the watch's quick-log with `onWatchMealLogged`, `diet_day` table) | `Diet.swift`, `ios/DietSync.swift` | Kotlin `DietSyncTest` vectors, scripted watch |
+| Menstrual cycle (service 0x32, flow dictionary 400018, log, estimates; `cycle_periods`/`cycle_days`) | `CycleModel.swift`, `MenstrualCodec.swift`, `Packets/MenstrualPackets.swift`, `ios/MenstrualFeature.swift`, `ios/CycleStore.swift` | Java golden, Kotlin `MenstrualTest`, scripted watch |
+| Live workout (reverse linkage, 17/11 reports, 17/03 poll, phone-side session on the realtime heart rate, phone GPS to the watch as 18/03 fixes while the app is open) | `LiveWorkoutCodec.swift`, `ios/LiveWorkout.swift`, `ios/WorkoutLink.swift`, `ios/CoreLocationStream.swift` | Java golden, Kotlin `LiveWorkoutTest`, scripted watch |
+| P2P stack, Healthy Living (health metric sync), running courses (28/xx file push), Track-watch HR zones | `P2PManager.swift`, `P2PDictionarySync.swift`, `HealthModel.swift`, `CourseProtobuf.swift`, `HealthMetricsSync.swift`, `ios/P2pController.swift` | Java golden (`p2p.json`), Kotlin `P2pTest` vectors, scripted watch |
+| Huawei Health export import (Privacy Centre ZIP, streamed, WinZip AES and ZipCrypto, `imported = 1` rows kept out of exports) | `ZipArchive.swift`, `ZipCrypto.swift`, `HuaweiExport*.swift`, `HuaweiMotionPathParser.swift`, `HuaweiHealthDetailParser.swift`, `ios/HuaweiImportController.swift`, `ios/HuaweiImportStore.swift` | archives written by zip4j (the library Android uses), Kotlin test vectors |
+
+Not ported: night HRV (`NightHrv.kt`) and the once-a-day "Morning summary" local notification (it needs the notification permission prompt; not
+part of this round), Android's ongoing live-workout notification (same reason). What iOS cannot do at all: forwarding other apps'
+notifications and the per-app list (see below), find my phone, calls and call control, SOS text messages.
 
 ## Features iOS cannot do, and what the app says
 
@@ -59,15 +74,19 @@ and what iOS cannot do at all: forwarding other apps' notifications, find my pho
   left alone) and shows `CBPeripheral.ancsAuthorized` as "iPhone shares notifications with the watch" (log line `ANCS ... authorized`).
 - **Find my phone, calls, call control.** iOS suspends the app and gives it no call access, so the Settings screen explains this instead of
   offering switches. **SOS text messages**: iOS does not let an app send an SMS by itself.
-- Screens of features that are merely not ported yet (meals, goals, cycle, healthy living, running courses, live workout, fall detection,
-  morning report) show "not available on iOS yet" instead of controls that would fail.
+- **Per-app notification filter.** There is no watch-side command for it: the 02 service has only the on/off switch (02/04), constraints,
+  capabilities and per-notification push/remove/reply (`Notifications.java`); Android's per-app choice is purely phone-side, applied before
+  forwarding. On iOS the filter is iOS's own (Settings > Notifications > each app), so the app list stays an explanation.
+- **SOS text messages.** The watch's SOS request is still answered ("nothing was sent", status 1) so the person is not left waiting.
+- The morning summary notification shows "not available on iOS yet".
 
 ## The JS API on iOS
 
-All 95 members of the Android module's TS interface exist (`node modules/huawei-wear/ios/scripts/check-api.mjs` prints the split): 53
-implemented, 10 inert getters returning the disabled shape, 4 no-ops, 9 off-switches (`false` resolves, `true` rejects), and 18 that
-reject `ERR_UNSUPPORTED` ("not available on iOS yet"). The screens of the last three groups say why on iOS instead of offering the control
-(`src/components/IosUnavailable.tsx`). Nothing claims to have reached the watch unless it did.
+All 98 members of the Android module's TS interface exist (`node modules/huawei-wear/ios/scripts/check-api.mjs` prints the split): 87
+implemented, 3 inert getters (morning summary, notification apps, SOS relay test), 1 no-op, 5 off-switches (`false` resolves, `true` rejects:
+find my phone, calls, call control, SOS relay, morning summary) and 2 that reject `ERR_UNSUPPORTED` (the Android notification access screen and
+the per-app switch). The screens of those say why on iOS instead of offering the control (`src/components/IosUnavailable.tsx`). Nothing
+claims to have reached the watch unless it did.
 
 ## iOS specifics
 
@@ -94,9 +113,9 @@ reject `ERR_UNSUPPORTED` ("not available on iOS yet"). The screens of the last t
 
 ```bash
 export PATH=$HOME/.local/swift-6.4/usr/bin:$HOME/jdk17/bin:$PATH
-bun run test:ios-protocol            # swift test in HuaweiProtocol (479 tests)
+bun run test:ios-protocol            # swift test in HuaweiProtocol (716 tests)
 bun run golden:ios                   # regenerate the Java golden fixtures (then re-run the tests)
-cd modules/huawei-wear/ios/ModuleLogicTests && ./link-sources.sh && JOYOFIT_REPO_ROOT=$PWD/../../../.. swift test   # 259 tests
+cd modules/huawei-wear/ios/ModuleLogicTests && ./link-sources.sh && JOYOFIT_REPO_ROOT=$PWD/../../../.. swift test   # 414 tests
 scripts/build-ios-linux.sh --dev     # signed JoyoFit-dev.ipa (docs/ios-linux.md)
 ```
 
@@ -112,6 +131,11 @@ The package also type-checks against the iPhoneOS SDK (`swiftc -typecheck -sdk <
   `ANCS ... authorized: yes/no` on connect); a Fit 4 Pro removes unsigned watch faces (100014), signed ones need the `signature` argument;
   the HealthKit workout, heart-rate series and route (`HKWorkoutBuilder`, `HKWorkoutRouteBuilder`) were never run; CoreLocation's when-in-use
   prompt for weather; the stress calibration's last-bit agreement of Apple's libm with the Java (Linux glibc matches on all vectors).
+- Second round, all untested on a watch: the DataSync configs of goals, body metrics, meals, fall detection and the cycle (service 0x32 and
+  dictionary 400018 have never been on a wire, not even from Android); the sleep report; live workout: whether the Fit 4 Pro asks for GPS over
+  18/02 and takes fixes from a foreground `CLLocationManager` (fixes stop when the app is backgrounded; the system location prompt can appear
+  the first time the watch asks for the phone's GPS); P2P Healthy Living and the course push (experimental on Android too); the Huawei export
+  import on a real multi-GB archive from the Files app (security-scoped access, memory, speed).
 - Scanning and connecting to the watch from CoreBluetooth; the real negotiated MTU and chunk sizes; notification delivery order.
 - A reconnect with a key bound from iOS (HiChain op2) and a first bind over LE (op1 steps 2 to 4 are unproven on any client; only step 1 was
   seen, from Android, which loses the 514-byte reply on Android 14+).

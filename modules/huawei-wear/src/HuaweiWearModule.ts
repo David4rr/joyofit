@@ -71,7 +71,7 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    */
   syncActivity(): Promise<SyncSummary>;
   /**
-   * Android only. Pulls everything the watch still holds (activity, sleep, night HRV, workouts) again, regardless of
+   * Pulls everything the watch still holds (activity, sleep, workouts, and on Android night HRV) again, regardless of
    * `device.last_sync`. Rows already stored are upserted, so only what is missing is added.
    */
   syncFullHistory(): Promise<SyncSummary>;

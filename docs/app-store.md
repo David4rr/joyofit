@@ -79,12 +79,12 @@ JoyoFit is a companion app for Huawei smartwatches (tested with the Huawei Watch
 
 NO SIGN-IN, NO DEMO ACCOUNT. Every feature of the app works without an account. Signing in with a JoyoRogo account (Settings, the cloud section) only turns on an optional cloud backup and the optional Strava upload. Leave both off. Nothing in the app is gated behind payment or an account; the app is free and has no in-app purchases or ads.
 
-WITHOUT A WATCH you can still see: the four tabs (Today, Workouts, Watch, Settings) with their empty states; the Watch tab's "Before you connect" steps and the scan, which finds nothing when no watch is in range; every Settings screen (background sync, weather, Strava, Apple Health, profile and daily step goal, About with the privacy policy link, Log). Screens for features iOS does not allow (find my phone, calls, SOS texts) or that are not on iOS yet explain that instead of showing controls that would fail.
+WITHOUT A WATCH you can still see: the four tabs (Today, Workouts, Watch, Settings) with their empty states; the Watch tab's "Before you connect" steps and the scan, which finds nothing when no watch is in range; every Settings screen (background sync, weather, Strava, Apple Health, profile and daily step goal, About with the privacy policy link, Log). Screens for features iOS does not allow (find my phone, calls, SOS texts) explain that instead of showing controls that would fail.
 
 PERMISSIONS and why:
 - Bluetooth: connect to the user's own Huawei watch (prompt appears when the user taps to scan or connect on the Watch tab).
 - Apple Health (write only): saves steps, distance, active energy, heart rate, SpO2, sleep and workouts (with routes) recorded by the watch. JoyoFit never reads Apple Health. The prompt appears only when the user switches the export on in Settings.
-- Location (when in use): optional, only for weather on the watch; coordinates are rounded to about 1 km before they go to Open-Meteo.
+- Location (when in use): optional, for weather on the watch (coordinates are rounded to about 1 km before they go to Open-Meteo) and, while a workout you started on the watch is running and the app is open, for sending your position to the watch. Never leaves the phone otherwise.
 - Background mode bluetooth-central: reconnect and sync with the remembered watch when iOS wakes the app.
 - Encryption: the protocol with the watch implements AES and HMAC itself; ITSAppUsesNonExemptEncryption is false (the encryption only protects the Bluetooth link to the user's watch; it is not used for anything else).
 

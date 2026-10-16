@@ -19,7 +19,7 @@
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "JoyoFit uses Bluetooth to connect to your Huawei or Honor watch and sync its data.",
         "NSBluetoothPeripheralUsageDescription": "JoyoFit uses Bluetooth to connect to your Huawei or Honor watch and sync its data.",
-        "NSLocationWhenInUseUsageDescription": "JoyoFit uses your approximate location only to look up the weather for your area and send it to your watch. Only coordinates rounded to about 1 km go to the weather service (Open-Meteo); your watch also receives that approximate position.",
+        "NSLocationWhenInUseUsageDescription": "JoyoFit uses your location to look up the weather for your area (only coordinates rounded to about 1 km go to the weather service, Open-Meteo) and to send your position to your watch while a workout you started on the watch is running. Nothing else leaves your phone.",
         "NSHealthShareUsageDescription": "JoyoFit does not read your Apple Health data. It only writes the data recorded by your watch.",
         "NSHealthUpdateUsageDescription": "Allow JoyoFit to save the steps, distance, calories, heart rate, blood oxygen, sleep, workouts and workout routes recorded by your watch to Apple Health.",
         "UIBackgroundModes": ["bluetooth-central"]

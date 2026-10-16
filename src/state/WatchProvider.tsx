@@ -43,7 +43,7 @@ export interface WatchContextValue {
   forget: (address: string) => Promise<void>;
   refreshBattery: () => Promise<void>;
   sync: () => Promise<void>;
-  /** Android only: pulls everything the watch still holds again; rows already stored are kept. */
+  /** Pulls everything the watch still holds again; rows already stored are kept. */
   syncFullHistory: () => Promise<void>;
 }
 
