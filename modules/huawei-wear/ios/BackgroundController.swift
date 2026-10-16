@@ -276,6 +276,8 @@ public final class BackgroundController: @unchecked Sendable {
             } catch {
                 if !(error is CancellationError) { log.error("Background battery refresh failed: \(error)") }
             }
+            // The weather timer cannot run while the process is suspended: this wake is where an overdue push is made.
+            await runtime?.weather.pushIfDue("background sync")
         }
     }
 }

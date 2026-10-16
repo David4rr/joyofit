@@ -13,6 +13,15 @@ import HuaweiProtocol
 public enum WearApp {
     public static let central = BleCentral.shared
 
+    /// The phone's coarse position for the weather.
+    private static var weatherLocationSource: LocationSource {
+        #if canImport(CoreLocation)
+        return CoreLocationSource()
+        #else
+        return UnavailableLocationSource()
+        #endif
+    }
+
     /// The one runtime. Creating it touches nothing on the radio: the central starts on the first connect or scan, or at launch when
     /// background mode is on (`HuaweiWearAppDelegateSubscriber`).
     public static let runtime: WearRuntime = {
@@ -31,7 +40,8 @@ public enum WearApp {
                 try await central.requireReady()
                 return await central.nearbyWatches(timeoutMs: timeoutMs).map { NearbyWatch(identifier: $0.identifier.uuidString, name: $0.name) }
             },
-            expiring: expiringWork
+            expiring: expiringWork,
+            weatherLocation: weatherLocationSource
         )
         // Bluetooth coming back on is the moment a waiting background connect can be retried.
         _ = central.addObserver { state in

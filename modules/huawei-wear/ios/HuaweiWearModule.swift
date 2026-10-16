@@ -147,6 +147,7 @@ public final class HuaweiWearModule: Module {
         OnAppBecomesActive {
             runtime.ensureBackgroundRunning()
             runtime.controller.nudge(reset: false)
+            Task { await runtime.weather.pushIfDue("app foreground") }
         }
 
         OnDestroy {
@@ -267,7 +268,6 @@ public final class HuaweiWearModule: Module {
         Function("getLiveWorkout") { () -> [String: Any]? in nil }
         Function("getPhoneFeatures") { () -> [String: Any] in runtime.features.status() }
         Function("getAlarms") { () -> [String: Any] in runtime.watchSettings.cachedAlarms() }
-        Function("getWeatherStatus") { () -> [String: Any] in Inert.weather() }
         Function("getSafety") { () -> [String: Any] in Inert.safety() }
         Function("testSosRelay") { () -> [String: Any] in Inert.sosRelayTest() }
         Function("getDietStatus") { () -> [String: Any] in Inert.diet() }
@@ -326,13 +326,40 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.features.findWatch(start) }
         }
 
+        // MARK: weather
+
+        Function("getWeatherStatus") { () -> [String: Any] in runtime.weather.status() }
+
+        AsyncFunction("setWeatherEnabled") { (enabled: Bool) async throws -> Void in
+            await runtime.weather.setEnabled(enabled)
+        }
+
+        AsyncFunction("setWeatherUnit") { (unit: String) async throws -> Void in
+            try await wearCall { try runtime.weather.setUnit(unit) }
+        }
+
+        AsyncFunction("setWeatherLocationMode") { (mode: String) async throws -> Void in
+            try await wearCall { try await runtime.weather.setLocationMode(mode) }
+        }
+
+        AsyncFunction("setWeatherIntervalMinutes") { (minutes: Int) async throws -> Void in
+            try await wearCall { try runtime.weather.setIntervalMinutes(minutes) }
+        }
+
+        AsyncFunction("setWeatherCity") { (query: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.weather.setCity(query).toJS() }
+        }
+
+        AsyncFunction("refreshWeather") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.weather.refreshNow() }
+        }
+
         // MARK: switches of phone-side features that are always off here
 
         switchRejectingOn("setMorningSummaryEnabled")
         switchRejectingOn("setFindPhoneEnabled")
         switchRejectingOn("setCallsEnabled")
         switchRejectingOn("setCallControlEnabled")
-        switchRejectingOn("setWeatherEnabled")
         switchRejectingOn("setSosRelayEnabled")
         switchRejectingOn("setSleepReportEnabled")
         switchRejectingOn("setCycleEnabled")
@@ -343,11 +370,6 @@ public final class HuaweiWearModule: Module {
 
         rejects("openNotificationAccess")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
-        rejects("setWeatherUnit", String.self)
-        rejects("setWeatherLocationMode", String.self)
-        rejects("setWeatherIntervalMinutes", Int.self)
-        rejects("setWeatherCity", String.self)
-        rejects("refreshWeather")
         rejects("listWatchfaces")
         rejects("installWatchface", String.self, String?.self, String?.self)
         rejects("setActiveWatchface", String.self)

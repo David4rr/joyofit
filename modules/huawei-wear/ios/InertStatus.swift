@@ -28,24 +28,6 @@ public enum Inert {
     /// `NotificationAccessStatus`: iOS has no notification listener for third-party apps.
     public static func notificationAccess() -> [String: Any] { ["granted": false, "enabled": false] }
 
-    /// `WeatherStatus`: off, nothing pushed.
-    public static func weather() -> [String: Any] {
-        [
-            "enabled": false,
-            "unit": "celsius",
-            "locationMode": "current",
-            "intervalMinutes": 60,
-            "city": NSNull(),
-            "locationPermission": false,
-            "watchSupported": NSNull(),
-            "lastPushAt": NSNull(),
-            "lastError": NSNull(),
-            "lastTemperatureC": NSNull(),
-            "lastCondition": NSNull(),
-            "lastLocationName": NSNull(),
-        ]
-    }
-
     /// `SafetyStatus`: no fall detection, no SOS relay (iOS apps cannot send SMS), the sleep report off.
     public static func safety() -> [String: Any] {
         [

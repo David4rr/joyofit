@@ -18,11 +18,6 @@ final class InertStatusTests: XCTestCase {
 
     func testStatusObjectsHaveTheirTypeScriptFields() {
         XCTAssertEqual(
-            keys(Inert.weather()),
-            ["enabled", "unit", "locationMode", "intervalMinutes", "city", "locationPermission", "watchSupported", "lastPushAt", "lastError", "lastTemperatureC", "lastCondition", "lastLocationName"]
-        )
-        XCTAssertEqual(Inert.weather()["enabled"] as? Bool, false)
-        XCTAssertEqual(
             keys(Inert.safety()),
             ["fallSupported", "fallNote", "fallSwitch", "fallUpdatedMs", "sosRelayEnabled", "smsSupported", "smsPermission", "telephony", "simReady", "sosReady", "sosBlockers", "sosListedByWatch", "sleepReportEnabled", "sleepReportSupported"]
         )
@@ -71,6 +66,14 @@ final class InertStatusTests: XCTestCase {
         let features = WatchSettingsFeatures(
             handle: { nil }, settings: WearSettings(defaults: ephemeralDefaults()), syncStore: SyncStore(url: temporaryDatabaseURL()), events: RecordingEvents()
         )
+        let events = RecordingEvents()
+        let weather = WeatherController(settings: WeatherSettings(defaults: ephemeralDefaults()), link: FakeLink(events: events), events: events, location: UnavailableLocationSource())
+        let populatedWeather: [String: Any] = [
+            "enabled": true, "unit": "fahrenheit", "locationMode": "city", "intervalMinutes": 30,
+            "city": WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6, detail: "West Java, Indonesia").toJS(),
+            "locationPermission": true, "watchSupported": true, "lastPushAt": Int64(1_792_110_700), "lastError": "x", "lastTemperatureC": -3,
+            "lastCondition": "LIGHT_RAIN", "lastLocationName": "Bandung",
+        ]
         let shapes: [String: Any] = [
             "PhoneFeatures": Inert.phoneFeatures(),
             "NotificationAccessStatus": Inert.notificationAccess(),
@@ -79,7 +82,8 @@ final class InertStatusTests: XCTestCase {
             "HealthSensorsStatus": features.healthSensorsStatus(),
             "StressStatus": features.stress.status(),
             "HrvReading": HrvReadingData(start: 1, end: 61, rmssd: 42.5, sdnn: 50.1, meanRr: 850.2, beats: 70, heartRate: 71).toJS(),
-            "WeatherStatus": Inert.weather(),
+            "WeatherStatus": weather.status(),
+            "WeatherStatus#populated": populatedWeather,
             "SafetyStatus": Inert.safety(),
             "SosRelayTest": Inert.sosRelayTest(),
             "CycleOverview": Inert.cycle(today: "2026-10-16", watchConnected: false),
