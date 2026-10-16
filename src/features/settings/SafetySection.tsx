@@ -168,9 +168,7 @@ export function SafetySection() {
           hint={
             safety.sleepReportSupported
               ? 'Once each morning, after the first sync that holds last night, the watch shows how long you slept and the stages.'
-              : isIos
-                ? 'Not available on iOS yet.'
-                : 'Not available: the watch does not report the event channel it needs.'
+              : 'Not available: the watch does not report the event channel it needs.'
           }
           value={safety.sleepReportEnabled}
           disabled={!safety.sleepReportSupported || busy}

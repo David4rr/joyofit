@@ -115,6 +115,8 @@ public final class HuaweiWearModule: Module {
             emit("onUploadResult", ["ok": ok, "fileName": fileName, "code": code, "message": message])
         }
         func faceCustomization(_ payload: [String: Any]) { emit("onFaceCustomization", payload) }
+        func watchMealLogged(_ payload: [String: Any]) { emit("onWatchMealLogged", payload) }
+        func liveWorkout(_ payload: [String: Any]) { emit("onLiveWorkout", payload) }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -270,12 +272,12 @@ public final class HuaweiWearModule: Module {
         Function("getMorningSummaryEnabled") { () -> Bool in false }
         Function("getHealthSensors") { () -> [String: Any] in runtime.watchSettings.healthSensorsStatus() }
         Function("getStressStatus") { () -> [String: Any] in runtime.watchSettings.stress.status() }
-        Function("getLiveWorkout") { () -> [String: Any]? in nil }
+        Function("getLiveWorkout") { () -> [String: Any]? in runtime.liveWorkout.snapshot() }
         Function("getPhoneFeatures") { () -> [String: Any] in runtime.features.status() }
         Function("getAlarms") { () -> [String: Any] in runtime.watchSettings.cachedAlarms() }
-        Function("getSafety") { () -> [String: Any] in Inert.safety() }
+        Function("getSafety") { () -> [String: Any] in runtime.safety.status() }
         Function("testSosRelay") { () -> [String: Any] in Inert.sosRelayTest() }
-        Function("getDietStatus") { () -> [String: Any] in Inert.diet() }
+        Function("getDietStatus") { () -> [String: Any] in runtime.diet.status() }
         Function("getBodyMetrics") { () -> [String: Any] in Inert.bodyMetrics() }
         Function("getActivityGoals") { () -> [String: Any] in Inert.activityGoals(dailyStepGoal: runtime.settings.profile?.dailyStepGoal) }
         Function("getHealthyLiving") { () -> [String: Any] in Inert.healthyLiving() }
@@ -290,9 +292,8 @@ public final class HuaweiWearModule: Module {
         AsyncFunction("cancelHrvMeasurement") { () async throws -> Void in
             runtime.watchSettings.hrv.cancel()
         }
-        Function("dismissLiveWorkout") { () -> Void in }
-        Function("finishLiveWorkout") { () -> Void in }
-        AsyncFunction("markWatchMealsSynced") { (ids: [String]) async throws -> Void in }
+        Function("dismissLiveWorkout") { () -> Void in runtime.liveWorkout.dismiss() }
+        Function("finishLiveWorkout") { () -> Void in runtime.liveWorkout.finish() }
         // Realtime heart rate drains the watch: it never outlives the app being on screen.
         AsyncFunction("setLiveHeartRate") { (active: Bool) async throws -> Void in
             runtime.watchSettings.liveHeartRate.setActive(active)
@@ -301,7 +302,7 @@ public final class HuaweiWearModule: Module {
         OnAppEntersBackground {
             runtime.watchSettings.liveHeartRate.setActive(false)
         }
-        Function("startLiveWorkout") { () throws -> Void in throw iosUnsupported("startLiveWorkout") }
+        Function("startLiveWorkout") { () -> Void in runtime.liveWorkout.startManual() }
 
         AsyncFunction("setNotificationsEnabled") { (enabled: Bool) async throws -> Void in
             try await wearCall { try await runtime.notifications.setEnabled(enabled) }
@@ -327,8 +328,43 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.watchSettings.setAlarms(try WatchAlarms.fromJS(alarms)) }
         }
 
+        // MARK: fall detection and the morning sleep report
+
+        AsyncFunction("setFallDetection") { (enabled: Bool) async throws -> Bool in
+            try await wearCall { try await runtime.safety.setFall(enabled) }
+        }
+
+        AsyncFunction("queryFallDetection") { () async throws -> Bool in
+            try await wearCall { try await runtime.safety.queryFall() }
+        }
+
+        AsyncFunction("setSleepReportEnabled") { (enabled: Bool) async throws -> Void in
+            runtime.safety.settings.sleepReportEnabled = enabled
+        }
+
+        AsyncFunction("sendSleepReportNow") { () async throws -> String in
+            try await wearCall { try await runtime.sleepReport.push(force: true) }
+        }
+
         AsyncFunction("findWatch") { (start: Bool) async throws -> Void in
             try await wearCall { try await runtime.features.findWatch(start) }
+        }
+
+        // MARK: meals on the watch's calorie card
+
+        AsyncFunction("setDietDay") { (day: [String: Any]) async throws -> Bool in
+            guard let parsed = DietDayArgument(js: day) else {
+                throw WearException(.invalidArgument, "Each meal of the day must be an object")
+            }
+            return try await wearCall { try await runtime.diet.setDay(date: parsed.date, meals: parsed.meals, goals: parsed.goals) }
+        }
+
+        AsyncFunction("pushDietNow") { () async throws -> Bool in
+            try await wearCall { try await runtime.diet.push("manual", withConfig: true) }
+        }
+
+        AsyncFunction("markWatchMealsSynced") { (ids: [String]) async throws -> Void in
+            try await wearCall { try runtime.diet.markWatchMealsSynced(ids) }
         }
 
         // MARK: weather
@@ -441,7 +477,6 @@ public final class HuaweiWearModule: Module {
         switchRejectingOn("setCallsEnabled")
         switchRejectingOn("setCallControlEnabled")
         switchRejectingOn("setSosRelayEnabled")
-        switchRejectingOn("setSleepReportEnabled")
         switchRejectingOn("setHealthyLivingEnabled")
         switchRejectingOn("setCoursesEnabled")
 
@@ -449,11 +484,6 @@ public final class HuaweiWearModule: Module {
 
         rejects("openNotificationAccess")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
-        rejects("setFallDetection", Bool.self)
-        rejects("queryFallDetection")
-        rejects("sendSleepReportNow")
-        rejects("setDietDay", [String: Any].self)
-        rejects("pushDietNow")
         rejects("setBodyMetrics", [String: Any].self)
         rejects("setActivityGoals", [String: Any].self)
         rejects("sendActivityGoals")

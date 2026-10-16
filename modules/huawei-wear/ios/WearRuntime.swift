@@ -60,6 +60,14 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var faceCustomizer: WatchfaceCustomizer!
     /// The menstrual calendar: the log, the watch's 0x32 requests and the flow dictionary.
     public private(set) var cycle: MenstrualFeature!
+    /// Fall detection (DataSync config) and the morning sleep report (DataSync event); the SOS relay is not possible on iOS.
+    public private(set) var safety: SafetyFeatures!
+    public private(set) var sleepReport: SleepReportFeature!
+    /// Calorie intake on the watch (meals, goals, the watch's quick-log).
+    public private(set) var diet: DietSync!
+    /// A workout started on the watch, followed live (and the phone's GPS for it).
+    public private(set) var liveWorkout: LiveWorkout!
+    public private(set) var workoutLink: WorkoutLink!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -94,7 +102,8 @@ public final class WearRuntime: @unchecked Sendable {
         weatherLocation: LocationSource = UnavailableLocationSource(),
         weatherFetch: @escaping WeatherFetch = WeatherNetwork.fetch,
         weatherDefaults: UserDefaults? = nil,
-        cycleDefaults: UserDefaults? = nil
+        cycleDefaults: UserDefaults? = nil,
+        liveGps: LiveGpsSource = UnavailableLiveGps()
     ) {
         self.settings = settings
         self.syncStore = syncStore
@@ -124,7 +133,20 @@ public final class WearRuntime: @unchecked Sendable {
         cycle = MenstrualFeature(settings: CycleSettings(defaults: cycleDefaults), store: CycleStore(store: syncStore), link: link, events: fanOut)
         dataSync.register(cycle)
         linkObservers.add(cycle)
+        diet = DietSync(store: syncStore, events: fanOut, settings: settings, now: now)
+        dataSync.register(diet)
         linkObservers.add(dataSync)
+        let extrasSettings = WatchExtrasSettings(defaults: weatherDefaults)
+        safety = SafetyFeatures(link: link, settings: extrasSettings, events: fanOut)
+        dataSync.register(safety)
+        sleepReport = SleepReportFeature(settings: extrasSettings, syncStore: syncStore, events: fanOut)
+        dataSync.register(sleepReport)
+        liveWorkout = LiveWorkout(
+            dataSync: dataSync, events: fanOut, settings: settings, setHeartRateActive: { [watchSettings] in watchSettings?.liveHeartRate.setWorkoutActive($0) }
+        )
+        dataSync.register(liveWorkout)
+        workoutLink = WorkoutLink(link: link, events: fanOut, live: liveWorkout, gps: liveGps)
+        linkObservers.add(workoutLink)
     }
 
     // MARK: events
@@ -161,10 +183,14 @@ public final class WearRuntime: @unchecked Sendable {
     fileprivate func handleSyncComplete(_ summary: SyncSummary) {
         lock.locked { _status.lastSyncSec = summary.to }
         onSyncComplete?(summary)
+        sleepReport?.onSyncComplete(summary)
         currentListeners().forEach { $0.syncComplete(summary) }
     }
 
-    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) { currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) } }
+    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) {
+        liveWorkout?.onHeartRate(bpm)
+        currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) }
+    }
 
     fileprivate func handleHrvProgress(_ secondsLeft: Int, _ beats: Int) { currentListeners().forEach { $0.hrvProgress(secondsLeft: secondsLeft, beats: beats) } }
 
@@ -196,6 +222,8 @@ public final class WearRuntime: @unchecked Sendable {
             runtime?.currentListeners().forEach { $0.uploadResult(ok: ok, fileName: fileName, code: code, message: message) }
         }
         func faceCustomization(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.faceCustomization(payload) } }
+        func watchMealLogged(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.watchMealLogged(payload) } }
+        func liveWorkout(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.liveWorkout(payload) } }
     }
 
     // MARK: bonded devices

@@ -25,7 +25,6 @@ final class InertStatusTests: XCTestCase {
         XCTAssertEqual(keys(Inert.sosRelayTest()), ["ready", "blockers"])
         XCTAssertEqual(Inert.sosRelayTest()["ready"] as? Bool, false)
         XCTAssertEqual((Inert.sosRelayTest()["blockers"] as? [String])?.count, 1)
-        XCTAssertEqual(keys(Inert.diet()), ["date", "mealCount", "intakeKcal", "goals", "updatedAt", "pushedAt", "lastResult", "unsyncedWatchMeals", "pendingWatchMeals", "supported"])
         XCTAssertEqual(keys(Inert.bodyMetrics()), ["weightKg", "weightTs", "bodyFatPct", "bodyFatTs", "restingKcal", "systolic", "diastolic", "bpTs"])
         XCTAssertEqual(keys(Inert.healthyLiving()), ["supported", "gate", "gateSet", "enabled", "registered", "pingCode", "msgVer", "packageSize", "lastRequestAt", "lastReportAt", "lastReport"])
         XCTAssertEqual(keys(Inert.courses()), ["enabled", "gate41", "gate169", "gate295", "p2p"])
@@ -63,6 +62,18 @@ final class InertStatusTests: XCTestCase {
         )
         let events = RecordingEvents()
         let weather = WeatherController(settings: WeatherSettings(defaults: ephemeralDefaults()), link: FakeLink(events: events), events: events, location: UnavailableLocationSource())
+        let extras = WatchExtrasSettings(defaults: ephemeralDefaults())
+        extras.fallSwitch = 1
+        extras.fallUpdatedMs = 1_792_110_700_000
+        let liveSafety = SafetyFeatures(link: RigSource(), settings: extras, events: RecordingEvents()).status()
+        // A phone-side live workout with and without readings: the objects `getLiveWorkout` and `onLiveWorkout` carry.
+        let liveSettings = WearSettings(defaults: ephemeralDefaults())
+        let live = LiveWorkout(dataSync: DataSyncService(link: RigSource(), events: events), events: events, settings: liveSettings, setHeartRateActive: { _ in })
+        live.startManual()
+        let emptyLive = live.snapshot()!
+        live.onHeartRate(120)
+        live.onHeartRate(121)
+        live.finish()
         let populatedWeather: [String: Any] = [
             "enabled": true, "unit": "fahrenheit", "locationMode": "city", "intervalMinutes": 30,
             "city": WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6, detail: "West Java, Indonesia").toJS(),
@@ -85,6 +96,24 @@ final class InertStatusTests: XCTestCase {
         populatedSettings.enabled = true
         populatedSettings.switches = MenstrualCodec.Switches(master: true)
         let populatedCycle = MenstrualFeature(settings: populatedSettings, store: populatedStore, link: populatedLink.source, events: events)
+        // The live meals status: nothing stored, and a day with a goal, a watch-logged meal, a push and its result.
+        let diet = DietSync(store: SyncStore(url: temporaryDatabaseURL()), events: events, settings: WearSettings(defaults: ephemeralDefaults()), defaults: ephemeralDefaults())
+        let dietStore = SyncStore(url: temporaryDatabaseURL())
+        let dietDefaults = ephemeralDefaults()
+        dietDefaults.set(1_792_110_700_000, forKey: "pushed_at")
+        dietDefaults.set("sent (set)", forKey: "last_result")
+        try DietStore(dietStore).put(
+            DietDay(
+                date: Inert.today(),
+                meals: [
+                    DietMeal(id: "app-1", eatTime: 1_792_100_000, kcal: 350.5, whichMeal: 10, carbs: 40, protein: 12.5, fat: 9),
+                    DietMeal(id: "watch-1792105000-20-0", eatTime: 1_792_105_000, kcal: 600, whichMeal: 20, src: "watch", synced: false),
+                ],
+                goals: DietGoals(dailyKcal: 2000, deficitKcal: 500, weightInitKg: 70, targetWeightKg: 65, weightManagerType: 1, activityCalGoal: 300),
+                updatedAt: 1_792_110_600_000
+            )
+        )
+        let populatedDiet = DietSync(store: dietStore, events: events, settings: WearSettings(defaults: ephemeralDefaults()), defaults: dietDefaults)
         let shapes: [String: Any] = [
             "PhoneFeatures": Inert.phoneFeatures(),
             "NotificationAccessStatus": Inert.notificationAccess(),
@@ -95,11 +124,15 @@ final class InertStatusTests: XCTestCase {
             "HrvReading": HrvReadingData(start: 1, end: 61, rmssd: 42.5, sdnn: 50.1, meanRr: 850.2, beats: 70, heartRate: 71).toJS(),
             "WeatherStatus": weather.status(),
             "WeatherStatus#populated": populatedWeather,
+            "LiveWorkout": emptyLive,
+            "LiveWorkout#ended": live.snapshot()!,
             "SafetyStatus": Inert.safety(),
+            "SafetyStatus#live": liveSafety,
             "SosRelayTest": Inert.sosRelayTest(),
             "CycleOverview": try cycle.overview(),
             "CycleOverview#populated": try populatedCycle.overview(),
-            "DietStatus": Inert.diet(),
+            "DietStatus": diet.status(),
+            "DietStatus#populated": populatedDiet.status(),
             "BodyMetrics": Inert.bodyMetrics(),
             "ActivityGoalsStatus": Inert.activityGoals(dailyStepGoal: nil),
             "HealthyLivingStatus": Inert.healthyLiving(),
