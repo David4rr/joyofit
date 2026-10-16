@@ -13,7 +13,6 @@ import { AppState } from 'react-native';
 
 import { authClient } from '@/cloud/auth';
 import { rogo } from '@/cloud/rogo';
-import { isIos } from '@/components/IosUnavailable';
 import { bodyMetricsFrom, buildDay, localDate, rogoMealFor } from '@/features/meals/mealMap';
 import { errorMessage } from '@/format';
 import { pushLog } from '@/state/logStore';
@@ -124,8 +123,7 @@ export function MealsProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(
     (reason: string): Promise<void> => {
-      // Android only: the watch's calorie card is not reachable from iOS yet, so there is nothing to push or read back.
-      if (!signedIn || isIos) return Promise.resolve();
+      if (!signedIn) return Promise.resolve();
       if (running.current) {
         again.current = reason;
         return running.current;
@@ -156,7 +154,6 @@ export function MealsProvider({ children }: { children: ReactNode }) {
   );
 
   const pushNow = useCallback(async () => {
-    if (isIos) return;
     if (signedIn) {
       await refresh('manual');
       return;

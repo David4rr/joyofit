@@ -62,6 +62,16 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var activityGoals: ActivityGoals!
     /// Weight, body fat, resting metabolism and the Health Glance card.
     public private(set) var bodyMetrics: BodyMetrics!
+    /// The menstrual calendar: the log, the watch's 0x32 requests and the flow dictionary.
+    public private(set) var cycle: MenstrualFeature!
+    /// Fall detection (DataSync config) and the morning sleep report (DataSync event); the SOS relay is not possible on iOS.
+    public private(set) var safety: SafetyFeatures!
+    public private(set) var sleepReport: SleepReportFeature!
+    /// Calorie intake on the watch (meals, goals, the watch's quick-log).
+    public private(set) var diet: DietSync!
+    /// A workout started on the watch, followed live (and the phone's GPS for it).
+    public private(set) var liveWorkout: LiveWorkout!
+    public private(set) var workoutLink: WorkoutLink!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -96,7 +106,9 @@ public final class WearRuntime: @unchecked Sendable {
         weatherLocation: LocationSource = UnavailableLocationSource(),
         weatherFetch: @escaping WeatherFetch = WeatherNetwork.fetch,
         weatherDefaults: UserDefaults? = nil,
-        goalsDefaults: UserDefaults? = nil
+        goalsDefaults: UserDefaults? = nil,
+        cycleDefaults: UserDefaults? = nil,
+        liveGps: LiveGpsSource = UnavailableLiveGps()
     ) {
         self.settings = settings
         self.syncStore = syncStore
@@ -127,7 +139,23 @@ public final class WearRuntime: @unchecked Sendable {
         dataSync.register(activityGoals)
         bodyMetrics = BodyMetrics(store: syncStore, service: dataSync, events: fanOut, settings: settings)
         dataSync.register(bodyMetrics)
+        cycle = MenstrualFeature(settings: CycleSettings(defaults: cycleDefaults), store: CycleStore(store: syncStore), link: link, events: fanOut)
+        dataSync.register(cycle)
+        linkObservers.add(cycle)
+        diet = DietSync.wired(store: syncStore, events: fanOut, settings: settings, now: now, goals: activityGoals, body: bodyMetrics)
+        dataSync.register(diet)
         linkObservers.add(dataSync)
+        let extrasSettings = WatchExtrasSettings(defaults: weatherDefaults)
+        safety = SafetyFeatures(link: link, settings: extrasSettings, events: fanOut)
+        dataSync.register(safety)
+        sleepReport = SleepReportFeature(settings: extrasSettings, syncStore: syncStore, events: fanOut)
+        dataSync.register(sleepReport)
+        liveWorkout = LiveWorkout(
+            dataSync: dataSync, events: fanOut, settings: settings, setHeartRateActive: { [watchSettings] in watchSettings?.liveHeartRate.setWorkoutActive($0) }
+        )
+        dataSync.register(liveWorkout)
+        workoutLink = WorkoutLink(link: link, events: fanOut, live: liveWorkout, gps: liveGps)
+        linkObservers.add(workoutLink)
     }
 
     // MARK: events
@@ -164,10 +192,14 @@ public final class WearRuntime: @unchecked Sendable {
     fileprivate func handleSyncComplete(_ summary: SyncSummary) {
         lock.locked { _status.lastSyncSec = summary.to }
         onSyncComplete?(summary)
+        sleepReport?.onSyncComplete(summary)
         currentListeners().forEach { $0.syncComplete(summary) }
     }
 
-    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) { currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) } }
+    fileprivate func handleHeartRate(_ bpm: Int, _ tsMs: Int64) {
+        liveWorkout?.onHeartRate(bpm)
+        currentListeners().forEach { $0.heartRate(bpm: bpm, tsMs: tsMs) }
+    }
 
     fileprivate func handleHrvProgress(_ secondsLeft: Int, _ beats: Int) { currentListeners().forEach { $0.hrvProgress(secondsLeft: secondsLeft, beats: beats) } }
 
@@ -199,6 +231,8 @@ public final class WearRuntime: @unchecked Sendable {
             runtime?.currentListeners().forEach { $0.uploadResult(ok: ok, fileName: fileName, code: code, message: message) }
         }
         func faceCustomization(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.faceCustomization(payload) } }
+        func watchMealLogged(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.watchMealLogged(payload) } }
+        func liveWorkout(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.liveWorkout(payload) } }
     }
 
     // MARK: bonded devices
@@ -370,6 +404,20 @@ public final class WearRuntime: @unchecked Sendable {
             events.error("Profile not sent: \(e.message)")
             return false
         }
+    }
+}
+
+extension DietSync {
+    /// The meals feature as the runtime runs it: the ring's calories goal is the activity-calorie goal of the diet config (Android passes
+    /// `{ activityGoals.goals.calories }`), and the watch's request for the latest weight (event 5) is answered by `BodyMetrics`.
+    static func wired(
+        store: SyncStore, events: WearEvents, settings: WearSettings, defaults: UserDefaults? = nil, now: @escaping @Sendable () -> Date,
+        goals: ActivityGoals, body: BodyMetrics
+    ) -> DietSync {
+        DietSync(
+            store: store, events: events, settings: settings, defaults: defaults, now: now, activityCalories: { goals.goals.calories },
+            sendWeight: { phone, watch, reason in (try? await body.sendWeight(phonePkg: phone, watchPkg: watch, reason: reason)) ?? false }
+        )
     }
 }
 

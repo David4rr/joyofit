@@ -207,25 +207,66 @@ function collectSamples(workout: StravaWorkout, points: readonly StravaPoint[]):
   return [...bySecond.values()].sort((a, b) => a.ts - b.ts);
 }
 
+/** A stretch of the workout the watch had paused, in Unix seconds. */
+interface Pause {
+  start: number;
+  end: number;
+}
+
+/** A gap in the samples shorter than this is not a pause. */
+const MIN_PAUSE_S = 30;
+
 /**
- * Fills `distance` on every sample: GPS samples get the haversine path length scaled so the last fix is at the watch's
- * total; samples between fixes interpolate in time, before the first fix is 0 and after the last the total. Without any
- * fix (treadmill, pool) the distance grows linearly over the whole workout.
+ * Where the watch's pause was. The watch only gives the active time, so the pause is `elapsed - active` seconds long;
+ * where it sat is not stored, but nothing is recorded while the watch is paused, so it lies around the longest stretch
+ * the samples leave empty: the longest gap between GPS fixes when the workout has at least two (the watch stops the GPS
+ * when it pauses; heart-rate samples may run on or stop a little later), else between any samples. The window is centred
+ * on that gap (a gap shorter than the pause is widened to the pause's length, a longer one is cut to it) and kept inside
+ * the workout. Null when the watch reports no pause or the samples have no gap of at least half of it.
  */
-function withDistance(samples: Sample[], total: number): void {
-  if (!(total > 0)) return;
+function findPause(workout: StravaWorkout, samples: readonly Sample[]): Pause | null {
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  if (!first || !last || !(workout.duration > 0)) return null;
+  const length = last.ts - first.ts - Math.round(workout.duration);
+  if (length < MIN_PAUSE_S) return null;
+  const fixes = samples.filter((s) => s.lat !== null);
+  const candidates = fixes.length >= 2 ? fixes : samples;
+  let gapStart = first.ts;
+  let gap = 0;
+  for (let i = 1; i < candidates.length; i++) {
+    const width = (candidates[i] as Sample).ts - (candidates[i - 1] as Sample).ts;
+    if (width > gap) {
+      gap = width;
+      gapStart = (candidates[i - 1] as Sample).ts;
+    }
+  }
+  if (gap < MIN_PAUSE_S || gap < length / 2) return null;
+  const start = Math.min(last.ts - length, Math.max(first.ts, Math.round(gapStart + gap / 2 - length / 2)));
+  return { start, end: start + length };
+}
+
+/**
+ * Fills `distance` on every sample. Distance is spread over the *active* time (the workout without its pause), so the
+ * stream reads as moving the whole time the watch was running and as stopped exactly while it was paused:
+ * - GPS fixes get the haversine path length scaled so the last fix is at the watch's total; the stretch before the first
+ *   fix and the one after the last move at the workout's average speed (the watch has no fix there, not no movement),
+ *   and the fixes' path takes the rest;
+ * - samples between two fixes, and before and after them, interpolate in active time, so a pause is flat;
+ * - without two fixes (treadmill, pool) the distance grows linearly in active time over the whole workout.
+ * The first sample is 0 and the last is the total.
+ */
+function withDistance(samples: Sample[], total: number, pause: Pause | null): void {
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  if (!(total > 0) || !first || !last) return;
+  const activeAt = (ts: number) => ts - first.ts - (pause ? Math.max(0, Math.min(ts, pause.end) - pause.start) : 0);
+  const activeTotal = activeAt(last.ts);
+  const linear = (s: Sample) => (activeTotal > 0 ? (total * activeAt(s.ts)) / activeTotal : 0);
   const fixes: number[] = [];
   samples.forEach((s, i) => {
     if (s.lat !== null) fixes.push(i);
   });
-  const first = samples[0];
-  const last = samples[samples.length - 1];
-  if (fixes.length < 2 || !first || !last) {
-    const span = last && first ? last.ts - first.ts : 0;
-    for (const s of samples) s.distance = span > 0 ? (total * (s.ts - (first?.ts ?? 0))) / span : 0;
-    if (last) last.distance = total;
-    return;
-  }
   const cumulative: number[] = [0];
   for (let k = 1; k < fixes.length; k++) {
     const a = samples[fixes[k - 1] as number] as Sample;
@@ -233,28 +274,39 @@ function withDistance(samples: Sample[], total: number): void {
     cumulative.push((cumulative[k - 1] as number) + haversine(a.lat as number, a.lon as number, b.lat as number, b.lon as number));
   }
   const gpsTotal = cumulative[cumulative.length - 1] as number;
-  if (!(gpsTotal > 0)) {
-    // All fixes on one spot: no path to scale, so fall back to time.
-    for (const s of samples) s.distance = (total * (s.ts - first.ts)) / Math.max(1, last.ts - first.ts);
+  if (fixes.length < 2 || !(gpsTotal > 0) || !(activeTotal > 0)) {
+    // No path to scale (no fixes, one fix, or all fixes on one spot): fall back to time.
+    for (const s of samples) s.distance = linear(s);
     last.distance = total;
     return;
   }
-  const scale = total / gpsTotal;
+  const firstFix = samples[fixes[0] as number] as Sample;
+  const lastFix = samples[fixes[fixes.length - 1] as number] as Sample;
+  const before = (total * activeAt(firstFix.ts)) / activeTotal;
+  const after = (total * (activeTotal - activeAt(lastFix.ts))) / activeTotal;
+  const scale = (total - before - after) / gpsTotal;
   fixes.forEach((index, k) => {
-    (samples[index] as Sample).distance = (cumulative[k] as number) * scale;
+    (samples[index] as Sample).distance = before + (cumulative[k] as number) * scale;
   });
-  const firstFix = fixes[0] as number;
-  const lastFix = fixes[fixes.length - 1] as number;
-  for (let i = 0; i < firstFix; i++) (samples[i] as Sample).distance = 0;
-  for (let i = lastFix + 1; i < samples.length; i++) (samples[i] as Sample).distance = total;
+  const lastFixIndex = fixes[fixes.length - 1] as number;
+  for (let i = 0; i < (fixes[0] as number); i++) {
+    const s = samples[i] as Sample;
+    s.distance = (before * activeAt(s.ts)) / Math.max(1, activeAt(firstFix.ts));
+  }
+  for (let i = lastFixIndex + 1; i < samples.length; i++) {
+    const s = samples[i] as Sample;
+    s.distance = lastFix.distance + (after * (activeAt(s.ts) - activeAt(lastFix.ts))) / Math.max(1, activeTotal - activeAt(lastFix.ts));
+  }
   for (let k = 1; k < fixes.length; k++) {
     const a = samples[fixes[k - 1] as number] as Sample;
     const b = samples[fixes[k] as number] as Sample;
+    const span = activeAt(b.ts) - activeAt(a.ts);
     for (let i = (fixes[k - 1] as number) + 1; i < (fixes[k] as number); i++) {
       const s = samples[i] as Sample;
-      s.distance = b.ts === a.ts ? a.distance : a.distance + ((b.distance - a.distance) * (s.ts - a.ts)) / (b.ts - a.ts);
+      s.distance = span > 0 ? a.distance + ((b.distance - a.distance) * (activeAt(s.ts) - activeAt(a.ts))) / span : a.distance;
     }
   }
+  last.distance = total;
 }
 
 /** FIT message numbers of the global profile. */
@@ -295,8 +347,9 @@ export interface BuiltFit {
 }
 
 /**
- * The FIT activity of one workout: file_id, device_info, a timer start event, one record per sample, a timer stop event,
- * one lap, one session and the activity. The record timestamps run from the workout's start to its end, the session's
+ * The FIT activity of one workout: file_id, device_info, a timer start event, one record per sample, a timer stop event
+ * (and, when the watch was paused, a stop and start around the pause, see `findPause`), one lap, one session and the
+ * activity. The record timestamps run from the workout's start to its end, the session's
  * `total_elapsed_time` is that span, `total_timer_time` the watch's active time and `total_distance` the watch's
  * distance. Foot sports get the watch's step count as strides (a stride is two steps) and an average cadence of strides
  * per minute over the active time, as Garmin devices write it. `utcOffsetSeconds` is the wearer's offset from UTC at the
@@ -305,13 +358,14 @@ export interface BuiltFit {
 export function buildFit(workout: StravaWorkout, points: readonly StravaPoint[], options: { utcOffsetSeconds?: number } = {}): BuiltFit {
   const samples = collectSamples(workout, points);
   const total = workout.distance > 0 ? workout.distance : 0;
-  withDistance(samples, total);
+  const pause = findPause(workout, samples);
+  withDistance(samples, total, pause);
   const sport = stravaSport(workout.sportType);
   // `collectSamples` always has a sample at the start and at the end.
   const start = (samples[0] as Sample).ts;
   const end = (samples[samples.length - 1] as Sample).ts;
   const elapsed = end - start;
-  const timer = workout.duration > 0 ? Math.min(workout.duration, elapsed) : elapsed;
+  const timer = workout.duration > 0 ? Math.min(Math.round(workout.duration), elapsed) : elapsed;
   const fixes = samples.filter((s) => s.lat !== null && s.lon !== null);
   const firstFix = fixes[0];
   const lastFix = fixes[fixes.length - 1];
@@ -373,7 +427,19 @@ export function buildFit(workout: StravaWorkout, points: readonly StravaPoint[],
   if (hasAlt) recordFields.push({ num: 2, type: 'uint16' }, { num: 78, type: 'uint32' });
   if (hasHr) recordFields.push({ num: 3, type: 'uint8' });
   const record = fit.define(3, MESG.record, recordFields);
+  // The watch's pause, if any, as a timer stop after the last record at or before its start and a timer start before the
+  // first record at or after its end; Strava takes the moving time of a run from these events when a file has any.
+  let pauseStopped = pause === null;
+  let pauseResumed = pause === null;
   for (const s of samples) {
+    if (pause && !pauseStopped && s.ts > pause.start) {
+      event(pause.start, FIT.eventTypeStopAll);
+      pauseStopped = true;
+    }
+    if (pause && !pauseResumed && s.ts >= pause.end) {
+      event(pause.end, FIT.eventTypeStart);
+      pauseResumed = true;
+    }
     const values: FitValue[] = [toFitTime(s.ts)];
     if (fixes.length > 0) values.push(s.lat === null ? null : toSemicircles(s.lat), s.lon === null ? null : toSemicircles(s.lon));
     // Centimetres.

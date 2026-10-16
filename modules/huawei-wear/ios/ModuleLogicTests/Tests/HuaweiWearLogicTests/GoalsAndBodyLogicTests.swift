@@ -373,6 +373,66 @@ final class BodyMetricsTests: XCTestCase {
     }
 }
 
+final class DietWiringTests: XCTestCase {
+    private let nowSec: Int64 = 1_760_450_000
+
+    private func make(_ rig: DataSyncRig, settings: WearSettings) -> (DietSync, ActivityGoals, BodyMetrics) {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let goals = ActivityGoals(defaults: ephemeralDefaults(), service: rig.service, events: rig.events, settings: settings)
+        let body = BodyMetrics(store: store, service: rig.service, events: rig.events, settings: settings, nowMs: { 1_760_450_000_000 })
+        let diet = DietSync.wired(
+            store: store, events: rig.events, settings: settings, defaults: ephemeralDefaults(),
+            now: { Date(timeIntervalSince1970: 1_760_450_000) }, goals: goals, body: body
+        )
+        rig.service.register(diet)
+        return (diet, goals, body)
+    }
+
+    private func bitmapRig() -> DataSyncRig {
+        let rig = DataSyncRig(bits: [83, 84, 173])
+        var bitmap = Bytes(repeating: 0, count: 32)
+        for bit in [83, 84, 85, 173, 215] { bitmap[bit / 8] |= UInt8(1 << (bit % 8)) }
+        rig.caps.expandCapabilities = bitmap
+        return rig
+    }
+
+    func testTheWatchsWeightRequestIsAnsweredByBodyMetrics() async throws {
+        let rig = bitmapRig()
+        let (_, _, body) = make(rig, settings: WearSettings(defaults: ephemeralDefaults()))
+        _ = try body.save(BodyMetricsData(weightKg: 70.5, weightTsMs: 1_760_000_000_000))
+        await rig.attach()
+        var json = HuaweiTLV()
+        json.put(0x01, string: "hw.sport.dietcal")
+        json.put(0x02, string: "hw.unitedevice.weightMgr")
+        json.put(0x03, int: 80_030_003)
+        json.put(0x04, byte: 0)
+        json.put(0x05, bytes: Array("{\"event\":5}".utf8))
+        rig.session.onData(DataSyncRig.frame(0x02, json))
+        await eventually { rig.watch.sent.contains { $0.command == 0x04 } }
+        let dict = try DataSyncWire.parseDictionary(try XCTUnwrap(rig.watch.sent.first { $0.command == 0x04 }).tlv)
+        XCTAssertEqual(dict.dictId, 10_006)
+        XCTAssertEqual(dict.rows[0].values[0].key, 2004)
+        XCTAssertEqual(dict.rows[0].values[0].value, BodyMetricsCodec.doubleLe(70.5))
+        XCTAssertEqual(dict.rows[0].startMs, 1_760_000_000_000)
+    }
+
+    func testTheRingsCaloriesGoalIsTheDietConfigsActivityCalGoal() async throws {
+        let rig = bitmapRig()
+        let (diet, goals, _) = make(rig, settings: WearSettings(defaults: ephemeralDefaults()))
+        _ = try await goals.set(ActivityGoalsData(calories: 420))
+        rig.watch.responder = { _ in [] }
+        let before = rig.watch.sent.count
+        _ = try await diet.setDay(date: "2025-10-14", meals: [], goals: DietGoals(dailyKcal: 2000))
+        let configs = rig.watch.sent.dropFirst(before).filter { $0.command == 0x01 }
+        let diets = try configs.compactMap { c -> String? in
+            let entry = try c.tlv.object(0x83).objects(0x84)[0]
+            return try entry.int(0x05) == 900_300_023 ? String(decoding: try entry.bytes(0x07), as: UTF8.self) : nil
+        }
+        XCTAssertEqual(diets.count, 1)
+        XCTAssertTrue(diets[0].contains("\"activityCalGoal\":420"), diets[0])
+    }
+}
+
 final class SyncSlicesTests: XCTestCase {
     func testAShortWindowIsOneSlice() {
         let slices = syncSlices(fromSec: 900_000, nowSec: 1_000_000)

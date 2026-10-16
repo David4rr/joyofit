@@ -53,44 +53,6 @@ public enum Inert {
     /// `SosRelayTest`: what an SOS request would do; sends nothing, to nobody.
     public static func sosRelayTest() -> [String: Any] { ["ready": false, "blockers": [sosBlocker]] }
 
-    /// `CycleOverview`: an empty log with the cycle calendar off. `today` is the local `YYYY-MM-DD`; the averages are the Android defaults.
-    public static func cycle(today: String, watchConnected: Bool) -> [String: Any] {
-        [
-            "today": today,
-            "enabled": false,
-            "periods": [Any](),
-            "days": [Any](),
-            "predictions": [Any](),
-            "averageCycleDays": 28,
-            "averagePeriodDays": 5,
-            "periodOngoing": false,
-            "daysLate": 0,
-            "switches": [
-                "master": false, "periodStart": false, "periodEnd": false, "fertileStart": false, "fertileEnd": false, "easyPregnancy": false,
-            ] as [String: Any],
-            "watchConnected": watchConnected,
-            "watchSupported": false,
-            "watchNote": "The cycle calendar is \(unavailable)",
-            "easyPregnancySwitch": false,
-        ]
-    }
-
-    /// `DietStatus`: nothing stored, nothing pushed, no watch-logged meals.
-    public static func diet() -> [String: Any] {
-        [
-            "date": NSNull(),
-            "mealCount": NSNull(),
-            "intakeKcal": NSNull(),
-            "goals": NSNull(),
-            "updatedAt": NSNull(),
-            "pushedAt": NSNull(),
-            "lastResult": NSNull(),
-            "unsyncedWatchMeals": 0,
-            "pendingWatchMeals": [Any](),
-            "supported": NSNull(),
-        ]
-    }
-
     /// `HealthyLivingStatus`: off.
     public static func healthyLiving() -> [String: Any] {
         [
