@@ -137,8 +137,15 @@ internal object WatchModels {
     le("Huawei Band 6", HuaweiConstants.HU_BAND6_NAME),
     le("Huawei Band 7", HuaweiConstants.HU_BAND7_NAME),
     le("Huawei Band 8", HuaweiConstants.HU_BAND8_NAME),
+    le("Huawei Band 8", "huawei b8-"),
+    le("Huawei Band 8", "band 8-"),
     le("Huawei Band 9", HuaweiConstants.HU_BAND9_NAME),
+    le("Huawei Band 9", "huawei b9-"),
+    le("Huawei Band 9", "band 9-"),
     le("Huawei Band 10", HuaweiConstants.HU_BAND10_NAME),
+    le("Huawei Band 10", "huawei b10-"),
+    le("Huawei Band 10", "huawei band 10"),
+    le("Huawei Band 10", "band 10-"),
     le("Huawei Band 11", HuaweiConstants.HU_BAND11_NAME),
     le("Huawei Band 11 Pro", HuaweiConstants.HU_BAND11PRO_NAME),
     le("Honor Band 3", HuaweiConstants.HO_BAND3_NAME),
@@ -161,7 +168,7 @@ internal object WatchModels {
     return when {
       model == null && AUDIO.any { it in lower } -> ModelMatch(null, ModelSupport.UNSUPPORTED, "Earphones, not a watch")
       // No name (Bluetooth permission trouble): let the connect decide.
-      model == null && (lower.isEmpty() || lower.startsWith("huawei") || lower.startsWith("honor")) ->
+      model == null && (lower.isEmpty() || lower.contains("huawei") || lower.contains("honor") || lower.startsWith("band ")) ->
         ModelMatch(null, ModelSupport.UNKNOWN, "Not in the list of known watches; it may not work")
       model == null -> ModelMatch(null, ModelSupport.UNSUPPORTED, "Not a Huawei or Honor watch")
       model.pake -> ModelMatch(model, ModelSupport.UNSUPPORTED, "Uses Honor's newer pairing, which JoyoFit does not support yet")

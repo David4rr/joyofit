@@ -46,6 +46,12 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   readonly distribution: 'play' | 'sideload';
   /** Bonded Bluetooth devices, each with the support level of its model. Requires BLUETOOTH_CONNECT on Android 12+. */
   getBondedDevices(): Promise<BondedDevice[]>;
+  /** Scans for nearby Huawei and Honor BLE devices in pairing mode. */
+  startScan(): Promise<void>;
+  /** Stops any ongoing Bluetooth LE scan. */
+  stopScan(): Promise<void>;
+  /** Returns devices discovered during the latest BLE scan session. */
+  getDiscoveredDevices(): BondedDevice[];
   /**
    * `getBondedDevices` again, for the Refresh button: on iOS (which has no bonded list: the remembered watch, the watches iOS already
    * holds a connection to, and the ones advertising) it ignores the last scan and scans longer; on Android it is the same list.

@@ -77,6 +77,25 @@ internal class WearException(
   val statusCode: Int? = null,
 ) : CodedException(errorCode, message, cause)
 
+/** A nearby or bonded device discovered during Bluetooth operations (`BondedDevice` in JS). */
+internal data class DiscoveredDevice(
+  val address: String,
+  val name: String,
+  val model: String? = null,
+  val support: String = "unknown",
+  val reason: String? = null,
+  val rssi: Int? = null,
+) {
+  fun toJs(): Map<String, Any?> = buildMap {
+    put("address", address)
+    put("name", name)
+    put("model", model)
+    put("support", support)
+    put("reason", reason)
+    if (rssi != null) put("rssi", rssi)
+  }
+}
+
 /** Sink for everything the native layer reports; fans out to JS (when running) and the service notification. */
 internal interface WearEvents {
   fun state(state: LinkState, error: String?)
@@ -106,4 +125,9 @@ internal interface WearEvents {
 
   /** Once a second during a 1-minute HRV measurement (`onHrvProgress`): seconds left and intervals received with a usable signal. */
   fun hrvProgress(secondsLeft: Int, beats: Int) = Unit
+
+  /** A nearby Bluetooth LE device was discovered during active scanning (`onDeviceDiscovered`). */
+  fun deviceDiscovered(device: DiscoveredDevice) = Unit
+  /** The state of the active Bluetooth LE scanner changed (`onScanStateChange`). */
+  fun scanState(scanning: Boolean, error: String?) = Unit
 }

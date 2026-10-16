@@ -407,4 +407,6 @@ export type HuaweiWearModuleEvents = {
   onHrvProgress: (event: HrvProgressEvent) => void;
   /** While `importHuaweiExport` runs: at most four times a second, then once with `phase: 'done'`. */
   onHuaweiImportProgress: (event: HuaweiImportProgressEvent) => void;
+  onDeviceDiscovered: (event: BondedDevice) => void;
+  onScanStateChange: (event: { scanning: boolean; error: string | null }) => void;
 };
