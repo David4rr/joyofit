@@ -1,7 +1,6 @@
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { KeyValue } from '@/components/KeyValue';
-import { IosUnavailable, isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { CLOUD_CONFIGURED } from '@/cloud/config';
@@ -27,10 +26,6 @@ export function MealsSection() {
         .filter(Boolean)
         .join(', ')
     : null;
-
-  if (isIos) {
-    return <IosUnavailable title="Meals on watch" icon="restaurant" reason="Sending your JoyoRogo diary and calorie target to the watch is not available on iOS yet." />;
-  }
 
   return (
     <Section title="Meals on watch" icon="restaurant">

@@ -414,15 +414,16 @@ public final class WearLink: @unchecked Sendable {
     }
 
     /// Pulls sleep, steps and totals since the last stored sync, commits them to the shared database and reports a summary (also as
-    /// `onSyncComplete`). The night-HRV phase of the Android sync is not ported; the P2P health metrics run as a sync extension.
-    public func syncActivity() async throws -> SyncSummary {
+    /// `onSyncComplete`). `fullHistory` ignores `device.last_sync` and re-pulls everything the watch still holds (`syncFullHistory`). The
+    /// night-HRV phase of the Android sync is not ported; the P2P health metrics run as a sync extension.
+    public func syncActivity(fullHistory: Bool = false) async throws -> SyncSummary {
         let connection = try requireConnected()
         if currentState() == .syncing { throw WearError(.busy, "A sync is already running") }
         let summary: SyncSummary = try await connection.operationLock.withLock {
             try beginSync(connection)
             events.state(.syncing, error: nil)
             do {
-                let result = try await runSync(connection)
+                let result = try await runSync(connection, fullHistory: fullHistory)
                 restoreConnected(connection)
                 return result
             } catch {
@@ -454,10 +455,14 @@ public final class WearLink: @unchecked Sendable {
         if restored { events.state(.connected, error: nil) }
     }
 
-    private func runSync(_ connection: Connection) async throws -> SyncSummary {
+    private func runSync(_ connection: Connection, fullHistory: Bool) async throws -> SyncSummary {
         let address = connection.address
-        let last = try storage { try syncStore.lastSync(address: address) }
-        let from = syncWindowStart(lastSyncSec: last, nowSec: Int64(now().timeIntervalSince1970))
+        let last = fullHistory ? nil : try storage { try syncStore.lastSync(address: address) }
+        let nowSec = Int64(now().timeIntervalSince1970)
+        // A full history asks from the beginning of time (ActivitySync turns 0 into 2000-01-01) in slices; the first sync keeps iOS's 7 days.
+        let from = fullHistory ? 0 : syncWindowStart(lastSyncSec: last, nowSec: nowSec)
+        let slices = syncSlices(fromSec: from, nowSec: nowSec)
+        events.info("History: \(fullHistory ? "full" : "incremental") pull in \(slices.count) slices from \(slices[0].from)")
         let log = events.sink
         let session = connection.session!
         let caps = connection.caps
@@ -465,10 +470,25 @@ public final class WearLink: @unchecked Sendable {
             session: session, caps: caps, log: log,
             trueSleep: { since, end in try await SleepSync(session: session, caps: caps, log: log).sync(sinceSec: since, end: end) }
         )
-        let result = try await sync.sync(fromSec: from)
-        let stored = try storage { try syncStore.save(address: address, result: result) }
+        var samples = 0
+        var sleep = 0
+        var finalSlice: SyncSummary?
+        for (index, slice) in slices.enumerated() {
+            let result = try await sync.sync(fromSec: slice.from, toSec: slice.to, now: now())
+            let part = try storage { try syncStore.save(address: address, result: result) }
+            samples += part.samples
+            sleep += part.sleep
+            events.info("History: slice \(index + 1)/\(slices.count) \(slice.from)..\(slice.to): \(part.samples) step samples, \(part.sleep) sleep segments")
+            finalSlice = part
+        }
+        let finalPart = finalSlice!
         let workouts = try await WorkoutPhase.run(
-            session: session, caps: caps, syncStore: syncStore, events: events, nowSec: Int64(now().timeIntervalSince1970)
+            session: session, caps: caps, syncStore: syncStore, events: events, nowSec: Int64(now().timeIntervalSince1970), fullHistory: fullHistory
+        )
+        events.info("History: summary \(samples) step samples, \(sleep) sleep segments, \(workouts) workouts written")
+        let summary = SyncSummary(
+            from: slices[0].from, to: finalPart.to, samples: samples, sleep: sleep, totalSteps: finalPart.totalSteps, totalCalories: finalPart.totalCalories,
+            totalDistance: finalPart.totalDistance, workouts: workouts
         )
         for step in lock.locked({ syncExtensionList }) {
             do {
@@ -482,7 +502,7 @@ public final class WearLink: @unchecked Sendable {
                 events.error("Sync extension failed: \(error)")
             }
         }
-        return stored.withWorkouts(workouts)
+        return summary
     }
 
     /// Database access; a failed read or write surfaces as ERR_STORAGE.

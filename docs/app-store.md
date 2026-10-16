@@ -65,7 +65,7 @@ PRIVACY
 
 NOTES
 • You need a Huawei watch. Tested with the Huawei Watch Fit 4 Pro; other watches have not been tried on iPhone. List: https://fit.joyorogo.com/jam
-• Because of iOS limits, JoyoFit cannot forward other apps' notifications, find your iPhone from the watch, handle calls or send SOS texts. For notifications, the watch reads them from the iPhone itself through the built-in iOS setting. Cycle tracking, meals and a few other features are not on iPhone yet.
+• Because of iOS limits, JoyoFit cannot forward other apps' notifications, find your iPhone from the watch, handle calls or send SOS texts. For notifications, the watch reads them from the iPhone itself through the built-in iOS setting. A few other features are not on iPhone yet.
 • JoyoFit is not a Huawei product and is not affiliated with Huawei. Huawei is a trademark of its owner.
 • JoyoFit is not a medical device. Do not use it for diagnosis or treatment.
 
