@@ -19,8 +19,8 @@ import { useWatch } from '@/state/WatchProvider';
 import { fonts, spacing, useColors } from '@/theme';
 
 const CONNECT_STEPS = [
-  'Pair the watch in Android Bluetooth settings. It has to appear in the list below.',
-  'Unbind it from Huawei Health first, or the watch will refuse this app.',
+  'Unbind the watch from Huawei Health first, or the watch will refuse this app.',
+  'Pair it in Android Bluetooth settings, or tap "Scan nearby devices" below to find it.',
   'On the first connect, keep the watch awake and accept the prompt on its screen.',
 ];
 
@@ -58,19 +58,28 @@ export default function WatchScreen() {
   // Measured row heights, so the list shows exactly VISIBLE_BONDED rows before it scrolls.
   const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
 
-  const showEmpty = bonded.devices.length === 0 && !bonded.loading && !bonded.error;
   const linked = watch.linkState === 'connected' || watch.linkState === 'syncing';
 
   // The watch in use first, then the ones this app can talk to best.
-  const devices = useMemo(
-    () =>
-      [...bonded.devices].sort(
-        (a, b) =>
-          Number(b.address === watch.activeAddress) - Number(a.address === watch.activeAddress) ||
-          supportRank(a.support) - supportRank(b.support),
-      ),
-    [bonded.devices, watch.activeAddress],
-  );
+  const devices = useMemo(() => {
+    const list = [...bonded.devices];
+    if (watch.activeAddress && !list.some((d) => d.address === watch.activeAddress)) {
+      list.unshift({
+        address: watch.activeAddress,
+        name: watch.device?.name || watch.activeAddress,
+        model: watch.device?.model ?? null,
+        support: watch.device?.support ?? 'tested',
+        reason: null,
+      });
+    }
+    return list.sort(
+      (a, b) =>
+        Number(b.address === watch.activeAddress) - Number(a.address === watch.activeAddress) ||
+        supportRank(a.support) - supportRank(b.support),
+    );
+  }, [bonded.devices, watch.activeAddress, watch.device]);
+
+  const showEmpty = devices.length === 0 && !bonded.loading && !bonded.error;
   const listMaxHeight = useMemo(() => {
     if (devices.length <= VISIBLE_BONDED) return undefined;
     const heights = devices.slice(0, VISIBLE_BONDED).map((d) => rowHeights[d.address]);
@@ -79,10 +88,14 @@ export default function WatchScreen() {
 
   const pairedWatches = (
     <Section
-      title="Paired watches"
+      title={bonded.scanning ? 'Searching for devices...' : 'Available watches'}
       icon="bluetooth"
       trailing={
-        devices.length > VISIBLE_BONDED ? (
+        bonded.scanning ? (
+          <AppText variant="caption" muted>
+            Scanning...
+          </AppText>
+        ) : devices.length > 0 ? (
           <AppText variant="caption" muted>
             {devices.length}
           </AppText>
@@ -105,9 +118,20 @@ export default function WatchScreen() {
           {showEmpty ? (
             <EmptyState
               icon="bluetooth"
-              title="No paired devices"
-              description="Pair the watch in Android Bluetooth settings, then refresh."
-              action={{ label: 'Refresh list', icon: 'refresh', onPress: () => void bonded.reload() }}
+              title={bonded.scanning ? 'Scanning for devices...' : 'No devices found'}
+              description={
+                bonded.scanning
+                  ? 'Looking for nearby Huawei and Honor watches or bands. Make sure your device is ready to connect.'
+                  : 'Pair the watch in Android Bluetooth settings, or tap Scan nearby devices.'
+              }
+              action={{
+                label: bonded.scanning ? 'Scanning...' : 'Scan nearby devices',
+                icon: 'refresh',
+                onPress: () => {
+                  void bonded.reload();
+                  void bonded.startScan();
+                },
+              }}
             />
           ) : (
             <>
@@ -129,14 +153,31 @@ export default function WatchScreen() {
                       device={d}
                       linkState={watch.linkState}
                       activeAddress={watch.activeAddress}
-                      onConnect={(address) => void watch.connect(address)}
+                      onConnect={(address) => {
+                        void bonded.stopScan();
+                        void watch.connect(address);
+                      }}
                       onDisconnect={() => void watch.disconnect()}
-                      onForget={(address) => void watch.forget(address)}
+                      onForget={(address) => {
+                        void watch.forget(address).then(() => void bonded.reload());
+                      }}
                     />
                   </View>
                 ))}
               </ScrollView>
-              <Button label="Refresh list" icon="refresh" loading={bonded.loading} onPress={() => void bonded.reload()} />
+              <Button
+                label={bonded.scanning ? 'Stop scanning' : linked ? 'Scan for other devices' : 'Scan nearby devices'}
+                icon={bonded.scanning ? 'close' : 'refresh'}
+                loading={bonded.loading}
+                onPress={() => {
+                  if (bonded.scanning) {
+                    void bonded.stopScan();
+                  } else {
+                    void bonded.reload();
+                    void bonded.startScan();
+                  }
+                }}
+              />
             </>
           )}
         </>
