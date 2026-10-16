@@ -211,6 +211,14 @@ strava.post("/token", async (c) => {
   return c.json({ accessToken: row.access_token, expiresAt: row.expires_at, athleteId: row.athlete_id });
 });
 
+/** Account deletion: revoke the Strava tokens when we can and delete our copy either way. */
+export async function dropStravaConnection(env: AppEnv, userId: string): Promise<void> {
+  const row = await readConnection(env.DB, userId);
+  if (!row) return;
+  if (configured(env)) await revoke(env, row.refresh_token, "refresh_token");
+  await env.DB.prepare("DELETE FROM strava_connection WHERE user_id = ?1").bind(userId).run();
+}
+
 strava.post("/disconnect", async (c) => {
   requireConfigured(c.env);
   const userId = c.get("user").id;

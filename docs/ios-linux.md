@@ -38,7 +38,7 @@ present and downloaded there otherwise.
    clean rerun of the whole script with warm caches (macros plugin, React Native tarballs) took 10 min 23 s.
 7. `assemble-app.py`: Info.plist, asset catalog (Linux actool), `UILaunchScreen` instead of the splash
    storyboard, JS bundle + Hermes bytecode (`expo export:embed` from the repo root), frameworks. Then
-   `enable-capabilities.py` turns on HealthKit for the bundle id through the App Store Connect API, and
+   `enable-capabilities.py` turns on HealthKit and Sign in with Apple (`APPLE_ID_AUTH`, primary app consent) for the bundle id through the App Store Connect API, and
    either `provision-dev.py` + `sign-dev.sh` (`--dev`: iOS Development certificate, profile for every
    enabled device in the team) or `asc.py stamp` + `sign-app.py` + `asc.py validate` (App Store).
 

@@ -12,7 +12,7 @@ const UPDATED_EN = "16 October 2026";
 const META = {
   title: "Kebijakan privasi JoyoFit",
   description:
-    "Data apa yang JoyoFit simpan di HP-mu, apa yang keluar dari HP (cloud opsional, Strava, cuaca, Health Connect), dan cara menghapusnya. Privacy policy in English below.",
+    "Data apa yang JoyoFit simpan di HP-mu, apa yang keluar dari HP (cloud opsional, Strava, cuaca, Health Connect, Apple Health, Masuk dengan Apple), dan cara menghapusnya. Privacy policy in English below.",
 };
 
 function Code({ children }: { children: React.ReactNode }) {
@@ -60,6 +60,7 @@ function Indonesian() {
           items={[
             "Data jam (langkah, detak jantung, SpO2, tidur, olahraga) disimpan di HP-mu. Tanpa kamu mengaktifkan fitur di bawah, tidak ada data kesehatanmu yang keluar dari HP.",
             "Cloud JoyoFit itu opsional dan baru aktif setelah kamu masuk dengan akun JoyoRogo.",
+            "Di iPhone, data jam hanya ditulis ke Apple Health bila kamu menyalakannya. JoyoFit tidak pernah membaca Apple Health.",
             "Tidak ada iklan, tidak ada SDK analitik atau pelaporan crash, dan datamu tidak dijual.",
             "Kode sumbernya terbuka (AGPL-3.0), jadi semua yang ditulis di sini bisa kamu periksa sendiri.",
           ]}
@@ -85,15 +86,16 @@ function Indonesian() {
           ]}
         />
         <p>
-          Cadangan otomatis Android dimatikan untuk aplikasi ini (<Code>allowBackup=false</Code>). JoyoFit tidak
+          Di iPhone, data yang sama disimpan di ruang penyimpanan pribadi aplikasi, dan JoyoFit tidak mengakses
+          Apple Health untuk membacanya. Cadangan otomatis Android dimatikan untuk aplikasi ini (<Code>allowBackup=false</Code>). JoyoFit tidak
           memakai iklan, ID iklan, Firebase, Sentry, atau layanan analitik apa pun.
         </p>
       </Block>
 
       <Block title="Cloud JoyoFit (opsional)">
         <p>
-          Di Pengaturan, Kesehatan dan cloud, kamu bisa masuk dengan akun JoyoRogo (login Google lewat
-          JoyoRogo). Setelah masuk, unggahan berjalan otomatis: sekitar dua detik setelah tiap sinkron dan saat
+          Di Pengaturan, Kesehatan dan cloud, kamu bisa masuk dengan akun JoyoRogo (login Google, atau Masuk
+          dengan Apple di iPhone, lewat JoyoRogo). Setelah masuk, unggahan berjalan otomatis: sekitar dua detik setelah tiap sinkron dan saat
           aplikasi dibuka. Unggahan pertama mengirim seluruh riwayat di HP, bukan hanya yang baru. Tidak masuk
           berarti tidak ada unggahan.
         </p>
@@ -118,7 +120,7 @@ function Indonesian() {
         </p>
         <p>
           Keluar (sign out) menghentikan unggahan, tetapi tidak menghapus data yang sudah ada di cloud maupun di
-          HP. Cara menghapus data cloud ada di bagian Penghapusan.
+          HP. Untuk menghapus akun dan data cloud-nya ada tombol di aplikasi, lihat bagian Penghapusan.
         </p>
         <p>
           Selama kamu masuk, JoyoFit juga bicara dengan server JoyoRogo (<Code>api.joyorogo.com</Code>): membaca
@@ -150,6 +152,34 @@ function Indonesian() {
         />
       </Block>
 
+      <Block title="Apple Health (iPhone, menulis saja)">
+        <p>
+          Di iPhone, bila kamu menyalakannya di Pengaturan, JoyoFit menyalin data jam ke Apple Health (HealthKit)
+          supaya aplikasi lain yang kamu izinkan bisa membacanya. Izinnya diminta lewat dialog Apple Health sendiri
+          dan bisa dicabut kapan saja di aplikasi Kesehatan (Berbagi, Aplikasi, JoyoFit) atau Pengaturan iPhone.
+        </p>
+        <List
+          items={[
+            "Yang ditulis: langkah, jarak jalan dan lari, energi aktif, detak jantung, detak jantung istirahat, saturasi oksigen, tidur (analisis tidur dengan tahapnya), sesi olahraga, dan rute GPS olahraga yang direkam jam.",
+            "Yang dibaca: tidak ada. JoyoFit tidak pernah membaca data Apple Health dan tidak meminta izin baca.",
+            "Data Apple Health tidak dijual, tidak dipakai untuk iklan atau penentuan profil iklan, tidak dikirim ke server mana pun oleh fitur ini, dan tidak dibagikan ke pihak ketiga. Data itu juga tidak dipakai untuk riset atau analitik.",
+            "Menghapus data yang ditulis JoyoFit dilakukan di aplikasi Kesehatan.",
+          ]}
+        />
+      </Block>
+
+      <Block title="Masuk dengan Apple (iPhone)">
+        <p>
+          Di iPhone kamu bisa masuk ke akun JoyoRogo dengan Apple, selain dengan Google. Apple mengirim token
+          identitas ke aplikasi, lalu JoyoFit meneruskannya ke server JoyoRogo (<Code>api.joyorogo.com</Code>)
+          untuk diperiksa ke Apple. Yang diterima: ID pengguna Apple untuk akunmu, alamat email (alamat relai
+          pribadi Apple bila kamu memilih Sembunyikan Email Saya), dan nama, hanya bila kamu mengizinkan dan hanya
+          saat pertama kali. Data ini hanya dipakai untuk membuat dan mengenali akun JoyoRogo-mu, tidak untuk iklan
+          dan tidak dibagikan. Saat akun dihapus, JoyoFit meminta Apple mencabut izin masuk itu, jadi JoyoFit juga
+          hilang dari daftar Masuk dengan Apple di ID Apple-mu.
+        </p>
+      </Block>
+
       <Block title="Strava (opsional, gratis)">
         <p>
           Bila kamu menyambungkan Strava di Pengaturan, Strava (masuk dengan akun JoyoRogo dulu), JoyoFit
@@ -179,6 +209,11 @@ function Indonesian() {
           Lokasinya dari lokasi HP (izin lokasi) atau kota yang kamu pilih. Lokasi HP terakhir dan nama tempatnya
           disimpan di HP supaya dipakai ulang; nama tempat dicari dengan layanan Geocoder bawaan Android.
         </p>
+        <p>
+          Di iPhone, JoyoFit meminta izin lokasi hanya saat aplikasi dipakai (tanpa lokasi latar belakang), dengan
+          akurasi sekitar satu kilometer, karena cuaca hanya butuh kotanya. Nama tempat dicari dengan layanan geocoding
+          Apple, yang menerima koordinat itu. Ke Open-Meteo tetap hanya koordinat yang dibulatkan.
+        </p>
       </Block>
 
       <Block title="Lokasi dan GPS">
@@ -199,6 +234,10 @@ function Indonesian() {
           mengirimnya ke jam lewat Bluetooth. Semua aplikasi non-sistem diteruskan kecuali kamu mematikannya di
           daftar aplikasi di Pengaturan. Notifikasi tidak disimpan di disk dan tidak dikirim lewat internet;
           hanya beberapa yang terakhir ada di memori.
+        </p>
+        <p className="text-muted-foreground">
+          Di iPhone, JoyoFit tidak bisa dan tidak membaca notifikasi aplikasi lain. Jam menampilkan notifikasi iPhone
+          sendiri lewat layanan notifikasi Bluetooth bawaan iOS (ANCS) bila kamu mengizinkannya di Pengaturan iPhone.
         </p>
       </Block>
 
@@ -251,7 +290,8 @@ function Indonesian() {
             "Open-Meteo: prakiraan cuaca dan pencarian kota (bagian Cuaca).",
             "Broadcom (glpals.com): data bantuan satelit (bagian Lokasi).",
             "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan.",
-            "JoyoRogo dan Google: login dan layanan JoyoRogo (bagian Cloud).",
+            "JoyoRogo, Google dan Apple: login dan layanan JoyoRogo (bagian Cloud dan Masuk dengan Apple).",
+            "Apple: Apple Health (menulis saja), Masuk dengan Apple, dan geocoding nama tempat di iPhone.",
             "Strava: tujuan unggahan olahraga bila kamu menyambungkannya (bagian Strava).",
             "RevKlik: statistik pengunjung situs ini (bagian Statistik situs).",
           ]}
@@ -263,20 +303,19 @@ function Indonesian() {
         <List
           items={[
             "Di HP: hapus instalasi JoyoFit atau pilih Pengaturan Android, Aplikasi, JoyoFit, Penyimpanan, Hapus data. Semua data lokal terhapus. Lepas jam dengan Forget pairing di aplikasi.",
-            "Di Health Connect: hapus data yang ditulis JoyoFit lewat aplikasi Health Connect.",
+            "Di Health Connect (Android) atau Apple Health (iPhone): hapus data yang ditulis JoyoFit lewat aplikasi Health Connect atau aplikasi Kesehatan.",
             "Di Strava: Putuskan Strava di aplikasi atau cabut JoyoFit di strava.com; token dihapus dari server JoyoFit saat itu juga.",
+            "Akun dan cloud: di aplikasi, Pengaturan, Kesehatan dan cloud, ketuk Delete JoyoRogo account (Hapus akun JoyoRogo) lalu konfirmasi. Ini langsung menghapus data cloud JoyoFit-mu (langkah, tidur, olahraga dan rutenya, jam, berkas impor, token Strava) dan akun JoyoRogo-mu beserta datanya di JoyoRogo. Akun JoyoRogo dipakai bersama, jadi akun itu juga hilang di JoyoRogo. Akun yang masuk dengan Apple diminta konfirmasi Apple dulu, lalu izin Masuk dengan Apple dicabut. Data di HP-mu tidak ikut terhapus.",
             <>
-              Di cloud JoyoFit: kirim email dari alamat akun Google yang kamu pakai ke <Mail /> dengan subjek{" "}
-              <span className="font-semibold">Hapus data cloud JoyoFit</span>. Aplikasi belum punya tombol hapus
-              cloud. Kami menghapus semua data JoyoFit di cloud yang terkait akunmu dan mengonfirmasi lewat
-              email, paling lambat 30 hari. Menghapus data lewat JoyoRogo tidak otomatis menghapus data cloud
-              JoyoFit.
+              Tanpa aplikasi: kirim email dari alamat akun yang kamu pakai ke <Mail /> dengan subjek{" "}
+              <span className="font-semibold">Hapus data cloud JoyoFit</span>. Kami menghapus semua data JoyoFit di
+              cloud yang terkait akunmu dan mengonfirmasi lewat email, paling lambat 30 hari.
             </>,
           ]}
         />
         <p className="text-muted-foreground">
-          Data cloud disimpan sampai kamu memintanya dihapus. Halaman ini juga alamat permintaan penghapusan data
-          untuk JoyoFit di Google Play.
+          Data cloud disimpan sampai kamu menghapusnya. Halaman ini juga alamat permintaan penghapusan data
+          untuk JoyoFit di Google Play dan App Store.
         </p>
       </Block>
 
@@ -311,6 +350,7 @@ function English() {
           items={[
             "Watch data (steps, heart rate, SpO2, sleep, workouts) is stored on your phone. Unless you turn on one of the features below, none of your health data leaves the phone.",
             "The JoyoFit cloud is optional and only starts after you sign in with a JoyoRogo account.",
+            "On iPhone, watch data is written to Apple Health only if you turn that on. JoyoFit never reads Apple Health.",
             "No ads, no analytics or crash-reporting SDKs, and your data is not sold.",
             "The source code is open (AGPL-3.0), so you can check everything stated here.",
           ]}
@@ -329,13 +369,14 @@ function English() {
           sleep, workouts with the GPS route the watch recorded, stress, HRV, skin temperature and other metrics
           the watch reports; what you enter yourself (profile, cycle calendar if enabled, weight and blood
           pressure, alarms); the watch&apos;s Bluetooth address, name, model and pairing key; and your settings.
-          Android auto-backup is off for the app (<Code>allowBackup=false</Code>).
+          Android auto-backup is off for the app (<Code>allowBackup=false</Code>). On iPhone the same data lives
+          in the app&apos;s private storage; JoyoFit does not use Apple Health to read it.
         </p>
       </Block>
 
       <Block title="JoyoFit cloud (optional)">
         <p>
-          After you sign in with your JoyoRogo account (Google sign-in through JoyoRogo) under Settings, Health &
+          After you sign in with your JoyoRogo account (Google sign-in, or Sign in with Apple on iPhone, through JoyoRogo) under Settings, Health &
           cloud, uploads run automatically, about two seconds after each sync and when the app opens. The first
           upload sends your whole history. Without signing in, nothing is uploaded.
         </p>
@@ -351,7 +392,8 @@ function English() {
         <p>
           The data is stored in Cloudflare database and storage under the developer&apos;s Cloudflare account,
           keyed by your JoyoRogo account ID. It is not sent to anyone else. Signing out stops uploads but deletes
-          nothing, in the cloud or on the phone.
+          nothing, in the cloud or on the phone; the app has a button to delete the account and its cloud data (see
+          Deleting your data).
         </p>
         <p>
           While signed in, JoyoFit also talks to JoyoRogo (<Code>api.joyorogo.com</Code>): it reads today&apos;s
@@ -379,6 +421,32 @@ function English() {
         </p>
       </Block>
 
+      <Block title="Apple Health (iPhone, write only)">
+        <p>
+          On iPhone, if you turn it on under Settings, JoyoFit copies watch data into Apple Health (HealthKit) so
+          other apps you allow can read it. Permission is asked through Apple Health&apos;s own dialog and can be
+          revoked at any time in the Health app (Sharing, Apps, JoyoFit) or iPhone Settings.{" "}
+          <span className="font-semibold">Written:</span> steps, walking and running distance, active energy,
+          heart rate, resting heart rate, blood oxygen, sleep analysis with stages, workouts, and the GPS route of
+          workouts the watch recorded. <span className="font-semibold">Read:</span> nothing. JoyoFit never reads
+          Apple Health data and does not ask for read permission. Apple Health data is not sold, not used for
+          advertising or ad profiling, not used for research or analytics, not sent to any server by this feature
+          and not shared with third parties. To remove what JoyoFit wrote, delete it in the Health app.
+        </p>
+      </Block>
+
+      <Block title="Sign in with Apple (iPhone)">
+        <p>
+          On iPhone you can sign in to your JoyoRogo account with Apple as well as Google. Apple hands the app an
+          identity token, which JoyoFit passes to the JoyoRogo server (<Code>api.joyorogo.com</Code>) to be
+          verified with Apple. What is received: your Apple user ID for this account, your email address (Apple&apos;s
+          private relay address if you choose Hide My Email), and your name only if you allow it and only the first
+          time. It is used only to create and recognize your JoyoRogo account, not for advertising, and not shared.
+          When the account is deleted, JoyoFit asks Apple to revoke the sign-in grant, so JoyoFit also disappears
+          from the Sign in with Apple list in your Apple ID.
+        </p>
+      </Block>
+
       <Block title="Strava (optional, free)">
         <p>
           If you connect Strava under Settings, Strava (after signing in with your JoyoRogo account), JoyoFit sends
@@ -402,7 +470,10 @@ function English() {
           rounded to two decimals (about 1 km), with no device ID or API key; Open-Meteo also sees your IP address.
           City search sends the city name to Open-Meteo&apos;s geocoding service. The location comes from the phone
           (location permission) or from a city you pick. The last phone location and its place name are kept on the
-          phone for reuse; the place name is looked up with Android&apos;s built-in Geocoder.
+          phone for reuse; the place name is looked up with Android&apos;s built-in Geocoder. On iPhone, JoyoFit asks for location only while
+          the app is in use (no background location), at about one kilometer of accuracy because the weather only
+          needs the city; the place name is looked up with Apple&apos;s geocoding service, which receives those
+          coordinates. Open-Meteo still gets only the rounded coordinates.
         </p>
       </Block>
 
@@ -424,7 +495,9 @@ function English() {
           <span className="font-semibold">Notifications:</span> off by default and need notification access that
           you grant in Android settings. Once on, JoyoFit reads title, text and app name of incoming notifications
           and sends them to the watch over Bluetooth. All non-system apps are forwarded unless you switch them off
-          in the app list. Notifications are not written to disk and never sent over the internet.
+          in the app list. Notifications are not written to disk and never sent over the internet. On iPhone, JoyoFit cannot and does
+          not read other apps&apos; notifications; the watch shows the iPhone&apos;s own notifications through iOS&apos;s
+          built-in Bluetooth notification service (ANCS) if you allow it in iPhone Settings.
         </p>
         <p>
           <span className="font-semibold">Calls:</span> the Google Play version uses the phone-state permission so
@@ -459,7 +532,7 @@ function English() {
       <Block title="Third parties">
         <p>
           Open-Meteo (weather), Broadcom (satellite-assist data), Cloudflare (hosting of the cloud and this
-          site), JoyoRogo and Google (sign-in), Strava (upload destination when you connect it), RevKlik (visitor
+          site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write-only, and place-name geocoding on iPhone), Strava (upload destination when you connect it), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling.
         </p>
@@ -469,20 +542,19 @@ function English() {
         <List
           items={[
             "On the phone: uninstall JoyoFit, or Android Settings, Apps, JoyoFit, Storage, Clear data. Use Forget pairing in the app to release the watch.",
-            "In Health Connect: delete what JoyoFit wrote in the Health Connect app.",
+            "In Health Connect (Android) or Apple Health (iPhone): delete what JoyoFit wrote in the Health Connect or Health app.",
             "Strava: Disconnect Strava in the app or revoke JoyoFit on strava.com; the tokens are deleted from the JoyoFit server at once.",
+            "Account and cloud: in the app, Settings, Health & cloud, tap Delete JoyoRogo account and confirm. It immediately deletes your JoyoFit cloud data (steps, sleep, workouts and their routes, watch, imported files, Strava tokens) and your JoyoRogo account with its JoyoRogo data. The JoyoRogo account is shared, so it is gone in JoyoRogo as well. An account that signs in with Apple asks you to confirm with Apple first, and the Sign in with Apple grant is revoked. Data on your phone is not deleted.",
             <>
-              JoyoFit cloud: email <Mail /> from the Google account you signed in with, subject{" "}
-              <span className="font-semibold">Hapus data cloud JoyoFit</span> (delete JoyoFit cloud data). The app
-              has no delete button for the cloud yet. We delete everything JoyoFit holds for your account and
-              confirm by email, within 30 days. Deleting data in JoyoRogo does not automatically delete JoyoFit cloud
-              data.
+              Without the app: email <Mail /> from the address of the account you signed in with, subject{" "}
+              <span className="font-semibold">Hapus data cloud JoyoFit</span> (delete JoyoFit cloud data). We delete
+              everything JoyoFit holds for your account and confirm by email, within 30 days.
             </>,
           ]}
         />
         <p className="text-muted-foreground">
-          Cloud data is kept until you ask for deletion. This page is also the data deletion request page for
-          JoyoFit on Google Play.
+          Cloud data is kept until you delete it. This page is also the data deletion request page for
+          JoyoFit on Google Play and the App Store.
         </p>
       </Block>
 

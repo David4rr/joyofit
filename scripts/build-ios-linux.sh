@@ -142,8 +142,8 @@ APP=$(ls -d "$OUT"/Payload/*.app)
 ASC="$OAD/tools/asc.py"
 BUNDLE_ID=$(node -p "require('$OUT/app.json').bundle_id")
 
-# HealthKit is a portal capability: enable it on the bundle id before any profile is made.
-"$PY" "$ROOT/scripts/ios/enable-capabilities.py" "$BUNDLE_ID" HEALTHKIT
+# HealthKit and Sign in with Apple are portal capabilities: enable them on the bundle id before any profile is made.
+"$PY" "$ROOT/scripts/ios/enable-capabilities.py" "$BUNDLE_ID" HEALTHKIT APPLE_ID_AUTH
 
 if [ "$mode" = --dev ]; then
   # iOS Development certificate + profile for every registered iPhone, reused on later runs.

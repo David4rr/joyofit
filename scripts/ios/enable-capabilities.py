@@ -26,13 +26,18 @@ if not wanted:
 bundle = asc.bundle_id(identifier)
 have = {c["attributes"]["capabilityType"]
         for c in asc.call("GET", f"/v1/bundleIds/{bundle}/bundleIdCapabilities")["data"]}
+# Sign in with Apple has no default configuration; the API wants one explicitly.
+SETTINGS = {
+    "APPLE_ID_AUTH": [{"key": "APPLE_ID_AUTH_APP_CONSENT", "options": [{"key": "PRIMARY_APP_CONSENT"}]}],
+}
 for capability in wanted:
     if capability in have:
         print(f"{identifier}: {capability} already enabled")
         continue
     asc.call("POST", "/v1/bundleIdCapabilities", {"data": {
         "type": "bundleIdCapabilities",
-        "attributes": {"capabilityType": capability},
+        "attributes": {"capabilityType": capability,
+                       **({"settings": SETTINGS[capability]} if capability in SETTINGS else {})},
         "relationships": {"bundleId": asc.rel("bundleIds", bundle)},
     }})
     print(f"{identifier}: enabled {capability}")

@@ -74,7 +74,7 @@ const GROUPS: readonly SettingsGroup[] = [
     title: 'You and your data',
     data: [
       {
-        title: 'Health Connect and cloud',
+        title: isIos ? 'Apple Health and cloud' : 'Health Connect and cloud',
         subtitle: 'Share data with other apps, back up',
         icon: 'heart',
         tint: 'heart',

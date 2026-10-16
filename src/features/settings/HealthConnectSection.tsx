@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { KeyValue } from '@/components/KeyValue';
+import { isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -11,9 +12,12 @@ import { errorMessage, formatDateTime } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type HealthConnectStatus } from '@/wear';
 
+/** The same store, by the name each platform uses. */
+const STORE = isIos ? 'Apple Health' : 'Health Connect';
+
 const AVAILABILITY_TEXT: Record<HealthConnectStatus['availability'], string> = {
   available: 'Available',
-  'update-required': 'Update the Health Connect app first',
+  'update-required': `Update the ${STORE} app first`,
   unavailable: 'Not available on this phone',
 };
 
@@ -60,7 +64,7 @@ export function HealthConnectSection() {
       }
       const afterRequest = await HuaweiWear.requestHealthConnectPermissions();
       if (afterRequest.granted.length === 0) {
-        setError('No write permission was granted. Allow JoyoFit in Health Connect to turn this on.');
+        setError(`No write permission was granted. Allow JoyoFit in ${STORE} to turn this on.`);
         return;
       }
       setBusy('Writing stored data');
@@ -71,10 +75,10 @@ export function HealthConnectSection() {
   const grantedCount = status?.granted.length ?? 0;
 
   return (
-    <Section title="Health Connect" icon="heart" tint="heart">
+    <Section title={STORE} icon="heart" tint="heart">
       <SwitchRow
         icon="heart"
-        label="Write to Health Connect"
+        label={`Write to ${STORE}`}
         hint={
           status && unavailable
             ? AVAILABILITY_TEXT[status.availability]
@@ -91,7 +95,7 @@ export function HealthConnectSection() {
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
       {status?.lastError ? <Notice tone="danger">Last export failed: {status.lastError}</Notice> : null}
-      <KeyValue icon="fitness" label="Health Connect" value={status ? AVAILABILITY_TEXT[status.availability] : null} />
+      <KeyValue icon="fitness" label={STORE} value={status ? AVAILABILITY_TEXT[status.availability] : null} />
       <KeyValue
         icon="key"
         label="Write permission"
@@ -141,7 +145,7 @@ export function HealthConnectSection() {
       ) : null}
       {status ? (
         <Button
-          label="Open Health Connect"
+          label={`Open ${STORE}`}
           variant="ghost"
           icon="open-outline"
           onPress={() => run('Opening', () => HuaweiWear.openHealthConnectSettings())}

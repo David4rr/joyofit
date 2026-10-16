@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { ZodError } from "zod";
 
+import { account } from "./account";
 import { cloudUnlocked, requireFounder } from "./access";
 import { AuthUnavailableError, requireUser } from "./auth";
 import type { AppContext } from "./env";
@@ -85,6 +86,7 @@ v1.get("/sync", async (c) => {
   return c.json(await pullSync(c.env.DB, c.get("user").id, since, limit));
 });
 
+v1.route("/account", account);
 v1.route("/imports", imports);
 v1.route("/strava", strava);
 app.route("/v1", v1);

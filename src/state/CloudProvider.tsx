@@ -12,11 +12,12 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 
+import { appleSignInAvailable, deleteJoyoRogoAccount, signInWithApple } from '@/cloud/account';
 import { CloudLockedError } from '@/cloud/api';
 import { authClient } from '@/cloud/auth';
 import { CLOUD_CONFIGURED } from '@/cloud/config';
 import { runUpload } from '@/cloud/uploader';
-import { countPending, getCloudState, type CloudState } from '@/db/cloud';
+import { countPending, getCloudState, resetCloudCursors, setCloudState, type CloudState } from '@/db/cloud';
 import { errorMessage } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
 
@@ -43,7 +44,18 @@ export interface CloudContextValue {
   lastSyncAt: number | null;
   /** Rows stored on the phone that the cloud does not have yet. */
   pending: number | null;
+  /** Sign in with Apple can run on this phone (iOS only). */
+  appleAvailable: boolean;
+  /** Sign in with Google. */
   signIn: () => Promise<void>;
+  signInApple: () => Promise<void>;
+  /** The JoyoRogo account is being deleted. */
+  deleting: boolean;
+  /**
+   * Deletes the shared JoyoRogo account and its cloud data, then signs out here. Resolves false when nothing was
+   * deleted (the Apple sheet was closed, or it failed: `error` says why).
+   */
+  deleteAccount: () => Promise<boolean>;
   signOut: () => Promise<void>;
   syncNow: () => Promise<void>;
 }
@@ -76,6 +88,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const [locked, setLocked] = useState(false);
   const lockedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const running = useRef<Promise<void> | null>(null);
   const again = useRef(false);
 
@@ -173,6 +187,51 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    let live = true;
+    void appleSignInAvailable().then((ok) => live && setAppleAvailable(ok));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const signInApple = useCallback(async () => {
+    setError(null);
+    try {
+      await signInWithApple();
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    setError(null);
+    setDeleting(true);
+    try {
+      if (!(await deleteJoyoRogoAccount())) return false;
+    } catch (e) {
+      setError(errorMessage(e));
+      return false;
+    } finally {
+      setDeleting(false);
+    }
+    // The server session is gone with the account; this only clears the cookies stored on the phone.
+    try {
+      await authClient.signOut();
+    } catch {
+      // the account is already gone on the server
+    }
+    // Forget the deleted account here too: its id, email and sync time, and what had been uploaded to it.
+    try {
+      await resetCloudCursors(db);
+      await setCloudState(db, { user_id: null, email: null, last_sync_at: null, last_error: null });
+      await refresh();
+    } catch {
+      // bookkeeping only; the next sign-in resets it again
+    }
+    return true;
+  }, [db, refresh]);
+
   const signOut = useCallback(async () => {
     setError(null);
     try {
@@ -193,11 +252,31 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       error: error ?? stored?.lastError ?? null,
       lastSyncAt: stored?.lastSyncAt ?? null,
       pending,
+      appleAvailable,
       signIn,
+      signInApple,
+      deleting,
+      deleteAccount,
       signOut,
       syncNow,
     }),
-    [signedIn, session.isPending, session.data, stored, uploading, locked, error, pending, signIn, signOut, syncNow],
+    [
+      signedIn,
+      session.isPending,
+      session.data,
+      stored,
+      uploading,
+      locked,
+      error,
+      pending,
+      appleAvailable,
+      signIn,
+      signInApple,
+      deleting,
+      deleteAccount,
+      signOut,
+      syncNow,
+    ],
   );
 
   return <CloudContext.Provider value={value}>{children}</CloudContext.Provider>;
