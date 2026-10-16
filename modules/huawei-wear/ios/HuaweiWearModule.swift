@@ -263,7 +263,7 @@ public final class HuaweiWearModule: Module {
         Function("getHealthSensors") { () -> [String: Any] in Inert.healthSensors() }
         Function("getStressStatus") { () -> [String: Any] in Inert.stress() }
         Function("getLiveWorkout") { () -> [String: Any]? in nil }
-        Function("getPhoneFeatures") { () -> [String: Any] in Inert.phoneFeatures() }
+        Function("getPhoneFeatures") { () -> [String: Any] in runtime.features.status() }
         Function("getAlarms") { () -> [String: Any] in Inert.alarms() }
         Function("getWeatherStatus") { () -> [String: Any] in Inert.weather() }
         Function("getSafety") { () -> [String: Any] in Inert.safety() }
@@ -290,6 +290,10 @@ public final class HuaweiWearModule: Module {
         }
         Function("startLiveWorkout") { () throws -> Void in throw iosUnsupported("startLiveWorkout") }
 
+        AsyncFunction("findWatch") { (start: Bool) async throws -> Void in
+            try await wearCall { try await runtime.features.findWatch(start) }
+        }
+
         // MARK: switches of phone-side features that are always off here
 
         switchRejectingOn("setNotificationsEnabled")
@@ -311,7 +315,6 @@ public final class HuaweiWearModule: Module {
         rejects("setHealthSensors", [String: Any].self)
         rejects("measureHrv")
         rejects("setAutomaticStress", Bool.self)
-        rejects("findWatch", Bool.self)
         rejects("refreshAlarms")
         rejects("setAlarms", [String: Any].self)
         rejects("setWeatherUnit", String.self)

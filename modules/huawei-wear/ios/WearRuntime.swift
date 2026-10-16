@@ -40,6 +40,10 @@ public final class WearRuntime: @unchecked Sendable {
     public var events: WearEvents { fanOut }
     public private(set) var link: WearLink!
     public private(set) var controller: BackgroundController!
+    /// Features that act on the live session register here; see `LinkObservers`.
+    public let linkObservers = LinkObservers()
+    /// Find my watch.
+    public private(set) var features: PhoneFeatures!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -83,6 +87,8 @@ public final class WearRuntime: @unchecked Sendable {
             transportFactory: transportFactory, now: now
         )
         controller = BackgroundController(runtime: self, expiring: expiring, clock: clock)
+        features = PhoneFeatures(link: link, events: fanOut)
+        linkObservers.add(features)
     }
 
     // MARK: events
@@ -105,6 +111,8 @@ public final class WearRuntime: @unchecked Sendable {
             _status.state = state
             if state != .disconnected { _status.note = nil }
         }
+        if state == .connected, let handle = link.handle() { linkObservers.connected(handle) }
+        if state == .disconnected { linkObservers.disconnected() }
         currentListeners().forEach { $0.state(state, error: error) }
         if state == .disconnected || state == .connected { controller?.onLinkChanged() }
     }
