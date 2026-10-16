@@ -25,6 +25,8 @@ public protocol WearEvents: AnyObject, Sendable {
     func faceCustomization(_ payload: [String: Any])
     /// The watch quick-logged meals (`onWatchMealLogged`): `{date, meals}`; they stay stored until JS calls `markWatchMealsSynced`.
     func watchMealLogged(_ payload: [String: Any])
+    /// A workout started on the watch changed state or pushed new numbers (`onLiveWorkout`, see `LiveWorkout`).
+    func liveWorkout(_ payload: [String: Any])
 }
 
 extension WearEvents {
@@ -34,6 +36,7 @@ extension WearEvents {
     public func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {}
     public func faceCustomization(_ payload: [String: Any]) {}
     public func watchMealLogged(_ payload: [String: Any]) {}
+    public func liveWorkout(_ payload: [String: Any]) {}
 
     public func info(_ message: String) { log(LogEntry(.info, message)) }
     public func error(_ message: String) { log(LogEntry(.error, message)) }

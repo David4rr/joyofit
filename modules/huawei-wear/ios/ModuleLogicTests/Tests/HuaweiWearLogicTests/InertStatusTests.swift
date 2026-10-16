@@ -71,6 +71,14 @@ final class InertStatusTests: XCTestCase {
         extras.fallSwitch = 1
         extras.fallUpdatedMs = 1_792_110_700_000
         let liveSafety = SafetyFeatures(link: RigSource(), settings: extras, events: RecordingEvents()).status()
+        // A phone-side live workout with and without readings: the objects `getLiveWorkout` and `onLiveWorkout` carry.
+        let liveSettings = WearSettings(defaults: ephemeralDefaults())
+        let live = LiveWorkout(dataSync: DataSyncService(link: RigSource(), events: events), events: events, settings: liveSettings, setHeartRateActive: { _ in })
+        live.startManual()
+        let emptyLive = live.snapshot()!
+        live.onHeartRate(120)
+        live.onHeartRate(121)
+        live.finish()
         let populatedWeather: [String: Any] = [
             "enabled": true, "unit": "fahrenheit", "locationMode": "city", "intervalMinutes": 30,
             "city": WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6, detail: "West Java, Indonesia").toJS(),
@@ -105,6 +113,8 @@ final class InertStatusTests: XCTestCase {
             "HrvReading": HrvReadingData(start: 1, end: 61, rmssd: 42.5, sdnn: 50.1, meanRr: 850.2, beats: 70, heartRate: 71).toJS(),
             "WeatherStatus": weather.status(),
             "WeatherStatus#populated": populatedWeather,
+            "LiveWorkout": emptyLive,
+            "LiveWorkout#ended": live.snapshot()!,
             "SafetyStatus": Inert.safety(),
             "SafetyStatus#live": liveSafety,
             "SosRelayTest": Inert.sosRelayTest(),
