@@ -36,3 +36,8 @@ export const STRAVA_REFRESH_MARGIN_S = 600;
 /** How long the signed `state` of a Strava authorization stays valid. */
 export const STRAVA_STATE_TTL_S = 600;
 export const STRAVA_TIMEOUT_MS = 5_000;
+
+/** POST /v1/waitlist: submissions per IP per clock hour (invalid ones count), and the largest body read. */
+export const WAITLIST_MAX_PER_HOUR = 5;
+export const WAITLIST_MAX_BODY_BYTES = 4_096;
+export const WAITLIST_MAX_ENTRIES = 5_000;

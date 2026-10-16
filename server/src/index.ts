@@ -11,10 +11,14 @@ import { MAX_SYNC_BODY_BYTES, PULL_DEFAULT_LIMIT, PULL_MAX_LIMIT } from "./limit
 import { syncBodySchema } from "./schemas";
 import { strava, stravaPublic } from "./strava";
 import { applySync, pullSync } from "./sync";
+import { waitlist } from "./waitlist";
 
 const app = new Hono<AppContext>();
 
 app.get("/", (c) => c.json({ service: "joyofit-api", ok: true }));
+
+// Public (no session): registered before `v1` so its session check never runs for these routes.
+app.route("/v1/waitlist", waitlist);
 
 const v1 = new Hono<AppContext>();
 v1.use("*", requireUser);

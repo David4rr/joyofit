@@ -37,3 +37,8 @@ export function goal(name: string, location: string) {
  */
 export const IOS_TESTFLIGHT_LIVE = false;
 export const IOS_TESTFLIGHT_URL = "https://testflight.apple.com/join/GXzrQ8GJ";
+
+export const STRAVA_PATH = "/strava";
+export const IPHONE_PATH = "/iphone";
+/** JoyoFit Worker; `POST /v1/waitlist` takes the /strava and /iphone forms. */
+export const WAITLIST_API = "https://api.fit.joyorogo.com/v1/waitlist";

@@ -9,6 +9,8 @@ export type AppEnv = Env & {
   STRAVA_CLIENT_SECRET?: string;
   /** The `verify_token` chosen when creating the Strava webhook subscription; checked on the validation GET. */
   STRAVA_WEBHOOK_VERIFY_TOKEN?: string;
+  /** Bearer token for `GET /v1/waitlist` (the owner's list). Unset = the list answers 503. */
+  WAITLIST_ADMIN_TOKEN?: string;
 };
 
 export interface AuthUser {

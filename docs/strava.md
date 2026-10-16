@@ -58,8 +58,12 @@ JoyoFit has its **own** Strava API application (client id `287873`, <https://www
    `curl -G https://www.strava.com/api/v3/push_subscriptions -d client_id=287873 -d client_secret=...`. The Worker only acts
    on the `athlete` / `authorized: "false"` event (it deletes that athlete's tokens); activity events are acknowledged and
    ignored.
-5. Until the application is approved, only the application owner's Strava account (and up to a few invited athletes) can
-   connect; see the review checklist below.
+5. Capacity. Per Strava's getting-started page (<https://developers.strava.com/docs/getting-started/>): a new application starts in
+   single-player mode, where only the owner's own Strava account can authenticate. The owner can upgrade from the API
+   settings dashboard to an athlete capacity of 10; once 10 athletes are connected, the application has to be submitted for
+   review (the form linked above) before it can grow. Until then JoyoFit's Strava sync is invite-only: people leave their email
+   and Strava profile on <https://fit.joyorogo.com/strava> (stored in D1 table `waitlist`, kind `strava`; read it with
+   `scripts/waitlist.sh strava`, see `server/README.md`).
 
 Worker routes (all in `server/src/strava.ts`):
 

@@ -197,6 +197,25 @@ function Indonesian() {
         />
       </Block>
 
+      <Block id="waitlist" title="Daftar undangan Strava dan iPhone">
+        <p>
+          Halaman fit.joyorogo.com/strava dan fit.joyorogo.com/iphone punya formulir daftar tunggu. Aplikasinya
+          tidak terlibat; hanya situs ini.
+        </p>
+        <List
+          items={[
+            "Yang disimpan: jenis daftar (Strava atau iPhone), email yang kamu isi, nama atau link profil Strava (daftar Strava), model jam bila kamu isi (daftar iPhone), status (awalnya menunggu), serta waktu mendaftar dan waktu terakhir diperbarui.",
+            "Untuk apa: hanya untuk memberimu undangan: mengaktifkan aksesmu ke Strava saat ada slot, atau menambahkan emailmu sebagai tester TestFlight, lalu mengabarimu lewat email. Tidak dipakai untuk pemasaran, tidak dijual, dan tidak dibagikan. Email Apple ID untuk TestFlight dimasukkan ke App Store Connect milik pengembang agar Apple mengirim undangan.",
+            "Di mana: database Cloudflare D1 di akun Cloudflare pengembang, hanya bisa dibaca pemilik lewat token rahasia. Formulirnya tidak mengirim email atau isian apa pun ke RevKlik (statistik situs).",
+            "Pembatas kiriman: server menghitung kiriman per jam dari alamat IP-mu memakai hash satu arah yang berlaku satu jam, bukan IP aslinya, dan menghapus hitungan itu dalam beberapa jam.",
+            <>
+              Hapus: kirim email dari alamat yang kamu daftarkan ke <Mail /> dengan subjek{" "}
+              <span className="font-semibold">Hapus daftar tunggu JoyoFit</span>. Kami menghapus barisnya dan mengonfirmasi lewat email, paling lambat 30 hari. Setelah kamu mendapat akses, entri disimpan sampai kamu minta hapus.
+            </>,
+          ]}
+        />
+      </Block>
+
       <Block title="Cuaca">
         <p>
           Cuaca di jam mati secara bawaan. Bila kamu menyalakannya, JoyoFit meminta prakiraan cuaca ke Open-Meteo
@@ -305,6 +324,7 @@ function Indonesian() {
             "Di HP: hapus instalasi JoyoFit atau pilih Pengaturan Android, Aplikasi, JoyoFit, Penyimpanan, Hapus data. Semua data lokal terhapus. Lepas jam dengan Forget pairing di aplikasi.",
             "Di Health Connect (Android) atau Apple Health (iPhone): hapus data yang ditulis JoyoFit lewat aplikasi Health Connect atau aplikasi Kesehatan.",
             "Di Strava: Putuskan Strava di aplikasi atau cabut JoyoFit di strava.com; token dihapus dari server JoyoFit saat itu juga.",
+            "Daftar tunggu Strava atau iPhone: email ke alamat kontak di halaman ini dengan subjek Hapus daftar tunggu JoyoFit (lihat bagian Daftar undangan).",
             "Akun dan cloud: di aplikasi, Pengaturan, Kesehatan dan cloud, ketuk Delete JoyoRogo account (Hapus akun JoyoRogo) lalu konfirmasi. Ini langsung menghapus data cloud JoyoFit-mu (langkah, tidur, olahraga dan rutenya, jam, berkas impor, token Strava) dan akun JoyoRogo-mu beserta datanya di JoyoRogo. Akun JoyoRogo dipakai bersama, jadi akun itu juga hilang di JoyoRogo. Akun yang masuk dengan Apple diminta konfirmasi Apple dulu, lalu izin Masuk dengan Apple dicabut. Data di HP-mu tidak ikut terhapus.",
             <>
               Tanpa aplikasi: kirim email dari alamat akun yang kamu pakai ke <Mail /> dengan subjek{" "}
@@ -463,6 +483,26 @@ function English() {
         </p>
       </Block>
 
+      <Block id="waitlist-en" title="Strava and iPhone invite lists">
+        <p>
+          fit.joyorogo.com/strava and fit.joyorogo.com/iphone have waitlist forms. The app is not involved; only this
+          site.
+        </p>
+        <List
+          items={[
+            "What is stored: the list (Strava or iPhone), the email you enter, your Strava profile name or link (Strava list), your watch model if you enter one (iPhone list), a status (pending at first), and the time you signed up and the time of the last update.",
+            "Why: only to invite you: to enable your Strava access when a slot is free, or to add your email as a TestFlight tester, and to tell you by email. It is not used for marketing, not sold and not shared. The Apple ID email for TestFlight is entered into the developer's App Store Connect so that Apple sends the invitation.",
+            "Where: a Cloudflare D1 database in the developer's Cloudflare account, readable only by the owner through a secret token. The form sends no email or field to RevKlik (site analytics).",
+            "Rate limit: the server counts submissions per hour from your IP address using a one-way hash that is only valid for that hour, not the IP itself, and deletes the count within a few hours.",
+            <>
+              Delete: email <Mail /> from the address you signed up with, subject{" "}
+              <span className="font-semibold">Hapus daftar tunggu JoyoFit</span> (delete JoyoFit waitlist). We delete the row and
+              confirm by email, within 30 days. After you are given access, the entry is kept until you ask for deletion.
+            </>,
+          ]}
+        />
+      </Block>
+
       <Block title="Weather">
         <p>
           Off by default. When on, JoyoFit requests a forecast from Open-Meteo when the watch connects and
@@ -544,6 +584,7 @@ function English() {
             "On the phone: uninstall JoyoFit, or Android Settings, Apps, JoyoFit, Storage, Clear data. Use Forget pairing in the app to release the watch.",
             "In Health Connect (Android) or Apple Health (iPhone): delete what JoyoFit wrote in the Health Connect or Health app.",
             "Strava: Disconnect Strava in the app or revoke JoyoFit on strava.com; the tokens are deleted from the JoyoFit server at once.",
+            "Strava or iPhone waitlist: email the contact address on this page with the subject Hapus daftar tunggu JoyoFit (see the invite lists section).",
             "Account and cloud: in the app, Settings, Health & cloud, tap Delete JoyoRogo account and confirm. It immediately deletes your JoyoFit cloud data (steps, sleep, workouts and their routes, watch, imported files, Strava tokens) and your JoyoRogo account with its JoyoRogo data. The JoyoRogo account is shared, so it is gone in JoyoRogo as well. An account that signs in with Apple asks you to confirm with Apple first, and the Sign in with Apple grant is revoked. Data on your phone is not deleted.",
             <>
               Without the app: email <Mail /> from the address of the account you signed in with, subject{" "}

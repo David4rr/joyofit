@@ -31,6 +31,9 @@ a guess. Deploy JoyoRogo with `fitness.cloudAccess` before this Worker.
 | `GET /v1/strava`, `GET /v1/strava/authorize`, `POST /v1/strava/token`, `POST /v1/strava/disconnect` | Strava connection of the signed-in user, **free (no Pro gate)**: status, authorize URL (scope `activity:write`), a fresh short-lived access token (refreshed here; the refresh token and client secret never reach the phone), revoke + delete. Table `strava_connection` ([`migrations/0002_strava.sql`](migrations/0002_strava.sql)). |
 | `GET /strava/callback`, `GET\|POST /strava/webhook` | Public, called by Strava: the OAuth redirect (stores tokens, redirects to `joyofit://settings/strava`) and the webhook (subscription validation; a deauthorization event deletes that athlete's tokens). |
 
+| `POST /v1/waitlist` | Public (no session, CORS for `https://fit.joyorogo.com`): the /strava and /iphone invite forms. Body `{ kind: "strava" \| "iphone", email, stravaProfile?, watchModel?, note?, website? }`; `website` is a honeypot (filled = `200`, nothing stored). Upserts by `(kind, email)` (status and `created_at` kept), at most 5 submissions per IP per hour (`429` + `Retry-After`; only a one-hour salted hash of the IP is stored, table `waitlist_rate`). Table `waitlist` ([`migrations/0003_waitlist.sql`](migrations/0003_waitlist.sql)). |
+| `GET /v1/waitlist?kind=&status=` | Owner only: `Authorization: Bearer $WAITLIST_ADMIN_TOKEN` (Worker secret, `503` when unset). Easiest: `scripts/waitlist.sh [strava\|iphone]` from the repo root, which reads the token from `~/.config/joyofit/waitlist-admin-token`. |
+
 Strava needs the `STRAVA_CLIENT_ID` var (in `wrangler.jsonc`) and two secrets, `STRAVA_CLIENT_SECRET` and
 `STRAVA_WEBHOOK_VERIFY_TOKEN`; without the client secret the Strava routes answer `503 strava_not_configured`. Owner setup
 (callback domain, webhook registration, review): [`../docs/strava.md`](../docs/strava.md).

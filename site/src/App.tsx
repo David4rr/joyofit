@@ -35,9 +35,11 @@ import {
   DUKUNG_JAM_PATH,
   GITHUB_URL,
   HARGA_URL,
+  IPHONE_PATH,
   JOYOROGO_URL,
   IOS_TESTFLIGHT_LIVE,
   IOS_TESTFLIGHT_URL,
+  STRAVA_PATH,
   TESTER_GROUP_URL,
   TESTER_OPTIN_URL,
   TRAKTEER_URL,
@@ -56,6 +58,7 @@ import {
 } from "./jam";
 import { PRIVASI_PATH, PrivasiPage } from "./Privasi";
 import { ButtonLink, GithubMark, Phone, Ring } from "./ui";
+import { IphonePage, StravaPage } from "./Waitlist";
 
 /** Harga paket Founder JoyoRogo, sama dengan joyorogo.com/harga (api.joyorogo.com/api/config). */
 const PRICE = { monthly: "Rp15.000", yearly: "Rp199.000" };
@@ -149,7 +152,16 @@ const FAQ = [
   },
   {
     q: "Jam apa saja yang didukung?",
-    a: `Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jam-mu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas. ${IOS_TESTFLIGHT_LIVE ? "Versi iPhone ada sebagai beta lewat TestFlight, baru diuji dengan Huawei Watch Fit 4 Pro." : "Belum ada versi iPhone."}`,
+    a: (
+      <>
+        Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jam-mu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas.{" "}
+        {IOS_TESTFLIGHT_LIVE ? (
+          <>Versi iPhone ada sebagai beta lewat TestFlight, baru diuji dengan Huawei Watch Fit 4 Pro.</>
+        ) : (
+          <>Belum ada versi iPhone di App Store; beta TestFlight-nya masih lewat undangan, dan kamu bisa <a className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80" href={IPHONE_PATH} {...goal("iphone_waitlist_click", "faq")}>mendaftar di sini</a>.</>
+        )}
+      </>
+    ),
   },
   {
     q: "Sudah stabil dipakai?",
@@ -166,6 +178,18 @@ const FAQ = [
   {
     q: "Bisa dipakai tanpa cloud sama sekali?",
     a: "Bisa. Cloud opsional. Tanpa itu semua fitur jam tetap jalan dan data tetap di HP-mu.",
+  },
+  {
+    q: "Bisa mengirim olahraga ke Strava?",
+    a: (
+      <>
+        Bisa, gratis, tapi masih lewat undangan karena Strava membatasi jumlah atlet untuk aplikasi baru sampai aplikasinya disetujui.{" "}
+        <a className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80" href={STRAVA_PATH} {...goal("strava_waitlist_click", "faq")}>
+          Daftar undangan Strava
+        </a>
+        .
+      </>
+    ),
   },
   {
     q: "Apa hubungannya dengan JoyoRogo?",
@@ -268,6 +292,12 @@ function Footer() {
             {...goal("trakteer_click", "footer")}
           >
             Dukung di Trakteer
+          </a>
+          <a href={STRAVA_PATH} className={link} {...goal("strava_waitlist_click", "footer")}>
+            Strava
+          </a>
+          <a href={IPHONE_PATH} className={link} {...goal("iphone_waitlist_click", "footer")}>
+            iPhone
           </a>
           <a href={PRIVASI_PATH} className={link}>
             Privasi
@@ -869,7 +899,7 @@ const IOS_LIMITS = [
 function IosBeta() {
   return (
     <div
-      id="iphone"
+      id="iphone-beta"
       data-section="iphone-beta"
       className="mt-6 scroll-mt-20 rounded-[1.75rem] bg-card p-6 md:p-8"
     >
@@ -918,6 +948,33 @@ function IosBeta() {
   );
 }
 
+function IphoneWaitlistCard() {
+  return (
+    <div
+      id="iphone"
+      data-section="iphone-waitlist"
+      className="mt-6 flex scroll-mt-20 flex-col gap-5 rounded-[1.75rem] bg-card p-6 md:flex-row md:items-center md:justify-between md:p-8"
+    >
+      <div className="flex gap-4">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground">
+          <Smartphone className="size-6" aria-hidden />
+        </span>
+        <div>
+          <h3 className="text-xl font-extrabold tracking-tight md:text-2xl">JoyoFit di iPhone: daftar TestFlight</h3>
+          <p className="mt-1 max-w-xl text-[0.9375rem] leading-relaxed text-muted-foreground">
+            Aplikasi iPhone ada di TestFlight tetapi masih lewat undangan, sambil menunggu beta publik dan review App
+            Store. Baru diuji dengan Huawei Watch Fit 4 Pro.
+          </p>
+        </div>
+      </div>
+      <ButtonLink href={IPHONE_PATH} className="shrink-0" {...goal("iphone_waitlist_click", "cara")}>
+        Daftarkan emailmu
+        <ArrowRight aria-hidden />
+      </ButtonLink>
+    </div>
+  );
+}
+
 function Options() {
   return (
     <section id="cara" data-section="options" className="scroll-mt-16 border-t border-border/70 py-20 md:py-24">
@@ -931,6 +988,7 @@ function Options() {
 
         <TesterJoin />
         {IOS_TESTFLIGHT_LIVE && <IosBeta />}
+        <IphoneWaitlistCard />
 
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {/* 1. Open source */}
@@ -955,11 +1013,18 @@ function Options() {
                 </li>
               ))}
             </ul>
-            <p className="mt-3 flex items-center gap-2 text-sm">
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
               <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
-                Segera
+                Undangan
               </span>
-              Gratis: olahraga otomatis terkirim ke Strava
+              Gratis: olahraga terkirim ke Strava.
+              <a
+                href={STRAVA_PATH}
+                className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
+                {...goal("strava_waitlist_click", "cara")}
+              >
+                Daftar
+              </a>
             </p>
             <div className="mt-auto pt-6">
               <ButtonLink variant="secondary" className="w-full" href={GITHUB_URL} target="_blank" rel="noopener">
@@ -1544,6 +1609,8 @@ export function App() {
   const jam = path === JAM_PATH;
   const dukungJam = path === DUKUNG_JAM_PATH;
   const privasi = path === PRIVASI_PATH;
+  const strava = path === STRAVA_PATH;
+  const iphone = path === IPHONE_PATH;
   return (
     <div className="min-h-svh">
       <Header />
@@ -1556,6 +1623,10 @@ export function App() {
           <DukungJamPage />
         ) : privasi ? (
           <PrivasiPage />
+        ) : strava ? (
+          <StravaPage />
+        ) : iphone ? (
+          <IphonePage />
         ) : (
           <>
             <Hero />
