@@ -17,11 +17,14 @@ public protocol WearEvents: AnyObject, Sendable {
     func uploadProgress(bytes: Int, total: Int)
     /// A watch face install finished (`onUploadResult`); `code` is the watch's status when it gave one.
     func uploadResult(ok: Bool, fileName: String, code: Int?, message: String)
+    /// The watch pushed a face configuration nobody asked for, e.g. the user edited the face on the watch (`onFaceCustomization`).
+    func faceCustomization(_ payload: [String: Any])
 }
 
 extension WearEvents {
     public func uploadProgress(bytes: Int, total: Int) {}
     public func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {}
+    public func faceCustomization(_ payload: [String: Any]) {}
 
     public func info(_ message: String) { log(LogEntry(.info, message)) }
     public func error(_ message: String) { log(LogEntry(.error, message)) }

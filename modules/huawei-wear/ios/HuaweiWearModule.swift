@@ -112,6 +112,7 @@ public final class HuaweiWearModule: Module {
         func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {
             emit("onUploadResult", ["ok": ok, "fileName": fileName, "code": code, "message": message])
         }
+        func faceCustomization(_ payload: [String: Any]) { emit("onFaceCustomization", payload) }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -316,6 +317,17 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.watchfaces.delete(id) }
         }
 
+        AsyncFunction("getFaceCustomization") { (faceId: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.faceCustomizer.query(faceId).toJS() }
+        }
+
+        AsyncFunction("applyFaceCustomization") { (faceId: String, config: [String: Any]) async throws -> [String: Any] in
+            guard let parsed = FaceCustomization(js: config) else {
+                throw WearException(.invalidArgument, "The configuration needs marketId, styles [{mode, index}], colourIndex, customColour and widgets")
+            }
+            return try await wearCall { try await runtime.faceCustomizer.apply(faceId, parsed).toJS() }
+        }
+
         // MARK: switches of phone-side features that are always off here
 
         switchRejectingOn("setNotificationsEnabled")
@@ -344,8 +356,6 @@ public final class HuaweiWearModule: Module {
         rejects("setWeatherIntervalMinutes", Int.self)
         rejects("setWeatherCity", String.self)
         rejects("refreshWeather")
-        rejects("getFaceCustomization", String.self)
-        rejects("applyFaceCustomization", String.self, [String: Any].self)
         rejects("getPhotoFace")
         rejects("addPhoto", String.self)
         rejects("deletePhoto", String.self)

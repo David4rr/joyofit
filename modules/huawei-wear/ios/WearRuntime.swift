@@ -46,6 +46,10 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var features: PhoneFeatures!
     /// Watch face list, install, activate and delete.
     public private(set) var watchfaces: WatchfaceController!
+    /// The one subscriber of DataSync (service 0x37); features register their handlers on it.
+    public private(set) var dataSync: DataSyncService!
+    /// Editable watch-face options over DataSync.
+    public private(set) var faceCustomizer: WatchfaceCustomizer!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -91,7 +95,10 @@ public final class WearRuntime: @unchecked Sendable {
         controller = BackgroundController(runtime: self, expiring: expiring, clock: clock)
         features = PhoneFeatures(link: link, events: fanOut)
         watchfaces = WatchfaceController(link: link, events: fanOut)
-        linkObservers.add(features)
+        dataSync = DataSyncService(link: link, events: fanOut)
+        faceCustomizer = WatchfaceCustomizer(events: fanOut, faces: { [watchfaces] in try await watchfaces!.entries() })
+        dataSync.register(faceCustomizer)
+        linkObservers.add(dataSync)
     }
 
     // MARK: events
@@ -156,7 +163,7 @@ public final class WearRuntime: @unchecked Sendable {
         func uploadResult(ok: Bool, fileName: String, code: Int?, message: String) {
             runtime?.currentListeners().forEach { $0.uploadResult(ok: ok, fileName: fileName, code: code, message: message) }
         }
-
+        func faceCustomization(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.faceCustomization(payload) } }
     }
 
     // MARK: bonded devices

@@ -7,25 +7,14 @@ import HuaweiProtocol
 
 #if canImport(SQLite3) || canImport(CSQLite)
 
-public final class PhoneFeatures: LinkObserver, @unchecked Sendable {
+public final class PhoneFeatures: @unchecked Sendable {
     private let link: WearLink
     private let events: WearEvents
-    private let lock = NSLock()
-    private var subscription: (session: HuaweiSession, id: Int)?
 
     public init(link: WearLink, events: WearEvents) {
         self.link = link
         self.events = events
     }
-
-    // MARK: LinkObserver
-
-    public func linkConnected(_ handle: LinkHandle) async {
-        let id = await FindWatch.attach(session: handle.session, log: events.sink)
-        lock.locked { subscription = (handle.session, id) }
-    }
-
-    public func linkDisconnected() { lock.locked { subscription = nil } }
 
     // MARK: find my watch
 
