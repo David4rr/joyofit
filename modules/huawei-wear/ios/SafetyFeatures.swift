@@ -1,5 +1,6 @@
-// Fall detection over DataSync (config 900500038). Port of the fall half of SafetyFeatures.kt; `getSafety` merges it with the inert SOS relay
-// half (iOS apps cannot send SMS). Fall detection is only offered when the watch reports what Huawei Health needs for it: ExpandCapability 83
+// Fall detection over DataSync (config 900500038) and the SOS request answer (event 800100040). Port of SafetyFeatures.kt; `getSafety` merges the
+// fall state with the inert SOS relay half. iOS apps cannot send SMS, so an SOS request is always answered `status: "1"` (nothing sent), like
+// Android does whenever it cannot send: refusing silently would leave the person waiting for help. Fall detection is only offered when the watch reports what Huawei Health needs for it: ExpandCapability 83
 // (DataSync configs) and SupportedCommands service 0x33 command 1 (`isSupportSosTransmission`). See SafetyPayloads for the wire format.
 import Foundation
 #if canImport(HuaweiProtocol)
@@ -32,6 +33,9 @@ public final class SafetyFeatures: DataSyncFeature, @unchecked Sendable {
         lock.locked { self.service = service }
         service.onConfig(phonePkg: SafetyPayloads.fallPhonePackage, watchPkg: SafetyPayloads.fallWatchPackage, configId: SafetyPayloads.fallConfigId) { [weak self] config in
             self?.onFallConfig(config)
+        }
+        service.onEvent(phonePkg: SafetyPayloads.sosPhonePackage, watchPkg: SafetyPayloads.sosWatchPackage, eventId: SafetyPayloads.sosEventId) { [weak self] event in
+            await self?.onSos(event)
         }
     }
 
@@ -96,6 +100,31 @@ public final class SafetyFeatures: DataSyncFeature, @unchecked Sendable {
         settings.fallSwitch = state.switchState
         settings.fallUpdatedMs = state.timeStampMs > 0 ? state.timeStampMs : Int64(now().timeIntervalSince1970 * 1000)
         log("Fall detection: the watch reports \(state.switchState == 1 ? "ON" : "OFF") (action \(item.action), timeStamp \(state.timeStampMs))")
+    }
+
+    // MARK: SOS (answered, never sent)
+
+    private func onSos(_ event: SampleEvent) async {
+        let raw: String?
+        switch SafetyPayloads.parseSos(event.data) {
+        case .bad(let reason, let text):
+            events.error("SOS: request refused, \(reason)")
+            raw = text
+        case .ok(let request):
+            events.info("SOS: the watch asks to send \(request.content.count) characters to \(SafetyPayloads.maskNumber(request.phoneNumber))")
+            events.error("SOS: no SMS sent, iOS apps cannot send SMS")
+            raw = request.raw
+        }
+        guard let service = dataSync() else { return }
+        do {
+            _ = try await service.sendEvent(
+                phonePkg: event.phonePkg, watchPkg: event.watchPkg, eventId: SafetyPayloads.sosEventId,
+                data: SafetyPayloads.sosAnswer(raw: raw, sent: false), what: "SOS SMS result 1"
+            )
+        } catch is CancellationError {
+        } catch {
+            events.error("SOS: the answer was not sent: \(error)")
+        }
     }
 
     // MARK: JS

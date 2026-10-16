@@ -201,3 +201,64 @@ final class SafetySleepReportTests: XCTestCase {
         XCTAssertEqual(SleepReport.duration(30), "1 min")
     }
 }
+
+/// The SOS request parse and answer: translations of the Kotlin WatchExtrasTest vectors plus the org.json formatting the answer echoes.
+final class SafetySosPayloadTests: XCTestCase {
+    private func text(_ bytes: Bytes) -> String { String(decoding: bytes, as: UTF8.self) }
+
+    func testSosRequestIsParsedAndAnsweredWithStatus() throws {
+        let raw = "{\"phoneNumber\":\"+6281234567890\",\"content\":\"Help, I fell.\",\"extra\":3}"
+        guard case .ok(let request) = SafetyPayloads.parseSos(Bytes(raw.utf8)) else { return XCTFail("not parsed") }
+        XCTAssertEqual(request.phoneNumber, "+6281234567890")
+        XCTAssertEqual(request.content, "Help, I fell.")
+        XCTAssertEqual(request.raw, raw)
+        XCTAssertEqual(text(SafetyPayloads.sosAnswer(raw: request.raw, sent: true)), "{\"phoneNumber\":\"+6281234567890\",\"content\":\"Help, I fell.\",\"extra\":3,\"status\":\"0\"}")
+        XCTAssertEqual(text(SafetyPayloads.sosAnswer(raw: request.raw, sent: false)), "{\"phoneNumber\":\"+6281234567890\",\"content\":\"Help, I fell.\",\"extra\":3,\"status\":\"1\"}")
+    }
+
+    func testBadSosRequestsAreRefused() {
+        for data in [nil, [], Bytes("not json".utf8), Bytes("[1]".utf8), Bytes("{\"phoneNumber\":".utf8)] as [Bytes?] {
+            guard case .bad(_, let raw) = SafetyPayloads.parseSos(data) else { return XCTFail("parsed \(String(describing: data))") }
+            XCTAssertNil(raw)
+        }
+        guard case .bad(let reason, let raw) = SafetyPayloads.parseSos(Bytes("{\"phoneNumber\":\"123\",\"content\":\"\"}".utf8)) else { return XCTFail() }
+        XCTAssertEqual(reason, "phoneNumber or content is missing or empty")
+        XCTAssertNotNil(raw)
+        guard case .bad = SafetyPayloads.parseSos(Bytes("{\"phoneNumber\":\" \",\"content\":\"x\"}".utf8)) else { return XCTFail() }
+        XCTAssertEqual(text(SafetyPayloads.sosAnswer(raw: nil, sent: false)), "{\"status\":\"1\"}")
+        XCTAssertEqual(text(SafetyPayloads.sosAnswer(raw: "garbage", sent: false)), "{\"status\":\"1\"}")
+    }
+
+    func testTheAnswerKeepsOrderEscapesLikeOrgJsonAndReplacesAStatus() {
+        let raw = "{\"phoneNumber\":\"1\",\"content\":\"a/b \\\"q\\\" \\u00e9\\n\",\"status\":\"9\",\"n\":[1,2.5,{\"k\":null}],\"t\":true}"
+        XCTAssertEqual(
+            text(SafetyPayloads.sosAnswer(raw: raw, sent: true)),
+            "{\"phoneNumber\":\"1\",\"content\":\"a\\/b \\\"q\\\" \u{e9}\\n\",\"status\":\"0\",\"n\":[1,2.5,{\"k\":null}],\"t\":true}"
+        )
+        XCTAssertEqual(text(SafetyPayloads.sosAnswer(raw: "{\"a\":1,\"a\":2}", sent: false)), "{\"a\":2,\"status\":\"1\"}")
+        XCTAssertEqual(text(SafetyPayloads.sosAnswer(raw: "{\"c\":\"\\u0001\"}", sent: false)), "{\"c\":\"\\u0001\",\"status\":\"1\"}")
+    }
+
+    func testAnswerGoesOutAsEventEightHundredMillionFortyAtLevelZero() throws {
+        let p = ParamsProvider()
+        p.transactionsCrypted = false
+        p.sliceSize = 1022
+        let packet = DataSyncWire.event(
+            srcPkg: SafetyPayloads.sosPhonePackage, wearPkg: SafetyPayloads.sosWatchPackage, eventId: SafetyPayloads.sosEventId, level: 0,
+            data: SafetyPayloads.sosAnswer(raw: "{\"phoneNumber\":\"1\",\"content\":\"x\"}", sent: true)
+        )
+        let out = try packet.serialize(params: p)[0]
+        let t = try HuaweiTLV(parsing: out, offset: 6, length: out.count - 8)
+        XCTAssertEqual(try t.string(0x01), "hw.unitedevice.safetyguard")
+        XCTAssertEqual(try t.string(0x02), "hw.watch.safetyguard")
+        XCTAssertEqual(try t.bytes(0x03), [0x2F, 0xB0, 0x8E, 0xC8])
+        XCTAssertEqual(try t.bytes(0x04), [0x00])
+        XCTAssertEqual(text(try t.bytes(0x05)), "{\"phoneNumber\":\"1\",\"content\":\"x\",\"status\":\"0\"}")
+    }
+
+    func testNumbersAreMaskedInLogs() {
+        XCTAssertEqual(SafetyPayloads.maskNumber("+6281234567890"), String(repeating: "*", count: 11) + "90")
+        XCTAssertEqual(SafetyPayloads.maskNumber("(021) 555 01 21"), String(repeating: "*", count: 8) + "21")
+        XCTAssertEqual(SafetyPayloads.maskNumber("7"), "**")
+    }
+}

@@ -205,6 +205,44 @@ final class SafetyFeaturesTests: XCTestCase {
         XCTAssertEqual(s.fallUpdatedMs, 1_791_979_200_000)
     }
 
+    // MARK: SOS (never sent, always answered)
+
+    private func sosFrame(_ data: Bytes?) -> Bytes {
+        DataSyncRig.eventFrame(src: SafetyPayloads.sosWatchPackage, wear: SafetyPayloads.sosPhonePackage, id: SafetyPayloads.sosEventId, data: data)
+    }
+
+    func testAnSosRequestIsAnsweredFailedAndNothingIsSent() async throws {
+        let rig = Rig()
+        await rig.data.attach()
+        let before = rig.data.watch.sent.count
+        let raw = "{\"phoneNumber\":\"+6281234567890\",\"content\":\"Help, I fell.\"}"
+        rig.data.session.onData(sosFrame(Bytes(raw.utf8)))
+        await eventually { rig.data.watch.sent.count > before }
+        let answer = try XCTUnwrap(rig.data.watch.sent.last)
+        XCTAssertEqual(answer.command, 0x02)
+        XCTAssertEqual(try answer.tlv.string(0x01), "hw.unitedevice.safetyguard")
+        XCTAssertEqual(try answer.tlv.string(0x02), "hw.watch.safetyguard")
+        XCTAssertEqual(try answer.tlv.bytes(0x03), [0x2F, 0xB0, 0x8E, 0xC8])
+        XCTAssertEqual(try answer.tlv.bytes(0x04), [0x00])
+        XCTAssertEqual(String(decoding: try answer.tlv.bytes(0x05), as: UTF8.self), "{\"phoneNumber\":\"+6281234567890\",\"content\":\"Help, I fell.\",\"status\":\"1\"}")
+        XCTAssertTrue(rig.data.events.contains("SOS: the watch asks to send 13 characters to ***********90"))
+        XCTAssertTrue(rig.data.events.containsError("SOS: no SMS sent, iOS apps cannot send SMS"))
+        XCTAssertFalse(rig.data.events.logs.contains { $0.message.contains("+6281234567890") && !$0.message.contains("DataSync") })
+    }
+
+    func testAnUnreadableSosRequestIsStillAnswered() async throws {
+        for (data, expected) in [(Bytes("nope".utf8), "{\"status\":\"1\"}"), ([], "{\"status\":\"1\"}"), (Bytes("{\"phoneNumber\":\"1\",\"content\":\"\"}".utf8), "{\"phoneNumber\":\"1\",\"content\":\"\",\"status\":\"1\"}")] as [(Bytes, String)] {
+            let rig = Rig()
+            await rig.data.attach()
+            let before = rig.data.watch.sent.count
+            rig.data.session.onData(sosFrame(data))
+            await eventually { rig.data.watch.sent.count > before }
+            let answer = try XCTUnwrap(rig.data.watch.sent.last)
+            XCTAssertEqual(String(decoding: try answer.tlv.bytes(0x05), as: UTF8.self), expected)
+            XCTAssertTrue(rig.data.events.containsError("SOS: request refused"))
+        }
+    }
+
     // MARK: sleep report
 
     // Local midnight in Jakarta of 2026-10-14; the night runs 23:00 to 06:30.
