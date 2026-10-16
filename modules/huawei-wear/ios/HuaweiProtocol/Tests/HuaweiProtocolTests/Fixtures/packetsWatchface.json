@@ -1,0 +1,752 @@
+{
+ "responses": [
+  {
+   "service": 39,
+   "name": "params full",
+   "ok": true,
+   "fields": {
+    "mode": 0,
+    "otherWatchfaceVersions": "2.1,2.2,2.3",
+    "width": 408,
+    "maxVersion": "2.10",
+    "supportFileType": 1,
+    "sort": 0,
+    "supportSync": 1,
+    "height": 480,
+    "supportCapability": 61,
+    "status": 100000
+   },
+   "command": 1,
+   "tlv": "0104322e31300204000001980304000001e0040101050100060b322e312c322e322c322e3311040000003d1701011801007f04000186a0"
+  },
+  {
+   "service": 39,
+   "name": "params minimal",
+   "ok": true,
+   "fields": {
+    "mode": -1,
+    "otherWatchfaceVersions": "",
+    "width": 408,
+    "maxVersion": "2.10",
+    "supportFileType": 1,
+    "sort": 0,
+    "supportSync": -1,
+    "height": 480,
+    "supportCapability": -1,
+    "status": -1
+   },
+   "command": 1,
+   "tlv": "0104322e313002020198030201e0040101050100"
+  },
+  {
+   "service": 39,
+   "name": "params byte capability",
+   "ok": true,
+   "fields": {
+    "mode": -1,
+    "otherWatchfaceVersions": "",
+    "width": 408,
+    "maxVersion": "2.10",
+    "supportFileType": -1,
+    "sort": -128,
+    "supportSync": -1,
+    "height": 480,
+    "supportCapability": 200,
+    "status": -1
+   },
+   "command": 1,
+   "tlv": "0104322e31300204000001980304000001e00401ff0501801101c8"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 39,
+   "name": "params no width",
+   "ok": false,
+   "parseException": true,
+   "command": 1,
+   "tlv": "0104322e31300304000001e0040101050100"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 39,
+   "name": "params empty sort",
+   "ok": false,
+   "parseException": false,
+   "command": 1,
+   "tlv": "0104322e31300204000001980304000001e00401010500"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 39,
+   "name": "params three byte width",
+   "ok": false,
+   "parseException": false,
+   "command": 1,
+   "tlv": "0104322e313002030102030304000001e0040101050100"
+  },
+  {
+   "service": 39,
+   "name": "params oversize capability",
+   "ok": true,
+   "fields": {
+    "mode": -1,
+    "otherWatchfaceVersions": "",
+    "width": 408,
+    "maxVersion": "2.10",
+    "supportFileType": 1,
+    "sort": 0,
+    "supportSync": -1,
+    "height": 480,
+    "supportCapability": -1,
+    "status": -1
+   },
+   "command": 1,
+   "tlv": "0104322e31300204000001980304000001e004010105010011050102030405"
+  },
+  {
+   "service": 39,
+   "name": "list two",
+   "ok": true,
+   "fields": {"list": [
+    {
+     "fileName": "1000",
+     "isCurrent": true,
+     "isTryout": false,
+     "isKaleidoscope": false,
+     "isEditable": false,
+     "isVideo": false,
+     "isPhoto": false,
+     "type": 3,
+     "isFactory": true,
+     "version": "1.0.0",
+     "expandedType": 0
+    },
+    {
+     "fileName": "2000",
+     "isCurrent": true,
+     "isTryout": false,
+     "isKaleidoscope": false,
+     "isEditable": true,
+     "isVideo": false,
+     "isPhoto": true,
+     "type": 41,
+     "isFactory": false,
+     "version": "1.2.0",
+     "expandedType": 7
+    }
+   ]},
+   "command": 2,
+   "tlv": "812782100304313030300405312e302e3005010382130304323030300405312e322e30050129070107"
+  },
+  {
+   "service": 39,
+   "name": "list flags",
+   "ok": true,
+   "fields": {"list": [
+    {
+     "fileName": "1",
+     "isCurrent": true,
+     "isTryout": true,
+     "isKaleidoscope": true,
+     "isEditable": true,
+     "isVideo": true,
+     "isPhoto": true,
+     "type": -1,
+     "isFactory": true,
+     "version": "v",
+     "expandedType": 0
+    },
+    {
+     "fileName": "2",
+     "isCurrent": false,
+     "isTryout": false,
+     "isKaleidoscope": true,
+     "isEditable": false,
+     "isVideo": false,
+     "isPhoto": false,
+     "type": -128,
+     "isFactory": false,
+     "version": "v",
+     "expandedType": -128
+    },
+    {
+     "fileName": "3",
+     "isCurrent": false,
+     "isTryout": true,
+     "isKaleidoscope": false,
+     "isEditable": false,
+     "isVideo": false,
+     "isPhoto": false,
+     "type": 64,
+     "isFactory": false,
+     "version": "v",
+     "expandedType": 0
+    }
+   ]},
+   "command": 2,
+   "tlv": "812482090301310401760501ff820c0301320401760501800701808209030133040176050140"
+  },
+  {
+   "service": 39,
+   "name": "list without 81",
+   "ok": true,
+   "fields": {"list": []},
+   "command": 2,
+   "tlv": ""
+  },
+  {
+   "service": 39,
+   "name": "list empty 81",
+   "ok": true,
+   "fields": {"list": []},
+   "command": 2,
+   "tlv": "8100"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 39,
+   "name": "list entry without type",
+   "ok": false,
+   "parseException": true,
+   "command": 2,
+   "tlv": "81088206030131040176"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 39,
+   "name": "list entry empty type",
+   "ok": false,
+   "parseException": false,
+   "command": 2,
+   "tlv": "810a82080301310401760500"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 39,
+   "name": "list malformed",
+   "ok": false,
+   "parseException": false,
+   "command": 2,
+   "tlv": "81028209"
+  },
+  {
+   "service": 39,
+   "name": "operation ok",
+   "ok": true,
+   "fields": {
+    "watchfaceId": "",
+    "code": 100000,
+    "needReceive": -1,
+    "watchfaceVersion": ""
+   },
+   "command": 3,
+   "tlv": "7f04000186a0"
+  },
+  {
+   "service": 39,
+   "name": "operation announce answer",
+   "ok": true,
+   "fields": {
+    "watchfaceId": "123",
+    "code": 100000,
+    "needReceive": 1,
+    "watchfaceVersion": "2.1.0"
+   },
+   "command": 3,
+   "tlv": "01033132330205322e312e300401017f04000186a0"
+  },
+  {
+   "service": 39,
+   "name": "operation need receive 0",
+   "ok": true,
+   "fields": {
+    "watchfaceId": "123",
+    "code": -1,
+    "needReceive": 0,
+    "watchfaceVersion": "2.1.0"
+   },
+   "command": 3,
+   "tlv": "01033132330205322e312e30040100"
+  },
+  {
+   "service": 39,
+   "name": "operation signature failure",
+   "ok": true,
+   "fields": {
+    "watchfaceId": "",
+    "code": 100014,
+    "needReceive": -1,
+    "watchfaceVersion": ""
+   },
+   "command": 3,
+   "tlv": "7f04000186ae"
+  },
+  {
+   "service": 39,
+   "name": "operation empty",
+   "ok": true,
+   "fields": {
+    "watchfaceId": "",
+    "code": -1,
+    "needReceive": -1,
+    "watchfaceVersion": ""
+   },
+   "command": 3,
+   "tlv": ""
+  },
+  {
+   "service": 39,
+   "name": "operation byte status",
+   "ok": true,
+   "fields": {
+    "watchfaceId": "",
+    "code": 0,
+    "needReceive": -1,
+    "watchfaceVersion": ""
+   },
+   "command": 3,
+   "tlv": "7f0100"
+  },
+  {
+   "service": 39,
+   "name": "operation long status",
+   "ok": true,
+   "fields": {
+    "watchfaceId": "",
+    "code": -1,
+    "needReceive": -1,
+    "watchfaceVersion": ""
+   },
+   "command": 3,
+   "tlv": "7f050102030405"
+  },
+  {
+   "service": 39,
+   "name": "confirm installed",
+   "ok": true,
+   "fields": {
+    "reportType": 2,
+    "fileName": "123456789_2.1.0"
+   },
+   "command": 5,
+   "tlv": "01093132333435363738390205322e312e30030400000002"
+  },
+  {
+   "service": 39,
+   "name": "confirm deleted",
+   "ok": true,
+   "fields": {
+    "reportType": 3,
+    "fileName": "123456789_2.1.0"
+   },
+   "command": 5,
+   "tlv": "01093132333435363738390205322e312e30030400000003040100"
+  },
+  {
+   "service": 39,
+   "name": "confirm byte type",
+   "ok": true,
+   "fields": {
+    "reportType": 2,
+    "fileName": "9_1.0"
+   },
+   "command": 5,
+   "tlv": "0101390203312e30030102"
+  },
+  {
+   "service": 39,
+   "name": "confirm without type",
+   "ok": true,
+   "fields": {
+    "reportType": 0,
+    "fileName": "9_1.0"
+   },
+   "command": 5,
+   "tlv": "0101390203312e30"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 39,
+   "name": "confirm without version",
+   "ok": false,
+   "parseException": true,
+   "command": 5,
+   "tlv": "010139"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 39,
+   "name": "confirm without id",
+   "ok": false,
+   "parseException": true,
+   "command": 5,
+   "tlv": "0203312e30"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 39,
+   "name": "confirm short type",
+   "ok": false,
+   "parseException": false,
+   "command": 5,
+   "tlv": "0101390203312e300303010203"
+  },
+  {
+   "service": 39,
+   "name": "names two",
+   "ok": true,
+   "fields": {"names": {
+    "1000": "Factory",
+    "2000": "Night Run"
+   }},
+   "command": 6,
+   "tlv": "8224830f0404313030300507466163746f7279831104043230303005094e696768742052756e"
+  },
+  {
+   "service": 39,
+   "name": "names duplicate id",
+   "ok": true,
+   "fields": {"names": {"1000": "Second"}},
+   "command": 6,
+   "tlv": "821f830d04043130303005054669727374830e04043130303005065365636f6e64"
+  },
+  {
+   "service": 39,
+   "name": "names without 82",
+   "ok": true,
+   "fields": {"names": {}},
+   "command": 6,
+   "tlv": ""
+  },
+  {
+   "service": 39,
+   "name": "names empty name",
+   "ok": true,
+   "fields": {"names": {"1000": ""}},
+   "command": 6,
+   "tlv": "820a83080404313030300500"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 39,
+   "name": "names entry without name",
+   "ok": false,
+   "parseException": true,
+   "command": 6,
+   "tlv": "82088306040431303030"
+  },
+  {
+   "service": 39,
+   "name": "names utf8",
+   "ok": true,
+   "fields": {"names": {"7": "夜跑"}},
+   "command": 6,
+   "tlv": "820d830b0401370506e5a49ce8b791"
+  }
+ ],
+ "requests": [
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0011002701010002000300040005000e000f00b014"],
+   "service": 39,
+   "name": "params",
+   "command": 1,
+   "tlv": "010002000300040005000e000f00"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00080027020100060103dd7b"],
+   "service": 39,
+   "name": "list",
+   "command": 2,
+   "tlv": "0100060103"
+  },
+  {
+   "sliced": true,
+   "fileName": "123456789_2.1.0",
+   "encrypted": true,
+   "frames": ["5a001800270301093132333435363738390205322e312e30030101b0fc"],
+   "service": 39,
+   "name": "operation 123456789_2.1.0 op 1",
+   "operation": 1,
+   "command": 3,
+   "tlv": "01093132333435363738390205322e312e30030101"
+  },
+  {
+   "sliced": true,
+   "fileName": "123456789_2.1.0",
+   "encrypted": true,
+   "frames": ["5a001800270301093132333435363738390205322e312e30030102809f"],
+   "service": 39,
+   "name": "operation 123456789_2.1.0 op 2",
+   "operation": 2,
+   "command": 3,
+   "tlv": "01093132333435363738390205322e312e30030102"
+  },
+  {
+   "sliced": true,
+   "fileName": "1000_1.0.0",
+   "encrypted": true,
+   "frames": ["5a00130027030104313030300205312e302e30030101280f"],
+   "service": 39,
+   "name": "operation 1000_1.0.0 op 1",
+   "operation": 1,
+   "command": 3,
+   "tlv": "0104313030300205312e302e30030101"
+  },
+  {
+   "sliced": true,
+   "fileName": "1000_1.0.0",
+   "encrypted": true,
+   "frames": ["5a00130027030104313030300205312e302e30030102186c"],
+   "service": 39,
+   "name": "operation 1000_1.0.0 op 2",
+   "operation": 2,
+   "command": 3,
+   "tlv": "0104313030300205312e302e30030102"
+  },
+  {
+   "sliced": true,
+   "fileName": "a_b_c",
+   "encrypted": true,
+   "frames": ["5a000c0027030101610201620301017a80"],
+   "service": 39,
+   "name": "operation a_b_c op 1",
+   "operation": 1,
+   "command": 3,
+   "tlv": "010161020162030101"
+  },
+  {
+   "sliced": true,
+   "fileName": "a_b_c",
+   "encrypted": true,
+   "frames": ["5a000c0027030101610201620301024ae3"],
+   "service": 39,
+   "name": "operation a_b_c op 2",
+   "operation": 2,
+   "command": 3,
+   "tlv": "010161020162030102"
+  },
+  {
+   "sliced": true,
+   "fileName": "_v",
+   "encrypted": true,
+   "frames": ["5a000b00270301000201760301019f0b"],
+   "service": 39,
+   "name": "operation _v op 1",
+   "operation": 1,
+   "command": 3,
+   "tlv": "0100020176030101"
+  },
+  {
+   "sliced": true,
+   "fileName": "_v",
+   "encrypted": true,
+   "frames": ["5a000b0027030100020176030102af68"],
+   "service": 39,
+   "name": "operation _v op 2",
+   "operation": 2,
+   "command": 3,
+   "tlv": "0100020176030102"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "fileName": "123456789",
+   "name": "operation 123456789 op 1",
+   "ok": false,
+   "operation": 1
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "fileName": "123456789",
+   "name": "operation 123456789 op 2",
+   "ok": false,
+   "operation": 2
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "fileName": "123_",
+   "name": "operation 123_ op 1",
+   "ok": false,
+   "operation": 1
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "fileName": "123_",
+   "name": "operation 123_ op 2",
+   "ok": false,
+   "operation": 2
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "fileName": "_",
+   "name": "operation _ op 1",
+   "ok": false,
+   "operation": 1
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "fileName": "_",
+   "name": "operation _ op 2",
+   "ok": false,
+   "operation": 2
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "fileName": "",
+   "name": "operation  op 1",
+   "ok": false,
+   "operation": 1
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "fileName": "",
+   "name": "operation  op 2",
+   "ok": false,
+   "operation": 2
+  },
+  {
+   "sliced": true,
+   "fileName": "a__b",
+   "encrypted": true,
+   "frames": ["5a000b00270301016102000301013dac"],
+   "service": 39,
+   "name": "operation a__b op 1",
+   "operation": 1,
+   "command": 3,
+   "tlv": "0101610200030101"
+  },
+  {
+   "sliced": true,
+   "fileName": "a__b",
+   "encrypted": true,
+   "frames": ["5a000b00270301016102000301020dcf"],
+   "service": 39,
+   "name": "operation a__b op 2",
+   "operation": 2,
+   "command": 3,
+   "tlv": "0101610200030102"
+  },
+  {
+   "sliced": true,
+   "fileName": "123456789_2.1.0",
+   "encrypted": true,
+   "frames": ["5a001b00270501093132333435363738390205322e312e307f04000186a0600e"],
+   "service": 39,
+   "name": "confirm 123456789_2.1.0",
+   "command": 5,
+   "tlv": "01093132333435363738390205322e312e307f04000186a0"
+  },
+  {
+   "sliced": true,
+   "fileName": "1000_1.0.0",
+   "encrypted": true,
+   "frames": ["5a00160027050104313030300205312e302e307f04000186a04b8d"],
+   "service": 39,
+   "name": "confirm 1000_1.0.0",
+   "command": 5,
+   "tlv": "0104313030300205312e302e307f04000186a0"
+  },
+  {
+   "sliced": true,
+   "fileName": "a_b_c",
+   "encrypted": true,
+   "frames": ["5a000f0027050101610201627f04000186a04b0f"],
+   "service": 39,
+   "name": "confirm a_b_c",
+   "command": 5,
+   "tlv": "0101610201627f04000186a0"
+  },
+  {
+   "sliced": true,
+   "fileName": "_v",
+   "encrypted": true,
+   "frames": ["5a000e00270501000201767f04000186a09efa"],
+   "service": 39,
+   "name": "confirm _v",
+   "command": 5,
+   "tlv": "01000201767f04000186a0"
+  },
+  {
+   "sliced": true,
+   "fileName": "123456789",
+   "encrypted": true,
+   "frames": ["5a0016002705010931323334353637383902007f04000186a0ae75"],
+   "service": 39,
+   "name": "confirm 123456789",
+   "command": 5,
+   "tlv": "010931323334353637383902007f04000186a0"
+  },
+  {
+   "sliced": true,
+   "fileName": "123_",
+   "encrypted": true,
+   "frames": ["5a0010002705010331323302007f04000186a0c830"],
+   "service": 39,
+   "name": "confirm 123_",
+   "command": 5,
+   "tlv": "010331323302007f04000186a0"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "fileName": "_",
+   "name": "confirm _",
+   "ok": false
+  },
+  {
+   "sliced": true,
+   "fileName": "",
+   "encrypted": true,
+   "frames": ["5a000d002705010002007f04000186a0a61a"],
+   "service": 39,
+   "name": "confirm ",
+   "command": 5,
+   "tlv": "010002007f04000186a0"
+  },
+  {
+   "sliced": true,
+   "fileName": "a__b",
+   "encrypted": true,
+   "frames": ["5a000e00270501016102007f04000186a0c9ef"],
+   "service": 39,
+   "name": "confirm a__b",
+   "command": 5,
+   "tlv": "01016102007f04000186a0"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0018002706010101821083060404313030308306040432303030c624"],
+   "service": 39,
+   "name": "names two",
+   "faces": [
+    {
+     "fileName": "1000",
+     "type": 3,
+     "version": "1.0.0",
+     "expandedType": 0
+    },
+    {
+     "fileName": "2000",
+     "type": 0,
+     "version": "1.2.0",
+     "expandedType": 5
+    }
+   ],
+   "command": 6,
+   "tlv": "010101821083060404313030308306040432303030"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000800270601010182005656"],
+   "service": 39,
+   "name": "names none",
+   "faces": [],
+   "command": 6,
+   "tlv": "0101018200"
+  }
+ ]
+}

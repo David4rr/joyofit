@@ -86,7 +86,8 @@ public struct FileRequest: CustomStringConvertible, Sendable {
 }
 
 /// The 0x05 packets the watch pushes while a block is being sent: filled from the session's executor, drained by one download.
-private final class FileBlockInbox: @unchecked Sendable {
+/// (Also the inbox of the file upload, which collects every packet the watch pushes.)
+final class FileBlockInbox: @unchecked Sendable {
     private struct Waiter {
         let token: UInt64
         let continuation: CheckedContinuation<HuaweiPacket?, Never>
