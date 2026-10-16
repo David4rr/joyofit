@@ -1,15 +1,19 @@
 // The HealthKit side of the export (HealthExporter.swift plans and calls it): authorization to WRITE stepCount, heartRate, oxygenSaturation,
-// restingHeartRate, distanceWalkingRunning, activeEnergyBurned, sleepAnalysis and workouts, and the samples themselves.
+// restingHeartRate, distanceWalkingRunning, activeEnergyBurned, sleepAnalysis, workouts and workout routes, and the samples themselves.
 //
 // Replace instead of duplicate, the HealthKit counterpart of the Health Connect clientRecordId + version: every sample carries
 // HKMetadataKeySyncIdentifier (`joyofit:<kind>:<key>`) and HKMetadataKeySyncVersion (the export time in milliseconds), and HealthKit replaces a
 // sample whose sync identifier it already holds when the new version is higher. Sleep has no session record to replace as a whole, so the stages
-// of a night are written after this app's sleep samples in the same time range are deleted.
+// of a night are written after this app's sleep samples in the same time range are deleted. A workout (HKWorkout, its heart-rate readings and its
+// HKWorkoutRoute) is replaced the same way: this app's earlier objects with the workout's ids are deleted before the new ones are saved.
 //
 // [INFERENCE] nothing here has run against a real Health store: the compile is checked against the iPhoneOS SDK only.
 #if canImport(HealthKit)
 import Foundation
 import HealthKit
+#if canImport(CoreLocation)
+import CoreLocation
+#endif
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -37,7 +41,18 @@ public final class HealthKitWriter: HealthWriter, @unchecked Sendable {
         }
     }
 
-    static var shareTypes: Set<HKSampleType> { Set(HealthRecordType.allCases.map { sampleType(for: $0) }) }
+    /// The route of a workout is a series type of its own; it has its own write permission and is asked for together with the others.
+    static var routeType: HKSeriesType { HKSeriesType.workoutRoute() }
+
+    static var shareTypes: Set<HKSampleType> { Set(HealthRecordType.allCases.map { sampleType(for: $0) }).union([routeType]) }
+
+    static func plan(_ status: HKAuthorizationStatus) -> HealthAuthStatus {
+        switch status {
+        case .sharingAuthorized: return .authorized
+        case .sharingDenied: return .denied
+        default: return .notDetermined
+        }
+    }
 
     public init() {}
 
@@ -46,7 +61,13 @@ public final class HealthKitWriter: HealthWriter, @unchecked Sendable {
     /// Write permission is readable per type (`sharingAuthorized`); read permission is not, and JoyoFit never reads.
     public func authorized() async throws -> Set<HealthRecordType> {
         guard HKHealthStore.isHealthDataAvailable() else { return [] }
-        return Set(HealthRecordType.allCases.filter { store.authorizationStatus(for: HealthKitWriter.sampleType(for: $0)) == .sharingAuthorized })
+        return Set(HealthRecordType.allCases.filter { record in
+            let status = HealthKitWriter.plan(store.authorizationStatus(for: HealthKitWriter.sampleType(for: record)))
+            if record == .exerciseSession {
+                return HealthKitPlan.exerciseSessionGranted(workout: status, route: HealthKitWriter.plan(store.authorizationStatus(for: HealthKitWriter.routeType)))
+            }
+            return status == .authorized
+        })
     }
 
     public func requestAuthorization() async throws {
@@ -122,10 +143,10 @@ public final class HealthKitWriter: HealthWriter, @unchecked Sendable {
                 }
             }
             return try await save(samples)
-        case .workouts(let rows):
+        case .workouts(let plans):
             var written = 0
-            for row in rows {
-                try await saveWorkout(row, device: hkDevice, metadata: meta(HealthKitPlan.id("workout", row.start)))
+            for plan in plans {
+                try await saveWorkout(plan, device: hkDevice, meta: meta)
                 written += 1
             }
             return written
@@ -144,21 +165,73 @@ public final class HealthKitWriter: HealthWriter, @unchecked Sendable {
         return saved
     }
 
-    /// One workout as an HKWorkout with the sport mapped from the Huawei type. Its energy and distance are not written again: the per-minute
-    /// samples already cover them, and adding them would count them twice for readers that sum energy (the same rule as the Android exporter).
-    private func saveWorkout(_ row: WorkoutRow, device: HKDevice, metadata: [String: Any]) async throws {
-        let (activity, indoor) = HealthKitWriter.activity(for: HealthKitPlan.workoutKind(huaweiType: row.sportType))
+    /// One workout as an HKWorkout with the sport mapped from the Huawei type, the heart-rate readings inside it attached, and its route when
+    /// the watch recorded one and the user allowed routes. Its energy and distance are not written again: the per-minute samples already cover
+    /// them, and adding them would count them twice for readers that sum energy or distance (the same rule as the Android exporter).
+    ///
+    /// Replace instead of duplicate: what an earlier export of this workout saved (the workout, its route, its heart-rate readings) is deleted by
+    /// sync identifier first. HealthKit lets an app delete only its own objects.
+    private func saveWorkout(_ plan: WorkoutPlan, device: HKDevice, meta: (String) -> [String: Any]) async throws {
+        func date(_ sec: Int64) -> Date { Date(timeIntervalSince1970: Double(sec)) }
+        let routeAllowed = HealthKitWriter.plan(store.authorizationStatus(for: HealthKitWriter.routeType)) == .authorized
+        let heartType = HKQuantityType(.heartRate)
+
+        try await deleteOwn(HKObjectType.workoutType(), ids: [plan.id])
+        if routeAllowed { try await deleteOwn(HealthKitWriter.routeType, ids: [plan.routeId]) }
+        if !plan.heartRate.isEmpty { try await deleteOwn(heartType, ids: plan.heartRate.map(\.id)) }
+
+        let (activity, indoor) = HealthKitWriter.activity(for: plan.kind)
         let configuration = HKWorkoutConfiguration()
         configuration.activityType = activity
         configuration.locationType = indoor ? .indoor : .unknown
         let builder = HKWorkoutBuilder(healthStore: store, configuration: configuration, device: device)
-        try await builder.beginCollection(at: Date(timeIntervalSince1970: Double(row.start)))
-        var extra = metadata
-        if let name = row.name, !name.isEmpty { extra[HKMetadataKeyWorkoutBrandName] = name }
-        if let notes = row.notes() { extra["JoyoFitNotes"] = notes }
+        try await builder.beginCollection(at: date(plan.start))
+        var extra = meta(plan.id)
+        if let name = plan.name, !name.isEmpty { extra[HKMetadataKeyWorkoutBrandName] = name }
+        if let notes = plan.notes { extra["JoyoFitNotes"] = notes }
         try await builder.addMetadata(extra)
-        try await builder.endCollection(at: Date(timeIntervalSince1970: Double(row.end)))
-        _ = try await builder.finishWorkout()
+        if !plan.heartRate.isEmpty {
+            let perMinute = HKUnit.count().unitDivided(by: .minute())
+            let readings: [HKSample] = plan.heartRate.map {
+                HKQuantitySample(
+                    type: heartType, quantity: HKQuantity(unit: perMinute, doubleValue: Double($0.bpm)), start: date($0.timeSec), end: date($0.timeSec),
+                    device: device, metadata: meta($0.id)
+                )
+            }
+            for start in stride(from: 0, to: readings.count, by: HealthKitWriter.saveChunk) {
+                try await builder.addSamples(Array(readings[start..<min(start + HealthKitWriter.saveChunk, readings.count)]))
+            }
+        }
+        try await builder.endCollection(at: date(plan.end))
+        guard let workout = try await builder.finishWorkout() else {
+            throw WearError(.storage, "HealthKit did not return the workout it saved (start \(plan.start))")
+        }
+
+        #if canImport(CoreLocation)
+        if routeAllowed && !plan.route.isEmpty {
+            let routeBuilder = HKWorkoutRouteBuilder(healthStore: store, device: device)
+            let locations = plan.route.map { p -> CLLocation in
+                // The watch reports no accuracy: 10 m horizontal (a valid, usual GPS value) and "no altitude accuracy" without an altitude.
+                CLLocation(
+                    coordinate: CLLocationCoordinate2D(latitude: p.latitude, longitude: p.longitude), altitude: p.altitude ?? 0, horizontalAccuracy: 10,
+                    verticalAccuracy: p.altitude == nil ? -1 : 10, timestamp: date(p.timeSec)
+                )
+            }
+            for start in stride(from: 0, to: locations.count, by: HealthKitWriter.saveChunk) {
+                try await routeBuilder.insertRouteData(Array(locations[start..<min(start + HealthKitWriter.saveChunk, locations.count)]))
+            }
+            _ = try await routeBuilder.finishRoute(with: workout, metadata: meta(plan.routeId))
+        }
+        #endif
+    }
+
+    /// Deletes this app's own objects of `type` whose sync identifier is one of `ids`.
+    private func deleteOwn(_ type: HKObjectType, ids: [String]) async throws {
+        for start in stride(from: 0, to: ids.count, by: HealthKitWriter.saveChunk) {
+            let chunk = Array(ids[start..<min(start + HealthKitWriter.saveChunk, ids.count)])
+            let predicate = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: chunk)
+            _ = try await store.deleteObjects(of: type, predicate: predicate)
+        }
     }
 
     /// The HealthKit activity for an exercise type, and whether it is an indoor one.
