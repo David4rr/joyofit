@@ -4,6 +4,7 @@
 //
 //   /         -> dist/index.html
 //   /strava   -> dist/strava.html   (served for /strava by html_handling)
+//   /keluarga -> dist/keluarga.html (also served for /keluarga/<code> by public/_redirects)
 //   not found -> dist/404.html      (served by not_found_handling "404-page")
 //
 // The body comes from src/entry-server.tsx through Vite's SSR loader, so the
@@ -13,6 +14,7 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { createServer } from "vite";
 import type * as SeoModule from "../src/seo";
+import type { Page } from "../src/seo";
 import type * as EntryServer from "../src/entry-server";
 
 const root = join(import.meta.dirname, "..");
@@ -31,7 +33,7 @@ const server = await createServer({
 });
 
 try {
-  const { PUBLIC_PATHS, NOT_FOUND_PATH, SITE_URL, headTags }: typeof SeoModule =
+  const { PAGES, PUBLIC_PATHS, NOT_FOUND_PATH, SITE_URL, headTags }: typeof SeoModule =
     await server.ssrLoadModule("/src/seo.ts");
   const { render }: typeof EntryServer = await server.ssrLoadModule("/src/entry-server.tsx");
 
@@ -70,7 +72,7 @@ try {
     next[path] = { hash, lastmod: old?.hash === hash ? old.lastmod : today };
   }
 
-  const urls = PUBLIC_PATHS.map(
+  const urls = PUBLIC_PATHS.filter((path) => !(PAGES[path] as Page).noindex).map(
     (path) => `  <url><loc>${SITE_URL}${path}</loc><lastmod>${next[path]!.lastmod}</lastmod></url>`,
   );
   await writeFile(

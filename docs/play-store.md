@@ -366,6 +366,19 @@ the Data safety form as in section 7. The declared reason: "Location is used for
 `RECEIVE_SMS` or `READ_CONTACTS`), `BLUETOOTH_CONNECT`, `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `VIBRATE`, `WAKE_LOCK`, `INTERNET`: none of these needs a Console declaration.
 If the Console pre-launch report flags `READ_PHONE_STATE`, explain: "Used to tell the user's watch that the phone is ringing, on an opt-in switch."
 
+### Family monitoring (stalkerware policy, Data safety)
+
+Family monitoring shows one person's daily numbers to another, so Google's Malware policy on stalkerware applies: tracking must never be covert. How JoyoFit meets it:
+
+- **Prominent in-app disclosure and consent**, shown to the watched person before anything is shared, on its own screen with **Lanjut** and **Nanti saja**: "Izinkan [nama] melihat kabarmu? [nama] ingin ikut memantau kabarmu dari jam Huawei-mu. Kamu yang menentukan apa yang dibagikan." A switch per category, the "tidak pernah dibagikan: lokasi, rute olahraga, detak jantung per menit, makanan, foto" line, and "Kamu bisa jeda atau berhenti kapan saja. Kalau berhenti, [nama] langsung tidak bisa melihat apa pun dan riwayatnya kami hapus." The invite page (`fit.joyorogo.com/keluarga/<code>`) repeats the same points before the app opens.
+- **No covert mode:** the app has no hidden icon, no silent install path and no way to start sharing without the watched person accepting. The watched person always sees who can view their data and can pause or revoke in one tap.
+- **Not real-time, not emergency:** the disclaimer text appears on the first-run screen and every family screen. The store listing must not claim fall, heart attack or emergency detection.
+- **Data safety update:** add Health info (resting heart rate, sleep, SpO2) and Fitness info (steps) as **shared** with another user, for App functionality, optional, encrypted in transit, deletable (revoke or account deletion). Add Device or other IDs: push token (App functionality) when alerts ship. Play Console may treat user-initiated sharing with another person differently from "sharing" with a third party: confirm which classification applies in the Data safety form before submitting [INFERENCE: not checked in Console].
+- **Notifications:** Android 13+ needs the notification prompt; the app explains first ("Notifikasi bisa terlambat dan tidak menjamin kamu langsung tahu") on a screen whose button says **Lanjut**.
+- **Listing line (id):** "Opsional: bagikan kabar harianmu (langkah, tidur, detak istirahat) ke keluarga yang kamu izinkan. Bukan pantauan langsung dan bukan alat darurat."
+- **Listing line (en):** "Optional: share a few daily numbers (steps, sleep, resting heart rate) with family you choose. Not real-time and not an emergency tool."
+- **Privacy policy:** `https://fit.joyorogo.com/privasi#keluarga`.
+
 ## 9. Pre-launch checklist
 
 - [ ] `scripts/build-release.sh --play` ran cleanly (it prints the permission list and fails on a forbidden one).
@@ -373,6 +386,7 @@ If the Console pre-launch report flags `READ_PHONE_STATE`, explain: "Used to tel
 - [ ] You can answer a cloud deletion email within 30 days (section 7 runbook).
 - [ ] Demo video recorded and linked in App access and the foreground service declaration.
 - [ ] 512 x 512 icon, 1024 x 500 feature graphic, 2+ phone screenshots uploaded.
+- [ ] Family monitoring: Data safety rows added, sharing classification confirmed, listing line added, disclosure screen screenshot ready.
 - [ ] Data safety, content rating, target audience, health apps, ads declarations saved.
 - [ ] Google Group created, 12+ testers added, opt-in link sent, day count started.
 - [ ] Android developer verification complete for the account.

@@ -6,3 +6,9 @@
 
 /shots/*
   Cache-Control: public, max-age=86400
+
+/keluarga
+  Referrer-Policy: no-referrer
+
+/keluarga/*
+  Referrer-Policy: no-referrer

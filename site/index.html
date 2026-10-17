@@ -10,6 +10,14 @@
     <link rel="icon" href="/favicon.png" sizes="64x64" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <script>
+      // Invite codes stay out of the address bar before the analytics script reads it (see src/Keluarga.tsx).
+      var invite = /^\/keluarga\/([^/]+)\/?$/.exec(location.pathname);
+      if (invite) {
+        try {
+          sessionStorage.setItem("joyofit-invite", invite[1]);
+        } catch (e) {}
+        history.replaceState(null, "", "/keluarga");
+      }
       try {
         var t = localStorage.getItem("vite-ui-theme") || "system";
         var dark =

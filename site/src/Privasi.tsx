@@ -304,6 +304,25 @@ function Indonesian() {
         </p>
       </Block>
 
+      <Block id="keluarga" title="Pantau keluarga (opsional)">
+        <List
+          items={[
+            "Fitur ini mati sampai kamu sendiri menerima undangan. Orang yang memantau (pemantau) perlu masuk dengan akun JoyoRogo; orang yang dipantau tidak perlu membayar apa pun.",
+            "Yang dikirim hanya ringkasan harian: langkah, detak jantung istirahat, tidur semalam, kadar oksigen (SpO2) bila kamu menyalakannya, serta kapan jam terakhir tersambung dan baterainya. Tidak pernah dikirim: lokasi, rute olahraga, detak jantung per menit, makanan, dan foto.",
+            "Kamu menyetujui tiap kategori dengan saklarnya sendiri dan bisa mengubahnya kapan saja. SpO2 mati secara bawaan.",
+            "Kalau kamu jeda atau berhenti, pemantau langsung tidak bisa melihat apa pun dan riwayat ringkasan yang sudah terkirim dihapus saat itu juga.",
+            "Riwayat disimpan 30 hari untuk pemantau Gratis dan 90 hari untuk pemantau Pro, lalu dihapus otomatis.",
+            "Tidak ada mode tersembunyi: kamu selalu bisa melihat siapa yang memantau dan kapan terakhir melihat datamu. Undangan berupa tautan atau kode 8 karakter yang berlaku 48 jam dan hanya bisa dipakai sekali.",
+            "Pemantau bisa menerima pemberitahuan push, dan lewat email bila Pro, saat datamu terlihat tidak biasa (misalnya belum ada langkah sampai siang atau jam lama tidak tersinkron). Pemberitahuan itu bukan diagnosis dokter.",
+            "Menghapus akun JoyoRogo menghapus semua tautan dan ringkasan, baik milikmu sebagai yang dipantau maupun sebagai pemantau.",
+            "Bukan alat medis dan bukan pantauan langsung: data baru masuk setelah jam tersinkron dan HP terhubung internet, jadi bisa telat dari beberapa menit sampai berjam-jam. Di iPhone, pengiriman latar belakang ditentukan iOS dan bisa lebih telat lagi. Jangan mengandalkannya untuk keadaan darurat; hubungi orangnya atau 112.",
+          ]}
+        />
+        <p className="text-muted-foreground">
+          Halaman undangan fit.joyorogo.com/keluarga tidak mengirim kode undangan ke statistik situs.
+        </p>
+      </Block>
+
       <Block title="Statistik situs">
         <p>
           Situs fit.joyorogo.com (bukan aplikasinya) memakai RevKlik, layanan statistik web, untuk menghitung
@@ -588,6 +607,25 @@ function English() {
           builds a summary (app version, phone make and model, Android version, watch model and version) and a
           connection log. Bluetooth addresses and the serial number are removed, but the log can contain other
           text, so read it before sending. Nothing is sent automatically.
+        </p>
+      </Block>
+
+      <Block id="keluarga-en" title="Family monitoring (optional)">
+        <List
+          items={[
+            "This is off until you accept an invite yourself. The person watching (the watcher) needs a JoyoRogo account; the person being watched is never charged.",
+            "Only daily summaries are sent: steps, resting heart rate, last night's sleep, blood oxygen (SpO2) if you turn it on, and when the watch last connected plus its battery. Never sent: location, workout routes, per-minute heart rate, food and photos.",
+            "You consent to each category with its own switch and can change it at any time. SpO2 is off by default.",
+            "If you pause or stop, the watcher immediately cannot see anything and the summaries already sent are deleted at once.",
+            "History is kept for 30 days for Free watchers and 90 days for Pro watchers, then deleted automatically.",
+            "There is no covert mode: you can always see who is watching and when they last viewed your data. An invite is a link or an 8-character code that is valid for 48 hours and works once.",
+            "The watcher can receive push notifications, and email if Pro, when your data looks unusual (for example no steps by midday, or the watch has not synced for a long time). These are not a doctor's diagnosis.",
+            "Deleting your JoyoRogo account deletes every link and summary, both as the watched person and as a watcher.",
+            "Not a medical device and not real-time: data arrives after the watch syncs and the phone is online, so it can be late by minutes to hours. On iPhone, iOS decides when background uploads run, so it can be later still. Do not rely on it in an emergency; call the person or 112.",
+          ]}
+        />
+        <p className="text-muted-foreground">
+          The invite page fit.joyorogo.com/keluarga does not send the invite code to the site analytics.
         </p>
       </Block>
 

@@ -8,6 +8,7 @@ import {
   IOS_TESTFLIGHT_URL,
   IPHONE_PATH,
   JAM_PATH,
+  KELUARGA_PATH,
   PANDUAN_PATH,
   PRIVASI_PATH,
   SELF_HOST_PATH,
@@ -86,6 +87,13 @@ export const PAGES = {
     description:
       "Data apa yang JoyoFit simpan di HP-mu, apa yang keluar dari HP (cloud opsional, Strava, cuaca, Health Connect, Apple Health, Masuk dengan Apple), dan cara menghapusnya. Privacy policy in English below.",
   },
+  [KELUARGA_PATH]: {
+    title: "Undangan Berbagi Kabar | JoyoFit",
+    name: "Keluarga",
+    noindex: true,
+    description:
+      "Seseorang mengundangmu berbagi kabar lewat JoyoFit: beberapa angka harian dari jam Huawei-mu. Kamu yang menentukan apa yang dibagikan.",
+  },
 } as const satisfies Record<string, Page>;
 
 export type PublicPath = keyof typeof PAGES;
@@ -99,9 +107,10 @@ export const NOT_FOUND: Page = {
   noindex: true,
 };
 
-/** A request path as a PAGES key: no trailing slash, "/" kept. */
+/** A request path as a PAGES key: no trailing slash, "/" kept, and /keluarga/<code> is the /keluarga page. */
 export function normalizePath(pathname: string): string {
-  return pathname.replace(/\/+$/, "") || "/";
+  const path = pathname.replace(/\/+$/, "") || "/";
+  return path.startsWith(`${KELUARGA_PATH}/`) ? KELUARGA_PATH : path;
 }
 
 export function isPublicPath(path: string): path is PublicPath {

@@ -36,6 +36,7 @@ import {
   IPHONE_PATH,
   JAM_PATH,
   JOYOROGO_URL,
+  KELUARGA_PATH,
   IOS_TESTFLIGHT_LIVE,
   IOS_TESTFLIGHT_URL,
   PANDUAN_PATH,
@@ -61,6 +62,7 @@ import {
 } from "./jam";
 import { FAQ } from "./faq";
 import { useScrollReveal } from "./reveal";
+import { KeluargaPage } from "./Keluarga";
 import { PanduanPage } from "./Panduan";
 import { PrivasiPage } from "./Privasi";
 import { isPublicPath, type PublicPath } from "./seo";
@@ -1727,6 +1729,7 @@ const PAGE_BODIES: Record<PublicPath, () => React.JSX.Element> = {
   [DUKUNG_JAM_PATH]: DukungJamPage,
   [SELF_HOST_PATH]: SelfHostPage,
   [PRIVASI_PATH]: PrivasiPage,
+  [KELUARGA_PATH]: KeluargaPage,
 };
 
 /** [path] is normalizePath(location.pathname); anything outside PAGES gets the 404 page. */

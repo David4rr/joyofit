@@ -1,0 +1,2 @@
+# /keluarga/<code> is one prerendered page (keluarga.html); the code is read in the browser. 200 = rewrite, URL kept.
+/keluarga/* /keluarga 200

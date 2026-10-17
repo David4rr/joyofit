@@ -95,9 +95,25 @@ DEMO VIDEO: a screen recording of pairing and syncing a watch from an iPhone is 
 The app UI is in English. Privacy policy: https://fit.joyorogo.com/privasi.
 ```
 
+FAMILY MONITORING (optional, off until used): a person can share a few daily numbers from their own watch (steps, resting heart rate, last night's sleep, optional SpO2, last watch connection and battery) with a family member who has JoyoFit and signed in. The watched person gets an invite link or code, sees a consent screen with a switch per category, and can pause or stop at any time; stopping deletes the shared history at once. There is no hidden mode: the watched person always sees who can view their data and when. The screens say it is not real-time and not an emergency or medical tool, and the app makes no diagnosis. To review it: Settings, Keluarga (needs two signed-in accounts and a watch, so a screen recording is available on request).
+
 Contact: Dzulfikar Ats Tsauri, +6285156160345, dzulfikar@joyorogo.com. No demo account.
 
 ## App Privacy (published)
 
 Collected, all for App Functionality only, no tracking: Name, Email Address, User ID, Device ID (the watch's Bluetooth address), Health, Fitness, Precise Location (workout GPS tracks): linked to the user, and only after the user signs in to the optional JoyoRogo cloud.
 Coarse Location (weather position rounded to about 1 km, sent to Open-Meteo): not linked. Apple Health data is written only and never read, so it is not a collected row.
+
+## Family monitoring (disclosure checklist)
+
+Checked against the guideline text we use; confirm in App Store Connect when you submit.
+
+- **5.1.3(i) Health data:** daily summaries go only to the person the user chose, never to ads, data brokers or analytics, and only after the watched person's explicit consent per category (steps, resting heart rate, sleep, SpO2, watch status). Say so in the review notes (done above).
+- **5.1.1 Data collection and consent:** consent screen with a switch per category, a way to withdraw (pause or stop, which deletes the history), and in-app account deletion that removes every link and summary (already exists). The app works without family monitoring.
+- **1.4.1 Physical harm:** no diagnosis and no accuracy claims. Not-real-time and not-emergency text on the first-run screen and each family screen; alerts say "bukan diagnosis dokter" and point to calling the person or 112. Do not describe the feature as detecting falls, heart attacks or emergencies in the listing or screenshots.
+- **App Privacy label:** add Health and Fitness data as shared with another user at the user's request (linked to the user, App Functionality, not tracking). Add Push Notification token under Device ID (App Functionality) once alerts ship.
+- **Push:** adds the Push Notifications capability (APNs entitlement). No feature may require the user to enable push.
+- **Background upload:** the daily upload on iOS is best effort (iOS decides when background tasks run), so the in-app text says data can be late. Do not promise timeliness in the listing.
+- **Listing line (id):** "Opsional: bagikan kabar harianmu (langkah, tidur, detak istirahat) ke keluarga yang kamu izinkan. Bukan pantauan langsung dan bukan alat darurat."
+- **Listing line (en):** "Optional: share a few daily numbers (steps, sleep, resting heart rate) with family you choose. Not real-time and not an emergency tool."
+- **Privacy policy:** `https://fit.joyorogo.com/privasi#keluarga` has the Family monitoring section.
