@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import type { AnchorHTMLAttributes } from "react";
 
+import { ANDROID_ROBOT_PATH, ANDROID_ROBOT_VIEWBOX } from "./android-robot";
 import { cn } from "./lib";
 
 // Same variants as JoyoRogo's Button (packages/ui), rendered as links.
@@ -43,24 +44,13 @@ export function GithubMark({ className }: { className?: string }) {
 }
 
 /**
- * The Android robot's head as a plain monochrome glyph (currentColor), not the Google Play badge. Footer carries the
- * Creative Commons 3.0 Attribution credit (ANDROID_ROBOT_CREDIT).
+ * The official Android robot head as a monochrome glyph (currentColor), not the Google Play badge. Artwork, source and
+ * licence terms are documented in android-robot.ts; the footer carries the required attribution (ANDROID_ROBOT_CREDIT).
  */
 export function AndroidMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className={className}>
-      <path
-        fill="currentColor"
-        fillRule="evenodd"
-        d="M3 18a9 9 0 0 1 18 0ZM7.4 14.2a1.1 1.1 0 1 0 2.2 0 1.1 1.1 0 1 0-2.2 0ZM14.4 14.2a1.1 1.1 0 1 0 2.2 0 1.1 1.1 0 1 0-2.2 0Z"
-      />
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        d="m7.2 4.8 2 3.4m7.6-3.4-2 3.4"
-      />
+    <svg viewBox={ANDROID_ROBOT_VIEWBOX} aria-hidden="true" focusable="false" className={className}>
+      <path fill="currentColor" fillRule="evenodd" d={ANDROID_ROBOT_PATH} />
     </svg>
   );
 }
