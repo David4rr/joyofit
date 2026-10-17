@@ -1,0 +1,179 @@
+# Checks for pull requests and pushes to master. No secrets, read-only token, so it is safe for forks.
+# Same commands as on the laptop (docs/ios.md "Commands", package.json scripts).
+#
+# Not in CI on purpose:
+#   - `expo lint`: fails locally today (react-hooks/set-state-in-effect in two files).
+#   - the iPhoneOS SDK type-check (needs the Xcode SDK) and the iOS ninja build; run those on the Mac/Linux box.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App (types, tests, API coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock', 'packages/hwt/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+      - run: bunx tsc --noEmit
+      - run: bun test ./src/
+      - run: node modules/huawei-wear/ios/scripts/check-api.mjs
+      - name: "@joyofit/hwt"
+        working-directory: packages/hwt
+        run: |
+          bun install --frozen-lockfile
+          bun test
+          bunx tsc --noEmit -p tsconfig.json
+
+  server:
+    name: Server (tsc, vitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('server/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+      - run: bunx tsc --noEmit
+      - run: bunx vitest run
+
+  site:
+    name: Site (typecheck, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('site/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+  kotlin:
+    name: Kotlin unit tests (huawei-wear)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - run: bun install --frozen-lockfile
+      # android/ is generated (gitignored); the module tests need the Gradle project.
+      - run: bunx expo prebuild -p android --no-install
+      - run: ./gradlew :huawei-wear:testDebugUnitTest
+        working-directory: android
+
+  swift-protocol:
+    name: Swift tests (HuaweiProtocol)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: swift-actions/setup-swift@7ca6abe6b3b0e8b5421b88be48feee39cbf52c6a # v2.4.0
+        with:
+          swift-version: "6.1"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: modules/huawei-wear/ios/HuaweiProtocol/.build
+          key: swiftpm-protocol-${{ runner.os }}-${{ hashFiles('modules/huawei-wear/ios/HuaweiProtocol/Package.swift') }}
+      - run: swift test
+        working-directory: modules/huawei-wear/ios/HuaweiProtocol
+
+  swift-logic:
+    name: Swift tests (ModuleLogicTests, inert shapes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: swift-actions/setup-swift@7ca6abe6b3b0e8b5421b88be48feee39cbf52c6a # v2.4.0
+        with:
+          swift-version: "6.1"
+      - run: sudo apt-get install -y --no-install-recommends libsqlite3-dev
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: modules/huawei-wear/ios/ModuleLogicTests/.build
+          key: swiftpm-logic-${{ runner.os }}-${{ hashFiles('modules/huawei-wear/ios/ModuleLogicTests/Package.swift') }}
+      # One run: the shape-dump tests write JSON when INERT_SHAPES_OUT is set (no-ops otherwise).
+      - name: Logic tests
+        working-directory: modules/huawei-wear/ios/ModuleLogicTests
+        env:
+          JOYOFIT_REPO_ROOT: ${{ github.workspace }}
+          INERT_SHAPES_OUT: ${{ runner.temp }}/shapes.json
+        run: |
+          ./link-sources.sh
+          swift test
+      # The JS shapes the iOS module returns must type-check against the TypeScript declarations
+      # in modules/huawei-wear/src.
+      - run: bun install --frozen-lockfile
+      - name: Inert shapes vs TypeScript declarations
+        run: node modules/huawei-wear/ios/ModuleLogicTests/check-inert-shapes.mjs "$RUNNER_TEMP/shapes.json"
