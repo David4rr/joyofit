@@ -24,7 +24,7 @@ import { DEFAULT_AGE, maxHeartRate } from '@/features/workouts/substrate';
 import { errorMessage, formatClock, formatDuration } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear } from '@/wear';
-import { HIT, radius, spacing, useColors } from '@/theme';
+import { HIT, radius, spacing, useColors, useTheme } from '@/theme';
 
 /** Stage changes listed before "Show all"; a night has 30 to 60. */
 const CHANGES_PREVIEW = 8;
@@ -37,7 +37,8 @@ const SHORT_DATE_FORMAT: Intl.DateTimeFormatOptions = { weekday: 'short', day: '
 /** One night at a time: stages over the night, minutes per stage per hour, every stage change, and earlier nights. */
 export function SleepScreen() {
   const db = useSQLiteContext();
-  const colors = useColors();
+  const theme = useTheme();
+  const colors = theme.colors;
   const { linkState, device, dataVersion, sync } = useWatch();
   const [nights, setNights] = useState<Night[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -88,8 +89,8 @@ export function SleepScreen() {
           <Notice tone="danger">Could not read stored sleep: {error}</Notice>
         ) : nights === null ? (
           <>
-            <Skeleton width="100%" height={88} radius={radius.card} />
-            <Skeleton width="100%" height={220} radius={radius.card} />
+            <Skeleton width="100%" height={88} radius="card" />
+            <Skeleton width="100%" height={220} radius="card" />
           </>
         ) : (
           <EmptyState icon="moon" title="No sleep stored" description="Wear the watch to bed, then sync after waking up." />
@@ -210,7 +211,7 @@ export function SleepScreen() {
                 accessibilityState={{ selected: current }}
                 accessibilityLabel={`${new Date(n.end * 1000).toLocaleDateString(undefined, DATE_FORMAT)}, ${n.nap ? 'nap' : 'night'}, asleep ${formatDuration(n.asleepSeconds)}${n.score ? `, score ${n.score.score}` : ''}`}
                 onPress={() => select(n)}
-                style={[styles.historyRow, current && { backgroundColor: colors.sleepSoft }]}>
+                style={[styles.historyRow, { borderRadius: theme.radius.input }, current && { backgroundColor: colors.sleepSoft }]}>
                 <View style={styles.historyText}>
                   <AppText variant={current ? 'bodyStrong' : 'body'} numberOfLines={1}>
                     {new Date(n.end * 1000).toLocaleDateString(undefined, SHORT_DATE_FORMAT)}
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
   changeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 34 },
   changeTime: { width: 48 },
   changeStage: { flex: 1 },
-  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44, borderRadius: radius.input, paddingHorizontal: spacing.sm, marginHorizontal: -spacing.sm },
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44, paddingHorizontal: spacing.sm, marginHorizontal: -spacing.sm },
   historyText: { flex: 1, gap: 4 },
   historyDuration: { minWidth: 76, textAlign: 'right' },
   miniBar: { flexDirection: 'row', height: 6, gap: 1, borderRadius: radius.pill, overflow: 'hidden' },

@@ -26,6 +26,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="advanced" options={{ title: 'Advanced' }} />
       <Stack.Screen name="log" options={{ title: 'Log' }} />
       <Stack.Screen name="about" options={{ title: 'About' }} />
+      <Stack.Screen name="appearance" options={{ title: 'Appearance' }} />
     </Stack>
   );
 }

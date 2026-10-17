@@ -1,7 +1,7 @@
 import { StyleSheet, Text, type AccessibilityRole } from 'react-native';
 
 import { PressableScale } from '@/components/PressableScale';
-import { fontSize, fonts, radius, useColors } from '@/theme';
+import { fontSize, useTheme } from '@/theme';
 
 interface ChipProps {
   label: string;
@@ -12,7 +12,7 @@ interface ChipProps {
 
 /** Pill filter. 40 dp tall plus 4 dp of slop above and below makes the 48 dp target. */
 export function Chip({ label, selected, onPress, role = 'button' }: ChipProps) {
-  const colors = useColors();
+  const { colors, fonts, radius } = useTheme();
   return (
     <PressableScale
       accessibilityRole={role}
@@ -21,8 +21,8 @@ export function Chip({ label, selected, onPress, role = 'button' }: ChipProps) {
       hitSlop={{ top: 4, bottom: 4 }}
       onPress={onPress}
       scaleTo={0.96}
-      style={[styles.chip, { backgroundColor: selected ? colors.foreground : colors.muted }]}>
-      <Text style={[styles.label, { color: selected ? colors.background : colors.foreground }]}>
+      style={[styles.chip, { backgroundColor: selected ? colors.foreground : colors.muted, borderRadius: radius.control }]}>
+      <Text style={[styles.label, { color: selected ? colors.background : colors.foreground, fontFamily: fonts.medium }]}>
         {label}
       </Text>
     </PressableScale>
@@ -33,9 +33,8 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: 40,
     paddingHorizontal: 16,
-    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontFamily: fonts.medium, fontSize: fontSize.sm },
+  label: { fontSize: fontSize.sm },
 });

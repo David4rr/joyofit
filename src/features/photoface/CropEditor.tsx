@@ -15,7 +15,7 @@ import {
   type CropView,
   type Size,
 } from '@/features/photoface/cropMath';
-import { radius, spacing, useColors } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 
 export interface CropSource extends Size {
   uri: string;
@@ -48,7 +48,7 @@ export function CropEditor({ source, target, busy, onCancel, onConfirm }: CropEd
 }
 
 function CropSurface({ source, target, busy, onCancel, onConfirm }: CropEditorProps & { source: CropSource }) {
-  const colors = useColors();
+  const { colors, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const frame = useMemo(
@@ -89,7 +89,7 @@ function CropSurface({ source, target, busy, onCancel, onConfirm }: CropEditorPr
           {...responder.panHandlers}
           accessible
           accessibilityLabel="Crop frame. Drag to move the photo, use the zoom buttons to scale it."
-          style={[styles.frame, { width: frame.width, height: frame.height, backgroundColor: colors.muted }]}>
+          style={[styles.frame, { width: frame.width, height: frame.height, backgroundColor: colors.muted, borderRadius: radius.tile }]}>
           <Image
             source={{ uri: source.uri }}
             resizeMode="stretch"
@@ -120,6 +120,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: spacing.lg, gap: spacing.md },
   head: { gap: spacing.xs, paddingTop: spacing.md },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  frame: { overflow: 'hidden', borderRadius: radius.tile },
+  frame: { overflow: 'hidden' },
   zoomRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: spacing.sm },
 });

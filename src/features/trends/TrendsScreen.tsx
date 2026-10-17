@@ -21,7 +21,7 @@ import {
 import { TrendCard } from '@/features/trends/TrendCard';
 import { useTrendsData } from '@/features/trends/useTrendsData';
 import { useWatch } from '@/state/WatchProvider';
-import { spacing, radius } from '@/theme';
+import { spacing } from '@/theme';
 
 const RANGE_OPTIONS = TREND_RANGES.map((value) => ({ value, label: `${value} days` }));
 
@@ -135,7 +135,7 @@ export function TrendsScreen() {
           </Details>
         </View>
       ) : error ? null : (
-        <Skeleton width="100%" height={260} radius={radius.card} />
+        <Skeleton width="100%" height={260} radius="card" />
       )}
     </Screen>
   );

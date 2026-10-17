@@ -6,7 +6,7 @@ import type { IconName } from '@/components/IconChip';
 import { isIos } from '@/components/IosUnavailable';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { PageHeader, useContentPadding } from '@/components/Screen';
-import { spacing, useColors, type Tint } from '@/theme';
+import { spacing, useTheme, type Tint } from '@/theme';
 
 interface SettingsRow {
   title: string;
@@ -128,6 +128,17 @@ const GROUPS: readonly SettingsGroup[] = [
     ],
   },
   {
+    title: 'App',
+    data: [
+      {
+        title: 'Appearance',
+        subtitle: 'Theme: Classic, Sport, Ocean',
+        icon: 'color-palette',
+        href: '/settings/appearance',
+      },
+    ],
+  },
+  {
     title: 'Advanced',
     data: [
       { title: 'Log', subtitle: 'Watch traffic and events', icon: 'terminal', href: '/settings/log' },
@@ -144,7 +155,8 @@ const GROUPS: readonly SettingsGroup[] = [
 ];
 
 export default function SettingsScreen() {
-  const colors = useColors();
+  const theme = useTheme();
+  const { colors } = theme;
   const router = useRouter();
   const padding = useContentPadding(true);
 
@@ -172,7 +184,7 @@ export default function SettingsScreen() {
           title={item.title}
           subtitle={item.subtitle}
           onPress={() => router.push(item.href)}
-          style={groupedRowStyle(colors, index, section.data.length)}
+          style={groupedRowStyle(theme, index, section.data.length)}
         />
       )}
     />

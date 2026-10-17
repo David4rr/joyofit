@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
-import { fontSize, fonts, monoFont, useColors } from '@/theme';
+import { fontSize, monoFont, useTheme } from '@/theme';
 
 type Variant =
   | 'display'
@@ -22,32 +23,35 @@ interface AppTextProps extends TextProps {
 }
 
 export function AppText({ variant = 'body', muted, danger, color, style, ...rest }: AppTextProps) {
-  const colors = useColors();
+  const { colors, fonts, numeral, title } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        display: {
+          fontFamily: fonts.heavy,
+          fontSize: numeral.hero.size,
+          lineHeight: numeral.hero.line,
+          letterSpacing: numeral.hero.tracking,
+          fontVariant: ['tabular-nums'],
+        },
+        figure: {
+          fontFamily: fonts.heavy,
+          fontSize: numeral.lg.size,
+          lineHeight: numeral.lg.line,
+          letterSpacing: numeral.lg.tracking,
+          fontVariant: ['tabular-nums'],
+        },
+        title: { fontFamily: fonts.heavy, fontSize: title.size, lineHeight: title.line, letterSpacing: title.tracking },
+        heading: { fontFamily: fonts.bold, fontSize: fontSize.md, lineHeight: 22 },
+        bodyStrong: { fontFamily: fonts.medium, fontSize: fontSize.base, lineHeight: 21 },
+        body: { fontFamily: fonts.regular, fontSize: fontSize.base, lineHeight: 22 },
+        caption: { fontFamily: fonts.regular, fontSize: fontSize.sm, lineHeight: 19 },
+        label: { fontFamily: fonts.medium, fontSize: fontSize.sm, lineHeight: 18 },
+        mono: { fontFamily: monoFont, fontSize: fontSize.xs, lineHeight: 17 },
+      }),
+    [fonts, numeral, title],
+  );
   const resolved =
     color ?? (danger ? colors.destructive : muted ? colors.mutedForeground : colors.foreground);
   return <Text {...rest} style={[styles[variant], { color: resolved }, style]} />;
 }
-
-const styles = StyleSheet.create({
-  display: {
-    fontFamily: fonts.heavy,
-    fontSize: fontSize.hero,
-    lineHeight: 60,
-    letterSpacing: -1.5,
-    fontVariant: ['tabular-nums'],
-  },
-  figure: {
-    fontFamily: fonts.heavy,
-    fontSize: fontSize.figure,
-    lineHeight: 38,
-    letterSpacing: -0.5,
-    fontVariant: ['tabular-nums'],
-  },
-  title: { fontFamily: fonts.heavy, fontSize: fontSize.title, lineHeight: 34, letterSpacing: -0.5 },
-  heading: { fontFamily: fonts.bold, fontSize: fontSize.md, lineHeight: 22 },
-  bodyStrong: { fontFamily: fonts.medium, fontSize: fontSize.base, lineHeight: 21 },
-  body: { fontFamily: fonts.regular, fontSize: fontSize.base, lineHeight: 22 },
-  caption: { fontFamily: fonts.regular, fontSize: fontSize.sm, lineHeight: 19 },
-  label: { fontFamily: fonts.medium, fontSize: fontSize.sm, lineHeight: 18 },
-  mono: { fontFamily: monoFont, fontSize: fontSize.xs, lineHeight: 17 },
-});

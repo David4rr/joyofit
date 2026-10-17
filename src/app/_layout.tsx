@@ -11,7 +11,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { Suspense, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 
 import { migrate } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
@@ -20,7 +19,7 @@ import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
 import { MealsProvider } from '@/state/MealsProvider';
 import { StravaProvider } from '@/state/StravaProvider';
 import { WatchProvider } from '@/state/WatchProvider';
-import { fonts, useColors } from '@/theme';
+import { ThemeProvider, useTheme } from '@/theme';
 
 const DATABASE_NAME = 'joyofit.db';
 
@@ -34,8 +33,15 @@ async function initDatabase(db: SQLiteDatabase): Promise<void> {
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const colors = useColors();
-  const scheme = useColorScheme();
+  return (
+    <ThemeProvider>
+      <RootNavigator />
+    </ThemeProvider>
+  );
+}
+
+function RootNavigator() {
+  const { colors, fonts, scheme } = useTheme();
   const [fontsReady, fontError] = useFonts({
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
@@ -59,10 +65,8 @@ export default function RootLayout() {
             <StravaProvider>
               <MealsProvider>
                 <LiveWorkoutProvider>
-                  <StatusBar style="auto" />
-                  {/* Keyed by scheme: the tab bar kept its first colors when the theme flipped while the app was open. */}
+                  <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
                   <Tabs
-                    key={scheme}
                     screenOptions={{
                       headerShown: false,
                       sceneStyle: { backgroundColor: colors.background },

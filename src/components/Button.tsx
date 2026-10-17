@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, type StyleProp, type ViewStyle } f
 import { Ionicons } from '@expo/vector-icons';
 
 import { PressableScale } from '@/components/PressableScale';
-import { fontSize, fonts, HIT, radius, spacing, useColors } from '@/theme';
+import { fontSize, HIT, spacing, useTheme } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -27,7 +27,7 @@ export function Button({
   icon,
   style,
 }: ButtonProps) {
-  const colors = useColors();
+  const { colors, fonts, radius } = useTheme();
   const inactive = disabled || loading;
   const scheme = {
     primary: { bg: colors.primary, fg: colors.primaryForeground },
@@ -43,10 +43,10 @@ export function Button({
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
       disabled={inactive}
       onPress={onPress}
-      style={[styles.base, { backgroundColor: scheme.bg }, style]}>
+      style={[styles.base, { backgroundColor: scheme.bg, borderRadius: radius.control }, style]}>
       {loading ? <ActivityIndicator size="small" color={scheme.fg} /> : null}
       {!loading && icon ? <Ionicons name={icon} size={18} color={scheme.fg} /> : null}
-      <Text style={[styles.label, { color: scheme.fg }]} numberOfLines={1}>
+      <Text style={[styles.label, { color: scheme.fg, fontFamily: fonts.medium }]} numberOfLines={1}>
         {label}
       </Text>
     </PressableScale>
@@ -57,11 +57,10 @@ const styles = StyleSheet.create({
   base: {
     minHeight: HIT,
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  label: { fontFamily: fonts.medium, fontSize: fontSize.base },
+  label: { fontSize: fontSize.base },
 });

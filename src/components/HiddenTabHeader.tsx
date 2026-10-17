@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { fonts, HIT, spacing, useColors } from '@/theme';
+import { HIT, spacing, useTheme } from '@/theme';
 
 /**
  * Header for a screen pushed from Today. These routes are hidden tabs, and a tab header has no back
@@ -10,7 +10,7 @@ import { fonts, HIT, spacing, useColors } from '@/theme';
  */
 export function HiddenTabHeader({ title }: { title: string }) {
   const router = useRouter();
-  const colors = useColors();
+  const { colors, fonts } = useTheme();
   return (
     <Tabs.Screen
       options={{

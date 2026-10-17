@@ -8,7 +8,7 @@ import { Card, Section, useContentPadding, useRefreshControl } from '@/component
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { CropEditor } from '@/features/photoface/CropEditor';
 import { usePhotoFace } from '@/features/photoface/usePhotoFace';
-import { radius, spacing, tintColors, useColors } from '@/theme';
+import { radius, spacing, tintColors, useColors, useTheme } from '@/theme';
 import type { PhotoFacePhoto } from '@/wear';
 
 /** One photo of the face: the local copy when this phone uploaded it, otherwise a labelled stand-in. */
@@ -25,10 +25,10 @@ function PhotoTile({
   deleting: boolean;
   onDelete: () => void;
 }) {
-  const colors = useColors();
+  const { colors, radius: themeRadius } = useTheme();
   return (
     <View style={styles.tile}>
-      <View style={[styles.thumb, { aspectRatio: ratio, backgroundColor: colors.muted }]}>
+      <View style={[styles.thumb, { aspectRatio: ratio, backgroundColor: colors.muted, borderRadius: themeRadius.tile }]}>
         {photo.uri ? (
           <Image source={{ uri: photo.uri }} style={styles.fill} resizeMode="cover" accessibilityLabel={`Photo ${photo.index}`} />
         ) : (
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   bar: { height: 8, borderRadius: radius.pill },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   tile: { width: '47%', flexGrow: 1, gap: spacing.sm },
-  thumb: { width: '100%', borderRadius: radius.tile, overflow: 'hidden' },
+  thumb: { width: '100%', overflow: 'hidden' },
   fill: { width: '100%', height: '100%' },
   standIn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md },
   centered: { textAlign: 'center' },

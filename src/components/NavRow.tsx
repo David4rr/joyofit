@@ -4,7 +4,7 @@ import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { PressableScale } from '@/components/PressableScale';
-import { radius, spacing, useColors, type Colors, type Tint } from '@/theme';
+import { spacing, useColors, type Colors, type Theme, type Tint } from '@/theme';
 
 interface NavRowProps {
   icon: IconName;
@@ -55,8 +55,13 @@ export function NavRow({ icon, tint, title, subtitle, value, onPress, disabled, 
 /**
  * Frame for one row of a grouped list: white card, hairline between rows, the first and last rows
  * carry the card's rounded corners. Lets virtualized lists (rows are separate items) read as one card.
+ * Takes what `useTheme()` returns.
  */
-export function groupedRowStyle(colors: Colors, index: number, count: number): ViewStyle {
+export function groupedRowStyle(
+  { colors, radius }: { colors: Colors; radius: Theme['radius'] },
+  index: number,
+  count: number,
+): ViewStyle {
   return {
     backgroundColor: colors.card,
     borderTopLeftRadius: index === 0 ? radius.card : 0,
