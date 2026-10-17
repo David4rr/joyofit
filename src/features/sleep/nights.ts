@@ -1,5 +1,5 @@
 import type { SleepScoreRow } from '@/db/queries';
-import { SESSION_GAP_SEC, withoutStrayUnstaged } from '@/features/today/stats';
+import { SESSION_GAP_SEC, withoutBlips, withoutStrayUnstaged } from '@/features/today/stats';
 import type { SleepSegment, SleepStage } from '@/wear';
 
 /** A decoded stage, or `asleep` for a segment the watch stored without one. */
@@ -59,7 +59,7 @@ function localDay(sec: number): string {
  * {@link SESSION_GAP_SEC}, the same rule the Today card and the watch's morning report use.
  */
 export function buildNights(segments: readonly SleepSegment[], scores: readonly SleepScoreRow[]): Night[] {
-  const sorted = withoutStrayUnstaged(segments).sort((a, b) => a.start - b.start || a.end - b.end);
+  const sorted = withoutBlips(withoutStrayUnstaged(segments));
   const periods: StagePeriod[] = [];
   let cursor = -Infinity;
   for (const seg of sorted) {

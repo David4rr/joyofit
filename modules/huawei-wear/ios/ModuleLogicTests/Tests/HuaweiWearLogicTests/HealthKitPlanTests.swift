@@ -56,8 +56,8 @@ final class HealthKitPlanTests: XCTestCase {
             SleepSegment(start: night + 600, end: night + 1_200, type: 0x07, stage: "deep"),
             SleepSegment(start: night + 1_200, end: night + 1_500, type: 0x5656, stage: "rem"),
             SleepSegment(start: night + 1_500, end: night + 1_560, type: 0x5658, stage: "awake"),
-            // Nap 5 h later.
-            SleepSegment(start: night + 20_000, end: night + 21_000, type: 1, stage: nil),
+            // A 30-minute nap 5 h later.
+            SleepSegment(start: night + 20_000, end: night + 21_800, type: 1, stage: nil),
         ]
         let sessions = HealthKitPlan.sleepSessions(segments, fromSec: 0)
         XCTAssertEqual(sessions.count, 2)

@@ -143,7 +143,7 @@ internal object NightHrv {
    * session count as asleep as a whole. Oldest first.
    */
   fun nights(segments: List<SleepSegment>): List<NightSpan> {
-    val sorted = withoutStrayUnstaged(segments).sortedWith(compareBy({ it.start }, { it.end }))
+    val sorted = withoutBlips(withoutStrayUnstaged(segments))
     val sessions = ArrayList<MutableList<SleepSegment>>()
     var reach = Long.MIN_VALUE
     for (s in sorted) {

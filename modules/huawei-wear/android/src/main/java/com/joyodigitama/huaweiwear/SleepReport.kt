@@ -18,6 +18,30 @@ internal fun withoutStrayUnstaged(segments: List<SleepSegment>): List<SleepSegme
   }
 }
 
+/**
+ * Drops stretches of sleep (segments chained with gaps up to [SleepReport.BLIP_GAP_SEC]) holding less than
+ * [SleepReport.MIN_SLEEP_SEC] asleep. A watch records a few minutes of sitting still, such as a 1-minute HRV or stress
+ * check, as sleep; on its own that became the latest night or a nap, and near a night it stretched the night. Same rule
+ * as `withoutBlips` in src/features/today/stats.ts. Returns the kept segments sorted by start.
+ */
+internal fun withoutBlips(segments: List<SleepSegment>): List<SleepSegment> {
+  val kept = ArrayList<SleepSegment>(segments.size)
+  val stretch = ArrayList<SleepSegment>()
+  var reach = Long.MIN_VALUE
+  fun close() {
+    val asleep = stretch.sumOf { if (it.stage == "awake") 0L else maxOf(0L, it.end - it.start) }
+    if (asleep >= SleepReport.MIN_SLEEP_SEC) kept.addAll(stretch)
+    stretch.clear()
+  }
+  for (s in segments.sortedWith(compareBy({ it.start }, { it.end }))) {
+    if (stretch.isNotEmpty() && s.start - reach > SleepReport.BLIP_GAP_SEC) close()
+    reach = if (stretch.isEmpty()) s.end else maxOf(reach, s.end)
+    stretch.add(s)
+  }
+  close()
+  return kept
+}
+
 /** One night as the report describes it, seconds per stage from the stored segments. */
 internal class SleepNight(
   val start: Long,
@@ -60,13 +84,20 @@ internal object SleepReport {
   /** Shorter sessions are naps, not "last night". */
   const val MIN_NIGHT_SEC = 3 * 3600L
 
+  /** Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap (`BLIP_GAP_SEC` in `stats.ts`). */
+  const val BLIP_GAP_SEC = 3600L
+
+  /** A stretch with less sleep than this (awake excluded) is not sleep, e.g. a 1-minute HRV check (`MIN_SLEEP_SEC` in `stats.ts`). */
+  const val MIN_SLEEP_SEC = 20 * 60L
+
   /** A report is only pushed this long after waking up at most; later it is not a morning report any more. */
   const val MAX_AGE_SEC = 8 * 3600L
 
   /** The latest session of [segments], chained with gaps up to [SESSION_GAP_SEC] (`lastSleepSession` in `stats.ts`). */
   fun lastNight(segments: List<SleepSegment>): SleepNight? {
     if (segments.isEmpty()) return null
-    val sorted = withoutStrayUnstaged(segments).sortedBy { it.start }
+    val sorted = withoutBlips(withoutStrayUnstaged(segments))
+    if (sorted.isEmpty()) return null
     var first = sorted.size - 1
     var earliest = sorted[first].start
     while (first > 0 && earliest - sorted[first - 1].end <= SESSION_GAP_SEC) {

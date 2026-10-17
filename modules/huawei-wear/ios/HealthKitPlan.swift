@@ -204,6 +204,31 @@ public enum HealthKitPlan {
         }
     }
 
+    /// Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap (`BLIP_GAP_SEC` in stats.ts).
+    public static let blipGapSec: Int64 = 3600
+    /// A stretch with less sleep than this (awake excluded) is not sleep, e.g. a 1-minute HRV check (`MIN_SLEEP_SEC` in stats.ts).
+    public static let minSleepSec: Int64 = 20 * 60
+
+    /// `withoutBlips` (SleepReport.kt): drops stretches of sleep (gaps up to `blipGapSec`) holding less than `minSleepSec` asleep, the
+    /// few still minutes of an HRV or stress check the watch records as sleep. Returns the kept segments sorted by start.
+    public static func withoutBlips(_ segments: [SleepSegment]) -> [SleepSegment] {
+        var kept = [SleepSegment]()
+        var stretch = [SleepSegment]()
+        var reach = Int64.min
+        func close() {
+            let asleep = stretch.reduce(Int64(0)) { $0 + ($1.stage == "awake" ? 0 : max(0, $1.end - $1.start)) }
+            if asleep >= minSleepSec { kept.append(contentsOf: stretch) }
+            stretch.removeAll()
+        }
+        for s in segments.sorted(by: { ($0.start, $0.end) < ($1.start, $1.end) }) {
+            if !stretch.isEmpty && s.start - reach > blipGapSec { close() }
+            reach = stretch.isEmpty ? s.end : max(reach, s.end)
+            stretch.append(s)
+        }
+        close()
+        return kept
+    }
+
     /// Groups sleep spans into sessions (a gap over `sleepSessionGapSec` starts a new one) and turns each into ordered, non-overlapping stages.
     /// Where spans overlap, the earlier-starting one keeps the time. Sessions that end before `fromSec` are left out, so a window can reach back
     /// far enough to see a whole night without rewriting older ones.
@@ -218,7 +243,7 @@ public enum HealthKitPlan {
             stages = []
         }
 
-        let sorted = withoutStrayUnstaged(segments).sorted { ($0.start, $0.end) < ($1.start, $1.end) }
+        let sorted = withoutBlips(withoutStrayUnstaged(segments))
         for s in sorted {
             if s.end <= s.start { continue }
             if !stages.isEmpty && s.start - cursor > sleepSessionGapSec { close() }

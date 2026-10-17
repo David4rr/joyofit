@@ -90,6 +90,37 @@ export function withoutStrayUnstaged<T extends SleepSegment>(segments: readonly 
   );
 }
 
+/** Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap. */
+export const BLIP_GAP_SEC = 3600;
+
+/** A stretch with less sleep than this (awake excluded) is not sleep. */
+export const MIN_SLEEP_SEC = 20 * 60;
+
+/**
+ * Drops stretches of sleep (segments chained with gaps up to {@link BLIP_GAP_SEC}) holding less than
+ * {@link MIN_SLEEP_SEC} asleep. A watch records a few minutes of sitting still, such as a 1-minute HRV or stress
+ * check, as sleep; on its own that became the latest "night" or a nap, and within {@link SESSION_GAP_SEC} of waking it
+ * stretched the night. Same rule as `withoutBlips` in SleepReport.kt. Returns the kept segments sorted by start.
+ */
+export function withoutBlips<T extends SleepSegment>(segments: readonly T[]): T[] {
+  const sorted = [...segments].sort((a, b) => a.start - b.start || a.end - b.end);
+  const kept: T[] = [];
+  let stretch: T[] = [];
+  let reach = -Infinity;
+  const close = () => {
+    const asleep = stretch.reduce((sum, s) => sum + (s.stage === 'awake' ? 0 : Math.max(0, s.end - s.start)), 0);
+    if (asleep >= MIN_SLEEP_SEC) kept.push(...stretch);
+    stretch = [];
+  };
+  for (const s of sorted) {
+    if (stretch.length > 0 && s.start - reach > BLIP_GAP_SEC) close();
+    stretch.push(s);
+    reach = stretch.length === 1 ? s.end : Math.max(reach, s.end);
+  }
+  close();
+  return kept;
+}
+
 export interface SleepTypeSummary {
   /** Raw watch sleep-state byte; its meaning is not decoded here. */
   type: number;
@@ -120,8 +151,8 @@ export interface SleepSummary {
  * with gaps up to {@link SESSION_GAP_SEC}. Expects `segments` oldest-first.
  */
 export function lastSleepSession(segments: readonly SleepSegment[]): SleepSummary | null {
-  if (segments.length === 0) return null;
-  const sorted = withoutStrayUnstaged(segments).sort((a, b) => a.start - b.start);
+  const sorted = withoutBlips(withoutStrayUnstaged(segments));
+  if (sorted.length === 0) return null;
   let first = sorted.length - 1;
   let earliestStart = sorted[first].start;
   while (first > 0 && earliestStart - sorted[first - 1].end <= SESSION_GAP_SEC) {

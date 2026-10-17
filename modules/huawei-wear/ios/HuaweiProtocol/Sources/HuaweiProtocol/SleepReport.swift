@@ -47,6 +47,10 @@ public enum SleepReport {
     public static let minNightSec: Int64 = 3 * 3600
     /// A report is only pushed this long after waking up at most.
     public static let maxAgeSec: Int64 = 8 * 3600
+    /// Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap (`BLIP_GAP_SEC` in `stats.ts`).
+    public static let blipGapSec: Int64 = 3600
+    /// A stretch with less sleep than this (awake excluded) is not sleep, e.g. a 1-minute HRV check (`MIN_SLEEP_SEC` in `stats.ts`).
+    public static let minSleepSec: Int64 = 20 * 60
 
     /// Drops unstaged segments within `sessionGapSec` of a staged one (`withoutStrayUnstaged` in `stats.ts`).
     public static func withoutStrayUnstaged(_ segments: [SleepSegment]) -> [SleepSegment] {
@@ -56,11 +60,31 @@ public enum SleepReport {
         }
     }
 
+    /// Drops stretches of sleep (gaps up to `blipGapSec`) holding less than `minSleepSec` asleep: a watch records a few still minutes,
+    /// such as an HRV or stress check, as sleep (`withoutBlips` in `stats.ts`). Returns the kept segments sorted by start.
+    public static func withoutBlips(_ segments: [SleepSegment]) -> [SleepSegment] {
+        var kept = [SleepSegment]()
+        var stretch = [SleepSegment]()
+        var reach = Int64.min
+        func close() {
+            let asleep = stretch.reduce(Int64(0)) { $0 + ($1.stage == "awake" ? 0 : max(0, $1.end - $1.start)) }
+            if asleep >= minSleepSec { kept.append(contentsOf: stretch) }
+            stretch.removeAll()
+        }
+        for s in segments.sorted(by: { ($0.start, $0.end) < ($1.start, $1.end) }) {
+            if !stretch.isEmpty && s.start - reach > blipGapSec { close() }
+            reach = stretch.isEmpty ? s.end : max(reach, s.end)
+            stretch.append(s)
+        }
+        close()
+        return kept
+    }
+
     /// The latest session of `segments`, chained with gaps up to `sessionGapSec` (`lastSleepSession` in `stats.ts`).
     public static func lastNight(_ segments: [SleepSegment]) -> SleepNight? {
         if segments.isEmpty { return nil }
         // Stable by start, like Kotlin's sortedBy.
-        let sorted = withoutStrayUnstaged(segments).enumerated().sorted { a, b in
+        let sorted = withoutBlips(withoutStrayUnstaged(segments)).enumerated().sorted { a, b in
             a.element.start != b.element.start ? a.element.start < b.element.start : a.offset < b.offset
         }.map(\.element)
         guard !sorted.isEmpty else { return nil }
