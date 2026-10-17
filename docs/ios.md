@@ -123,6 +123,25 @@ claims to have reached the watch unless it did.
 - **Background.** `setBackgroundEnabled` means: reconnect the remembered watch when iOS wakes the app for the `bluetooth-central` session
   (pending connect + state restoration), then authenticate, sync and read the battery inside a background task. Nothing runs while the process
   is suspended.
+- **Family monitoring upload** (`FamilyUploader.swift`, `FamilySummary.swift`, `FamilySettings.swift`, `FamilyBackgroundSession.swift`; contract in
+  `docs/family-monitoring.md` section 10). `familyConfigure` keeps the scopes in UserDefaults (`joyofit_family`) and the bearer token in the Keychain
+  (after first unlock); `null` removes both with the last result, the last payload and any queued body. After every successful background sync
+  (`BackgroundController.cycle`, after the battery read) the summary of the granted categories is built from `joyofit.db` (three local days,
+  `imported = 0` rows only, a category whose scope is off is never queried), written to `<Caches>/family-ingest/ingest-<ms>.json` and handed to a
+  background `URLSession` (`com.joyodigitama.joyofit.family-ingest`, not discretionary) as `PUT <baseUrl>/v1/family/ingest`, so the system finishes
+  the upload if iOS suspends the app right after the sync. The answer arrives through the session delegate, in this process or in the one iOS
+  relaunches (`handleEventsForBackgroundURLSession` in `HuaweiWearAppDelegateSubscriber`): 2xx is `sent` (the body becomes `lastPayload`), 401/403
+  `rejected` (the config is dropped), anything else `failed` (the next sync retries). One request per 10 minutes unless forced, except when the
+  watch synced again since the last one. `familyUploadNow` sends in the foreground and always. expo-file-system's app delegate subscriber keeps the
+  system completion handler of every background session until one of its own finishes, so `releaseFileSystemHandler` tells it ours is done.
+  No new background mode or `BGTaskScheduler` entry: a refresh task would need `fetch` and `BGTaskSchedulerPermittedIdentifiers` in Info.plist and
+  could only upload what the last sync already queued.
+  What iOS does not do, for the in-app honesty card: nothing runs after the user force-quits JoyoFit (no Bluetooth wake, and iOS cancels that
+  app's background transfers) until JoyoFit is opened again; after a restart nothing runs before the first unlock; a sync happens only when iOS wakes
+  the app because the watch came into range (a pending connect to the remembered watch, or state restoration), never on a timer while suspended, so
+  a watch out of range or Bluetooth off means no new data; iOS decides when a queued upload goes out (Low Power Mode, Low Data Mode, no signal
+  and the cellular switch of JoyoFit delay it, and a body that could not go out within 2 hours is dropped for the next sync's); the result shows in
+  the app only once iOS delivers it, possibly at the next app open.
 - **Storage.** The auth key, fake MAC and fake id are Keychain items (after first unlock). Sync rows go to the same SQLite file and schema the JS
   reads (`<Documents>/SQLite/joyofit.db`, migrations embedded from `schema/joyofit-db-migrations.json`; `gen-migrations.mjs` regenerates them).
 - **Apple Health.** Steps, heart rate, SpO2, resting heart rate, distance, active energy and sleep stages are written with
@@ -164,6 +183,10 @@ The package also type-checks against the iPhoneOS SDK (`swiftc -typecheck -sdk <
   seen, from Android, which loses the 514-byte reply on Android 14+).
 - State restoration and the background wake path; the Keychain after reinstall; HealthKit replacement on a repeated sync identifier; expo-sqlite
   sharing the database file with the native writer (the connection is kept open for the process lifetime because expo-sqlite links its own SQLite).
+- Family upload, none of it run on an iPhone: that the background `URLSession` finishes an upload after the app is suspended and relaunches the app
+  with the result (`handleEventsForBackgroundURLSession`), that the system's completion handler is released through `releaseFileSystemHandler`
+  (it calls expo-file-system's `invokeCompletionHandlerForSessionIdentifier:` by selector), how long iOS defers the transfer in Low Power Mode, and
+  whether a bluetooth wake after a restart or a memory kill reaches `BackgroundController.cycle`.
 - Strava: the connect page in `ASWebAuthenticationSession` and its return to `joyofit://settings/strava` (the Worker side was probed over HTTP,
   the in-app part never ran on an iPhone); an upload of a Swift-written workout to Strava (the FIT builder and the rows are checked, Strava's
   answer is not); that the automatic pass sends a workout the watch synced while the app was in the background once the app is opened.

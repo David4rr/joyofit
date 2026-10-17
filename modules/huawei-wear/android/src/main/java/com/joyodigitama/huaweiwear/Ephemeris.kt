@@ -3,8 +3,6 @@
 package com.joyodigitama.huaweiwear
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -221,7 +219,7 @@ internal class EphemerisLink(
         run.download?.cancel()
         run.task = true
         run.state = 0
-        if (!online()) {
+        if (!isOnline(appContext)) {
           run.task = false
           log("no network; answering 100007")
           tx(run, AGPS_SERVICE, 0x01, HuaweiTLV().put(0x7F, CODE_NO_NETWORK), "operator answer (no network)")
@@ -243,17 +241,6 @@ internal class EphemerisLink(
       }
       else -> log("unknown operation $op; ignored")
     }
-  }
-
-  private fun online(): Boolean = try {
-    val manager = appContext.getSystemService(ConnectivityManager::class.java)
-    val network = manager?.activeNetwork
-    if (manager == null) true
-    else if (network == null) false
-    else manager.getNetworkCapabilities(network)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-  } catch (e: SecurityException) {
-    // Without the permission there is no way to tell; the download itself will fail and say so.
-    true
   }
 
   private class Consult(val version: Int, val tag: String, val urls: List<String>)

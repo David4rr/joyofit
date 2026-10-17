@@ -37,6 +37,7 @@ import type { FaceApplyResult, FaceCustomization } from './HuaweiWearFaceCustom.
 import type { PhotoFace } from './HuaweiWearPhotoFace.types';
 import type { CoursesStatus, HealthyLivingStatus, RunningCourse, RunningCoursePushResult } from './HuaweiWearP2p.types';
 import type { HuaweiImportSummary } from './HuaweiWearImport.types';
+import type { FamilyConfig, FamilyUploadResult, FamilyUploadStatus } from './HuaweiWearFamily.types';
 
 declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   /**
@@ -368,6 +369,15 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   pushDietNow(): Promise<boolean>;
   /** JS wrote these watch-logged meals (`onWatchMealLogged`) to JoyoRogo; native stops keeping them apart. */
   markWatchMealsSynced(ids: string[]): Promise<void>;
+
+  /**
+   * Family monitoring (monitored side). Stores the config natively, or clears it (and everything native kept for it) with null.
+   * Nothing is read from the watch database or sent before a config with `enabled: true` is set.
+   */
+  familyConfigure(config: FamilyConfig | null): Promise<void>;
+  /** Builds the summary of the granted categories and posts it now. Never rejects on network errors: see `outcome`. */
+  familyUploadNow(): Promise<FamilyUploadResult>;
+  familyUploadStatus(): FamilyUploadStatus;
 
   getBodyMetrics(): BodyMetrics;
   /** Stores the set fields and, when connected, pushes the weight (event 5 dictionary 10006) and resting metabolism (500018) if they changed. */

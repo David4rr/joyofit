@@ -31,6 +31,14 @@ public enum WearApp {
         #endif
     }
 
+    #if canImport(UIKit)
+    /// The system-managed upload queue of the family summary; the app delegate subscriber hands it the events iOS relaunches the app for.
+    public static let familySession = FamilyBackgroundSession()
+    private static var familyBackground: FamilyBackgroundUploading? { familySession }
+    #else
+    private static var familyBackground: FamilyBackgroundUploading? { nil }
+    #endif
+
     /// The one runtime. Creating it touches nothing on the radio: the central starts on the first connect or scan, or at launch when
     /// background mode is on (`HuaweiWearAppDelegateSubscriber`).
     public static let runtime: WearRuntime = {
@@ -56,7 +64,9 @@ public enum WearApp {
             },
             expiring: expiringWork,
             weatherLocation: weatherLocationSource,
-            liveGps: liveGpsSource
+            liveGps: liveGpsSource,
+            familySecrets: KeychainSecretStore(),
+            familyBackground: familyBackground
         )
         // Bluetooth coming back on is the moment a waiting background connect can be retried.
         _ = central.addObserver { state in

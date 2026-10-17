@@ -10,3 +10,4 @@ export * from './src/HuaweiWearFaceCustom.types';
 export * from './src/HuaweiWearPhotoFace.types';
 export * from './src/HuaweiWearP2p.types';
 export * from './src/HuaweiWearImport.types';
+export * from './src/HuaweiWearFamily.types';

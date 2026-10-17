@@ -333,6 +333,9 @@ class HuaweiWearModule : Module() {
     // P2P (service 0x34): Healthy Living replies and the experimental running courses (P2pModuleApi.kt).
     p2pApi { runtime() }
 
+    // Family monitoring, monitored side: config, upload now, last result (FamilyModuleApi.kt, FamilyUploader.kt).
+    familyApi { runtime() }
+
     OnDestroy {
       destroyed = true
       runtimeRef?.let {

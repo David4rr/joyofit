@@ -261,9 +261,11 @@ public final class BackgroundController: @unchecked Sendable {
     private func cycle() async {
         lock.locked { nextSyncAtMs = clock() + intervalMs() }
         await expiring("JoyoFit watch sync") { [self] in
+            var synced = false
             do {
                 _ = try await link.syncActivity()
                 lastSyncAtMs = clock()
+                synced = true
             } catch let e as WearError {
                 if e.code != .busy { log.error("Background sync failed [\(e.code.rawValue)]: \(e.message)") }
             } catch {
@@ -278,6 +280,8 @@ public final class BackgroundController: @unchecked Sendable {
             }
             // The weather timer cannot run while the process is suspended: this wake is where an overdue push is made.
             await runtime?.weather.pushIfDue("background sync")
+            // The family summary follows the stored sync (and the battery just read); the background URLSession carries it if iOS suspends the app now.
+            if synced { await runtime?.family.uploadAfterSync() }
         }
     }
 }

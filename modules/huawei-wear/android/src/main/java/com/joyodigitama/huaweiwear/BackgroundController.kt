@@ -225,7 +225,7 @@ internal class BackgroundController(private val runtime: WearRuntime) {
     }
   }
 
-  /** One periodic round: sync, then battery. Failures are logged; the next interval retries. */
+  /** One periodic round: sync, then battery, then the family summary upload. Failures are logged; the next interval retries. */
   private suspend fun cycle() {
     nextSyncAtMs = SystemClock.elapsedRealtime() + intervalMs()
     scheduleTick()
@@ -246,6 +246,8 @@ internal class BackgroundController(private val runtime: WearRuntime) {
     } catch (e: WearException) {
       log.log(LogDirection.ERROR, null, null, null, "Background battery refresh failed [${e.errorCode}]: ${e.message}")
     }
+    // Family monitoring posts the fresh summary and battery; it runs on its own and never fails the cycle.
+    runtime.family.uploadAfterSync()
   }
 
   companion object {

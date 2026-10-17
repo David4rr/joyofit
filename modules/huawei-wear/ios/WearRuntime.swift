@@ -76,6 +76,8 @@ public final class WearRuntime: @unchecked Sendable {
     /// A workout started on the watch, followed live (and the phone's GPS for it).
     public private(set) var liveWorkout: LiveWorkout!
     public private(set) var workoutLink: WorkoutLink!
+    /// Family monitoring, monitored side: the daily summary for the watcher, uploaded after every background watch sync.
+    public private(set) var family: FamilyUploader!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -115,7 +117,12 @@ public final class WearRuntime: @unchecked Sendable {
         goalsDefaults: UserDefaults? = nil,
         cycleDefaults: UserDefaults? = nil,
         liveGps: LiveGpsSource = UnavailableLiveGps(),
-        p2pDefaults: UserDefaults? = nil
+        p2pDefaults: UserDefaults? = nil,
+        familyDefaults: UserDefaults? = nil,
+        familySecrets: SecretStore = MemorySecretStore(),
+        familySend: @escaping FamilySend = FamilyNetwork.send,
+        familyBackground: FamilyBackgroundUploading? = nil,
+        familyDirectory: URL = FamilyUploader.defaultDirectory()
     ) {
         self.settings = settings
         self.syncStore = syncStore
@@ -170,6 +177,10 @@ public final class WearRuntime: @unchecked Sendable {
             syncStore: syncStore, events: fanOut
         )
         linkObservers.add(p2p)
+        family = FamilyUploader(
+            settings: FamilySettings(defaults: familyDefaults, secrets: familySecrets), store: syncStore, events: fanOut,
+            battery: { [weak self] in self?.status.battery }, send: familySend, background: familyBackground, directory: familyDirectory, now: now
+        )
     }
 
     // MARK: events

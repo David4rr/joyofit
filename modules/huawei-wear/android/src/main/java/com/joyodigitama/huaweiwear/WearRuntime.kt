@@ -181,6 +181,7 @@ internal class WearRuntime private constructor(context: Context) {
   val workoutLink = WorkoutLink(appContext, link, events, scope, liveWorkout)
   val extras = WatchExtras(appContext, syncStore, link, events, scope)
   val p2p = P2pController(appContext, P2pSettings(appContext), link, settings, syncStore, events, scope)
+  val family = FamilyUploader(appContext, FamilySettings(appContext), FamilyStoreSource(syncStore), { status.value.battery }, events, scope)
   val ephemeris = EphemerisLink(appContext, link, events, scope)
 
   init {

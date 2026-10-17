@@ -3,7 +3,7 @@
 // contract to it and forwards runtime events (onStateChange / onBattery / onLog / onSyncComplete) to JS while the module is alive.
 //
 // Implemented for real: the link (getBondedDevices, connect, disconnect, getState, getDevice, getSupportReport, refreshBattery, syncActivity,
-// forgetDevice), the background session, the user profile and the HealthKit export. Everything else the Android module offers has no iOS
+// forgetDevice), the background session, the user profile, the HealthKit export and the family monitoring upload. Everything else the Android module offers has no iOS
 // counterpart or no ported protocol layer yet and keeps its name: getters answer with the inert status of InertStatus.swift, commands reject
 // with ERR_UNSUPPORTED ("... not available on iOS yet"). Nothing claims to have reached the watch that did not.
 #if canImport(ExpoModulesCore) && canImport(CoreBluetooth) && (canImport(SQLite3) || canImport(CSQLite))
@@ -152,6 +152,7 @@ public final class HuaweiWearModule: Module {
             self.bridge.module = self
             self.listenerToken = runtime.addListener(self.bridge)
             runtime.ensureBackgroundRunning()
+            runtime.family.attach()
         }
 
         OnAppBecomesActive {
@@ -405,6 +406,21 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try runtime.diet.markWatchMealsSynced(ids) }
         }
 
+        // MARK: family monitoring (the monitored person's phone)
+
+        // Stores the config (the token goes to the Keychain), or drops it with the last result and payload and everything queued when null.
+        // Nothing is read from the database or sent before a config with `enabled: true` is set.
+        AsyncFunction("familyConfigure") { (config: [String: Any]?) async throws -> Void in
+            try await wearCall { runtime.family.configure(try config.map(FamilyConfig.parse)) }
+        }
+
+        // Builds the summary of the granted categories and sends it now; the outcome says what happened, network errors do not reject.
+        AsyncFunction("familyUploadNow") { () async throws -> [String: Any] in
+            await runtime.family.uploadNow().toJS()
+        }
+
+        Function("familyUploadStatus") { () -> [String: Any] in runtime.family.status() }
+
         // MARK: weather
 
         Function("getWeatherStatus") { () -> [String: Any] in runtime.weather.status() }
@@ -570,6 +586,32 @@ public class HuaweiWearAppDelegateSubscriber: ExpoAppDelegateSubscriber {
             WearApp.runtime.ensureBackgroundRunning()
         }
         return true
+    }
+
+    /// iOS relaunched or woke the app because the family upload's background session has something to report. The runtime is created first: it
+    /// wires the session's result callback, which has to exist before the session delivers its events.
+    public func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+        guard identifier == FamilyBackgroundSession.sessionIdentifier else {
+            completionHandler()
+            return
+        }
+        _ = WearApp.runtime
+        WearApp.familySession.handleEvents {
+            completionHandler()
+            Task { @MainActor in releaseFileSystemHandler(forSession: identifier) }
+        }
+    }
+}
+
+/// expo-file-system's subscriber answers every `handleEventsForBackgroundURLSession` by keeping the handler until one of ITS OWN sessions finishes, and
+/// Expo calls the system's handler only after every subscriber has called its handler: for a session of ours that would never happen, and iOS would
+/// wait out the app's background time instead of suspending it. Tells that subscriber the session is done. Without it (no such subscriber, or one
+/// that changed) nothing is called.
+@MainActor
+private func releaseFileSystemHandler(forSession identifier: String) {
+    let selector = NSSelectorFromString("invokeCompletionHandlerForSessionIdentifier:")
+    for subscriber in ExpoAppDelegateSubscriberRepository.subscribers where subscriber.responds(to: selector) {
+        _ = (subscriber as AnyObject).perform(selector, with: identifier)
     }
 }
 
