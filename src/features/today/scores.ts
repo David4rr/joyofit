@@ -1,3 +1,4 @@
+import type { NightHrvAvailability } from '@/features/today/nightHrv';
 import { readiness, type Readiness } from '@/features/today/readiness';
 import { recovery } from '@/features/today/recovery';
 import { lastSleepSession } from '@/features/today/stats';
@@ -12,7 +13,7 @@ export interface Scores {
 }
 
 /** Strain per day and today's readiness (with recovery when HRV allows) from stored history; Today and the Readiness screen share it. */
-export function computeScores(data: TodayData): Scores {
+export function computeScores(data: TodayData, availability?: NightHrvAvailability | null): Scores {
   const { maxHr, strain } = data;
   return {
     maxHr,
@@ -23,7 +24,8 @@ export function computeScores(data: TodayData): Scores {
       resting: data.resting,
       strain,
       sleep: lastSleepSession(data.sleep),
-      hrv: recovery(data.hrv, data.nowSec),
+      hrv: recovery(data.hrv, data.nowSec, availability),
+      availability,
     }),
   };
 }

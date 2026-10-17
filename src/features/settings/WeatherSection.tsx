@@ -10,6 +10,7 @@ import { Segmented } from '@/components/Segmented';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
+import { forecastLine } from '@/features/settings/forecastStatus';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatClock } from '@/format';
 import { spacing } from '@/theme';
@@ -139,6 +140,7 @@ export function WeatherSection() {
     });
 
   const connected = status.watchSupported !== null;
+  const forecast = forecastLine(status.lastForecast);
 
   return (
     <Section title="Weather" icon="partly-sunny">
@@ -250,6 +252,11 @@ export function WeatherSection() {
           }
         />
       </PairGrid>
+      {forecast ? (
+        <AppText variant="caption" muted>
+          {forecast}
+        </AppText>
+      ) : null}
       {status.lastError ? <Notice tone="danger">{status.lastError}</Notice> : null}
       <Details>
         {"Sends current weather and a forecast, on every connect and at the chosen interval. Data comes from Open-Meteo; only coordinates rounded to about 1 km go out.\n\n" +

@@ -40,10 +40,11 @@ export function AutomaticStressRows({ connected }: { connected: boolean }) {
     }
   };
 
+  const unsupported = !status.supported || status.knownSupported === false;
   const hint = !connected
     ? undefined
-    : !status.supported
-      ? 'This watch does not offer it.'
+    : unsupported
+      ? 'Not available on this watch: it does not list automatic stress, so it records no night HRV.'
       : status.enabled
         ? status.lastCalibratedAt !== null
           ? `Calibrated ${formatDateTime(status.lastCalibratedAt)}`
@@ -58,7 +59,7 @@ export function AutomaticStressRows({ connected }: { connected: boolean }) {
         hint={hint}
         value={status.enabled}
         onValueChange={(value) => void change(value)}
-        disabled={busy || !connected || !status.supported}
+        disabled={busy || !connected || unsupported}
       />
       {calibrating ? (
         <Notice

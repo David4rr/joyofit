@@ -1,3 +1,4 @@
+import type { NightHrvAvailability } from '@/features/today/nightHrv';
 import type { Recovery, RecoveryState } from '@/features/today/recovery';
 import { type SleepSummary } from '@/features/today/stats';
 import type { DayStrain } from '@/features/today/strain';
@@ -41,6 +42,8 @@ export interface Readiness {
   missing: string[];
   /** HRV against your baseline, when there is a reading and a baseline. */
   recovery: Recovery | null;
+  /** Says HRV is not a night reading in this readiness; null when it is, or nothing is known. */
+  hrvNote: string | null;
 }
 
 function mean(values: readonly number[]): number {
@@ -63,8 +66,10 @@ export function readiness(input: {
   strain: readonly DayStrain[];
   sleep: SleepSummary | null;
   hrv: RecoveryState;
+  /** Why night HRV is or is not arriving; leaves the HRV note out when not given. */
+  availability?: NightHrvAvailability | null;
 }): Readiness {
-  const { dayStart, resting, strain, sleep, hrv } = input;
+  const { dayStart, resting, strain, sleep, hrv, availability } = input;
   const signals: Signal[] = [];
   const missing: string[] = [];
 
@@ -144,7 +149,26 @@ export function readiness(input: {
     }
   }
 
-  return { headline: headline(signals), signals, missing, recovery: 'recovery' in hrv ? hrv.recovery : null };
+  return {
+    headline: headline(signals),
+    signals,
+    missing,
+    recovery: 'recovery' in hrv ? hrv.recovery : null,
+    hrvNote: hrvNote(hrv, availability),
+  };
+}
+
+/**
+ * One line saying HRV is not a night reading in this readiness, so the headline is not mistaken for one that had it.
+ * Null when a night reading is in, or when night HRV is expected and only the baseline is still short.
+ */
+export function hrvNote(hrv: RecoveryState, availability: NightHrvAvailability | null | undefined): string | null {
+  const why = availability && availability.state !== 'available' ? availability.message : null;
+  if ('recovery' in hrv) {
+    if (hrv.recovery.source === 'night') return null;
+    return `HRV here is a 1-minute reading standing in for night HRV${why ? `: ${why}` : ''}.`;
+  }
+  return why ? `Readiness here uses sleep, resting heart rate and training load, no night HRV: ${why}.` : null;
 }
 
 function headline(signals: readonly Signal[]): ReadinessHeadline | null {

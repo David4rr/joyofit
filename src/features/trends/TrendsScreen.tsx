@@ -8,6 +8,8 @@ import { Screen } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { Notice, Skeleton } from '@/components/States';
 import { buildNights } from '@/features/sleep/nights';
+import { nightHrvTrendEmpty, recoveryTrendEmpty } from '@/features/today/nightHrv';
+import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
 import { STRAIN_MAX } from '@/features/today/strain';
 import {
   hrvSeries,
@@ -35,6 +37,7 @@ export function TrendsScreen() {
   const { linkState, device, dataVersion, sync } = useWatch();
   const [range, setRange] = useState<TrendRange>(30);
   const { data, error } = useTrendsData(range, dataVersion);
+  const nightHrv = useNightHrvAvailability(dataVersion);
   const canSync = linkState === 'connected' && device !== null;
 
   const trends = useMemo(() => {
@@ -67,7 +70,7 @@ export function TrendsScreen() {
             firstDay={trends.days[0]}
             domain={[0, 100]}
             format={(v) => `${Math.round(v)}%`}
-            empty="No recovery yet. Needs HRV readings (a night with the watch on, or a 1-minute reading) and 4 earlier ones of the same kind in the 30 days before."
+            empty={recoveryTrendEmpty(nightHrv)}
           />
           <TrendCard
             title="Strain"
@@ -96,7 +99,7 @@ export function TrendsScreen() {
             values={trends.hrvNight}
             firstDay={trends.days[0]}
             format={(v) => `${Math.round(v)} ms`}
-            empty="No night HRV stored. Wear the watch asleep and sync."
+            empty={nightHrvTrendEmpty(nightHrv)}
           />
           <TrendCard
             title="HRV, 1-minute readings"

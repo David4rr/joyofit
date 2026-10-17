@@ -1,4 +1,5 @@
 import type { HrvReadingRow } from '@/db/queries';
+import type { NightHrvAvailability } from '@/features/today/nightHrv';
 
 /**
  * Recovery from HRV against your own baseline, after Plews and Buchheit: work on ln(RMSSD), compare today's value with
@@ -36,16 +37,28 @@ export function bandOf(percent: number): RecoveryBand {
   return percent >= 67 ? 'green' : percent >= 34 ? 'yellow' : 'red';
 }
 
+/** Why there is no reading for today, from what is known about night HRV on this watch. */
+function missingText(readings: readonly HrvReadingRow[], availability: NightHrvAvailability | null | undefined): string {
+  if (availability && availability.state !== 'available') {
+    return availability.state === 'off' || availability.state === 'waiting'
+      ? `${availability.message}. ${availability.detail}`
+      : `${availability.message}. Measure HRV for a minute to get a recovery score.`;
+  }
+  return readings.length === 0
+    ? 'HRV: no readings yet. Measure HRV for a minute, or sync after a night with the watch on.'
+    : 'HRV: no reading from last night or today yet.';
+}
+
 /** Today's recovery from `readings` (oldest first). Prefers last night over a spot reading. */
-export function recovery(readings: readonly HrvReadingRow[], nowSec: number): RecoveryState {
+export function recovery(
+  readings: readonly HrvReadingRow[],
+  nowSec: number,
+  availability?: NightHrvAvailability | null,
+): RecoveryState {
   const latest = (source: HrvReadingRow['source'], freshSec: number) =>
     [...readings].reverse().find((r) => r.source === source && r.end >= nowSec - freshSec) ?? null;
   const today = latest('night', NIGHT_FRESH_SEC) ?? latest('spot', SPOT_FRESH_SEC);
-  if (!today) {
-    return readings.length === 0
-      ? { missing: 'HRV: no readings yet. Measure HRV for a minute, or sync after a night with the watch on.' }
-      : { missing: 'HRV: no reading from last night or today yet.' };
-  }
+  if (!today) return { missing: missingText(readings, availability) };
   const history = readings.filter(
     (r) => r.source === today.source && r.end < today.start && r.end >= today.end - BASELINE_DAYS * 86400 && r.rmssd > 0,
   );

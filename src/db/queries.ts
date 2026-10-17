@@ -75,6 +75,15 @@ export function listHrvReadingsSince(db: SQLiteDatabase, sinceSec: number): Prom
   );
 }
 
+/** Night HRV rows (`source = 'night'`) that ended at or after `sinceSec`. */
+export async function countNightHrvSince(db: SQLiteDatabase, sinceSec: number): Promise<number> {
+  const row = await db.getFirstAsync<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM hrv_readings WHERE source = 'night' AND end >= ?",
+    sinceSec,
+  );
+  return row?.n ?? 0;
+}
+
 /** A `workouts` row. `complete` is false while a part of its download failed; the next sync retries. */
 export interface WorkoutRow {
   id: number;

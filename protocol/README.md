@@ -117,6 +117,34 @@ temperature, HRV, emotion, sleep apnea and similar. It carries no sleep stages, 
 or SpO₂, and is ported separately: see [P2P (service 0x34)](#p2p-service-0x34). Sleep detail
 (dictionary class 700013) stays with the file download above.
 
+## Night HRV (stress records, `NightHrv.kt`; Android only, UNVERIFIED on any watch)
+
+Three different things look like "HRV" in Huawei's data; JoyoFit reads one of them overnight:
+
+| Source | What it is | Gate (GB `HuaweiState`) | JoyoFit |
+|---|---|---|---|
+| Stress records, file `rrisqi_data.bin` | the watch's own automatic stress measurements (about every 30 min at rest, also while asleep, per Huawei's help page); each record holds the RMSSD the watch computed from its beat-to-beat intervals | `20/09` listed (`supportsAutoStress`), the switch turned on with a calibration (`20/09` status 1) | **night HRV**: mean RMSSD of the records made while asleep, needs 3 usable records per night |
+| Sleep details, dictionary class 700013 (`avgHrv` = 700013878) | the HRV figure of Huawei Health's sleep screen, sent with the sleep stages; rolled out on HarmonyOS 5 watches in 2025 (Watch GT 5 Pro and D2, then GT 5; Gadgetbridge issue 6461 is a GT 5 owner who sees it in Huawei Health) | ExpandCapability 143 (`supportsDictSleepSync`) | parsed by the vendored GB parser, not used |
+| P2P dictionary 500044 (`heartRateVariabilityRMSSD`) | all-day HRV from the data dictionary | ExpandCapability 235 (`supportsHRV`) | stored in `health_metrics`, not used for night HRV |
+
+A watch that lists `20/09` only records stress while the user has turned **Automatic stress** on in JoyoFit (Settings → Heart
+rate and sensors; the minute of calibration is computed on the phone, as GB does) and re-sent on every connect. A watch that does
+not list `20/09` cannot give night HRV through this path at all. The Watch Fit 2 reported by a user in 2026-10 has no
+dictionary sleep (no ExpandCapability 143), which suggests an older firmware without Huawei's sleep HRV; whether it lists `20/09`
+or records stress while asleep is **not known**: no capability dump from that watch has reached us.
+
+What the app says about it (`src/features/today/nightHrv.ts`): watch lists no `20/09` (`StressStatus.knownSupported === false`, kept
+from the last connect) or Automatic stress has been on for three nights with no night record stored: "Night HRV not available on this
+watch"; switch off: "Night HRV is off" with where to turn it on; fewer than three nights since: waiting; iPhone: "Night HRV is not
+read on iPhone yet". Recovery and Readiness say the same instead of "sync after a night", and Readiness says it was computed without
+night HRV (a 1-minute reading stands in only when one was taken).
+
+Support report lines to read on the next report from such a watch: `Supported commands` service `20` (is `09` there), the
+`Night HRV gates:` line (20/09 listed, switch, calibration time, ExpandCapability 143 and 235, new sync service for the stress
+file) and the `Night HRV last sync:` lines (file size, number of stress records and their time span, per night: records in the
+window, records made while asleep, usable ones). A file with records but none inside the nights means the watch does not
+measure stress while asleep.
+
 ## Workouts and GPS
 
 `WorkoutSync` follows GB's `HuaweiWorkoutSyncManager` after the activity sync, over service `17`:
@@ -191,7 +219,10 @@ fat share `(1 - RER) / 0.3`, 9 and 4 kcal per gram).
 
 Port of GB's `HuaweiWeatherManager.sendWeather` (`Weather.java`, `SendWeather*Request`). The watch only
 takes it if it lists `0f/01` in SupportedCommands (`supportsWeather`); every request below waits for the
-watch's reply with the same service and command (5 s), like GB's request chain. All TLVs are encrypted.
+watch's reply with the same service and command (5 s), like GB's request chain. All TLVs are encrypted. The first five
+steps are queries: what they return decides what the packets may carry, so a missing reply ends the push (GB's chain stalls
+there too). Current weather, position and forecast are pushes, whose reply is only a receipt: a missing one is logged and the
+sequence goes on, so an unreadable receipt for the current weather cannot keep the forecast from being sent (GB would stop).
 
 | Step | Command | Sent when | Content |
 |---|---|---|---|
@@ -202,7 +233,7 @@ watch's reply with the same service and command (5 s), like GB's request chain. 
 | 5 | `0f/0a` WeatherSunMoonSupport | `0f/0a` listed | reply bitmap: bit0 sun rise/set, 1 moon phase |
 | 6 | `0f/01` Current | always | `81{02 icon, 03 wind = (direction << 8) + beaufort}`, `85{06 low, 07 high}`, `04` pm2.5, `08` location, `09` current temp, `0a` unit, `0b` AQI, `0c` observation time, `0e` source, `0f` UV (ExpandCapability 0x2f), `10` humidity, `11` wind km/h, `12` feels-like (ExpandCapability 0xc0) |
 | 7 | `18/07` GpsAndTime | `18/06` listed | `01` time (now - 1 day, as GB), `02` lat f64, `03` lon f64 (7 decimals); a missing reply is only logged |
-| 8 | `0f/08` Forecast (sliced) | `0f/08` listed | `81{82{03 time, 04 icon, 05 temp, 06 rain %, 07 UV}}` up to 24 hours; `90{91{12 time, 13 icon, 14 high, 15 low, 16/17 sun rise/set, 1a/1b moon rise/set, 1e moon phase}}` up to 8 days (today first). Each tag only if the matching support bit is set |
+| 8 | `0f/08` Forecast (sliced) | `0f/08` listed | `81{82{03 time, 04 icon, 05 temp, 06 rain %, 07 UV}}` up to 24 hours; `90{91{12 time, 13 icon, 14 high, 15 low, 16/17 sun rise/set, 1a/1b moon rise/set, 1e moon phase}}` up to 8 days (today first). Each tag only if the matching support bit is set. A watch that does not list `0f/08` gets current weather only |
 
 A tag the watch did not report as supported is left out. Temperatures are whole degrees Celsius in a signed byte in
 every unit (GB sends `K - 273` and sets the unit tag only); whether the watch converts for display is not verified.
@@ -210,6 +241,29 @@ Today's entry uses the current icon and the observation time, later days use the
 (GB's `SendWeatherForecastRequest`). Sun times outside their local day are sent as 0 (GB `fixupWeather`: a wrong one makes
 the watch show no weather at all). Open-Meteo has no moon rise/set (sent as 0, which the packet skips) so only
 the moon phase is sent, computed from the synodic month ([0..360) degrees to GB's eight phases).
+
+**Counts.** Gadgetbridge issue 6973 (Watch GT 4, 2026-10): the watch showed only today, no hourly or daily forecast, and Gadgetbridge's
+developer found that the GT 4 firmware wants exactly 24 hours and 8 days (today first) and shows nothing with fewer; a GT 6 Pro does not.
+JoyoFit asks Open-Meteo for 8 days, which gives 192 hours and 8 daily rows (checked against the live API for Bandung, no missing
+values), sends the next 24 hours and 8 days, and logs a warning line when either count falls short. Which counts a Watch Fit 2
+wants is **not known**.
+
+**Icon flag (suspected, not confirmed on any watch).** GB sets "icons supported" only from the `0f/06` reply (bit 2). A watch that
+does not list `0f/06` can never say so, and then the current weather and every forecast row carry no weather condition (`81{02}`,
+`82{04}`, `91{13}`), which a watch might answer by showing no forecast: the symptom of the Watch Fit 2 report (current weather
+shows, forecast does not). The basic support bitmap (`0f/02`) lists the current-weather tags in order (bit 0 weather condition, 1 wind,
+2 pm2.5, 3 temperature, 4 place, 5 current temperature, 6 unit, 7 air quality), so without `0f/06` JoyoFit takes the icon flag from bit 0
+and logs `Weather: the watch lists no 0f/06, so the icon flag follows bit 0 of the support bitmap`. A watch that lists `0f/06` is
+untouched. If a report shows the forecast still missing with icons on, or the current weather worse, revert this one line in
+`HuaweiWeatherSender.run` (and its Swift twin).
+
+**What a push reports.** Each step logs `Weather step <name>: answered 0x... in N ms` or `no answer within N ms`, the first line of a
+push is `Weather gates:` (which of `0f/01 05 06 08 0a 07 0c`, `18/06` and ExpandCapability `0x2f` and `0xc0` the watch lists), then
+`Weather flags the packets will follow:` (what the support answers switched on) and `Weather forecast: 24 hours (tags 03 04 05),
+8 days (tags 12 13 14 15 ...)`, the tags read back from the packet GB's class built. The forecast ends as one of: `sent` (OK
+reply, `0x186A0` or `0x186A3`), `unsupported` (`0f/08` not listed), `unacknowledged` (no reply in 5 s) or `rejected` (another
+code); Settings → Weather shows it and the support report summary carries the same (`Weather:` and `Weather last push:` lines),
+so a report from a Watch Fit 2 says which of the three failure shapes it is.
 
 Errors (`0f/0c` WeatherErrorExtended when listed, else `0f/07` WeatherErrorSimple): `0` network, `1` GPS permission
 (used for no location available), `2` weather disabled.

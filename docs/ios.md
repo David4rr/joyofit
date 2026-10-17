@@ -63,8 +63,10 @@ Second round (every row: Java golden where the Java has the packet, Kotlin test 
 | P2P stack, Healthy Living (health metric sync), running courses (28/xx file push), Track-watch HR zones | `P2PManager.swift`, `P2PDictionarySync.swift`, `HealthModel.swift`, `CourseProtobuf.swift`, `HealthMetricsSync.swift`, `ios/P2pController.swift` | Java golden (`p2p.json`), Kotlin `P2pTest` vectors, scripted watch |
 | Huawei Health export import (Privacy Centre ZIP, streamed, WinZip AES and ZipCrypto, `imported = 1` rows kept out of exports) | `ZipArchive.swift`, `ZipCrypto.swift`, `HuaweiExport*.swift`, `HuaweiMotionPathParser.swift`, `HuaweiHealthDetailParser.swift`, `ios/HuaweiImportController.swift`, `ios/HuaweiImportStore.swift` | archives written by zip4j (the library Android uses), Kotlin test vectors |
 
-Not ported: night HRV (`NightHrv.kt`) and the once-a-day "Morning summary" local notification (it needs the notification permission prompt; not
-part of this round), Android's ongoing live-workout notification (same reason). What iOS cannot do at all: forwarding other apps'
+Not ported: night HRV (`NightHrv.kt`; the app says "Night HRV is not read on iPhone yet" on Recovery, Readiness and Trends instead of
+waiting for a night that never arrives, and the iOS support report has a `Night HRV: not read on iPhone` line) and the once-a-day "Morning
+summary" local notification (it needs the notification permission prompt; not part of this round), Android's ongoing live-workout
+notification (same reason). What iOS cannot do at all: forwarding other apps'
 notifications and the per-app list (see below), find my phone, calls and call control, SOS text messages.
 
 ## Features iOS cannot do, and what the app says

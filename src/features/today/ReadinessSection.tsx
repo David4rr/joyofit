@@ -54,6 +54,11 @@ export function ReadinessSection({ readiness }: { readiness: Readiness }) {
           {line}
         </AppText>
       ))}
+      {readiness.hrvNote ? (
+        <AppText variant="caption" muted>
+          {readiness.hrvNote}
+        </AppText>
+      ) : null}
       <Details title="How is this calculated?">
         {`${readiness.recovery ? 'Recovery: your usual HRV is 50 %, one standard deviation above it 75 %. ' : ''}Estimates from your own history, not medical advice.`}
       </Details>

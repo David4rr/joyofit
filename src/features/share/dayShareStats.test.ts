@@ -6,7 +6,7 @@ import type { Recovery } from '@/features/today/recovery';
 import type { SleepSummary } from '@/features/today/stats';
 import type { DayStrain } from '@/features/today/strain';
 
-const none: Readiness = { headline: null, signals: [], missing: [], recovery: null };
+const none: Readiness = { headline: null, signals: [], missing: [], recovery: null, hrvNote: null };
 const recovery = { percent: 72, band: 'green' } as Recovery;
 const strain = { day: 0, trimp: 100, strain: 12.44, zoneMinutes: [] } as unknown as DayStrain;
 

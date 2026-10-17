@@ -234,6 +234,21 @@ when the watch connects, whenever the watch asks for it (opening its weather app
 - Temperatures are always sent in °C, like Gadgetbridge; the unit setting tells the watch which one to show.
 - Open-Meteo has no moon rise/set, air quality or place name for a coordinate: the moon phase is computed,
   the others are not sent, and a current-location name comes from Android's `Geocoder` when the phone has one.
+- Settings → Weather says what the watch did with the forecast of the last push: sent (24 hours, 8 days), refused (the code it
+  answered), not confirmed, or "takes current weather only" when the watch does not list the forecast command. The support
+  report carries the same lines, the commands the watch lists and every step of the last push, so a watch that shows today's
+  weather but no forecast (reported on a Watch Fit 2, cause not confirmed yet) can be diagnosed from one report.
+
+### Night HRV
+
+Night HRV comes from the watch's own automatic stress records (Android only; the iPhone app does not read them yet). It needs a
+watch that offers **Automatic stress** and that switch on in Settings → Heart rate and sensors (one minute of calibration). The app
+then averages the records the watch made while you slept, once at least three usable ones exist. What it says when there is none:
+"Night HRV not available on this watch" when the watch does not offer automatic stress, or when the switch has been on for three nights
+and no record from sleep ever arrived; "Night HRV is off" when the switch is off. Recovery and Readiness say the same instead of
+waiting for a night that will not come, and Readiness states that it was worked out without night HRV; a 1-minute reading
+(Measure HRV) stands in for it only when you took one. Whether a Watch Fit 2 records stress while asleep is not known (one user
+reports night HRV never arrives); the support report carries the `Night HRV` lines that settle it.
 
 ### Find my watch, find my phone, calls and alarms
 

@@ -24,6 +24,7 @@ import {
 } from '@/features/today/stats';
 import { useLiveHeartRate } from '@/features/today/useLiveHeartRate';
 import { useStepGoal } from '@/features/today/useStepGoal';
+import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
 import { useTodayData } from '@/features/today/useTodayData';
 import { WatchHero } from '@/features/today/WatchHero';
 import { computeScores } from '@/features/today/scores';
@@ -54,6 +55,7 @@ export default function TodayScreen() {
   const colors = useColors();
   const { linkState, device, battery, lastSync, totals, error, dataVersion, sync } = useWatch();
   const { data, error: loadError } = useTodayData(dataVersion);
+  const nightHrv = useNightHrvAvailability(dataVersion);
   const goal = useStepGoal();
   const live = useLiveHeartRate(isLinkUp(linkState));
   const liveWorkout = useLiveWorkout();
@@ -63,7 +65,7 @@ export default function TodayScreen() {
     const watchTotals = totals && totals.at >= data.dayStart ? totals : null;
     const sleep = lastSleepSession(data.sleep);
     const dayTotals = watchTotals ?? sumTotals(data.samples);
-    const scores = computeScores(data);
+    const scores = computeScores(data, nightHrv);
     return {
       totals: dayTotals,
       share: { steps: dayTotals.steps, sleep, readiness: scores.readiness, strain: scores.today },
@@ -75,7 +77,7 @@ export default function TodayScreen() {
       hasSamples: data.samples.length > 0,
       scores,
     };
-  }, [data, totals]);
+  }, [data, totals, nightHrv]);
 
   useRogoScoresPush(view?.scores ?? null, data?.dayStart ?? null);
 

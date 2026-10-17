@@ -9,6 +9,7 @@ import { JoyoRogoCard } from '@/features/today/JoyoRogoCard';
 import { ReadinessSection } from '@/features/today/ReadinessSection';
 import { computeScores } from '@/features/today/scores';
 import { StrainSection } from '@/features/today/StrainSection';
+import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
 import { useTodayData } from '@/features/today/useTodayData';
 import { useWatch } from '@/state/WatchProvider';
 import { useTheme } from '@/theme';
@@ -19,7 +20,8 @@ export function ReadinessScreen() {
   const theme = useTheme();
   const { linkState, device, dataVersion, sync } = useWatch();
   const { data, error } = useTodayData(dataVersion);
-  const scores = useMemo(() => (data ? computeScores(data) : null), [data]);
+  const nightHrv = useNightHrvAvailability(dataVersion);
+  const scores = useMemo(() => (data ? computeScores(data, nightHrv) : null), [data, nightHrv]);
   const canSync = linkState === 'connected' && device !== null;
 
   return (
