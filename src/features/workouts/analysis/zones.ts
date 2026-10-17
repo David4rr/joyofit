@@ -1,0 +1,96 @@
+import { zoneThresholds, type WorkoutStrain } from '@/features/today/strain';
+
+import type { EffortSeconds } from './efforts';
+import { BEST_EFFORT_DISTANCES, type AnalysisBestEffort, type AnalysisHrZones, type AnalysisPaceZones, type BestEffortKey, type PaceZoneKey } from './types';
+
+/** Efforts shorter than this say little about a one-hour pace. */
+const MIN_THRESHOLD_EFFORT_SEC = 480;
+/** Riegel's fatigue exponent minus one: pace slows by (T2 / T1) ^ 0.06 when the same effort lasts T2 instead of T1. */
+const RIEGEL_PACE_EXPONENT = 0.06;
+const THRESHOLD_EFFORT_SEC = 3600;
+const THRESHOLD_KEYS: readonly BestEffortKey[] = ['1mi', '5k', '10k', 'half'];
+
+/**
+ * Heart-rate zones from the workout's `workoutStrain`, so the zone time and the strain always agree: every reading counts
+ * until the next one, a gap over two minutes is a pause. `source` is 'age' while the maximum comes from the profile's
+ * birth year (or the default age), 'setting' when the user entered it.
+ */
+export function hrZones(strain: WorkoutStrain, maxHr: number, source: 'age' | 'setting'): AnalysisHrZones {
+  const sec = strain.zoneMinutes.map((m) => Math.round(m * 60));
+  const covered = Math.round(strain.coveredMinutes * 60);
+  return {
+    maxHr,
+    source,
+    bounds: [...zoneThresholds(maxHr), maxHr],
+    sec,
+    belowSec: Math.max(0, covered - sec.reduce((a, b) => a + b, 0)),
+  };
+}
+
+export interface EffortCandidate {
+  sec: number;
+  distM: number;
+}
+
+/**
+ * Threshold pace (about a 60-minute effort, seconds per km): for each effort of at least 8 minutes, its pace slowed to a
+ * one-hour effort with Riegel's exponent, `pace * (3600 / sec) ^ 0.06`; the fastest of them. Null without such an effort.
+ */
+export function thresholdPace(candidates: readonly EffortCandidate[]): number | null {
+  let best: number | null = null;
+  for (const c of candidates) {
+    if (c.sec < MIN_THRESHOLD_EFFORT_SEC || c.distM <= 0) continue;
+    const pace = (c.sec / c.distM) * 1000 * (THRESHOLD_EFFORT_SEC / c.sec) ** RIEGEL_PACE_EXPONENT;
+    if (best === null || pace < best) best = pace;
+  }
+  return best;
+}
+
+/** The 1 mile, 5 km, 10 km and half-marathon efforts of this workout and of the history, as threshold candidates. */
+export function thresholdCandidates(efforts: readonly AnalysisBestEffort[], history: readonly EffortSeconds[]): EffortCandidate[] {
+  const out: EffortCandidate[] = [];
+  for (const key of THRESHOLD_KEYS) {
+    const distM = BEST_EFFORT_DISTANCES[key];
+    const own = efforts.find((e) => e.key === key);
+    if (own) out.push({ sec: own.sec, distM });
+    for (const h of history) {
+      const sec = h[key];
+      if (sec) out.push({ sec, distM });
+    }
+  }
+  return out;
+}
+
+/** Zone edges as a share of threshold pace, slow to fast; `from` is the slow edge. */
+const PACE_ZONES: readonly { key: PaceZoneKey; from: number | null; to: number | null }[] = [
+  { key: 'recovery', from: null, to: 1.29 },
+  { key: 'endurance', from: 1.29, to: 1.14 },
+  { key: 'tempo', from: 1.14, to: 1.06 },
+  { key: 'threshold', from: 1.06, to: 0.99 },
+  { key: 'vo2', from: 0.99, to: null },
+];
+
+/**
+ * Time per pace zone from the grid's pace series: every sample with a pace counts the `stepSec` it covers (the last one
+ * only up to `elapsedSec`). Zones are fractions of the threshold: recovery slower than 129 %, endurance 114-129,
+ * tempo 106-114, threshold 99-106, VO2 faster than 99 %.
+ */
+export function paceZones(pace: readonly (number | null)[], stepSec: number, elapsedSec: number, thresholdSecKm: number): AnalysisPaceZones {
+  const sec = PACE_ZONES.map(() => 0);
+  for (let i = 0; i < pace.length; i++) {
+    const p = pace[i];
+    if (p === null) continue;
+    const share = p / thresholdSecKm;
+    const index = PACE_ZONES.findIndex((z) => z.to === null || share > z.to);
+    sec[index === -1 ? PACE_ZONES.length - 1 : index] += Math.min(stepSec, Math.max(0, elapsedSec - i * stepSec));
+  }
+  return {
+    thresholdSecKm: Math.round(thresholdSecKm),
+    zones: PACE_ZONES.map((z, i) => ({
+      key: z.key,
+      fromSecKm: z.from === null ? null : Math.round(z.from * thresholdSecKm),
+      toSecKm: z.to === null ? null : Math.round(z.to * thresholdSecKm),
+      sec: sec[i],
+    })),
+  };
+}

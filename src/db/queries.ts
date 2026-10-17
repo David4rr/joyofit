@@ -162,6 +162,23 @@ export function listWorkoutPoints(db: SQLiteDatabase, workoutId: number): Promis
   );
 }
 
+/** Complete workouts other than `excludeId` that started in `[sinceSec, beforeSec)`, newest first, with their summary JSON. */
+export async function listWorkoutsSince(
+  db: SQLiteDatabase,
+  sinceSec: number,
+  beforeSec: number,
+  excludeId: number,
+): Promise<{ workout: WorkoutRow; summaryJson: string }[]> {
+  const rows = await db.getAllAsync<RawWorkout & { summaryJson: string }>(
+    `SELECT ${WORKOUT_COLUMNS}, summary_json AS summaryJson FROM workouts
+     WHERE start >= ? AND start < ? AND id != ? AND complete != 0 ORDER BY start DESC`,
+    sinceSec,
+    beforeSec,
+    excludeId,
+  );
+  return rows.map(({ summaryJson, ...rest }) => ({ workout: toWorkout(rest), summaryJson }));
+}
+
 /**
  * Heart-rate load per local day, aggregated in SQL so long ranges never put per-minute rows through JS. It is
  * `dailyStrain`'s arithmetic: a reading counts until the next reading (of any day), at most 600 s, never past

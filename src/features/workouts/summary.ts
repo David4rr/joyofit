@@ -63,6 +63,18 @@ export interface WorkoutSummary {
   paceBlocks?: PaceBlock[];
   paceFastestSecPerKm?: number;
   paceSlowestSecPerKm?: number;
+  /** Watch laps, unix seconds; absent for workouts stored before laps were kept. */
+  laps?: SummaryLap[];
+}
+
+/** One lap of `summary_json.laps`. */
+export interface SummaryLap {
+  startTs: number;
+  endTs: number;
+  distanceM: number | null;
+  avgHr: number | null;
+  maxHr: number | null;
+  avgCadence: number | null;
 }
 
 export function parseSummary(json: string): WorkoutSummary {
