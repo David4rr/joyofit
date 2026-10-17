@@ -25,7 +25,6 @@ import {
   Server,
   ShieldCheck,
   Smartphone,
-  Users,
   Watch,
   type LucideIcon,
 } from "lucide-react";
@@ -67,7 +66,7 @@ import { PrivasiPage } from "./Privasi";
 import { isPublicPath, type PublicPath } from "./seo";
 import { Testimonials } from "./testimonials-section";
 import { TESTIMONIALS } from "./testimonials";
-import { ButtonLink, GithubMark, Phone, Ring } from "./ui";
+import { AndroidMark, ANDROID_ROBOT_CREDIT, ButtonLink, GithubMark, Phone, Ring } from "./ui";
 import { IphonePage, StravaPage } from "./Waitlist";
 
 /** Harga JoyoRogo Pro, sama dengan joyorogo.com/harga (api.joyorogo.com/api/config). */
@@ -254,7 +253,12 @@ function Footer() {
           <a href={STRAVA_PATH} className={link} {...goal("strava_waitlist_click", "footer")}>
             Strava
           </a>
-          <a href={IPHONE_PATH} className={link} {...goal("iphone_waitlist_click", "footer")}>
+          <a href="/#tester" className={cn(link, "gap-1.5")}>
+            <AndroidMark className="size-4" />
+            Android
+          </a>
+          <a href={IPHONE_PATH} className={cn(link, "gap-1.5")} {...goal("iphone_waitlist_click", "footer")}>
+            <Smartphone aria-hidden className="size-4" />
             iPhone
           </a>
           <a href={PANDUAN_PATH} className={link}>
@@ -268,6 +272,9 @@ function Footer() {
           </a>
         </nav>
       </div>
+      <p className="mx-auto w-full max-w-6xl px-4 pb-8 text-xs leading-relaxed text-muted-foreground md:px-6">
+        {ANDROID_ROBOT_CREDIT}
+      </p>
     </footer>
   );
 }
@@ -876,13 +883,14 @@ function Install() {
             role="tab"
             id={`install-tab-${id}`}
             aria-selected={tab === id}
-            aria-controls={`install-panel-${id}`}
+            aria-controls={id === "android" ? "tester" : "iphone-beta"}
             onClick={() => setPicked(id)}
             className={cn(
               "inline-flex min-h-11 items-center rounded-full px-5 text-sm font-bold transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
               tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
+            {id === "android" ? <AndroidMark className="mr-2 size-[1.125rem]" /> : <Smartphone aria-hidden className="mr-2 size-[1.125rem]" />}
             {label}
           </button>
         ))}
@@ -909,7 +917,7 @@ function Install() {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <ButtonLink href={TESTER_GROUP_URL} target="_blank" rel="noopener" {...goal("tester_group_click", "cara")}>
-                <Users aria-hidden />
+                <AndroidMark />
                 1. Gabung grup Google
               </ButtonLink>
               <ButtonLink
@@ -996,7 +1004,7 @@ function PlatformButtons({ location, className, buttonClassName }: { location: s
         rel="noopener"
         {...goal("tester_group_click", location)}
       >
-        <Users aria-hidden />
+        <AndroidMark />
         JoyoFit untuk Android
       </ButtonLink>
       {IOS_TESTFLIGHT_LIVE && (
