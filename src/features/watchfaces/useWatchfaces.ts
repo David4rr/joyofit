@@ -1,7 +1,7 @@
 import { useEventListener } from 'expo';
 import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { errorMessage } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
@@ -54,18 +54,24 @@ export function useWatchfaces() {
   );
 
   /** Installs a watch face from an explicit URI (file://, content://, or http/https URL). */
-  const installFromUri = useCallback(async (uri: string, signature?: string, fileName?: string) => {
+  const installFromUri = useCallback(async (uri: string, signature?: string, fileName?: string): Promise<boolean> => {
     setProgress({ bytes: 0, total: 0 });
+    let ok = false;
     await run('install', async () => {
       try {
         const result = await HuaweiWear.installWatchface(uri, signature, fileName);
         if (result.list) setList(result.list);
-        if (result.listed) setNotice(`${result.name}: ${result.message}`);
-        else setError(`${result.name}: ${result.message}`);
+        if (result.listed) {
+          setNotice(`${result.name}: ${result.message}`);
+          ok = true;
+        } else {
+          setError(`${result.name}: ${result.message}`);
+        }
       } finally {
         setProgress(null);
       }
     });
+    return ok;
   }, [run]);
 
   /** Installs a picked .hwt; `signature` + `fileName` replay a captured Huawei signature (see installWatchface). */
@@ -82,9 +88,14 @@ export function useWatchfaces() {
     await installFromUri(asset.uri, signature, fileName);
   }, [installFromUri]);
 
+  const initialFetchDone = useRef(false);
+
   useFocusEffect(
     useCallback(() => {
-      if (connected) void refresh();
+      if (connected && !initialFetchDone.current) {
+        initialFetchDone.current = true;
+        void refresh();
+      }
     }, [connected, refresh]),
   );
 
