@@ -176,20 +176,19 @@ const FAQ: readonly FaqItem[] = [
     a: {
       id: (
         <>
-          Nyalakan <B>Keep connected in the background</B> di Pengaturan → Background and sync: layanan latar belakang menyambung
-          ulang sendiri setelah putus (jeda 5 detik, berlipat sampai 5 menit) dan saat Bluetooth menyala. Kalau HP-mu mematikan
-          layanan itu, kecualikan JoyoFit dari pembatasan baterai di pengaturan Android. Ketuk <B>Disconnect</B> di aplikasi
-          menghentikan sambung ulang otomatis sampai kamu menyambung lagi. Dan ingat: kalau Huawei Health atau HP lain mengambil
-          jam, JoyoFit kehilangan sambungannya.
+          Nyalakan <B>Keep connected in the background</B> di Pengaturan → Background and sync. JoyoFit akan menyambung ulang
+          sendiri setiap kali sambungan putus atau Bluetooth dinyalakan. Kalau HP-mu tetap mematikan JoyoFit di latar belakang,
+          kecualikan JoyoFit dari penghemat baterai di pengaturan Android. Setelah kamu mengetuk <B>Disconnect</B>, JoyoFit
+          berhenti menyambung ulang sampai kamu menyambungkannya lagi. Sambungan juga putus kalau Huawei Health atau HP lain
+          mengambil alih jam.
         </>
       ),
       en: (
         <>
-          Turn on <B>Keep connected in the background</B> under Settings → Background and sync: the background service
-          reconnects by itself after a drop (5 s, doubling up to 5 min) and when Bluetooth turns on. If your phone kills that
-          service, exempt JoyoFit from battery restrictions in Android settings. Tapping <B>Disconnect</B> in the app pauses
-          auto-reconnect until you connect again. And remember: if Huawei Health or another phone takes the watch, JoyoFit
-          loses the link.
+          Turn on <B>Keep connected in the background</B> under Settings → Background and sync. JoyoFit then reconnects on its
+          own whenever the link drops or Bluetooth comes back on. If your phone still kills JoyoFit in the background, exempt it
+          from battery saving in Android settings. After you tap <B>Disconnect</B>, JoyoFit stops reconnecting until you connect
+          again. The link also drops if Huawei Health or another phone takes over the watch.
         </>
       ),
     },
@@ -200,14 +199,16 @@ const FAQ: readonly FaqItem[] = [
       id: (
         <>
           Buka Pengaturan → Notifications and calls: <B>Notification access</B> harus <B>Granted</B> dan{" "}
-          <B>Forward notifications to the watch</B> menyala. Pilih aplikasinya di <B>Notification apps</B>. Pada build sendiri di Android 13 ke atas, izinkan dulu pengaturan terbatas: App info → menu tiga titik → <B>Allow restricted
+          <B>Forward notifications to the watch</B> menyala. Pilih aplikasinya di <B>Notification apps</B>. Pakai build sendiri
+          di Android 13 ke atas? Android memblokir akses ini sampai kamu membuka App info → menu tiga titik → <B>Allow restricted
           settings</B>.
         </>
       ),
       en: (
         <>
           Open Settings → Notifications and calls: <B>Notification access</B> must say <B>Granted</B> and{" "}
-          <B>Forward notifications to the watch</B> must be on. Pick the apps under <B>Notification apps</B>. For a self-build on Android 13 and newer, first allow restricted settings: App info → the three-dot menu →{" "}
+          <B>Forward notifications to the watch</B> must be on. Pick the apps under <B>Notification apps</B>. On a self-build
+          with Android 13 or newer, Android blocks this access until you open App info → three-dot menu →{" "}
           <B>Allow restricted settings</B>.
         </>
       ),
@@ -216,8 +217,8 @@ const FAQ: readonly FaqItem[] = [
   {
     q: { id: "Mau pindah ke HP lain", en: "Moving to another phone" },
     a: {
-      id: "Jam menyimpan satu pairing HP. Memasangkannya di HP baru menggantikan pairing yang lama, jadi di HP lama jam akan perlu dipasangkan ulang. Data yang sudah disinkron tersimpan di HP lama (dan di cloud bila kamu memakainya).",
-      en: "A watch keeps one phone pairing. Pairing it on the new phone replaces the old pairing, so the old phone will have to pair again. Data that was already synced stays on the old phone (and in the cloud if you use it).",
+      id: "Jam hanya mengingat satu HP. Begitu dipasangkan di HP baru, HP lama harus memasangkannya ulang kalau mau dipakai lagi. Data yang sudah disinkron tetap ada di HP lama (dan di cloud kalau kamu memakainya).",
+      en: "A watch remembers one phone. Once you pair it with the new phone, the old phone has to pair again to use it. Data already synced stays on the old phone (and in the cloud if you use it).",
     },
   },
 ];
@@ -236,14 +237,14 @@ function Install({ lang }: { lang: Lang }) {
         items={
           id
             ? [
-                "Gabung grup Google joyofit-testers dengan akun Google yang kamu pakai di Play Store. Grup inilah yang memberi akses ke tes tertutup.",
-                "Setelah Google mengaktifkan aksesnya, buka halaman tes di Play dan ketuk Become a tester. Kalau halaman belum bisa dibuka, tunggu sebentar lalu coba lagi.",
-                "Pasang JoyoFit dari Play Store. Data jam tetap tersimpan di HP; masuk dengan akun JoyoRogo hanya perlu kalau kamu mau cloud atau Strava.",
+                "Gabung grup Google joyofit-testers dengan akun Google yang sama dengan di Play Store. Hanya anggota grup yang bisa ikut tes.",
+                "Buka halaman tes di Play dan ketuk Become a tester. Kalau halamannya belum terbuka, aksesmu belum aktif: tunggu beberapa menit lalu coba lagi.",
+                "Pasang JoyoFit dari Play Store. Akun tidak wajib: data jam tersimpan di HP. Akun JoyoRogo hanya dibutuhkan untuk cloud dan Strava.",
               ]
             : [
-                "Join the Google group joyofit-testers with the Google account you use on the Play Store. The group is what gives access to the closed test.",
-                "Once Google has enabled access, open the test page on Play and tap Become a tester. If the page does not open yet, wait a little and try again.",
-                "Install JoyoFit from the Play Store. Watch data stays on the phone; signing in with a JoyoRogo account is only needed for the cloud or Strava.",
+                "Join the joyofit-testers Google group with the same Google account you use on the Play Store. Only group members can join the test.",
+                "Open the test page on Play and tap Become a tester. If the page does not open yet, your access is not active: wait a few minutes and try again.",
+                "Install JoyoFit from the Play Store. No account needed: watch data stays on the phone. A JoyoRogo account is only for the cloud and Strava.",
               ]
         }
       />
@@ -267,28 +268,28 @@ function Install({ lang }: { lang: Lang }) {
       <p>
         {id ? (
           <>
-            JoyoFit hanya dibagikan lewat Google Play dan App Store; situs ini tidak menyediakan unduhan APK. Kode dan cara
-            membangun sendiri ada di <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a> (bagian
-            Build di README). Build sendiri bisa mengaktifkan fitur tambahan yang tidak ada di versi toko: nama penelepon dari
-            log panggilan dan SMS SOS.
+            JoyoFit hanya tersedia di Google Play dan App Store; tidak ada unduhan APK di situs ini. Kalau mau membangun
+            sendiri, kode dan caranya ada di <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
+            (bagian Build di README). Build sendiri punya dua fitur yang tidak ada di versi Play Store dan App Store: nama penelepon dari log
+            panggilan dan SMS SOS.
           </>
         ) : (
           <>
-            JoyoFit is shared only through Google Play and the App Store; this site does not offer an APK download. The code
-            and how to build it yourself are on <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
-            (Build section of the README). A self-build can enable the extra features the store versions leave out: caller
-            names from the call log and SOS texts.
+            JoyoFit is only on Google Play and the App Store; this site has no APK download. To build it yourself, the code and
+            instructions are on <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
+            (Build section of the README). A self-build has two features the store versions lack: caller names from the call
+            log and SOS texts.
           </>
         )}
       </p>
       <div className="rounded-2xl bg-muted p-4">
         <p className="font-semibold">
-          {id ? "Jangan campur versi toko dan build sendiri" : "Do not mix the store version and a self-build"}
+          {id ? "Jangan campur versi Play Store dan build sendiri" : "Do not mix the Play Store version and a self-build"}
         </p>
         <p className="mt-1 text-muted-foreground">
           {id
-            ? "Versi toko dan build sendiri ditandatangani kunci yang berbeda (Google yang menandatangani versi Play), dan Android tidak mau menimpa satu dengan yang lain. Kalau pindah dari salah satunya, uninstall yang lama dulu. Uninstall menghapus data lokal di HP, jadi sinkronkan ke cloud dulu kalau kamu memakainya."
-            : "The store version and a self-build are signed with different keys (Google signs the Play version), and Android will not update one with the other. If you switch from one to the other, uninstall the old one first. Uninstalling wipes the local data on the phone, so upload to the cloud first if you use it."}
+            ? "Versi Play Store dan build sendiri ditandatangani dengan kunci berbeda, jadi Android tidak bisa memperbarui yang satu dengan yang lain. Untuk pindah, uninstall yang lama dulu. Uninstall menghapus data di HP, jadi unggah ke cloud dulu kalau kamu memakainya."
+            : "The Play Store version and a self-build are signed with different keys, so Android cannot update one with the other. To switch, uninstall the old one first. Uninstalling wipes the data on the phone, so upload to the cloud first if you use it."}
         </p>
       </div>
 
@@ -298,16 +299,16 @@ function Install({ lang }: { lang: Lang }) {
           <p>
             {id ? (
               <>
-                Versi iPhone beta lewat TestFlight: pasang TestFlight dari App Store, buka{" "}
+                Versi iPhone masih beta di TestFlight. Pasang TestFlight dari App Store, buka{" "}
                 <a className={link} href={IOS_TESTFLIGHT_URL} target="_blank" rel="noopener" {...goal("ios_testflight_click", "panduan")}>undangan TestFlight</a>,
-                ketuk Terima, lalu Pasang JoyoFit. Panduan di bawah ditulis untuk Android; langkah di iPhone mirip, dan
+                ketuk <B>Accept</B>, lalu <B>Install</B>. Panduan ini ditulis untuk Android; di iPhone langkahnya mirip, dan
                 tab Watch menampilkan petunjuknya sendiri.
               </>
             ) : (
               <>
-                The iPhone version is a beta on TestFlight: install TestFlight from the App Store, open the{" "}
+                The iPhone version is in beta on TestFlight. Install TestFlight from the App Store, open the{" "}
                 <a className={link} href={IOS_TESTFLIGHT_URL} target="_blank" rel="noopener" {...goal("ios_testflight_click", "panduan")}>TestFlight invitation</a>,
-                tap Accept, then Install JoyoFit. The guide below is written for Android; the iPhone steps are similar and
+                tap <B>Accept</B>, then <B>Install</B>. This guide is written for Android; on iPhone the steps are similar and
                 the Watch tab shows its own instructions.
               </>
             )}
@@ -327,27 +328,26 @@ function BeforePairing({ lang }: { lang: Lang }) {
           id
             ? [
                 <>
-                  <B>Lepaskan jam dari Huawei Health</B> (Unbind). Jam hanya bisa terikat ke satu aplikasi dalam satu waktu; kalau
-                  masih terikat, jam menolak JoyoFit. Huawei Health tidak perlu terpasang untuk memakai JoyoFit, dan kamu tidak
-                  butuh akun Huawei.
+                  <B>Lepaskan jam dari Huawei Health</B> (Unbind). Jam hanya bisa terikat ke satu aplikasi; selama masih terikat
+                  ke Huawei Health, jam menolak JoyoFit. Setelah itu Huawei Health boleh dihapus, dan kamu tidak butuh akun Huawei.
                 </>,
                 "Pastikan jam tidak sedang terhubung ke HP lain atau JoyoFit di HP lain.",
                 <>
-                  Nyalakan Bluetooth di HP, dan dekatkan jam. Jam yang sudah terpasang di Pengaturan Bluetooth Android akan
-                  muncul di daftar JoyoFit (namanya seperti <Code>HUAWEI WATCH FIT 4-XXX</Code>); kalau belum, JoyoFit bisa
-                  mencarinya lewat <B>Scan nearby devices</B> (Android 12 ke atas).
+                  Nyalakan Bluetooth dan dekatkan jam ke HP. Kalau jam sudah dipasangkan di Pengaturan Bluetooth Android, jam
+                  langsung muncul di JoyoFit (namanya seperti <Code>HUAWEI WATCH FIT 4-XXX</Code>). Kalau belum, cari lewat{" "}
+                  <B>Scan nearby devices</B> (Android 12 ke atas).
                 </>,
               ]
             : [
                 <>
-                  <B>Unbind the watch from Huawei Health.</B> A watch can only be bound to one app at a time; if it is still
-                  bound, it refuses JoyoFit. Huawei Health does not need to stay installed to use JoyoFit, and you do not need a
-                  Huawei account.
+                  <B>Unbind the watch from Huawei Health.</B> A watch can only be bound to one app; while it is still bound to
+                  Huawei Health, it refuses JoyoFit. After that you can uninstall Huawei Health, and you do not need a Huawei
+                  account.
                 </>,
                 "Make sure the watch is not connected to another phone or to JoyoFit on another phone.",
                 <>
-                  Turn Bluetooth on on the phone and bring the watch close. A watch already paired in Android Bluetooth settings
-                  appears in JoyoFit&apos;s list (named like <Code>HUAWEI WATCH FIT 4-XXX</Code>); if not, JoyoFit can find it
+                  Turn Bluetooth on and bring the watch close to the phone. If the watch is already paired in Android Bluetooth
+                  settings, it shows up in JoyoFit right away (named like <Code>HUAWEI WATCH FIT 4-XXX</Code>). If not, find it
                   with <B>Scan nearby devices</B> (Android 12 and newer).
                 </>,
               ]
@@ -359,8 +359,8 @@ function BeforePairing({ lang }: { lang: Lang }) {
         </p>
         <p className="mt-1 text-muted-foreground">
           {id
-            ? "Melepas jam dari Huawei Health sudah cukup. Reset pabrik jam juga berhasil sebagai cara melepasnya, tapi menghapus semua yang ada di jam. JoyoFit sendiri tidak punya langkah reset atau pindai QR."
-            : "Unbinding from Huawei Health is enough. A factory reset of the watch also works as a way to release it, but it wipes everything on the watch. JoyoFit itself has no reset or QR-scan step."}
+            ? "Cukup lepaskan jam dari Huawei Health. Reset pabrik juga melepas jam, tapi menghapus semua isinya. JoyoFit tidak punya langkah reset atau pindai QR."
+            : "Unbinding from Huawei Health is enough. A factory reset also releases the watch, but wipes everything on it. JoyoFit has no reset or QR-scan step."}
         </p>
       </div>
       <div className="rounded-2xl bg-makan-soft p-4 text-makan-ink">
@@ -369,8 +369,8 @@ function BeforePairing({ lang }: { lang: Lang }) {
         </p>
         <p className="mt-1">
           {id
-            ? "Sinkronkan jam sekali lagi di Huawei Health (tarik layar ke bawah) karena data yang hanya ada di jam hilang saat jam dilepas, dan minta ekspor datamu (langkahnya ada di bagian 6)."
-            : "Sync the watch once more in Huawei Health (pull down), because data only on the watch is lost when it is unbound, and request your data export (the steps are in section 6)."}
+            ? "Sinkronkan jam sekali lagi di Huawei Health (tarik layar ke bawah): data yang belum sinkron hilang saat jam dilepas. Lalu minta ekspor datamu (langkahnya di bagian 6)."
+            : "Sync the watch once more in Huawei Health (pull down): anything not yet synced is lost when the watch is unbound. Then request your data export (steps in section 6)."}
         </p>
       </div>
     </>
@@ -383,8 +383,8 @@ function Pairing({ lang }: { lang: Lang }) {
     <>
       <p>
         {id
-          ? "Nama tombol di aplikasi berbahasa Inggris, jadi ditulis apa adanya di sini."
-          : "Button names are quoted exactly as they appear in the app."}
+          ? "Aplikasi JoyoFit berbahasa Inggris, jadi nama tombol di panduan ini ditulis persis seperti di layar."
+          : "Button names are written exactly as they appear in the app."}
       </p>
       <Steps
         items={
@@ -395,19 +395,19 @@ function Pairing({ lang }: { lang: Lang }) {
                   izinkan. Kalau sudah terlanjur ditolak, ketuk <B>Open app settings</B>.
                 </>,
                 <>
-                  Di <B>Available watches</B> pilih jam-mu. Belum muncul? Ketuk <B>Scan nearby devices</B>, atau pasangkan di
+                  Di <B>Available watches</B> pilih jammu. Belum ada? Ketuk <B>Scan nearby devices</B>, atau pasangkan dulu di
                   Pengaturan Android → Bluetooth.
                 </>,
                 <>
                   Ketuk <B>Connect</B> pada jam itu.
                 </>,
                 <>
-                  Kalau jam belum dikenal HP ini, muncul <B>Pair this watch with this phone?</B>. Ketuk <B>Continue</B>.
-                  (Itu menggantikan pairing jam dengan HP atau aplikasi lain.)
+                  Kalau jam belum pernah tersambung ke HP ini, muncul <B>Pair this watch with this phone?</B>. Ketuk{" "}
+                  <B>Continue</B>. HP atau aplikasi yang sebelumnya tersambung ke jam akan terputus.
                 </>,
-                "Biarkan layar jam menyala dan setujui permintaan di jam dalam 30 detik.",
+                "Jaga layar jam tetap menyala, lalu setujui permintaan di jam dalam 30 detik.",
                 <>
-                  Status berubah menjadi tersambung. Buka <B>Today</B> lalu ketuk <B>Sync now</B> untuk sinkron pertama.
+                  Setelah tersambung, buka <B>Today</B> dan ketuk <B>Sync now</B> untuk sinkron pertama.
                 </>,
               ]
             : [
@@ -423,20 +423,20 @@ function Pairing({ lang }: { lang: Lang }) {
                   Tap <B>Connect</B> on that watch.
                 </>,
                 <>
-                  If this phone does not know the watch yet, <B>Pair this watch with this phone?</B> appears. Tap{" "}
-                  <B>Continue</B>. (This replaces the watch&apos;s pairing with another phone or app.)
+                  If the watch has never connected to this phone, <B>Pair this watch with this phone?</B> appears. Tap{" "}
+                  <B>Continue</B>. Whatever phone or app the watch was paired with before gets disconnected.
                 </>,
                 "Keep the watch screen awake and accept the prompt on the watch within 30 seconds.",
                 <>
-                  The status changes to connected. Open <B>Today</B> and tap <B>Sync now</B> for the first sync.
+                  Once connected, open <B>Today</B> and tap <B>Sync now</B> for the first sync.
                 </>,
               ]
         }
       />
       <p className="text-muted-foreground">
         {id
-          ? "Forget pairing di tab Watch hanya menghapus kunci pairing yang disimpan JoyoFit; pairing Bluetooth Android tidak disentuh. Sambungan berikutnya jadi pairing pertama lagi dan perlu dikonfirmasi di jam."
-          : "Forget pairing on the Watch tab only drops the pairing key JoyoFit stored; the Android Bluetooth pairing is not touched. The next connect is a first-time pairing again and has to be confirmed on the watch."}
+          ? "Forget pairing di tab Watch hanya membuat JoyoFit melupakan jam; pairing Bluetooth Android tetap ada. Saat menyambung lagi, kamu perlu menyetujuinya di jam seperti pertama kali."
+          : "Forget pairing on the Watch tab only makes JoyoFit forget the watch; the Android Bluetooth pairing stays. Next time you connect, you confirm it on the watch like the first time."}
       </p>
     </>
   );
@@ -449,15 +449,17 @@ function Watches({ lang }: { lang: Lang }) {
       <p>
         {id ? (
           <>
-            Baru <B>Huawei Watch Fit 4 Pro</B> yang sudah diuji dengan JoyoFit. Dari {JAM_BISA_DICOBA} model jam dan band Huawei dan
-            Honor yang bisa dicoba, sisanya masih eksperimen: jalurnya ada, tapi belum pernah dicoba. Kalau jam-mu eksperimen, sambungkan sekali lalu
-            kirim laporan (tab Watch → Help support your watch → Report on GitHub), supaya modelnya bisa naik jadi teruji.
+            Baru <B>Huawei Watch Fit 4 Pro</B> yang sudah diuji. JoyoFit bisa mencoba {JAM_BISA_DICOBA} model jam dan band Huawei
+            dan Honor, tapi model lainnya masih eksperimen: secara teori didukung, belum ada yang mencobanya. Punya model
+            eksperimen? Sambungkan sekali, lalu kirim laporan (tab Watch → Help support your watch → Report on GitHub) supaya
+            modelnya bisa ditandai teruji.
           </>
         ) : (
           <>
-            Only the <B>Huawei Watch Fit 4 Pro</B> has been tested with JoyoFit. Of the {JAM_BISA_DICOBA} Huawei and Honor watch and band
-            models it can try, the rest are experimental: the path exists but has not been tried. If yours is experimental, connect once and
-            send a report (Watch tab → Help support your watch → Report on GitHub) so the model can move up to tested.
+            Only the <B>Huawei Watch Fit 4 Pro</B> has been tested. JoyoFit can attempt {JAM_BISA_DICOBA} Huawei and Honor watch
+            and band models, but the others are experimental: supported in theory, not tried by anyone yet. Have an experimental
+            model? Connect once, then send a report (Watch tab → Help support your watch → Report on GitHub) so it can be marked
+            tested.
           </>
         )}
       </p>
@@ -466,22 +468,21 @@ function Watches({ lang }: { lang: Lang }) {
       <p className="font-semibold">{id ? "Belum bisa" : "Not yet"}</p>
       <p className="text-muted-foreground">
         {id
-          ? "Pairing baru Honor (HiChain PAKE) belum diimplementasi, dan earphone bukan jam."
-          : "Honor's newer pairing (HiChain PAKE) is not implemented, and earphones are not watches."}
+          ? "Model Honor yang lebih baru memakai cara pairing (HiChain PAKE) yang belum didukung. Earphone juga tidak didukung."
+          : "Newer Honor models use a pairing method (HiChain PAKE) that is not supported yet. Earphones are not supported either."}
       </p>
       <Chips items={JAM_BELUM_PAKE} />
       <p>
         {id ? (
           <>
             Daftar lengkap model eksperimen ada di halaman{" "}
-            <a className={link} href="/jam">Jam yang didukung</a>. Jam Huawei atau Honor yang tidak ada di daftar tetap dicoba
-            dengan cara yang sama dan mungkin tidak berhasil; selain Huawei dan Honor ditolak.
+            <a className={link} href="/jam">Jam yang didukung</a>. Jam Huawei atau Honor yang tidak ada di daftar tetap bisa
+            dicoba, tapi belum tentu berhasil. Merek lain tidak bisa disambungkan.
           </>
         ) : (
           <>
-            The full list of experimental models is on the <a className={link} href="/jam">Supported watches</a> page. A Huawei or
-            Honor watch that is not listed is tried the same way and may not work; anything that is not Huawei or Honor is
-            refused.
+            The full list of experimental models is on the <a className={link} href="/jam">Supported watches</a> page. Huawei
+            and Honor watches that are not listed can still be tried, but may not work. Other brands cannot connect.
           </>
         )}
       </p>
@@ -503,57 +504,57 @@ function Permissions({ lang }: { lang: Lang }) {
           id
             ? [
                 <>
-                  <B>Nearby devices (Bluetooth)</B>: wajib, diminta di tab Watch. Untuk menampilkan jam yang dipasangkan dan
-                  membuka sambungan. Tidak butuh izin lokasi.
+                  <B>Nearby devices (Bluetooth)</B>: wajib, diminta di tab Watch untuk mencari dan menyambung ke jam. Tidak
+                  butuh izin lokasi.
                 </>,
                 <>
                   <B>Notifikasi</B> (Android 13 ke atas): diminta saat kamu menyalakan <B>Keep connected in the background</B>.
-                  Ditolak pun layanan tetap jalan, hanya notifikasinya tersembunyi.
+                  Kalau ditolak, sambungan latar belakang tetap jalan; hanya notifikasinya yang tidak tampil.
                 </>,
                 <>
                   <B>Akses notifikasi</B> (Notification access): untuk meneruskan notifikasi ke jam. Pengaturan → Notifications
                   and calls → <B>Open notification access</B>, izinkan JoyoFit, lalu nyalakan{" "}
-                  <B>Forward notifications to the watch</B>. Pilih aplikasinya di <B>Notification apps</B>. Pada build sendiri di Android 13 ke atas, izinkan <B>Allow restricted settings</B> dulu (bagian 1).
+                  <B>Forward notifications to the watch</B>. Pilih aplikasinya di <B>Notification apps</B>. Pakai build sendiri di Android 13 ke atas? Buka dulu <B>Allow restricted settings</B> (lihat bagian 7).
                 </>,
                 <>
                   <B>Latar belakang</B>: Pengaturan → Background and sync → nyalakan <B>Keep connected in the background</B>.
-                  Interval sinkron bisa 15 menit sampai 4 jam.
+                  Interval sinkron bisa diatur dari 15 menit sampai 4 jam.
                 </>,
                 <>
-                  <B>Optimasi baterai</B>: aplikasi tidak memintanya. Kalau HP-mu mematikan layanan latar belakang, kecualikan
-                  JoyoFit dari pembatasan baterai di pengaturan Android.
+                  <B>Optimasi baterai</B>: aplikasi tidak memintanya. Kalau HP-mu mematikan JoyoFit di latar belakang, kecualikan
+                  JoyoFit dari penghemat baterai di pengaturan Android.
                 </>,
               ]
             : [
                 <>
-                  <B>Nearby devices (Bluetooth)</B>: required, asked on the Watch tab. To list the paired watch and open the link.
-                  No location permission needed.
+                  <B>Nearby devices (Bluetooth)</B>: required, asked on the Watch tab to find and connect to the watch. No
+                  location permission needed.
                 </>,
                 <>
                   <B>Notifications</B> (Android 13 and newer): asked when you turn on <B>Keep connected in the background</B>.
-                  If denied the service still runs, only its notification is hidden.
+                  If you deny it, the background connection still works; only its notification is hidden.
                 </>,
                 <>
                   <B>Notification access</B>: to forward notifications to the watch. Settings → Notifications and calls →{" "}
                   <B>Open notification access</B>, allow JoyoFit, then turn on <B>Forward notifications to the watch</B>. Pick
-                  the apps under <B>Notification apps</B>. For a self-build on Android 13 and newer, allow{" "}
-                  <B>Allow restricted settings</B> first (section 1).
+                  the apps under <B>Notification apps</B>. On a self-build with Android 13 or newer, turn on{" "}
+                  <B>Allow restricted settings</B> first (see section 7).
                 </>,
                 <>
                   <B>Background</B>: Settings → Background and sync → turn on <B>Keep connected in the background</B>. The sync
                   interval can be 15 minutes to 4 hours.
                 </>,
                 <>
-                  <B>Battery optimization</B>: the app does not ask for it. If your phone kills the background service, exempt
-                  JoyoFit from battery restrictions in Android settings.
+                  <B>Battery optimization</B>: the app does not ask for it. If your phone kills JoyoFit in the background, exempt
+                  it from battery saving in Android settings.
                 </>,
               ]
         }
       />
       <p className="text-muted-foreground">
         {id
-          ? "Opsional, hanya diminta bila kamu menyalakan fiturnya: lokasi (cuaca dan GPS olahraga luar ruang, hanya saat aplikasi dipakai), status telepon dan menjawab panggilan (panggilan di jam), dan Health Connect (menulis data jam untuk aplikasi lain)."
-          : "Optional, only asked when you switch the feature on: location (weather and GPS for outdoor workouts, only while the app is in use), phone state and answering calls (calls on the watch), and Health Connect (writing watch data for other apps)."}
+          ? "Opsional, hanya diminta saat kamu menyalakan fiturnya: lokasi (cuaca dan GPS olahraga luar ruang, hanya saat aplikasi dibuka), telepon (menerima panggilan dari jam), dan Health Connect (berbagi data jam dengan aplikasi lain)."
+          : "Optional, only asked when you turn the feature on: location (weather and GPS for outdoor workouts, only while the app is open), phone (answering calls from the watch), and Health Connect (sharing watch data with other apps)."}
       </p>
     </>
   );
@@ -567,15 +568,15 @@ function Features({ lang }: { lang: Lang }) {
       <p>
         {id ? (
           <>
-            Buka <B>Today</B> dan ketuk <B>Sync now</B> (atau tarik layar ke bawah). Sinkron pertama menarik semua riwayat yang
-            masih disimpan jam; yang berikutnya mulai dari sinkron terakhir. Dengan <B>Keep connected in the background</B>,
-            sinkron jalan sendiri tiap 30 menit (bisa diubah) dan data terkumpul walau aplikasi ditutup.
+            Buka <B>Today</B> dan ketuk <B>Sync now</B> (atau tarik layar ke bawah). Sinkron pertama mengambil semua riwayat
+            yang masih ada di jam; berikutnya hanya data baru. Dengan <B>Keep connected in the background</B>, JoyoFit
+            sinkron sendiri tiap 30 menit (bisa diubah), walau aplikasi ditutup.
           </>
         ) : (
           <>
-            Open <B>Today</B> and tap <B>Sync now</B> (or pull down). The first sync pulls everything the watch still holds; later
-            ones start from the previous sync. With <B>Keep connected in the background</B>, sync runs by itself every 30 minutes
-            (configurable) and data accumulates even with the app closed.
+            Open <B>Today</B> and tap <B>Sync now</B> (or pull down). The first sync pulls all history still on the watch; after
+            that, only new data. With <B>Keep connected in the background</B>, JoyoFit syncs on its own every 30 minutes
+            (adjustable), even with the app closed.
           </>
         )}
       </p>
@@ -584,30 +585,29 @@ function Features({ lang }: { lang: Lang }) {
       <p>
         {id ? (
           <>
-            Pengaturan → <B>Strava</B> mengirim olahraga dari jam ke akun Strava-mu sendiri. Gratis, tidak perlu JoyoRogo Pro.
-            Kamu perlu masuk dengan akun JoyoRogo dulu (<B>Sign in with JoyoRogo</B>), lalu ketuk <B>Connect with Strava</B>.
-            Olahraga yang selesai setelah tersambung dikirim otomatis setelah tiap sinkron; yang lebih lama bisa dikirim dengan{" "}
-            <B>Send to Strava</B> di layar olahraganya.
+            Pengaturan → <B>Strava</B> mengirim olahraga dari jam ke akun Strava-mu. Gratis, tanpa JoyoRogo Pro. Masuk dulu
+            dengan <B>Sign in with JoyoRogo</B>, lalu ketuk <B>Connect with Strava</B>. Olahraga baru dikirim otomatis tiap
+            sinkron; olahraga sebelum tersambung bisa dikirim manual lewat <B>Send to Strava</B> di layar olahraganya.
           </>
         ) : (
           <>
-            Settings → <B>Strava</B> sends watch workouts to your own Strava account. Free, no JoyoRogo Pro needed. Sign in with
-            a JoyoRogo account first (<B>Sign in with JoyoRogo</B>), then tap <B>Connect with Strava</B>. Workouts that finish
-            after you connect are sent after each sync; older ones can be sent with <B>Send to Strava</B> on the workout screen.
+            Settings → <B>Strava</B> sends watch workouts to your Strava account. Free, no JoyoRogo Pro needed. First tap{" "}
+            <B>Sign in with JoyoRogo</B>, then <B>Connect with Strava</B>. New workouts go up automatically on each sync; ones
+            from before you connected can be sent by hand with <B>Send to Strava</B> on the workout screen.
           </>
         )}
       </p>
       <p className="rounded-2xl bg-muted p-4">
         {id ? (
           <>
-            <B>Kuota terbatas sementara.</B> Strava membatasi jumlah atlet untuk aplikasi baru sampai aplikasinya disetujui,
-            jadi sambungan Strava masih lewat undangan.{" "}
+            <B>Kuota terbatas.</B> Strava membatasi jumlah pengguna aplikasi baru sampai aplikasinya disetujui, jadi untuk
+            sementara Strava hanya lewat undangan.{" "}
             <a className={link} href={STRAVA_PATH} {...goal("strava_waitlist_click", "panduan")}>Daftar undangan Strava</a>.
           </>
         ) : (
           <>
-            <B>Limited quota for now.</B> Strava caps the number of athletes for a new app until it is approved, so the Strava
-            connection is still by invitation.{" "}
+            <B>Limited spots.</B> Strava caps how many people can use a new app until it is approved, so for now Strava is
+            invite-only.{" "}
             <a className={link} href={STRAVA_PATH} {...goal("strava_waitlist_click", "panduan")}>Join the Strava waitlist</a>.
           </>
         )}
@@ -616,8 +616,8 @@ function Features({ lang }: { lang: Lang }) {
       <Sub>{id ? "Impor riwayat Huawei Health" : "Import Huawei Health history"}</Sub>
       <p>
         {id
-          ? "Pengaturan → Import from Huawei Health membawa detak jantung, tidur, langkah, dan olahraga dari akun Huawei Health ke JoyoFit. Gratis, jalan di HP, dan tidak mengirim apa pun ke mana-mana."
-          : "Settings → Import from Huawei Health brings heart rate, sleep, steps and workouts from your Huawei Health account into JoyoFit. Free, runs on the phone and sends nothing anywhere."}
+          ? "Pengaturan → Import from Huawei Health memindahkan detak jantung, tidur, langkah, dan olahraga dari Huawei Health ke JoyoFit. Gratis, diproses di HP, tidak ada data yang dikirim keluar."
+          : "Settings → Import from Huawei Health moves heart rate, sleep, steps and workouts from Huawei Health into JoyoFit. Free, processed on the phone, nothing is sent out."}
       </p>
       <Steps
         items={
@@ -627,7 +627,7 @@ function Features({ lang }: { lang: Lang }) {
                   Minta datamu ke Huawei di <Code>privacy-sg.consumer.huawei.com/privacycenter</Code> (untuk akun Indonesia), atau
                   di Huawei Health → Me → akunmu → Privacy Center. Pilih <B>Request Your Data</B> dan centang <B>Health</B>.
                 </>,
-                "Atur password untuk ZIP dan ingat. Huawei menyiapkan berkasnya dan mengirim tautan unduhan lewat email: sampai 7 hari, dan tautannya berlaku 21 hari.",
+                "Buat password untuk ZIP-nya dan catat. Huawei butuh hingga 7 hari untuk menyiapkan berkas, lalu mengirim tautan unduhan lewat email. Tautannya berlaku 21 hari.",
                 "Sebelum melepas jam dari Huawei Health, sinkronkan sekali lagi di sana. Data yang hanya ada di jam hilang saat dilepas.",
                 <>
                   Unduh ZIP-nya, di JoyoFit pilih <B>Choose the ZIP file</B>, isi password, lalu ketuk <B>Import</B>.
@@ -639,18 +639,18 @@ function Features({ lang }: { lang: Lang }) {
                   accounts), or in Huawei Health → Me → your account → Privacy Center. Choose <B>Request Your Data</B> and tick{" "}
                   <B>Health</B>.
                 </>,
-                "Set a password for the ZIP and remember it. Huawei prepares the file and emails a download link: up to 7 days, and the link works for 21 days.",
+                "Set a password for the ZIP and note it down. Huawei takes up to 7 days to prepare the file, then emails a download link. The link works for 21 days.",
                 "Before unbinding the watch from Huawei Health, sync it there once more. Data only on the watch is lost when it is unbound.",
                 <>
-                  Download the ZIP, in JoyoFit pick <B>Choose the ZIP file</B>, enter the password, then tap <B>Import</B>.
+                  Download the ZIP. In JoyoFit, tap <B>Choose the ZIP file</B>, enter the password, then tap <B>Import</B>.
                 </>,
               ]
         }
       />
       <p className="text-muted-foreground">
         {id
-          ? "Data jam yang sudah ada tidak ditimpa, dan hasil impor tidak ikut diunggah ke cloud, Health Connect, atau Strava. Fitur ini baru dan belum diperiksa dengan berkas ekspor asli; kalau ada yang tidak terbaca, laporkan di GitHub."
-          : "Existing watch data is never replaced, and imported rows are not uploaded to the cloud, Health Connect or Strava. The feature is new and has not been checked against a real export file; if something does not read, report it on GitHub."}
+          ? "Data jam yang sudah ada tidak ditimpa, dan data impor tidak diunggah ke cloud, Health Connect, atau Strava. Fitur ini baru dan belum dicoba dengan berkas ekspor asli; kalau ada data yang tidak terbaca, laporkan di GitHub."
+          : "Existing watch data is never overwritten, and imported data is not uploaded to the cloud, Health Connect or Strava. The feature is new and has not been tried on a real export file yet; if some data fails to import, report it on GitHub."}
       </p>
     </>
   );
