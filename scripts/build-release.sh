@@ -72,7 +72,8 @@ if [ "$PLAY" = 1 ]; then
   fi
   MANIFEST="$(java -jar "$BUNDLETOOL" dump manifest --bundle "$OUT")"
   # Proof for the reviewer: none of the restricted permissions may be in the merged manifest.
-  if grep -E 'android.permission.(SEND_SMS|READ_CALL_LOG|READ_CONTACTS|READ_SMS|RECEIVE_SMS|REQUEST_INSTALL_PACKAGES|SYSTEM_ALERT_WINDOW|RECORD_AUDIO|CAMERA)"' <<<"$MANIFEST"; then
+  # CAMERA is allowed: the workout share image's "Take photo" asks for it at that tap; the photo stays on the phone.
+  if grep -E 'android.permission.(SEND_SMS|READ_CALL_LOG|READ_CONTACTS|READ_SMS|RECEIVE_SMS|REQUEST_INSTALL_PACKAGES|SYSTEM_ALERT_WINDOW|RECORD_AUDIO)"' <<<"$MANIFEST"; then
     echo "Play AAB still declares a forbidden permission" >&2
     exit 1
   fi
