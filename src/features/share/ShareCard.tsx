@@ -6,7 +6,7 @@ import Svg, { Circle, Defs, LinearGradient, Polyline, Rect, Stop } from 'react-n
 import type { IconName } from '@/components/IconChip';
 import type { ShareStat } from '@/features/share/shareStats';
 import { downsample, projectRoute, type RoutePoint } from '@/features/workouts/summary';
-import { fonts, useColors } from '@/theme';
+import { overlay, useTheme } from '@/theme';
 
 export type ShareFormat = 'story' | 'square';
 /** `sticker` has no background at all: the PNG keeps its alpha so it can be pasted over any photo. */
@@ -106,7 +106,7 @@ function RouteTrace({ route, width, height, stroke, accent, start, end }: RouteT
       <Polyline
         points={projected.polyline}
         fill="none"
-        stroke="rgba(0,0,0,0.35)"
+        stroke={overlay.halo}
         strokeWidth={stroke * 2}
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -119,7 +119,7 @@ function RouteTrace({ route, width, height, stroke, accent, start, end }: RouteT
         strokeLinejoin="round"
         strokeLinecap="round"
       />
-      <Circle cx={projected.start.x} cy={projected.start.y} r={stroke * 1.1} fill={start} stroke="#FFFFFF" strokeWidth={stroke / 3} />
+      <Circle cx={projected.start.x} cy={projected.start.y} r={stroke * 1.1} fill={start} stroke={overlay.ink} strokeWidth={stroke / 3} />
       <Circle cx={projected.end.x} cy={projected.end.y} r={stroke * 1.1} fill={end} stroke={accent} strokeWidth={stroke / 2} />
     </Svg>
   );
@@ -153,17 +153,17 @@ export function ShareCard({
   photoUri,
   onPhotoStatus,
 }: ShareCardProps) {
-  const colors = useColors();
+  const { colors, fonts } = useTheme();
   const m = METRICS[format];
   const onDark = background === 'route';
   const hasRoute = route.length >= 2;
   const ink = colors.heroForeground;
-  const soft = onDark ? colors.heroMuted : 'rgba(242,247,248,0.86)';
+  const soft = onDark ? colors.heroMuted : overlay.inkSoft;
   // White text over an arbitrary photo or an arbitrary Story needs a shadow to stay readable.
   const shadow: TextStyle = onDark
     ? {}
     : {
-        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowColor: overlay.textShadow,
         textShadowOffset: { width: 0, height: px(3) },
         textShadowRadius: px(14),
       };
@@ -189,7 +189,7 @@ export function ShareCard({
         width={m.inset}
         height={m.inset}
         stroke={10}
-        accent={colors.heroWarn}
+        accent={colors.heroAccent}
         start={colors.heroLink}
         end={ink}
       />
@@ -217,10 +217,10 @@ export function ShareCard({
           <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
             <Defs>
               <LinearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#000000" stopOpacity={0.55} />
-                <Stop offset="0.3" stopColor="#000000" stopOpacity={0} />
-                <Stop offset="0.5" stopColor="#000000" stopOpacity={0} />
-                <Stop offset="1" stopColor="#000000" stopOpacity={0.8} />
+                <Stop offset="0" stopColor={overlay.scrimInk} stopOpacity={0.55} />
+                <Stop offset="0.3" stopColor={overlay.scrimInk} stopOpacity={0} />
+                <Stop offset="0.5" stopColor={overlay.scrimInk} stopOpacity={0} />
+                <Stop offset="1" stopColor={overlay.scrimInk} stopOpacity={0.8} />
               </LinearGradient>
             </Defs>
             <Rect width="100%" height="100%" fill="url(#scrim)" />
@@ -235,7 +235,7 @@ export function ShareCard({
               width: px(m.icon),
               height: px(m.icon),
               borderRadius: px(m.icon) / 2,
-              backgroundColor: onDark ? colors.heroTrack : 'rgba(0,0,0,0.38)',
+              backgroundColor: onDark ? colors.heroTrack : overlay.chip,
               alignItems: 'center',
               justifyContent: 'center',
             }}>
@@ -259,7 +259,7 @@ export function ShareCard({
                 width={m.hero.w}
                 height={m.hero.h}
                 stroke={14}
-                accent={colors.heroWarn}
+                accent={colors.heroAccent}
                 start={colors.heroLink}
                 end={ink}
               />

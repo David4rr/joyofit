@@ -20,12 +20,12 @@ import {
   type ShareBackground,
   type ShareFormat,
 } from '@/features/share/ShareCard';
-import { captureToFile, copyCardImage, shareCardImage } from '@/features/share/shareImage';
+import { captureToFile, copyCardImage, shareCardImage, shareToInstagramStory } from '@/features/share/shareImage';
 import { buildShareStats, formatShareDate } from '@/features/share/shareStats';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import type { RoutePoint, WorkoutSummary } from '@/features/workouts/summary';
 import { errorMessage } from '@/format';
-import { HIT, radius, spacing, useColors } from '@/theme';
+import { HIT, overlay, spacing, useTheme } from '@/theme';
 
 /** The card is 1080 px wide; a photo much larger than the card only costs memory. */
 const PHOTO_MAX_SIDE = 2400;
@@ -65,9 +65,9 @@ function StickerBackdrop() {
     <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
       <Defs>
         <Pattern id="checker" width={20} height={20} patternUnits="userSpaceOnUse">
-          <Rect width={20} height={20} fill="#1A1D1B" />
-          <Rect width={10} height={10} fill="#2A2F2C" />
-          <Rect x={10} y={10} width={10} height={10} fill="#2A2F2C" />
+          <Rect width={20} height={20} fill={overlay.checkerDark} />
+          <Rect width={10} height={10} fill={overlay.checkerLight} />
+          <Rect x={10} y={10} width={10} height={10} fill={overlay.checkerLight} />
         </Pattern>
       </Defs>
       <Rect width="100%" height="100%" fill="url(#checker)" />
@@ -82,7 +82,7 @@ function ShareWorkoutSheet({
   visible,
   onClose,
 }: Props & { visible: boolean; onClose: () => void }) {
-  const colors = useColors();
+  const { colors, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const screen = useWindowDimensions();
   const cardRef = useRef<View>(null);
@@ -90,7 +90,7 @@ function ShareWorkoutSheet({
   const [background, setBackground] = useState<ShareBackground>('route');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>('loading');
-  const [busy, setBusy] = useState<'share' | 'copy' | 'photo' | null>(null);
+  const [busy, setBusy] = useState<'share' | 'copy' | 'story' | 'photo' | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
   const stats = useMemo(() => buildShareStats(workout, summary), [workout, summary]);
@@ -150,7 +150,7 @@ function ShareWorkoutSheet({
     }
   };
 
-  const run = async (action: 'share' | 'copy') => {
+  const run = async (action: 'share' | 'copy' | 'story') => {
     const card = cardRef.current;
     if (!card || busy) return;
     setBusy(action);
@@ -158,12 +158,15 @@ function ShareWorkoutSheet({
     try {
       if (action === 'share') {
         await shareCardImage(await captureToFile(card), CAPTION);
+      } else if (action === 'story') {
+        const opened = await shareToInstagramStory(await captureToFile(card), background, CAPTION);
+        if (!opened) setFeedback({ tone: 'info', text: 'Instagram is not installed, so the share sheet opened instead.' });
       } else {
         await copyCardImage(card);
         setFeedback({ tone: 'info', text: 'Image copied. Paste it into your Story, a chat or a note.' });
       }
     } catch (e) {
-      setFeedback({ tone: 'danger', text: `Could not ${action === 'share' ? 'share' : 'copy'} the image: ${errorMessage(e)}` });
+      setFeedback({ tone: 'danger', text: `Could not ${action === 'copy' ? 'copy' : 'share'} the image: ${errorMessage(e)}` });
     } finally {
       setBusy(null);
     }
@@ -176,7 +179,7 @@ function ShareWorkoutSheet({
         : 'Your numbers on a dark JoyoFit card. This workout has no GPS route.'
       : background === 'photo'
         ? 'Your photo with the numbers on top.'
-        : 'A transparent PNG. Copy it, then paste it over your own photo in an Instagram Story.';
+        : 'A transparent PNG. Send it to Instagram Story as a sticker, or copy it and paste it over your own photo.';
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
@@ -194,7 +197,7 @@ function ShareWorkoutSheet({
           <Segmented options={backgrounds} value={background} onChange={pickBackground} />
           <Segmented options={FORMATS} value={format} onChange={setFormat} />
 
-          <View style={[styles.stage, { backgroundColor: colors.muted }]}>
+          <View style={[styles.stage, { backgroundColor: colors.muted, borderRadius: radius.card }]}>
             <View style={{ width: frameWidth, height: frameHeight, borderRadius: radius.input, overflow: 'hidden' }}>
               {background === 'sticker' ? <StickerBackdrop /> : null}
               {needsPhoto && photoUri === null ? (
@@ -261,22 +264,31 @@ function ShareWorkoutSheet({
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md), borderTopColor: colors.hairline }]}>
           <Button
-            label="Copy image"
-            icon="copy-outline"
-            loading={busy === 'copy'}
+            label="Instagram Story"
+            icon="logo-instagram"
+            loading={busy === 'story'}
             disabled={!ready || busy !== null}
-            onPress={() => void run('copy')}
-            style={styles.flex}
+            onPress={() => void run('story')}
           />
-          <Button
-            label="Share"
-            icon="share-outline"
-            variant="primary"
-            loading={busy === 'share'}
-            disabled={!ready || busy !== null}
-            onPress={() => void run('share')}
-            style={styles.flex}
-          />
+          <View style={styles.row}>
+            <Button
+              label="Copy image"
+              icon="copy-outline"
+              loading={busy === 'copy'}
+              disabled={!ready || busy !== null}
+              onPress={() => void run('copy')}
+              style={styles.flex}
+            />
+            <Button
+              label="Share"
+              icon="share-outline"
+              variant="primary"
+              loading={busy === 'share'}
+              disabled={!ready || busy !== null}
+              onPress={() => void run('share')}
+              style={styles.flex}
+            />
+          </View>
         </View>
       </View>
     </Modal>
@@ -296,7 +308,6 @@ const styles = StyleSheet.create({
   close: { width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' },
   content: { padding: spacing.lg, gap: spacing.md },
   stage: {
-    borderRadius: radius.card,
     paddingVertical: spacing.md,
     alignItems: 'center',
   },
@@ -305,7 +316,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm },
   flex: { flex: 1 },
   footer: {
-    flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,

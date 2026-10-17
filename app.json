@@ -173,6 +173,13 @@
         }
       ],
       [
+        "react-native-share",
+        {
+          "android": ["com.instagram.android"],
+          "ios": ["instagram", "instagram-stories"]
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
