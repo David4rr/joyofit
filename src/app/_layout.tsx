@@ -18,6 +18,7 @@ import { serializeQueries } from '@/db/serialize';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { CloudProvider } from '@/state/CloudProvider';
 import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
+import { OnboardingProvider } from '@/state/OnboardingProvider';
 import { MealsProvider } from '@/state/MealsProvider';
 import { StravaProvider } from '@/state/StravaProvider';
 import { WatchProvider } from '@/state/WatchProvider';
@@ -67,6 +68,7 @@ function RootNavigator() {
             <StravaProvider>
               <MealsProvider>
                 <LiveWorkoutProvider>
+                  <OnboardingProvider>
                   <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
                   <View style={{ flex: 1 }}>
                   <Tabs
@@ -127,10 +129,13 @@ function RootNavigator() {
                     <Tabs.Screen name="trends" options={{ href: null }} />
                     {/* Opens by itself when a workout starts on the watch (LiveWorkoutProvider). */}
                     <Tabs.Screen name="workout-live" options={{ href: null }} />
+                    {/* The setup guide: opened by OnboardingProvider on a first run and from Settings; full screen, no tab bar. */}
+                    <Tabs.Screen name="onboarding" options={{ href: null, tabBarStyle: { display: 'none' } }} />
                   </Tabs>
                   {/* Android installs from Google Play only: flexible in-app update. */}
                   <UpdateBanner />
                   </View>
+                  </OnboardingProvider>
                 </LiveWorkoutProvider>
               </MealsProvider>
             </StravaProvider>

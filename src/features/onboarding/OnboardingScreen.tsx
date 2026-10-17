@@ -1,0 +1,104 @@
+import { useRouter } from 'expo-router';
+import { useEffect, type ReactElement } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Button } from '@/components/Button';
+import { currentStep, footerFor, progress, type StepId } from '@/features/onboarding/flow';
+import { StepProgress } from '@/features/onboarding/StepProgress';
+import { AccountStep } from '@/features/onboarding/steps/AccountStep';
+import { DoneStep } from '@/features/onboarding/steps/DoneStep';
+import { PairStep } from '@/features/onboarding/steps/PairStep';
+import { BackgroundStep, HealthStep, NotificationsStep, WeatherStep } from '@/features/onboarding/steps/PermissionSteps';
+import { ProStep } from '@/features/onboarding/steps/ProStep';
+import { SyncStep } from '@/features/onboarding/steps/SyncStep';
+import { UnbindStep } from '@/features/onboarding/steps/UnbindStep';
+import { WelcomeStep } from '@/features/onboarding/steps/WelcomeStep';
+import { useCloud } from '@/state/CloudProvider';
+import { useOnboarding } from '@/state/OnboardingProvider';
+import { useWatch } from '@/state/WatchProvider';
+import { spacing, useColors } from '@/theme';
+
+const BODIES: Record<StepId, () => ReactElement> = {
+  welcome: () => <WelcomeStep />,
+  unbind: () => <UnbindStep />,
+  pair: () => <PairStep />,
+  sync: () => <SyncStep />,
+  notifications: () => <NotificationsStep />,
+  health: () => <HealthStep />,
+  weather: () => <WeatherStep />,
+  background: () => <BackgroundStep />,
+  account: () => <AccountStep />,
+  pro: () => <ProStep />,
+  done: () => <DoneStep />,
+};
+
+/**
+ * The first-run setup guide: one step at a time, a progress bar on top, and Back, Later and Continue underneath. What each step shows
+ * is the same section Settings or the Watch tab shows; this screen only sequences them (see `flow.ts` for the order and the rules).
+ */
+export function OnboardingScreen() {
+  const guide = useOnboarding();
+  const watch = useWatch();
+  const cloud = useCloud();
+  const router = useRouter();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const { state, ctx } = guide;
+
+  // Finished or left: go to Today. A run opened from Settings arrives here already active.
+  const status = state?.status;
+  useEffect(() => {
+    if (status && status !== 'active') router.navigate('/');
+  }, [status, router]);
+
+  if (!state || state.status !== 'active') return null;
+
+  const step = currentStep(state, ctx);
+  const { index, total } = progress(state, ctx);
+  const footer = footerFor(step, { linkState: watch.linkState, signedIn: cloud.signedIn });
+  const hasButtons = footer.primary !== null || footer.skip !== null || footer.back;
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top + spacing.sm }]}>
+      <View style={styles.progress}>
+        <StepProgress index={index} total={total} />
+      </View>
+      <ScrollView
+        key={step}
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        {BODIES[step]()}
+      </ScrollView>
+      {hasButtons ? (
+        <View style={[styles.footer, { borderTopColor: colors.hairline, paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+          {footer.primary ? (
+            <Button label={footer.primary} variant="primary" disabled={footer.primaryDisabled} onPress={guide.next} />
+          ) : null}
+          {footer.back || footer.skip ? (
+            <View style={styles.secondary}>
+              {footer.back ? <Button label="Back" variant="ghost" icon="chevron-back" onPress={guide.back} style={styles.cell} /> : <View style={styles.cell} />}
+              {footer.skip ? (
+                <Button label={footer.skip} variant="ghost" onPress={step === 'welcome' ? guide.dismissGuide : guide.skipStep} style={styles.cell} />
+              ) : (
+                <View style={styles.cell} />
+              )}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  progress: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+  scroll: { flex: 1 },
+  content: { gap: spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+  footer: { gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
+  secondary: { flexDirection: 'row', gap: spacing.sm },
+  cell: { flex: 1 },
+});

@@ -11,6 +11,11 @@ export async function getLastSync(db: SQLiteDatabase, address: string): Promise<
   return row?.last_sync ?? null;
 }
 
+/** A watch has been connected on this phone before (a `device` row exists). */
+export async function hasStoredWatch(db: SQLiteDatabase): Promise<boolean> {
+  return (await db.getFirstAsync<{ address: string }>('SELECT address FROM device LIMIT 1')) !== null;
+}
+
 export function listStepSamplesSince(db: SQLiteDatabase, sinceSec: number): Promise<StepSample[]> {
   return db.getAllAsync<StepSample>(
     `SELECT timestamp, steps, calories, distance,

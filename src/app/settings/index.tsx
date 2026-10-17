@@ -6,6 +6,7 @@ import type { IconName } from '@/components/IconChip';
 import { isIos } from '@/components/IosUnavailable';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { PageHeader, useContentPadding } from '@/components/Screen';
+import { useOnboarding } from '@/state/OnboardingProvider';
 import { spacing, useTheme, type Tint } from '@/theme';
 
 interface SettingsRow {
@@ -13,7 +14,8 @@ interface SettingsRow {
   subtitle?: string;
   icon: IconName;
   tint?: Tint;
-  href: Href;
+  /** Where the row goes; a row with no `href` opens the setup guide. */
+  href?: Href;
 }
 
 interface SettingsGroup {
@@ -131,6 +133,11 @@ const GROUPS: readonly SettingsGroup[] = [
     title: 'App',
     data: [
       {
+        title: 'Setup guide',
+        subtitle: 'Pair the watch, permissions, JoyoRogo',
+        icon: 'compass',
+      },
+      {
         title: 'Appearance',
         subtitle: 'Theme: Classic, Sport, Ocean',
         icon: 'color-palette',
@@ -159,11 +166,12 @@ export default function SettingsScreen() {
   const { colors } = theme;
   const router = useRouter();
   const padding = useContentPadding(true);
+  const guide = useOnboarding();
 
   return (
     <SectionList
       sections={GROUPS}
-      keyExtractor={(row) => row.href as string}
+      keyExtractor={(row) => row.title}
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={padding}
       stickySectionHeadersEnabled
@@ -183,7 +191,7 @@ export default function SettingsScreen() {
           tint={item.tint}
           title={item.title}
           subtitle={item.subtitle}
-          onPress={() => router.push(item.href)}
+          onPress={() => (item.href ? router.push(item.href) : guide.open())}
           style={groupedRowStyle(theme, index, section.data.length)}
         />
       )}

@@ -152,6 +152,28 @@ Step-by-step install and pairing guide (Indonesian, with an English section): <h
    background mode follows.
 6. **Settings → Advanced → Log** shows every TX/RX frame in hex.
 
+### First-run setup guide (Settings → Setup guide)
+
+The first launch opens a guide (`src/features/onboarding/`, route `/onboarding`, a hidden tab with no tab bar). It resumes where it was left if the app is closed, can be
+reopened from **Settings → Setup guide**, and is never shown on its own to someone who already has a paired watch (a watch linked now, remembered for background, or a
+`device` row from an earlier sync: a `bypassed` record is written once). Progress is one JSON record in the `expo-sqlite/kv-store` key `joyofit.onboarding`. Back and a skip
+exist on every step except while the watch is connecting; Continue on the pairing step waits until the watch is linked. There is no event tracking in the app, so the guide sends none.
+
+Order, with the rules in `flow.ts` (pure, tested in `flow.test.ts`): Welcome, Huawei Health, Pair, First sync, Notifications, Apple Health / Health Connect, Weather, Background
+(Android only), JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done.
+
+- **Huawei Health first**: the watch accepts one app, so it is released before pairing. It is also the last point to let Huawei Health sync once more and to request the data export
+  (which takes up to 7 days), so the step carries the real import sections behind a button and the ZIP can be imported when it arrives. A watch reset is only mentioned as a last resort
+  under the pairing step, because it wipes the watch's stored data.
+- **Pair** is the Watch tab's list and bind confirmation (`AvailableWatchesSection`, `BindConfirmDialog`), not a copy; nothing asks for Bluetooth before the pre-prompt "Continue".
+- **First sync** comes right after pairing: it proves the link, and the scores, exports and backups below all need data. The native sync reports no percentage, so the step shows that it
+  is running and then what came in.
+- **JoyoRogo Pro** (`pro.ts`): the price and the AI scan limits are read from `GET https://api.joyorogo.com/api/config` (`founderPriceIdr`, `founderYearlyPriceIdr`, `founderDailyCap`,
+  `freeDailyScans`, `promo`), never written in the app. By store: iOS only says Pro is available in JoyoRogo, with no price and no link
+  ([App Store Review Guideline 3.1.1](https://developer.apple.com/app-store/review/guidelines/#in-app-purchase)); a Google Play build shows no price and links to the JoyoRogo app's Play
+  listing ([Play Payments policy, section 4](https://support.google.com/googleplay/android-developer/answer/9858738)); only a sideloaded Android build shows the price and a button to
+  `joyorogo.com/pro` (`utm_campaign=evergreen-onboarding`). Using JoyoFit stays free either way.
+
 ### Background mode
 
 Turn on **Keep connected in the background** in Settings. A foreground service (type

@@ -1,7 +1,6 @@
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
 
-import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
 import { Details } from '@/components/Details';
@@ -10,6 +9,7 @@ import { Notice } from '@/components/States';
 import { isIos } from '@/components/IosUnavailable';
 import { formatCount, formatDateTime } from '@/format';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
+import { SignInButtons } from '@/features/settings/SignInButtons';
 import { useCloud } from '@/state/CloudProvider';
 import { HuaweiWear } from '@/wear';
 
@@ -113,38 +113,8 @@ export function CloudSection() {
             />
           )}
         </>
-      ) : withApple ? (
-        <>
-          <AppText variant="label" muted>
-            Sign in with
-          </AppText>
-          <ButtonRow>
-            <Button
-              label="Apple"
-              variant="primary"
-              icon="logo-apple"
-              onPress={() => void cloud.signInApple()}
-              disabled={cloud.sessionPending}
-            />
-            <Button
-              label="Google"
-              variant="secondary"
-              icon="logo-google"
-              onPress={() => void cloud.signIn()}
-              disabled={cloud.sessionPending}
-              loading={cloud.sessionPending}
-            />
-          </ButtonRow>
-        </>
       ) : (
-        <Button
-          label="Sign in with JoyoRogo"
-          variant="primary"
-          icon="log-in-outline"
-          onPress={() => void cloud.signIn()}
-          disabled={cloud.sessionPending}
-          loading={cloud.sessionPending}
-        />
+        <SignInButtons />
       )}
       <Details>
         Cloud backup is part of JoyoRogo Pro. It backs up your steps, heart rate, SpO2, sleep and workouts, including GPS

@@ -28,8 +28,16 @@ function sortBonded(devices: BondedDevice[]): BondedDevice[] {
   );
 }
 
+/** The watch list and its actions, as `useBondedDevices` returns them. */
+export interface BondedDevices extends BondedState {
+  reload: () => Promise<void>;
+  refresh: () => Promise<void>;
+  startScan: () => Promise<void>;
+  stopScan: () => Promise<void>;
+}
+
 /** Loads bonded and nearby BLE devices when permission is granted. */
-export function useBondedDevices(enabled: boolean) {
+export function useBondedDevices(enabled: boolean): BondedDevices {
   const [state, setState] = useState<BondedState>({
     devices: [],
     loading: false,

@@ -17,8 +17,14 @@ export async function ensureBluetoothConnect(): Promise<Exclude<PermissionStatus
   return result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN ? 'blocked' : 'denied';
 }
 
+/** The Bluetooth permission as the hook tracks it, and the button that asks for it. */
+export interface BluetoothPermission {
+  status: PermissionStatus;
+  request: () => Promise<void>;
+}
+
 /** Checks BLUETOOTH_CONNECT on mount and asks for it when it is not yet granted. */
-export function useBluetoothPermission() {
+export function useBluetoothPermission(): BluetoothPermission {
   const [status, setStatus] = useState<PermissionStatus>('checking');
 
   useEffect(() => {
