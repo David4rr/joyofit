@@ -502,8 +502,8 @@ public final class WearLink: @unchecked Sendable {
         let address = connection.address
         let last = fullHistory ? nil : try storage { try syncStore.lastSync(address: address) }
         let nowSec = Int64(now().timeIntervalSince1970)
-        // A full history asks from the beginning of time (ActivitySync turns 0 into 2000-01-01) in slices; the first sync keeps iOS's 7 days.
-        let from = fullHistory ? 0 : syncWindowStart(lastSyncSec: last, nowSec: nowSec)
+        // The first sync and a full history both ask from the beginning of time (ActivitySync turns 0 into 2000-01-01) in slices.
+        let from = syncWindowStart(lastSyncSec: last)
         let slices = syncSlices(fromSec: from, nowSec: nowSec)
         events.info("History: \(fullHistory ? "full" : "incremental") pull in \(slices.count) slices from \(slices[0].from)")
         let log = events.sink

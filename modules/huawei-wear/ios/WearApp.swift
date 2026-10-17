@@ -72,6 +72,8 @@ public enum WearApp {
     public static let health = HealthExporter(
         syncStore: runtime.syncStore, writer: HealthKitWriter(), settings: HealthExportSettings(), events: runtime.events
     )
+    /// The one-time Apple Health history import; the only code that reads HealthKit.
+    public static let appleHealthImport = AppleHealthImporter(syncStore: runtime.syncStore)
     #endif
 
     // MARK: environment

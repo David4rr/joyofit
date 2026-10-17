@@ -17,12 +17,9 @@ import HuaweiProtocol
 /// Re-request this much already-stored history on every sync; upserts make the overlap idempotent.
 public let syncOverlapSec: Int64 = 3600
 
-/// The first sync of a watch (no `last_sync` yet) asks for this much history.
-public let firstSyncLookbackSec: Int64 = 7 * 24 * 3600
-
-/// Start of the next sync window, unix seconds: 7 days back on the first sync, else 1 h before the last one.
-public func syncWindowStart(lastSyncSec: Int64?, nowSec: Int64) -> Int64 {
-    guard let last = lastSyncSec else { return nowSec - firstSyncLookbackSec }
+/// Start of the next sync window, unix seconds: 0 (everything the watch still holds) on the first sync, else 1 h before the last one.
+public func syncWindowStart(lastSyncSec: Int64?) -> Int64 {
+    guard let last = lastSyncSec else { return 0 }
     return max(0, last - syncOverlapSec)
 }
 

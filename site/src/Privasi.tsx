@@ -60,7 +60,7 @@ function Indonesian() {
           items={[
             "Data jam (langkah, detak jantung, SpO2, tidur, olahraga) disimpan di HP-mu. Tanpa kamu mengaktifkan fitur di bawah, tidak ada data kesehatanmu yang keluar dari HP.",
             "Cloud JoyoFit itu opsional dan baru aktif setelah kamu masuk dengan akun JoyoRogo.",
-            "Di iPhone, data jam hanya ditulis ke Apple Health bila kamu menyalakannya. JoyoFit tidak pernah membaca Apple Health.",
+            "Di iPhone, data jam hanya ditulis ke Apple Health bila kamu menyalakannya. JoyoFit membaca Apple Health satu kali saja, saat kamu menekan Impor riwayat dari Apple Health.",
             "Tidak ada iklan, tidak ada SDK analitik atau pelaporan crash, dan datamu tidak dijual.",
             "Kode sumbernya terbuka (AGPL-3.0), jadi semua yang ditulis di sini bisa kamu periksa sendiri.",
           ]}
@@ -152,7 +152,7 @@ function Indonesian() {
         />
       </Block>
 
-      <Block title="Apple Health (iPhone, menulis saja)">
+      <Block title="Apple Health (iPhone, menulis dan impor satu kali)">
         <p>
           Di iPhone, bila kamu menyalakannya di Pengaturan, JoyoFit menyalin data jam ke Apple Health (HealthKit)
           supaya aplikasi lain yang kamu izinkan bisa membacanya. Izinnya diminta lewat dialog Apple Health sendiri
@@ -161,7 +161,8 @@ function Indonesian() {
         <List
           items={[
             "Yang ditulis: langkah, jarak jalan dan lari, energi aktif, detak jantung, detak jantung istirahat, saturasi oksigen, tidur (analisis tidur dengan tahapnya), sesi olahraga, dan rute GPS olahraga yang direkam jam.",
-            "Yang dibaca: tidak ada. JoyoFit tidak pernah membaca data Apple Health dan tidak meminta izin baca.",
+            "Yang dibaca: hanya saat kamu menekan Impor riwayat dari Apple Health di Pengaturan. Saat itu JoyoFit meminta izin baca Apple Health untuk langkah, detak jantung, detak jantung istirahat, tidur, olahraga, saturasi oksigen (SpO2) dan energi aktif, lalu membaca riwayat yang Huawei Health simpan di sana. Izin baca tidak diminta di waktu lain, dan data yang JoyoFit tulis sendiri tidak ikut dibaca kembali.",
+            "Data yang dibaca itu hanya disimpan di HP-mu, tidak dikirim ke server JoyoFit atau server mana pun, dan tidak dipakai untuk iklan.",
             "Data Apple Health tidak dijual, tidak dipakai untuk iklan atau penentuan profil iklan, tidak dikirim ke server mana pun oleh fitur ini, dan tidak dibagikan ke pihak ketiga. Data itu juga tidak dipakai untuk riset atau analitik.",
             "Menghapus data yang ditulis JoyoFit dilakukan di aplikasi Kesehatan.",
           ]}
@@ -330,7 +331,7 @@ function Indonesian() {
             "Broadcom (glpals.com): data bantuan satelit (bagian Lokasi).",
             "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan.",
             "JoyoRogo, Google dan Apple: login dan layanan JoyoRogo (bagian Cloud dan Masuk dengan Apple).",
-            "Apple: Apple Health (menulis saja), Masuk dengan Apple, dan geocoding nama tempat di iPhone.",
+            "Apple: Apple Health (menulis, dan membaca satu kali saat impor), Masuk dengan Apple, dan geocoding nama tempat di iPhone.",
             "Strava: tujuan unggahan olahraga bila kamu menyambungkannya (bagian Strava).",
             "RevKlik: statistik pengunjung situs ini (bagian Statistik situs).",
           ]}
@@ -390,7 +391,7 @@ function English() {
           items={[
             "Watch data (steps, heart rate, SpO2, sleep, workouts) is stored on your phone. Unless you turn on one of the features below, none of your health data leaves the phone.",
             "The JoyoFit cloud is optional and only starts after you sign in with a JoyoRogo account.",
-            "On iPhone, watch data is written to Apple Health only if you turn that on. JoyoFit never reads Apple Health.",
+            "On iPhone, watch data is written to Apple Health only if you turn that on. JoyoFit reads Apple Health once, only when you tap Import history from Apple Health.",
             "No ads, no analytics or crash-reporting SDKs, and your data is not sold.",
             "The source code is open (AGPL-3.0), so you can check everything stated here.",
           ]}
@@ -410,7 +411,7 @@ function English() {
           the watch reports; what you enter yourself (profile, cycle calendar if enabled, weight and blood
           pressure, alarms); the watch&apos;s Bluetooth address, name, model and pairing key; and your settings.
           Android auto-backup is off for the app (<Code>allowBackup=false</Code>). On iPhone the same data lives
-          in the app&apos;s private storage; JoyoFit does not use Apple Health to read it.
+          in the app&apos;s private storage; JoyoFit reads Apple Health only for the one-time history import you start yourself.
         </p>
       </Block>
 
@@ -461,17 +462,20 @@ function English() {
         </p>
       </Block>
 
-      <Block title="Apple Health (iPhone, write only)">
+      <Block title="Apple Health (iPhone, write and one-time import)">
         <p>
           On iPhone, if you turn it on under Settings, JoyoFit copies watch data into Apple Health (HealthKit) so
           other apps you allow can read it. Permission is asked through Apple Health&apos;s own dialog and can be
           revoked at any time in the Health app (Sharing, Apps, JoyoFit) or iPhone Settings.{" "}
           <span className="font-semibold">Written:</span> steps, walking and running distance, active energy,
           heart rate, resting heart rate, blood oxygen, sleep analysis with stages, workouts, and the GPS route of
-          workouts the watch recorded. <span className="font-semibold">Read:</span> nothing. JoyoFit never reads
-          Apple Health data and does not ask for read permission. Apple Health data is not sold, not used for
-          advertising or ad profiling, not used for research or analytics, not sent to any server by this feature
-          and not shared with third parties. To remove what JoyoFit wrote, delete it in the Health app.
+          workouts the watch recorded. <span className="font-semibold">Read:</span> only when you tap Import history
+          from Apple Health in Settings. Then JoyoFit asks for read permission for steps, heart rate, resting heart
+          rate, sleep, workouts, blood oxygen (SpO2) and active energy, and reads the history Huawei Health saved
+          there, once. It does not ask for read permission at any other time, and data JoyoFit wrote itself is not
+          read back. What is read stays on your phone and is not sent to any server or used for ads. Apple Health data
+          is not sold, not used for advertising or ad profiling, not used for research or analytics, and not shared
+          with third parties. To remove what JoyoFit wrote, delete it in the Health app.
         </p>
       </Block>
 
@@ -609,7 +613,7 @@ function English() {
       <Block title="Third parties">
         <p>
           Open-Meteo (weather), Broadcom (satellite-assist data), Cloudflare (hosting of the cloud and this
-          site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write-only, and place-name geocoding on iPhone), Strava (upload destination when you connect it), RevKlik (visitor
+          site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling.
         </p>

@@ -27,13 +27,13 @@ final class SyncStoreTests: XCTestCase {
         XCTAssertEqual(seen, [5_000, 10_000, 20_000, 40_000, 80_000, 160_000, 300_000, 300_000])
     }
 
-    func testFirstSyncLooksBackSevenDays() {
-        XCTAssertEqual(syncWindowStart(lastSyncSec: nil, nowSec: 1_000_000), 1_000_000 - 7 * 24 * 3600)
+    func testFirstSyncAsksForFullHistory() {
+        XCTAssertEqual(syncWindowStart(lastSyncSec: nil), 0)
     }
 
     func testLaterSyncsOverlapByOneHour() {
-        XCTAssertEqual(syncWindowStart(lastSyncSec: 500_000, nowSec: 1_000_000), 500_000 - 3600)
-        XCTAssertEqual(syncWindowStart(lastSyncSec: 100, nowSec: 1_000_000), 0)
+        XCTAssertEqual(syncWindowStart(lastSyncSec: 500_000), 500_000 - 3600)
+        XCTAssertEqual(syncWindowStart(lastSyncSec: 100), 0)
     }
 
     func testMigrationsCreateTheSharedSchema() throws {

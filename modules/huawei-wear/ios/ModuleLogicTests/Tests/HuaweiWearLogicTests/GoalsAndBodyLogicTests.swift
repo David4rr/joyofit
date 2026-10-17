@@ -452,9 +452,9 @@ final class SyncSlicesTests: XCTestCase {
         XCTAssertEqual(slices.count, 1 + 3 + 1)
     }
 
-    func testTheFirstSyncsSevenDaysAreOneSliceAndAFortnightIsTwo() {
+    func testTheFirstSyncIsFullHistoryAndAFortnightIsTwoSlices() {
         let now: Int64 = 50_000_000
-        XCTAssertEqual(syncSlices(fromSec: syncWindowStart(lastSyncSec: nil, nowSec: now), nowSec: now).count, 1)
+        XCTAssertEqual(syncSlices(fromSec: syncWindowStart(lastSyncSec: nil), nowSec: now).count, 1 + 3 + 1)
         XCTAssertEqual(syncSlices(fromSec: now - syncSliceSec - 10, nowSec: now).count, 2)
     }
 }

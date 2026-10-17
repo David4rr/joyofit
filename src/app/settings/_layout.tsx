@@ -16,6 +16,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="health" options={{ title: 'Health & cloud' }} />
       <Stack.Screen name="strava" options={{ title: 'Strava' }} />
       <Stack.Screen name="import-huawei" options={{ title: 'Import from Huawei Health' }} />
+      <Stack.Screen name="import-apple-health" options={{ title: 'Import from Apple Health' }} />
       <Stack.Screen name="import-fit" options={{ title: 'Import a FIT file' }} />
       <Stack.Screen name="profile" options={{ title: 'Profile and goal' }} />
       <Stack.Screen name="meals" options={{ title: 'Meals on watch' }} />

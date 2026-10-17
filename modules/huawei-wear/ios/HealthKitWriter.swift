@@ -58,7 +58,7 @@ public final class HealthKitWriter: HealthWriter, @unchecked Sendable {
 
     public var availability: String { HKHealthStore.isHealthDataAvailable() ? "available" : "unavailable" }
 
-    /// Write permission is readable per type (`sharingAuthorized`); read permission is not, and JoyoFit never reads.
+    /// Write permission is readable per type (`sharingAuthorized`); read permission is not (the one read is AppleHealthImporter, after the user taps Import).
     public func authorized() async throws -> Set<HealthRecordType> {
         guard HKHealthStore.isHealthDataAvailable() else { return [] }
         return Set(HealthRecordType.allCases.filter { record in

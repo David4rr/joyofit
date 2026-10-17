@@ -94,6 +94,17 @@ const GROUPS: readonly SettingsGroup[] = [
         tint: 'heart',
         href: '/settings/import-huawei',
       },
+      ...(isIos
+        ? [
+            {
+              title: 'Import from Apple Health',
+              subtitle: 'Bring the history Huawei Health saved in Apple Health, once',
+              icon: 'heart' as const,
+              tint: 'heart' as const,
+              href: '/settings/import-apple-health' as const,
+            },
+          ]
+        : []),
       {
         title: 'Import a FIT file',
         subtitle: 'A ride or run from iGPSPORT, Garmin, Wahoo and others',

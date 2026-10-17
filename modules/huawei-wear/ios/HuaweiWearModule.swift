@@ -485,8 +485,14 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.huaweiImport.run(uri: uri, password: password) { bridge.huaweiImportProgress($0) } }
         }
 
+        // Reads what Huawei Health wrote into Apple Health, once; asks for read permission only now. Same progress event and summary as the ZIP import.
+        AsyncFunction("importAppleHealthHistory") { () async throws -> [String: Any] in
+            try await wearCall { try await WearApp.appleHealthImport.run { bridge.huaweiImportProgress($0) } }
+        }
+
         Function("cancelHuaweiImport") { () -> Void in
             runtime.huaweiImport.cancel()
+            WearApp.appleHealthImport.cancel()
         }
 
         // MARK: P2P (service 0x34): Healthy Living and the experimental running courses

@@ -109,7 +109,16 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * (an import is running) or ERR_STORAGE.
    */
   importHuaweiExport(uri: string, password: string): Promise<HuaweiImportSummary>;
-  /** Stops a running import between two records; the promise resolves with `cancelled: true`. Rows written so far stay. */
+  /**
+   * iOS only (not defined on Android): the one-time import of the history Huawei Health wrote into Apple Health. Asks for READ
+   * permission for steps, heart rate, resting heart rate, blood oxygen, sleep, workouts and active energy when called (the system sheet
+   * shows the first time only), then reads window by window, oldest first, skipping samples JoyoFit wrote itself. Rows carry
+   * `imported = 1` like the ZIP import; the same rules apply (watch data wins, a second run adds nothing). Progress arrives as
+   * `onHuaweiImportProgress` (`fileName` null, `fileCount` 0). Nothing read leaves the phone. Rejects with ERR_UNSUPPORTED (no Health
+   * data on this device), ERR_BUSY or ERR_STORAGE, or with the HealthKit error when the permission sheet fails.
+   */
+  importAppleHealthHistory(): Promise<HuaweiImportSummary>;
+  /** Stops a running import (ZIP or Apple Health) between two records; the promise resolves with `cancelled: true`. Rows written so far stay. */
   cancelHuaweiImport(): void;
 
   /**
