@@ -15,9 +15,9 @@ internal interface HealthLivingState {
 
 /**
  * Switches and bookkeeping of the P2P (service 0x34) features: Healthy Living replies, the experimental
- * running-course push. Own SharedPreferences file so the background service reads it without JS.
+ * running-course push and the JoyoFit Fuel link. Own SharedPreferences file so the background service reads it without JS.
  */
-internal class P2pSettings(context: Context) : HealthLivingState {
+internal class P2pSettings(context: Context) : HealthLivingState, FuelState {
   private val prefs: SharedPreferences = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
   /** Answer the watch's Healthy Living requests and push the day when data changes. On by default: the watch only asks when the user opens the app. */
@@ -51,6 +51,42 @@ internal class P2pSettings(context: Context) : HealthLivingState {
     get() = prefs.getBoolean(KEY_COURSES, false)
     set(value) = prefs.edit().putBoolean(KEY_COURSES, value).apply()
 
+  override var fuelWatchFingerprint: String
+    get() = prefs.getString(KEY_FUEL_FINGERPRINT, "") ?: ""
+    set(value) = prefs.edit().putString(KEY_FUEL_FINGERPRINT, value.trim()).apply()
+
+  override var fuelLastHelloAtMs: Long
+    get() = prefs.getLong(KEY_FUEL_HELLO_AT, 0L)
+    set(value) = prefs.edit().putLong(KEY_FUEL_HELLO_AT, value).apply()
+
+  override var fuelLastHelloVersion: String?
+    get() = prefs.getString(KEY_FUEL_HELLO_VER, null)
+    set(value) = prefs.edit().apply { if (value == null) remove(KEY_FUEL_HELLO_VER) else putString(KEY_FUEL_HELLO_VER, value) }.apply()
+
+  override var fuelLastHelloProfileAtMs: Long
+    get() = prefs.getLong(KEY_FUEL_HELLO_PROFILE, 0L)
+    set(value) = prefs.edit().putLong(KEY_FUEL_HELLO_PROFILE, value).apply()
+
+  override var fuelLastProfileSentAtMs: Long
+    get() = prefs.getLong(KEY_FUEL_SENT_AT, 0L)
+    set(value) = prefs.edit().putLong(KEY_FUEL_SENT_AT, value).apply()
+
+  override var fuelLastAckAtMs: Long
+    get() = prefs.getLong(KEY_FUEL_ACK_AT, 0L)
+    set(value) = prefs.edit().putLong(KEY_FUEL_ACK_AT, value).apply()
+
+  override var fuelLastAckProfileAtMs: Long
+    get() = prefs.getLong(KEY_FUEL_ACK_PROFILE, 0L)
+    set(value) = prefs.edit().putLong(KEY_FUEL_ACK_PROFILE, value).apply()
+
+  override var fuelSentKey: String?
+    get() = prefs.getString(KEY_FUEL_SENT_KEY, null)
+    set(value) = prefs.edit().apply { if (value == null) remove(KEY_FUEL_SENT_KEY) else putString(KEY_FUEL_SENT_KEY, value) }.apply()
+
+  override var fuelStampedAtMs: Long
+    get() = prefs.getLong(KEY_FUEL_STAMPED_AT, 0L)
+    set(value) = prefs.edit().putLong(KEY_FUEL_STAMPED_AT, value).apply()
+
   private companion object {
     const val PREFS_NAME = "joyofit_p2p"
     const val KEY_HEALTH_LIVING = "health_living"
@@ -60,5 +96,14 @@ internal class P2pSettings(context: Context) : HealthLivingState {
     const val KEY_HL_REPORT = "hl_report_ms"
     const val KEY_HL_SUMMARY = "hl_summary"
     const val KEY_COURSES = "courses_experimental"
+    const val KEY_FUEL_FINGERPRINT = "fuel_watch_fingerprint"
+    const val KEY_FUEL_HELLO_AT = "fuel_hello_at_ms"
+    const val KEY_FUEL_HELLO_VER = "fuel_hello_ver"
+    const val KEY_FUEL_HELLO_PROFILE = "fuel_hello_profile_at_ms"
+    const val KEY_FUEL_SENT_AT = "fuel_sent_at_ms"
+    const val KEY_FUEL_ACK_AT = "fuel_ack_at_ms"
+    const val KEY_FUEL_ACK_PROFILE = "fuel_ack_profile_at_ms"
+    const val KEY_FUEL_SENT_KEY = "fuel_sent_key"
+    const val KEY_FUEL_STAMPED_AT = "fuel_stamped_at_ms"
   }
 }

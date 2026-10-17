@@ -82,6 +82,7 @@ ProductInfo with their own tag sets. None of this has been tried on a real band 
 | `20` Stress | `09` | AutomaticStress (`StressSwitch.kt`) | `{01: 1 on, 02: score, 03: 12 big-endian floats, 04: calibration time s}` or `{01: 2}` off. The features and score come from the same minute of RR intervals (GB `HuaweiStressHRVCalculation`, `HuaweiStressScoreCalculation`). Sent again on every connect while the switch is on. The answer is logged; GB does not wait for one, UNVERIFIED on the Fit 4 Pro |
 | `27` Watchface | `01` params, `02` list, `06` names, `03` operation, `05` confirm (pushed), `08` photo info, `09` photo save | watch faces, photo face | list, set active, delete, install confirmation, photo list; see Watch faces |
 | `28` FileUpload | `01` file request (pushed), `02` info, `03` hash, `04` ack, `05` chunk request (pushed), `06` chunk, `07` result, `08` error (pushed) | watch face upload, photo upload | the watch drives, the phone answers; `01`: the watch asks for a photo; see Watch faces |
+| `2A` App | `06` params, `03` list, `01` delete, `02` install status (pushed) | watch apps (`WatchApps.kt`) | the watch's app runtime, installed apps, delete, install / removal reports; file type 6 upload of a Lite Wearable app; UNVERIFIED on the Fit 4 Pro, see Watch apps |
 | `34` P2P | `01` | cmd 1 ping, 2 data, 3 answer | module traffic to the watch's apps: health dictionary, Healthy Living, courses; see P2P (service 0x34) |
 
 ## Notifications and profile
@@ -528,6 +529,45 @@ its own defaults. The photo shows as the face's background, but the watch keeps 
 prompt. OPEN: whether the full `27/09` (above) clears it. Huawei Health is not known to send anything more after the save;
 what its H5 editor page calls afterwards is not known.
 
+## Watch apps (service 0x2a, upload file type 6; `WatchApps.kt`, `WatchAppPackage.kt`)
+
+**UNVERIFIED on the Fit 4 Pro: nothing in this section has run against it.** *GB* = layout from Gadgetbridge (`HuaweiAppManager`, `HuaweiFwHelper.parseAsApp`, `HuaweiBinAppParser`,
+`requests/{GetAppInfoParams,GetAppNames,SendAppDelete}`, `AsynchronousResponse.handleApp`, `packets/App.java`), which runs it on other Huawei watches. Every step is logged
+(`adb logcat -d -s JoyoFit:V | grep "App:"`). Android only: iOS has no app install and no Fuel link yet (its module rejects the calls with `ERR_UNSUPPORTED`).
+
+| Service | Cmd | Name | Content |
+|---|---|---|---|
+| `2A` App | `06` | AppInfoParams | request `81` empty; reply `81{82{03 type (byte; 38 = liteWearable), 04 OS API level, 05 OS version, 06 screen shape, 07 width (i16), 08 height (i16), 09 build level, 0a build type}}`. Gate: SupportedCommands `2a/06` (GB `supportsAppParams`); the decision is logged and JoyoFit refuses every app operation without it |
+| `2A` | `03` | AppNames | request `81` empty; reply `81{82{03 package, 04 version, 05 size (most devices send 0), 06 name, 07 time (0), 09 version code, 0d package type}…}`. JoyoFit reads the tags after the package name leniently (GB throws when one is missing) |
+| `2A` | `01` | AppDelete | `01 = 1`, `02` package. GB sends it and does not wait; JoyoFit logs an answer if one comes |
+| `2A` | `02` | AppInstallStatus | watch → phone, unrequested: `01` status, `02` package. `<= 100` is a percentage; 101 install started (right after the transfer, before the first percentage), 102 installed, 103 install failed, 104 removal started (just before 105), 105 removed, 106 removal failed |
+
+**Container** (GB `HuaweiBinAppParser`; integers big endian): `0xBE`, package (`i32` length + UTF-8), then entries until the signature block starts: file name (`i32` length + UTF-8), path (`i32` length, may be 0, + UTF-8), content (`i64` length + bytes). A signed
+file ends with the signature block, whose last 32 bytes are `hw signed app   ` (16 bytes), `1000`, an `i32` block length (header included, which is where GB stops reading entries) and 8 more bytes. `config.json` holds `app.bundleName`, `app.vendor`,
+`app.version.name`; `icon_small.png` is the icon. JoyoFit reads both, shows name, version, vendor and whether the trailer is there before the install, warns before an unsigned file is sent, and checks every length against what is left in the file.
+
+**What DevEco Studio 3.1.1 writes (community guides, not seen here).** A Lite Wearable debug build ends up as `build/outputs/hap/debug/liteWearable/entry-bin-debug-lite-signed.hap`, which the guides copy to the phone for Huawei DevEco Assistant; GB's installer takes the same
+kind of app as a `.bin` (Gadgetbridge issue #4175: "a `.bin` file that is built in debug mode and signed with a certificate (.p7b) that contains the UUID for a specific watch"). Whether the `.hap` is the bare container or a zip around it is not known, so JoyoFit
+accepts a file that starts with `0xBE` as it is, and for a zip uses the first entry that starts with `0xBE` and parses as a container (the entry name is logged and shown). Any other zip, for example one holding `config.json` and a JS bundle, and any other file is refused with a message that says what JoyoFit
+takes.
+
+**Install flow** (`WatchAppOps.install`, `FileUploader`, GB `HuaweiFwHelper` + `HuaweiInstallHandler` + `HuaweiAppManager.handleInstallStatus`):
+
+1. SupportedCommands gate `2a/06`, then `2a/06` and `2a/03` (the list shows whether the app is installed already).
+2. `28/02` … `28/07` with **file type 6**, name `<package>_INSTALL` (the package from the container; no tags `05` / `06`, which are for watch faces), exactly as the face upload in Watch faces drives it. GB uses the same `_INSTALL` name for a first install and an update
+   (`fileName = app.getPackageName() + "_INSTALL"; //TODO: INSTALL or UPDATE suffix`), JoyoFit does the same and logs when the app is on the watch already. GB's `HuaweiUploadManager` comment lists "7 - app", but `FileUpload.Filetype.app` is 6 and that is the value its install path sets.
+3. `2a/02` reports for the package until 102 or 103: 101, percentages, 102. Each report must follow within 60 s of the previous one. Reports about another package are logged and ignored. They are emitted as `onAppInstallStatus`.
+4. `2a/03` again. A 102 whose package is missing from the list, or a silence with the app in the list, is reported as such.
+
+**103 and why the watch refuses.** The watch checks the app's signature: it takes an app signed by Huawei, i.e. a debug build whose signing profile (AppGallery Connect, `.p7b`) lists this watch's UDID, or an AppGallery release (Gadgetbridge issue #4175, maintainer's answer: "the watch itself checks the certificate of the apps. To support unsigned apps
+or apps signed with debug keys changes to the watch firmware are required"). An app without the `hw signed app` trailer is expected to end with 103; the app asks before sending one. The failure text says all of this and points to `watchapp/fuel/README.md`.
+
+**Delete.** `2a/01`, then 104 and 105 (or 106), then `2a/03`. The app asks for confirmation first. No report within 30 s with the app still listed is a timeout; no report with the app gone is a success.
+
+**Device test steps.** (1) Connect, open Watch → Apps. Expected `App: SupportedCommands 2a/06=true`, `App: AppInfoParams: type=38 (liteWearable) …` and one `App: AppList:` line per app. If it says `=false` the watch does not list the service and nothing else is tried.
+(2) Choose the signed Fuel build. Expected: name, version, vendor, "Signed" and the unwrapped zip entry when the file was a zip. Install. Expected `Upload: FileInfoSend TLV before encryption: 01="…_INSTALL" 02=… 03=06`, chunk lines, `FileUploadResult`, then `AppInstallStatus: 101 install started`,
+percentages, `102 installed`, and the app in the list. (3) An unsigned build: the warning, then `103 install failed` with the explanation. (4) Delete: `AppDelete …`, `104 removal started`, `105 removed`. Record the log of any step that differs.
+
 ## Calorie intake (Huawei Health's behaviour)
 
 **UNVERIFIED. Based on the Huawei Health app's observed behaviour (17.0.8.300); nothing was sent to a watch yet.**
@@ -761,6 +801,38 @@ time or distance targets, pace / heart-rate % / cadence intensity and repeat gro
 4. The meaning of intensity types 13 / 17 (zones) and of `instensityValueH/L` for heart-rate range (percent vs bpm) was not confirmed; JoyoFit never sends zones.
 5. Plans (business types 2, 7, 21, 22) and the DataSync trigger `800200002` (ExpandCapability 295, not set on our watch) are not implemented.
 
+### (d) JoyoFit Fuel: module `com.joyodigitama.joyofit` ↔ `com.joyodigitama.joyofit.fuel` (`FuelLink.kt`; UNVERIFIED)
+
+The phone side of the JoyoFit Fuel watch app (`watchapp/fuel/`, a Huawei Lite Wearable JS app that computes kcal, fat and carbohydrate from heart rate on the watch; see the README there). Written for this branch: neither side has run on a watch. No ExpandCapability gate is known for a third-party
+app, so the service is registered whenever SupportedCommands lists `34/01`. The stack is the one above (`P2pStack`, `P2pController`), so it also runs from the background service.
+
+| What | Value |
+|---|---|
+| Watch app bundle name (= destination package) | `com.joyodigitama.joyofit.fuel` |
+| Phone package (= source package of everything the phone sends, also the ping source; `HuaweiBaseP2PService.getPingPackage` is overridden, GB's default is `com.huawei.health`) | `com.joyodigitama.joyofit` |
+| Phone fingerprint (local, tag `05`) | SHA-256 of JoyoFit's APK signing certificate (`PackageManager` signing info, the current signer), **uppercase hex without separators**, 64 characters. Shown on Watch → Apps with a Copy button; the watch app has it as `PEER_FINGERPRINT` |
+| Watch app fingerprint (remote, tag `06`) | Free text typed on the same screen, stored in the module's own `joyofit_p2p` preferences, default empty. Huawei's apps register as `<bundleName>_<base64 public key of the signing certificate>` (see (b)). Empty: the bundle name is sent and the log says so; whether the watch checks it is UNVERIFIED |
+
+Transport: `34/01` cmd 2 (data), payload tag `07` = UTF-8 JSON, no prefix, at most 1 KB. Ping: cmd 1 from the phone package to the watch app, answer `0xca` = installed and reachable. Every data packet from the watch app (source package = the bundle name) is answered `0xcf`, as for all P2P services.
+JoyoFit parses the payload from the first `{` to the last `}`; anything that is not a version 1 message is logged as an error line with the payload's hex and ignored (`Fuel: a watch message was not understood (…); payload N bytes: …`).
+
+| Direction | Message | When |
+|---|---|---|
+| watch → phone | `{"v":1,"t":"hello","ver":"1.0.0","profileAt":<ms of the profile it holds, 0 if none>}` | the watch app starts. JoyoFit records the time, version and `profileAt`, and replies with the profile |
+| phone → watch | `{"v":1,"t":"profile","weightKg":72.5,"age":34,"sex":"male","maxHr":186,"restHr":58,"at":<ms>}` (fields in this order; `restHr` may be `null`; `weightKg` prints as `70.0` for a whole number) | in reply to every hello; after the link reaches CONNECTED and the ping returns `0xca`; on **Send profile now**; after weight, birth year or sex changed while connected |
+| watch → phone | `{"v":1,"t":"ack","at":<profile at it stored>}` | after the watch stored a profile. JoyoFit records the time and the `at` |
+
+Profile values: weight, age (year difference to the birth year, as `ProfileSender.age`) and sex from the saved JoyoFit profile; a missing value falls back as the live workout estimate does (`LiveWorkout.DEFAULT_AGE` 35, `DEFAULT_WEIGHT_KG` 70.0, sex `unknown`) and is sent all the same;
+`maxHr` = 220 - age (`SubstrateEstimator.maxHeartRate`, clamped 120 to 220); `restHr` = the newest `step_samples.resting_heart_rate` the activity sync stored, else `null`. `at`: the watch keeps a received profile only when its `at` is newer than the one it holds,
+so `at` has to move whenever any value in the payload does. JoyoFit remembers the tuple (weight, age, sex, maxHr, restHr) of the last profile sent; a profile with a different tuple (weight, birth year or sex edited, a new resting heart rate, the age turning over with the year) is sent with `at = max(time weight, birth year or sex last changed, now)`, which is stored,
+and the same tuple keeps the `at` it went out with, however often it is sent again. A profile that was never saved (defaults) has `at` 0 and keeps it, so it never replaces anything on the watch. An edit on the watch carries the watch clock and `src: "watch"`.
+The kcal, fat and carbohydrate math is on the watch and equals `HeartRateEnergy.kcalPerMinute` and `SubstrateEstimator.fatShare` (`LiveWorkoutCodec.kt`).
+
+Status for the screen (`getFuelLink`): ping answer and `reachable` (`0xca`), last hello (time, version, the profile `at` it held), last profile sent, last ack (time, `at`), both fingerprints, the profile that would be sent now. Every step is logged with a `Fuel:` prefix.
+
+**What is not known:** whether the watch routes a third-party app's P2P packets by the source package, the fingerprints or the signing certificate; whether a Lite Wearable app can receive on `34/01` at all (it needs Huawei's P2P / Wear Engine on the watch side, and the app's own registration with the phone's package and fingerprint);
+whether it answers a ping with `0xca`; whether the watch checks the fingerprints (and in which form); whether it forwards a hello when the app starts. A silent ping or an error answer in the log is the first thing to read.
+
 ### Device test steps
 
 1. Connect, tap **Sync now** and read `adb logcat -d -s JoyoFit:V | grep -E "P2P|Health metric|Healthy Living|Courses"`. Expected: `P2P: SupportedCommands 34/01=true; registering P2P services`, `P2P dictionary sync: ping answered 0xca`,
@@ -768,6 +840,9 @@ time or distance targets, pace / heart-rate % / cadence intensity and repeat gro
 2. Open **Healthy Living** on the watch. Expected: `Healthy Living: request payload … bytes`, `request msgType=2001 msgVer=…`, `reporting (request) day … in N report(s)`, and `report 1/N acknowledged by the watch with 0xcf`.
    If the watch shows nothing, the log has both sides of the exchange; the request bytes are enough to correct the schema.
 3. Courses (Settings → Advanced → Running courses, then the editor): `Courses: gates … 41=true 169=true`, the course bytes, the `Upload:` lines of the file transfer and `Courses: upload finished, watch result status=…`.
+4. JoyoFit Fuel (Watch → Apps → JoyoFit Fuel; the app must be installed, see Watch apps): `Fuel: registering com.joyodigitama.joyofit.fuel`, `P2P tx cmd=1 …`, then either `Fuel: ping of … answered 0xca` followed by `Fuel: sending the profile (ping answered) … {"v":1,"t":"profile",…}` and
+   `the watch acknowledged the profile with 0xcf`, or an answer other than `0xca` (the app is not there, or the watch does not route third-party packets). Start the watch app: `Fuel: hello from the watch app, version …` and a reply. Tap **Send profile now** and change the weight in Settings: each sends a profile. Expected after the watch stores it:
+   `Fuel: the watch app stored the profile of <at>`. Paste the phone fingerprint into `PEER_FINGERPRINT` and try the registered fingerprint of the watch app if the first attempt is silent.
 
 ## Auth decision
 

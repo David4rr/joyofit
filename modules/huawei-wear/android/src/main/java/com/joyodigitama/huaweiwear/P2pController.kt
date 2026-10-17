@@ -2,6 +2,7 @@ package com.joyodigitama.huaweiwear
 
 import android.content.Context
 import android.database.sqlite.SQLiteException
+import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +59,7 @@ internal class P2pController(
           handle.session, events, settings,
           { manager -> HealthModelService(manager, settings, events, scope, ::loadDay, ::goals) },
           { HeartRateZonesSync.age(wearSettings.profile) },
+          { manager -> FuelService(manager, settings, events, ::fuelProfile, ::phoneFingerprint) },
         )
         stack = created
         created.start()
@@ -142,6 +144,82 @@ internal class P2pController(
     if (settings.healthLivingMsgVer <= 0f) return false
     withContext(Dispatchers.IO) { service.push("manual") }
     return true
+  }
+
+  // JoyoFit Fuel (watch app `com.joyodigitama.joyofit.fuel`, see FuelLink.kt)
+
+  private val phoneFingerprintValue: String? by lazy {
+    SigningFingerprint.of(appContext).also {
+      if (it == null) error("Fuel: the signing certificate of this app could not be read; no phone fingerprint")
+    }
+  }
+
+  private fun phoneFingerprint(): String? = phoneFingerprintValue
+
+  /** The newest resting heart rate in the activity samples the sync stored; null when there is none or the database cannot be read. */
+  private fun restingHeartRate(): Int? = try {
+    syncStore.db().rawQuery(
+      "SELECT resting_heart_rate FROM step_samples WHERE resting_heart_rate IS NOT NULL AND resting_heart_rate > 0 ORDER BY timestamp DESC LIMIT 1",
+      null,
+    ).use { if (it.moveToFirst()) it.getInt(0) else null }
+  } catch (e: SQLiteException) {
+    error("Fuel: the resting heart rate could not be read: ${e.message}")
+    null
+  }
+
+  /** What the Fuel watch app is sent now: the saved profile, the newest resting heart rate. */
+  private fun fuelProfile(): FuelProfile =
+    FuelProfiles.build(wearSettings.profile, wearSettings.profileChangedAtMs, restingHeartRate(), LocalDate.now())
+
+  /** [fuelProfile] with the `at` it goes out with, without storing the decision: what the next send would carry. */
+  private fun fuelProfilePreview(): FuelProfile = FuelProfiles.stamp(fuelProfile(), settings, System.currentTimeMillis(), commit = false)
+
+  fun fuelStatus(): Map<String, Any?> {
+    val current = stack
+    val service = current?.fuel
+    val helloAt = settings.fuelLastHelloAtMs
+    return mapOf(
+      "available" to (current != null),
+      "registered" to (service != null),
+      "pingCode" to service?.pingCode,
+      "reachable" to service?.reachable,
+      "phonePackage" to FuelContract.PHONE_PACKAGE,
+      "watchPackage" to FuelContract.WATCH_PACKAGE,
+      "phoneFingerprint" to phoneFingerprint(),
+      "watchFingerprint" to settings.fuelWatchFingerprint,
+      "lastHelloAt" to helloAt.takeIf { it > 0 },
+      "lastHelloVersion" to settings.fuelLastHelloVersion,
+      "lastHelloProfileAt" to if (helloAt > 0) settings.fuelLastHelloProfileAtMs else null,
+      "lastProfileSentAt" to settings.fuelLastProfileSentAtMs.takeIf { it > 0 },
+      "lastAckAt" to settings.fuelLastAckAtMs.takeIf { it > 0 },
+      "lastAckProfileAt" to if (settings.fuelLastAckAtMs > 0) settings.fuelLastAckProfileAtMs else null,
+      "profile" to fuelProfilePreview().toJs(),
+    )
+  }
+
+  fun setFuelWatchFingerprint(value: String) {
+    settings.fuelWatchFingerprint = value
+    log("Fuel: the watch app fingerprint is now " + value.trim().ifEmpty { "empty (the bundle name is sent in its place)" })
+  }
+
+  /** "Send profile now": pings the watch app again and sends the profile whatever the answer is. */
+  suspend fun sendFuelProfile(): Map<String, Any?> = withContext(Dispatchers.IO) {
+    val service = stack?.fuel
+      ?: throw WearException(ErrorCodes.UNSUPPORTED, "The JoyoFit Fuel link needs a connected watch that lists the P2P service (0x34/0x01)")
+    service.ping("send profile now", sendOnAnswer = false)
+    val sent = service.sendProfile("send profile now")
+    mapOf("sent" to sent, "profile" to fuelProfilePreview().toJs())
+  }
+
+  /** The user changed the profile: the Fuel watch app gets the new numbers when it is there ([previous] is what was stored before). */
+  fun onProfileChanged(previous: UserProfileData?, current: UserProfileData) {
+    if (previous != null && previous.weightKg == current.weightKg && previous.birthYear == current.birthYear && previous.sex == current.sex) return
+    val service = stack?.fuel ?: return
+    if (service.reachable == false) {
+      log("Fuel: profile changed, not sent: the watch app did not answer the ping with 0xca")
+      return
+    }
+    scope.launch(Dispatchers.IO) { service.sendProfile("profile changed") }
   }
 
   // Running courses (experimental, off by default)

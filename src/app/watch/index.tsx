@@ -103,6 +103,14 @@ export default function WatchScreen() {
       />
       <Divider />
       <NavRow
+        icon="apps"
+        title="Watch apps"
+        subtitle="Install, delete, JoyoFit Fuel"
+        style={styles.navRow}
+        onPress={() => router.push('/watch/apps')}
+      />
+      <Divider />
+      <NavRow
         icon="images"
         title="Photo face"
         subtitle="Your photos on the watch"

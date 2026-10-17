@@ -2,6 +2,7 @@ import type { WatchMealLoggedEvent } from './HuaweiWearDiet.types';
 import type { UploadProgressEvent, UploadResultEvent } from './HuaweiWearWatchface.types';
 import type { FaceCustomization } from './HuaweiWearFaceCustom.types';
 import type { HuaweiImportProgressEvent } from './HuaweiWearImport.types';
+import type { AppInstallStatusEvent } from './HuaweiWearWatchApps.types';
 
 export type LinkState =
   | 'disconnected'
@@ -420,6 +421,8 @@ export type HuaweiWearModuleEvents = {
   onLog: (event: LogEvent) => void;
   onUploadProgress: (event: UploadProgressEvent) => void;
   onUploadResult: (event: UploadResultEvent) => void;
+  /** While `installWatchApp` or `deleteWatchApp` runs: each report the watch sends about the app (0x2a/0x02). */
+  onAppInstallStatus: (event: AppInstallStatusEvent) => void;
   onSyncComplete: (event: SyncCompleteEvent) => void;
   onHeartRate: (event: HeartRateEvent) => void;
   onWatchMealLogged: (event: WatchMealLoggedEvent) => void;
