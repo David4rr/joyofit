@@ -18,8 +18,15 @@
     // The Strava API application shared with JoyoRogo (client id is public; docs/strava.md). The matching
     // STRAVA_CLIENT_SECRET (the same value JoyoRogo's Worker has) and STRAVA_WEBHOOK_VERIFY_TOKEN are Worker
     // secrets: `bunx wrangler secret put <NAME>`.
-    "STRAVA_CLIENT_ID": "287873"
+    "STRAVA_CLIENT_ID": "287873",
+    // Sender of family alert emails; same sender as JoyoRogo.
+    "EMAIL_FROM": "halo@mail.joyorogo.com",
+    "EMAIL_FROM_NAME": "JoyoFit"
   },
+  // Family monitoring (docs/family-monitoring.md): alert checks every 15 minutes, the digest at 19:00 WIB, a nightly purge.
+  "triggers": { "crons": ["*/15 * * * *", "0 12 * * *", "0 20 * * *"] },
+  // Alert emails and the digest. The sending domain must be onboarded for Email Sending in this account.
+  "send_email": [{ "name": "EMAIL" }],
   "d1_databases": [
     {
       "binding": "DB",

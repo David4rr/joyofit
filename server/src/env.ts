@@ -11,6 +11,12 @@ export type AppEnv = Env & {
   STRAVA_WEBHOOK_VERIFY_TOKEN?: string;
   /** Bearer token for `GET /v1/waitlist` (the owner's list). Unset = the list answers 503. */
   WAITLIST_ADMIN_TOKEN?: string;
+  /** Cloudflare Email binding for family alert emails and the digest (wrangler.jsonc `send_email`). Unset = no email. */
+  EMAIL?: SendEmail;
+  EMAIL_FROM?: string;
+  EMAIL_FROM_NAME?: string;
+  /** Expo Push access token (enhanced security). Optional: Expo accepts unauthenticated sends unless the project requires it. */
+  EXPO_ACCESS_TOKEN?: string;
 };
 
 export interface AuthUser {

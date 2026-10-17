@@ -5,6 +5,7 @@ import { afterEach, beforeEach, vi } from "vitest";
 import app from "../src";
 import { clearAccessCache } from "../src/access";
 import { clearAuthCache } from "../src/auth";
+import { clearRogoCache } from "../src/family/joyorogo";
 import type { AppEnv } from "../src/env";
 
 export interface FakeUser {
@@ -16,7 +17,7 @@ export interface FakeUser {
 /** The sessions the fake JoyoRogo knows: token -> user. */
 const sessions = new Map<string, FakeUser>();
 /** Users whose JoyoRogo account counts as Founder (`fitness.cloudAccess` says `unlocked`). */
-const founders = new Set<string>();
+export const founders = new Set<string>();
 export const upstream = {
   calls: [] as { url: string; cookie: string | null }[],
   failWith: null as number | null,
@@ -32,6 +33,20 @@ export const grantApi = {
   calls: [] as { action: string; headers: Headers; body: Record<string, unknown> }[],
   handler: null as ((action: string, body: Record<string, unknown>) => Response) | null,
 };
+
+/** Expo Push messages the Worker sent, and how Expo answers (per message `ok`, or a details error such as DeviceNotRegistered). */
+export const expo = {
+  sent: [] as { to: string; title: string; body: string; data: Record<string, string> }[],
+  failWith: null as string | null,
+};
+
+/** Emails the Worker sent through the EMAIL binding. */
+export const outbox: { to: string; subject: string; text: string }[] = [];
+export const fakeEmail = {
+  send: async (message: { to: string; subject: string; text: string }) => {
+    outbox.push({ to: message.to, subject: message.subject, text: message.text });
+  },
+} as unknown as SendEmail;
 
 let counter = 0;
 /** Registers a user and returns the Cookie header the app would send for them. Founder unless `founder` is false. */
@@ -66,6 +81,14 @@ export function fakeCloudAccess(cookie: string | null): Response {
   return Response.json({ json: { unlocked, tier: unlocked ? "founder" : "free" } });
 }
 
+/** What JoyoRogo's `/internal/joyofit/family/users` answers. */
+export function fakeFamilyUsers(userIds: string[]): Response {
+  const users = [...sessions.values()]
+    .filter((u) => userIds.includes(u.id))
+    .map((u) => ({ id: u.id, name: u.name, email: u.email, locale: "id", tier: founders.has(u.id) ? "founder" : "free", pro: founders.has(u.id) }));
+  return Response.json({ users });
+}
+
 /** The fake JoyoRogo as a whole: routes by URL like the real server. */
 export function fakeJoyorogo(url: string, cookie: string | null): Response {
   return url.endsWith("/rpc/fitness/cloudAccess") ? fakeCloudAccess(cookie) : fakeGetSession(cookie);
@@ -74,11 +97,15 @@ export function fakeJoyorogo(url: string, cookie: string | null): Response {
 beforeEach(() => {
   clearAuthCache();
   clearAccessCache();
+  clearRogoCache();
   upstream.calls = [];
   upstream.failWith = null;
   upstream.accessFailWith = null;
   grantApi.calls = [];
   grantApi.handler = null;
+  expo.sent = [];
+  expo.failWith = null;
+  outbox.length = 0;
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const grantCall = /\/internal\/joyofit\/strava\/(\w+)$/.exec(String(input));
     if (grantCall?.[1]) {
@@ -86,6 +113,15 @@ beforeEach(() => {
       grantApi.calls.push({ action: grantCall[1], headers: new Headers(init?.headers), body });
       if (!grantApi.handler) throw new Error(`unexpected grant API call: ${String(input)}`);
       return grantApi.handler(grantCall[1], body);
+    }
+    if (String(input).endsWith("/internal/joyofit/family/users")) {
+      const body = JSON.parse(String(init?.body ?? "{}")) as { userIds: string[] };
+      return fakeFamilyUsers(body.userIds);
+    }
+    if (String(input) === "https://exp.host/--/api/v2/push/send") {
+      const messages = JSON.parse(String(init?.body ?? "[]")) as { to: string; title: string; body: string; data: Record<string, string> }[];
+      expo.sent.push(...messages);
+      return Response.json({ data: messages.map(() => (expo.failWith ? { status: "error", details: { error: expo.failWith } } : { status: "ok", id: "x" })) });
     }
     if (String(input).startsWith("https://www.strava.com/")) throw new Error(`JoyoFit's Worker must not call Strava itself: ${String(input)}`);
     const headers = new Headers(init?.headers);

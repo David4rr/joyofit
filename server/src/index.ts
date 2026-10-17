@@ -5,7 +5,9 @@ import { ZodError } from "zod";
 import { account } from "./account";
 import { cloudUnlocked, requireFounder } from "./access";
 import { AuthUnavailableError, requireUser } from "./auth";
-import type { AppContext } from "./env";
+import type { AppContext, AppEnv } from "./env";
+import { family, familyDevice } from "./family/routes";
+import { runScheduled } from "./family/cron";
 import { imports } from "./imports";
 import { MAX_SYNC_BODY_BYTES, PULL_DEFAULT_LIMIT, PULL_MAX_LIMIT } from "./limits";
 import { syncBodySchema } from "./schemas";
@@ -19,6 +21,8 @@ app.get("/", (c) => c.json({ service: "joyofit-api", ok: true }));
 
 // Public (no session): registered before `v1` so its session check never runs for these routes.
 app.route("/v1/waitlist", waitlist);
+// Device-token auth, not a session: the monitored phone uploads from native background code.
+app.route("/v1/family", familyDevice);
 
 const v1 = new Hono<AppContext>();
 v1.use("*", requireUser);
@@ -93,6 +97,7 @@ v1.get("/sync", async (c) => {
 v1.route("/account", account);
 v1.route("/imports", imports);
 v1.route("/strava", strava);
+v1.route("/family", family);
 app.route("/v1", v1);
 app.route("/strava", stravaPublic);
 
@@ -109,4 +114,10 @@ app.onError((error, c) => {
   return c.json({ error: "internal_error" }, 500);
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  /** Cron triggers (wrangler.jsonc): family alert checks every 15 minutes, the 19:00 WIB digest, the nightly purge. */
+  async scheduled(controller: ScheduledController, env: AppEnv, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(runScheduled(env, controller.cron));
+  },
+} satisfies ExportedHandler<AppEnv>;
