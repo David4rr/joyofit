@@ -23,6 +23,7 @@
         "NSHealthShareUsageDescription": "JoyoFit reads your Apple Health history once, only when you tap Import history from Apple Health, to bring the steps, heart rate, sleep, blood oxygen, active energy and workouts that Huawei Health saved there into JoyoFit. It stays on your phone.",
         "NSHealthUpdateUsageDescription": "Allow JoyoFit to save the steps, distance, calories, heart rate, blood oxygen, sleep, workouts and workout routes recorded by your watch to Apple Health.",
         "UIBackgroundModes": ["bluetooth-central"],
+        "LSSupportsOpeningDocumentsInPlace": false,
         "CFBundleDocumentTypes": [
           {
             "CFBundleTypeName": "FIT activity",
