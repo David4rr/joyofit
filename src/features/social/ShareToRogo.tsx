@@ -15,6 +15,7 @@ import { SwitchRow } from '@/components/SwitchRow';
 import type { WorkoutPointRow, WorkoutRow } from '@/db/queries';
 import { SignInGate } from '@/features/social/SignInGate';
 import { buildWatchPost, canShareToRogo, hrSeries, routePairs } from '@/features/social/watchPost';
+import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import { errorMessage } from '@/format';
 import { HIT, spacing, useColors } from '@/theme';
 
@@ -34,14 +35,18 @@ const VISIBILITY_HINT: Record<RogoVisibility, string> = {
 interface Props {
   workout: WorkoutRow;
   points: readonly WorkoutPointRow[];
+  /** The full analysis of the workout (see `analyzeWorkout`, all options on); null while it is computed or when it failed. */
+  analysis: WorkoutAnalysis | null;
+  /** True until the analysis has either arrived or failed; posting waits for it so the detail is never a downgrade. */
+  analysisPending: boolean;
 }
 
 /**
  * "Share to JoyoRogo" for a workout and the composer it opens: a caption, who may see it, and whether the heart-rate
- * chart and the route go along. Free for everyone to share; JoyoRogo decides who may view the detail. Renders nothing for
+ * data, the route and the comparison with earlier workouts go along. Free for everyone to share; JoyoRogo decides who may view the detail. Renders nothing for
  * a workout that may not be shared (see `canShareToRogo`).
  */
-export function ShareToRogoButton({ workout, points }: Props) {
+export function ShareToRogoButton({ workout, points, analysis, analysisPending }: Props) {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -50,11 +55,13 @@ export function ShareToRogoButton({ workout, points }: Props) {
   const [visibility, setVisibility] = useState<RogoVisibility>('grup');
   const [includeHr, setIncludeHr] = useState(true);
   const [includeRoute, setIncludeRoute] = useState(true);
+  const [includeComparison, setIncludeComparison] = useState(true);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [postedId, setPostedId] = useState<string | null>(null);
   const hasHr = useMemo(() => hrSeries(points, workout.start, workout.end) !== null, [points, workout.start, workout.end]);
   const hasRoute = useMemo(() => routePairs(points) !== null, [points]);
+  const hasComparison = analysis?.comparison != null;
 
   if (!canShareToRogo(workout)) return null;
 
@@ -68,7 +75,7 @@ export function ShareToRogoButton({ workout, points }: Props) {
     setPosting(true);
     setError(null);
     try {
-      const created = await rogo.social.createWatchPost(buildWatchPost(workout, points, { caption, visibility, includeHr, includeRoute }));
+      const created = await rogo.social.createWatchPost(buildWatchPost(workout, points, { caption, visibility, includeHr, includeRoute, includeComparison }, analysis));
       setCaption('');
       setPostedId(created.id);
     } catch (e) {
@@ -128,7 +135,7 @@ export function ShareToRogoButton({ workout, points }: Props) {
                       {VISIBILITY_HINT[visibility]}
                     </AppText>
                   </View>
-                  {hasHr ? <SwitchRow label="Heart-rate chart" value={includeHr} onValueChange={setIncludeHr} /> : null}
+                  {hasHr ? <SwitchRow label="Heart-rate data" value={includeHr} onValueChange={setIncludeHr} /> : null}
                   {hasRoute ? (
                     <SwitchRow
                       label="Route"
@@ -137,13 +144,14 @@ export function ShareToRogoButton({ workout, points }: Props) {
                       onValueChange={setIncludeRoute}
                     />
                   ) : null}
-                  {hasHr || hasRoute ? (
-                    <AppText variant="caption" muted>
-                      Everyone you share with sees the summary. The heart-rate chart and route are visible to JoyoRogo Pro members and to you.
-                    </AppText>
+                  {hasComparison ? (
+                    <SwitchRow label="Comparison with earlier workouts" value={includeComparison} onValueChange={setIncludeComparison} />
                   ) : null}
+                  <AppText variant="caption" muted>
+                    Everyone you share with sees the summary. The full analysis (map, charts, splits, zones, best efforts and more) is visible to JoyoRogo Pro members and to you.
+                  </AppText>
                   {error ? <Notice tone="danger">{error}</Notice> : null}
-                  <Button label="Post" variant="primary" icon="send" loading={posting} onPress={() => void post()} />
+                  <Button label="Post" variant="primary" icon="send" loading={posting || analysisPending} onPress={() => void post()} />
                 </>
               )}
             </SignInGate>

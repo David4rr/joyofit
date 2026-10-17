@@ -75,10 +75,12 @@ interface ScreenProps {
   caption?: string;
   right?: ReactNode;
   refresh?: RefreshProps;
+  /** False freezes the scroll, e.g. while a chart is being scrubbed. */
+  scrollEnabled?: boolean;
   children: ReactNode;
 }
 
-export function Screen({ title, caption, right, refresh, children }: ScreenProps) {
+export function Screen({ title, caption, right, refresh, scrollEnabled = true, children }: ScreenProps) {
   const colors = useColors();
   const padding = useContentPadding(title !== undefined);
   const refreshControl = useRefreshControl(refresh);
@@ -88,6 +90,7 @@ export function Screen({ title, caption, right, refresh, children }: ScreenProps
       contentContainerStyle={[styles.content, padding]}
       keyboardShouldPersistTaps="handled"
       refreshControl={refreshControl}
+      scrollEnabled={scrollEnabled}
       showsVerticalScrollIndicator={false}>
       {title ? <PageHeader title={title} caption={caption} right={right} /> : null}
       {children}

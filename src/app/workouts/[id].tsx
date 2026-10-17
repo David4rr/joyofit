@@ -26,8 +26,11 @@ import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/st
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
 import { ShareWorkoutButton } from '@/features/share/ShareWorkoutSheet';
 import { ShareToRogoButton } from '@/features/social/ShareToRogo';
-import { HeartRateChart } from '@/features/workouts/HeartRateChart';
-import { RouteView } from '@/features/workouts/RouteView';
+import { analyzeWorkout } from '@/features/workouts/analysis/analyze';
+import { loadAnalysisHistory } from '@/features/workouts/analysis/history';
+import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/palette';
+import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
+import { WorkoutAnalysisView, makeEnglishT } from '@/features/workouts/analysis/ui';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import { splitWorkout } from '@/features/workouts/substrate';
 import {
@@ -35,7 +38,6 @@ import {
   formatPace,
   formatSpeed,
   formatWorkoutDistance,
-  kmSplits,
   parseSummary,
   routePoints,
   type WorkoutSummary,
@@ -80,16 +82,26 @@ function paceRows(summary: WorkoutSummary): { label: string; value: string }[] {
   return rows;
 }
 
+/** The analysis of the workout on screen: computed after the rest of the screen is drawn. */
+type AnalysisState = { status: 'pending' } | { status: 'ready'; analysis: WorkoutAnalysis } | { status: 'error'; message: string };
+
+const ANALYSIS_T = makeEnglishT();
+
 export default function WorkoutDetailScreen() {
   const db = useSQLiteContext();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: 'pending' });
+  const [scrubbing, setScrubbing] = useState(false);
+  const palette = useAnalysisPalette();
+  const mapTheme = useMapTheme();
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
       const workoutId = Number(id);
+      setAnalysisState({ status: 'pending' });
       (async () => {
         const found = await getWorkout(db, workoutId);
         if (!found) throw new Error('This workout is no longer stored');
@@ -98,8 +110,23 @@ export default function WorkoutDetailScreen() {
         const daySamples = (await listStepSamplesSince(db, day)).filter((s) => s.timestamp < day + 86400);
         return { workout: found.workout, summary: parseSummary(found.summaryJson), points, daySamples };
       })().then(
-        (value) => {
-          if (!cancelled) setLoaded(value);
+        async (value) => {
+          if (cancelled) return;
+          setLoaded(value);
+          try {
+            const maxHr = userMaxHr();
+            const history = await loadAnalysisHistory(db, value.workout, maxHr);
+            // Let the summary paint before the analysis blocks the JS thread.
+            await new Promise<void>((resolve) => setTimeout(resolve, 0));
+            if (cancelled) return;
+            const analysis = analyzeWorkout(
+              { workout: value.workout, summary: value.summary, points: value.points, maxHr, daySamples: value.daySamples, history },
+              { includeHr: true, includeRoute: true, includeComparison: true },
+            );
+            setAnalysisState({ status: 'ready', analysis });
+          } catch (e) {
+            if (!cancelled) setAnalysisState({ status: 'error', message: errorMessage(e) });
+          }
         },
         (e: unknown) => {
           if (!cancelled) setError(errorMessage(e));
@@ -112,7 +139,6 @@ export default function WorkoutDetailScreen() {
   );
 
   const route = useMemo(() => (loaded ? routePoints(loaded.points) : []), [loaded]);
-  const splits = useMemo(() => (loaded ? kmSplits(loaded.summary) : []), [loaded]);
   const maxHr = useMemo(() => userMaxHr(), []);
   const burn = useMemo(() => {
     if (!loaded) return null;
@@ -160,7 +186,7 @@ export default function WorkoutDetailScreen() {
     : [];
 
   return (
-    <Screen>
+    <Screen scrollEnabled={!scrubbing}>
       <Stack.Screen options={{ title: workout.sportName }} />
       <Card>
         <View style={styles.summaryHead}>
@@ -205,12 +231,22 @@ export default function WorkoutDetailScreen() {
           ) : null}
         </View>
         <ShareWorkoutButton workout={workout} summary={summary} route={route} />
-        <ShareToRogoButton workout={workout} points={loaded.points} />
+        <ShareToRogoButton
+          workout={workout}
+          points={loaded.points}
+          analysis={analysisState.status === 'ready' ? analysisState.analysis : null}
+          analysisPending={analysisState.status === 'pending'}
+        />
       </Card>
 
-      <Section title="Heart rate" icon="heart" tint="heart">
-        <HeartRateChart points={loaded.points} start={workout.start} end={workout.end} />
-      </Section>
+      {analysisState.status === 'ready' ? (
+        <WorkoutAnalysisView analysis={analysisState.analysis} palette={palette} t={ANALYSIS_T} mapTheme={mapTheme} onScrubActive={setScrubbing} />
+      ) : analysisState.status === 'error' ? (
+        <Notice tone="danger">{`The analysis could not be computed: ${analysisState.message}`}</Notice>
+      ) : (
+        <Skeleton width="100%" height={320} radius="card" />
+      )}
+      {summary.gps === 'failed' ? <Notice icon="location-outline">The watch did not provide a GPS file for this workout.</Notice> : null}
 
       <Section title="Strain" icon="pulse" tint="workouts">
         {strain ? (
@@ -234,20 +270,6 @@ export default function WorkoutDetailScreen() {
                   Day strain now {strain.share.dayStrain.toFixed(1)}
                 </AppText>
               </View>
-            </View>
-            <View style={styles.zones}>
-              {strain.zoneMinutes.map((minutes, i) =>
-                minutes > 0 ? (
-                  <View key={i} style={styles.zone} accessible accessibilityLabel={`Zone ${i + 1}, ${50 + 10 * i} to ${60 + 10 * i} percent of max, ${formatElapsed(Math.round(minutes * 60))}`}>
-                    <AppText variant="caption" muted>
-                      Z{i + 1}
-                    </AppText>
-                    <AppText variant="label" style={styles.strainValue}>
-                      {formatElapsed(Math.round(minutes * 60))}
-                    </AppText>
-                  </View>
-                ) : null,
-              )}
             </View>
             <Details title="How is this calculated?">
               {`An estimate by JoyoFit, the watch does not report it: the heart-rate zones of this workout, with a maximum of ${maxHr} bpm, are summed (Edwards TRIMP: zones 1 to 5 count 1 to 5 per minute) and mapped onto 0 to 21 like the strain of a day. Zones are 50 to 60 % of max for Z1 up to 90 to 100 % for Z5. Pauses over two minutes count for nothing. The added part is the strain of the day with this workout minus the strain of the day without its minutes, so the same workout adds less on a day that already carried load.`}
@@ -348,25 +370,6 @@ export default function WorkoutDetailScreen() {
         ) : null}
       </Section>
 
-      <Section title="Route" icon="map" tint="workouts">
-        <RouteView route={route} />
-        {summary.gps === 'failed' ? (
-          <Notice icon="location-outline">The watch did not provide a GPS file for this workout.</Notice>
-        ) : null}
-      </Section>
-
-      {splits.length > 0 ? (
-        <Section title="Splits" icon="flag">
-          {splits.map((split, i) => (
-            <KeyValue
-              key={i}
-              label={`${split.km.toFixed(split.km % 1 === 0 ? 0 : 2)} km`}
-              value={formatPace(split.pace, 'km')}
-            />
-          ))}
-        </Section>
-      ) : null}
-
       {swimRows.length > 0 ? (
         <Section title="Swimming" icon="water" tint="workouts">
           {swimRows.map((row) => (
@@ -398,7 +401,5 @@ const styles = StyleSheet.create({
   summaryTitle: { flex: 1, gap: 2 },
   figures: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, rowGap: spacing.sm },
   figure: { gap: 0, minWidth: '30%' },
-  zones: { flexDirection: 'row', justifyContent: 'space-between' },
-  zone: { alignItems: 'center', gap: 0 },
   tiles: { flexDirection: 'row', gap: spacing.md },
 });

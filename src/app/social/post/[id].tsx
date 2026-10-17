@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import { rogo } from '@/cloud/rogo';
 import { Screen } from '@/components/Screen';
@@ -18,14 +18,15 @@ export default function PostScreen() {
   const load = useCallback(() => rogo.social.post(id), [id]);
   const { data: post, error, refreshing, refresh, setData } = useRogoQuery(load, cloud.signedIn);
   const stats = post ? watchStats(post) : null;
+  const [scrubbing, setScrubbing] = useState(false);
 
   return (
-    <Screen refresh={{ refreshing, onRefresh: () => void refresh(), enabled: cloud.signedIn }}>
+    <Screen refresh={{ refreshing, onRefresh: () => void refresh(), enabled: cloud.signedIn }} scrollEnabled={!scrubbing}>
       <SignInGate>
         {post ? (
           <>
             <PostCard post={post} onChange={setData} />
-            {stats?.hasDetail === 1 ? <WorkoutDetailSection postId={post.id} startedAt={stats.startedAt} /> : null}
+            {stats?.hasDetail === 1 ? <WorkoutDetailSection postId={post.id} onScrubActive={setScrubbing} /> : null}
             <CommentsSection postId={post.id} onAdded={() => void refresh()} />
           </>
         ) : error !== null ? (

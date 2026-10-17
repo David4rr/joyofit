@@ -1,6 +1,7 @@
 import { NotSignedInError } from '@/cloud/api';
 import { authClient } from '@/cloud/auth';
 import { JOYOROGO_URL } from '@/cloud/config';
+import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 
 /**
  * Minimal client for JoyoRogo's oRPC API (`packages/api` in the joyorogo repo, mounted at `<server>/rpc`).
@@ -232,7 +233,7 @@ export interface RogoWatchPostInput {
     avgHr: number | null;
     maxHr: number | null;
   };
-  detail?: { hr: RogoHrSeries | null; route: RogoRoute | null };
+  detail?: { hr?: RogoHrSeries | null; route?: RogoRoute | null; analysis?: WorkoutAnalysis | null };
   caption?: string;
   visibility: RogoVisibility;
 }
@@ -240,8 +241,10 @@ export interface RogoWatchPostInput {
 /** `social.workoutDetail`: what the viewer may see of a watch post's detail. `locked` means the viewer is not Pro. */
 export interface RogoWorkoutDetail {
   locked: boolean;
+  /** Legacy posts only; a post with `analysis` carries everything in it. */
   hr: RogoHrSeries | null;
   route: RogoRoute | null;
+  analysis: WorkoutAnalysis | null;
 }
 
 export interface RogoGroup {

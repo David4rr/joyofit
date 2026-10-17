@@ -129,7 +129,7 @@ Screenshots to capture on the phone with a connected watch (`adb exec-out screen
 
 1. **Today**: the ring cards (steps, heart rate, sleep summary).
 2. **Sleep**: last night with the stages.
-3. **Workouts**: the list and one workout detail with the route.
+3. **Workouts**: the list and one workout detail with the map and analysis.
 4. **Watch**: connected watch, battery, find my watch, alarms.
 5. **Settings, Notifications and calls**: forwarding and call options.
 6. **Settings, Health and cloud**: Health Connect and the optional cloud, showing it is opt-in.

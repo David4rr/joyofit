@@ -115,7 +115,7 @@ flowchart LR
 | Notification forwarding (app name, title, text) with a per-app list | implemented; unverified on the Fit 4 |
 | Profile (height, weight, birth year, sex) and daily step goal sent to the watch | implemented; unverified on the Fit 4 |
 | Write steps, distance, calories, heart rate, SpO₂, resting HR, sleep and workouts to Health Connect (for JoyoRogo and others), also from the background service | implemented; unverified on the Fit 4 |
-| Workouts (sport sessions): totals, heart rate, pace splits, swim data and the GPS track, shown in the Workouts tab (stats, heart-rate bars, route as an SVG polyline, no map) | implemented, ported from GB; unverified on the Fit 4 |
+| Workouts (sport sessions): totals, heart rate, pace splits, swim data and the GPS track, shown in the Workouts tab as a full analysis (map, scrubber charts, splits, zones, best efforts, laps, load: see [Workout analysis](#workout-analysis)) | implemented, ported from GB; unverified on the Fit 4 |
 | Weather on the watch: current conditions and a 24 h / 8 day forecast from Open-Meteo (no key) for the phone's coarse location or a chosen city, pushed on connect, when the watch asks, and every hour (configurable) | implemented, ported from GB; unverified on the Fit 4 |
 | Find my watch (phone → watch) from the Watch tab | implemented, ported from GB; unverified on the Fit 4 |
 | Find my phone (watch → phone): loud ringtone on the alarm volume, vibration, notification with Stop; works from the background service | implemented, ported from GB; unverified on the Fit 4 |
@@ -575,6 +575,43 @@ How imported data is kept apart: migration `imported` adds `imported INTEGER NOT
 The format is undocumented and was written from what community converters report (`NOTICE` credits them); it has not
 been checked against a real export yet. The first real file may need field-name or scale adjustments.
 
+## Workout analysis (Workouts → a workout)
+
+One workout opens a Strava-style analysis, computed on the phone from the stored points and summary (`src/features/workouts/analysis/`: `analyzeWorkout`,
+history from `loadAnalysisHistory`; the screen is `src/app/workouts/[id].tsx`, the views are in `analysis/ui/`). The summary card shows at once and the
+analysis fills in a moment later. Sections, each only when the data exists:
+
+- **Summary strip and map.** Distance, time, moving time, pace or speed, elevation. A tile map of the route (OpenFreeMap vector tiles drawn with
+  react-native-svg, no native module, `src/features/map/`; cached on the phone) with a km marker per kilometre.
+- **Scrubber charts.** Pace or speed, heart rate, elevation, cadence and power on one shared time grid; touching a chart moves a dot on the map and fills a
+  readout. The screen's scroll freezes while a chart is touched.
+- **Splits and laps.** Per kilometre (pace, heart rate, climb, cadence) and the watch's or FIT file's laps.
+- **Heart-rate zones, pace zones, best efforts** (400 m, 1 km, 1 mile, 5 km, 10 km, half marathon, ranked against the same sport of the last 120 days),
+  **effort** (JoyoFit workout strain), **training load** (acute against chronic, with the watch's own training effect and recovery time when it reports them)
+  and **comparison** with similar earlier workouts.
+
+Workouts without GPS (gym, jump rope, swimming) keep the heart-rate, zones, effort and load sections.
+
+Data availability:
+
+| Data | Watch sync | FIT import | Huawei export import |
+| --- | --- | --- | --- |
+| GPS track | yes | yes | yes |
+| Heart-rate series | yes, sampled by the watch every few seconds | yes | yes, per sample |
+| Altitude | yes, per sample | yes | yes, barometric |
+| Speed, cadence, stride, power per sample | yes, for workouts synced after migration 12 | yes | cadence only |
+| Laps | no: the Sections response carries per-km style blocks without timestamps (raw kept in `summary.sections`) | yes | no |
+| Km splits | computed from the track | computed | computed |
+| Pace blocks | yes (watch) | no | no |
+| Temperature | not recorded by the watch protocol | the FIT record temperature is not imported | no |
+| Swim data | summary only (laps, strokes, SWOLF) | summary | summary |
+| Calories | one total from the watch (envelope); fat and carbs are an estimate by JoyoFit | yes | yes |
+
+SQLite migration 12 adds per-sample `speed`, `cadence`, `stride` and `power` to `workout_points`. They are only filled for workouts synced or imported after
+that version; older workouts show the analysis without those charts. The migration needs the new native build (the schema is shared with the native module).
+
+Map data © OpenStreetMap contributors, tiles by [OpenFreeMap](https://openfreemap.org); the attribution is drawn on every map.
+
 ## Share a workout or your day (Share on a workout, share icon on Today)
 
 A story card rendered on the phone as a 1080 px PNG (`src/features/share/`, `react-native-view-shot`): 9:16 story or 1:1 square, on a dark JoyoFit
@@ -605,9 +642,11 @@ JoyoFit reads and writes JoyoRogo's social backend with the shared JoyoRogo acco
 - **Groups.** Your groups, join by invite code, and per group today's Recovery, Strain, Sleep and readiness of each member who opted in. You opt in per group
   with *Share JoyoFit scores* (`group.setShareFitness`); *Share food names* is JoyoRogo's existing switch.
 - **Share to JoyoRogo** (workout screen) posts the summary (sport, duration, kcal, distance, average and maximum heart rate) as a `latihan` post, visible to
-  your groups or public, with an optional heart-rate series (at most 600 averaged readings, `intervalSec` apart) and route (at most 1000 points). Building
-  that input is `features/social/watchPost.ts`.
-- **Pro paywall on viewing, not sharing.** Anyone can share the detail. The author always sees their own; another viewer gets the chart and route only on
+  your groups or public, with the workout analysis as its detail (`detail.analysis`, at most 200 KB; thinned to a coarser series above 190 KB). The composer has switches for
+  *Heart-rate data*, *Route* (off drops the map track) and *Comparison with earlier workouts*, which `shareableAnalysis` applies to the full analysis before it
+  is sent; turning heart rate off also removes zones, effort, load and per-split heart rate. Workouts without an analysis fall back to the older heart-rate
+  series (at most 600 averaged readings) and route (at most 1000 points). Building that input is `features/social/watchPost.ts`.
+- **Pro paywall on viewing, not sharing.** Anyone can share the detail. The author always sees their own; another viewer gets the full analysis (map, charts, splits, zones, best efforts and more) only on
   JoyoRogo Pro (`social.workoutDetail` answers `locked: true` otherwise, and the post shows a Pro card). The card's link follows the store rules of
   `proOffer`: a web link outside Google Play, the JoyoRogo Play listing on Play, text only on iOS.
 - **Strava.** Imported rows (`workouts.imported = 1`: Huawei export or a FIT file, whose origin the app cannot tell, possibly a Strava download) are never
@@ -657,7 +696,7 @@ The profile, background and notification settings are in native SharedPreference
 Workouts are two more tables from migration 3: `workouts` (one row per session: watch workout number,
 start/end, Huawei sport type and GB's name for it, duration, distance, calories, average/max heart
 rate, steps, `summary_json` with everything else, `complete`) and `workout_points` (`workout_id`, `ts`,
-`lat`, `lon`, `alt`, `hr`). GPS points have lat/lon, heart-rate samples have `hr`; a point has only
+`lat`, `lon`, `alt`, `hr`; from migration 12 also `speed`, `cadence`, `stride`, `power`). GPS points have lat/lon, heart-rate samples have `hr`; a point has only
 what its source had. A workout is replaced as a whole in one transaction, keyed by `start`.
 
 The cycle log is two tables from the cycle migration: `cycle_periods` (`start` and `end` as local `YYYY-MM-DD`, `end` NULL while a period is going on, `modified`
@@ -711,7 +750,7 @@ src/app/                  expo-router: five tabs, index (Today), workouts (list 
 src/state/                WatchProvider (link state, events), log ring buffer
 src/db/                   expo-sqlite migrations (from the shared JSON) + read queries + cloud cursors (cloud.ts)
 src/cloud/                JoyoRogo sign-in (better-auth client), cloud API client with retries, incremental uploader
-src/features/             screen pieces (device, today, settings, log, alarms, watchfaces)
+src/features/             screen pieces (device, today, settings, log, alarms, watchfaces, workouts + workouts/analysis, map, social)
 modules/huawei-wear/
   src/                    TS contract (HuaweiWear.types.ts, HuaweiWearModule.ts)
   schema/                 joyofit-db-migrations.json, read by JS and by native
