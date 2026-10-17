@@ -159,6 +159,11 @@ internal class ActivitySync(
 
       if (count + 1 < maxCount) count += 1 else break
     }
+    if (segments.isNotEmpty()) {
+      val byType = segments.groupBy { it.type }.entries.sortedBy { it.key }
+        .joinToString(", ") { (type, list) -> "0x%02x x%d (%d min, stage %s)".format(type, list.size, list.sumOf { it.end - it.start } / 60, list[0].stage ?: "none") }
+      events.log(LogDirection.INFO, null, null, null, "Sleep frames: ${segments.size} segments by raw type: $byType")
+    }
     return segments
   }
 

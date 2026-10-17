@@ -7,6 +7,7 @@ import { Metric } from '@/components/Metric';
 import { EmptyState } from '@/components/States';
 import { formatClock, formatDuration } from '@/format';
 import type { SleepScoreRow } from '@/db/queries';
+import { NoStagesNotice } from '@/features/sleep/NoStagesNotice';
 import { SleepScoreRing } from '@/features/sleep/SleepScoreRing';
 import { STAGE_LABELS, stageColor } from '@/features/sleep/stageStyle';
 import type { SleepSummary } from '@/features/today/stats';
@@ -39,7 +40,7 @@ export function SleepSummaryView({ summary, score }: { summary: SleepSummary | n
           </View>
           <AppText variant="caption" muted>
             {formatClock(summary.start)} to {formatClock(summary.end)}
-            {hasStages ? ', awake excluded' : ''}
+            {hasStages ? ', awake excluded' : ', no stages'}
           </AppText>
         </View>
         {score ? <SleepScoreRing score={score} /> : null}
@@ -68,6 +69,7 @@ export function SleepSummaryView({ summary, score }: { summary: SleepSummary | n
         </>
       ) : (
         <>
+          <NoStagesNotice />
           {summary.byType.map((entry) => (
             <KeyValue
               key={entry.type}

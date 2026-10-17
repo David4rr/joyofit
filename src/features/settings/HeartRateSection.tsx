@@ -132,7 +132,7 @@ export function HeartRateSection() {
         {[
           'Continuous heart rate: the watch records your heart rate about every minute. Without it Today shows no heart rate.',
           'Automatic SpO2: measures blood oxygen in the background.',
-          'Sleep tracking: needed for the sleep stages and the sleep history.',
+          'Sleep tracking (TruSleep): newer watches record the sleep stages with it on. Some older watches only report when you slept, shown as "Sleep (no stages)", and may give light and deep sleep with it off.',
           'Automatic stress: turning it on takes 1 minute of sitting still with the watch snug. The phone measures your beat intervals and sends the watch a baseline.',
           'High alert: the watch warns when your heart rate stays above this. Needs continuous heart rate.',
           'Low alert: the watch warns when your heart rate stays below this.',

@@ -139,6 +139,12 @@ public final class ActivitySync {
 
             if count + 1 < maxCount { count += 1 } else { break }
         }
+        if !segments.isEmpty {
+            let byType = Dictionary(grouping: segments, by: \.type).sorted { $0.key < $1.key }.map { type, list in
+                "0x\(String(format: "%02x", type)) x\(list.count) (\(list.reduce(Int64(0)) { $0 + $1.end - $1.start } / 60) min, stage \(list[0].stage ?? "none"))"
+            }.joined(separator: ", ")
+            info("Sleep frames: \(segments.count) segments by raw type: \(byType)")
+        }
         return segments
     }
 

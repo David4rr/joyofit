@@ -14,7 +14,8 @@ import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { listAllSleep, listSleepScores, listStepSamplesSince } from '@/db/queries';
 import { HourlyStages } from '@/features/sleep/HourlyStages';
 import { Hypnogram } from '@/features/sleep/Hypnogram';
-import { buildNights, hourlyStages, NIGHT_STAGES, type Night } from '@/features/sleep/nights';
+import { NoStagesNotice } from '@/features/sleep/NoStagesNotice';
+import { buildNights, hourlyStages, NIGHT_STAGES, nightHasStages, type Night } from '@/features/sleep/nights';
 import { SleepScoreRing } from '@/features/sleep/SleepScoreRing';
 import { STAGE_LABELS, stageColor } from '@/features/sleep/stageStyle';
 import { sleepNeedSec } from '@/features/today/readiness';
@@ -102,6 +103,7 @@ export function SleepScreen() {
   const changes = night.periods.slice(1).map((p, i) => ({ at: p.start, from: night.periods[i].stage, to: p.stage, gap: p.start - night.periods[i].end }));
   const shownPeriods = showAllChanges ? night.periods : night.periods.slice(0, CHANGES_PREVIEW);
   const stages = NIGHT_STAGES.filter((stage) => night.seconds[stage] > 0);
+  const hasStages = nightHasStages(night);
   const recorded = night.asleepSeconds + night.seconds.awake;
   const minutes = Math.round(night.asleepSeconds / 60);
   const dateLabel = new Date(night.end * 1000).toLocaleDateString(undefined, DATE_FORMAT);
@@ -137,7 +139,7 @@ export function SleepScreen() {
           {night.score ? <SleepScoreRing score={night.score} /> : null}
         </View>
         <AppText variant="caption" muted>
-          {night.awakenings} awake · {changes.length} stage {changes.length === 1 ? 'change' : 'changes'}
+          {hasStages ? `${night.awakenings} awake · ${changes.length} stage ${changes.length === 1 ? 'change' : 'changes'}` : 'No stages from the watch'}
           {need
             ? ` · needed ${formatDuration(need.seconds)}, got ${Math.round((night.asleepSeconds / need.seconds) * 100)}%`
             : ''}
@@ -158,6 +160,7 @@ export function SleepScreen() {
             </View>
           ))}
         </View>
+        {!hasStages && !night.nap ? <NoStagesNotice /> : null}
         <Details>
           {`Asleep time excludes time awake.${night.score ? ` Score is the watch's${night.score.efficiency !== null ? `, ${night.score.efficiency}% of the time in bed asleep` : ''}.` : ''}${need ? ` Need is 7 h 30 min${need.strain !== null ? ` plus extra after a strain of ${need.strain.toFixed(1)} that day` : ''}.` : ''}`}
         </Details>

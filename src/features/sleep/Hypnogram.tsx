@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 
 import { AppText } from '@/components/AppText';
-import { NIGHT_STAGES, type Night, type NightStage } from '@/features/sleep/nights';
+import { NIGHT_STAGES, nightHasStages, type Night, type NightStage } from '@/features/sleep/nights';
 import { STAGE_LABELS, stageColor } from '@/features/sleep/stageStyle';
 import { formatClock, formatDuration } from '@/format';
 import { useColors } from '@/theme';
@@ -22,7 +22,7 @@ export function Hypnogram({ night }: { night: Night }) {
   const [width, setWidth] = useState(0);
 
   // A staged night always shows all four stage rows so nights line up; `asleep` only when the watch gave no stage.
-  const staged = night.asleepSeconds + night.seconds.awake > night.seconds.asleep;
+  const staged = nightHasStages(night);
   const rows = NIGHT_STAGES.filter((stage) => night.seconds[stage] > 0 || (staged && stage !== 'asleep'));
   const rowOf = Object.fromEntries(rows.map((stage, i) => [stage, i])) as Record<NightStage, number>;
   const height = rows.length * ROW_HEIGHT;

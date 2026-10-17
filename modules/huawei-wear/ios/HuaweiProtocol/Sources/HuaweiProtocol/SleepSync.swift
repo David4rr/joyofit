@@ -9,9 +9,10 @@ import Foundation
 ///  2. ExpandCapability bit 143 (`supportsDictSleepSync`): a `sequence_data` file of dictionary class
 ///     `HuaweiDictTypes.sleepDetailsClass` over service 0x2C, parsed into per-minute stages. GB does not fall back to the
 ///     state/data files when this download fails.
-///  3. Otherwise `sleep_state.bin` then `sleep_data.bin` (service 0x2C when SettingRelated said `truSleepNewSync`, else 0x0A). GB
-///     stores one marker per `TruSleepStatus` range and does not use the sleep_data content (its analysis call is commented out),
-///     so the data file is only parsed for the log.
+///  3. Otherwise `sleep_state.bin` then `sleep_data.bin` (service 0x2C when SettingRelated said `truSleepNewSync`, else 0x0A). The state
+///     file only says when the watch judged you asleep: GB stores one marker per `TruSleepStatus` range and does not use the sleep_data
+///     content (its analysis call is commented out; Huawei Health works the stages out from it on the phone). The ranges are stored here
+///     without a stage (`segmentsFromState`), so they show as "asleep" and never as light sleep. The data file is only parsed for the log.
 ///
 /// GB's P2P data-dictionary sync is a different mechanism (skin temperature, HRV, emotion, sleep apnea and similar, never sleep
 /// stages); the sleep detail class 700013 stays here as a file download.
@@ -22,6 +23,9 @@ public final class SleepSync: @unchecked Sendable {
 
     /// Minimum span of the sleep window; matches the 36 h the Today screen looks back for last night.
     private static let sleepLookbackSec = 36 * 3600
+
+    /// Bytes of the sleep state file written to the log.
+    private static let stateLogBytes = 160
 
     // HuaweiSampleProvider.RawTypes
     private static let rawUnknown = 1
@@ -102,6 +106,8 @@ public final class SleepSync: @unchecked Sendable {
             info("TruSleep: sleep state file empty")
             return .empty
         }
+        // The 8 bytes after each range are not understood (GB drops them); kept in the log for the Support report.
+        info("TruSleep: sleep_state.bin \(state.count) bytes: \(Array(state.prefix(Self.stateLogBytes)).hexUpper)\(state.count > Self.stateLogBytes ? "..." : "")")
         let segments = Self.segmentsFromState(TruSleepParser.parseState(state))
         if segments.isEmpty { info("TruSleep: no sleep results") }
         for s in segments { info("TruSleep: sleep range \(s.start)..\(s.end) type=\(s.type) stage=\(s.stage ?? "null")") }
@@ -125,10 +131,12 @@ public final class SleepSync: @unchecked Sendable {
 
     // MARK: pure mapping
 
-    /// GB addSleepActivities(data, 0x0a) stores every TruSleep state range with raw kind 0x06.
+    /// GB addSleepActivities(data, 0x0a) stores every TruSleep state range with raw kind 0x06 and then reads it back as light sleep, which
+    /// is why GB shows all TruSleep sleep as light. A state range only says the watch judged you asleep, so here it keeps GB's key
+    /// (start, 0x06) but no stage: an earlier build's row for the same night is rewritten in place and stops reading as light.
     public static func segmentsFromState(_ statuses: [TruSleepParser.TruSleepStatus]) -> [SleepSegment] {
         statuses.map {
-            SleepSegment(start: Int64($0.startTime), end: Int64($0.endTime), type: rawLightSleep, stage: stageForRawKind(rawLightSleep))
+            SleepSegment(start: Int64($0.startTime), end: Int64($0.endTime), type: rawLightSleep, stage: nil)
         }
     }
 

@@ -102,12 +102,14 @@ final class SleepSyncTests: XCTestCase {
         XCTAssertNil(SleepSync.stageForRawKind(0))
     }
 
-    func testSegmentsFromStateUseRawKindLight() {
+    /// GB stores a state range as raw kind 0x06 and reads it back as light sleep (its docs: all TruSleep sleep shows as light). A range only
+    /// says the watch judged you asleep, so it keeps the key (start, 0x06), which rewrites a row an earlier build stored as light, but no stage.
+    func testSegmentsFromStateKeepRawKindLightButHaveNoStage() {
         let segments = SleepSync.segmentsFromState([
             TruSleepParser.TruSleepStatus(startTime: 1000, endTime: 5000),
             TruSleepParser.TruSleepStatus(startTime: -5, endTime: Int32.max),
         ])
-        XCTAssertEqual(segments.map(Seg.init), [Seg(1000, 5000, 0x06, "light"), Seg(-5, Int64(Int32.max), 0x06, "light")])
+        XCTAssertEqual(segments.map(Seg.init), [Seg(1000, 5000, 0x06, nil), Seg(-5, Int64(Int32.max), 0x06, nil)])
         XCTAssertEqual(SleepSync.segmentsFromState([]), [])
     }
 
@@ -334,11 +336,12 @@ final class SleepSyncTests: XCTestCase {
 
         let result = try await sync.sync(sinceSec: 1, end: 2)
 
-        XCTAssertEqual(result.segments.map(Seg.init), [Seg(1000, 5000, 0x06, "light"), Seg(7000, 9000, 0x06, "light")])
+        XCTAssertEqual(result.segments.map(Seg.init), [Seg(1000, 5000, 0x06, nil), Seg(7000, 9000, 0x06, nil)])
         XCTAssertEqual(result.scores, [])
         XCTAssertEqual(h.watch.count(0x2c, 0x01), 2) // sleep_state.bin and sleep_data.bin
         XCTAssertEqual(h.watch.requests.filter { $0.command == 0x01 }.compactMap { try? $0.tlv.string(0x01) }, ["sleep_state.bin", "sleep_data.bin"], "state first, then data")
-        XCTAssertTrue(h.log.contains("TruSleep: sleep range 1000..5000 type=6 stage=light"))
+        XCTAssertTrue(h.log.contains("TruSleep: sleep range 1000..5000 type=6 stage=null"))
+        XCTAssertTrue(h.log.contains("TruSleep: sleep_state.bin 32 bytes: E8030000"))
     }
 
     /// The same over the old service 0x0A when SettingRelated did not announce the new sync.
@@ -352,7 +355,7 @@ final class SleepSyncTests: XCTestCase {
 
         let result = try await sync.sync(sinceSec: 1, end: 2)
 
-        XCTAssertEqual(result.segments.map(Seg.init), [Seg(1_700_000_000, 1_700_030_000, 0x06, "light")])
+        XCTAssertEqual(result.segments.map(Seg.init), [Seg(1_700_000_000, 1_700_030_000, 0x06, nil)])
         XCTAssertEqual(h.watch.count(0x0a, 0x01), 1)
         XCTAssertEqual(h.watch.count(0x2c, 0x01), 0)
         XCTAssertTrue(h.log.contains("sleep_state/sleep_data download (service 0A)"))
@@ -370,7 +373,7 @@ final class SleepSyncTests: XCTestCase {
             .init(name: "sleep_data.bin", typeByte: 0x0f, fileId: 2, content: acc + t1 + t3),
         ])
         let result = try await SleepSync(session: h.session, caps: caps(dict: false), log: h.log.sink).sync(sinceSec: 1, end: 2)
-        XCTAssertEqual(result.segments.map(Seg.init), [Seg(1, 2, 0x06, "light"), Seg(3, 5, 0x06, "light")])
+        XCTAssertEqual(result.segments.map(Seg.init), [Seg(1, 2, 0x06, nil), Seg(3, 5, 0x06, nil)])
         XCTAssertTrue(h.log.contains("TruSleep: sleep_data parsed, 1 ACC and 69 PPG samples (not mapped, as GB)"))
     }
 
@@ -455,7 +458,7 @@ final class SleepSyncTests: XCTestCase {
         let h = SleepFilesHarness()
         _ = h.newSyncServer([.init(name: "sleep_state.bin", typeByte: 0x0e, fileId: 1, content: state)]) // no sleep_data.bin
         let result = try await SleepSync(session: h.session, caps: caps(dict: false), log: h.log.sink).sync(sinceSec: 1, end: 2)
-        XCTAssertEqual(result.segments.map(Seg.init), [Seg(1000, 5000, 0x06, "light")])
+        XCTAssertEqual(result.segments.map(Seg.init), [Seg(1000, 5000, 0x06, nil)])
         XCTAssertTrue(h.log.containsError("Error downloading file: sleep_data.bin: sleep_data.bin: invalid file size reported by device: -1"), "\(h.log.entries.map { $0.message })")
     }
 

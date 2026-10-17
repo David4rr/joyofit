@@ -110,7 +110,7 @@ flowchart LR
 | Sync per-minute steps / kcal / distance / HR / SpO₂ / resting HR, sleep segments, today's totals | implemented |
 | Heart rate, SpO₂ and TruSleep switched on in the watch on every connect (Settings → Watch & sync → Heart rate and sensors, default on; optional high/low heart-rate alerts, default off); live heart rate on Today while it is on screen; the hero shows the live bpm, else the newest stored one with its age, else `--` | implemented, ported from GB; the realtime push layout is a guess (GB has no parser), unverified on the Fit 4 |
 | Local storage + Today screen + raw packet log (copy to clipboard) | implemented |
-| Sleep stages from TruSleep / dictionary files (file download services 0x2C and 0x0A) | implemented, gated like GB; unverified on the Fit 4 |
+| Sleep stages from TruSleep / dictionary files (file download services 0x2C and 0x0A) | implemented, gated like GB; unverified on the Fit 4. Watches without dictionary sleep (ExpandCapability 143, older HarmonyOS) only give the time asleep in the TruSleep state file: GB reads that as light sleep, JoyoFit stores it with no stage and shows "Sleep (no stages)" with a hint about the TruSleep switch. Suspected cause of an all-light night reported on the Watch Fit 2; not confirmed, no capability dump from that watch yet |
 | Background mode: foreground service keeps the watch connected, reconnects with backoff, syncs every 30 min (configurable), starts on boot | implemented; unverified on the Fit 4 |
 | Notification forwarding (app name, title, text) with a per-app list | implemented; unverified on the Fit 4 |
 | Profile (height, weight, birth year, sex) and daily step goal sent to the watch | implemented; unverified on the Fit 4 |

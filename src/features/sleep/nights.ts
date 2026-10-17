@@ -13,6 +13,11 @@ export interface StagePeriod {
   stage: NightStage;
 }
 
+/** Whether the watch gave any stage for this night; false when everything is `asleep` (the watch only said when you slept). */
+export function nightHasStages(night: Pick<Night, 'seconds' | 'asleepSeconds'>): boolean {
+  return night.asleepSeconds + night.seconds.awake > night.seconds.asleep;
+}
+
 export interface Night {
   start: number;
   end: number;

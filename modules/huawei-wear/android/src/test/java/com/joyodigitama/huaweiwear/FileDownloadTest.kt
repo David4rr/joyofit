@@ -5,6 +5,7 @@ import java.nio.ByteOrder
 import java.util.Collections
 import kotlinx.coroutines.runBlocking
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTruSleepParser
 import nodomain.freeyourgadget.gadgetbridge.util.CheckSums
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -373,7 +374,7 @@ class FileDownloadTest {
   }
 
   @Test
-  fun truSleepStateRangesBecomeSegmentsWhenDictionaryIsNotSupported() = runBlocking {
+  fun truSleepStateRangesBecomeUnstagedSegmentsWhenDictionaryIsNotSupported() = runBlocking {
     capsWithTruSleep(dict = false)
     val state = ByteBuffer.allocate(0x20).order(ByteOrder.LITTLE_ENDIAN)
       .putInt(1000).putInt(5000).put(ByteArray(8))
@@ -401,7 +402,20 @@ class FileDownloadTest {
 
     val segments = SleepSync(session, events).sync(1, 2).segments
 
-    assertEquals(listOf(listOf(1000L, 5000L, 0x06, "light"), listOf(7000L, 9000L, 0x06, "light")), segments.map { listOf(it.start, it.end, it.type, it.stage) })
+    // GB stores a state range as raw 0x06 and reads it back as light sleep; the range holds no stage, so it has none here.
+    assertEquals(
+      listOf(listOf<Any?>(1000L, 5000L, 0x06, null), listOf<Any?>(7000L, 9000L, 0x06, null)),
+      segments.map { listOf<Any?>(it.start, it.end, it.type, it.stage) },
+    )
     assertEquals(2, watch.count(0x2c, 0x01)) // sleep_state.bin and sleep_data.bin
+    assertTrue(events.logs.any { it.contains("sleep_state.bin 32 bytes: E8030000") })
+  }
+
+  @Test
+  fun stateRangesNeverReadAsLightSleep() {
+    val ranges = SleepSync.segmentsFromState(arrayOf(HuaweiTruSleepParser.TruSleepStatus(1000, 5000)))
+    assertEquals(listOf(null), ranges.map { it.stage })
+    // the same row key as GB's raw kind 0x06, so a row an earlier build stored as light is rewritten, not duplicated
+    assertEquals(listOf(1000L to 0x06), ranges.map { it.start to it.type })
   }
 }
