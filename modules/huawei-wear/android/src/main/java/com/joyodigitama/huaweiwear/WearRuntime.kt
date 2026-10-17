@@ -111,10 +111,6 @@ internal class WearRuntime private constructor(context: Context) {
       listeners.forEach { it.uploadResult(ok, fileName, code, message) }
     }
 
-    override fun appInstallStatus(status: Int, packageName: String) {
-      listeners.forEach { it.appInstallStatus(status, packageName) }
-    }
-
     override fun heartRate(bpm: Int, tsMs: Long) {
       liveWorkout.onHeartRate(bpm)
       listeners.forEach { it.heartRate(bpm, tsMs) }
@@ -173,7 +169,6 @@ internal class WearRuntime private constructor(context: Context) {
   val weather = WeatherController(appContext, weatherSettings, link, events, scope)
   val watchfaces = WatchfaceController(appContext, link, events)
   val photoFaces = PhotoFaceController(appContext, link, events)
-  val watchApps = WatchAppController(appContext, link, events)
   val liveHeartRate = LiveHeartRate(link, settings, events, scope)
   val hrv = HrvSpot(link, liveHeartRate, syncStore, events)
   val stress = StressSwitch(link, settings, hrv, events, scope)
@@ -435,10 +430,7 @@ internal class WearRuntime private constructor(context: Context) {
   /** Stores the profile; true when it also reached the connected watch. */
   suspend fun setUserProfile(profile: UserProfileData): Boolean {
     validate(profile)
-    val previousProfile = settings.profile
     settings.profile = profile
-    // The JoyoFit Fuel watch app computes with weight, birth year and sex: it gets them as soon as they change.
-    p2p.onProfileChanged(previousProfile, profile)
     val handle = link.handle() ?: return false
     return try {
       val sent = ProfileSender.sendProfile(handle.session, events, profile) > 0

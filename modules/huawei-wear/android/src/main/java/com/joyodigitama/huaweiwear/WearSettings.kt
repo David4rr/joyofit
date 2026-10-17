@@ -140,37 +140,18 @@ internal class WearSettings(context: Context) {
       )
     }
     set(value) {
-      val previous = profile
       val editor = prefs.edit()
       if (value == null) {
         editor.remove(KEY_PROFILE_HEIGHT).remove(KEY_PROFILE_WEIGHT).remove(KEY_PROFILE_BIRTH_YEAR)
-          .remove(KEY_PROFILE_SEX).remove(KEY_PROFILE_GOAL).remove(KEY_PROFILE_CHANGED_AT)
+          .remove(KEY_PROFILE_SEX).remove(KEY_PROFILE_GOAL)
       } else {
         editor.putInt(KEY_PROFILE_HEIGHT, value.heightCm)
           .putLong(KEY_PROFILE_WEIGHT, java.lang.Double.doubleToRawLongBits(value.weightKg))
           .putInt(KEY_PROFILE_BIRTH_YEAR, value.birthYear)
           .putString(KEY_PROFILE_SEX, value.sex)
           .putInt(KEY_PROFILE_GOAL, value.dailyStepGoal)
-        // Only what the JoyoFit Fuel watch app computes with counts as a change (see [FuelProfiles]).
-        if (previous == null || previous.weightKg != value.weightKg || previous.birthYear != value.birthYear || previous.sex != value.sex) {
-          editor.putLong(KEY_PROFILE_CHANGED_AT, System.currentTimeMillis())
-        }
       }
       editor.apply()
-    }
-
-  /**
-   * Unix milliseconds when the weight, birth year or sex of [profile] last changed, sent to the JoyoFit Fuel watch app as `at`. A profile
-   * stored before JoyoFit recorded this gets the time of the first read. 0 when there is no profile (the app then sends defaults).
-   */
-  val profileChangedAtMs: Long
-    get() {
-      if (!prefs.contains(KEY_PROFILE_HEIGHT)) return 0L
-      val stored = prefs.getLong(KEY_PROFILE_CHANGED_AT, 0L)
-      if (stored > 0L) return stored
-      val now = System.currentTimeMillis()
-      prefs.edit().putLong(KEY_PROFILE_CHANGED_AT, now).apply()
-      return now
     }
 
   companion object {
@@ -194,7 +175,6 @@ internal class WearSettings(context: Context) {
     private const val KEY_PROFILE_BIRTH_YEAR = "profile_birth_year"
     private const val KEY_PROFILE_SEX = "profile_sex"
     private const val KEY_PROFILE_GOAL = "profile_step_goal"
-    private const val KEY_PROFILE_CHANGED_AT = "profile_changed_at_ms"
     private const val KEY_AUTO_HEART_RATE = "sensor_auto_heart_rate"
     private const val KEY_AUTO_SPO2 = "sensor_auto_spo2"
     private const val KEY_TRUSLEEP = "sensor_trusleep"

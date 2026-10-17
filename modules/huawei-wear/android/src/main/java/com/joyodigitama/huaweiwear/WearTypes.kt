@@ -111,12 +111,6 @@ internal interface WearEvents {
   /** A watch face install finished (`onUploadResult`); [code] is the watch's status when it gave one. */
   fun uploadResult(ok: Boolean, fileName: String, code: Int?, message: String) = Unit
 
-  /**
-   * The watch reported the progress or the end of an app install or removal (`onAppInstallStatus`, 0x2a/0x02): [status] is a percentage
-   * up to 100 or one of 101 to 106, [packageName] is the package the report names (empty when it names none).
-   */
-  fun appInstallStatus(status: Int, packageName: String) = Unit
-
   /** A live heart-rate reading pushed by the watch (`onHeartRate`); [tsMs] is the phone's receive time. */
   fun heartRate(bpm: Int, tsMs: Long) = Unit
 

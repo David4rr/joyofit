@@ -33,13 +33,6 @@ import type {
   DietStatus,
 } from './HuaweiWearDiet.types';
 import type { WatchfaceInstallResult, WatchfaceList } from './HuaweiWearWatchface.types';
-import type {
-  FuelLinkStatus,
-  FuelProfileSendResult,
-  WatchAppInstallResult,
-  WatchAppList,
-  WatchAppPackageInfo,
-} from './HuaweiWearWatchApps.types';
 import type { FaceApplyResult, FaceCustomization } from './HuaweiWearFaceCustom.types';
 import type { PhotoFace } from './HuaweiWearPhotoFace.types';
 import type { CoursesStatus, HealthyLivingStatus, RunningCourse, RunningCoursePushResult } from './HuaweiWearP2p.types';
@@ -301,32 +294,6 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   setActiveWatchface(id: string): Promise<WatchfaceList>;
   /** Deletes the face with this id; resolves with the list read afterwards, rejects if the face is still there. */
   deleteWatchface(id: string): Promise<WatchfaceList>;
-  /**
-   * The watch's apps (0x2a/0x03) with its app runtime parameters (0x2a/0x06). Android only. Needs a connected watch (ERR_NOT_CONNECTED)
-   * that lists 0x2a/0x06 in its supported commands (ERR_UNSUPPORTED, Gadgetbridge's gate).
-   */
-  listWatchApps(): Promise<WatchAppList>;
-  /**
-   * Reads a picked Lite Wearable app (the `entry-bin-debug-lite-signed.hap` of DevEco Studio, or the `.bin` Gadgetbridge installs) from a
-   * `file://` or `content://` URI and says what it is, without touching the watch. Rejects with ERR_INVALID_ARGUMENT for any other file.
-   */
-  inspectWatchApp(uri: string): Promise<WatchAppPackageInfo>;
-  /**
-   * Uploads the app as file type 6 named `<package>_INSTALL` (what Gadgetbridge does), follows the watch's install reports (emitted as
-   * `onAppInstallStatus`, upload bytes as `onUploadProgress`, the end as `onUploadResult`) and reads the app list afterwards.
-   * An app without the signature trailer rejects with ERR_INVALID_ARGUMENT unless `allowUnsigned`. Rejects with ERR_UPLOAD_REJECTED
-   * (`103`, the watch refused the app: a Huawei watch only runs apps Huawei signed) or the exact code the file upload got, ERR_TIMEOUT when
-   * the watch goes silent, ERR_UNSUPPORTED without 0x2a/0x06 in the supported commands.
-   */
-  installWatchApp(uri: string, allowUnsigned: boolean): Promise<WatchAppInstallResult>;
-  /** Removes the app with this package name, waits for the watch's 105 (or 106: rejects) and resolves with the list read afterwards. */
-  deleteWatchApp(packageName: string): Promise<WatchAppList>;
-  /** The state of the link to the JoyoFit Fuel watch app: ping result, last hello, last profile sent, last ack, both fingerprints. */
-  getFuelLink(): Promise<FuelLinkStatus>;
-  /** Stores the fingerprint the watch app is registered under (see protocol/README.md); an empty string sends the bundle name instead. */
-  setFuelWatchFingerprint(fingerprint: string): Promise<void>;
-  /** Pings the Fuel watch app and sends it the profile now. Rejects with ERR_UNSUPPORTED without a connected watch that lists 0x34/0x01. */
-  sendFuelProfile(): Promise<FuelProfileSendResult>;
   /**
    * A face's current options (DataSync 800100008). Resolves with what the watch reports; a face with no editable options does not answer
    * (ERR_TIMEOUT). ERR_NOT_CONNECTED, ERR_UNSUPPORTED (watch lacks ExpandCapability 84), ERR_INVALID_ARGUMENT (face not on the watch).

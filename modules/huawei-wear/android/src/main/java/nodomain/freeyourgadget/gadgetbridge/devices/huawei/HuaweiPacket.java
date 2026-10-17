@@ -20,7 +20,6 @@
 // Modified for watch-fit (AGPL-3.0-or-later): parse()/parseOutgoing() dispatch limited to the ported packet classes (DeviceConfig, FitnessData, FileDownloadService0A/2C, Notifications constraints/capabilities); other packet classes not ported.
 // Modified for watch-fit (AGPL-3.0-or-later): parse() also dispatches the FileUpload (0x28) and Watchface (0x27) services; WatchfaceOperation (0x27/0x03) is parsed too (GB leaves it generic).
 // Modified for watch-fit (AGPL-3.0-or-later): parse() also dispatches the P2P service (0x34/0x01, packets/P2P.java).
-// Modified for watch-fit (AGPL-3.0-or-later): parse() also dispatches the App service (0x2a: install status 02, app list 03, device params 06; packets/App.java).
 package nodomain.freeyourgadget.gadgetbridge.devices.huawei;
 
 import static nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiConstants.HUAWEI_MAGIC;
@@ -50,7 +49,6 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Workout;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Weather;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.FileUpload;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Watchface;
-import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.App;
 import nodomain.freeyourgadget.gadgetbridge.util.CheckSums;
 
 public class HuaweiPacket {
@@ -656,18 +654,6 @@ public class HuaweiPacket {
                         return new Watchface.WatchfaceConfirm.Response(paramsProvider).fromPacket(this);
                     case Watchface.WatchfaceNameInfo.id:
                         return new Watchface.WatchfaceNameInfo.Response(paramsProvider).fromPacket(this);
-                    default:
-                        this.isEncrypted = this.attemptDecrypt(); // Helps with debugging
-                        return this;
-                }
-            case App.id:
-                switch (this.commandId) {
-                    case App.AppInstallStatus.id:
-                        return new App.AppInstallStatus.Response(paramsProvider).fromPacket(this);
-                    case App.AppNames.id:
-                        return new App.AppNames.Response(paramsProvider).fromPacket(this);
-                    case App.AppInfoParams.id:
-                        return new App.AppInfoParams.Response(paramsProvider).fromPacket(this);
                     default:
                         this.isEncrypted = this.attemptDecrypt(); // Helps with debugging
                         return this;
