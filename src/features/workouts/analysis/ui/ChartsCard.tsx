@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { PanResponder, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { PanResponder, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import type { AnalysisSeries, WorkoutAnalysis } from '../types';
 import { availableMetrics, indexFromX, type ChartMetric } from './chartMath';
@@ -135,7 +135,7 @@ function ChartsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
 
   return (
     <Card title={t('section.charts')}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs} accessibilityRole="tablist">
+      <View style={styles.tabs} accessibilityRole="tablist">
         {metrics.map((m) => {
           const selected = m === metric;
           const color = metricColor(palette, m);
@@ -155,7 +155,7 @@ function ChartsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
       <View style={styles.readoutLine}>
         <View style={styles.readoutFlex}>
           <Readout series={series} metric={metric} kind={kind} />
@@ -195,7 +195,7 @@ const EMPTY_SERIES: AnalysisSeries = { stepSec: 1, n: 0, dist: null, hr: null, p
 export const ChartsCard = memo(ChartsCardImpl);
 
 const styles = StyleSheet.create({
-  tabs: { gap: 8, paddingBottom: 2 },
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: MIN_HIT - 10, borderRadius: 999 },
   readoutLine: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   readoutFlex: { flex: 1, minWidth: 0 },

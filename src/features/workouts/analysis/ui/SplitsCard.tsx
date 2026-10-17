@@ -7,7 +7,7 @@ import { useAnalysisContext } from './context';
 import { Card, MIN_HIT, Txt } from './primitives';
 import { useScrubSelector } from './scrub';
 
-const W_KM = 44;
+const W_KM = 56;
 const W_PACE = 44;
 const W_ELEV = 56;
 const W_HR = 34;

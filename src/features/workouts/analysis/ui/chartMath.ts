@@ -139,7 +139,8 @@ const PACE_STEPS = [5, 10, 15, 20, 30, 60, 120, 300];
 /** Round tick values inside [min, max], roughly `target` of them. `steps` overrides the 1-2-5 ladder (pace uses seconds). */
 export function niceTicks(min: number, max: number, target: number, steps?: readonly number[]): number[] {
   if (!(max > min) || target < 1) return [];
-  const rough = (max - min) / target;
+  // A step up to a quarter smaller than the even split is fine: charts read better with a tick more than a tick less.
+  const rough = ((max - min) / target) * 0.75;
   let step: number;
   if (steps) {
     step = steps.find((s) => s >= rough) ?? steps[steps.length - 1]!;

@@ -112,7 +112,7 @@ export const englishText = {
   'effort.band.max': 'All out',
   'effort.outOf': 'of 21',
   'effort.addedToDay': '+{value} to the day',
-  'effort.explain': 'Relative Effort is JoyoFit\'s strain for this workout on a 0 to 21 scale. It is calculated from the time you spent in each heart rate zone (TRIMP {trimp}), so the same workout feels bigger at a higher heart rate.',
+  'effort.explain': 'Relative Effort is JoyoFit\'s strain for this workout on a 0 to 21 scale: the longer your heart works at a high level, the higher it goes (TRIMP {trimp}).',
   'effort.a11y': 'Relative effort {value} of 21, {band}',
 
   // Load
@@ -144,7 +144,6 @@ export const englishText = {
   'laps.speed': 'Speed',
   'laps.hr': 'HR',
   'laps.cad': 'Cad',
-  'laps.avgMax': 'avg / max',
 
   // Comparison
   'compare.thisWorkout': 'This workout',
@@ -163,7 +162,7 @@ export const englishText = {
   'compare.basisDurationOne': 'Compared with your last workout of similar duration (within 25%).',
 
   // Notes: how the numbers are calculated
-  'note.effort': 'Strain is computed from heart rate readings: each minute counts by the zone it falls in (Edwards TRIMP), then maps onto a 0 to 21 scale. It needs your max heart rate, so set it in your profile for best results.',
+  'note.effort': 'Each minute of heart rate counts by the zone it falls in (Edwards TRIMP) and the total is mapped onto the 0 to 21 scale. It relies on your max heart rate, so set it in your profile for best results.',
   'note.load': 'Load is the Edwards TRIMP: minutes in each heart rate zone multiplied by the zone number. The last 7 days add up to this workout; the weekly average is the mean of the 28 days before it.',
   'note.threshold': 'Threshold pace is estimated from your best 1 mile, 5 km, 10 km and half marathon efforts, slowed to a one hour effort. Zones are set as shares of it.',
 

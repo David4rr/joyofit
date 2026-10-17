@@ -33,7 +33,7 @@ function LapsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
         {head(FLEX.time, t('laps.time'))}
         {show.dist ? head(FLEX.dist, t('laps.dist')) : null}
         {show.pace ? head(FLEX.pace, t(speed ? 'laps.speed' : 'laps.pace')) : null}
-        {show.hr ? head(FLEX.hr, `${t('laps.hr')} ${t('laps.avgMax')}`) : null}
+        {show.hr ? head(FLEX.hr, t('laps.hr')) : null}
         {show.cad ? head(FLEX.cad, t('laps.cad')) : null}
       </View>
       <View style={[styles.rule, { backgroundColor: palette.border }]} />
