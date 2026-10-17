@@ -30,6 +30,18 @@
             "CFBundleTypeRole": "Viewer",
             "LSHandlerRank": "Alternate",
             "LSItemContentTypes": ["com.joyodigitama.joyofit.fit"]
+          },
+          {
+            "CFBundleTypeName": "GPX route",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": ["com.joyodigitama.joyofit.gpx"]
+          },
+          {
+            "CFBundleTypeName": "TCX route",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": ["com.joyodigitama.joyofit.tcx"]
           }
         ],
         "UTImportedTypeDeclarations": [
@@ -40,6 +52,24 @@
             "UTTypeTagSpecification": {
               "public.filename-extension": ["fit"],
               "public.mime-type": ["application/vnd.ant.fit"]
+            }
+          },
+          {
+            "UTTypeIdentifier": "com.joyodigitama.joyofit.gpx",
+            "UTTypeDescription": "GPX route file",
+            "UTTypeConformsTo": ["public.xml"],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": ["gpx"],
+              "public.mime-type": ["application/gpx+xml"]
+            }
+          },
+          {
+            "UTTypeIdentifier": "com.joyodigitama.joyofit.tcx",
+            "UTTypeDescription": "TCX route file",
+            "UTTypeConformsTo": ["public.xml"],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": ["tcx"],
+              "public.mime-type": ["application/vnd.garmin.tcx+xml"]
             }
           }
         ]
@@ -127,13 +157,65 @@
           ]
         },
         {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "mimeType": "application/gpx+xml" },
+            { "scheme": "content", "mimeType": "application/vnd.garmin.tcx+xml" },
+            { "scheme": "content", "mimeType": "application/xml" },
+            { "scheme": "content", "mimeType": "text/xml" }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "host": "*", "mimeType": "application/octet-stream" },
+            { "pathPattern": ".*\\\\.gpx" },
+            { "pathPattern": ".*\\\\..*\\\\.gpx" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.gpx" },
+            { "pathPattern": ".*\\\\.GPX" },
+            { "pathPattern": ".*\\\\..*\\\\.GPX" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.GPX" },
+            { "pathPattern": ".*\\\\.tcx" },
+            { "pathPattern": ".*\\\\..*\\\\.tcx" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.tcx" },
+            { "pathPattern": ".*\\\\.TCX" },
+            { "pathPattern": ".*\\\\..*\\\\.TCX" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.TCX" }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "host": "*" },
+            { "pathPattern": ".*\\\\.gpx" },
+            { "pathPattern": ".*\\\\..*\\\\.gpx" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.gpx" },
+            { "pathPattern": ".*\\\\.GPX" },
+            { "pathPattern": ".*\\\\..*\\\\.GPX" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.GPX" },
+            { "pathPattern": ".*\\\\.tcx" },
+            { "pathPattern": ".*\\\\..*\\\\.tcx" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.tcx" },
+            { "pathPattern": ".*\\\\.TCX" },
+            { "pathPattern": ".*\\\\..*\\\\.TCX" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.TCX" }
+          ]
+        },
+        {
           "action": "SEND",
           "category": ["DEFAULT"],
           "data": [
             { "mimeType": "application/vnd.ant.fit" },
             { "mimeType": "application/octet-stream" },
             { "mimeType": "application/zip" },
-            { "mimeType": "application/x-zip-compressed" }
+            { "mimeType": "application/x-zip-compressed" },
+            { "mimeType": "application/gpx+xml" },
+            { "mimeType": "application/vnd.garmin.tcx+xml" },
+            { "mimeType": "application/xml" },
+            { "mimeType": "text/xml" }
           ]
         }
       ],
@@ -175,6 +257,7 @@
         }
       ],
       "expo-font",
+      "@maplibre/maplibre-react-native",
       [
         "expo-image-picker",
         {

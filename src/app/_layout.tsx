@@ -143,6 +143,8 @@ function RootNavigator() {
                     <Tabs.Screen name="workout-live" options={{ href: null }} />
                     {/* Family monitoring: opened from Today, Settings and notifications; its stack draws its own headers. */}
                     <Tabs.Screen name="family" options={{ href: null }} />
+                    {/* Watch routes: opened from the Watch tab and by shared GPX/TCX files; its stack draws its own headers. */}
+                    <Tabs.Screen name="routes" options={{ href: null }} />
                     {/* The setup guide: opened by OnboardingProvider on a first run and from Settings; full screen, no tab bar. */}
                     <Tabs.Screen name="onboarding" options={{ href: null, tabBarStyle: { display: 'none' } }} />
                   </Tabs>

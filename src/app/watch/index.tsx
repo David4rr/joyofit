@@ -17,6 +17,7 @@ import { WatchStatusCard } from '@/features/device/WatchStatusCard';
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
 import { useBondedDevices } from '@/features/device/useBondedDevices';
 import { useWatch } from '@/state/WatchProvider';
+import { copy as routeCopy } from '@/features/routes/copy';
 import { spacing, useTheme } from '@/theme';
 
 const CONNECT_STEPS = isIos
@@ -116,6 +117,14 @@ export default function WatchScreen() {
         subtitle="Read and change"
         style={styles.navRow}
         onPress={() => router.push('/watch/alarms')}
+      />
+      <Divider />
+      <NavRow
+        icon="trail-sign"
+        title={routeCopy.hub.title}
+        subtitle={routeCopy.hub.subtitle}
+        style={styles.navRow}
+        onPress={() => router.push('/routes')}
       />
     </Section>
   );

@@ -33,12 +33,31 @@ describe('with-shared-fit plugin', () => {
     expect(() => applySharedFit('class Other {}')).toThrow('MainActivity layout changed');
   });
 
-  it('is registered in app.json with the intent filters for .fit and .zip files', () => {
+  it('is registered in app.json with the intent filters for .fit, .zip, .gpx and .tcx files', () => {
     const { expo } = JSON.parse(readFileSync('app.json', 'utf8'));
     expect(expo.plugins).toContain('./plugins/with-shared-fit');
     const actions = expo.android.intentFilters.map((f: { action: string }) => f.action);
-    expect(actions).toEqual(['VIEW', 'VIEW', 'VIEW', 'VIEW', 'VIEW', 'VIEW', 'SEND']);
-    expect(JSON.stringify(expo.android.intentFilters)).toContain('application/vnd.ant.fit');
-    expect(JSON.stringify(expo.android.intentFilters)).toContain('application/x-zip-compressed');
+    expect(actions).toEqual(['VIEW', 'VIEW', 'VIEW', 'VIEW', 'VIEW', 'VIEW', 'VIEW', 'VIEW', 'VIEW', 'SEND']);
+    const filters = JSON.stringify(expo.android.intentFilters);
+    expect(filters).toContain('application/vnd.ant.fit');
+    expect(filters).toContain('application/x-zip-compressed');
+    expect(filters).toContain('application/gpx+xml');
+    expect(filters).toContain('application/vnd.garmin.tcx+xml');
+    expect(filters).toContain('.*\\\\\\\\.gpx');
+    expect(filters).toContain('.*\\\\\\\\.TCX');
+    const send = expo.android.intentFilters.find((f: { action: string }) => f.action === 'SEND');
+    const sendTypes = send.data.map((d: { mimeType: string }) => d.mimeType);
+    expect(sendTypes).toEqual(expect.arrayContaining(['application/gpx+xml', 'application/vnd.garmin.tcx+xml', 'application/xml', 'text/xml']));
+  });
+
+  it('declares the gpx and tcx document types for iOS', () => {
+    const { expo } = JSON.parse(readFileSync('app.json', 'utf8'));
+    const types = expo.ios.infoPlist.UTImportedTypeDeclarations;
+    const byId = Object.fromEntries(types.map((t: { UTTypeIdentifier: string }) => [t.UTTypeIdentifier, t]));
+    expect(byId['com.joyodigitama.joyofit.gpx'].UTTypeConformsTo).toEqual(['public.xml']);
+    expect(byId['com.joyodigitama.joyofit.gpx'].UTTypeTagSpecification['public.filename-extension']).toEqual(['gpx']);
+    expect(byId['com.joyodigitama.joyofit.tcx'].UTTypeTagSpecification['public.mime-type']).toEqual(['application/vnd.garmin.tcx+xml']);
+    const documents = expo.ios.infoPlist.CFBundleDocumentTypes.flatMap((d: { LSItemContentTypes: string[] }) => d.LSItemContentTypes);
+    expect(documents).toEqual(['com.joyodigitama.joyofit.fit', 'com.joyodigitama.joyofit.gpx', 'com.joyodigitama.joyofit.tcx']);
   });
 });

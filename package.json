@@ -7,6 +7,7 @@
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/vector-icons": "^15.0.2",
     "@garmin/fitsdk": "^21.218.0",
+    "@maplibre/maplibre-react-native": "^11.5.0",
     "better-auth": "1.7.3",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",

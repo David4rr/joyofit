@@ -26,6 +26,7 @@ import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/st
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
 import { ShareWorkoutButton } from '@/features/share/ShareWorkoutSheet';
 import { ShareToRogoButton } from '@/features/social/ShareToRogo';
+import { SaveWorkoutRouteButton } from '@/features/routes/SaveWorkoutRouteButton';
 import { analyzeWorkout } from '@/features/workouts/analysis/analyze';
 import { loadAnalysisHistory } from '@/features/workouts/analysis/history';
 import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/palette';
@@ -237,6 +238,7 @@ export default function WorkoutDetailScreen() {
           analysis={analysisState.status === 'ready' ? analysisState.analysis : null}
           analysisPending={analysisState.status === 'pending'}
         />
+        <SaveWorkoutRouteButton workout={workout} points={loaded.points} />
       </Card>
 
       {analysisState.status === 'ready' ? (
