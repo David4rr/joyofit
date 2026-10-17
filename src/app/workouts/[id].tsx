@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { IconChip } from '@/components/IconChip';
+import { isIos } from '@/components/IosUnavailable';
 import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { Ring } from '@/components/Ring';
@@ -299,6 +300,19 @@ export default function WorkoutDetailScreen() {
         {summary.minAltitude !== undefined ? (
           <KeyValue icon="chevron-down-circle-outline" label="Lowest point" value={metres(summary.minAltitude)} />
         ) : null}
+        {summary.avgPower !== undefined ? (
+          <KeyValue icon="flash-outline" label="Average power" value={`${summary.avgPower} W`} />
+        ) : null}
+        {summary.normalizedPower !== undefined ? (
+          <KeyValue icon="flash-outline" label="Normalized power" value={`${summary.normalizedPower} W`} />
+        ) : null}
+        {summary.maxPower !== undefined ? <KeyValue icon="flash-outline" label="Peak power" value={`${summary.maxPower} W`} /> : null}
+        {summary.avgCadence !== undefined ? (
+          <KeyValue icon="sync-outline" label="Average cadence" value={`${summary.avgCadence} rpm`} />
+        ) : null}
+        {summary.maxCadence !== undefined ? (
+          <KeyValue icon="sync-outline" label="Peak cadence" value={`${summary.maxCadence} rpm`} />
+        ) : null}
         {summary.maxDepth !== undefined ? (
           <KeyValue icon="water-outline" label="Maximum depth" value={metres(summary.maxDepth)} />
         ) : null}
@@ -316,6 +330,11 @@ export default function WorkoutDetailScreen() {
         ) : null}
         {summary.vo2max !== undefined ? (
           <KeyValue icon="pulse-outline" label="VO2 max" value={`${summary.vo2max} ml/kg/min`} />
+        ) : null}
+        {summary.importedFrom !== undefined ? (
+          <Notice icon="document-outline">
+            Imported from a {summary.importedFrom} FIT file. It stays on this phone and is not sent to the cloud or {isIos ? 'Apple Health' : 'Health Connect'}.
+          </Notice>
         ) : null}
         {!workout.complete ? (
           <Notice icon="cloud-download-outline">Partly downloaded; the next sync fetches the rest.</Notice>

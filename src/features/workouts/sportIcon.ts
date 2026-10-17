@@ -5,7 +5,7 @@ const RULES: readonly [RegExp, IconName][] = [
   [/swim|diving|apnea|scuba/i, 'water'],
   [/walk|hik/i, 'walk'],
   [/run|trail/i, 'speedometer'],
-  [/cycl|spinning|bik/i, 'bicycle'],
+  [/cycl|spinning|bik|\bride\b/i, 'bicycle'],
   [/rop|jump/i, 'pulse'],
   [/soccer|football/i, 'football'],
   [/basketball|volleyball/i, 'basketball'],

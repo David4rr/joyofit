@@ -522,6 +522,38 @@ How imported data is kept apart: migration `imported` adds `imported INTEGER NOT
 The format is undocumented and was written from what community converters report (`NOTICE` credits them); it has not
 been checked against a real export yet. The first real file may need field-name or scale adjustments.
 
+## Import a FIT file (Settings → Import a FIT file, Workouts → Import a FIT file, free)
+
+A ride or run recorded by a bike computer or sports watch (iGPSPORT first; Garmin, Wahoo, Bryton, Magene, XOSS and
+anything else that writes a standard FIT activity) becomes a full workout: route, heart rate, speed or pace, ascent,
+calories, power and cadence. It is JS only (`src/features/fitimport/`): Garmin's `@garmin/fitsdk` decoder reads the file on the
+phone, no server is called.
+
+Ways in: the **Choose a .fit file** button (Settings, or on the Workouts tab); on Android also **Open with JoyoFit** from a
+file manager and **Share to JoyoFit** from the bike computer's app (intent filters for `content://` VIEW with
+`application/vnd.ant.fit` or `application/octet-stream` and a `*.fit` name, and SEND, in `app.json`; the config plugin
+`plugins/with-shared-fit.js` turns a shared file into a view intent so Expo Router gets it as a URL, and
+`src/app/+native-intent.ts` sends that URL to the import screen). Registering SEND for `application/octet-stream` means
+JoyoFit also shows up when you share other binary files; the import then says it is not a FIT file. On iOS the same URL
+arrives through the `CFBundleDocumentTypes` entry for `.fit` in `app.json` (not tried on a device yet).
+
+| FIT | JoyoFit |
+| --- | --- |
+| `file_id.type` must be `activity`, `file_id.manufacturer` names the workout (`Ride (iGPSPORT)`; unknown brands give `Ride`) | `workouts.sport_name` |
+| `session` (several, as some head units write after a pause, are added up): start, `total_elapsed_time`, `total_timer_time`, distance, calories, avg/max heart rate, ascent | `workouts.start`, `end`, `duration` (active seconds), `distance`, `calories`, `avg_hr`, `max_hr`, `summary_json` |
+| `session.sport` / `sub_sport` | `sport_type`: cycling 3, indoor cycling or virtual 7, running 1, trail run 11, treadmill 5, walking 2, indoor walking 13, hiking 14, anything else 255 (Exercise) |
+| avg/max speed, ascent/descent, altitude range, avg/max cadence, avg/max/normalized power | `summary_json` (`workout_points` has no columns for power or cadence) |
+| `record`: time, position (semicircles to degrees), altitude, heart rate | `workout_points` (`ts`, `lat`, `lon`, `alt`, `hr`) |
+| `record.heart_rate`, averaged per minute | `step_samples.heart_rate`, `imported = 1`: Strain, Readiness and Trends read the per-minute heart rate, not `workouts` |
+
+Same rules as the Huawei import: the row has `imported = 1`, so the cloud upload, Health Connect / Apple Health and the
+automatic Strava upload skip it (the per-workout **Send to Strava** button stays the user's choice). The same file again adds
+nothing (same start). A file whose time overlaps a stored workout by more than half of the file's own span is skipped with a
+message and the stored one, the watch's, is kept; a minute already in `step_samples` is never touched. Errors shown: not a
+FIT file, damaged (checksum), not an activity file, no session, already imported, watch already recorded it. Tests:
+`src/features/fitimport/` (files built with `src/features/strava/fitEncoder.ts` and Garmin's encoder, the real schema in memory).
+The importer has not been run on a real iGPSPORT file yet.
+
 ## Where data lives
 
 `joyofit.db` in `<app files>/SQLite` is shared by the screens (expo-sqlite, read) and the native

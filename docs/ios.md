@@ -48,6 +48,7 @@ with 16-byte IVs) is written out in the package because CryptoKit rejects what t
 | Weather (0x0F, current + 24 h + 8 days, GPS, unit) over Open-Meteo, CoreLocation, URLSession | `Packets/WeatherPackets.swift`, `HuaweiWeather.swift`, `OpenMeteo.swift`, `ios/WeatherController.swift`, `ios/CoreLocationSource.swift` | Java golden, recorded Open-Meteo answers, scripted watch |
 | Notifications: the watch's own switch (02/04) and `CBPeripheral.ancsAuthorized` | `Packets/NotificationPackets.swift`, `ios/WatchNotifications.swift`, `BleTransport.swift` | Java golden, scripted watch |
 | Strava (Settings → Strava, Send to Strava, automatic upload): JS only, no native call; the native side is the shared SQLite schema: `workouts.imported`, `strava_upload` (migrations 10 and 11) | `WearMigrations.swift`, `ios/WorkoutStore.swift` | SQLite tests: the JS candidate query on rows the Swift store wrote, upgrade of the build 202610160151 database |
+| FIT file import (Settings → Import a FIT file): JS only (`@garmin/fitsdk`, `expo-file-system`), `imported = 1` rows kept out of exports; Info.plist document type for `.fit` (not tried on a device) | `src/features/fitimport/`, `app.json` | bun tests with FIT files from the app's own encoder and the shared schema in SQLite |
 
 Second round (every row: Java golden where the Java has the packet, Kotlin test vectors translated where only the Kotlin has it, fake or scripted watches):
 

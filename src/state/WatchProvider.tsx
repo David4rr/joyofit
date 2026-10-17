@@ -39,6 +39,8 @@ export interface WatchContextValue {
   totals: WatchTotals | null;
   /** Bumped after every stored sync so data screens re-query. */
   dataVersion: number;
+  /** Call after rows were written outside a sync (a FIT import), so the data screens re-query. */
+  dataChanged: () => void;
   connect: (address: string) => Promise<void>;
   /** Set when a connect stopped before a first bind; the watch the person has to agree to bind this phone to. */
   bindRequest: { address: string } | null;
@@ -218,6 +220,8 @@ export function WatchProvider({ children }: { children: ReactNode }) {
     [device, applySummary],
   );
 
+  const dataChanged = useCallback(() => setDataVersion((v) => v + 1), []);
+
   const sync = useCallback(() => runSync(() => HuaweiWear.syncActivity()), [runSync]);
   const syncFullHistory = useCallback(() => runSync(() => HuaweiWear.syncFullHistory()), [runSync]);
 
@@ -231,6 +235,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       lastSync,
       totals,
       dataVersion,
+      dataChanged,
       connect,
       bindRequest,
       confirmBind,
@@ -251,6 +256,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       lastSync,
       totals,
       dataVersion,
+      dataChanged,
       connect,
       bindRequest,
       confirmBind,

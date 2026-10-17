@@ -13,6 +13,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { PageHeader, useContentPadding, useRefreshControl } from '@/components/Screen';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { listWorkouts, type WorkoutRow } from '@/db/queries';
+import { pickFitFile } from '@/features/fitimport/useFitImport';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import { formatElapsed, formatWorkoutDistance } from '@/features/workouts/summary';
 import { useWorkoutStrain } from '@/features/workouts/useWorkoutStrain';
@@ -106,6 +107,7 @@ export default function WorkoutsScreen() {
   const [workouts, setWorkouts] = useState<WorkoutRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pulling, setPulling] = useState(false);
+  const [pickError, setPickError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -143,6 +145,17 @@ export default function WorkoutsScreen() {
 
   const connectAction = { label: 'Connect your watch', onPress: () => router.push('/watch') };
 
+  /** The picker here, the import and its result on the FIT import screen. */
+  const importFit = async () => {
+    setPickError(null);
+    try {
+      const picked = await pickFitFile();
+      if (picked) router.push({ pathname: '/settings/import-fit', params: { uri: picked.uri } });
+    } catch (e) {
+      setPickError(errorMessage(e));
+    }
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <SectionList
@@ -171,6 +184,13 @@ export default function WorkoutsScreen() {
                 />
               }
             />
+            <Button
+              label="Import a FIT file"
+              variant="secondary"
+              icon="bicycle"
+              onPress={() => void importFit()}
+            />
+            {pickError ? <Notice tone="danger">Could not open the file picker: {pickError}</Notice> : null}
             {error ? <Notice tone="danger">Could not read stored workouts: {error}</Notice> : null}
             {!canSync && !syncing && workouts && workouts.length > 0 ? (
               <Notice icon="watch-outline" action={connectAction}>

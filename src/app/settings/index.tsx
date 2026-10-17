@@ -95,6 +95,13 @@ const GROUPS: readonly SettingsGroup[] = [
         href: '/settings/import-huawei',
       },
       {
+        title: 'Import a FIT file',
+        subtitle: 'A ride or run from iGPSPORT, Garmin, Wahoo and others',
+        icon: 'bicycle',
+        tint: 'workouts',
+        href: '/settings/import-fit',
+      },
+      {
         title: 'Profile and goal',
         subtitle: 'Height, weight, daily step goal',
         icon: 'person',

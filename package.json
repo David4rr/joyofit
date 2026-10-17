@@ -6,6 +6,7 @@
     "@better-auth/expo": "1.7.3",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/vector-icons": "^15.0.2",
+    "@garmin/fitsdk": "^21.218.0",
     "better-auth": "1.7.3",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
@@ -16,6 +17,7 @@
     "expo-constants": "~57.0.21",
     "expo-crypto": "~57.0.4",
     "expo-document-picker": "~57.0.3",
+    "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.4",
     "expo-image-manipulator": "~57.0.21",
     "expo-image-picker": "~57.0.20",
@@ -37,7 +39,6 @@
     "react-native-view-shot": "5.1.0"
   },
   "devDependencies": {
-    "@garmin/fitsdk": "^21.218.0",
     "@types/react": "~19.2.2",
     "sharp": "^0.35.5",
     "typescript": "~6.0.3"

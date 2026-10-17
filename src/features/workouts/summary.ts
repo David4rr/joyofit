@@ -43,6 +43,14 @@ export interface WorkoutSummary {
   recoveryHours?: number;
   vo2max?: number;
   trainingPoints?: number;
+  /** Watts, rpm (strides per minute on foot): from an imported FIT file, which has no per-sample columns for them. */
+  avgPower?: number;
+  maxPower?: number;
+  normalizedPower?: number;
+  avgCadence?: number;
+  maxCadence?: number;
+  /** Set on workouts imported from a FIT file: the device brand, or `FIT file` when the file does not say. */
+  importedFrom?: string;
   swim?: {
     style?: string;
     strokes?: number;
