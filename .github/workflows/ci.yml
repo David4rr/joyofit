@@ -90,8 +90,11 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('site/bun.lock') }}
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock', 'site/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
+      # site/tsconfig.json extends expo/tsconfig.base from the root node_modules.
+      - run: bun install --frozen-lockfile
+        working-directory: .
       - run: bun install --frozen-lockfile
       - run: bun run build
 
@@ -133,9 +136,23 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: swift-actions/setup-swift@7ca6abe6b3b0e8b5421b88be48feee39cbf52c6a # v2.4.0
+      # The tests need Swift 6.4 (6.1 rejects HealthExporterTests); swift-actions/setup-swift stops at 6.2, so the
+      # official toolchain tarball is used and cached.
+      - name: Cache Swift toolchain
+        id: swift-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          swift-version: "6.1"
+          path: ~/swift-toolchain
+          key: swift-6.4.1-ubuntu24.04
+      - name: Install Swift 6.4.1
+        run: |
+          if [ ! -x ~/swift-toolchain/usr/bin/swift ]; then
+            mkdir -p ~/swift-toolchain
+            curl -fsSL https://download.swift.org/swift-6.4.1-release/ubuntu2404/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE-ubuntu24.04.tar.gz \
+              | tar -xz --strip-components=1 -C ~/swift-toolchain
+          fi
+          echo "$HOME/swift-toolchain/usr/bin" >> "$GITHUB_PATH"
+          ~/swift-toolchain/usr/bin/swift --version
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: modules/huawei-wear/ios/HuaweiProtocol/.build
@@ -155,9 +172,23 @@ jobs:
         with:
           node-version: "24"
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-      - uses: swift-actions/setup-swift@7ca6abe6b3b0e8b5421b88be48feee39cbf52c6a # v2.4.0
+      # The tests need Swift 6.4 (6.1 rejects HealthExporterTests); swift-actions/setup-swift stops at 6.2, so the
+      # official toolchain tarball is used and cached.
+      - name: Cache Swift toolchain
+        id: swift-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          swift-version: "6.1"
+          path: ~/swift-toolchain
+          key: swift-6.4.1-ubuntu24.04
+      - name: Install Swift 6.4.1
+        run: |
+          if [ ! -x ~/swift-toolchain/usr/bin/swift ]; then
+            mkdir -p ~/swift-toolchain
+            curl -fsSL https://download.swift.org/swift-6.4.1-release/ubuntu2404/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE-ubuntu24.04.tar.gz \
+              | tar -xz --strip-components=1 -C ~/swift-toolchain
+          fi
+          echo "$HOME/swift-toolchain/usr/bin" >> "$GITHUB_PATH"
+          ~/swift-toolchain/usr/bin/swift --version
       - run: sudo apt-get install -y --no-install-recommends libsqlite3-dev
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
