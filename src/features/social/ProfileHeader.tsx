@@ -1,0 +1,63 @@
+import { StyleSheet, View } from 'react-native';
+
+import { AppText } from '@/components/AppText';
+import { IconChip } from '@/components/IconChip';
+import { Metric } from '@/components/Metric';
+import { Card } from '@/components/Screen';
+import { formatCount } from '@/format';
+import { spacing } from '@/theme';
+
+interface ProfileHeaderProps {
+  name: string;
+  handle: string | null;
+  bio?: string | null;
+  /** Null for a private profile: it shows no numbers. */
+  counts: { posts: number; followers: number; following: number } | null;
+}
+
+/** Name, @handle, bio and the post, follower and following counts of a profile. */
+export function ProfileHeader({ name, handle, bio, counts }: ProfileHeaderProps) {
+  return (
+    <Card>
+      <View style={styles.head}>
+        <IconChip icon="person" size="lg" />
+        <View style={styles.title}>
+          <AppText variant="heading" numberOfLines={2}>
+            {name}
+          </AppText>
+          {handle ? (
+            <AppText variant="caption" muted>
+              @{handle}
+            </AppText>
+          ) : null}
+        </View>
+      </View>
+      {bio ? <AppText variant="body">{bio}</AppText> : null}
+      {counts ? (
+        <View style={styles.counts}>
+          <Count label="Posts" value={counts.posts} />
+          <Count label="Followers" value={counts.followers} />
+          <Count label="Following" value={counts.following} />
+        </View>
+      ) : null}
+    </Card>
+  );
+}
+
+function Count({ label, value }: { label: string; value: number }) {
+  return (
+    <View accessible accessibilityLabel={`${label}: ${value}`} style={styles.count}>
+      <Metric value={formatCount(value)} size="md" />
+      <AppText variant="caption" muted>
+        {label}
+      </AppText>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  title: { flex: 1, gap: 2 },
+  counts: { flexDirection: 'row', gap: spacing.lg },
+  count: { gap: 0 },
+});

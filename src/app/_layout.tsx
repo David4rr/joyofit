@@ -99,6 +99,15 @@ function RootNavigator() {
                       }}
                     />
                     <Tabs.Screen
+                      name="social"
+                      options={{
+                        title: 'Social',
+                        tabBarIcon: ({ focused, color, size }) => (
+                          <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={color} />
+                        ),
+                      }}
+                    />
+                    <Tabs.Screen
                       name="watch"
                       options={{
                         title: 'Watch',

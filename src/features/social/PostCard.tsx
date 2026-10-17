@@ -11,8 +11,9 @@ import { Card } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { PillRow, StatPill } from '@/features/social/StatPill';
 import { postFigures } from '@/features/social/postStats';
+import { useAgo } from '@/features/social/useAgo';
 import { sportIcon } from '@/features/workouts/sportIcon';
-import { errorMessage, formatAgo } from '@/format';
+import { errorMessage } from '@/format';
 import { spacing, useColors } from '@/theme';
 
 const KIND_ICON: Record<Exclude<RogoPost['kind'], 'latihan'>, IconName> = {
@@ -39,6 +40,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
   const [error, setError] = useState<string | null>(null);
   const figures = postFigures(post);
   const handle = post.author.handle;
+  const ago = useAgo(post.createdAt);
 
   const toggleKudos = async () => {
     setBusy(true);
@@ -62,7 +64,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
         </AppText>
         <AppText variant="caption" muted numberOfLines={1}>
           {handle ? `@${handle} · ` : ''}
-          {formatAgo(Date.parse(post.createdAt) / 1000, Date.now() / 1000)}
+          {ago}
         </AppText>
       </View>
       <Ionicons

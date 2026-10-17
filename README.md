@@ -595,6 +595,24 @@ What the App ID buys: Instagram opens straight in the Story editor, and the stic
 Without it, on iOS the PNG goes through Photos (Instagram opens the saved image; it is flattened to JPEG, so the sticker option uses the system
 share sheet instead to keep its transparency), and on Android it opens Instagram's share chooser.
 
+## Social (Social tab, Share to JoyoRogo on a workout, free)
+
+JoyoFit reads and writes JoyoRogo's social backend with the shared JoyoRogo account (`src/cloud/rogo.ts`, `rogo.group.*` and `rogo.social.*`; screens in
+`src/app/social/`, pieces in `src/features/social/`). Nothing goes through the JoyoFit Worker.
+
+- **Feed.** Following (you, people you follow, your groups) and Explore (public posts), kudos, comments, and the author's profile. Signed out, every screen
+  shows the same JoyoRogo sign-in as Settings.
+- **Groups.** Your groups, join by invite code, and per group today's Recovery, Strain, Sleep and readiness of each member who opted in. You opt in per group
+  with *Share JoyoFit scores* (`group.setShareFitness`); *Share food names* is JoyoRogo's existing switch.
+- **Share to JoyoRogo** (workout screen) posts the summary (sport, duration, kcal, distance, average and maximum heart rate) as a `latihan` post, visible to
+  your groups or public, with an optional heart-rate series (at most 600 averaged readings, `intervalSec` apart) and route (at most 1000 points). Building
+  that input is `features/social/watchPost.ts`.
+- **Pro paywall on viewing, not sharing.** Anyone can share the detail. The author always sees their own; another viewer gets the chart and route only on
+  JoyoRogo Pro (`social.workoutDetail` answers `locked: true` otherwise, and the post shows a Pro card). The card's link follows the store rules of
+  `proOffer`: a web link outside Google Play, the JoyoRogo Play listing on Play, text only on iOS.
+- **Strava.** Imported rows (`workouts.imported = 1`: Huawei export or a FIT file, whose origin the app cannot tell, possibly a Strava download) are never
+  offered for sharing, like they stay out of the cloud upload. JoyoFit never reads Strava data, so a watch workout carries none.
+
 ## Import a FIT file (Settings → Import a FIT file, Workouts → Import a FIT file, free)
 
 A ride or run recorded by a bike computer or sports watch (iGPSPORT first; Garmin, Wahoo, Bryton, Magene, XOSS and
@@ -689,7 +707,7 @@ AAB's merged manifest still has a restricted permission. Publishing on Google Pl
 ## Layout
 
 ```
-src/app/                  expo-router: four tabs, index (Today), workouts (list + detail stack), watch (status, alarms, faces stack), settings (menu stack, with Log and About); /today, /log, /alarms and /watchfaces redirect to their new place
+src/app/                  expo-router: five tabs, index (Today), workouts (list + detail stack), social (feed, post, groups, profiles stack), watch (status, alarms, faces stack), settings (menu stack, with Log and About); /today, /log, /alarms and /watchfaces redirect to their new place
 src/state/                WatchProvider (link state, events), log ring buffer
 src/db/                   expo-sqlite migrations (from the shared JSON) + read queries + cloud cursors (cloud.ts)
 src/cloud/                JoyoRogo sign-in (better-auth client), cloud API client with retries, incremental uploader

@@ -9,8 +9,9 @@ import { Input } from '@/components/Input';
 import { PressableScale } from '@/components/PressableScale';
 import { Divider, Section } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
+import { useAgo } from '@/features/social/useAgo';
 import { useRogoQuery } from '@/features/social/useRogoQuery';
-import { errorMessage, formatAgo } from '@/format';
+import { errorMessage } from '@/format';
 import { spacing } from '@/theme';
 
 /** JoyoRogo's limit for one comment. */
@@ -19,6 +20,7 @@ const COMMENT_MAX = 280;
 function CommentRow({ comment }: { comment: RogoComment }) {
   const router = useRouter();
   const handle = comment.author.handle;
+  const ago = useAgo(comment.createdAt);
   return (
     <View style={styles.comment}>
       <PressableScale
@@ -30,7 +32,7 @@ function CommentRow({ comment }: { comment: RogoComment }) {
           {comment.author.name}
           <AppText variant="caption" muted>
             {'  '}
-            {formatAgo(Date.parse(comment.createdAt) / 1000, Date.now() / 1000)}
+            {ago}
           </AppText>
         </AppText>
       </PressableScale>

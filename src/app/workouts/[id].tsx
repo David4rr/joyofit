@@ -25,6 +25,7 @@ import { startOfLocalDay } from '@/features/today/stats';
 import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/strain';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
 import { ShareWorkoutButton } from '@/features/share/ShareWorkoutSheet';
+import { ShareToRogoButton } from '@/features/social/ShareToRogo';
 import { HeartRateChart } from '@/features/workouts/HeartRateChart';
 import { RouteView } from '@/features/workouts/RouteView';
 import { sportIcon } from '@/features/workouts/sportIcon';
@@ -204,6 +205,7 @@ export default function WorkoutDetailScreen() {
           ) : null}
         </View>
         <ShareWorkoutButton workout={workout} summary={summary} route={route} />
+        <ShareToRogoButton workout={workout} points={loaded.points} />
       </Card>
 
       <Section title="Heart rate" icon="heart" tint="heart">
