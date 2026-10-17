@@ -24,7 +24,6 @@ import {
   Route,
   Server,
   ShieldCheck,
-  Smartphone,
   Watch,
   type LucideIcon,
 } from "lucide-react";
@@ -66,7 +65,7 @@ import { PrivasiPage } from "./Privasi";
 import { isPublicPath, type PublicPath } from "./seo";
 import { Testimonials } from "./testimonials-section";
 import { TESTIMONIALS } from "./testimonials";
-import { AndroidMark, ANDROID_ROBOT_CREDIT, ButtonLink, GithubMark, Phone, Ring } from "./ui";
+import { AndroidMark, ANDROID_ROBOT_CREDIT, AppleMark, ButtonLink, GithubMark, Phone, Ring } from "./ui";
 import { IphonePage, StravaPage } from "./Waitlist";
 
 /** Harga JoyoRogo Pro, sama dengan joyorogo.com/harga (api.joyorogo.com/api/config). */
@@ -258,7 +257,7 @@ function Footer() {
             Android
           </a>
           <a href={IPHONE_PATH} className={cn(link, "gap-1.5")} {...goal("iphone_waitlist_click", "footer")}>
-            <Smartphone aria-hidden className="size-4" />
+            <AppleMark className="size-4" />
             iPhone
           </a>
           <a href={PANDUAN_PATH} className={link}>
@@ -890,7 +889,7 @@ function Install() {
               tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {id === "android" ? <AndroidMark className="mr-2 size-[1.125rem]" /> : <Smartphone aria-hidden className="mr-2 size-[1.125rem]" />}
+            {id === "android" ? <AndroidMark className="mr-2 size-[1.125rem]" /> : <AppleMark className="mr-2 size-[1.125rem]" />}
             {label}
           </button>
         ))}
@@ -958,7 +957,7 @@ function Install() {
                   rel="noopener"
                   {...goal("ios_testflight_click", "cara")}
                 >
-                  <Smartphone aria-hidden />
+                  <AppleMark />
                   Buka TestFlight
                 </ButtonLink>
                 <p className="mt-3 text-sm">
@@ -1016,7 +1015,7 @@ function PlatformButtons({ location, className, buttonClassName }: { location: s
           rel="noopener"
           {...goal("ios_testflight_click", location)}
         >
-          <Smartphone aria-hidden />
+          <AppleMark />
           JoyoFit untuk iPhone
         </ButtonLink>
       )}
