@@ -1,8 +1,10 @@
 // Per-page SEO data and the <head> tags built from it. Page components read
 // their titles from here, vite.config.ts uses headTags() in dev, and
 // scripts/prerender.ts uses it to write one static HTML file per route.
+import { POSTS, postPath } from "./blog/index.ts";
 import { FAQ } from "./faq.ts";
 import {
+  BLOG_PATH,
   DUKUNG_JAM_PATH,
   GITHUB_URL,
   IOS_TESTFLIGHT_URL,
@@ -35,9 +37,11 @@ export type Page = {
   /** Breadcrumb label. */
   name: string;
   noindex?: true;
+  /** A blog post: head tags become an article and the JSON-LD a BlogPosting (ISO dates). */
+  article?: { published: string };
 };
 
-export const PAGES = {
+const STATIC_PAGES = {
   "/": {
     title: "JoyoFit: Pengganti Huawei Health untuk Jam Huawei, Open Source",
     ogTitle: "JoyoFit: Jam-mu. Data-mu. HP-mu.",
@@ -49,7 +53,7 @@ export const PAGES = {
     title: "Pakai Huawei Watch Fit 4 Pro Tanpa Huawei Health | Panduan JoyoFit",
     name: "Panduan",
     description:
-      "Langkah memakai Huawei Watch Fit 4 Pro tanpa Huawei Health: lepas jam, pasang JoyoFit, pairing, sinkron, Strava, impor riwayat, dan atasi masalah umum. English guide below.",
+      "Langkah memakai Huawei Watch Fit 4 Pro tanpa Huawei Health: pasang JoyoFit, panduan awal, pairing, sinkron, Strava, impor riwayat, Social, dan masalah umum. English guide below.",
   },
   [STRAVA_PATH]: {
     title: "Sinkron Jam Huawei ke Strava dengan JoyoFit (Daftar Tunggu)",
@@ -94,11 +98,33 @@ export const PAGES = {
     description:
       "Seseorang mengundangmu berbagi kabar lewat JoyoFit: beberapa angka harian dari jam Huawei-mu. Kamu yang menentukan apa yang dibagikan.",
   },
+  [BLOG_PATH]: {
+    title: "Blog JoyoFit: kabar fitur dan cara pakai",
+    name: "Blog",
+    description:
+      "Tulisan tentang fitur JoyoFit yang sudah bisa dipakai: tab Social, bagikan latihan ke JoyoRogo, panduan awal, Strava, kartu bagikan, dan pembaruan.",
+  },
 } as const satisfies Record<string, Page>;
 
-export type PublicPath = keyof typeof PAGES;
+/** One page per published post (src/blog/index.ts); drafts are not in POSTS, so they get no page. */
+const POST_PAGES: Record<string, Page> = Object.fromEntries(
+  POSTS.map((post) => [
+    postPath(post),
+    {
+      title: `${post.title} | JoyoFit`,
+      ogTitle: post.title,
+      name: post.title,
+      description: post.description,
+      article: { published: post.date },
+    } satisfies Page,
+  ]),
+);
 
-export const PUBLIC_PATHS = Object.keys(PAGES) as PublicPath[];
+export const PAGES: Record<string, Page> = { ...STATIC_PAGES, ...POST_PAGES };
+
+export type PublicPath = string;
+
+export const PUBLIC_PATHS: PublicPath[] = Object.keys(PAGES);
 
 export const NOT_FOUND: Page = {
   title: "Halaman tidak ditemukan | JoyoFit",
@@ -188,13 +214,29 @@ function homeJsonLd(): object[] {
 }
 
 function breadcrumbJsonLd(path: PublicPath): object {
+  const crumbs = [{ name: PAGES["/"].name, item: `${SITE_URL}/` }];
+  if (PAGES[path].article) crumbs.push({ name: PAGES[BLOG_PATH].name, item: `${SITE_URL}${BLOG_PATH}` });
+  crumbs.push({ name: PAGES[path].name, item: `${SITE_URL}${path}` });
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: PAGES["/"].name, item: `${SITE_URL}/` },
-      { "@type": "ListItem", position: 2, name: PAGES[path].name, item: `${SITE_URL}${path}` },
-    ],
+    itemListElement: crumbs.map((crumb, i) => ({ "@type": "ListItem", position: i + 1, ...crumb })),
+  };
+}
+
+function articleJsonLd(path: PublicPath, page: Page): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: page.name,
+    description: page.description,
+    datePublished: page.article!.published,
+    dateModified: page.article!.published,
+    inLanguage: "id",
+    mainEntityOfPage: `${SITE_URL}${path}`,
+    image: `${SITE_URL}${OG_IMAGE.path}`,
+    author: { "@id": ORG_ID },
+    publisher: { "@id": ORG_ID },
   };
 }
 
@@ -209,7 +251,7 @@ export function headTags(path: string): string {
     `<title>${esc(page.title)}</title>`,
     `<meta name="description" content="${esc(page.description)}" />`,
     page.noindex ? `<meta name="robots" content="noindex" />` : `<link rel="canonical" href="${url}" />`,
-    `<meta property="og:type" content="website" />`,
+    `<meta property="og:type" content="${page.article ? "article" : "website"}" />`,
     `<meta property="og:site_name" content="${SITE_NAME}" />`,
     `<meta property="og:locale" content="id_ID" />`,
     notFound ? "" : `<meta property="og:url" content="${url}" />`,
@@ -226,7 +268,14 @@ export function headTags(path: string): string {
     `<meta name="twitter:image" content="${image}" />`,
     `<meta name="twitter:image:alt" content="${esc(OG_IMAGE.alt)}" />`,
     // "<" is escaped so no string in the data can close the script element.
-    ...(notFound ? [] : path === "/" ? homeJsonLd() : [breadcrumbJsonLd(path)]).map(
+    ...(notFound
+      ? []
+      : path === "/"
+        ? homeJsonLd()
+        : page.article
+          ? [breadcrumbJsonLd(path), articleJsonLd(path, page)]
+          : [breadcrumbJsonLd(path)]
+    ).map(
       (data) => `<script type="application/ld+json">${JSON.stringify(data).replaceAll("<", "\\u003c")}</script>`,
     ),
   ];

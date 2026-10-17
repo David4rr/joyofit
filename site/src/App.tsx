@@ -17,17 +17,24 @@ import {
   Footprints,
   Heart,
   HeartPulse,
+  ListChecks,
+  Lock,
   Mail,
+  MessageCircle,
   Moon,
   Package,
   Palette,
   Route,
   Server,
+  Share2,
   ShieldCheck,
+  Upload,
+  Users,
   Watch,
   type LucideIcon,
 } from "lucide-react";
 import {
+  BLOG_PATH,
   CLOUDAGNI_URL,
   CONTACT_EMAIL,
   DUKUNG_JAM_PATH,
@@ -62,10 +69,11 @@ import {
 } from "./jam";
 import { FAQ } from "./faq";
 import { useScrollReveal } from "./reveal";
+import { BlogIndexPage, BlogPostPage } from "./Blog";
 import { KeluargaPage } from "./Keluarga";
 import { PanduanPage } from "./Panduan";
 import { PrivasiPage } from "./Privasi";
-import { isPublicPath, type PublicPath } from "./seo";
+import { isPublicPath } from "./seo";
 import { Testimonials } from "./testimonials-section";
 import { TESTIMONIALS } from "./testimonials";
 import { AndroidMark, ANDROID_ROBOT_CREDIT, AppleMark, ButtonLink, GithubMark, Phone, Ring } from "./ui";
@@ -184,6 +192,9 @@ function Header() {
           <a href="/#cara" className={link}>
             Tiga cara pakai
           </a>
+          <a href={BLOG_PATH} className={link}>
+            Blog
+          </a>
           <a href="/#faq" className={link}>
             Tanya jawab
           </a>
@@ -265,6 +276,9 @@ function Footer() {
           </a>
           <a href={PANDUAN_PATH} className={link}>
             Panduan
+          </a>
+          <a href={BLOG_PATH} className={link}>
+            Blog
           </a>
           <a href={PRIVASI_PATH} className={link}>
             Privasi
@@ -599,7 +613,7 @@ const SCORES: { Icon: LucideIcon; name: string; line: string; method: string; to
 
 function Scores() {
   return (
-    <section data-section="scores" className="scroll-mt-16 bg-card py-20 md:py-28">
+    <section id="skor" data-section="scores" className="scroll-mt-16 bg-card py-20 md:py-28">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
         <div className="max-w-2xl">
           <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
@@ -714,6 +728,127 @@ function Features() {
           ))}
         </ul>
       </article>
+    </section>
+  );
+}
+
+const SOCIAL_POINTS: { Icon: LucideIcon; title: string; body: string }[] = [
+  {
+    Icon: Users,
+    title: "Feed dan grup",
+    body: "Feed JoyoRogo dengan tab Following dan Explore. Gabung grup dengan kode undangan; grup baru dibuat lewat JoyoRogo.",
+  },
+  {
+    Icon: MessageCircle,
+    title: "Profil, komentar, kudos",
+    body: "Buka profil teman, balas komentar, dan beri kudos di latihan mereka.",
+  },
+  {
+    Icon: Share2,
+    title: "Share to JoyoRogo",
+    body: "Dari layar latihan: tulis caption, pilih Group atau Public, lalu pilih apakah detak jantung, rute, dan perbandingan ikut.",
+  },
+  {
+    Icon: Lock,
+    title: "Detail itu fitur Pro",
+    body: "Grafik detak jantung dan rute di postingan orang lain butuh JoyoRogo Pro. Milikmu selalu bisa kamu lihat, dan membagikannya gratis.",
+  },
+];
+
+function SocialSection() {
+  return (
+    <section id="social" data-section="social" className="scroll-mt-16 bg-card py-20 md:py-28">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
+        <div className="max-w-2xl">
+          <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Baru</p>
+          <SectionTitle>Social: latihan dari jammu, dilihat teman</SectionTitle>
+          <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+            Tab Social membuka feed{" "}
+            <a href={JOYOROGO_URL} className="font-bold underline underline-offset-2">
+              JoyoRogo
+            </a>{" "}
+            di dalam JoyoFit. Masuk dengan akun JoyoRogo, gabung grup temanmu, dan bagikan latihan langsung dari jam.
+            Grup juga bisa membagikan skor harian Recovery, Strain, tidur, dan Readiness.
+          </p>
+        </div>
+        <ul className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {SOCIAL_POINTS.map(({ Icon, title, body }) => (
+            <li key={title} className="rounded-[1.75rem] border border-border/70 bg-background p-6">
+              <span className="flex size-10 items-center justify-center rounded-full bg-makan-soft text-makan-ink">
+                <Icon className="size-5" aria-hidden />
+              </span>
+              <h3 className="mt-4 text-lg font-extrabold tracking-tight">{title}</h3>
+              <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-muted-foreground">{body}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-6 text-[0.9375rem] text-muted-foreground">
+          Langkahnya ada di{" "}
+          <a href={`${PANDUAN_PATH}#social`} className="font-semibold text-foreground underline underline-offset-4">
+            panduan Social
+          </a>{" "}
+          dan{" "}
+          <a href="/blog/social-joyofit" className="font-semibold text-foreground underline underline-offset-4">
+            tulisan tentang tab Social
+          </a>
+          .
+        </p>
+      </div>
+    </section>
+  );
+}
+
+const SEND_POINTS: { Icon: LucideIcon; title: string; body: string; href: string; label: string }[] = [
+  {
+    Icon: Share2,
+    title: "Kartu bagikan",
+    body: "Latihan atau ringkasan Hari ini jadi gambar Story 9:16 atau Square 1:1, berlatar rute, fotomu, atau stiker transparan. Kirim ke Instagram Stories, salin, atau simpan.",
+    href: "/blog/kartu-bagikan",
+    label: "Soal kartu bagikan",
+  },
+  {
+    Icon: Upload,
+    title: "Upload ke Strava",
+    body: "Olahraga dikirim ke Strava sebagai file FIT berisi angka dari jam: jarak, waktu aktif, kalori, detak jantung, elevasi, kadensi, dan rute. Gratis. Slot Strava sedang penuh, ada daftar tunggu.",
+    href: "/blog/strava-file-fit",
+    label: "Soal upload Strava",
+  },
+  {
+    Icon: ListChecks,
+    title: "Panduan awal",
+    body: "Saat pertama dibuka, aplikasi menuntun dari lepas jam dari Huawei Health, pairing, dan sinkron pertama sampai izin dan masuk JoyoRogo. Bisa dilewati, dilanjutkan, dan dibuka lagi dari Settings.",
+    href: "/blog/panduan-awal",
+    label: "Soal panduan awal",
+  },
+];
+
+function SendSection() {
+  return (
+    <section data-section="send" className="mx-auto w-full max-w-6xl px-4 py-20 md:px-6 md:py-28">
+      <div className="max-w-2xl">
+        <SectionTitle>Bagikan, kirim, dan mulai tanpa bingung</SectionTitle>
+        <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+          Tiga hal yang sudah ada di aplikasi sekarang. JoyoFit dari Google Play juga memberi tahu kalau ada versi baru.
+        </p>
+      </div>
+      <ul className="mt-10 grid gap-4 md:grid-cols-3">
+        {SEND_POINTS.map(({ Icon, title, body, href, label }) => (
+          <li key={title} className="flex flex-col rounded-[1.75rem] bg-card p-6 md:p-7">
+            <span className="flex size-12 items-center justify-center rounded-full bg-bakar-soft text-bakar-ink">
+              <Icon className="size-6" aria-hidden />
+            </span>
+            <h3 className="mt-5 text-xl font-extrabold tracking-tight">{title}</h3>
+            <p className="mt-2 flex-1 text-[0.9375rem] leading-relaxed text-muted-foreground">{body}</p>
+            <a
+              href={href}
+              className="mt-4 inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-primary underline-offset-4 hover:underline"
+            >
+              {label}
+              <ArrowRight className="size-4" aria-hidden />
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -1633,7 +1768,7 @@ const SWITCH_STEPS = [
   },
   {
     title: "Pasangkan di JoyoFit",
-    body: "Dekatkan jam ke HP, buka tab Watch, cari jam, lalu setujui permintaan pairing di layar jam. Semuanya lewat Bluetooth.",
+    body: "Dekatkan jam ke HP, buka tab Watch, cari jam, lalu setujui permintaan pairing di layar jam. Semuanya lewat Bluetooth. Panduan awal di aplikasi menuntun urutannya.",
   },
   {
     title: "Sinkron, data tetap di HP",
@@ -1688,6 +1823,8 @@ function HomePage() {
       <Workouts />
       <Scores />
       <Features />
+      <SocialSection />
+      <SendSection />
       <WatchSection />
       <Testimonials items={TESTIMONIALS} />
       <JamTeaser />
@@ -1720,7 +1857,8 @@ function NotFoundPage() {
   );
 }
 
-const PAGE_BODIES: Record<PublicPath, () => React.JSX.Element> = {
+const PAGE_BODIES: Record<string, () => React.JSX.Element> = {
+  [BLOG_PATH]: BlogIndexPage,
   "/": HomePage,
   [PANDUAN_PATH]: PanduanPage,
   [STRAVA_PATH]: StravaPage,
@@ -1739,7 +1877,7 @@ export function App({ path }: { path: string }) {
     <div className="min-h-svh">
       <Header />
       <main>
-        <Body />
+        {Body ? <Body /> : <BlogPostPage path={path} />}
       </main>
       <Footer />
     </div>

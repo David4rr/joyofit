@@ -5,13 +5,14 @@
 //   /         -> dist/index.html
 //   /strava   -> dist/strava.html   (served for /strava by html_handling)
 //   /keluarga -> dist/keluarga.html (also served for /keluarga/<code> by public/_redirects)
+//   /blog/<slug> -> dist/blog/<slug>.html (one per published post, see src/blog/index.ts)
 //   not found -> dist/404.html      (served by not_found_handling "404-page")
 //
 // The body comes from src/entry-server.tsx through Vite's SSR loader, so the
 // HTML crawlers see is the same React tree the browser hydrates.
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { createServer } from "vite";
 import type * as SeoModule from "../src/seo";
 import type { Page } from "../src/seo";
@@ -54,7 +55,8 @@ try {
     await readFile(lastmodFile, "utf8").catch(() => "{}"),
   );
   const next: typeof previous = {};
-  const today = new Date().toISOString().slice(0, 10);
+  // The site is written in WIB; blog post dates are WIB calendar dates, so lastmod uses the same day.
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
 
   const pages = [...PUBLIC_PATHS, NOT_FOUND_PATH];
   for (const path of pages) {
@@ -64,6 +66,7 @@ try {
       .replace(HEAD_MARKER, () => head + fontPreload)
       .replace(EMPTY_APP, () => `<div id="app">${body}</div>`);
     const file = path === "/" ? "index.html" : `${path.slice(1)}.html`;
+    await mkdir(dirname(join(dist, file)), { recursive: true });
     await writeFile(join(dist, file), html);
 
     // lastmod moves only when what a crawler sees on the page changes.

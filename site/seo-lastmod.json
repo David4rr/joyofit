@@ -1,38 +1,74 @@
 {
   "/": {
-    "hash": "df2e52fdda6214ff",
-    "lastmod": "2026-10-17"
+    "hash": "cda6e429f7bf1bd4",
+    "lastmod": "2026-10-18"
   },
   "/panduan": {
-    "hash": "2b8f38e86fd5f085",
-    "lastmod": "2026-10-17"
+    "hash": "0ec64671872132c5",
+    "lastmod": "2026-10-18"
   },
   "/strava": {
-    "hash": "ae19a0f718b915c9",
-    "lastmod": "2026-10-17"
+    "hash": "f9f6b17935042c4e",
+    "lastmod": "2026-10-18"
   },
   "/iphone": {
-    "hash": "962af92af2253c1a",
-    "lastmod": "2026-10-17"
+    "hash": "00e1a2afd57b4cb5",
+    "lastmod": "2026-10-18"
   },
   "/jam": {
-    "hash": "8493f2305540fe39",
-    "lastmod": "2026-10-17"
+    "hash": "2e90f227f0ce9edf",
+    "lastmod": "2026-10-18"
   },
   "/dukung-jam": {
-    "hash": "a757e68754509126",
-    "lastmod": "2026-10-17"
+    "hash": "3dc776fcfefbf179",
+    "lastmod": "2026-10-18"
   },
   "/self-host": {
-    "hash": "011bd05fe98f030a",
-    "lastmod": "2026-10-17"
+    "hash": "7ad6b72d8db08209",
+    "lastmod": "2026-10-18"
   },
   "/privasi": {
-    "hash": "04a69477e7da99a4",
-    "lastmod": "2026-10-17"
+    "hash": "4800f95bbcf5ee4a",
+    "lastmod": "2026-10-18"
+  },
+  "/keluarga": {
+    "hash": "d80581320f5cd604",
+    "lastmod": "2026-10-18"
+  },
+  "/blog": {
+    "hash": "96cd9505750d2444",
+    "lastmod": "2026-10-18"
+  },
+  "/blog/social-joyofit": {
+    "hash": "abf814fb6a5841ec",
+    "lastmod": "2026-10-18"
+  },
+  "/blog/bagikan-latihan-ke-joyorogo": {
+    "hash": "9f2740ff549c1e16",
+    "lastmod": "2026-10-18"
+  },
+  "/blog/panduan-awal": {
+    "hash": "9a27fe3cb924fa43",
+    "lastmod": "2026-10-18"
+  },
+  "/blog/strava-file-fit": {
+    "hash": "e450662d184f4f6d",
+    "lastmod": "2026-10-18"
+  },
+  "/blog/kartu-bagikan": {
+    "hash": "c4a60d703c430575",
+    "lastmod": "2026-10-18"
+  },
+  "/blog/tidur-hrv-cuaca": {
+    "hash": "3b0184194e706732",
+    "lastmod": "2026-10-18"
+  },
+  "/blog/pembaruan-di-aplikasi": {
+    "hash": "f9f0cf036259c900",
+    "lastmod": "2026-10-18"
   },
   "/404": {
-    "hash": "b4646c5a53afdcf7",
-    "lastmod": "2026-10-17"
+    "hash": "d0724970a379e290",
+    "lastmod": "2026-10-18"
   }
 }

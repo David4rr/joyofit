@@ -91,12 +91,14 @@ function Chips({ items }: { items: readonly string[] }) {
 
 const SECTIONS = [
   { key: "pasang", id: "1. Pasang JoyoFit", en: "1. Install JoyoFit" },
-  { key: "sebelum", id: "2. Sebelum memasangkan jam", en: "2. Before pairing the watch" },
-  { key: "pairing", id: "3. Pasangkan jam di JoyoFit", en: "3. Pair the watch in JoyoFit" },
-  { key: "jam", id: "4. Jam yang didukung", en: "4. Supported watches" },
-  { key: "izin", id: "5. Izin yang diminta", en: "5. Permissions" },
-  { key: "fitur", id: "6. Sinkron, Strava, impor riwayat", en: "6. Sync, Strava, history import" },
-  { key: "faq", id: "7. Jika ada masalah", en: "7. Troubleshooting" },
+  { key: "awal", id: "2. Panduan awal di aplikasi", en: "2. The in-app setup guide" },
+  { key: "sebelum", id: "3. Sebelum memasangkan jam", en: "3. Before pairing the watch" },
+  { key: "pairing", id: "4. Pasangkan jam di JoyoFit", en: "4. Pair the watch in JoyoFit" },
+  { key: "jam", id: "5. Jam yang didukung", en: "5. Supported watches" },
+  { key: "izin", id: "6. Izin yang diminta", en: "6. Permissions" },
+  { key: "fitur", id: "7. Sinkron, Strava, impor riwayat", en: "7. Sync, Strava, history import" },
+  { key: "social", id: "8. Social dan berbagi", en: "8. Social and sharing" },
+  { key: "faq", id: "9. Jika ada masalah", en: "9. Troubleshooting" },
 ] as const;
 
 type FaqItem = { q: Pair<string>; a: Pair };
@@ -239,12 +241,12 @@ function Install({ lang }: { lang: Lang }) {
             ? [
                 "Gabung grup Google joyofit-testers dengan akun Google yang sama dengan di Play Store. Hanya anggota grup yang bisa ikut tes.",
                 "Buka halaman tes di Play dan ketuk Become a tester. Kalau halamannya belum terbuka, aksesmu belum aktif: tunggu beberapa menit lalu coba lagi.",
-                "Pasang JoyoFit dari Play Store. Akun tidak wajib: data jam tersimpan di HP. Akun JoyoRogo hanya dibutuhkan untuk cloud dan Strava.",
+                "Pasang JoyoFit dari Play Store. Akun tidak wajib: data jam tersimpan di HP. Akun JoyoRogo hanya dibutuhkan untuk cloud, Strava, dan Social.",
               ]
             : [
                 "Join the joyofit-testers Google group with the same Google account you use on the Play Store. Only group members can join the test.",
                 "Open the test page on Play and tap Become a tester. If the page does not open yet, your access is not active: wait a few minutes and try again.",
-                "Install JoyoFit from the Play Store. No account needed: watch data stays on the phone. A JoyoRogo account is only for the cloud and Strava.",
+                "Install JoyoFit from the Play Store. No account needed: watch data stays on the phone. A JoyoRogo account is only for the cloud, Strava and Social.",
               ]
         }
       />
@@ -369,8 +371,8 @@ function BeforePairing({ lang }: { lang: Lang }) {
         </p>
         <p className="mt-1">
           {id
-            ? "Sinkronkan jam sekali lagi di Huawei Health (tarik layar ke bawah): data yang belum sinkron hilang saat jam dilepas. Lalu minta ekspor datamu (langkahnya di bagian 6)."
-            : "Sync the watch once more in Huawei Health (pull down): anything not yet synced is lost when the watch is unbound. Then request your data export (steps in section 6)."}
+            ? "Sinkronkan jam sekali lagi di Huawei Health (tarik layar ke bawah): data yang belum sinkron hilang saat jam dilepas. Lalu minta ekspor datamu (langkahnya di bagian 7)."
+            : "Sync the watch once more in Huawei Health (pull down): anything not yet synced is lost when the watch is unbound. Then request your data export (steps in section 7)."}
         </p>
       </div>
     </>
@@ -514,7 +516,7 @@ function Permissions({ lang }: { lang: Lang }) {
                 <>
                   <B>Akses notifikasi</B> (Notification access): untuk meneruskan notifikasi ke jam. Pengaturan → Notifications
                   and calls → <B>Open notification access</B>, izinkan JoyoFit, lalu nyalakan{" "}
-                  <B>Forward notifications to the watch</B>. Pilih aplikasinya di <B>Notification apps</B>. Pakai build sendiri di Android 13 ke atas? Buka dulu <B>Allow restricted settings</B> (lihat bagian 7).
+                  <B>Forward notifications to the watch</B>. Pilih aplikasinya di <B>Notification apps</B>. Pakai build sendiri di Android 13 ke atas? Buka dulu <B>Allow restricted settings</B> (lihat bagian 9).
                 </>,
                 <>
                   <B>Latar belakang</B>: Pengaturan → Background and sync → nyalakan <B>Keep connected in the background</B>.
@@ -538,7 +540,7 @@ function Permissions({ lang }: { lang: Lang }) {
                   <B>Notification access</B>: to forward notifications to the watch. Settings → Notifications and calls →{" "}
                   <B>Open notification access</B>, allow JoyoFit, then turn on <B>Forward notifications to the watch</B>. Pick
                   the apps under <B>Notification apps</B>. On a self-build with Android 13 or newer, turn on{" "}
-                  <B>Allow restricted settings</B> first (see section 7).
+                  <B>Allow restricted settings</B> first (see section 9).
                 </>,
                 <>
                   <B>Background</B>: Settings → Background and sync → turn on <B>Keep connected in the background</B>. The sync
@@ -587,15 +589,22 @@ function Features({ lang }: { lang: Lang }) {
           <>
             Pengaturan → <B>Strava</B> mengirim olahraga dari jam ke akun Strava-mu. Gratis, tanpa JoyoRogo Pro. Masuk dulu
             dengan <B>Sign in with JoyoRogo</B>, lalu ketuk <B>Connect with Strava</B>. Olahraga baru dikirim otomatis tiap
-            sinkron; olahraga sebelum tersambung bisa dikirim manual lewat <B>Send to Strava</B> di layar olahraganya.
+            sinkron; olahraga sebelum tersambung bisa dikirim manual lewat <B>Send to Strava</B> di layar olahraganya, dan{" "}
+            <B>View on Strava</B> membuka aktivitasnya setelah terkirim.
           </>
         ) : (
           <>
             Settings → <B>Strava</B> sends watch workouts to your Strava account. Free, no JoyoRogo Pro needed. First tap{" "}
             <B>Sign in with JoyoRogo</B>, then <B>Connect with Strava</B>. New workouts go up automatically on each sync; ones
-            from before you connected can be sent by hand with <B>Send to Strava</B> on the workout screen.
+            from before you connected can be sent by hand with <B>Send to Strava</B> on the workout screen, and{" "}
+            <B>View on Strava</B> opens the activity once it is sent.
           </>
         )}
+      </p>
+      <p>
+        {id
+          ? "Yang diunggah adalah satu file FIT dengan angka dari jam: semua sampel dari awal sampai akhir (titik GPS dan sampel yang hanya berisi detak jantung), jarak yang dicocokkan dengan jarak jam, waktu aktif, kalori, detak jantung, kenaikan elevasi, dan kadensi dari langkah. Yang tidak diberikan jam tidak diisi."
+          : "What goes up is one FIT file with the watch's numbers: every sample from start to end (GPS points and heart-rate-only samples), distance matched to the watch's distance, active time, calories, heart rate, elevation gain and step-based cadence. Anything the watch does not provide is left out."}
       </p>
       <p className="rounded-2xl bg-muted p-4">
         {id ? (
@@ -656,6 +665,220 @@ function Features({ lang }: { lang: Lang }) {
   );
 }
 
+function SetupGuide({ lang }: { lang: Lang }) {
+  const id = lang === "id";
+  return (
+    <>
+      <p>
+        {id ? (
+          <>
+            Saat pertama dibuka, JoyoFit menampilkan <B>Set up JoyoFit</B>: panduan yang menuntun dari jam yang masih
+            terikat ke Huawei Health sampai data pertama masuk. Urutannya sengaja begini karena pairing hanya berhasil kalau
+            jam sudah dilepas dulu.
+          </>
+        ) : (
+          <>
+            On first launch JoyoFit shows <B>Set up JoyoFit</B>: a guide that walks from a watch still bound to Huawei Health to
+            the first data coming in. The order is deliberate, because pairing only works once the watch has been released.
+          </>
+        )}
+      </p>
+      <Steps
+        items={
+          id
+            ? [
+                <>
+                  <B>Welcome</B>: isi panduan, dan satu-satunya tempat untuk keluar dari panduan.
+                </>,
+                <>
+                  <B>Huawei Health</B>: lepas jam (Unbind). Ini juga kesempatan terakhir menyinkronkan jam sekali lagi di sana
+                  dan meminta ekspor datanya. Ekspor butuh berhari-hari, jadi minta sekarang dan impor kapan pun berkasnya tiba.
+                </>,
+                <>
+                  <B>Pair</B>: pilih jam, ketuk <B>Connect</B>, lalu setujui permintaan di layar jam.
+                </>,
+                <>
+                  <B>First sync</B>: tarik riwayat pertama. Langkah ini membuktikan sambungannya jalan.
+                </>,
+                "Notifications, Health Connect (Apple Health di iPhone), dan Weather: izin opsional.",
+                "Background (hanya Android): jaga jam tetap tersambung di latar belakang.",
+                "JoyoRogo: masuk dengan akun JoyoRogo untuk cloud, Strava, dan Social. Lalu JoyoRogo Pro, hanya informasi dan tidak menghalangi langkah berikutnya.",
+                <>
+                  <B>Done</B>: tips terakhir.
+                </>,
+              ]
+            : [
+                <>
+                  <B>Welcome</B>: what the guide covers, and the one place to leave it.
+                </>,
+                <>
+                  <B>Huawei Health</B>: unbind the watch. This is also the last chance to sync it once more there and request
+                  its data export. The export takes days, so ask now and import it whenever the file arrives.
+                </>,
+                <>
+                  <B>Pair</B>: pick the watch, tap <B>Connect</B>, then accept the prompt on the watch.
+                </>,
+                <>
+                  <B>First sync</B>: pull the first history. This step proves the link works.
+                </>,
+                "Notifications, Health Connect (Apple Health on iPhone), and Weather: optional permissions.",
+                "Background (Android only): keep the watch connected in the background.",
+                "JoyoRogo: sign in with your JoyoRogo account for the cloud, Strava and Social. Then JoyoRogo Pro, information only, which never blocks the next step.",
+                <>
+                  <B>Done</B>: last tips.
+                </>,
+              ]
+        }
+      />
+      <p className="text-muted-foreground">
+        {id ? (
+          <>
+            Setiap langkah bisa dilewati atau dilanjutkan, dan kalau aplikasi ditutup di tengah jalan, panduan lanjut dari
+            langkah terakhir. Buka lagi kapan saja lewat Pengaturan → <B>Setup guide</B>; kalau jam sudah terpasang, langkah
+            lepas jam tidak ditampilkan. Pengguna lama yang jamnya sudah terpasang tidak dipaksa melewatinya. Bagian 3 dan 4 di
+            bawah menjelaskan langkah yang sama dengan lebih rinci.
+          </>
+        ) : (
+          <>
+            Every step can be skipped or continued, and if the app is closed midway, the guide resumes from the last step.
+            Reopen it any time from Settings → <B>Setup guide</B>; if a watch is already paired, the unbind step is left out.
+            Existing users whose watch is already paired are not forced through it. Sections 3 and 4 below cover the same steps
+            in more detail.
+          </>
+        )}
+      </p>
+    </>
+  );
+}
+
+function SocialGuide({ lang }: { lang: Lang }) {
+  const id = lang === "id";
+  return (
+    <>
+      <p>
+        {id ? (
+          <>
+            Tab <B>Social</B> menampilkan feed JoyoRogo di dalam JoyoFit. Kamu perlu masuk dengan akun JoyoRogo dulu (Sign in
+            with JoyoRogo); sebelum itu tab ini meminta kamu masuk.
+          </>
+        ) : (
+          <>
+            The <B>Social</B> tab shows the JoyoRogo feed inside JoyoFit. Sign in with your JoyoRogo account first (Sign in with
+            JoyoRogo); until then the tab asks you to.
+          </>
+        )}
+      </p>
+      <Sub>{id ? "Feed, grup, profil" : "Feed, groups, profiles"}</Sub>
+      <List
+        items={
+          id
+            ? [
+                <>
+                  Feed punya dua tab: <B>Following</B> (kamu, orang yang kamu ikuti, dan grupmu) dan <B>Explore</B> (postingan
+                  publik di JoyoRogo).
+                </>,
+                <>
+                  <B>Groups</B>: gabung dengan kode undangan dari teman (isi <B>Invite code</B>, ketuk <B>Join</B>). Membuat grup
+                  baru masih lewat JoyoRogo.
+                </>,
+                <>
+                  <B>My profile</B> menampilkan postinganmu; profil orang lain terbuka dari feed atau dari daftar anggota grup.
+                </>,
+                "Di setiap postingan kamu bisa memberi kudos dan berkomentar.",
+                "Grup JoyoRogo bisa membagikan skor harian JoyoFit (Recovery, Strain, tidur, Readiness). Hanya skornya, bukan detak jantung atau langkah. Pengaturannya ada di grup di JoyoRogo.",
+              ]
+            : [
+                <>
+                  The feed has two tabs: <B>Following</B> (you, people you follow, and your groups) and <B>Explore</B> (public
+                  posts on JoyoRogo).
+                </>,
+                <>
+                  <B>Groups</B>: join with an invite code from a friend (fill in <B>Invite code</B>, tap <B>Join</B>). Creating a
+                  new group is still done in JoyoRogo.
+                </>,
+                <>
+                  <B>My profile</B> shows your posts; other people's profiles open from the feed or from a group's member list.
+                </>,
+                "On any post you can give kudos and comment.",
+                "A JoyoRogo group can share the daily JoyoFit scores (Recovery, Strain, sleep, Readiness). Only the scores, not heart rate or steps. The setting is on the group in JoyoRogo.",
+              ]
+        }
+      />
+      <Sub>{id ? "Bagikan latihan" : "Share a workout"}</Sub>
+      <Steps
+        items={
+          id
+            ? [
+                <>
+                  Buka latihan dari tab <B>Workouts</B> dan ketuk <B>Share to JoyoRogo</B>.
+                </>,
+                "Tulis caption (sampai 1.000 karakter) kalau mau.",
+                <>
+                  Pilih <B>Group</B> (hanya orang yang satu grup JoyoRogo denganmu) atau <B>Public</B> (siapa saja di JoyoRogo;
+                  profil JoyoRogo-mu harus publik).
+                </>,
+                <>
+                  Nyalakan atau matikan <B>Heart-rate data</B>, <B>Route</B>, dan <B>Comparison with earlier workouts</B>. Yang
+                  datanya tidak ada tidak ditampilkan.
+                </>,
+                <>
+                  Ketuk <B>Post</B>, lalu <B>View post</B> untuk melihatnya.
+                </>,
+              ]
+            : [
+                <>
+                  Open the workout from the <B>Workouts</B> tab and tap <B>Share to JoyoRogo</B>.
+                </>,
+                "Write a caption (up to 1,000 characters) if you like.",
+                <>
+                  Choose <B>Group</B> (only people who share a JoyoRogo group with you) or <B>Public</B> (anyone on JoyoRogo; your
+                  JoyoRogo profile has to be public).
+                </>,
+                <>
+                  Turn <B>Heart-rate data</B>, <B>Route</B>, and <B>Comparison with earlier workouts</B> on or off. Ones with no
+                  data are not shown.
+                </>,
+                <>
+                  Tap <B>Post</B>, then <B>View post</B> to see it.
+                </>,
+              ]
+        }
+      />
+      <p className="rounded-2xl bg-muted p-4">
+        {id ? (
+          <>
+            <B>Yang gratis dan yang Pro.</B> Membagikan latihan gratis. Melihat grafik detak jantung dan rute di postingan orang
+            lain adalah fitur JoyoRogo Pro; milikmu sendiri selalu bisa kamu lihat.
+          </>
+        ) : (
+          <>
+            <B>Free and Pro.</B> Sharing a workout is free. Seeing the heart-rate chart and route on someone else's post is a
+            JoyoRogo Pro feature; your own are always visible to you.
+          </>
+        )}
+      </p>
+      <Sub>{id ? "Kartu bagikan (gambar)" : "Share card (image)"}</Sub>
+      <p>
+        {id ? (
+          <>
+            Tombol bagikan di layar latihan dan di <B>Today</B> membuka lembar berbagi: pilih <B>Story 9:16</B> atau{" "}
+            <B>Square 1:1</B>, latar rute, fotomu, atau stiker transparan (latihan), lalu kirim ke Instagram, <B>Copy</B>,{" "}
+            <B>Save</B>, atau <B>More</B>. Di Android 11 ke atas, Save tidak butuh izin penyimpanan. Kartu hanya gambar;
+            postingan yang bisa dikomentari lewat Share to JoyoRogo.
+          </>
+        ) : (
+          <>
+            The share button on a workout and on <B>Today</B> opens a share sheet: pick <B>Story 9:16</B> or <B>Square 1:1</B>, a
+            route, photo or transparent-sticker background (workouts), then send it to Instagram, <B>Copy</B>, <B>Save</B> or{" "}
+            <B>More</B>. On Android 11 and newer, Save needs no storage permission. The card is only an image; a post friends
+            can comment on goes through Share to JoyoRogo.
+          </>
+        )}
+      </p>
+    </>
+  );
+}
+
 function Faq({ lang }: { lang: Lang }) {
   return (
     <div className="divide-y divide-border/70 rounded-3xl bg-card">
@@ -679,11 +902,13 @@ function Guide({ lang }: { lang: Lang }) {
   const prefix = lang === "id" ? "" : "en-";
   const body: Record<(typeof SECTIONS)[number]["key"], React.ReactNode> = {
     pasang: <Install lang={lang} />,
+    awal: <SetupGuide lang={lang} />,
     sebelum: <BeforePairing lang={lang} />,
     pairing: <Pairing lang={lang} />,
     jam: <Watches lang={lang} />,
     izin: <Permissions lang={lang} />,
     fitur: <Features lang={lang} />,
+    social: <SocialGuide lang={lang} />,
     faq: null,
   };
   return (

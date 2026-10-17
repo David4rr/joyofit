@@ -5,7 +5,8 @@
 ## Halaman
 
 - [Beranda](https://fit.joyorogo.com/): fitur, tanya jawab, dan cara memakai.
-- [Panduan](https://fit.joyorogo.com/panduan): memakai Huawei Watch Fit 4 Pro tanpa Huawei Health, langkah demi langkah (Indonesia dan English).
+- [Panduan](https://fit.joyorogo.com/panduan): memakai Huawei Watch Fit 4 Pro tanpa Huawei Health, langkah demi langkah, termasuk panduan awal di aplikasi dan tab Social (Indonesia dan English).
+- [Blog](https://fit.joyorogo.com/blog): tulisan tentang fitur yang sudah bisa dipakai: tab Social, bagikan latihan ke JoyoRogo, panduan awal, upload ke Strava, kartu bagikan, tidur dan HRV, pembaruan di aplikasi.
 - [Jam yang didukung](https://fit.joyorogo.com/jam): yang sudah diuji, eksperimen, dan yang belum bisa.
 - [Dukung jam](https://fit.joyorogo.com/dukung-jam): membantu jam baru masuk daftar uji.
 - [Strava](https://fit.joyorogo.com/strava): kirim olahraga dari jam ke Strava; slot penuh, ada daftar tunggu.

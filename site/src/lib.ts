@@ -21,6 +21,7 @@ export const JAM_PATH = "/jam";
 export const PANDUAN_PATH = "/panduan";
 export const PRIVASI_PATH = "/privasi";
 export const KELUARGA_PATH = "/keluarga";
+export const BLOG_PATH = "/blog";
 export const WATCH_REPORTS_URL = `${GITHUB_URL}/issues?q=is%3Aissue+label%3Awatch-report`;
 export const WATCH_REPORT_FORM_URL = `${GITHUB_URL}/issues/new?template=watch-report.yml`;
 export const WATCH_REQUEST_URL = `${GITHUB_URL}/issues/new?title=${encodeURIComponent("[Permintaan jam] ")}&body=${encodeURIComponent("Model jam:\nNama Bluetooth di HP (kalau tahu):\nSaya bisa: bantu uji / pinjamkan jam / hanya meminta\n")}`;

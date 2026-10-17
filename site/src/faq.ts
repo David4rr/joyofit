@@ -53,8 +53,13 @@ export const FAQ: readonly FaqItem[] = [
   },
   {
     q: "Bisa mengirim olahraga ke Strava?",
-    a: "Bisa, gratis. Strava membatasi aplikasi kami di 10 atlet dan semua slotnya sedang terpakai; kami sudah mengajukan review ke Strava untuk menaikkan batas itu. Sampai disetujui, kamu bisa masuk daftar tunggu. Daftarnya sama untuk JoyoFit dan JoyoRogo, karena keduanya memakai satu aplikasi Strava.",
+    a: "Bisa, gratis. JoyoFit mengunggah olahraga sebagai file FIT berisi angka dari jam: jarak, waktu aktif, kalori, detak jantung, elevasi, kadensi, dan rute. Strava membatasi aplikasi kami di 10 atlet dan semua slotnya sedang terpakai; kami sudah mengajukan review ke Strava untuk menaikkan batas itu. Sampai disetujui, kamu bisa masuk daftar tunggu. Daftarnya sama untuk JoyoFit dan JoyoRogo, karena keduanya memakai satu aplikasi Strava.",
     link: { href: STRAVA_PATH, label: "Masuk daftar tunggu Strava", goal: { name: "strava_waitlist_click", location: "faq" } },
+  },
+  {
+    q: "Apa itu tab Social?",
+    a: "Tab Social menampilkan feed JoyoRogo di dalam JoyoFit: latihan dan makanan dari orang yang kamu ikuti dan dari grupmu. Kamu bisa gabung grup dengan kode undangan, membuka profil, memberi kudos, dan berkomentar. Latihan dari jam dibagikan dengan Share to JoyoRogo di layar latihannya. Perlu masuk dengan akun JoyoRogo. Grafik detak jantung dan rute di postingan orang lain butuh JoyoRogo Pro; melihat dan membagikan milikmu sendiri gratis.",
+    link: { href: "/blog/social-joyofit", label: "Baca soal tab Social" },
   },
   {
     q: "Apa hubungannya dengan JoyoRogo?",
