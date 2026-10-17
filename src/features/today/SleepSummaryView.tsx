@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Details } from '@/components/Details';
 import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { EmptyState } from '@/components/States';
@@ -18,7 +19,7 @@ export function SleepSummaryView({ summary, score }: { summary: SleepSummary | n
       <EmptyState
         icon="moon"
         title="No sleep stored"
-        description="Nothing from the last 36 hours. Sync after waking up to see last night."
+        description="Nothing in the last 36 hours. Sync after waking."
       />
     );
   }
@@ -38,7 +39,7 @@ export function SleepSummaryView({ summary, score }: { summary: SleepSummary | n
           </View>
           <AppText variant="caption" muted>
             {formatClock(summary.start)} to {formatClock(summary.end)}
-            {hasStages ? ', time awake excluded' : ', segment durations added up'}
+            {hasStages ? ', awake excluded' : ''}
           </AppText>
         </View>
         {score ? <SleepScoreRing score={score} /> : null}
@@ -50,23 +51,20 @@ export function SleepSummaryView({ summary, score }: { summary: SleepSummary | n
               <View key={entry.stage} style={{ flex: entry.seconds, backgroundColor: stageColor(entry.stage, colors) }} />
             ))}
           </View>
-          {summary.byStage.map((entry) => (
-            <View key={entry.stage} style={styles.legendRow}>
-              <View style={[styles.swatch, { backgroundColor: stageColor(entry.stage, colors) }]} />
-              <AppText variant="caption" style={styles.legendLabel}>
-                {STAGE_LABELS[entry.stage]}
-              </AppText>
-              <AppText variant="caption" muted style={styles.tabular}>
-                {Math.round((entry.seconds / summary.totalSeconds) * 100)}%
-              </AppText>
-              <AppText variant="label" style={[styles.legendValue, styles.tabular]}>
-                {formatDuration(entry.seconds)}
-              </AppText>
-            </View>
-          ))}
-          <AppText variant="caption" muted>
-            Stages come from the watch&apos;s sleep data. Spans without a stage count only in the total.
-          </AppText>
+          <View style={styles.legend}>
+            {summary.byStage.map((entry) => (
+              <View key={entry.stage} style={styles.legendRow}>
+                <View style={[styles.swatch, { backgroundColor: stageColor(entry.stage, colors) }]} />
+                <AppText variant="caption" numberOfLines={1} style={styles.legendLabel}>
+                  {STAGE_LABELS[entry.stage]}
+                </AppText>
+                <AppText variant="label" style={styles.tabular}>
+                  {formatDuration(entry.seconds)} <AppText variant="caption" muted>{Math.round((entry.seconds / summary.totalSeconds) * 100)}%</AppText>
+                </AppText>
+              </View>
+            ))}
+          </View>
+          <Details>Stages come from the watch&apos;s sleep data. Spans without a stage count only in the total.</Details>
         </>
       ) : (
         <>
@@ -77,9 +75,7 @@ export function SleepSummaryView({ summary, score }: { summary: SleepSummary | n
               value={`${entry.count} ${entry.count === 1 ? 'segment' : 'segments'}, ${formatDuration(entry.seconds)}`}
             />
           ))}
-          <AppText variant="caption" muted>
-            Types are the raw state bytes from the watch. Their meanings are not decoded.
-          </AppText>
+          <Details>Types are the raw state bytes from the watch. Their meanings are not decoded.</Details>
         </>
       )}
     </View>
@@ -89,12 +85,12 @@ export function SleepSummaryView({ summary, score }: { summary: SleepSummary | n
 const styles = StyleSheet.create({
   wrap: { gap: spacing.sm },
   headlineRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  headlineText: { flex: 1, gap: spacing.sm },
+  headlineText: { flex: 1, gap: 2 },
   headline: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   stageBar: { flexDirection: 'row', height: 14, gap: 2, borderRadius: radius.pill, overflow: 'hidden', marginVertical: spacing.xs },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 28 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 24, width: '47%' },
   swatch: { width: 12, height: 12, borderRadius: 6 },
   legendLabel: { flex: 1 },
-  legendValue: { minWidth: 72, textAlign: 'right' },
   tabular: { fontVariant: ['tabular-nums'] },
 });

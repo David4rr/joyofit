@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { Metric } from '@/components/Metric';
 import { Divider, Screen, Section } from '@/components/Screen';
@@ -135,42 +136,39 @@ export function SleepScreen() {
           {night.score ? <SleepScoreRing score={night.score} /> : null}
         </View>
         <AppText variant="caption" muted>
-          Asleep, time awake excluded. {night.awakenings} {night.awakenings === 1 ? 'time' : 'times'} awake during the night, {changes.length} stage{' '}
-          {changes.length === 1 ? 'change' : 'changes'}.
-          {night.score ? ` Score from the watch${night.score.efficiency !== null ? `, ${night.score.efficiency}% of the time in bed asleep` : ''}.` : ''}
+          {night.awakenings} awake · {changes.length} stage {changes.length === 1 ? 'change' : 'changes'}
+          {need
+            ? ` · needed ${formatDuration(need.seconds)}, got ${Math.round((night.asleepSeconds / need.seconds) * 100)}%`
+            : ''}
         </AppText>
-        {need ? (
-          <AppText variant="caption">
-            Needed {formatDuration(need.seconds)}
-            {need.strain !== null ? ` after a strain of ${need.strain.toFixed(1)} that day` : ''}, got{' '}
-            {Math.round((night.asleepSeconds / need.seconds) * 100)}%.
-          </AppText>
-        ) : null}
-        {stages.map((stage) => (
-          <View key={stage} style={styles.legendRow}>
-            <View style={[styles.swatch, { backgroundColor: stageColor(stage, colors) }]} />
-            <AppText variant="caption" style={styles.legendLabel}>
-              {STAGE_LABELS[stage]}
-            </AppText>
-            <AppText variant="caption" muted style={styles.tabular}>
-              {Math.round((night.seconds[stage] / recorded) * 100)}%
-            </AppText>
-            <AppText variant="label" style={[styles.legendValue, styles.tabular]}>
-              {formatDuration(night.seconds[stage])}
-            </AppText>
-          </View>
-        ))}
+        <View style={styles.legend}>
+          {stages.map((stage) => (
+            <View key={stage} style={styles.legendRow}>
+              <View style={[styles.swatch, { backgroundColor: stageColor(stage, colors) }]} />
+              <AppText variant="caption" numberOfLines={1} style={styles.legendLabel}>
+                {STAGE_LABELS[stage]}
+              </AppText>
+              <AppText variant="label" style={styles.tabular}>
+                {formatDuration(night.seconds[stage])}{' '}
+                <AppText variant="caption" muted>
+                  {Math.round((night.seconds[stage] / recorded) * 100)}%
+                </AppText>
+              </AppText>
+            </View>
+          ))}
+        </View>
+        <Details>
+          {`Asleep time excludes time awake.${night.score ? ` Score is the watch's${night.score.efficiency !== null ? `, ${night.score.efficiency}% of the time in bed asleep` : ''}.` : ''}${need ? ` Need is 7 h 30 min${need.strain !== null ? ` plus extra after a strain of ${need.strain.toFixed(1)} that day` : ''}.` : ''}`}
+        </Details>
       </Section>
 
-      <Section title="Stages through the night" icon="analytics" tint="sleep">
+      <Section title="Stages" icon="analytics" tint="sleep">
         <Hypnogram night={night} />
       </Section>
 
       <Section title="Each hour" icon="bar-chart" tint="sleep">
         <HourlyStages hours={hours} />
-        <AppText variant="caption" muted>
-          A full bar is 60 minutes; grey is time with nothing recorded.
-        </AppText>
+        <Details>A full bar is 60 minutes; grey is time with nothing recorded.</Details>
       </Section>
 
       <Section title="Stage changes" icon="swap-vertical" tint="sleep" trailing={<AppText variant="caption" muted>{changes.length}</AppText>}>
@@ -288,16 +286,16 @@ const styles = StyleSheet.create({
   step: { width: HIT, height: HIT, borderRadius: HIT / 2, alignItems: 'center', justifyContent: 'center' },
   headlineRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   headline: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 28 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 24, width: '47%' },
   swatch: { width: 12, height: 12, borderRadius: 6 },
   legendLabel: { flex: 1 },
-  legendValue: { minWidth: 72, textAlign: 'right' },
   tabular: { fontVariant: ['tabular-nums'] },
-  changeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 },
+  changeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 34 },
   changeTime: { width: 48 },
   changeStage: { flex: 1 },
-  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, borderRadius: radius.input, paddingHorizontal: spacing.sm, marginHorizontal: -spacing.sm },
-  historyText: { flex: 1, gap: 6 },
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44, borderRadius: radius.input, paddingHorizontal: spacing.sm, marginHorizontal: -spacing.sm },
+  historyText: { flex: 1, gap: 4 },
   historyDuration: { minWidth: 76, textAlign: 'right' },
   miniBar: { flexDirection: 'row', height: 6, gap: 1, borderRadius: radius.pill, overflow: 'hidden' },
 });

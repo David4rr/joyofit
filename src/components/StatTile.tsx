@@ -23,11 +23,13 @@ export function StatTile({ icon, tint, label, value, unit, sub }: StatTileProps)
       accessible
       accessibilityLabel={`${label}: ${value}${unit ? ` ${unit}` : ''}`}
       style={[styles.tile, { backgroundColor: scheme.soft }]}>
-      <IconChip icon={icon} tint={tint} size="sm" background={colors.card} />
-      <View style={styles.body}>
-        <AppText variant="label" color={scheme.text}>
+      <View style={styles.head}>
+        <IconChip icon={icon} tint={tint} size="sm" background={colors.card} />
+        <AppText variant="label" color={scheme.text} numberOfLines={1} style={styles.label}>
           {label}
         </AppText>
+      </View>
+      <View style={styles.body}>
         <Metric value={value} unit={unit} size="md" color={scheme.text} unitColor={scheme.text} />
         {sub ? (
           <AppText variant="caption" color={scheme.text}>
@@ -40,6 +42,8 @@ export function StatTile({ icon, tint, label, value, unit, sub }: StatTileProps)
 }
 
 const styles = StyleSheet.create({
-  tile: { flex: 1, borderRadius: radius.tile, padding: spacing.md + 4, gap: spacing.sm, minHeight: 112 },
-  body: { gap: 2 },
+  tile: { flex: 1, borderRadius: radius.tile, padding: spacing.md, gap: spacing.sm },
+  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  label: { flex: 1 },
+  body: { gap: 0 },
 });

@@ -4,9 +4,9 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Details } from '@/components/Details';
 import { Button } from '@/components/Button';
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
-import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { Divider, Screen, Section } from '@/components/Screen';
 import { EmptyState, Notice } from '@/components/States';
@@ -97,17 +97,17 @@ export function MeasureHrvScreen() {
             </View>
             <AppText variant="caption" muted>
               {progress && progress.beats > 0
-                ? `${progress.beats} beats received. Keep still, the watch snug on your wrist.`
-                : 'Waiting for the watch to find your pulse. Keep still, the watch snug on your wrist.'}
+                ? `${progress.beats} beats received. Keep still.`
+                : 'Finding your pulse. Keep still.'}
             </AppText>
             <Button label="Cancel" variant="ghost" onPress={cancel} />
           </View>
         ) : (
           <View style={styles.block}>
-            <AppText variant="body">Sit down and rest your arm. Wear the watch snug, about a finger above the wrist bone.</AppText>
-            <AppText variant="caption" muted>
-              Stay still and quiet for the whole minute; moving or talking spoils the reading. Live heart rate pauses meanwhile.
-            </AppText>
+            <AppText variant="body">Sit down, rest your arm, watch snug.</AppText>
+            <Details title="How to measure">
+              Wear the watch snug, about a finger above the wrist bone. Stay still and quiet for the whole minute; moving or talking spoils the reading. Live heart rate pauses meanwhile.
+            </Details>
             <Button label={result ? 'Measure again' : 'Start measuring'} variant="primary" icon="pulse" disabled={!connected} onPress={() => void start()} />
           </View>
         )}
@@ -120,18 +120,20 @@ export function MeasureHrvScreen() {
             <Metric value={String(Math.round(result.rmssd))} unit="ms RMSSD" size="lg" color={colors.heartText} />
             <Metric value={String(result.heartRate)} unit="bpm" size="md" />
           </View>
-          <KeyValue label="SDNN" value={`${Math.round(result.sdnn)} ms`} />
-          <KeyValue label="Average beat interval" value={`${Math.round(result.meanRr)} ms`} />
-          <KeyValue label="Beats used" value={String(result.beats)} />
-          <AppText variant="caption" muted>
+          <View style={styles.resultRow}>
+            <Stat label="SDNN" value={`${Math.round(result.sdnn)} ms`} />
+            <Stat label="Beat interval" value={`${Math.round(result.meanRr)} ms`} />
+            <Stat label="Beats" value={String(result.beats)} />
+          </View>
+          <Details>
             A single minute is a rough reading: posture, breathing and the time of day move it. Measure under the same conditions to compare.
-          </AppText>
+          </Details>
         </Section>
       ) : null}
 
       <Section title="Earlier measurements" icon="time" tint="heart">
         {history === null ? null : history.length === 0 ? (
-          <EmptyState icon="pulse" title="No measurements yet" description="Your one-minute readings are listed here." />
+          <EmptyState icon="pulse" title="No measurements yet" description="One-minute readings are listed here." />
         ) : (
           history.map((row, i) => (
             <View key={`${row.start}-${row.source}`}>
@@ -153,11 +155,23 @@ export function MeasureHrvScreen() {
   );
 }
 
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.stat}>
+      <AppText variant="caption" muted>
+        {label}
+      </AppText>
+      <AppText variant="bodyStrong">{value}</AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  block: { gap: spacing.md },
+  stat: { flex: 1 },
+  block: { gap: spacing.sm },
   track: { height: 8, borderRadius: radius.pill, overflow: 'hidden' },
   fill: { height: 8, borderRadius: radius.pill },
   resultRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xs },
   historyText: { flex: 1 },
 });

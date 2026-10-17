@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import type { Readiness, SignalTone } from '@/features/today/readiness';
 import { spacing, useColors } from '@/theme';
@@ -53,12 +54,9 @@ export function ReadinessSection({ readiness }: { readiness: Readiness }) {
           {line}
         </AppText>
       ))}
-      <AppText variant="caption" muted>
-        {readiness.recovery
-          ? 'Recovery: your usual HRV is 50 %, one standard deviation above it 75 %. '
-          : ''}
-        Estimates from your own history, not medical advice.
-      </AppText>
+      <Details title="How is this calculated?">
+        {`${readiness.recovery ? 'Recovery: your usual HRV is 50 %, one standard deviation above it 75 %. ' : ''}Estimates from your own history, not medical advice.`}
+      </Details>
     </Section>
   );
 }

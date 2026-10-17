@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Details } from '@/components/Details';
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { Screen } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
@@ -66,8 +67,7 @@ export function TrendsScreen() {
             firstDay={trends.days[0]}
             domain={[0, 100]}
             format={(v) => `${Math.round(v)}%`}
-            empty="No recovery yet. It needs HRV readings (a night with the watch on, or a 1-minute reading) and at least 4 earlier readings of the same kind in the 30 days before."
-            note="Your HRV against your own 30-day baseline: 50% is your usual. An estimate, not medical advice."
+            empty="No recovery yet. Needs HRV readings (a night with the watch on, or a 1-minute reading) and 4 earlier ones of the same kind in the 30 days before."
           />
           <TrendCard
             title="Strain"
@@ -78,7 +78,6 @@ export function TrendsScreen() {
             domain={[0, STRAIN_MAX]}
             format={(v) => v.toFixed(1)}
             empty="No heart rate stored in this range. Wear the watch and sync."
-            note={`Worked out from the heart rate the watch stored (max ${trends.maxHr} bpm). A day with little stored heart rate reads low.`}
           />
           <TrendCard
             title="Sleep"
@@ -87,10 +86,8 @@ export function TrendsScreen() {
             values={trends.sleep.hours}
             firstDay={trends.days[0]}
             reference={trends.sleep.need}
-            referenceNote="Dashed line: the sleep you needed, 7 h 30 min plus up to 1 h after a hard day."
             format={hoursMinutes}
             empty="No nights stored in this range. Wear the watch to bed and sync."
-            note="Time asleep, naps under 3 h left out."
           />
           <TrendCard
             title="HRV, nights"
@@ -100,7 +97,6 @@ export function TrendsScreen() {
             firstDay={trends.days[0]}
             format={(v) => `${Math.round(v)} ms`}
             empty="No night HRV stored. Wear the watch asleep and sync."
-            note="RMSSD averaged over sleep, from the watch's own records."
           />
           <TrendCard
             title="HRV, 1-minute readings"
@@ -110,7 +106,6 @@ export function TrendsScreen() {
             firstDay={trends.days[0]}
             format={(v) => `${Math.round(v)} ms`}
             empty="No 1-minute readings yet. Measure HRV for a minute to add one."
-            note="RMSSD of readings you took yourself. They run at a different level than nights, so keep them apart."
           />
           <TrendCard
             title="Resting heart rate"
@@ -120,11 +115,24 @@ export function TrendsScreen() {
             firstDay={trends.days[0]}
             format={(v) => `${Math.round(v)} bpm`}
             empty="No resting heart rate stored in this range. Wear the watch day and night and sync."
-            note="The lowest resting value the watch reported each day."
           />
-          <AppText variant="caption" muted>
-            Days without data are left empty, not filled in.
-          </AppText>
+          <Details title="How are these calculated?">
+            <AppText variant="caption" muted>
+              {'Recovery: your HRV against your own 30-day baseline, 50% is your usual. An estimate, not medical advice.'}
+            </AppText>
+            <AppText variant="caption" muted>
+              {`Strain: worked out from the heart rate the watch stored (max ${trends.maxHr} bpm). A day with little stored heart rate reads low.`}
+            </AppText>
+            <AppText variant="caption" muted>
+              Sleep: time asleep, naps under 3 h left out. Dashed line: the sleep you needed, 7 h 30 min plus up to 1 h after a hard day.
+            </AppText>
+            <AppText variant="caption" muted>
+              HRV: RMSSD. Nights are averaged over sleep from the watch&apos;s records; 1-minute readings are ones you took yourself and run at a different level, so they are kept apart.
+            </AppText>
+            <AppText variant="caption" muted>
+              Resting heart rate: the lowest resting value the watch reported each day. On line charts the dashed line is your average. Days without data are left empty, not filled in.
+            </AppText>
+          </Details>
         </View>
       ) : error ? null : (
         <Skeleton width="100%" height={260} radius={radius.card} />
@@ -134,5 +142,5 @@ export function TrendsScreen() {
 }
 
 const styles = StyleSheet.create({
-  cards: { gap: spacing.md },
+  cards: { gap: spacing.sm },
 });

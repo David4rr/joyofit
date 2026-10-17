@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Details } from '@/components/Details';
 import { Ring } from '@/components/Ring';
 import { Section } from '@/components/Screen';
 import { STRAIN_MAX, type DayStrain } from '@/features/today/strain';
@@ -42,8 +43,8 @@ export function StrainSection({ days, dayStart, maxHr }: { days: readonly DayStr
     <Section title="Strain" icon="flash" tint="workouts">
       <View style={styles.row}>
         <Ring
-          size={92}
-          stroke={8}
+          size={80}
+          stroke={7}
           value={today?.strain ?? 0}
           max={STRAIN_MAX}
           color={colors.workouts}
@@ -65,9 +66,6 @@ export function StrainSection({ days, dayStart, maxHr }: { days: readonly DayStr
               {hard} min above 70 % of max heart rate, {easy} min at 50 to 70 %.
             </AppText>
           ) : null}
-          <AppText variant="caption" muted>
-            From the heart rate the watch stored (max {maxHr} bpm). Sync to update.
-          </AppText>
         </View>
       </View>
       <View style={styles.bars} accessibilityLabel="Strain over the last seven days">
@@ -92,6 +90,7 @@ export function StrainSection({ days, dayStart, maxHr }: { days: readonly DayStr
           </View>
         ))}
       </View>
+      <Details>From the heart rate the watch stored (max {maxHr} bpm). Sync to update.</Details>
     </Section>
   );
 }

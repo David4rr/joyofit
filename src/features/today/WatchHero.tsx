@@ -68,15 +68,14 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
 
       <View style={styles.body}>
         <Ring
-          size={156}
-          stroke={14}
+          size={120}
+          stroke={11}
           value={steps}
           max={goal}
           color={colors.heroSteps}
           track={colors.heroTrack}
           accessibilityLabel={`Steps today: ${formatCount(steps)} of ${formatCount(goal)}`}>
-          <Ionicons name="footsteps" size={18} color={colors.heroSteps} />
-          <Metric value={formatCount(steps)} size="lg" color={colors.heroForeground} />
+          <Metric value={formatCount(steps)} size="md" color={colors.heroForeground} />
           <AppText variant="caption" color={colors.heroMuted}>
             of {formatCount(goal)}
           </AppText>
@@ -107,7 +106,7 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
                 hitSlop={8}
                 onPress={onEnableHeartRate}>
                 <AppText variant="caption" color={colors.heroLink}>
-                  Turn on continuous heart rate
+                  Turn on
                 </AppText>
               </PressableScale>
             )}
@@ -143,12 +142,12 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
 }
 
 const styles = StyleSheet.create({
-  hero: { borderRadius: radius.card, padding: spacing.lg, gap: spacing.lg },
+  hero: { borderRadius: radius.card, padding: spacing.md + 4, gap: spacing.md },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: -8, minHeight: 28 },
   link: { flexShrink: 0 },
   device: { flex: 1, textAlign: 'right' },
-  body: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  stats: { flex: 1, gap: spacing.lg },
+  body: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  stats: { flex: 1, gap: spacing.md },
   stat: { gap: 2 },
   statLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   footer: {

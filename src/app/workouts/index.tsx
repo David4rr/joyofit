@@ -78,7 +78,7 @@ function WorkoutCard({ workout }: { workout: WorkoutRow }) {
         <View style={styles.partial}>
           <Ionicons name="cloud-download-outline" size={16} color={colors.mutedForeground} />
           <AppText variant="caption" muted style={styles.partialText}>
-            Partly downloaded; the next sync fetches the rest.
+            Partly downloaded; next sync fetches the rest.
           </AppText>
         </View>
       ) : null}
@@ -90,7 +90,7 @@ function WorkoutSkeletons() {
   return (
     <View style={styles.skeletons}>
       {[0, 1, 2, 3].map((i) => (
-        <Skeleton key={i} width="100%" height={116} radius={radius.card} />
+        <Skeleton key={i} width="100%" height={96} radius={radius.card} />
       ))}
     </View>
   );
@@ -185,7 +185,7 @@ export default function WorkoutsScreen() {
               }
             />
             <Button
-              label="Import a FIT file"
+              label="Import FIT file"
               variant="secondary"
               icon="bicycle"
               onPress={() => void importFit()}
@@ -204,7 +204,7 @@ export default function WorkoutsScreen() {
             <EmptyState
               icon="fitness"
               title="No workouts yet"
-              description="Sessions you record on the watch appear here after a sync."
+              description="Watch sessions appear here after a sync."
               action={
                 canSync
                   ? { label: 'Sync now', icon: 'sync', onPress: () => void sync() }
@@ -236,13 +236,13 @@ function ItemGap() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { gap: spacing.md, marginBottom: spacing.sm },
-  sectionHeader: { paddingTop: spacing.md, paddingBottom: spacing.sm },
-  gap: { height: spacing.md },
-  card: { borderRadius: radius.card, padding: spacing.lg, gap: spacing.md },
+  header: { gap: spacing.sm, marginBottom: spacing.xs },
+  sectionHeader: { paddingTop: spacing.sm, paddingBottom: spacing.xs },
+  gap: { height: spacing.sm },
+  card: { borderRadius: radius.card, padding: spacing.md + 4, gap: spacing.sm },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardTitle: { flex: 1, gap: 2 },
-  metrics: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg, rowGap: spacing.xs },
+  metrics: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, rowGap: 0 },
   partial: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   partialText: { flex: 1 },
   skeletons: { gap: spacing.md },

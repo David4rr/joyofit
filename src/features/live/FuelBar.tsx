@@ -12,7 +12,7 @@ export function BurnFigure({ label, grams, color }: { label: string; grams: numb
       <AppText variant="label" color={color}>
         {label}
       </AppText>
-      <Metric value={formatGrams(grams)} unit="g" size="lg" color={color} unitColor={color} />
+      <Metric value={formatGrams(grams)} unit="g" size="md" color={color} unitColor={color} />
     </View>
   );
 }

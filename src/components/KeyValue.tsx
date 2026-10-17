@@ -28,7 +28,7 @@ export function KeyValue({ label, value, icon }: KeyValueProps) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 28 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 26 },
   label: { flexShrink: 0 },
   value: {
     flex: 1,

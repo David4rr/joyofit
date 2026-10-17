@@ -66,7 +66,7 @@ export function MorningCheckin({ hrv, dayStart, nowMs, connected, onMeasure }: M
       <View style={styles.body}>
         <AppText variant="bodyStrong">Morning check-in</AppText>
         <AppText variant="caption" muted>
-          Measure HRV for 1 minute to add a reading for today.
+          1 minute adds today's HRV.
         </AppText>
         <View style={styles.actions}>
           <Button label="Measure HRV" icon="pulse" onPress={onMeasure} />

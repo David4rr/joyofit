@@ -4,13 +4,13 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Details } from '@/components/Details';
 import { IconChip } from '@/components/IconChip';
 import { isIos } from '@/components/IosUnavailable';
 import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { Ring } from '@/components/Ring';
 import { Card, Screen, Section } from '@/components/Screen';
-import { StatTile } from '@/components/StatTile';
 import { Notice, Skeleton } from '@/components/States';
 import {
   getWorkout,
@@ -175,43 +175,47 @@ export default function WorkoutDetailScreen() {
         </View>
         <View style={styles.figures}>
           <Figure label="Duration">
-            <Metric value={formatElapsed(workout.duration)} size="lg" />
+            <Metric value={formatElapsed(workout.duration)} size="md" />
           </Figure>
           {workout.distance > 0 ? (
             <Figure label="Distance">
-              <Metric value={distance} unit={distanceUnit} size="lg" />
+              <Metric value={distance} unit={distanceUnit} size="md" />
             </Figure>
           ) : null}
           {workout.calories > 0 ? (
             <Figure label="Calories">
-              <Metric value={formatCount(workout.calories)} unit="kcal" size="lg" />
+              <Metric value={formatCount(workout.calories)} unit="kcal" size="md" />
             </Figure>
           ) : null}
           {workout.steps > 0 ? (
             <Figure label={jumpRope ? 'Jumps' : 'Steps'}>
-              <Metric value={formatCount(workout.steps)} size="lg" />
+              <Metric value={formatCount(workout.steps)} size="md" />
+            </Figure>
+          ) : null}
+          {workout.avgHr !== null ? (
+            <Figure label="Avg HR">
+              <Metric value={String(workout.avgHr)} unit="bpm" size="md" color={colors.heartText} />
+            </Figure>
+          ) : null}
+          {workout.maxHr !== null ? (
+            <Figure label="Max HR">
+              <Metric value={String(workout.maxHr)} unit="bpm" size="md" color={colors.heartText} />
             </Figure>
           ) : null}
         </View>
-        {workout.avgHr !== null || workout.maxHr !== null ? (
-          <View style={styles.tiles}>
-            {workout.avgHr !== null ? (
-              <StatTile icon="heart" tint="heart" label="Avg heart rate" value={String(workout.avgHr)} unit="bpm" />
-            ) : null}
-            {workout.maxHr !== null ? (
-              <StatTile icon="heart" tint="heart" label="Max heart rate" value={String(workout.maxHr)} unit="bpm" />
-            ) : null}
-          </View>
-        ) : null}
         <ShareWorkoutButton workout={workout} summary={summary} route={route} />
       </Card>
+
+      <Section title="Heart rate" icon="heart" tint="heart">
+        <HeartRateChart points={loaded.points} start={workout.start} end={workout.end} />
+      </Section>
 
       <Section title="Strain" icon="pulse" tint="workouts">
         {strain ? (
           <>
             <View style={styles.strainRow}>
               <Ring
-                size={84}
+                size={72}
                 stroke={7}
                 value={strain.strain}
                 max={STRAIN_MAX}
@@ -225,30 +229,30 @@ export default function WorkoutDetailScreen() {
               <View style={styles.strainText}>
                 <Metric value={`+${strain.share.added.toFixed(1)}`} unit="to the day" size="md" color={colors.workoutsText} unitColor={colors.workoutsText} />
                 <AppText variant="caption" muted>
-                  Added about {strain.share.added.toFixed(1)} to the strain of that day, which comes to {strain.share.dayStrain.toFixed(1)}.
+                  Day strain now {strain.share.dayStrain.toFixed(1)}
                 </AppText>
               </View>
             </View>
-            {strain.zoneMinutes.map((minutes, i) =>
-              minutes > 0 ? (
-                <KeyValue
-                  key={i}
-                  label={`Zone ${i + 1} (${50 + 10 * i} to ${60 + 10 * i} % of max)`}
-                  value={formatElapsed(Math.round(minutes * 60))}
-                />
-              ) : null,
-            )}
-            <AppText variant="caption" muted>
-              An estimate by JoyoFit, the watch does not report it: the heart-rate zones of this workout, with a maximum of {maxHr}{' '}
-              bpm, are summed (Edwards TRIMP: zones 1 to 5 count 1 to 5 per minute) and mapped onto 0 to 21 like the strain of a
-              day. Pauses over two minutes count for nothing. The added part is the strain of the day with this workout minus
-              the strain of the day without its minutes, so the same workout adds less on a day that already carried load.
-            </AppText>
+            <View style={styles.zones}>
+              {strain.zoneMinutes.map((minutes, i) =>
+                minutes > 0 ? (
+                  <View key={i} style={styles.zone} accessible accessibilityLabel={`Zone ${i + 1}, ${50 + 10 * i} to ${60 + 10 * i} percent of max, ${formatElapsed(Math.round(minutes * 60))}`}>
+                    <AppText variant="caption" muted>
+                      Z{i + 1}
+                    </AppText>
+                    <AppText variant="label" style={styles.strainValue}>
+                      {formatElapsed(Math.round(minutes * 60))}
+                    </AppText>
+                  </View>
+                ) : null,
+              )}
+            </View>
+            <Details title="How is this calculated?">
+              {`An estimate by JoyoFit, the watch does not report it: the heart-rate zones of this workout, with a maximum of ${maxHr} bpm, are summed (Edwards TRIMP: zones 1 to 5 count 1 to 5 per minute) and mapped onto 0 to 21 like the strain of a day. Zones are 50 to 60 % of max for Z1 up to 90 to 100 % for Z5. Pauses over two minutes count for nothing. The added part is the strain of the day with this workout minus the strain of the day without its minutes, so the same workout adds less on a day that already carried load.`}
+            </Details>
           </>
         ) : (
-          <Notice icon="heart-outline">
-            No heart-rate samples were stored for this workout, so JoyoFit cannot work out its strain.
-          </Notice>
+          <Notice icon="heart-outline">No heart rate stored for this workout, so no strain.</Notice>
         )}
       </Section>
 
@@ -266,17 +270,15 @@ export default function WorkoutDetailScreen() {
               value={`fat ${formatGrams(z.fatGrams)} g, carbs ${formatGrams(z.carbGrams)} g`}
             />
           ))}
-          <AppText variant="caption" muted>
-            An estimate by JoyoFit, the watch does not measure it: the {formatCount(workout.calories)} kcal are split over the
-            time you actually spent at each heart rate, with a maximum of {maxHr} bpm (220 minus your age from the
-            profile). Easier effort burns a larger share of fat.
-          </AppText>
+          <Details title="How is this calculated?">
+            {`An estimate by JoyoFit, the watch does not measure it: the ${formatCount(workout.calories)} kcal are split over the time you actually spent at each heart rate, with a maximum of ${maxHr} bpm (220 minus your age from the profile). Easier effort burns a larger share of fat.`}
+          </Details>
         </Section>
       ) : null}
 
       <StravaWorkoutSection workout={workout} />
 
-      <Section title="Details" icon="list">
+      <Section title="More stats" icon="list">
         <KeyValue
           icon="time-outline"
           label="Time of day"
@@ -333,7 +335,7 @@ export default function WorkoutDetailScreen() {
         ) : null}
         {summary.importedFrom !== undefined ? (
           <Notice icon="document-outline">
-            Imported from a {summary.importedFrom} FIT file. It stays on this phone and is not sent to the cloud or {isIos ? 'Apple Health' : 'Health Connect'}.
+            Imported from a {summary.importedFrom} FIT file. Stays on this phone, not sent to the cloud or {isIos ? 'Apple Health' : 'Health Connect'}.
           </Notice>
         ) : null}
         {!workout.complete ? (
@@ -349,10 +351,6 @@ export default function WorkoutDetailScreen() {
         {summary.gps === 'failed' ? (
           <Notice icon="location-outline">The watch did not provide a GPS file for this workout.</Notice>
         ) : null}
-      </Section>
-
-      <Section title="Heart rate" icon="heart" tint="heart">
-        <HeartRateChart points={loaded.points} start={workout.start} end={workout.end} />
       </Section>
 
       {splits.length > 0 ? (
@@ -396,7 +394,9 @@ const styles = StyleSheet.create({
   strainValue: { fontVariant: ['tabular-nums'] },
   summaryHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   summaryTitle: { flex: 1, gap: 2 },
-  figures: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.xl, rowGap: spacing.md },
-  figure: { gap: 2 },
+  figures: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, rowGap: spacing.sm },
+  figure: { gap: 0, minWidth: '30%' },
+  zones: { flexDirection: 'row', justifyContent: 'space-between' },
+  zone: { alignItems: 'center', gap: 0 },
   tiles: { flexDirection: 'row', gap: spacing.md },
 });

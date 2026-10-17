@@ -69,7 +69,7 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
       {!connected ? (
         <>
           <AppText variant="caption" muted>
-            Connect Strava to send this workout, with the distance, calories, heart rate and route the watch recorded.
+            Connect Strava to send this workout with its distance, calories, heart rate and route.
           </AppText>
           <Button label="Set up Strava" variant="secondary" icon="link" onPress={() => router.push('/settings/strava')} />
         </>
@@ -80,7 +80,7 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
           {row && row.status !== 'done' && row.error ? <Notice tone="danger">{row.error}</Notice> : null}
           {error ? <Notice tone="danger">{error}</Notice> : null}
           {!workout.complete ? (
-            <Notice>This workout is still being downloaded from the watch. Send it after the next sync.</Notice>
+            <Notice>Still downloading from the watch. Send after the next sync.</Notice>
           ) : null}
           {!done ? (
             <Button
@@ -94,7 +94,7 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
           ) : null}
           {!strava.signedIn ? (
             <AppText variant="caption" muted>
-              Sign in with JoyoRogo (Settings, Health and cloud) to send workouts.
+              Sign in with JoyoRogo (Settings, Health and cloud) to send.
             </AppText>
           ) : null}
         </>

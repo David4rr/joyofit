@@ -6,7 +6,7 @@ import { AppText } from '@/components/AppText';
 import type { DaySeries } from '@/features/trends/series';
 import { useColors } from '@/theme';
 
-const HEIGHT = 72;
+const HEIGHT = 56;
 const PAD = 6;
 const DOT = 3;
 

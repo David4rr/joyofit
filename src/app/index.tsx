@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { Metric } from '@/components/Metric';
 import { NavRow } from '@/components/NavRow';
 import { Card, Screen, Section } from '@/components/Screen';
@@ -135,59 +136,48 @@ export default function TodayScreen() {
 
       {loading ? (
         <View style={styles.tiles}>
-          <Skeleton width="48%" height={112} radius={18} />
-          <Skeleton width="48%" height={112} radius={18} />
+          <Skeleton width="48%" height={84} radius={18} />
+          <Skeleton width="48%" height={84} radius={18} />
         </View>
       ) : (
-        <View style={styles.stack}>
-          <View style={styles.tiles}>
-            <StatTile icon="flame" tint="workouts" label="Calories" value={formatCount(view?.totals.calories ?? 0)} unit="kcal" />
-            <StatTile icon="trail-sign" tint="steps" label="Distance" value={distance.value} unit={distance.unit} />
-          </View>
-          <AppText variant="caption" muted style={styles.note}>
-            {view?.totalsFromWatch
-              ? 'Totals as reported by the watch at the last sync.'
-              : view?.hasSamples
-                ? 'Totals added up from stored one-minute samples.'
-                : 'Nothing stored for today yet. Sync to pull today from the watch.'}
-          </AppText>
+        <View style={styles.tiles}>
+          <StatTile icon="flame" tint="workouts" label="Calories" value={formatCount(view?.totals.calories ?? 0)} unit="kcal" />
+          <StatTile icon="trail-sign" tint="steps" label="Distance" value={distance.value} unit={distance.unit} />
         </View>
       )}
 
-      <Section title="Heart rate today" icon="heart" tint="heart">
+      <Section title="Heart rate" icon="heart" tint="heart">
         {view?.heart ? (
           <View style={styles.heartRow}>
-            <View style={styles.heartMain}>
-              <Metric value={String(view.heart.latest.bpm)} unit="bpm" size="lg" color={colors.heartText} unitColor={colors.mutedForeground} />
+            <View style={styles.heartCol}>
+              <Metric value={String(view.heart.latest.bpm)} unit="bpm" size="md" color={colors.heartText} unitColor={colors.mutedForeground} />
               <AppText variant="caption" muted>
-                Latest, {formatClock(view.heart.latest.timestamp)}
+                Latest {formatClock(view.heart.latest.timestamp)}
               </AppText>
             </View>
-            <View style={styles.heartRange}>
-              <View>
-                <Metric value={String(view.heart.min)} unit="bpm" size="sm" />
-                <AppText variant="caption" muted>
-                  Lowest
-                </AppText>
-              </View>
-              <View>
-                <Metric value={String(view.heart.max)} unit="bpm" size="sm" />
-                <AppText variant="caption" muted>
-                  Highest
-                </AppText>
-              </View>
+            <View style={styles.heartCol}>
+              <Metric value={String(view.heart.min)} unit="bpm" size="md" />
+              <AppText variant="caption" muted>
+                Low
+              </AppText>
+            </View>
+            <View style={styles.heartCol}>
+              <Metric value={String(view.heart.max)} unit="bpm" size="md" />
+              <AppText variant="caption" muted>
+                High
+              </AppText>
             </View>
           </View>
         ) : loading ? (
           <Skeleton width="60%" height={38} />
         ) : (
           <AppText variant="caption" muted>
-            No heart-rate readings stored for today.
+            No heart rate stored today.
           </AppText>
         )}
       </Section>
 
-      <Section title="Steps per hour today" icon="footsteps" tint="steps">
+      <Section title="Steps per hour" icon="footsteps" tint="steps">
         <HourlyBars steps={view?.hourly ?? new Array<number>(24).fill(0)} />
       </Section>
 
@@ -200,10 +190,19 @@ export default function TodayScreen() {
           icon="pulse"
           tint="heart"
           title="Health metrics"
-          subtitle="Skin temperature, HRV, stress and more"
+          subtitle="Skin temp, HRV, stress and more"
           onPress={() => router.push('/health')}
         />
       </Card>
+      <Details title="About these numbers">
+        {`${
+          view?.totalsFromWatch
+            ? 'Calories and distance are as reported by the watch at the last sync.'
+            : view?.hasSamples
+              ? 'Calories and distance are added up from stored one-minute samples.'
+              : 'Nothing stored for today yet. Sync to pull today from the watch.'
+        } Pull down to sync.`}
+      </Details>
     </Screen>
   );
 }
@@ -211,8 +210,6 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   stack: { gap: spacing.md },
   tiles: { flexDirection: 'row', gap: spacing.md },
-  note: { paddingHorizontal: spacing.xs },
-  heartRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.lg },
-  heartMain: { gap: 2 },
-  heartRange: { flexDirection: 'row', gap: spacing.lg },
+  heartRow: { flexDirection: 'row', gap: spacing.md },
+  heartCol: { flex: 1, gap: 0 },
 });
