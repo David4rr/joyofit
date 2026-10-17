@@ -51,6 +51,9 @@ public enum ErrorCode: String, Sendable {
     case importPassword = "ERR_IMPORT_PASSWORD"
     /// Huawei import: the file is not a ZIP, or not a Huawei Health export.
     case importFormat = "ERR_IMPORT_FORMAT"
+    /// `connect` stopped before a first bind: the watch does not know this phone, and a bind replaces its current phone pairing. Nothing on
+    /// the watch changed; the app asks the user, then calls `confirmBind` and connects again.
+    case bindConfirmation = "ERR_BIND_CONFIRMATION"
 }
 
 /// Every failure that reaches JS: a coded error like the Android `WearException`.

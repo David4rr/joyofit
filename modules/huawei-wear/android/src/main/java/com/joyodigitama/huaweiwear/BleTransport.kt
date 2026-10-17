@@ -85,6 +85,13 @@ internal class BleTransport(
   /** ATT MTU in force; one write carries at most this minus the 3 byte ATT header. 23 until the watch agrees to more. */
   @Volatile private var attMtu = DEFAULT_ATT_MTU
 
+  /** What [connect] is waiting for, and the last thing Android's GATT callbacks said, for the timeout and failure messages. */
+  @Volatile private var stage = "starting"
+  @Volatile private var lastGattEvent: String? = null
+
+  /** True once the GATT link of this connect came up: a drop after that is the watch ending a link, not a connect that never opened. */
+  @Volatile private var linkWasUp = false
+
   // Connect phase of the current attempt: completed by the GATT callbacks, failed when the link drops or [close] runs.
   @Volatile private var linkUp = CompletableDeferred<Unit>()
   @Volatile private var mtuDone = CompletableDeferred<Unit>()
@@ -108,10 +115,11 @@ internal class BleTransport(
     override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
       if (g in staleClients) return
       step("GATT connection state ${stateText(newState)}, ${statusText(status)}")
+      lastGattEvent = "${stateText(newState)}, ${statusText(status)}"
       if (newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS) {
         linkUp.complete(Unit)
       } else if (newState == BluetoothProfile.STATE_DISCONNECTED || status != BluetoothGatt.GATT_SUCCESS) {
-        linkLost(IOException("Bluetooth LE link ended: ${statusText(status)}"))
+        linkLost(LinkEndedException("Bluetooth LE link ended: ${statusText(status)}"))
       }
     }
 
@@ -158,17 +166,27 @@ internal class BleTransport(
    */
   @SuppressLint("MissingPermission")
   override suspend fun connect(timeoutMs: Long) {
+    val totalMs = timeoutMs + SCAN_MS
     try {
-      withTimeout(timeoutMs + SCAN_MS) { open() }
+      withTimeout(totalMs) { open() }
     } catch (e: TimeoutCancellationException) {
       close()
-      throw WearException(ErrorCodes.TIMEOUT, "Timed out after $timeoutMs ms connecting to ${device.address} over Bluetooth LE", e)
+      val last = lastGattEvent?.let { "last GATT event: $it" } ?: "Android reported no GATT event"
+      throw WearException(
+        ErrorCodes.TIMEOUT,
+        "Timed out after $totalMs ms connecting to ${device.address} over Bluetooth LE while $stage ($last)",
+        e,
+      )
     } catch (e: WearException) {
       close()
       throw e
     } catch (e: IOException) {
       close()
-      throw WearException(ErrorCodes.CONNECT_FAILED, "Bluetooth LE connect to ${device.address} failed: ${e.message}", e)
+      // The watch ended a link that had come up (it is held by another phone or app, or went away): a dropped link, not a connect that never opened.
+      if (e is LinkEndedException && linkWasUp) {
+        throw WearException(ErrorCodes.DISCONNECTED, "The watch ended the Bluetooth LE link while $stage: ${e.message}", e)
+      }
+      throw WearException(ErrorCodes.CONNECT_FAILED, "Bluetooth LE connect to ${device.address} failed while $stage: ${e.message}", e)
     } catch (e: SecurityException) {
       close()
       throw WearException(ErrorCodes.BLUETOOTH_PERMISSION, "BLUETOOTH_CONNECT permission denied: ${e.message}", e)
@@ -190,17 +208,20 @@ internal class BleTransport(
 
   @SuppressLint("MissingPermission")
   private suspend fun open() {
+    stage = "scanning for the watch"
     val target = findTarget()
     val client = connectWithRetry(target)
     step("GATT connected")
 
     // Best effort: a watch that never answers must not hold the connect up. The frames are cut to what the ATT MTU carries
     // in write(), so a small MTU only costs speed.
+    stage = "negotiating the ATT MTU"
     val mtuStarted = client.requestMtu(REQUESTED_MTU)
     step("ATT MTU request $REQUESTED_MTU ${if (mtuStarted) "sent" else "refused by Android"}")
     if (mtuStarted) withTimeoutOrNull(MTU_TIMEOUT_MS) { mtuDone.await() } ?: step("ATT MTU: no answer within $MTU_TIMEOUT_MS ms")
     step("ATT MTU $attMtu")
 
+    stage = "discovering GATT services"
     if (!client.discoverServices()) throw IOException("Android refused to start service discovery")
     servicesDone.await()
     for (service in client.services) {
@@ -225,6 +246,7 @@ internal class BleTransport(
     writeCharacteristic = write
     step("GATT write ${if (writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) "without" else "with"} response; notify characteristic $readUuid")
 
+    stage = "enabling notifications"
     enableNotifications(client, read)
     step("GATT notifications on")
   }
@@ -243,6 +265,7 @@ internal class BleTransport(
       mtuDone = CompletableDeferred()
       servicesDone = CompletableDeferred()
       synchronized(stateLock) { lostBeforeReady = null }
+      stage = "opening the GATT link (attempt $attempt of $CONNECT_ATTEMPTS)"
       step("GATT connect to ${target.address}, attempt $attempt of $CONNECT_ATTEMPTS (transport LE, autoConnect ${if (autoConnect) "on" else "off"})")
       val client = target.connectGatt(context, autoConnect, callback, BluetoothDevice.TRANSPORT_LE, BluetoothDevice.PHY_LE_1M_MASK)
         ?: throw IOException("Android did not create a GATT client")
@@ -254,6 +277,7 @@ internal class BleTransport(
       }
       try {
         linkUp.await()
+        linkWasUp = true
         step("GATT link up on attempt $attempt: variant autoConnect ${if (autoConnect) "on" else "off"}, PHY LE 1M")
         return client
       } catch (e: IOException) {
@@ -552,6 +576,7 @@ internal class BleTransport(
         19 -> "the watch ended the connection"
         22 -> "the phone ended the connection"
         62 -> "connection failed to establish"
+        147 -> "connection could not be established, the watch is not answering"
         133 -> "generic GATT error"
         BluetoothGatt.GATT_INSUFFICIENT_AUTHENTICATION, BluetoothGatt.GATT_INSUFFICIENT_ENCRYPTION -> "not bonded"
         else -> null

@@ -91,11 +91,13 @@ internal class HuaweiAuthenticator(
 
   /**
    * Runs the whole authentication. Throws [WearException]: ERR_AUTH_FAILED (GB-style reason in the
-   * message), ERR_TIMEOUT, ERR_DEVICE_STATUS or ERR_DISCONNECTED.
+   * message), ERR_TIMEOUT, ERR_DEVICE_STATUS, ERR_DISCONNECTED or, when a HiChain first bind is needed while [firstBindAllowed]
+   * is false, ERR_BIND_CONFIRMATION. That stop comes before the PinCode request, so nothing on the watch has changed. Normal
+   * mode, HiChain Lite and a HiChain reconnect with a key the watch knows never ask for it.
    */
-  suspend fun authenticate(): AuthMode {
+  suspend fun authenticate(firstBindAllowed: Boolean): AuthMode {
     try {
-      return negotiate()
+      return negotiate(firstBindAllowed)
     } catch (e: WearException) {
       throw when (e.errorCode) {
         ErrorCodes.PROTOCOL -> WearException(ErrorCodes.AUTH_FAILED, "Authentication failed: ${e.message}", e)
@@ -109,9 +111,9 @@ internal class HuaweiAuthenticator(
     }
   }
 
-  private suspend fun negotiate(): AuthMode {
-    val firstConnection = identity.isFirstConnection
-    val authTimeout = if (firstConnection) Timeouts.FIRST_AUTH_MS else Timeouts.AUTH_MS
+  private suspend fun negotiate(firstBindAllowed: Boolean): AuthMode {
+    var firstConnection = identity.isFirstConnection
+    var authTimeout = if (firstConnection) Timeouts.FIRST_AUTH_MS else Timeouts.AUTH_MS
 
     // GB initializeDevice(): fake MAC / android id are created before the first request.
     identity.ensureCreated()
@@ -145,7 +147,16 @@ internal class HuaweiAuthenticator(
     val mode: AuthMode
     if (authType == 0x0186A0 || isHiChain3(authType)) {
       mode = if (params.deviceSupportType.toInt() == 4 || isHiChain3(authType)) AuthMode.HICHAIN3 else AuthMode.HICHAIN
+      val decision = FirstBind.decide(params.authMode.toInt(), authType, firstConnection)
+      if (decision.firstConnection != firstConnection) authTimeout = if (decision.firstConnection) Timeouts.FIRST_AUTH_MS else Timeouts.AUTH_MS
+      firstConnection = decision.firstConnection
+      events.log(LogDirection.INFO, null, null, null, "Auth: ${decision.note}")
       events.log(LogDirection.INFO, null, null, null, "Auth: ${mode.wire} mode (authType=$authType, firstConnection=$firstConnection)")
+      if (FirstBind.needsConfirmation(firstConnection, firstBindAllowed)) {
+        // Decided before the PinCode request: the watch has not been touched.
+        events.log(LogDirection.INFO, null, null, null, "Auth: a first bind is needed; this connection may not start one")
+        throw WearException(ErrorCodes.BIND_CONFIRMATION, FirstBind.MESSAGE)
+      }
       hiChainMode(firstConnection, authTimeout)
     } else if (authType == 0x01 || authType == 0x02) {
       mode = AuthMode.HICHAIN_LITE

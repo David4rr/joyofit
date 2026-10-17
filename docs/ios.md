@@ -20,7 +20,7 @@ modules/huawei-wear/
       Tests/HuaweiProtocolTests/  716 tests; Fixtures/*.json are generated from the Java the Android app runs
       GoldenGen/                  run.sh + Golden*.java: regenerates the fixtures (JDK 17, no Android SDK needed)
     BleTransport.swift ...        CoreBluetooth central, Keychain store, SQLite sync store, HealthKit writer, Expo module
-    ModuleLogicTests/             SwiftPM package compiling the same sources as one module; 414 logic tests on Linux
+    ModuleLogicTests/             SwiftPM package compiling the same sources as one module; 434 logic tests on Linux
     scripts/                      check-api.mjs (JS API coverage), gen-migrations.mjs (embeds schema/joyofit-db-migrations.json)
 ```
 
@@ -90,16 +90,33 @@ claims to have reached the watch unless it did.
 
 ## iOS specifics
 
-- **Scan.** FE86 is not advertised, so there is no service filter: a foreground scan matches the advertised name (`HUAWEI WATCH FIT 4 Pro-xxx`,
-  same stem rule as Android) or the `0xFDEE` service data. The peripheral identifier is remembered; later connects use
-  `retrievePeripherals` first.
+- **Finding the watch (JRG-173).** FE86 is not advertised, so there is no service filter: a foreground scan (duplicates on, so a name or `0xFDEE`
+  service data that comes in a later packet still counts) matches the advertised name (`HUAWEI WATCH FIT 4 Pro-xxx`, same stem rule as Android)
+  or the `0xFDEE` service data. The Watch tab list (`bondedDevices`, `refreshBondedDevices`) is the union of: the remembered watch; the Huawei and
+  Honor watches iOS **already holds a connection to** (paired in Settings > Bluetooth, held by ANCS or another app), which never advertise and so
+  no scan shows them: `retrieveConnectedPeripherals(withServices:)` with a broad probe list (`BleUUID.systemConnectedProbe`: FE86, the Honor
+  service, FDEE and the standard services the Fit 4 Pro's GATT database holds, 1800, 1801, 3802, 180F, 180D, 1812, its vendor service, plus
+  180A and 1805), kept only when named Huawei/Honor or the remembered identifier; and a 4 s scan. Rows carry `nearby` and `systemConnected`.
+  The system list is asked every time; the scan result is cached 30 s but an empty scan is never cached, and Refresh (`refreshBondedDevices`,
+  pull to refresh) ignores the cache and scans 8 s. The identifier is remembered and later connects use `retrievePeripherals` first, then the
+  system-connected list by identifier and by the full Bluetooth name (iOS hands a re-paired watch a new identifier; connecting by the remembered
+  identifier keeps the stored key, so a same-named watch under a new identifier is one row, never a second one that would bind again).
+- **A watch linked to another phone does not advertise.** The Android phone running JoyoFit in background mode (or Huawei Health) holds the watch's
+  one link; the iPhone cannot see it and nothing in the app can change that. When no listed watch is `nearby`, the Watch tab says "Watch not
+  found. If it is still connected to another phone, disconnect it there first. Make sure the watch is on and close to this phone, then tap
+  Refresh" and a failed connect (`ERR_CONNECT_FAILED`, `ERR_TIMEOUT`, `ERR_DISCONNECTED`, `ERR_AUTH_FAILED`) shows the same advice with a
+  **Retry** button (`src/features/device/connectFailure.ts`, shared with Android).
 - **MTU.** iOS negotiates it. Writes are cut to `maximumWriteValueLength(for: .withoutResponse)` with write-without-response flow
   control; notifications of any size are reassembled. The negotiated length and every chunk size are logged (tag `JoyoFitBle`, support report).
 - **First bind replaces the existing binding.** The watch keeps one credential. A first bind needs two confirmations (ACCEPT on the watch and
   iOS's system pairing dialog, which appears by itself; the transport never requests encryption or disconnects meanwhile) and its waits are 120 s.
   The bind-or-reconnect decision comes from SecurityNegotiation tag 0x02 (authType 5 = the watch does not know this phone, 6 = known). A
-  background reconnect never starts a bind (`firstBindAllowed: false`): it logs and stops; only an explicit `connect()` from the app binds.
-  Android-side findings behind this are in `protocol/README.md` (the 2026-10-16 observations).
+  background reconnect never starts a bind (`firstBindAllowed: false`): it logs and stops. An interactive `connect()` does not bind by itself
+  either: it stops at the same point (before the PinCode request, nothing on the watch changes) and rejects `ERR_BIND_CONFIRMATION`; the Watch
+  tab then shows its own confirmation ("Pair this watch with this phone?", button Continue) saying the other phone's or app's pairing will be
+  replaced, and only Continue calls `confirmBind(address)` (single use, per watch, cleared by the connect it belongs to, by disconnect and by
+  forget) and connects again. Android behaves the same. Android-side findings behind this are in `protocol/README.md` (the 2026-10-16
+  observations).
 - **Background.** `setBackgroundEnabled` means: reconnect the remembered watch when iOS wakes the app for the `bluetooth-central` session
   (pending connect + state restoration), then authenticate, sync and read the battery inside a background task. Nothing runs while the process
   is suspended.
@@ -115,7 +132,7 @@ claims to have reached the watch unless it did.
 export PATH=$HOME/.local/swift-6.4/usr/bin:$HOME/jdk17/bin:$PATH
 bun run test:ios-protocol            # swift test in HuaweiProtocol (716 tests)
 bun run golden:ios                   # regenerate the Java golden fixtures (then re-run the tests)
-cd modules/huawei-wear/ios/ModuleLogicTests && ./link-sources.sh && JOYOFIT_REPO_ROOT=$PWD/../../../.. swift test   # 414 tests
+cd modules/huawei-wear/ios/ModuleLogicTests && ./link-sources.sh && JOYOFIT_REPO_ROOT=$PWD/../../../.. swift test   # 434 tests
 scripts/build-ios-linux.sh --dev     # signed JoyoFit-dev.ipa (docs/ios-linux.md)
 ```
 
@@ -137,6 +154,9 @@ The package also type-checks against the iPhoneOS SDK (`swiftc -typecheck -sdk <
   the first time the watch asks for the phone's GPS); P2P Healthy Living and the course push (experimental on Android too); the Huawei export
   import on a real multi-GB archive from the Files app (security-scoped access, memory, speed).
 - Scanning and connecting to the watch from CoreBluetooth; the real negotiated MTU and chunk sizes; notification delivery order.
+- JRG-173, none of it run on the iPhone yet: that `retrieveConnectedPeripherals` with the probe list returns a Fit 4 Pro that iOS holds through
+  Settings > Bluetooth (the Fit 4 Pro's service list comes from an Android GATT read, not from iOS's cache); connecting such a watch from the app;
+  the "Watch not found" advice while the Android phone holds the watch; the bind confirmation before a first bind and none on a reconnect.
 - A reconnect with a key bound from iOS (HiChain op2) and a first bind over LE (op1 steps 2 to 4 are unproven on any client; only step 1 was
   seen, from Android, which loses the 514-byte reply on Android 14+).
 - State restoration and the background wake path; the Keychain after reinstall; HealthKit replacement on a repeated sync identifier; expo-sqlite

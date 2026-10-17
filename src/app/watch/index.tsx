@@ -4,6 +4,7 @@ import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { KeyValue } from '@/components/KeyValue';
 import { NavRow } from '@/components/NavRow';
 import { Divider, Screen, Section } from '@/components/Screen';
@@ -14,6 +15,7 @@ import { FindWatchSection } from '@/features/device/FindWatchSection';
 import { SUPPORT_LABEL, supportRank } from '@/features/device/modelSupport';
 import { SupportReportSection } from '@/features/device/SupportReportSection';
 import { WatchStatusCard } from '@/features/device/WatchStatusCard';
+import { NO_WATCH_FOUND_HINT } from '@/features/device/connectFailure';
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
 import { useBondedDevices } from '@/features/device/useBondedDevices';
 import { useWatch } from '@/state/WatchProvider';
@@ -21,7 +23,7 @@ import { fonts, spacing, useColors } from '@/theme';
 
 const CONNECT_STEPS = isIos
   ? [
-      'Keep the watch close to the iPhone with Bluetooth on. It shows up in the list below.',
+      'Keep the watch close to the iPhone with Bluetooth on. If it is still connected to another phone, disconnect it there first. It shows up in the list below.',
       'Unbind it from Huawei Health first, or the watch will refuse this app.',
       'On the first connect, keep the watch awake, accept the prompt on its screen, then tap Pair on the iPhone.',
     ]
@@ -67,6 +69,9 @@ export default function WatchScreen() {
 
   const showEmpty = bonded.devices.length === 0 && !bonded.loading && !bonded.error;
   const linked = watch.linkState === 'connected' || watch.linkState === 'syncing';
+  // iOS only: every listed watch is out of reach (a watch linked to another phone does not advertise). Android leaves `nearby` unset.
+  const showNotInReach =
+    bonded.loaded && !bonded.loading && !bonded.error && !linked && bonded.devices.length > 0 && bonded.devices.every((d) => d.nearby === false);
 
   // The watch in use first, then the ones this app can talk to best.
   const devices = useMemo(
@@ -109,16 +114,19 @@ export default function WatchScreen() {
       ) : (
         <>
           {bonded.error ? <Notice tone="danger">Could not read paired devices: {bonded.error}</Notice> : null}
+          {showNotInReach ? (
+            <Notice action={{ label: 'Refresh', onPress: () => void bonded.refresh() }}>{NO_WATCH_FOUND_HINT}</Notice>
+          ) : null}
           {showEmpty ? (
             <EmptyState
               icon="bluetooth"
               title="No paired devices"
               description={
                 isIos
-                  ? 'Keep the watch close to the iPhone with Bluetooth on, then refresh.'
+                  ? NO_WATCH_FOUND_HINT
                   : 'Pair the watch in Android Bluetooth settings, then refresh.'
               }
-              action={{ label: 'Refresh list', icon: 'refresh', onPress: () => void bonded.reload() }}
+              action={{ label: 'Refresh list', icon: 'refresh', onPress: () => void bonded.refresh() }}
             />
           ) : (
             <>
@@ -147,7 +155,7 @@ export default function WatchScreen() {
                   </View>
                 ))}
               </ScrollView>
-              <Button label="Refresh list" icon="refresh" loading={bonded.loading} onPress={() => void bonded.reload()} />
+              <Button label="Refresh list" icon="refresh" loading={bonded.loading} onPress={() => void bonded.refresh()} />
             </>
           )}
         </>
@@ -211,7 +219,7 @@ export default function WatchScreen() {
   return (
     <Screen
       title="Watch"
-      refresh={{ refreshing: bonded.loading, onRefresh: () => void bonded.reload(), enabled: granted }}>
+      refresh={{ refreshing: bonded.loading, onRefresh: () => void bonded.refresh(), enabled: granted }}>
       <WatchStatusCard />
       {/* Connected, the list is only needed to disconnect or switch, so the watch's own pages come first. */}
       {linked ? (
@@ -233,6 +241,18 @@ export default function WatchScreen() {
         </>
       )}
       {device ? <ConnectSteps /> : null}
+      <ConfirmDialog
+        visible={watch.bindRequest !== null}
+        title="Pair this watch with this phone?"
+        message={
+          `This watch is not paired with this ${isIos ? 'iPhone' : 'phone'} yet. A watch keeps one phone pairing, so continuing replaces ` +
+          'the pairing with your other phone or app (Huawei Health, or JoyoFit on another phone), which will have to pair again. ' +
+          'You will then confirm on the watch.'
+        }
+        confirmLabel="Continue"
+        onConfirm={() => void watch.confirmBind()}
+        onCancel={watch.cancelBind}
+      />
     </Screen>
   );
 }

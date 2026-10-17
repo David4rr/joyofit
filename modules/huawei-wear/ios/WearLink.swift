@@ -17,6 +17,30 @@ public struct LinkHandle: Sendable {
     public let operationLock: AsyncLock
 }
 
+/// The watches the user agreed to bind this phone to. A first bind replaces the watch's one phone credential, so an interactive connect that
+/// finds the watch does not know this phone stops with ERR_BIND_CONFIRMATION unless the app (after asking the user) called `allow` first.
+/// One use: the connect that ends (either way) takes the consent with it.
+final class BindConsent: @unchecked Sendable {
+    private let lock = NSLock()
+    private var addresses = Set<String>()
+
+    func allow(_ address: String) { lock.locked { _ = addresses.insert(address) } }
+    func isAllowed(_ address: String) -> Bool { lock.locked { addresses.contains(address) } }
+    func clear(_ address: String) { lock.locked { _ = addresses.remove(address) } }
+    func clearAll() { lock.locked { addresses.removeAll() } }
+}
+
+/// What `connect` reports for a stop before a first bind: background connects keep ERR_AUTH_FAILED (nothing is asked there), interactive ones
+/// become ERR_BIND_CONFIRMATION so the app can ask the user.
+func bindStop(_ failure: WearError, mode: ConnectMode) -> WearError {
+    guard mode == .interactive, failure.isFirstBindNeeded else { return failure }
+    return WearError(
+        .bindConfirmation,
+        "This watch has to be paired with this phone first. Pairing replaces the watch's current phone pairing (another phone or app).",
+        underlying: failure.underlying
+    )
+}
+
 public final class WearLink: @unchecked Sendable {
     private let events: WearEvents
     private let settings: WearSettings
@@ -35,6 +59,13 @@ public final class WearLink: @unchecked Sendable {
     private var _lastDeviceInfo: WatchDeviceInfo?
     private var _lastAttemptName: String?
     private var _lastCaps: DeviceCaps?
+    let bindConsent = BindConsent()
+
+    /// The user agreed (in the app) that the next connect to `rawAddress` may start a first bind. Never called by background connects.
+    public func allowBind(_ rawAddress: String) { bindConsent.allow(DeviceStore.normalize(rawAddress)) }
+
+    /// The watch of the connection in progress or up, nil when there is none.
+    public var activeAddress: String? { lock.locked { current?.address } }
 
     /// A step that runs at the end of every stored sync, under the operation lock (the P2P health metrics): isolated and logged, so a failing one
     /// never fails the sync whose rows are already committed; a lost link or a cancellation still stops the sync.
@@ -206,6 +237,8 @@ public final class WearLink: @unchecked Sendable {
             name = remembered
             if let replacing { teardown(replacing, cause: WearError(.disconnected, "Superseded by a connect from the app"), error: nil, report: false) }
         }
+        // The consent is for this connect only.
+        defer { bindConsent.clear(address) }
         let match = connection.model
 
         let log = events.sink
@@ -252,8 +285,9 @@ public final class WearLink: @unchecked Sendable {
                 session: session, identity: identity, log: log, deviceType: connection.deviceType, phoneModel: phoneModel
             )
             // A first bind replaces the watch's one stored credential (an Android phone bound to it loses its binding), so it only ever
-            // runs from a connect the user asked for; a background reconnect that finds the watch does not know this phone stops here.
-            let authMode = try await authenticator.authenticate(firstBindAllowed: mode == .interactive)
+            // runs from a connect the user asked for AND agreed to bind (`allowBind`); a background reconnect that finds the watch does not
+            // know this phone stops here, and so does an interactive one without the user's agreement (ERR_BIND_CONFIRMATION).
+            let authMode = try await authenticator.authenticate(firstBindAllowed: mode == .interactive && bindConsent.isAllowed(address))
 
             try setState(connection, .initializing)
             let bondedName = transport.peripheralName ?? name
@@ -297,7 +331,7 @@ public final class WearLink: @unchecked Sendable {
             // protocol-level failure of the operation itself wins.
             let closeCause = lock.locked { connection.closeCause }
             let wear = error as? WearError
-            let failure: WearError
+            var failure: WearError
             if let closeCause, wear == nil || wear!.code == .disconnected || wear!.code == .connectFailed {
                 failure = closeCause
             } else if let wear {
@@ -311,8 +345,15 @@ public final class WearLink: @unchecked Sendable {
                         "a bind replaces the watch's one stored credential. Connect to the watch from the app to bind it."
                 )
             }
-            events.error("Connect failed [\(failure.code.rawValue)]: \(failure.message)")
-            teardown(connection, cause: failure, error: failure.message)
+            failure = bindStop(failure, mode: mode)
+            if failure.code == .bindConfirmation {
+                // Not a failure: nothing on the watch changed, the app asks the user and connects again with `confirmBind`.
+                events.info("Connect stopped before a first bind: the watch does not know this phone; waiting for the user's confirmation in the app")
+                teardown(connection, cause: failure, error: nil)
+            } else {
+                events.error("Connect failed [\(failure.code.rawValue)]: \(failure.message)")
+                teardown(connection, cause: failure, error: failure.message)
+            }
             throw failure
         }
     }
@@ -331,6 +372,7 @@ public final class WearLink: @unchecked Sendable {
     // MARK: disconnect / teardown
 
     public func disconnect() {
+        bindConsent.clearAll()
         guard let connection = lock.locked({ current }) else { return }
         events.info("Disconnecting from \(connection.address)")
         teardown(connection, cause: WearError(.disconnected, "Disconnected"), error: nil)
@@ -341,6 +383,7 @@ public final class WearLink: @unchecked Sendable {
 
     public func forget(_ rawAddress: String) {
         let address = DeviceStore.normalize(rawAddress)
+        bindConsent.clear(address)
         if let connection = lock.locked({ current }), connection.address == address {
             teardown(connection, cause: WearError(.disconnected, "Device forgotten"), error: nil)
         }

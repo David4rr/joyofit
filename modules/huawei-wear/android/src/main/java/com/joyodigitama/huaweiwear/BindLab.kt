@@ -109,7 +109,8 @@ internal object BindLab {
         )
       }
       val authenticator = HuaweiAuthenticator(live, identity, LabEvents, model.deviceType(ModelTransport.LE), lab)
-      val mode = authenticator.authenticate()
+      // The stored identity never binds; a lab identity binds only with commit, or stops before anything changes on the watch.
+      val mode = authenticator.authenticate(firstBindAllowed = !real && (commit || stop != null))
       Log.i(TAG, "lab: AUTHENTICATED ${mode.wire}, protocolVersion ${authenticator.protocolVersion}, bonded ${!identity.isFirstConnection}")
       val battery = live.queryBattery(Timeouts.QUERY_MS)
       Log.i(TAG, "lab: BATTERY $battery% over the new key")

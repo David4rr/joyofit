@@ -7,6 +7,10 @@ final class WearRuntimeTests: XCTestCase {
     private var nearbyCalls = 0
     private var nearby: [NearbyWatch] = []
     private var nearbyError: WearError?
+    private var system: [NearbyWatch] = []
+    private var systemCalls = 0
+    private var systemError: WearError?
+    private var scanTimeouts: [Int] = []
     private var transports: TransportLog!
     private var clockMs = 0
 
@@ -15,6 +19,10 @@ final class WearRuntimeTests: XCTestCase {
         nearbyCalls = 0
         nearby = []
         nearbyError = nil
+        system = []
+        systemCalls = 0
+        systemError = nil
+        scanTimeouts = []
         transports = TransportLog()
         clockMs = 0
     }
@@ -30,10 +38,16 @@ final class WearRuntimeTests: XCTestCase {
                 log.add(t)
                 return t
             },
-            nearby: { [unowned self] _ in
+            nearby: { [unowned self] timeoutMs in
                 self.nearbyCalls += 1
+                self.scanTimeouts.append(timeoutMs)
                 if let e = self.nearbyError { throw e }
                 return self.nearby
+            },
+            systemConnected: { [unowned self] in
+                self.systemCalls += 1
+                if let e = self.systemError { throw e }
+                return self.system
             },
             clock: { box.value }
         )
@@ -62,7 +76,7 @@ final class WearRuntimeTests: XCTestCase {
         XCTAssertEqual(list[0]["model"] as? String, "Huawei Watch Fit 4 Pro")
         XCTAssertEqual(list[0]["support"] as? String, "tested")
         XCTAssertTrue(list[0]["reason"] is NSNull)
-        XCTAssertEqual(Set(list[0].keys), ["address", "name", "model", "support", "reason"])
+        XCTAssertEqual(Set(list[0].keys), ["address", "name", "model", "support", "reason", "nearby", "systemConnected"])
     }
 
     func testBondedDevicesAddsNearbyWatchesAndSortsByName() async throws {
@@ -113,6 +127,137 @@ final class WearRuntimeTests: XCTestCase {
         XCTAssertEqual(nearbyCalls, 0)
         runtime.disconnectFromApp()
         _ = try? await connect.value
+    }
+
+    // MARK: finding the watch from the app (JRG-173)
+
+    private let fit = "HUAWEI WATCH FIT 4 Pro-40A"
+
+    func testAWatchTheSystemHoldsListsWithoutAScanResult() async throws {
+        system = [NearbyWatch(identifier: watch, name: fit)]
+        let list = try await makeRuntime().bondedDevices()
+        XCTAssertEqual(list.count, 1)
+        XCTAssertEqual(list[0]["name"] as? String, fit)
+        XCTAssertEqual(list[0]["systemConnected"] as? Bool, true)
+        XCTAssertEqual(list[0]["nearby"] as? Bool, true)
+    }
+
+    func testASystemWatchThatIsAlsoScannedAndRememberedIsOneRow() async throws {
+        settings.watchAddress = watch
+        settings.watchName = fit
+        system = [NearbyWatch(identifier: watch.lowercased(), name: fit)]
+        nearby = [NearbyWatch(identifier: watch, name: fit)]
+        let list = try await makeRuntime().bondedDevices()
+        XCTAssertEqual(list.count, 1)
+        XCTAssertEqual(list[0]["systemConnected"] as? Bool, true)
+    }
+
+    func testARememberedWatchOutOfReachListsAsNotNearby() async throws {
+        settings.watchAddress = watch
+        settings.watchName = fit
+        let list = try await makeRuntime().bondedDevices()
+        XCTAssertEqual(list.count, 1)
+        XCTAssertEqual(list[0]["nearby"] as? Bool, false)
+        XCTAssertEqual(list[0]["systemConnected"] as? Bool, false)
+    }
+
+    func testAnEmptyScanIsNotCachedSoAWatchThatJustAppearedShows() async throws {
+        let runtime = makeRuntime()
+        _ = try await runtime.bondedDevices()
+        XCTAssertEqual(nearbyCalls, 1)
+        nearby = [NearbyWatch(identifier: watch, name: fit)]
+        let list = try await runtime.bondedDevices()
+        XCTAssertEqual(nearbyCalls, 2, "an empty result must not hide the watch for 30 s")
+        XCTAssertEqual(list.count, 1)
+    }
+
+    func testRefreshIgnoresTheCacheAndScansLonger() async throws {
+        nearby = [NearbyWatch(identifier: watch, name: fit)]
+        let runtime = makeRuntime()
+        _ = try await runtime.bondedDevices()
+        _ = try await runtime.bondedDevices()
+        XCTAssertEqual(nearbyCalls, 1)
+        nearby = [
+            NearbyWatch(identifier: watch, name: fit),
+            NearbyWatch(identifier: "11111111-2222-3333-4444-555555555555", name: "HONOR Band 9-1A"),
+        ]
+        let list = try await runtime.bondedDevices(refresh: true)
+        XCTAssertEqual(nearbyCalls, 2)
+        XCTAssertEqual(scanTimeouts, [4_000, 8_000])
+        XCTAssertEqual(list.count, 2)
+    }
+
+    func testTheSystemListIsNeverCachedSoAWatchHeldByiOSShowsAtOnce() async throws {
+        nearby = [NearbyWatch(identifier: "11111111-2222-3333-4444-555555555555", name: "HONOR Band 9-1A")]
+        let runtime = makeRuntime()
+        _ = try await runtime.bondedDevices()
+        system = [NearbyWatch(identifier: watch, name: fit)]
+        let list = try await runtime.bondedDevices()
+        XCTAssertEqual(nearbyCalls, 1, "the scan stays cached")
+        XCTAssertEqual(list.count, 2)
+        XCTAssertEqual(systemCalls, 2)
+    }
+
+    func testDisconnectingDropsTheCachedScan() async throws {
+        nearby = [NearbyWatch(identifier: watch, name: fit)]
+        let runtime = makeRuntime()
+        _ = try await runtime.bondedDevices()
+        runtime.disconnectFromApp()
+        _ = try await runtime.bondedDevices()
+        XCTAssertEqual(nearbyCalls, 2)
+    }
+
+    func testListingMergesDuplicatesByIdentifierIgnoringCase() {
+        let rows = WearRuntime.listing(
+            remembered: NearbyWatch(identifier: watch, name: nil), active: nil,
+            system: [NearbyWatch(identifier: watch.lowercased(), name: fit)],
+            scanned: [NearbyWatch(identifier: watch, name: fit), NearbyWatch(identifier: watch, name: fit)]
+        )
+        XCTAssertEqual(rows, [WearRuntime.ListedWatch(identifier: watch, name: fit, nearby: true, systemConnected: true)])
+    }
+
+    func testARememberedWatchSeenUnderANewIdentifierWithTheSameFullNameIsOneRow() {
+        let renewed = "AAAAAAAA-2222-3333-4444-555555555555"
+        let rows = WearRuntime.listing(
+            remembered: NearbyWatch(identifier: watch, name: fit), active: nil,
+            system: [], scanned: [NearbyWatch(identifier: renewed, name: fit.lowercased())]
+        )
+        XCTAssertEqual(rows.count, 1)
+        XCTAssertEqual(rows[0].identifier, watch, "connecting by the remembered identifier keeps the stored key")
+        XCTAssertTrue(rows[0].nearby)
+    }
+
+    func testAnotherWatchOfTheSameModelIsItsOwnRow() {
+        let other = "AAAAAAAA-2222-3333-4444-555555555555"
+        let rows = WearRuntime.listing(
+            remembered: NearbyWatch(identifier: watch, name: fit), active: nil,
+            system: [], scanned: [NearbyWatch(identifier: other, name: "HUAWEI WATCH FIT 4 Pro-77B")]
+        )
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertFalse(rows[0].nearby)
+        XCTAssertTrue(rows[1].nearby)
+    }
+
+    func testTheRememberedIdentifierSeenBesideASameNamedOtherOneStaysItsOwnRow() {
+        let other = "AAAAAAAA-2222-3333-4444-555555555555"
+        let rows = WearRuntime.listing(
+            remembered: NearbyWatch(identifier: watch, name: fit), active: nil,
+            system: [], scanned: [NearbyWatch(identifier: watch, name: fit), NearbyWatch(identifier: other, name: fit)]
+        )
+        XCTAssertEqual(rows.count, 2)
+    }
+
+    func testTheLinksOwnWatchCountsAsInReach() {
+        let rows = WearRuntime.listing(remembered: nil, active: watch, system: [], scanned: [])
+        XCTAssertEqual(rows, [WearRuntime.ListedWatch(identifier: watch, name: nil, nearby: true, systemConnected: false)])
+    }
+
+    func testTheSystemScanFailingWithBluetoothOffStillListsTheRememberedWatch() async throws {
+        settings.watchAddress = watch
+        settings.watchName = fit
+        systemError = WearError(.bluetoothOff, "Bluetooth is turned off; turn it on and try again")
+        let list = try await makeRuntime().bondedDevices()
+        XCTAssertEqual(list.count, 1)
     }
 
     // MARK: events

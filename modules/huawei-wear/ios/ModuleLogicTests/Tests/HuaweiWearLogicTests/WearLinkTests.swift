@@ -261,4 +261,73 @@ final class WearLinkTests: XCTestCase {
         XCTAssertEqual(secrets.count, 0)
         XCTAssertTrue(events.messages(.info).contains("Forgot \(watch): stored auth key and fake identity cleared"))
     }
+
+    // MARK: bind consent (JRG-173): a first bind replaces the watch's one phone pairing, so it only runs after the user agreed in the app
+
+    private func firstBindStop(authType: Int = 5) -> WearError {
+        WearError(.authFailed, "watch does not know this phone: first bind needed", underlying: FirstBindNeededError(authType: authType))
+    }
+
+    func testAnInteractiveStopBeforeAFirstBindAsksForConfirmation() {
+        let asked = bindStop(firstBindStop(), mode: .interactive)
+        XCTAssertEqual(asked.code, .bindConfirmation)
+        XCTAssertEqual(asked.code.rawValue, "ERR_BIND_CONFIRMATION")
+        XCTAssertTrue(asked.isFirstBindNeeded, "the cause stays attached")
+        XCTAssertEqual(bindStop(firstBindStop(authType: 6), mode: .interactive).code, .bindConfirmation)
+    }
+
+    func testABackgroundStopBeforeAFirstBindStaysAnAuthFailureAndNeverAsks() {
+        XCTAssertEqual(bindStop(firstBindStop(), mode: .background).code, .authFailed)
+    }
+
+    func testOtherFailuresPassThroughUnchanged() {
+        for failure in [
+            WearError(.authFailed, "wrong token"), WearError(.timeout, "Timed out"), WearError(.connectFailed, "no"), WearError(.disconnected, "gone"),
+        ] {
+            XCTAssertEqual(bindStop(failure, mode: .interactive).code, failure.code)
+            XCTAssertEqual(bindStop(failure, mode: .interactive).message, failure.message)
+        }
+    }
+
+    func testConsentIsPerWatchAndSingleUse() {
+        let consent = BindConsent()
+        XCTAssertFalse(consent.isAllowed(watch))
+        consent.allow(watch)
+        XCTAssertTrue(consent.isAllowed(watch))
+        XCTAssertFalse(consent.isAllowed("11111111-2222-3333-4444-555555555555"))
+        consent.clear(watch)
+        XCTAssertFalse(consent.isAllowed(watch))
+        consent.allow(watch)
+        consent.clearAll()
+        XCTAssertFalse(consent.isAllowed(watch))
+    }
+
+    func testAllowBindNormalizesTheAddressAndAFailedConnectTakesItAway() async {
+        let link = makeLink(.failConnect(WearError(.connectFailed, "no route")))
+        link.allowBind(watch.lowercased())
+        XCTAssertTrue(link.bindConsent.isAllowed(watch), "stored under the normalized identifier")
+        _ = try? await link.connect(watch)
+        XCTAssertFalse(link.bindConsent.isAllowed(watch), "the consent is for one connect only")
+    }
+
+    func testDisconnectAndForgetTakeAwayTheConsent() {
+        let link = makeLink(.hangConnect)
+        link.allowBind(watch)
+        link.disconnect()
+        XCTAssertFalse(link.bindConsent.isAllowed(watch))
+        link.allowBind(watch)
+        link.forget(watch)
+        XCTAssertFalse(link.bindConsent.isAllowed(watch))
+    }
+
+    func testTheLinkReportsItsActiveWatch() async {
+        let link = makeLink(.hangConnect)
+        XCTAssertNil(link.activeAddress)
+        let connect = Task { try await link.connect(watch) }
+        await eventually("connecting") { link.currentState() == .connecting }
+        XCTAssertEqual(link.activeAddress, watch)
+        link.disconnect()
+        _ = try? await connect.value
+        XCTAssertNil(link.activeAddress)
+    }
 }

@@ -203,8 +203,13 @@ internal class WearLink(
 
   // Connect
 
-  @SuppressLint("MissingPermission")
-  suspend fun connect(rawAddress: String): Map<String, Any?> {
+  /**
+   * Opens the link, authenticates and initializes. Every failure rejects with one coded [WearException] and leaves the link
+   * `disconnected` (the transport released), so an immediate retry starts clean. [allowFirstBind] lets this attempt start a
+   * first bind with the watch (which replaces its current phone pairing); without it the connect stops with
+   * ERR_BIND_CONFIRMATION before anything on the watch changes. Only the interactive connect the user confirmed passes true.
+   */
+  suspend fun connect(rawAddress: String, allowFirstBind: Boolean = false): Map<String, Any?> {
     val address = rawAddress.trim().uppercase(Locale.ROOT)
     val adapter = requireAdapter()
     if (!BluetoothAdapter.checkBluetoothAddress(address)) {
@@ -230,14 +235,8 @@ internal class WearLink(
         }
       }
       if (joining == null) {
-        val device = adapter.getRemoteDevice(address)
-        val name = bondedName(device)
-        val model = WatchModels.match(name)
-        if (!model.connectable) {
-          throw WearException(ErrorCodes.UNSUPPORTED, "${name ?: address}: ${model.reason}")
-        }
-        connection = Connection(address, device, adapter, model)
-        lastAttemptName = name
+        connection = prepare(address, adapter)
+        lastAttemptName = bondedName(connection.device)
         lastAttemptTransport = connection.transportKind
         current = connection
         state = LinkState.CONNECTING
@@ -246,38 +245,45 @@ internal class WearLink(
       }
     }
     joining?.let { return it.ready.await() }
-    events.state(LinkState.CONNECTING, null)
-    val model = connection.model
-    val link = when (connection.transportKind) {
-      ModelTransport.BR -> "RFCOMM, SDP ${model.sdp}"
-      ModelTransport.LE ->
-        "Bluetooth LE GATT (${if (model.newHonorProtocol) "Honor service" else "service 0xFE86"}), device type ${connection.deviceType}"
-    }
-    connection.linkEvents.log(
-      LogDirection.INFO,
-      null,
-      null,
-      null,
-      "Connecting to $address \"${lastAttemptName ?: "no name"}\": ${model.model?.name ?: "unknown model"} (${model.support.wire}), " +
-        "$link${if (settings.forceBle) " (forced by the developer switch)" else ""}, encrypted ${model.crypted}",
-    )
 
+    // Everything from here is inside the try: whatever fails, the connection is torn down and the link ends `disconnected`.
     try {
+      events.state(LinkState.CONNECTING, null)
+      val model = connection.model
+      val link = when (connection.transportKind) {
+        ModelTransport.BR -> "RFCOMM, SDP ${model.sdp}"
+        ModelTransport.LE ->
+          "Bluetooth LE GATT (${if (model.newHonorProtocol) "Honor service" else "service 0xFE86"}), device type ${connection.deviceType}"
+      }
+      connection.linkEvents.log(
+        LogDirection.INFO,
+        null,
+        null,
+        null,
+        "Connecting to $address \"${lastAttemptName ?: "no name"}\": ${model.model?.name ?: "unknown model"} (${model.support.wire}), " +
+          "$link${if (settings.forceBle) " (forced by the developer switch)" else ""}, encrypted ${model.crypted}" +
+          if (allowFirstBind) ", first bind confirmed by the user" else "",
+      )
+
       try {
         connection.transport.connect(Timeouts.CONNECT_MS)
       } catch (e: Exception) {
-        if (e is CancellationException || connection.transportKind != ModelTransport.BR || connection.closed.get()) throw e
+        if (connection.transportKind != ModelTransport.BR || connection.closed.get() || !shouldFallBackToLe(e)) throw e
         events.log(LogDirection.ERROR, null, null, null, "RFCOMM did not open (${e.message}); trying Bluetooth LE GATT")
         connection.fallBackToLe()
         synchronized(lock) { lastAttemptTransport = ModelTransport.LE }
-        connection.transport.connect(Timeouts.CONNECT_MS)
+        try {
+          connection.transport.connect(Timeouts.CONNECT_MS)
+        } catch (le: WearException) {
+          throw afterRfcommFailure(le, e)
+        }
       }
       connection.linkEvents.log(LogDirection.INFO, null, null, null, "${connection.transportKind.label} connected")
 
       setState(connection, LinkState.AUTHENTICATING)
       val identity = store.forDevice(address)
       val authenticator = HuaweiAuthenticator(connection.session, identity, connection.linkEvents, connection.deviceType)
-      val authMode = authenticator.authenticate()
+      val authMode = authenticator.authenticate(firstBindAllowed = allowFirstBind)
 
       setState(connection, LinkState.INITIALIZING)
       val init = HuaweiInitializer(
@@ -326,18 +332,33 @@ internal class WearLink(
       }
       // Closed under us (user disconnect, watch dropped the link): report what closed it rather than
       // the I/O error that followed. A protocol-level failure of the operation itself wins.
-      val closeCause = connection.closeCause
-      val failure: WearException = when {
-        closeCause != null && (t !is WearException || t.errorCode == ErrorCodes.DISCONNECTED || t.errorCode == ErrorCodes.CONNECT_FAILED) -> closeCause
-        t is WearException -> t
-        t is IOException -> WearException(ErrorCodes.CONNECT_FAILED, "Connect failed: ${t.message}", t)
-        else -> WearException(ErrorCodes.CONNECT_FAILED, "Connect failed: ${t.message ?: t.javaClass.simpleName}", t)
-      }
-      connection.linkEvents.log(LogDirection.ERROR, null, null, null, "Connect failed [${failure.errorCode}]: ${failure.message}")
-      teardown(connection, failure, failure.message)
+      val failure = connectFailure(t, connection.closeCause)
+      val needsConfirmation = failure.errorCode == ErrorCodes.BIND_CONFIRMATION
+      connection.linkEvents.log(
+        if (needsConfirmation) LogDirection.INFO else LogDirection.ERROR,
+        null,
+        null,
+        null,
+        "Connect stopped [${failure.errorCode}]: ${failure.message}",
+      )
+      teardown(connection, failure, stateError(failure))
       throw failure
     }
   }
+
+  /** The [Connection] for [address], or a coded failure: ERR_UNSUPPORTED for a watch this app does not drive, ERR_CONNECT_FAILED for anything Android refuses. */
+  private fun prepare(address: String, adapter: BluetoothAdapter): Connection =
+    try {
+      val device = adapter.getRemoteDevice(address)
+      val name = bondedName(device)
+      val model = WatchModels.match(name)
+      if (!model.connectable) throw WearException(ErrorCodes.UNSUPPORTED, "${name ?: address}: ${model.reason}")
+      Connection(address, device, adapter, model)
+    } catch (e: WearException) {
+      throw e
+    } catch (e: Exception) {
+      throw WearException(ErrorCodes.CONNECT_FAILED, "Could not prepare the connection to $address: ${e.message ?: e.javaClass.simpleName}", e)
+    }
 
   /** The watch becomes the one background mode follows, and gets its row in the shared database. */
   private fun rememberWatch(address: String, name: String, info: Map<String, Any?>) {
@@ -395,13 +416,24 @@ internal class WearLink(
     teardown(connection, WearException(ErrorCodes.DISCONNECTED, reason, cause), reason)
   }
 
-  /** Idempotent. Fails in-flight requests with [cause]; reports `disconnected` with [error] to JS. */
+  /**
+   * Idempotent. Fails in-flight requests with [cause]; reports `disconnected` with [error] to JS. Whatever the transport does while
+   * closing, the link still ends `disconnected`, so a failed close can never leave the next connect answering BUSY.
+   */
   private fun teardown(connection: Connection, cause: WearException, error: String?) {
     if (!connection.closed.compareAndSet(false, true)) return
     connection.closeCause = cause
     connection.ready.completeExceptionally(cause)
-    connection.session.close(cause)
-    connection.transport.close()
+    try {
+      connection.session.close(cause)
+    } catch (e: Exception) {
+      events.log(LogDirection.ERROR, null, null, null, "Closing the session failed: ${e.message ?: e.javaClass.simpleName}")
+    }
+    try {
+      connection.transport.close()
+    } catch (e: Exception) {
+      events.log(LogDirection.ERROR, null, null, null, "Closing the ${connection.transportKind.label} link failed: ${e.message ?: e.javaClass.simpleName}")
+    }
     val wasCurrent = synchronized(lock) {
       if (current === connection) {
         current = null

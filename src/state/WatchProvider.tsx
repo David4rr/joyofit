@@ -12,6 +12,7 @@ import {
 } from 'react';
 
 import { getLastSync } from '@/db/queries';
+import { describeConnectFailure } from '@/features/device/connectFailure';
 import { errorMessage } from '@/format';
 import { pushLog } from '@/state/logStore';
 import {
@@ -39,6 +40,13 @@ export interface WatchContextValue {
   /** Bumped after every stored sync so data screens re-query. */
   dataVersion: number;
   connect: (address: string) => Promise<void>;
+  /** Set when a connect stopped before a first bind; the watch the person has to agree to bind this phone to. */
+  bindRequest: { address: string } | null;
+  /** Agree to the bind and connect again. */
+  confirmBind: () => Promise<void>;
+  cancelBind: () => void;
+  /** The watch of the last connect that could not reach it (busy elsewhere, out of reach); `connect` to it again is Retry. */
+  retryAddress: string | null;
   disconnect: () => Promise<void>;
   forget: (address: string) => Promise<void>;
   refreshBattery: () => Promise<void>;
@@ -63,6 +71,8 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
   const [linkState, setLinkState] = useState<LinkState>(() => HuaweiWear.getState());
   const [error, setError] = useState<string | null>(null);
+  const [bindRequest, setBindRequest] = useState<{ address: string } | null>(null);
+  const [retryAddress, setRetryAddress] = useState<string | null>(null);
   // The background service may already own the link when the UI starts; read it synchronously.
   const [device, setDevice] = useState<DeviceInfo | null>(() => HuaweiWear.getDevice());
   const [activeAddress, setActiveAddress] = useState<string | null>(() =>
@@ -132,6 +142,8 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   const connect = useCallback(
     async (address: string) => {
       setError(null);
+      setRetryAddress(null);
+      setBindRequest(null);
       setActiveAddress(address);
       try {
         const info = await HuaweiWear.connect(address);
@@ -139,12 +151,28 @@ export function WatchProvider({ children }: { children: ReactNode }) {
         setBattery(info.batteryLevel);
         setLastSync(await getLastSync(db, info.address));
       } catch (e) {
-        setError(errorMessage(e));
         setActiveAddress(null);
+        const failure = describeConnectFailure(e);
+        if (failure.kind === 'bind') {
+          // Nothing changed on the watch. Binding replaces its current phone pairing, so the person decides first.
+          setBindRequest({ address });
+          return;
+        }
+        setError(failure.message);
+        if (failure.kind === 'unreachable') setRetryAddress(address);
       }
     },
     [db],
   );
+
+  /** The person agreed to the bind: the next connect to this watch may start it. */
+  const confirmBind = useCallback(async () => {
+    if (!bindRequest) return;
+    HuaweiWear.confirmBind(bindRequest.address);
+    await connect(bindRequest.address);
+  }, [bindRequest, connect]);
+
+  const cancelBind = useCallback(() => setBindRequest(null), []);
 
   const disconnect = useCallback(async () => {
     try {
@@ -204,6 +232,10 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       totals,
       dataVersion,
       connect,
+      bindRequest,
+      confirmBind,
+      cancelBind,
+      retryAddress,
       disconnect,
       forget,
       refreshBattery,
@@ -220,6 +252,10 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       totals,
       dataVersion,
       connect,
+      bindRequest,
+      confirmBind,
+      cancelBind,
+      retryAddress,
       disconnect,
       forget,
       refreshBattery,

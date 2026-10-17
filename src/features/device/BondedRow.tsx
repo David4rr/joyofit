@@ -60,6 +60,15 @@ export function BondedRow({
               {device.reason}
             </AppText>
           ) : null}
+          {device.systemConnected ? (
+            <AppText variant="caption" muted>
+              Already connected to this iPhone through Bluetooth. Tap Connect to use it here.
+            </AppText>
+          ) : device.nearby === false && !isActive ? (
+            <AppText variant="caption" muted>
+              Not in reach right now. If it is connected to another phone, disconnect it there first.
+            </AppText>
+          ) : null}
         </View>
       </View>
       <View style={styles.actions}>

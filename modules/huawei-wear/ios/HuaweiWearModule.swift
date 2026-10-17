@@ -172,6 +172,16 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.bondedDevices() }
         }
 
+        // The list again with the scan result of the last 30 s ignored and a longer scan.
+        AsyncFunction("refreshBondedDevices") { () async throws -> [[String: Any]] in
+            try await wearCall { try await runtime.bondedDevices(refresh: true) }
+        }
+
+        // The user agreed to a first bind with this watch: the next connect may start it (otherwise connect rejects ERR_BIND_CONFIRMATION).
+        Function("confirmBind") { (address: String) -> Void in
+            runtime.confirmBind(address)
+        }
+
         AsyncFunction("connect") { (address: String) async throws -> [String: Any] in
             try await wearCall { try await runtime.connectFromApp(address).toJS() }
         }

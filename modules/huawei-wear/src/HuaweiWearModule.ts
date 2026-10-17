@@ -47,12 +47,21 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   /** Bonded Bluetooth devices, each with the support level of its model. Requires BLUETOOTH_CONNECT on Android 12+. */
   getBondedDevices(): Promise<BondedDevice[]>;
   /**
+   * `getBondedDevices` again, for the Refresh button: on iOS (which has no bonded list: the remembered watch, the watches iOS already
+   * holds a connection to, and the ones advertising) it ignores the last scan and scans longer; on Android it is the same list.
+   */
+  refreshBondedDevices(): Promise<BondedDevice[]>;
+  /**
    * RFCOMM or BLE GATT connect (by model) + LinkParams + auth + init. Resolves when `connected`. There is one link per
    * process: if the background service is already connecting to or connected with this watch, this
    * joins that link. A successful connect remembers the watch for background mode and resumes a
-   * paused auto-reconnect.
+   * paused auto-reconnect. A first bind (the watch does not know this phone) replaces the watch's current phone pairing, so it never
+   * starts by itself: connect rejects `ERR_BIND_CONFIRMATION` before anything changes on the watch, and only a connect that follows
+   * `confirmBind(address)` binds. Other failures: `ERR_CONNECT_FAILED`, `ERR_TIMEOUT`, `ERR_DISCONNECTED`, `ERR_AUTH_FAILED`.
    */
   connect(address: string): Promise<DeviceInfo>;
+  /** The user agreed to bind this phone to the watch: the next `connect(address)` may start a first bind. Single use. */
+  confirmBind(address: string): void;
   /** Closes the link. With background mode on, this also pauses auto-reconnect. */
   disconnect(): Promise<void>;
   getState(): LinkState;

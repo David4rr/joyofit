@@ -49,6 +49,11 @@ public enum WearApp {
                 try await central.requireReady()
                 return await central.nearbyWatches(timeoutMs: timeoutMs).map { NearbyWatch(identifier: $0.identifier.uuidString, name: $0.name) }
             },
+            systemConnected: {
+                try await central.requireReady()
+                let remembered = settings.watchAddress.flatMap { UUID(uuidString: $0) }
+                return central.systemConnectedWatches(remembered: remembered).map { NearbyWatch(identifier: $0.identifier.uuidString, name: $0.name) }
+            },
             expiring: expiringWork,
             weatherLocation: weatherLocationSource,
             liveGps: liveGpsSource

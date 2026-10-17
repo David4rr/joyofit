@@ -202,9 +202,18 @@ internal class WearRuntime private constructor(context: Context) {
 
   // Link actions from the app
 
+  /** Watches the user confirmed a first bind for; only [connectFromApp] takes it, never the background reconnect. */
+  private val bindConsent = BindConsent()
+
+  /** The next [connectFromApp] to [rawAddress] may start a first bind, which replaces the watch's current phone pairing. */
+  fun confirmBind(rawAddress: String) {
+    bindConsent.grant(rawAddress)
+  }
+
+  /** Single use: the consent ends with this connect, whatever its outcome. */
   suspend fun connectFromApp(address: String): Map<String, Any?> {
     paused = false
-    return link.connect(address)
+    return link.connect(address, allowFirstBind = bindConsent.take(address))
   }
 
   fun disconnectFromApp() {
@@ -212,11 +221,13 @@ internal class WearRuntime private constructor(context: Context) {
       paused = true
       setNote("Disconnected in the app. Connect there to resume.")
     }
+    bindConsent.clearAll()
     link.disconnect()
   }
 
   fun forget(rawAddress: String) {
     val address = rawAddress.trim().uppercase(Locale.ROOT)
+    bindConsent.clear(address)
     link.forget(address)
     if (settings.watchAddress == address) {
       setBackground(null)

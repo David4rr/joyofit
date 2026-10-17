@@ -155,6 +155,16 @@ class HuaweiWearModule : Module() {
       runtime().link.bondedDevices()
     }
 
+    // Same list: Android reads the system's bonded devices without a scan.
+    AsyncFunction("refreshBondedDevices") {
+      runtime().link.bondedDevices()
+    }
+
+    // Lets the next connect(address) start a first bind, which replaces the watch's current phone pairing. Single use.
+    Function("confirmBind") { address: String ->
+      runtime().confirmBind(address)
+    }
+
     AsyncFunction("connect") Coroutine { address: String ->
       runtime().connectFromApp(address)
     }

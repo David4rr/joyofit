@@ -29,6 +29,13 @@ export interface BondedDevice {
   support: ModelSupport;
   /** Why it is not `tested`, in a few words; null for tested models. */
   reason: string | null;
+  /**
+   * iOS only (undefined on Android, where the list is the system's bonded devices): the watch was seen just now, advertising or held by
+   * iOS. False for the remembered watch that is out of reach, or still linked to another phone, which then does not advertise.
+   */
+  nearby?: boolean;
+  /** iOS only: iOS already holds a connection to this watch (paired in Settings > Bluetooth, or held by another app), so no scan shows it. */
+  systemConnected?: boolean;
 }
 
 export interface DeviceInfo {

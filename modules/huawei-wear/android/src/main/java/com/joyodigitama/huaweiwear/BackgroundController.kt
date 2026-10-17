@@ -200,7 +200,8 @@ internal class BackgroundController(private val runtime: WearRuntime) {
       return Attempt.BLOCKED
     }
     try {
-      link.connect(address)
+      // The background link never starts a first bind (allowFirstBind stays false): only a connect the user confirms in the app does.
+      link.connect(address, allowFirstBind = false)
       return Attempt.CONNECTED
     } catch (e: CancellationException) {
       throw e
@@ -208,6 +209,10 @@ internal class BackgroundController(private val runtime: WearRuntime) {
       when (e.errorCode) {
         ErrorCodes.BLUETOOTH_OFF -> {
           runtime.setNote("Waiting for Bluetooth.")
+          return Attempt.BLOCKED
+        }
+        ErrorCodes.BIND_CONFIRMATION -> {
+          runtime.setNote("Not bound yet. Connect once from the Device tab.")
           return Attempt.BLOCKED
         }
         ErrorCodes.BLUETOOTH_PERMISSION -> {

@@ -19,7 +19,7 @@ const LOW_BATTERY = 20;
  */
 export function WatchStatusCard() {
   const colors = useColors();
-  const { linkState, device, battery, lastSync, error } = useWatch();
+  const { linkState, device, battery, lastSync, error, retryAddress, connect } = useWatch();
   const { status: background } = useBackgroundStatus();
 
   const label = LINK_LABEL[linkState];
@@ -56,7 +56,13 @@ export function WatchStatusCard() {
         </View>
       ) : null}
 
-      {error ? <Notice tone="danger">{error}</Notice> : null}
+      {error ? (
+        <Notice
+          tone="danger"
+          action={retryAddress && linkState === 'disconnected' ? { label: 'Retry', onPress: () => void connect(retryAddress) } : undefined}>
+          {error}
+        </Notice>
+      ) : null}
 
       {lastSync !== null || background.address ? (
         <View style={[styles.footer, { borderTopColor: colors.heroDivider }]}>

@@ -43,6 +43,12 @@ public struct BleDiscovery: @unchecked Sendable {
     public var isWatchCandidate: Bool { looksLikeHuaweiOrHonor || hasFdeeServiceData }
 }
 
+/// A watch iOS already holds a connection to (`BleCentral.systemConnectedWatches`).
+public struct BleSystemWatch: Sendable, Equatable {
+    public let identifier: UUID
+    public let name: String?
+}
+
 public enum BleScanVerdict {
     case keepScanning
     case stop
@@ -75,6 +81,16 @@ enum BleUUID {
     static let honorWrite = CBUUID(string: "2a5fc8bd-3de4-43cb-9449-354bcdeccc70")
     static let honorRead = CBUUID(string: "a563d757-b216-48bc-8a0f-e8dde1f916aa")
     static let watchAdvertisement = CBUUID(string: "FDEE")
+    /// Services `retrieveConnectedPeripherals` is asked for: iOS returns a connected peripheral only when it has one of them in its service cache.
+    /// The Fit 4 Pro's GATT database (protocol/README.md, 2026-10-16, read over Android): 1801, 1800, 3802, 180F battery, FE86, 180D heart rate,
+    /// 1812 HID and a vendor service. Other Huawei and Honor models differ, so the probe also holds the Honor service, 0xFDEE, device
+    /// information and current time.
+    static let systemConnectedProbe: [CBUUID] = [
+        huaweiService, honorService, watchAdvertisement,
+        CBUUID(string: "1800"), CBUUID(string: "1801"), CBUUID(string: "3802"), CBUUID(string: "180A"), CBUUID(string: "180F"),
+        CBUUID(string: "180D"), CBUUID(string: "1805"), CBUUID(string: "1812"),
+        CBUUID(string: "cc353442-be58-4ea2-876e-11d8d6976366"),
+    ]
 }
 
 // MARK: central
@@ -225,11 +241,33 @@ public final class BleCentral: NSObject, CBCentralManagerDelegate, BluetoothGate
 
     func takeRestored(_ identifier: UUID) -> CBPeripheral? { lock.locked { restored.removeValue(forKey: identifier) } }
 
-    /// The peripheral iOS remembers for `identifier` (it knew it from an earlier scan or connect), else one already connected system-wide.
-    func knownPeripheral(_ identifier: UUID) -> CBPeripheral? {
+    /// The peripheral iOS remembers for `identifier` (it knew it from an earlier scan or connect), else one already connected system-wide, by
+    /// identifier and then by the watch's full Bluetooth name (`named`): after a re-pair or a Bluetooth reset iOS hands the same watch a new
+    /// identifier, and a watch iOS holds a connection to never advertises, so no scan would find it either.
+    func knownPeripheral(_ identifier: UUID, named: String? = nil) -> CBPeripheral? {
         guard let manager else { return nil }
         if let found = manager.retrievePeripherals(withIdentifiers: [identifier]).first { return found }
-        return manager.retrieveConnectedPeripherals(withServices: [BleUUID.huaweiService, BleUUID.honorService]).first { $0.identifier == identifier }
+        let connected = manager.retrieveConnectedPeripherals(withServices: BleUUID.systemConnectedProbe)
+        if let found = connected.first(where: { $0.identifier == identifier }) { return found }
+        guard let wanted = named?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), !wanted.isEmpty else { return nil }
+        return connected.first { $0.name?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == wanted }
+    }
+
+    /// Huawei and Honor watches iOS already holds a connection to (paired in Settings > Bluetooth, or held by ANCS or another app). They do not
+    /// advertise, so no scan sees them; `retrieveConnectedPeripherals` lists them by the services they expose, and iOS gives no way to ask
+    /// for "all", so the probe is a broad list (`BleUUID.systemConnectedProbe`). Only named Huawei/Honor devices, and the remembered one
+    /// whatever its name, are returned. Needs a started central (`requireReady`).
+    public func systemConnectedWatches(remembered: UUID?) -> [BleSystemWatch] {
+        guard let manager = lock.locked({ self.manager }) else { return [] }
+        var seen = Set<UUID>()
+        var found: [BleSystemWatch] = []
+        for peripheral in manager.retrieveConnectedPeripherals(withServices: BleUUID.systemConnectedProbe) {
+            guard seen.insert(peripheral.identifier).inserted else { continue }
+            guard WatchModels.looksLikeHuaweiOrHonor(peripheral.name) || peripheral.identifier == remembered else { continue }
+            found.append(BleSystemWatch(identifier: peripheral.identifier, name: peripheral.name))
+        }
+        WearConsole.ble("connected to the system: \(found.map { "\($0.identifier) \"\($0.name ?? "no name")\"" }.joined(separator: ", "))")
+        return found
     }
 
     func connect(_ peripheral: CBPeripheral) { manager?.connect(peripheral, options: nil) }
@@ -282,7 +320,9 @@ public final class BleCentral: NSObject, CBCentralManagerDelegate, BluetoothGate
                     run.attach(c)
                     queue.async {
                         self.lock.locked { self.scanRun = run }
-                        self.manager?.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
+                        // Duplicates on: a watch whose name or 0xFDEE service data comes in a later packet than its first one (scan response)
+                        // would never be reported otherwise. The scan is short and in the foreground.
+                        self.manager?.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
                         self.queue.asyncAfter(deadline: .now() + .milliseconds(timeoutMs)) { run.finish(nil) }
                     }
                 }
@@ -513,6 +553,9 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
         step("ANCS (iPhone notifications to the watch) authorized: \(target.ancsAuthorized ? "yes" : "no")")
     }
 
+    /// The identifier of a peripheral that is this transport's watch under another identifier than `identifier`; `queue` only.
+    private var extraRoute: UUID?
+
     /// Registers this transport for connection callbacks of its peripheral; `queue` only.
     private func claimRoute() {
         if !registered {
@@ -528,13 +571,10 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
                 self.step("state restoration handed back \(restored.identifier) (\(BleCentral.describe(restored.state)))")
                 return restored
             }
-            return self.central.knownPeripheral(self.identifier)
+            return self.central.knownPeripheral(self.identifier, named: self.request.rememberedName)
         }
         if let known {
-            await onQueue {
-                self.peripheral = known
-                known.delegate = self
-            }
+            await onQueue { self.adopt(known) }
             if known.state == .connected || known.state == .connecting {
                 // A link iOS holds from an earlier session of this process or a restored one has no Huawei session behind it any more: drop it
                 // and open a fresh one, the way Android's process death does.
@@ -556,11 +596,21 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
             step("iOS does not remember \(address); scanning for the watch")
         }
         let found = try await scanForWatch()
-        await onQueue {
-            self.peripheral = found.peripheral
-            found.peripheral.delegate = self
-        }
+        await onQueue { self.adopt(found.peripheral) }
         return found.peripheral
+    }
+
+    /// Makes `target` the peripheral of this transport; `queue` only. A watch iOS knows under another identifier than the remembered one (found
+    /// by name) gets its connection callbacks routed here too, or the connect would never complete.
+    private func adopt(_ target: CBPeripheral) {
+        peripheral = target
+        target.delegate = self
+        if target.identifier != identifier, extraRoute != target.identifier {
+            if let old = extraRoute { central.unregister(self, for: old) }
+            extraRoute = target.identifier
+            central.register(self, for: target.identifier)
+            step("iOS knows this watch as \(target.identifier), not \(address); routing its connection events here")
+        }
     }
 
 
@@ -928,6 +978,10 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
         if registered {
             registered = false
             central.unregister(self, for: identifier)
+        }
+        if let extra = extraRoute {
+            extraRoute = nil
+            central.unregister(self, for: extra)
         }
         peripheral = nil
         writeCharacteristic = nil

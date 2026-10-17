@@ -81,6 +81,7 @@ public final class WearRuntime: @unchecked Sendable {
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
 
     private let nearby: @Sendable (_ timeoutMs: Int) async throws -> [NearbyWatch]
+    private let systemConnected: @Sendable () async throws -> [NearbyWatch]
     private let fanOut = FanOut()
     private let lock = NSLock()
     private var listeners: [UUID: WearEvents] = [:]
@@ -104,6 +105,7 @@ public final class WearRuntime: @unchecked Sendable {
         phoneModel: String,
         transportFactory: @escaping TransportFactory,
         nearby: @escaping @Sendable (_ timeoutMs: Int) async throws -> [NearbyWatch] = { _ in [] },
+        systemConnected: @escaping @Sendable () async throws -> [NearbyWatch] = { [] },
         expiring: @escaping ExpiringWork = { _, work in await work() },
         now: @escaping @Sendable () -> Date = { Date() },
         clock: @escaping @Sendable () -> Int = BackgroundController.uptimeMs,
@@ -119,6 +121,7 @@ public final class WearRuntime: @unchecked Sendable {
         self.syncStore = syncStore
         self.environment = environment
         self.nearby = nearby
+        self.systemConnected = systemConnected
         self.nowMs = clock
         fanOut.runtime = self
         link = WearLink(
@@ -248,40 +251,98 @@ public final class WearRuntime: @unchecked Sendable {
 
     // MARK: bonded devices
 
-    /// iOS has no list of bonded Bluetooth devices. The watches `getBondedDevices` returns are the remembered one, plus the ones advertising
-    /// within a short scan while no link is open (cached for 30 s), each with the support level of its model.
-    public func bondedDevices() async throws -> [[String: Any]] {
-        var found: [NearbyWatch] = []
-        if let address = settings.watchAddress {
-            found.append(NearbyWatch(identifier: address, name: settings.watchName))
+    /// One row of the Watch tab list. `nearby`: seen right now (advertising, held by iOS, or the link's own watch); `systemConnected`: iOS already
+    /// holds a connection to it (Settings > Bluetooth, ANCS, another app), so it does not advertise and a scan never shows it.
+    struct ListedWatch: Equatable {
+        var identifier: String
+        var name: String?
+        var nearby = false
+        var systemConnected = false
+    }
+
+    /// The remembered watch, the one the link is on, the watches iOS holds a connection to and the ones the scan saw, one row per watch:
+    /// - the same identifier (any letter case) is one row;
+    /// - a watch that shows up under another identifier but with exactly the remembered watch's full name, while the remembered identifier is
+    ///   not seen at all, is the remembered watch under a new iOS identifier (after a re-pair or a Bluetooth reset): it fills the remembered
+    ///   row (connecting by the remembered identifier finds it by name), so the list does not offer a second row that would bind again.
+    ///   A stem match is not enough: every Fit 4 Pro advertises the same stem.
+    static func listing(remembered: NearbyWatch?, active: String?, system: [NearbyWatch], scanned: [NearbyWatch]) -> [ListedWatch] {
+        var rows: [ListedWatch] = []
+        func index(_ identifier: String) -> Int? { rows.firstIndex { $0.identifier.caseInsensitiveCompare(identifier) == .orderedSame } }
+        func mark(_ i: Int, name: String?, system: Bool) {
+            rows[i].nearby = true
+            rows[i].systemConnected = rows[i].systemConnected || system
+            if rows[i].name == nil { rows[i].name = name }
         }
-        if link.currentState() == .disconnected {
-            do {
-                for watch in try await cachedNearby() where !found.contains(where: { $0.identifier.caseInsensitiveCompare(watch.identifier) == .orderedSame }) {
-                    found.append(watch)
-                }
-            } catch {
-                // Bluetooth off or not allowed: the remembered watch still lists; with none, the user needs to hear why.
-                if found.isEmpty { throw error }
+        func normalized(_ name: String?) -> String? {
+            guard let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+            return trimmed.lowercased()
+        }
+        if let remembered { rows.append(ListedWatch(identifier: remembered.identifier, name: remembered.name)) }
+        if let active {
+            if let i = index(active) { mark(i, name: nil, system: false) } else { rows.append(ListedWatch(identifier: active, name: nil, nearby: true)) }
+        }
+        let seen = system.map { ($0, true) } + scanned.map { ($0, false) }
+        var leftovers: [(NearbyWatch, Bool)] = []
+        for (watch, isSystem) in seen {
+            if let i = index(watch.identifier) { mark(i, name: watch.name, system: isSystem) } else { leftovers.append((watch, isSystem)) }
+        }
+        for (watch, isSystem) in leftovers {
+            if let i = index(watch.identifier) {
+                mark(i, name: watch.name, system: isSystem)
+            } else if let remembered, let i = index(remembered.identifier), !rows[i].nearby,
+                normalized(watch.name) != nil, normalized(watch.name) == normalized(remembered.name) {
+                mark(i, name: watch.name, system: isSystem)
+            } else {
+                rows.append(ListedWatch(identifier: watch.identifier, name: watch.name, nearby: true, systemConnected: isSystem))
             }
         }
-        return found
+        return rows
+    }
+
+    /// iOS has no list of bonded Bluetooth devices. The watches `getBondedDevices` returns are the remembered one, the watches iOS already holds
+    /// a connection to (a scan never shows those), and the ones advertising within a short scan while no link is open. The scan result is
+    /// cached for 30 s unless it found nothing (a watch that has just been released or woken must not stay hidden); `refresh` ignores the cache
+    /// and scans longer. Each row carries the support level of its model.
+    public func bondedDevices(refresh: Bool = false) async throws -> [[String: Any]] {
+        let remembered = settings.watchAddress.map { NearbyWatch(identifier: $0, name: settings.watchName) }
+        var system: [NearbyWatch] = []
+        var scanned: [NearbyWatch] = []
+        var failure: Error?
+        if link.currentState() == .disconnected {
+            do {
+                system = try await systemConnected()
+                scanned = try await cachedNearby(refresh: refresh)
+            } catch {
+                // Bluetooth off or not allowed: the remembered watch still lists; with none, the user needs to hear why.
+                failure = error
+            }
+        }
+        let rows = WearRuntime.listing(remembered: remembered, active: link.activeAddress, system: system, scanned: scanned)
+        if rows.isEmpty, let failure { throw failure }
+        return rows
             .map { watch -> [String: Any] in
                 let name = watch.name ?? watch.identifier
-                var entry: [String: Any] = ["address": DeviceStore.normalize(watch.identifier), "name": name]
+                var entry: [String: Any] = [
+                    "address": DeviceStore.normalize(watch.identifier), "name": name,
+                    "nearby": watch.nearby, "systemConnected": watch.systemConnected,
+                ]
                 for (key, value) in WatchModels.match(watch.name).toJS() { entry[key] = value }
                 return entry
             }
             .sorted { ($0["name"] as! String).lowercased() < ($1["name"] as! String).lowercased() }
     }
 
-    private func cachedNearby() async throws -> [NearbyWatch] {
+    private func cachedNearby(refresh: Bool) async throws -> [NearbyWatch] {
         let now = nowMs()
-        if let cache = lock.locked({ nearbyCache }), now - cache.atMs < 30_000 { return cache.list }
-        let list = try await nearby(4_000)
-        lock.locked { nearbyCache = (now, list) }
+        if !refresh, let cache = lock.locked({ nearbyCache }), now - cache.atMs < 30_000 { return cache.list }
+        let list = try await nearby(refresh ? 8_000 : 4_000)
+        lock.locked { nearbyCache = list.isEmpty ? nil : (now, list) }
         return list
     }
+
+    /// Forgets the scan result: the next list scans again (a watch that was linked to this app advertises again once it is released).
+    private func dropNearbyCache() { lock.locked { nearbyCache = nil } }
 
     // MARK: support report
 
@@ -310,17 +371,22 @@ public final class WearRuntime: @unchecked Sendable {
         return try await link.connect(address)
     }
 
+    /// The user agreed in the app that the next connect to `address` may start a first bind (it replaces the watch's current phone pairing).
+    public func confirmBind(_ address: String) { link.allowBind(address) }
+
     public func disconnectFromApp() {
         if settings.backgroundEnabled {
             lock.locked { _paused = true }
             setNote("Disconnected in the app. Connect there to resume.")
         }
         link.disconnect()
+        dropNearbyCache()
     }
 
     public func forget(_ rawAddress: String) {
         let address = DeviceStore.normalize(rawAddress)
         link.forget(address)
+        dropNearbyCache()
         if let remembered = settings.watchAddress, remembered.caseInsensitiveCompare(address) == .orderedSame {
             try? setBackground(nil)
             settings.watchAddress = nil

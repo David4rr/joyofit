@@ -45,6 +45,9 @@ internal object ErrorCodes {
   const val INVALID_ARGUMENT = "ERR_INVALID_ARGUMENT"
   const val UNSUPPORTED = "ERR_UNSUPPORTED"
 
+  /** The watch needs a first bind with this phone, which replaces its current phone pairing, and `confirmBind` was not called first. */
+  const val BIND_CONFIRMATION = "ERR_BIND_CONFIRMATION"
+
   /** The watch refused a file upload or a watch face operation; the message carries the exact code it returned. */
   const val UPLOAD_REJECTED = "ERR_UPLOAD_REJECTED"
 

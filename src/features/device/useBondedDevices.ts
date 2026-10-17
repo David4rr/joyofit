@@ -9,6 +9,8 @@ interface BondedState {
   devices: BondedDevice[];
   loading: boolean;
   error: string | null;
+  /** True once a load has finished, so "no watch found" is not shown before the first answer. */
+  loaded: boolean;
 }
 
 /** Tested watches first, then experimental, unknown and unsupported, each by name. */
@@ -20,17 +22,21 @@ function sortBonded(devices: BondedDevice[]): BondedDevice[] {
 
 /** Loads bonded devices once permission is granted, and again whenever the tab regains focus. */
 export function useBondedDevices(enabled: boolean) {
-  const [state, setState] = useState<BondedState>({ devices: [], loading: false, error: null });
+  const [state, setState] = useState<BondedState>({ devices: [], loading: false, error: null, loaded: false });
 
-  const reload = useCallback(async () => {
+  const load = useCallback(async (fetchDevices: () => Promise<BondedDevice[]>) => {
     setState((s) => ({ ...s, loading: true, error: null }));
     try {
-      const devices = sortBonded(await HuaweiWear.getBondedDevices());
-      setState({ devices, loading: false, error: null });
+      const devices = sortBonded(await fetchDevices());
+      setState({ devices, loading: false, error: null, loaded: true });
     } catch (e) {
-      setState((s) => ({ ...s, loading: false, error: errorMessage(e) }));
+      setState((s) => ({ ...s, loading: false, error: errorMessage(e), loaded: true }));
     }
   }, []);
+
+  const reload = useCallback(() => load(() => HuaweiWear.getBondedDevices()), [load]);
+  /** The Refresh button: on iOS the last scan is ignored and the scan runs longer, so a watch that was just released shows up. */
+  const refresh = useCallback(() => load(() => HuaweiWear.refreshBondedDevices()), [load]);
 
   useFocusEffect(
     useCallback(() => {
@@ -38,5 +44,5 @@ export function useBondedDevices(enabled: boolean) {
     }, [enabled, reload]),
   );
 
-  return { ...state, reload };
+  return { ...state, reload, refresh };
 }
