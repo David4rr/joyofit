@@ -11,9 +11,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { Suspense, useEffect } from 'react';
+import { View } from 'react-native';
 
 import { migrate } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
+import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { CloudProvider } from '@/state/CloudProvider';
 import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
 import { MealsProvider } from '@/state/MealsProvider';
@@ -66,6 +68,7 @@ function RootNavigator() {
               <MealsProvider>
                 <LiveWorkoutProvider>
                   <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+                  <View style={{ flex: 1 }}>
                   <Tabs
                     screenOptions={{
                       headerShown: false,
@@ -125,6 +128,9 @@ function RootNavigator() {
                     {/* Opens by itself when a workout starts on the watch (LiveWorkoutProvider). */}
                     <Tabs.Screen name="workout-live" options={{ href: null }} />
                   </Tabs>
+                  {/* Android installs from Google Play only: flexible in-app update. */}
+                  <UpdateBanner />
+                  </View>
                 </LiveWorkoutProvider>
               </MealsProvider>
             </StravaProvider>

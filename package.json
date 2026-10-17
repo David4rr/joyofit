@@ -33,11 +33,13 @@
     "expo-web-browser": "~57.0.3",
     "react": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-device-info": "15.0.2",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-share": "^12.3.1",
     "react-native-svg": "15.15.4",
-    "react-native-view-shot": "5.1.0"
+    "react-native-view-shot": "5.1.0",
+    "sp-react-native-in-app-updates": "2.0.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
@@ -54,6 +56,9 @@
     "test:native": "cd android && ./gradlew :huawei-wear:testDebugUnitTest",
     "test:ios-protocol": "cd modules/huawei-wear/ios/HuaweiProtocol && swift test",
     "golden:ios": "modules/huawei-wear/ios/HuaweiProtocol/GoldenGen/run.sh"
+  },
+  "overrides": {
+    "react-native-device-info": "15.0.2"
   },
   "private": true,
   "license": "AGPL-3.0-or-later"

@@ -1,0 +1,138 @@
+import * as SecureStore from 'expo-secure-store';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, Platform } from 'react-native';
+
+import { playUpdates } from '@/features/updates/play';
+import { isDismissed, isPlayInstaller, parseTimestamp, shouldCheck } from '@/features/updates/updatePolicy';
+
+/** What the banner renders. */
+export type UpdateBannerModel =
+  | { kind: 'available'; failed: boolean }
+  | { kind: 'downloading'; percent: number | null }
+  | { kind: 'ready' };
+
+type Phase =
+  | { step: 'idle' }
+  | { step: 'available'; failed: boolean }
+  | { step: 'downloading'; percent: number | null }
+  | { step: 'ready' };
+
+const DISMISSED_KEY = 'joyofit_update_dismissed_at';
+
+/**
+ * Drives the in-app update banner for installs made by the Play Store (any track). Everything else gets
+ * nothing: iOS (TestFlight and the App Store notify on their own) and sideloaded APKs (JoyoFit has no public
+ * APK and no self-updater). Checks on cold start and when the app returns to the foreground, at most once
+ * per 6 hours. "Later" hides the banner for 24 hours.
+ */
+export function useAppUpdate() {
+  const [enabled, setEnabled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [phase, setPhase] = useState<Phase>({ step: 'idle' });
+  const [readyHidden, setReadyHidden] = useState(false);
+  const lastCheckedAt = useRef<number | null>(null);
+  const dismissedAt = useRef<number | null>(null);
+
+  const remember = useCallback((now: number) => {
+    dismissedAt.current = now;
+    setHidden(true);
+    void SecureStore.setItemAsync(DISMISSED_KEY, String(now)).catch(() => {});
+  }, []);
+
+  const check = useCallback(async () => {
+    if (!playUpdates) return;
+    lastCheckedAt.current = Date.now();
+    try {
+      const res = await playUpdates.check(playUpdates.installedVersionCode());
+      // Evaluated here, not in render: the 24 h window is a clock read.
+      setHidden(isDismissed(dismissedAt.current, Date.now()));
+      setPhase((current) => {
+        // Never knock a running download or a ready restart back to "available".
+        if (current.step === 'downloading' || current.step === 'ready') return current;
+        if (res.state === 'available') return { step: 'available', failed: false };
+        // Accepted before the process restarted: either still downloading or done. Start at "ready";
+        // a status event flips it to "downloading" if bytes are still coming in.
+        if (res.state === 'pending') return { step: 'ready' };
+        return { step: 'idle' };
+      });
+    } catch {
+      // Play not reachable or an old Play Store: stay silent, the next check retries.
+    }
+  }, []);
+
+  // Cold start: decide whether this install is a Play install, then check once.
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !playUpdates) return;
+    let live = true;
+    void (async () => {
+      const [installer, stored] = await Promise.all([
+        playUpdates.installer(),
+        SecureStore.getItemAsync(DISMISSED_KEY).catch(() => null),
+      ]);
+      if (!live || !isPlayInstaller(installer)) return;
+      dismissedAt.current = parseTimestamp(stored);
+      setEnabled(true);
+      await check();
+    })();
+    return () => {
+      live = false;
+    };
+  }, [check]);
+
+  // Play status events (download progress, finished, declined, failed).
+  useEffect(() => {
+    if (!enabled || !playUpdates) return;
+    return playUpdates.subscribe((event) => {
+      if (event.type === 'downloading') {
+        setPhase({ step: 'downloading', percent: event.percent });
+      } else if (event.type === 'downloaded') {
+        setReadyHidden(false);
+        setPhase({ step: 'ready' });
+      } else if (event.type === 'failed') {
+        setPhase({ step: 'available', failed: true });
+      } else {
+        remember(Date.now());
+        setPhase({ step: 'available', failed: false });
+      }
+    });
+  }, [enabled, remember]);
+
+  // Resume, throttled.
+  useEffect(() => {
+    if (!enabled) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && shouldCheck(lastCheckedAt.current, Date.now())) void check();
+    });
+    return () => sub.remove();
+  }, [enabled, check]);
+
+  const dismiss = useCallback(() => {
+    if (phase.step === 'ready') setReadyHidden(true);
+    else remember(Date.now());
+  }, [phase.step, remember]);
+
+  const update = useCallback(async () => {
+    if (!playUpdates) return;
+    setPhase({ step: 'downloading', percent: null });
+    try {
+      await playUpdates.startFlexible();
+    } catch {
+      setPhase({ step: 'available', failed: true });
+    }
+  }, []);
+
+  const restart = useCallback(() => {
+    playUpdates?.restart();
+  }, []);
+
+  let banner: UpdateBannerModel | null = null;
+  if (enabled) {
+    if (phase.step === 'downloading') banner = { kind: 'downloading', percent: phase.percent };
+    else if (phase.step === 'ready') banner = readyHidden ? null : { kind: 'ready' };
+    else if (phase.step === 'available' && !hidden) {
+      banner = { kind: 'available', failed: phase.failed };
+    }
+  }
+
+  return { banner, update, restart, dismiss };
+}

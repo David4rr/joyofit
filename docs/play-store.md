@@ -21,7 +21,7 @@ Source of truth for the policies cited here:
 | `SEND_SMS` | yes (SOS texts the watch asks for) | **removed** |
 | `READ_CALL_LOG` | yes (caller number) | **removed** |
 | `READ_CONTACTS` | yes (caller name) | **removed** (only used with the number, which Android no longer passes without `READ_CALL_LOG`) |
-| APK self-updater | none in JoyoFit | none (`REQUEST_INSTALL_PACKAGES` is in neither build) |
+| APK self-updater | none in JoyoFit | none (`REQUEST_INSTALL_PACKAGES` is in neither build). Play installs show an in-app update banner instead: `docs/in-app-updates.md` |
 
 How it works: `modules/huawei-wear/android/build.gradle` reads `JOYOFIT_DISTRIBUTION` (or `-PjoyofitDistribution=`). For `play` it merges
 `modules/huawei-wear/android/src/play/AndroidManifest.xml` (`tools:node="remove"` for the three permissions and the SMS `uses-feature`) and
