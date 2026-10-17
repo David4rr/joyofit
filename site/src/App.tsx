@@ -56,6 +56,7 @@ import {
   JAM_EKSPERIMEN_LE,
   JAM_SUDAH_DIUJI,
 } from "./jam";
+import { PANDUAN_PATH, PanduanPage } from "./Panduan";
 import { PRIVASI_PATH, PrivasiPage } from "./Privasi";
 import { Testimonials } from "./testimonials-section";
 import { TESTIMONIALS } from "./testimonials";
@@ -300,6 +301,9 @@ function Footer() {
           </a>
           <a href={IPHONE_PATH} className={link} {...goal("iphone_waitlist_click", "footer")}>
             iPhone
+          </a>
+          <a href={PANDUAN_PATH} className={link}>
+            Panduan
           </a>
           <a href={PRIVASI_PATH} className={link}>
             Privasi
@@ -854,7 +858,11 @@ function TesterJoin() {
           <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">Gabung tester</h3>
           <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-tidur-ink/85">
             JoyoFit lewat Google Play masih tes tertutup. Gratis, dan kamu bisa membantu menemukan yang rusak
-            sebelum dirilis untuk semua orang.
+            sebelum dirilis untuk semua orang.{" "}
+            <a className="font-semibold underline underline-offset-4" href={PANDUAN_PATH}>
+              Baca panduan pasang dan pakai
+            </a>
+            .
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <ButtonLink href={TESTER_GROUP_URL} target="_blank" rel="noopener" {...goal("tester_group_click", "cara")}>
@@ -1611,6 +1619,7 @@ export function App() {
   const jam = path === JAM_PATH;
   const dukungJam = path === DUKUNG_JAM_PATH;
   const privasi = path === PRIVASI_PATH;
+  const panduan = path === PANDUAN_PATH;
   const strava = path === STRAVA_PATH;
   const iphone = path === IPHONE_PATH;
   return (
@@ -1625,6 +1634,8 @@ export function App() {
           <DukungJamPage />
         ) : privasi ? (
           <PrivasiPage />
+        ) : panduan ? (
+          <PanduanPage />
         ) : strava ? (
           <StravaPage />
         ) : iphone ? (

@@ -12,6 +12,7 @@ import { isIos } from '@/components/IosUnavailable';
 import { EmptyState, LoadingState, Notice } from '@/components/States';
 import { BondedRow } from '@/features/device/BondedRow';
 import { FindWatchSection } from '@/features/device/FindWatchSection';
+import { GuideLink } from '@/features/device/GuideLink';
 import { SUPPORT_LABEL, supportRank } from '@/features/device/modelSupport';
 import { SupportReportSection } from '@/features/device/SupportReportSection';
 import { WatchStatusCard } from '@/features/device/WatchStatusCard';
@@ -50,6 +51,7 @@ function ConnectSteps() {
           </AppText>
         </View>
       ))}
+      <GuideLink />
     </Section>
   );
 }

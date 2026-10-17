@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 
 import { KeyValue } from '@/components/KeyValue';
+import { GuideLink } from '@/features/device/GuideLink';
 import { Section, Screen } from '@/components/Screen';
 import { Notice } from '@/components/States';
 
@@ -15,6 +16,7 @@ export default function AboutScreen() {
           Watch data stays on this phone in joyofit.db until you sign in to the cloud. Weather, if switched on, sends
           rounded coordinates to Open-Meteo. Privacy policy: fit.joyorogo.com/privasi
         </Notice>
+        <GuideLink />
       </Section>
     </Screen>
   );

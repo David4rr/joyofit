@@ -136,6 +136,8 @@ link parameters to `protocol/README.md` → Observations.
 
 ## Using it
 
+Step-by-step install and pairing guide (Indonesian, with an English section): <https://fit.joyorogo.com/panduan>. Also reachable in the app from the Watch tab and Settings → About.
+
 1. Unbind the watch from Huawei Health. The watch can only be bound to one app at a time; a
    factory reset of the watch also works.
 2. Pair the watch in **Android Settings → Bluetooth**. It shows up as `HUAWEI WATCH FIT 4-XXX`.
