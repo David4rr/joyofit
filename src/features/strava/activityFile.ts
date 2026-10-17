@@ -534,7 +534,7 @@ export function duplicateOf(message: string | null): number | null {
 }
 
 /** The activity description when the user opted in; plain text, never part of the title. */
-export const DESCRIPTION_LINK = 'fit.joyorogo.com';
+export const DESCRIPTION_LINK = 'fit.joyorogo.com/?utm_source=strava&utm_medium=referral&utm_campaign=evergreen-description';
 
 export interface UploadForm {
   /** Value of the `Content-Type` header, boundary included. */

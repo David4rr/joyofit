@@ -7,7 +7,6 @@ import { PressableScale } from '@/components/PressableScale';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
-import { DESCRIPTION_LINK } from '@/features/strava/activityFile';
 import { formatDateTime } from '@/format';
 import { spacing } from '@/theme';
 import { useCloud } from '@/state/CloudProvider';
@@ -83,7 +82,7 @@ export function StravaSection() {
             value={strava.settings.connectedAt ? formatDateTime(strava.settings.connectedAt) : null}
           />
           <SwitchRow
-            label={`Add ${DESCRIPTION_LINK} to the description`}
+            label="Add fit.joyorogo.com to the description"
             hint="Plain text in the activity description. Never in the title. Off by default."
             value={strava.settings.addLink}
             onValueChange={(on) => void strava.setAddLink(on)}

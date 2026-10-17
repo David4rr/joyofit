@@ -12,7 +12,7 @@ import { useCloud } from '@/state/CloudProvider';
 import { HuaweiWear } from '@/wear';
 
 /** Where a sideloaded build sends someone to become Founder. */
-const FOUNDER_URL = 'https://joyorogo.com/pro?from=joyofit';
+const FOUNDER_URL = 'https://joyorogo.com/pro?from=joyofit&utm_source=joyofit&utm_medium=app&utm_campaign=evergreen-cloud-settings';
 /**
  * The Play build shows no purchase link: Google Play's payments policy does not allow pointing to an external
  * checkout from inside the app. JoyoRogo's own Play build does the same (billing off, no checkout, no price).

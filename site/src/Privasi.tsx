@@ -276,7 +276,7 @@ function Indonesian() {
           yang disimpan atau dikirim keluar HP.
         </p>
         <p className="text-muted-foreground">
-          APK dari situs fit.joyorogo.com dan hasil build sendiri bisa, bila kamu mengizinkan, membaca nomor
+          Build sendiri dari kode sumber bisa, bila kamu mengizinkan, membaca nomor
           penelepon (izin log panggilan) dan nama kontak, serta mengirim SMS SOS yang diminta jam. Fitur itu
           dihilangkan dari versi Google Play.
         </p>
@@ -566,7 +566,7 @@ function English() {
           <span className="font-semibold">Calls:</span> the Google Play version uses the phone-state permission so
           the watch can show that the phone is ringing (it shows &quot;Incoming call&quot;) and the answer-calls
           permission for the watch&apos;s accept and reject buttons, both only if you enable them. It does not read
-          your call log or contacts and does not send SMS. The APK from fit.joyorogo.com and self-builds can,
+          your call log or contacts and does not send SMS. Self-builds from source can,
           with your permission, also read the caller&apos;s number and contact name and send the SOS text message
           the watch asks for.
         </p>

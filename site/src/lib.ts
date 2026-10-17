@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 export const GITHUB_URL = "https://github.com/dzulfikar08/joyofit";
 /** Pricing link from this site; from=joyofit and the UTM tags let JoyoRogo's sign-in and purchase goals say where the visit began. */
 export const HARGA_URL =
-  "https://joyorogo.com/harga?from=joyofit&utm_source=joyofit&utm_medium=site&utm_campaign=cloud";
+  "https://joyorogo.com/harga?from=joyofit&utm_source=joyofit&utm_medium=referral&utm_campaign=evergreen-site-cloud";
 export const CLOUDAGNI_URL = "https://cloudagni.my.id";
 export const JOYOROGO_URL = "https://joyorogo.com";
 export const TRAKTEER_URL = "https://trakteer.id/dzulfikar_ats_tsauri";
@@ -31,9 +31,8 @@ export function goal(name: string, location: string) {
 }
 
 /**
- * Flip to true once Apple approves the JoyoFit TestFlight beta for external
- * testers. While false, the site shows no iPhone beta and still says there
- * is no iPhone version.
+ * The JoyoFit iPhone public TestFlight beta is live. While false, the site
+ * shows no iPhone beta section and no iPhone sentence in the FAQ.
  */
 export const IOS_TESTFLIGHT_LIVE = true;
 export const IOS_TESTFLIGHT_URL = "https://testflight.apple.com/join/GXzrQ8GJ";

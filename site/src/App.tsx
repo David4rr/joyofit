@@ -1014,7 +1014,7 @@ function Options() {
             <ul className="mt-5 space-y-2.5 text-sm">
               {[
                 "Seluruh kode di GitHub, termasuk protokol jam",
-                "Bangun APK sendiri dan pasang di HP",
+                "Bangun sendiri dari kode sumber",
                 "Data tetap di HP, tanpa cloud",
               ].map((line) => (
                 <li key={line} className="flex gap-2">
@@ -1298,7 +1298,7 @@ function SelfHostPage() {
                 "Isi variabel, lalu arahkan aplikasi",
                 <>
                   Biarkan <Code>JOYOROGO_AUTH_URL</Code> di <Code>https://api.joyorogo.com</Code>
-                  (login tetap lewat akun JoyoRogo). Bangun APK dengan{" "}
+                  (login tetap lewat akun JoyoRogo). Bangun aplikasinya dengan{" "}
                   <Code>EXPO_PUBLIC_JOYOFIT_CLOUD_URL=https://alamat-workermu</Code>.
                 </>,
               ],

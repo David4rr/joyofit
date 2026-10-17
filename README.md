@@ -136,6 +136,8 @@ link parameters to `protocol/README.md` → Observations.
 
 ## Using it
 
+JoyoFit ships only through Google Play and the App Store; there is no public APK download. A self-build from source (see [Release builds](#release-builds-self-build-apk-and-google-play-aab)) can also enable the extra call-log and SMS features that the store versions leave out.
+
 Step-by-step install and pairing guide (Indonesian, with an English section): <https://fit.joyorogo.com/panduan>. Also reachable in the app from the Watch tab and Settings → About.
 
 1. Unbind the watch from Huawei Health. The watch can only be bound to one app at a time; a
@@ -188,7 +190,7 @@ request are in the neighbouring `Sync:`, `StepDataCount` and `Workout` lines.
 
 ### Notifications
 
-In Settings, grant **notification access** (on Android 13+ a sideloaded app must first be allowed
+In Settings, grant **notification access** (on Android 13+ a self-built app must first be allowed
 under App info → ⋮ → *Allow restricted settings*), then switch on forwarding. Ongoing notifications,
 group summaries, local-only ones, calls (VoIP calls ring the watch as calls, see *Calls* below), media controls, progress bars and JoyoFit's own are skipped.
 Apps you have not chosen are on, except system apps; **Notification apps** (Settings → Notifications & calls) overrides either way.
@@ -397,7 +399,7 @@ app does not read from the cloud yet. The Huawei history import (below) runs on 
 Uploading is a **JoyoRogo Pro** benefit. The Worker asks JoyoRogo (`fitness.cloudAccess`, with your session) and
 answers `402` with `paywall: true` to accounts that are not Pro; JoyoRogo servers without a paywall (self-host)
 count everyone as unlocked. Reads stay open. The app then shows that backup is part of Pro and stops uploading
-(no retry loop; coming back to the app or **Sync now** asks again). The sideload APK links to
+(no retry loop; coming back to the app or **Sync now** asks again). The self-build links to
 `joyorogo.com/pro`; the Play build shows the same text without a purchase link, as JoyoRogo's own Play build
 does.
 
@@ -598,7 +600,7 @@ bun run typecheck && bun run lint
 
 Keep `JAVA_HOME` pointed at JDK 17 and `ANDROID_HOME` at the SDK.
 
-### Release builds: sideload APK and Google Play AAB
+### Release builds: self-build APK and Google Play AAB
 
 Both are signed with `keystore/keystore.properties` (restore it as described in `~/.config/joyofit/KEYSTORE_BACKUP.md`) and
 get `versionCode` = minutes since 2024-01-01 UTC (`plugins/with-version-code.js`), so every build is newer than the last.

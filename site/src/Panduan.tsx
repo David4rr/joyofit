@@ -205,42 +205,19 @@ const FAQ: readonly FaqItem[] = [
     },
   },
   {
-    q: { id: "Google Play Protect memperingatkan saat memasang APK", en: "Google Play Protect warns when installing the APK" },
-    a: {
-      id: (
-        <>
-          APK di luar Play tidak lewat pemeriksaan toko, jadi Play Protect bisa menampilkan peringatan. Ketuk <B>Selengkapnya</B>{" "}
-          (More details), lalu <B>Tetap instal</B> (Install anyway). Kode JoyoFit terbuka dan bisa kamu periksa di{" "}
-          <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>. Kalau Android menolak menimpa
-          aplikasi yang sudah ada, uninstall versi yang lama dulu (lihat bagian 1).
-        </>
-      ),
-      en: (
-        <>
-          An APK from outside Play does not go through the store&apos;s checks, so Play Protect may show a warning. Tap{" "}
-          <B>More details</B>, then <B>Install anyway</B>. JoyoFit&apos;s code is open and can be inspected on{" "}
-          <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>. If Android refuses to update an
-          app that is already installed, uninstall the old version first (see section 1).
-        </>
-      ),
-    },
-  },
-  {
     q: { id: "Notifikasi tidak sampai ke jam", en: "Notifications do not reach the watch" },
     a: {
       id: (
         <>
           Buka Pengaturan → Notifications and calls: <B>Notification access</B> harus <B>Granted</B> dan{" "}
-          <B>Forward notifications to the watch</B> menyala. Pilih aplikasinya di <B>Notification apps</B>. Pada APK di luar
-          Play di Android 13 ke atas, izinkan dulu pengaturan terbatas: App info → menu tiga titik → <B>Allow restricted
+          <B>Forward notifications to the watch</B> menyala. Pilih aplikasinya di <B>Notification apps</B>. Pada build sendiri di Android 13 ke atas, izinkan dulu pengaturan terbatas: App info → menu tiga titik → <B>Allow restricted
           settings</B>.
         </>
       ),
       en: (
         <>
           Open Settings → Notifications and calls: <B>Notification access</B> must say <B>Granted</B> and{" "}
-          <B>Forward notifications to the watch</B> must be on. Pick the apps under <B>Notification apps</B>. For an APK from
-          outside Play on Android 13 and newer, first allow restricted settings: App info → the three-dot menu →{" "}
+          <B>Forward notifications to the watch</B> must be on. Pick the apps under <B>Notification apps</B>. For a self-build on Android 13 and newer, first allow restricted settings: App info → the three-dot menu →{" "}
           <B>Allow restricted settings</B>.
         </>
       ),
@@ -296,56 +273,32 @@ function Install({ lang }: { lang: Lang }) {
         </ButtonLink>
       </div>
 
-      <Sub>{id ? "B. Berkas APK di luar Play (sideload)" : "B. An APK file from outside Play (sideload)"}</Sub>
+      <Sub>{id ? "B. Build sendiri dari kode sumber" : "B. Build it yourself from source"}</Sub>
       <p>
         {id ? (
           <>
-            Situs ini tidak menyediakan unduhan APK. Kode dan cara membangun APK sendiri ada di{" "}
-            <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a> (bagian Build di README). Kalau kamu
-            sudah punya berkas APK JoyoFit:
+            JoyoFit hanya dibagikan lewat Google Play dan App Store; situs ini tidak menyediakan unduhan APK. Kode dan cara
+            membangun sendiri ada di <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a> (bagian
+            Build di README). Build sendiri bisa mengaktifkan fitur tambahan yang tidak ada di versi toko: nama penelepon dari
+            log panggilan dan SMS SOS.
           </>
         ) : (
           <>
-            This site does not offer an APK download. The code and how to build your own APK are on{" "}
-            <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a> (Build section of the README). If you
-            already have a JoyoFit APK file:
+            JoyoFit is shared only through Google Play and the App Store; this site does not offer an APK download. The code
+            and how to build it yourself are on <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
+            (Build section of the README). A self-build can enable the extra features the store versions leave out: caller
+            names from the call log and SOS texts.
           </>
         )}
       </p>
-      <Steps
-        items={
-          id
-            ? [
-                "Buka berkas APK dan izinkan pemasangan dari sumber itu bila Android bertanya.",
-                <>
-                  Kalau Google Play Protect memperingatkan, ketuk <B>Selengkapnya</B> (More details), lalu <B>Tetap instal</B>{" "}
-                  (Install anyway).
-                </>,
-                <>
-                  Di Android 13 ke atas, sebelum bisa memberi akses notifikasi, izinkan pengaturan terbatas: App info → menu
-                  tiga titik → <B>Allow restricted settings</B>.
-                </>,
-              ]
-            : [
-                "Open the APK file and allow installs from that source if Android asks.",
-                <>
-                  If Google Play Protect warns, tap <B>More details</B>, then <B>Install anyway</B>.
-                </>,
-                <>
-                  On Android 13 and newer, before you can grant notification access, allow restricted settings: App info → the
-                  three-dot menu → <B>Allow restricted settings</B>.
-                </>,
-              ]
-        }
-      />
       <div className="rounded-2xl bg-muted p-4">
         <p className="font-semibold">
-          {id ? "Jangan campur Play dan APK sembarangan" : "Do not mix Play and the APK carelessly"}
+          {id ? "Jangan campur versi toko dan build sendiri" : "Do not mix the store version and a self-build"}
         </p>
         <p className="mt-1 text-muted-foreground">
           {id
-            ? "Versi Play dan APK di luar Play bisa ditandatangani kunci yang berbeda (Google yang menandatangani versi Play), dan Android tidak mau menimpa satu dengan yang lain. Kalau pindah dari salah satunya, uninstall yang lama dulu. Uninstall menghapus data lokal di HP, jadi sinkronkan ke cloud dulu kalau kamu memakainya."
-            : "The Play version and an APK from outside Play can be signed with different keys (Google signs the Play version), and Android will not update one with the other. If you switch from one to the other, uninstall the old one first. Uninstalling wipes the local data on the phone, so upload to the cloud first if you use it."}
+            ? "Versi toko dan build sendiri ditandatangani kunci yang berbeda (Google yang menandatangani versi Play), dan Android tidak mau menimpa satu dengan yang lain. Kalau pindah dari salah satunya, uninstall yang lama dulu. Uninstall menghapus data lokal di HP, jadi sinkronkan ke cloud dulu kalau kamu memakainya."
+            : "The store version and a self-build are signed with different keys (Google signs the Play version), and Android will not update one with the other. If you switch from one to the other, uninstall the old one first. Uninstalling wipes the local data on the phone, so upload to the cloud first if you use it."}
         </p>
       </div>
 
@@ -570,8 +523,7 @@ function Permissions({ lang }: { lang: Lang }) {
                 <>
                   <B>Akses notifikasi</B> (Notification access): untuk meneruskan notifikasi ke jam. Pengaturan → Notifications
                   and calls → <B>Open notification access</B>, izinkan JoyoFit, lalu nyalakan{" "}
-                  <B>Forward notifications to the watch</B>. Pilih aplikasinya di <B>Notification apps</B>. Pada APK di luar
-                  Play di Android 13 ke atas, izinkan <B>Allow restricted settings</B> dulu (bagian 1).
+                  <B>Forward notifications to the watch</B>. Pilih aplikasinya di <B>Notification apps</B>. Pada build sendiri di Android 13 ke atas, izinkan <B>Allow restricted settings</B> dulu (bagian 1).
                 </>,
                 <>
                   <B>Latar belakang</B>: Pengaturan → Background and sync → nyalakan <B>Keep connected in the background</B>.
@@ -594,7 +546,7 @@ function Permissions({ lang }: { lang: Lang }) {
                 <>
                   <B>Notification access</B>: to forward notifications to the watch. Settings → Notifications and calls →{" "}
                   <B>Open notification access</B>, allow JoyoFit, then turn on <B>Forward notifications to the watch</B>. Pick
-                  the apps under <B>Notification apps</B>. For an APK from outside Play on Android 13 and newer, allow{" "}
+                  the apps under <B>Notification apps</B>. For a self-build on Android 13 and newer, allow{" "}
                   <B>Allow restricted settings</B> first (section 1).
                 </>,
                 <>
