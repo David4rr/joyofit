@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   AlarmClock,
@@ -50,7 +51,9 @@ import {
   WATCH_REPORT_FORM_URL,
   WATCH_REQUEST_URL,
   goal,
+  cn,
 } from "./lib";
+import { usePlatform } from "./platform";
 import {
   JAM_BELUM_PAKE,
   JAM_BISA_DICOBA,
@@ -134,8 +137,8 @@ const PROMISES = [
   },
   {
     icon: Footprints,
-    title: "Ekspor ke Health Connect",
-    body: "Langkah, jarak, kalori, detak jantung, SpO2, tidur, dan olahraga bisa ditulis ke Health Connect untuk aplikasi lain.",
+    title: "Ekspor ke Health Connect dan Apple Health",
+    body: "Langkah, jarak, kalori, detak jantung, SpO2, tidur, dan olahraga bisa ditulis ke Health Connect di Android atau Apple Health di iPhone untuk aplikasi lain.",
   },
 ] as const;
 
@@ -284,6 +287,7 @@ function Dot() {
 }
 
 function Hero() {
+  const platform = usePlatform();
   return (
     <section
       data-section="hero"
@@ -303,38 +307,31 @@ function Hero() {
           ditarik langsung lewat Bluetooth dan disimpan di HP. Tanpa Huawei Health, cloud hanya kalau
           kamu mau.
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <ButtonLink
-            size="lg"
-            href={TESTER_GROUP_URL}
-            target="_blank"
-            rel="noopener"
-            {...goal("tester_group_click", "hero")}
-          >
-            <Users aria-hidden />
-            Gabung tester
-          </ButtonLink>
-          <ButtonLink size="lg" variant="secondary" href="#cara">
-            Cara pakai
-          </ButtonLink>
-          <ButtonLink size="lg" variant="secondary" href={GITHUB_URL} target="_blank" rel="noopener">
-            <GithubMark className="size-[1.125rem]" />
-            GitHub
-          </ButtonLink>
+        <PlatformButtons location="hero" className="mt-8" />
+        <div className="mt-4 grid max-w-lg gap-3 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2">
+          <p className={cn(platform === "ios" && "order-1")}>
+            <span className="font-bold text-foreground">Android:</span> tes tertutup Google Play. Gabung grup dulu, lalu
+            ketuk{" "}
+            <a
+              href={TESTER_OPTIN_URL}
+              target="_blank"
+              rel="noopener"
+              className="font-semibold text-foreground underline underline-offset-4"
+              {...goal("tester_optin_click", "hero")}
+            >
+              Become a tester
+            </a>{" "}
+            setelah Google menyetujui akses tesnya. Android 10 ke atas.
+          </p>
+          {IOS_TESTFLIGHT_LIVE && (
+            <p className={cn(platform === "ios" && "-order-1")}>
+              <span className="font-bold text-foreground">iPhone:</span> beta publik TestFlight; versi App Store 1.0
+              sedang menunggu review Apple. iOS 16.4 ke atas.
+            </p>
+          )}
         </div>
-        <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground">
-          Aplikasinya masih di tes tertutup Google Play: gabung grup dulu, lalu ketuk{" "}
-          <a
-            href={TESTER_OPTIN_URL}
-            target="_blank"
-            rel="noopener"
-            className="font-semibold text-foreground underline underline-offset-4"
-            {...goal("tester_optin_click", "hero")}
-          >
-            Become a tester
-          </a>{" "}
-          setelah Google menyetujui akses tesnya. Gratis dan open source. Diuji di Huawei Watch Fit 4 Pro, jam lain
-          eksperimen. Android 10 ke atas.{" "}
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+          Gratis dan open source. Diuji di Huawei Watch Fit 4 Pro, jam lain eksperimen.{" "}
           <a
             href={DUKUNG_JAM_PATH}
             className="font-semibold text-foreground underline underline-offset-4"
@@ -343,6 +340,15 @@ function Hero() {
             Jam-mu belum diuji? Bantu kami mendukungnya.
           </a>
         </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <ButtonLink variant="secondary" href="#cara">
+            Cara pakai
+          </ButtonLink>
+          <ButtonLink variant="secondary" href={GITHUB_URL} target="_blank" rel="noopener">
+            <GithubMark className="size-[1.125rem]" />
+            GitHub
+          </ButtonLink>
+        </div>
       </div>
 
       <figure className="relative mx-auto w-full max-w-[22rem] md:max-w-[26rem]">
@@ -796,130 +802,236 @@ function Code({ children }: { children: React.ReactNode }) {
   );
 }
 
-const TESTER_STEPS = [
+const UNBIND_STEP =
+  "Lepas jam dari Huawei Health dulu (Unbind), lalu pasangkan di tab Watch. Jam hanya bisa terikat ke satu HP dalam satu waktu, jadi memasangkannya di sini menggantikan pairing yang lama.";
+
+const ANDROID_STEPS = [
   "Gabung grup Google joyofit-testers dengan akun Google yang kamu pakai di Play Store. Grup inilah yang memberi akses ke tes tertutup.",
   "Setelah Google mengaktifkan aksesnya, buka halaman tes di Play dan ketuk Become a tester. Kalau halaman belum bisa dibuka, tunggu sebentar lalu coba lagi.",
   "Pasang JoyoFit dari Play Store. Data jam tetap tersimpan di HP; masuk dengan akun JoyoRogo hanya perlu kalau kamu mau cloud.",
+  UNBIND_STEP,
 ] as const;
 
-function TesterJoin() {
+const IOS_STEPS = [
+  "Pasang TestFlight dari App Store, kalau belum ada di iPhone-mu.",
+  "Buka link TestFlight JoyoFit di iPhone dan ketuk Terima.",
+  "Ketuk Pasang di TestFlight untuk memasang JoyoFit.",
+  UNBIND_STEP,
+] as const;
+
+const IOS_LIMITS = [
+  "Butuh iOS 16.4 ke atas. Baru diuji dengan Huawei Watch Fit 4 Pro; jam lain belum dicoba di iPhone.",
+  "Watch face, olahraga dengan rute GPS ke Apple Health, cari jam, alarm, cuaca, siklus, makanan, target, olahraga langsung, laporan pagi, impor Huawei Health, dan Strava sudah ada di iPhone. Sebagian baru diuji lewat tes otomatis, belum di iPhone sungguhan.",
+  "iOS tidak mengizinkan JoyoFit meneruskan notifikasi aplikasi lain, mencari iPhone dari jam, mengatur panggilan, atau mengirim SMS SOS. Jam membaca notifikasi iPhone sendiri lewat iOS.",
+] as const;
+
+type Tab = "android" | "ios";
+
+function StepList({ steps }: { steps: readonly string[] }) {
   return (
-    <div
-      id="tester"
-      data-section="tester"
-      className="mt-12 scroll-mt-20 rounded-[1.75rem] bg-tidur-soft p-6 md:p-8"
-    >
-      <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-start">
-        <div>
-          <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">Gabung tester</h3>
-          <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-tidur-ink/85">
-            JoyoFit lewat Google Play masih tes tertutup. Gratis, dan kamu bisa membantu menemukan yang rusak
-            sebelum dirilis untuk semua orang.{" "}
-            <a className="font-semibold underline underline-offset-4" href={PANDUAN_PATH}>
-              Baca panduan pasang dan pakai
-            </a>
-            .
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <ButtonLink href={TESTER_GROUP_URL} target="_blank" rel="noopener" {...goal("tester_group_click", "cara")}>
-              <Users aria-hidden />
-              1. Gabung grup Google
-            </ButtonLink>
-            <ButtonLink
-              variant="outline"
-              href={TESTER_OPTIN_URL}
-              target="_blank"
-              rel="noopener"
-              {...goal("tester_optin_click", "cara")}
-            >
-              2. Become a tester di Play
-            </ButtonLink>
+    <ol className="space-y-4">
+      {steps.map((step, i) => (
+        <li key={step} className="flex gap-3.5">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-card text-sm font-extrabold text-tidur-ink tabular-nums">
+            {i + 1}
+          </span>
+          <p className="pt-0.5 text-[0.9375rem] leading-relaxed text-tidur-ink/90">{step}</p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * Android and iPhone install steps behind a segmented switch. Both panels are always in the HTML (the inactive one is
+ * `hidden`), so crawlers read both; the visitor's phone picks the tab that opens first.
+ */
+function Install() {
+  const platform = usePlatform();
+  const [picked, setPicked] = useState<Tab | null>(null);
+  const tab: Tab = picked ?? (platform === "ios" ? "ios" : "android");
+
+  useEffect(() => {
+    const fromHash = () => {
+      if (location.hash === "#iphone-beta") setPicked("ios");
+      else if (location.hash === "#tester") setPicked("android");
+    };
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    return () => window.removeEventListener("hashchange", fromHash);
+  }, []);
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "android", label: "Android" },
+    { id: "ios", label: "iPhone" },
+  ];
+
+  return (
+    <div data-section="install" className="mt-12 rounded-[1.75rem] bg-tidur-soft p-6 md:p-8">
+      <div role="tablist" aria-label="Pilih HP-mu" className="inline-flex rounded-full bg-card p-1">
+        {tabs.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`install-tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls={`install-panel-${id}`}
+            onClick={() => setPicked(id)}
+            className={cn(
+              "inline-flex min-h-11 items-center rounded-full px-5 text-sm font-bold transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
+              tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        id="tester"
+        role="tabpanel"
+        aria-labelledby="install-tab-android"
+        data-section="tester"
+        hidden={tab !== "android"}
+        className="mt-6 scroll-mt-20"
+      >
+        <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-start">
+          <div>
+            <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">JoyoFit di Android (tes tertutup)</h3>
+            <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-tidur-ink/85">
+              JoyoFit lewat Google Play masih tes tertutup. Gratis, butuh Android 10 ke atas, dan kamu bisa membantu
+              menemukan yang rusak sebelum dirilis untuk semua orang.{" "}
+              <a className="font-semibold underline underline-offset-4" href={PANDUAN_PATH}>
+                Baca panduan pasang dan pakai
+              </a>
+              .
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <ButtonLink href={TESTER_GROUP_URL} target="_blank" rel="noopener" {...goal("tester_group_click", "cara")}>
+                <Users aria-hidden />
+                1. Gabung grup Google
+              </ButtonLink>
+              <ButtonLink
+                variant="outline"
+                href={TESTER_OPTIN_URL}
+                target="_blank"
+                rel="noopener"
+                {...goal("tester_optin_click", "cara")}
+              >
+                2. Become a tester di Play
+              </ButtonLink>
+            </div>
+          </div>
+          <StepList steps={ANDROID_STEPS} />
+        </div>
+      </div>
+
+      {IOS_TESTFLIGHT_LIVE && (
+        <div
+          id="iphone-beta"
+          role="tabpanel"
+          aria-labelledby="install-tab-ios"
+          data-section="iphone-beta"
+          hidden={tab !== "ios"}
+          className="mt-6 scroll-mt-20"
+        >
+          <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-start">
+            <div>
+              <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">JoyoFit di iPhone (beta publik)</h3>
+              <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-tidur-ink/85">
+                Versi iPhone sudah bisa dicoba lewat TestFlight, dan versi App Store 1.0 sedang menunggu review Apple.
+                Gratis, butuh iOS 16.4 ke atas, dan masukanmu membantu kami merapikannya.
+              </p>
+              <div className="mt-6">
+                <ButtonLink
+                  href={IOS_TESTFLIGHT_URL}
+                  target="_blank"
+                  rel="noopener"
+                  {...goal("ios_testflight_click", "cara")}
+                >
+                  <Smartphone aria-hidden />
+                  Buka TestFlight
+                </ButtonLink>
+                <p className="mt-3 text-sm">
+                  <a
+                    href={IPHONE_PATH}
+                    className="font-semibold text-tidur-ink underline underline-offset-4"
+                    {...goal("iphone_waitlist_click", "cara")}
+                  >
+                    Detail dan batasan di iPhone
+                  </a>
+                </p>
+              </div>
+            </div>
+            <div>
+              <StepList steps={IOS_STEPS} />
+              <p className="mt-6 text-sm font-bold text-tidur-ink">Yang perlu kamu tahu</p>
+              <ul className="mt-2 space-y-2">
+                {IOS_LIMITS.map((line) => (
+                  <li key={line} className="flex gap-2 text-sm leading-relaxed text-tidur-ink/85">
+                    <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
-        <ol className="space-y-4">
-          {TESTER_STEPS.map((step, i) => (
-            <li key={step} className="flex gap-3.5">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-card text-sm font-extrabold text-tidur-ink tabular-nums">
-                {i + 1}
-              </span>
-              <p className="pt-0.5 text-[0.9375rem] leading-relaxed text-tidur-ink/90">{step}</p>
-            </li>
-          ))}
-        </ol>
-      </div>
+      )}
     </div>
   );
 }
 
-const IOS_STEPS = [
-  "Pasang TestFlight dari App Store, kalau belum ada di iPhone-mu.",
-  "Buka link TestFlight di iPhone, ketuk Terima, lalu Pasang JoyoFit.",
-] as const;
-
-const IOS_LIMITS = [
-  "Baru diuji dengan Huawei Watch Fit 4 Pro; jam lain belum dicoba di iPhone.",
-  "Watch face, olahraga dengan rute GPS ke Apple Health, cari jam, alarm, cuaca, siklus, makanan, target, olahraga langsung, laporan pagi, impor Huawei Health, dan Strava sudah ada di iPhone. Sebagian baru diuji lewat tes otomatis, belum di iPhone sungguhan.",
-  "iOS tidak mengizinkan JoyoFit meneruskan notifikasi aplikasi lain, mencari iPhone dari jam, mengatur panggilan, atau mengirim SMS SOS. Jam membaca notifikasi iPhone sendiri lewat iOS.",
-  "Memasangkan jam ke iPhone menggantikan pairing yang sudah ada di Android, jadi satu jam hanya bisa dipakai di satu HP dalam satu waktu.",
-] as const;
-
-function IosBeta() {
+/** The two app buttons, the visitor's platform first. Both are always rendered. */
+function PlatformButtons({ location, className, buttonClassName }: { location: string; className?: string; buttonClassName?: string }) {
+  const platform = usePlatform();
   return (
-    <div
-      id="iphone-beta"
-      data-section="iphone-beta"
-      className="mt-6 scroll-mt-20 rounded-[1.75rem] bg-card p-6 md:p-8"
-    >
-      <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-start">
-        <div>
-          <h3 className="text-2xl font-extrabold tracking-tight md:text-3xl">JoyoFit di iPhone (beta publik)</h3>
-          <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-muted-foreground">
-            Versi iPhone sudah bisa dicoba lewat TestFlight, dan versi App Store 1.0 sedang menunggu review Apple.
-            Gratis, dan masukanmu membantu kami merapikannya.
-          </p>
-          <div className="mt-6">
-            <ButtonLink
-              href={IOS_TESTFLIGHT_URL}
-              target="_blank"
-              rel="noopener"
-              {...goal("ios_testflight_click", "cara")}
-            >
-              <Smartphone aria-hidden />
-              Buka TestFlight
-            </ButtonLink>
-            <p className="mt-3 text-sm">
-              <a
-                href={IPHONE_PATH}
-                className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
-                {...goal("iphone_waitlist_click", "cara")}
-              >
-                Detail dan batasan di iPhone
-              </a>
-            </p>
-          </div>
-        </div>
-        <div>
-          <ol className="space-y-4">
-            {IOS_STEPS.map((step, i) => (
-              <li key={step} className="flex gap-3.5">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-extrabold tabular-nums">
-                  {i + 1}
-                </span>
-                <p className="pt-0.5 text-[0.9375rem] leading-relaxed">{step}</p>
-              </li>
-            ))}
-          </ol>
-          <p className="mt-6 text-sm font-bold">Yang perlu kamu tahu</p>
-          <ul className="mt-2 space-y-2">
-            {IOS_LIMITS.map((line) => (
-              <li key={line} className="flex gap-2 text-sm leading-relaxed text-muted-foreground">
-                <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
-                {line}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+    <div className={cn("flex flex-wrap gap-3", className)}>
+      <ButtonLink
+        size="lg"
+        className={cn(platform === "ios" && "order-last", buttonClassName)}
+        href={TESTER_GROUP_URL}
+        target="_blank"
+        rel="noopener"
+        {...goal("tester_group_click", location)}
+      >
+        <Users aria-hidden />
+        JoyoFit untuk Android
+      </ButtonLink>
+      {IOS_TESTFLIGHT_LIVE && (
+        <ButtonLink
+          size="lg"
+          className={cn(platform === "android" && "order-last", buttonClassName)}
+          href={IOS_TESTFLIGHT_URL}
+          target="_blank"
+          rel="noopener"
+          {...goal("ios_testflight_click", location)}
+        >
+          <Smartphone aria-hidden />
+          JoyoFit untuk iPhone
+        </ButtonLink>
+      )}
+    </div>
+  );
+}
+
+function ClosingButtons() {
+  return (
+    <div className="mt-8 flex flex-col items-center gap-4">
+      <PlatformButtons
+        location="closing"
+        className="justify-center"
+        buttonClassName="bg-primary-foreground text-primary hover:bg-primary-foreground/90 focus-visible:ring-primary-foreground/50"
+      />
+      <ButtonLink
+        size="lg"
+        variant="ghost"
+        className="border-primary-foreground/35 text-primary-foreground hover:bg-primary-foreground/10 focus-visible:ring-primary-foreground/50"
+        href="#cara"
+      >
+        Cara pasang
+      </ButtonLink>
     </div>
   );
 }
@@ -935,8 +1047,7 @@ function Options() {
           </p>
         </div>
 
-        <TesterJoin />
-        {IOS_TESTFLIGHT_LIVE && <IosBeta />}
+        <Install />
 
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {/* 1. Open source */}
@@ -1147,26 +1258,7 @@ function Closing() {
         <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-primary-foreground/95">
           Pasang JoyoFit, sambungkan jam lewat Bluetooth, dan data jam-mu ada di HP-mu hari ini juga.
         </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <ButtonLink
-            size="lg"
-            className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 focus-visible:ring-primary-foreground/50"
-            href={GITHUB_URL}
-            target="_blank"
-            rel="noopener"
-          >
-            <GithubMark className="size-[1.125rem]" />
-            Ambil dari GitHub
-          </ButtonLink>
-          <ButtonLink
-            size="lg"
-            variant="ghost"
-            className="border-primary-foreground/35 text-primary-foreground hover:bg-primary-foreground/10 focus-visible:ring-primary-foreground/50"
-            href="#cara"
-          >
-            Bandingkan tiga cara
-          </ButtonLink>
-        </div>
+        <ClosingButtons />
       </div>
     </section>
   );

@@ -149,7 +149,7 @@ function homeJsonLd(): object[] {
           description: PAGES["/"].description,
           applicationCategory: "HealthApplication",
           operatingSystem: "Android, iOS",
-          softwareRequirements: "Android 10 atau lebih baru",
+          softwareRequirements: "Android 10 atau lebih baru; iOS 16.4 atau lebih baru",
           inLanguage: "id",
           isAccessibleForFree: true,
           offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
