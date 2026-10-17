@@ -18,6 +18,13 @@ export TMPDIR="${TMPDIR:-$HOME/.cache/jf-tmp}"
 export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:--Djava.io.tmpdir=$TMPDIR}"
 mkdir -p "$TMPDIR"
 
+# ~/.gradle is a symlink to the SSD image (/run/media/dzul/ioswork/gradle-home); without the mount Gradle would fail on a dangling link.
+if [ -L "$HOME/.gradle" ] && [ ! -d "$HOME/.gradle/" ]; then
+  echo "~/.gradle -> $(readlink "$HOME/.gradle") is not there: the ioswork SSD image is not mounted." >&2
+  echo "mount it: udisksctl loop-setup -f /run/media/dzul/Data/dzul-offload/ios-work.ext4" >&2
+  exit 1
+fi
+
 PLAY=0
 CLEAN=0
 for arg in "$@"; do
