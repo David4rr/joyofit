@@ -63,8 +63,8 @@ import { TESTIMONIALS } from "./testimonials";
 import { ButtonLink, GithubMark, Phone, Ring } from "./ui";
 import { IphonePage, StravaPage } from "./Waitlist";
 
-/** Harga paket Founder JoyoRogo, sama dengan joyorogo.com/harga (api.joyorogo.com/api/config). */
-const PRICE = { monthly: "Rp15.000", yearly: "Rp199.000" };
+/** Harga JoyoRogo Pro, sama dengan joyorogo.com/harga (api.joyorogo.com/api/config). */
+const PRICE = { monthly: "Rp29.000", yearly: "Rp199.000", next: "Rp49.000", slots: 110 };
 
 const FACTS = [
   { value: `${JAM_BISA_DICOBA} model`, label: "jam dan band Huawei dan Honor bisa dicoba", href: "/jam" },
@@ -157,18 +157,16 @@ const FAQ = [
     q: "Jam apa saja yang didukung?",
     a: (
       <>
-        Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jam-mu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas.{" "}
-        {IOS_TESTFLIGHT_LIVE ? (
-          <>Versi iPhone ada sebagai beta lewat TestFlight, baru diuji dengan Huawei Watch Fit 4 Pro.</>
-        ) : (
-          <>Belum ada versi iPhone di App Store; beta TestFlight-nya masih lewat undangan, dan kamu bisa <a className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80" href={IPHONE_PATH} {...goal("iphone_waitlist_click", "faq")}>mendaftar di sini</a>.</>
+        Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Di Android, pemindai di aplikasi sekarang juga menemukan band yang tidak muncul di pengaturan Bluetooth (Band 8, 9, 10, dan Fit), dan memberi pesan yang jelas kalau jam sedang dipegang HP lain. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jam-mu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas.{" "}
+        {IOS_TESTFLIGHT_LIVE && (
+          <>Versi iPhone ada sebagai beta publik lewat TestFlight, dan versi App Store 1.0 sedang menunggu review Apple. Baru diuji dengan Huawei Watch Fit 4 Pro.</>
         )}
       </>
     ),
   },
   {
     q: "Sudah stabil dipakai?",
-    a: "Protokol jamnya porting dari Gadgetbridge dan lolos 222 tes JVM. Tapi sebagian fitur, seperti kustomisasi tampilan jam, kartu kalori, dan latihan lari terjadwal, masih ditandai belum terverifikasi di Fit 4 di dokumentasi proyek. Kami jujur soal itu; log lengkapnya ada di Pengaturan.",
+    a: "Protokol jamnya porting dari Gadgetbridge. Tapi sebagian fitur, seperti kustomisasi tampilan jam, kartu kalori, dan latihan lari terjadwal, masih ditandai belum terverifikasi di Fit 4 di dokumentasi proyek. Kami jujur soal itu; log lengkapnya ada di Pengaturan.",
   },
   {
     q: "Ke mana data saya pergi?",
@@ -186,9 +184,9 @@ const FAQ = [
     q: "Bisa mengirim olahraga ke Strava?",
     a: (
       <>
-        Bisa, gratis, tapi masih lewat undangan karena Strava membatasi jumlah atlet untuk aplikasi baru sampai aplikasinya disetujui.{" "}
+        Bisa, gratis. Strava membatasi aplikasi kami di 10 atlet dan semua slotnya sedang terpakai; kami sudah mengajukan review ke Strava untuk menaikkan batas itu. Sampai disetujui, kamu bisa masuk daftar tunggu. Daftarnya sama untuk JoyoFit dan JoyoRogo, karena keduanya memakai satu aplikasi Strava.{" "}
         <a className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80" href={STRAVA_PATH} {...goal("strava_waitlist_click", "faq")}>
-          Daftar undangan Strava
+          Masuk daftar tunggu Strava
         </a>
         .
       </>
@@ -897,12 +895,13 @@ function TesterJoin() {
 
 const IOS_STEPS = [
   "Pasang TestFlight dari App Store, kalau belum ada di iPhone-mu.",
-  "Buka link undangan di iPhone, ketuk Terima, lalu Pasang JoyoFit.",
+  "Buka link TestFlight di iPhone, ketuk Terima, lalu Pasang JoyoFit.",
 ] as const;
 
 const IOS_LIMITS = [
   "Baru diuji dengan Huawei Watch Fit 4 Pro; jam lain belum dicoba di iPhone.",
-  "Watch face dan sebagian fitur belum ada di iPhone.",
+  "Watch face, olahraga dengan rute GPS ke Apple Health, cari jam, alarm, cuaca, siklus, makanan, target, olahraga langsung, laporan pagi, impor Huawei Health, dan Strava sudah ada di iPhone. Sebagian baru diuji lewat tes otomatis, belum di iPhone sungguhan.",
+  "iOS tidak mengizinkan JoyoFit meneruskan notifikasi aplikasi lain, mencari iPhone dari jam, mengatur panggilan, atau mengirim SMS SOS. Jam membaca notifikasi iPhone sendiri lewat iOS.",
   "Memasangkan jam ke iPhone menggantikan pairing yang sudah ada di Android, jadi satu jam hanya bisa dipakai di satu HP dalam satu waktu.",
 ] as const;
 
@@ -915,10 +914,10 @@ function IosBeta() {
     >
       <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-start">
         <div>
-          <h3 className="text-2xl font-extrabold tracking-tight md:text-3xl">JoyoFit di iPhone (beta)</h3>
+          <h3 className="text-2xl font-extrabold tracking-tight md:text-3xl">JoyoFit di iPhone (beta publik)</h3>
           <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-muted-foreground">
-            Versi iPhone masih beta dan dibagikan lewat TestFlight. Gratis, dan masukanmu membantu kami
-            merapikannya.
+            Versi iPhone sudah bisa dicoba lewat TestFlight, dan versi App Store 1.0 sedang menunggu review Apple.
+            Gratis, dan masukanmu membantu kami merapikannya.
           </p>
           <div className="mt-6">
             <ButtonLink
@@ -928,8 +927,17 @@ function IosBeta() {
               {...goal("ios_testflight_click", "cara")}
             >
               <Smartphone aria-hidden />
-              Buka undangan TestFlight
+              Buka TestFlight
             </ButtonLink>
+            <p className="mt-3 text-sm">
+              <a
+                href={IPHONE_PATH}
+                className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
+                {...goal("iphone_waitlist_click", "cara")}
+              >
+                Detail dan batasan di iPhone
+              </a>
+            </p>
           </div>
         </div>
         <div>
@@ -958,33 +966,6 @@ function IosBeta() {
   );
 }
 
-function IphoneWaitlistCard() {
-  return (
-    <div
-      id="iphone"
-      data-section="iphone-waitlist"
-      className="mt-6 flex scroll-mt-20 flex-col gap-5 rounded-[1.75rem] bg-card p-6 md:flex-row md:items-center md:justify-between md:p-8"
-    >
-      <div className="flex gap-4">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground">
-          <Smartphone className="size-6" aria-hidden />
-        </span>
-        <div>
-          <h3 className="text-xl font-extrabold tracking-tight md:text-2xl">JoyoFit di iPhone: daftar TestFlight</h3>
-          <p className="mt-1 max-w-xl text-[0.9375rem] leading-relaxed text-muted-foreground">
-            Aplikasi iPhone ada di TestFlight tetapi masih lewat undangan, sambil menunggu beta publik dan review App
-            Store. Baru diuji dengan Huawei Watch Fit 4 Pro.
-          </p>
-        </div>
-      </div>
-      <ButtonLink href={IPHONE_PATH} className="shrink-0" {...goal("iphone_waitlist_click", "cara")}>
-        Daftarkan emailmu
-        <ArrowRight aria-hidden />
-      </ButtonLink>
-    </div>
-  );
-}
-
 function Options() {
   return (
     <section id="cara" data-section="options" className="scroll-mt-16 border-t border-border/70 py-20 md:py-24">
@@ -998,7 +979,6 @@ function Options() {
 
         <TesterJoin />
         {IOS_TESTFLIGHT_LIVE && <IosBeta />}
-        <IphoneWaitlistCard />
 
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {/* 1. Open source */}
@@ -1025,9 +1005,9 @@ function Options() {
             </ul>
             <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
               <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
-                Undangan
+                Slot penuh
               </span>
-              Gratis: olahraga terkirim ke Strava.
+              Gratis: olahraga terkirim ke Strava. Slot sedang penuh, review sudah diajukan.
               <a
                 href={STRAVA_PATH}
                 className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
@@ -1074,22 +1054,22 @@ function Options() {
             </div>
           </section>
 
-          {/* 3. JoyoFit Cloud via JoyoRogo Premium */}
+          {/* 3. JoyoFit Cloud via JoyoRogo Pro */}
           <section className="flex flex-col rounded-[1.75rem] bg-makan-soft p-6">
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-bold text-makan-ink">JoyoFit Cloud</h3>
               <span className="inline-flex h-6 items-center rounded-full bg-card px-2.5 text-xs font-bold text-makan-ink">
-                JoyoRogo Premium
+                JoyoRogo Pro
               </span>
             </div>
             <p className="mt-3 text-4xl font-extrabold tracking-tight tabular-nums">{PRICE.monthly}</p>
             <p className="text-sm text-muted-foreground">per bulan</p>
             <p className="mt-0.5 text-xs font-semibold text-makan-ink">
-              atau {PRICE.yearly}/tahun (~Rp16.600/bulan), lebih hemat dari Rp29.000/bulan setelah promo
+              Harga perkenalan untuk {PRICE.slots} pembeli pertama, lalu {PRICE.next}/bulan. Atau {PRICE.yearly}/tahun (~Rp16.600/bulan).
             </p>
             <ul className="mt-5 space-y-2.5 text-sm">
               {[
-                "Termasuk di JoyoRogo Premium (paket Pro)",
+                "Termasuk di JoyoRogo Pro (cadangan cloud JoyoFit)",
                 "Server kami yang urus, tanpa setup",
                 "Masuk dengan akun JoyoRogo yang sama",
               ].map((line) => (
@@ -1101,7 +1081,7 @@ function Options() {
             </ul>
             <div className="mt-auto pt-6">
               <ButtonLink className="w-full" href={HARGA_URL} {...goal("founder_cta_click", "cara")}>
-                Langganan JoyoRogo Premium
+                Ambil JoyoRogo Pro
               </ButtonLink>
               <p className="mt-2 text-center text-xs text-muted-foreground">
                 Harga dan paket mengikuti joyorogo.com/harga.

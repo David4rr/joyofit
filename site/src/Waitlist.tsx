@@ -17,8 +17,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { CONTACT_EMAIL, IPHONE_PATH, STRAVA_PATH, WAITLIST_API, cn, goal, setMeta } from "./lib";
+import { CONTACT_EMAIL, IOS_TESTFLIGHT_URL, IPHONE_PATH, STRAVA_PATH, WAITLIST_API, cn, goal, setMeta } from "./lib";
 import { PRIVASI_PATH } from "./Privasi";
+import { ButtonLink } from "./ui";
 
 type Kind = "strava" | "iphone";
 
@@ -120,7 +121,7 @@ function WaitlistForm({ kind }: { kind: Kind }) {
         <p className="mt-1.5 text-[0.9375rem] leading-relaxed">
           {strava
             ? "Kami kabari lewat email begitu ada slot Strava untukmu. Mengirim formulir lagi dengan email yang sama hanya memperbarui isiannya."
-            : "Kami tambahkan emailmu sebagai tester TestFlight secara manual, jadi tunggu email dari TestFlight. Mengirim formulir lagi dengan email yang sama hanya memperbarui isiannya."}
+            : "Terima kasih. Kami kabari lewat email kalau ada kabar baru soal JoyoFit di iPhone. Mengirim formulir lagi dengan email yang sama hanya memperbarui isiannya."}
         </p>
       </div>
     );
@@ -131,8 +132,8 @@ function WaitlistForm({ kind }: { kind: Kind }) {
     <form onSubmit={onSubmit} className="space-y-5" noValidate={false}>
       <Field
         id={`${kind}-email`}
-        label={strava ? "Email" : "Email Apple ID untuk TestFlight"}
-        hint={strava ? "Untuk memberi tahu kamu saat slot tersedia." : "Harus email yang kamu pakai untuk masuk ke App Store di iPhone."}
+        label="Email"
+        hint={strava ? "Untuk memberi tahu kamu saat slot tersedia." : "Untuk memberi tahu kamu kalau ada kabar baru soal versi iPhone."}
       >
         <input
           id={`${kind}-email`}
@@ -196,7 +197,7 @@ function WaitlistForm({ kind }: { kind: Kind }) {
         className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-[background-color,transform] duration-150 hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none active:scale-[0.97] disabled:opacity-70 sm:w-auto"
       >
         {sending ? <LoaderCircle className="size-5 animate-spin motion-reduce:animate-none" aria-hidden /> : <Send className="size-5" aria-hidden />}
-        {sending ? "Mengirim" : strava ? "Masuk daftar tunggu Strava" : "Masuk daftar TestFlight"}
+        {sending ? "Mengirim" : strava ? "Masuk daftar tunggu Strava" : "Kabari saya"}
       </button>
       <p role="alert" className={cn("flex gap-2 text-sm font-semibold text-destructive", state.phase !== "error" && "hidden")}>
         <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -204,7 +205,7 @@ function WaitlistForm({ kind }: { kind: Kind }) {
       </p>
       <p className="text-sm leading-relaxed text-muted-foreground">
         Yang kami simpan: email{strava ? ", nama atau link profil Strava" : " dan model jam bila kamu isi"}, serta waktu
-        pendaftaran. Dipakai hanya untuk undangan ini, tidak dibagikan, dan tidak masuk statistik situs. Hapus kapan saja
+        pendaftaran. Dipakai hanya untuk daftar ini, tidak dibagikan, dan tidak masuk statistik situs. Hapus kapan saja
         lewat email. Rinciannya di{" "}
         <a href={`${PRIVASI_PATH}#waitlist`} className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80">
           halaman privasi
@@ -262,9 +263,9 @@ function Notes({ title, items }: { title: string; items: readonly string[] }) {
 }
 
 const STRAVA_META = {
-  title: "JoyoFit ke Strava: daftar undangan",
+  title: "JoyoFit ke Strava: daftar tunggu",
   description:
-    "JoyoFit mengirim olahraga dari jam Huawei ke Strava dengan jarak, waktu aktif, kalori, langkah, detak jantung, dan rute dari jam. Masih lewat undangan sampai Strava menyetujui aplikasinya.",
+    "JoyoFit mengirim olahraga dari jam Huawei ke Strava dengan jarak, waktu aktif, kalori, langkah, detak jantung, dan rute dari jam. Slot Strava sedang penuh; daftar tunggu ini berlaku untuk JoyoFit dan JoyoRogo.",
 };
 
 const STRAVA_SENT: { Icon: LucideIcon; label: string }[] = [
@@ -289,7 +290,7 @@ export function StravaPage() {
             </h1>
             <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
               Setelah tersambung, JoyoFit mengunggah olahraga yang kamu rekam di jam Huawei ke akun Strava-mu sendiri.
-              Gratis, dan masih lewat undangan.
+              Gratis. Slot Strava sedang penuh, dan formulir di bawah adalah daftar tunggunya.
             </p>
             <div className="mt-5 rounded-xl bg-white p-3">
               <img
@@ -318,13 +319,14 @@ export function StravaPage() {
               Strava merata-ratakan sampelnya sendiri.
             </p>
 
-            <h2 className="mt-8 text-lg font-extrabold tracking-tight">Kenapa masih lewat undangan</h2>
+            <h2 className="mt-8 text-lg font-extrabold tracking-tight">Kenapa slotnya penuh</h2>
             <p className="mt-2 text-[0.9375rem] leading-relaxed text-muted-foreground">
               Menurut dokumentasi Strava, aplikasi API baru dimulai dalam mode satu pemain: hanya akun pemilik aplikasi yang
               bisa masuk. Pemilik bisa menaikkan kapasitasnya menjadi 10 atlet dari dashboard API-nya, dan setelah
               mencapai 10 atlet, aplikasi harus diajukan ke Strava untuk ditinjau (review) sebelum bisa melayani lebih
-              banyak orang. Aplikasi Strava JoyoFit masih di tahap terbatas itu, jadi kami membuka akses bertahap: sesuai
-              slot yang ada, dan lebih luas setelah Strava menyetujui aplikasinya.
+              banyak orang. Aplikasi Strava kami sudah mencapai batas itu: 10 atlet, dan semua slotnya terpakai. Kami sudah
+              mengajukan review ke Strava untuk menaikkan batas; sampai disetujui, tidak ada slot baru. Aplikasi Strava
+              yang sama dipakai JoyoRogo dan JoyoFit, jadi daftar tunggu ini berlaku untuk keduanya.
             </p>
             <p className="mt-2 text-[0.9375rem] leading-relaxed text-muted-foreground">
               Kamu bisa mengecek aturan ini sendiri di{" "}
@@ -351,15 +353,15 @@ export function StravaPage() {
                       body: "Isi formulir di bawah dengan email dan nama atau link profil Strava-mu.",
                     },
                     {
-                      title: "Kami beri akses sesuai kapasitas",
-                      body: "Kami mengundang pendaftar bertahap, sesuai slot yang ada, dan lebih banyak setelah Strava menyetujui aplikasinya. Kami kabari lewat email.",
+                      title: "Tunggu slot terbuka",
+                      body: "Slot baru baru ada setelah Strava menyetujui review aplikasinya. Kami mengundang pendaftar bertahap dan mengabari lewat email.",
                     },
                     {
-                      title: "Sambungkan di JoyoFit",
+                      title: "Sambungkan di JoyoFit atau JoyoRogo",
                       body: (
                         <>
-                          Di aplikasi: Pengaturan, Strava, Connect with Strava. Setelah itu olahraga yang selesai kamu
-                          rekam terkirim otomatis, dan olahraga lama bisa dikirim dengan tombol Kirim ke Strava.
+                          Di JoyoFit: Pengaturan, Strava, Connect with Strava. Setelah itu olahraga yang selesai kamu
+                          rekam terkirim otomatis, dan olahraga lama bisa dikirim dengan tombol Kirim ke Strava. Di JoyoRogo: Profil atau Olahraga, Strava; aktivitasmu masuk sebagai kalori terbakar.
                         </>
                       ),
                     },
@@ -380,7 +382,7 @@ export function StravaPage() {
               <Notes
                 title="Yang perlu kamu tahu"
                 items={[
-                  "Daftar ini bukan jaminan slot dalam waktu tertentu; kami mengundang sesuai kapasitas Strava.",
+                  "Daftar ini bukan jaminan slot dalam waktu tertentu; slot baru tergantung persetujuan Strava.",
                   "Izin yang diminta hanya satu: mengunggah aktivitas ke akunmu sendiri. JoyoFit tidak membaca data Strava.",
                   "Kamu bisa memutus sambungan kapan saja di aplikasi, atau di strava.com (Pengaturan, Aplikasi Saya).",
                 ]}
@@ -394,9 +396,9 @@ export function StravaPage() {
 }
 
 const IPHONE_META = {
-  title: "JoyoFit untuk iPhone: daftar TestFlight",
+  title: "JoyoFit untuk iPhone: beta publik TestFlight",
   description:
-    "Aplikasi JoyoFit untuk iPhone masih di TestFlight dan lewat undangan, sambil menunggu beta publik dan review App Store. Daftarkan email Apple ID-mu.",
+    "Aplikasi JoyoFit untuk iPhone sudah bisa dicoba lewat beta publik TestFlight. Versi App Store 1.0 sedang menunggu review Apple.",
 };
 
 export function IphonePage() {
@@ -412,31 +414,40 @@ export function IphonePage() {
                 <Smartphone className="size-6" aria-hidden />
               </span>
               <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
-                JoyoFit di iPhone, lewat undangan TestFlight
+                JoyoFit di iPhone, beta publik TestFlight
               </h1>
             </div>
             <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted-foreground">
-              Aplikasi iPhone-nya sudah ada di TestFlight, tetapi baru dibuka untuk tester yang kami undang satu per satu.
-              Beta publik dan review App Store belum selesai, jadi belum ada link yang bisa dibuka siapa saja dan belum
-              ada di App Store.
+              Aplikasi iPhone-nya sudah bisa dicoba siapa saja lewat beta publik TestFlight, gratis. Versi App Store 1.0
+              sedang menunggu review Apple, jadi belum ada di App Store.
             </p>
+            <div className="mt-5">
+              <ButtonLink
+                href={IOS_TESTFLIGHT_URL}
+                target="_blank"
+                rel="noopener"
+                {...goal("ios_testflight_click", "iphone_page")}
+              >
+                <Smartphone aria-hidden />
+                Buka TestFlight
+              </ButtonLink>
+            </div>
 
             <h2 className="mt-8 text-lg font-extrabold tracking-tight">Batasan yang jujur</h2>
             <div className="mt-3">
               <Notes
-                title="Baca dulu sebelum mendaftar"
+                title="Baca dulu sebelum memasang"
                 items={[
                   "Baru diuji dengan Huawei Watch Fit 4 Pro. Jam lain belum dicoba di iPhone.",
-                  "Banyak hal yang kami tulis untuk iPhone baru diuji di komputer dan belum dijalankan di iPhone sungguhan, jadi harapkan ada yang tidak jalan.",
+                  "Sebagian fitur iPhone baru diuji di komputer dan belum dijalankan di iPhone sungguhan, jadi harapkan ada yang tidak jalan.",
                   "Memasangkan jam ke iPhone menggantikan pairing yang sudah ada, jadi satu jam hanya bisa dipakai di satu HP dalam satu waktu.",
-                  "iOS tidak mengizinkan JoyoFit meneruskan notifikasi aplikasi lain, mencari iPhone dari jam, atau mengatur panggilan. Notifikasi dibaca jam langsung dari iPhone lewat pengaturan iOS.",
-                  "Beberapa fitur yang ada di Android belum ada di iPhone, seperti siklus, makanan, dan latihan dengan GPS HP. Layar yang belum tersedia mengatakan itu, bukan menampilkan tombol yang gagal.",
+                  "iOS tidak mengizinkan JoyoFit meneruskan notifikasi aplikasi lain, mencari iPhone dari jam, mengatur panggilan, atau mengirim SMS SOS, dan tidak ada pilihan notifikasi per aplikasi di JoyoFit. Jam membaca notifikasi iPhone sendiri lewat pengaturan iOS.",
                   "Tampilan aplikasinya saat ini berbahasa Inggris.",
                 ]}
               />
             </div>
             <p className="mt-6 text-[0.9375rem] leading-relaxed text-muted-foreground">
-              Penjelasan fitur iPhone yang sudah dan belum ada ada di{" "}
+              Watch face, olahraga dengan rute GPS ke Apple Health, cari jam, alarm, cuaca, siklus, makanan, target, olahraga langsung, laporan pagi, impor Huawei Health, dan Strava sudah ada di iPhone. Penjelasan lengkapnya ada di{" "}
               <a
                 href="https://github.com/dzulfikar08/joyofit/blob/master/docs/ios.md"
                 target="_blank"
@@ -451,21 +462,21 @@ export function IphonePage() {
 
           <div className="space-y-4">
             <div className="rounded-[1.75rem] bg-card p-6 md:p-8">
-              <h2 className="text-xl font-extrabold tracking-tight">Cara masuk</h2>
+              <h2 className="text-xl font-extrabold tracking-tight">Cara pasang</h2>
               <div className="mt-5">
                 <Steps
                   items={[
                     {
-                      title: "Kami tambahkan emailmu sebagai tester",
-                      body: "Isi email Apple ID yang kamu pakai di iPhone. Kami menambahkannya di App Store Connect secara manual, jadi tidak instan.",
+                      title: "Pasang TestFlight",
+                      body: "Pasang TestFlight dari App Store bila belum ada di iPhone-mu.",
                     },
                     {
-                      title: "Kamu terima email dari TestFlight",
-                      body: "Email undangannya datang dari Apple (TestFlight) ke alamat yang kamu daftarkan.",
+                      title: "Buka link beta publik",
+                      body: "Buka link TestFlight JoyoFit di iPhone dan ketuk Terima.",
                     },
                     {
-                      title: "Pasang TestFlight dan terima undangan",
-                      body: "Pasang TestFlight dari App Store bila belum ada, buka undangannya di iPhone, ketuk Terima, lalu Pasang JoyoFit.",
+                      title: "Pasang JoyoFit",
+                      body: "Ketuk Pasang di TestFlight, lalu pasangkan jammu di tab Watch.",
                     },
                   ]}
                 />
@@ -474,7 +485,7 @@ export function IphonePage() {
             <div className="rounded-[1.75rem] bg-card p-6 md:p-8">
               <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
                 <Mail className="size-5 text-primary" aria-hidden />
-                Daftar
+                Kabari saya (opsional)
               </h2>
               <div className="relative mt-5">
                 <WaitlistForm kind="iphone" />
