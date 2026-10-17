@@ -197,6 +197,75 @@ internal object NightHrv {
 }
 
 /**
+ * What the last night HRV step found, kept for the support report. The question a report on a new watch has to answer is whether
+ * any stress record reached the phone overnight, and a day of syncs scrolls that out of the log. In memory only.
+ */
+internal object NightHrvDiagnostics {
+  class Builder(val atSec: Long) {
+    var gate = false
+    var result = "not run"
+    var fileBytes: Int? = null
+    var records: Int? = null
+    var recordSpan: String? = null
+    val nights = ArrayList<String>()
+    var examined = 0
+    var stored = 0
+    var withoutRecords = 0
+
+    fun snapshot() = Snapshot(atSec, gate, result, fileBytes, records, recordSpan, nights.takeLast(MAX_NIGHT_LINES), examined, stored, withoutRecords)
+  }
+
+  class Snapshot(
+    val atSec: Long,
+    /** The watch lists 20/09, the command GB gates the stress file on. */
+    val gate: Boolean,
+    /** What became of the file: "gate closed", "file not available", "file empty", "records read", ... */
+    val result: String,
+    val fileBytes: Int?,
+    val records: Int?,
+    val recordSpan: String?,
+    /** One line per sleep night looked at, newest last. */
+    val nights: List<String>,
+    /** Sleep nights inside the file window that were long enough to score. */
+    val examined: Int,
+    val stored: Int,
+    /** Examined nights where the file held no stress record made while asleep: the sign of a watch that does not record overnight. */
+    val withoutRecords: Int,
+  )
+
+  @Volatile var last: Snapshot? = null
+
+  private const val MAX_NIGHT_LINES = 4
+
+  /** Support report lines: what lets a watch record night HRV, then the last sync. */
+  fun summary(listed: Boolean?, enabled: Boolean, calibratedAtSec: Long?, nowSec: Long = System.currentTimeMillis() / 1000): List<String> {
+    fun yn(value: Boolean) = if (value) "yes" else "no"
+    val lines = ArrayList<String>()
+    lines.add(
+      "Night HRV gates: automatic stress 20/09 listed=${listed?.let(::yn) ?: "unknown"} (last connect), switch=${if (enabled) "on" else "off"}, " +
+        "calibrated=${calibratedAtSec?.let { java.time.Instant.ofEpochSecond(it).toString() } ?: "never"}, " +
+        "dictionary sleep (cap 143)=${yn(DeviceCaps.supportsDictSleepSync)}, HRV dictionary (cap 235)=${yn(DeviceCaps.expandCapability(235))}, " +
+        "stress file over the new sync service=${yn(DeviceCaps.rriNewSync)}",
+    )
+    val snapshot = last
+    if (snapshot == null) {
+      lines.add("Night HRV last sync: none in this process")
+      return lines
+    }
+    val ago = (nowSec - snapshot.atSec).coerceAtLeast(0)
+    lines.add("Night HRV last sync: ${ago / 60} min ago, ${snapshot.result}")
+    if (snapshot.fileBytes != null) {
+      lines.add(
+        "  file ${snapshot.fileBytes} bytes, ${snapshot.records ?: 0} stress records${snapshot.recordSpan?.let { " ($it)" } ?: ""}; " +
+          "nights looked at ${snapshot.examined}, stored ${snapshot.stored}, with no record during sleep ${snapshot.withoutRecords}",
+      )
+    }
+    for (night in snapshot.nights) lines.add("  $night")
+    return lines
+  }
+}
+
+/**
  * The nightly HRV step of an activity sync: downloads `rrisqi_data.bin` for the window, works out each sleep night the
  * window covers and upserts `hrv_readings` (source `night`). Everything here is best effort: the caller isolates it.
  */
@@ -208,13 +277,24 @@ internal class NightHrvSync(
   private val downloader = FileDownloader(session, events)
 
   suspend fun sync(nowSec: Long, fullHistory: Boolean = false) {
+    val diag = NightHrvDiagnostics.Builder(nowSec)
+    try {
+      run(nowSec, fullHistory, diag)
+    } finally {
+      NightHrvDiagnostics.last = diag.snapshot()
+    }
+  }
+
+  private suspend fun run(nowSec: Long, fullHistory: Boolean, diag: NightHrvDiagnostics.Builder) {
     val autoStress = DeviceCaps.supports(NightHrv.GATE_SERVICE, NightHrv.GATE_COMMAND)
     val newSync = DeviceCaps.rriNewSync
+    diag.gate = autoStress
     log(
       "Night HRV gates: supportsAutoStress(20/09)=$autoStress rriNewSync(SettingRelated)=$newSync " +
         "commands20=[${DeviceCaps.supportedCommands[NightHrv.GATE_SERVICE]?.joinToString(" ") { it.hex2() } ?: "none"}]",
     )
     if (!autoStress) {
+      diag.result = "gate closed: the watch does not list 20/09, so it cannot record night HRV for us (stress file skipped, as GB)"
       log("Night HRV: service 0x20 command 0x09 not supported, RRI file skipped (as GB)")
       return
     }
@@ -237,10 +317,13 @@ internal class NightHrvSync(
       if (e.errorCode == ErrorCodes.DISCONNECTED) throw e
       // GB treats any download failure of this file as "no stress data"; the watch answers an unsupported or empty
       // request with an error status or file size -1, which surfaces here as a protocol error.
+      diag.result = "file not available [${e.errorCode}]: ${e.message}"
       events.log(LogDirection.ERROR, null, null, null, "Night HRV: ${request.filename} not available, skipped [${e.errorCode}]: ${e.message}")
       return
     }
+    diag.fileBytes = data.size
     if (data.isEmpty()) {
+      diag.result = "file empty: the watch holds no stress record in the window (automatic stress off, or nothing measured yet)"
       log("Night HRV: ${request.filename} is empty, the watch has no stress records in the window (automatic stress off, or nothing measured yet)")
       return
     }
@@ -248,20 +331,26 @@ internal class NightHrvSync(
 
     val file = NightHrv.parse(data)
     if (file == null) {
+      diag.result = "file shorter than its ${NightHrv.HEADER_BYTES} byte header, ignored"
       log("Night HRV: file shorter than the ${NightHrv.HEADER_BYTES} byte header, ignored")
       return
     }
     log("Night HRV: parsed fileSize=${file.fileSize} version=${file.version} bitmap=${file.bitmap} records=${file.records.size}")
+    diag.records = file.records.size
     if (!file.understood) {
+      diag.result = "file version ${file.version} not known (GB only knows 3), no records read"
       log("Night HRV: file version ${file.version} is not known (GB only knows 3), no records read")
       return
     }
     if (file.records.isEmpty()) {
+      diag.result = "file has a header but no stress records"
       log("Night HRV: file has no records")
       return
     }
-    log("Night HRV: records span ${file.records.minOf { it.startSec }}..${file.records.maxOf { it.endSec }}")
+    diag.recordSpan = "${file.records.minOf { it.startSec }}..${file.records.maxOf { it.endSec }}"
+    log("Night HRV: records span ${diag.recordSpan}")
     for (r in file.records.sortedBy { it.startSec }.takeLast(LOGGED_RECORDS)) log("Night HRV: record $r")
+    diag.result = "records read"
 
     val segments = withContext(Dispatchers.IO) {
       store.read { db ->
@@ -290,22 +379,29 @@ internal class NightHrvSync(
         continue
       }
       val summary = NightHrv.summarize(night, file.records)
+      val inWindow = file.records.count { it.endSec >= night.start && it.startSec <= night.end }
+      val detail = "$label asleep=${night.asleepSec / 60} min records=$inWindow inSleep=${summary.inSleep.size} usable=${summary.valid.size}"
       log(
-        "Night HRV: $label asleep=${night.asleepSec / 60} min records=${file.records.count { it.endSec >= night.start && it.startSec <= night.end }} " +
-          "inSleep=${summary.inSleep.size} usable=${summary.valid.size} flagsAcc=${summary.inSleep.count { it.accFlag != 0 }} " +
+        "Night HRV: $detail flagsAcc=${summary.inSleep.count { it.accFlag != 0 }} " +
           "rmssdMean=${summary.rmssdMean?.let { "%.1f".format(it) }} rmssdMedian=${summary.rmssdMedian?.let { "%.1f".format(it) }} " +
           "beats~${summary.beats}",
       )
+      diag.examined++
+      if (summary.inSleep.isEmpty()) diag.withoutRecords++
       val reason = summary.rejected
       val mean = summary.rmssdMean
       if (reason != null || mean == null) {
+        diag.nights.add("$detail: no reading (${reason ?: "no usable RMSSD"})")
         log("Night HRV: $label no reading: ${reason ?: "no usable RMSSD"}")
         continue
       }
       withContext(Dispatchers.IO) { saveNight(store.db(), night, mean, summary.beats) }
       stored++
+      diag.stored = stored
+      diag.nights.add("$detail: stored rmssd ${"%.1f".format(mean)} ms")
       log("Night HRV: $label stored rmssd=${"%.1f".format(mean)} ms from ${summary.valid.size} records")
     }
+    diag.result = if (stored > 0) "records read, $stored nights stored" else "records read, no night stored"
     log("Night HRV: $stored nights stored")
   }
 

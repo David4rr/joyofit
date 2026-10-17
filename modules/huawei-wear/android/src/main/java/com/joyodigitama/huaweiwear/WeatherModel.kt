@@ -41,6 +41,10 @@ internal data class WeatherReport(
   val hourly: List<WeatherHour>,
   /** Today first. */
   val daily: List<WeatherDay>,
+  /** Rows Open-Meteo listed but without a temperature or weather code, left out of [hourly]; the watch wants whole lists. */
+  val skippedHours: Int = 0,
+  /** Same for [daily]. */
+  val skippedDays: Int = 0,
 )
 
 /**

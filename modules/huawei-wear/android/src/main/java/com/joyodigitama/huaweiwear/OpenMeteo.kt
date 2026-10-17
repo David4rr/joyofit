@@ -75,8 +75,12 @@ internal object OpenMeteo {
       val hourPrecip = hourly.optJSONArray("precipitation_probability")
       val hourUv = hourly.optJSONArray("uv_index")
       val hours = ArrayList<WeatherHour>(hourTimes.length())
+      var skippedHours = 0
       for (i in 0 until hourTimes.length()) {
-        if (hourTemps.isNull(i) || hourCodes.isNull(i)) continue
+        if (hourTemps.isNull(i) || hourCodes.isNull(i)) {
+          skippedHours++
+          continue
+        }
         hours.add(
           WeatherHour(
             timestamp = hourTimes.getInt(i),
@@ -95,8 +99,12 @@ internal object OpenMeteo {
       val daySunrise = daily.optJSONArray("sunrise")
       val daySunset = daily.optJSONArray("sunset")
       val days = ArrayList<WeatherDay>(dayTimes.length())
+      var skippedDays = 0
       for (i in 0 until dayTimes.length()) {
-        if (dayCodes.isNull(i) || dayMax.isNull(i) || dayMin.isNull(i)) continue
+        if (dayCodes.isNull(i) || dayMax.isNull(i) || dayMin.isNull(i)) {
+          skippedDays++
+          continue
+        }
         days.add(
           WeatherDay(
             timestamp = dayTimes.getInt(i),
@@ -124,6 +132,8 @@ internal object OpenMeteo {
         uvIndex = if (current.isNull("uv_index") || !current.has("uv_index")) null else current.getDouble("uv_index"),
         hourly = hours,
         daily = days,
+        skippedHours = skippedHours,
+        skippedDays = skippedDays,
       )
     } catch (e: JSONException) {
       throw BadResponseException("Open-Meteo answered something unexpected: ${e.message}", e)

@@ -156,6 +156,8 @@ internal class WearRuntime private constructor(context: Context) {
       linkState = link.currentState(),
       log = supportLog.lines(),
       transport = link.lastAttemptTransport,
+      extraSummary = WeatherDiagnostics.summary(weatherSettings.enabled) +
+        NightHrvDiagnostics.summary(settings.autoStressListed, settings.stressEnabled, stress.status()["lastCalibratedAt"] as Long?),
     )
   }
 

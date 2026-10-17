@@ -119,6 +119,15 @@ internal class WearSettings(context: Context) {
     get() = prefs.getString(KEY_STRESS_CALIBRATION, null)
     set(value) = prefs.edit().apply { if (value == null) remove(KEY_STRESS_CALIBRATION) else putString(KEY_STRESS_CALIBRATION, value) }.apply()
 
+  /**
+   * Whether the watch listed the automatic stress command (20/09) the last time it connected; null before any connect. The live
+   * answer only exists while connected, and the app has to tell a watch that cannot record night HRV from one that is just
+   * away (`StressStatus.knownSupported`).
+   */
+  var autoStressListed: Boolean?
+    get() = if (prefs.contains(KEY_AUTO_STRESS_LISTED)) prefs.getBoolean(KEY_AUTO_STRESS_LISTED, false) else null
+    set(value) = prefs.edit().apply { if (value == null) remove(KEY_AUTO_STRESS_LISTED) else putBoolean(KEY_AUTO_STRESS_LISTED, value) }.apply()
+
   var profile: UserProfileData?
     get() {
       if (!prefs.contains(KEY_PROFILE_HEIGHT)) return null
@@ -173,5 +182,6 @@ internal class WearSettings(context: Context) {
     private const val KEY_LOW_HR_ALERT = "sensor_low_hr_alert"
     private const val KEY_STRESS_ENABLED = "stress_automatic"
     private const val KEY_STRESS_CALIBRATION = "stress_calibration"
+    private const val KEY_AUTO_STRESS_LISTED = "stress_auto_listed"
   }
 }

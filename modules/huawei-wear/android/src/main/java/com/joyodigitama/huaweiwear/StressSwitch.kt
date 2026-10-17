@@ -36,6 +36,7 @@ internal class StressSwitch(
     "enabled" to settings.stressEnabled,
     "lastCalibratedAt" to storedCalibration()?.let { it.endTime / 1000 },
     "supported" to supported(),
+    "knownSupported" to settings.autoStressListed,
   )
 
   private fun storedCalibration(): HuaweiStressParser.StressData? =
@@ -82,6 +83,12 @@ internal class StressSwitch(
     when (state) {
       LinkState.CONNECTED -> {
         val session = link.handle()?.session ?: return
+        // Written on every CONNECTED (one also follows each sync) but only stored when it changed.
+        val listed = DeviceCaps.supports(Stress.id.toInt(), Stress.AutomaticStress.id.toInt())
+        if (settings.autoStressListed != listed) {
+          settings.autoStressListed = listed
+          log("Automatic stress (20/09) is ${if (listed) "listed" else "not listed"} by this watch")
+        }
         val first = synchronized(lock) {
           if (resentOn === session) false else { resentOn = session; true }
         }
