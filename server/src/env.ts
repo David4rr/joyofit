@@ -17,6 +17,8 @@ export type AppEnv = Env & {
   EMAIL_FROM_NAME?: string;
   /** Expo Push access token (enhanced security). Optional: Expo accepts unauthenticated sends unless the project requires it. */
   EXPO_ACCESS_TOKEN?: string;
+  /** Replaces Expo's push endpoint, for a local or staging run that must not reach real devices. Unset in production. */
+  EXPO_PUSH_URL?: string;
 };
 
 export interface AuthUser {

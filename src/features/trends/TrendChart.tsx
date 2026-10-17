@@ -29,13 +29,15 @@ interface TrendChartProps {
   /** Dashed horizontal line at the range's average. */
   average?: number | null;
   label: string;
+  /** The right end of the axis; "Today" unless the last day is another day or the text needs another language. */
+  endLabel?: string;
 }
 
 /**
  * Days as a line or bars on a shared x axis. Days without a value are gaps: a line is cut there, never drawn across,
  * and a lone day is a dot. Dots mark only lone days and the newest day, so 90 days stay readable.
  */
-export function TrendChart({ values, kind, color, firstDay, domain, reference, average, label }: TrendChartProps) {
+export function TrendChart({ values, kind, color, firstDay, domain, reference, average, label, endLabel = 'Today' }: TrendChartProps) {
   const colors = useColors();
   const [width, setWidth] = useState(0);
 
@@ -155,7 +157,7 @@ export function TrendChart({ values, kind, color, firstDay, domain, reference, a
           {first.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
         </AppText>
         <AppText variant="caption" muted>
-          Today
+          {endLabel}
         </AppText>
       </View>
     </View>

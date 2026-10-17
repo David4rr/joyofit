@@ -17,6 +17,7 @@ import { CloudLockedError } from '@/cloud/api';
 import { authClient } from '@/cloud/auth';
 import { CLOUD_CONFIGURED } from '@/cloud/config';
 import { runUpload } from '@/cloud/uploader';
+import { releaseFamilyDevice } from '@/features/family/device';
 import { countPending, getCloudState, resetCloudCursors, setCloudState, type CloudState } from '@/db/cloud';
 import { errorMessage } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
@@ -235,6 +236,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     setError(null);
     try {
+      // Family monitoring needs the session to revoke this phone's tokens, so it goes first; it never blocks signing out.
+      await releaseFamilyDevice().catch(() => {});
       await authClient.signOut();
     } catch (e) {
       setError(errorMessage(e));

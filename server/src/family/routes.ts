@@ -43,7 +43,7 @@ function linkJson(link: LinkRow, me: string, now: number, others: Map<string, Ro
     id: link.id,
     role: watching ? ("watching" as const) : ("watchedBy" as const),
     label: link.label,
-    otherName: other?.name ?? null,
+    otherName: other?.name ?? (watching ? link.label : "Seseorang"),
     status: effectiveStatus(link, now),
     scopes: link.scopes,
     pausedUntil: link.pausedUntil,
@@ -148,6 +148,7 @@ family.get("/links", async (c) => {
   for (const link of watching) {
     const base = linkJson(link, me, now, users, frozen.has(link.id));
     let today: { steps: number | null; restingHr: number | null; sleepMin: number | null } | null = null;
+    let baselineHr: number | null = null;
     let chip: "ok" | "check" | "nosync" = "nosync";
     let dataAt: number | null = null;
     if (base.status === "active" && !base.frozen) {
@@ -155,10 +156,12 @@ family.get("/links", async (c) => {
       ({ chip, dataAt } = await chipFor(db, link, rules, now));
       const state = await loadState(db, link.monitoredId);
       const date = localParts(now, state?.tzOffsetMin ?? 420).date;
-      const row = (await loadDays(db, link.monitoredId, date)).find((d) => d.date === date);
+      const rows = await loadDays(db, link.monitoredId, shiftDate(date, -14));
+      const row = rows.find((d) => d.date === date);
+      if (link.scopes.restingHr) baselineHr = restingBaseline(rows, date).restingHr;
       today = { steps: link.scopes.steps ? (row?.steps ?? null) : null, restingHr: link.scopes.restingHr ? (row?.restingHr ?? null) : null, sleepMin: link.scopes.sleep ? (row?.sleepMin ?? null) : null };
     }
-    items.push({ ...base, dataAt, chip, today });
+    items.push({ ...base, dataAt, chip, today, baselineHr });
   }
   return c.json({
     watching: items,

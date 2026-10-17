@@ -17,9 +17,10 @@ export interface RogoQuery<T> {
 
 /**
  * One JoyoRogo read, run every time the screen gains focus while `enabled` (a signed-in session). `load` must be stable
- * (`useCallback`); a new one reads again. An answer that arrives after a newer read started is dropped.
+ * (`useCallback`); a new one reads again. An answer that arrives after a newer read started is dropped. `describe` words a
+ * failure for the screen (default: the error's own message); it must be stable too.
  */
-export function useRogoQuery<T>(load: () => Promise<T>, enabled: boolean): RogoQuery<T> {
+export function useRogoQuery<T>(load: () => Promise<T>, enabled: boolean, describe: (e: unknown) => string = errorMessage): RogoQuery<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,9 +34,9 @@ export function useRogoQuery<T>(load: () => Promise<T>, enabled: boolean): RogoQ
       setData(answer);
       setError(null);
     } catch (e) {
-      if (mine === generation.current) setError(errorMessage(e));
+      if (mine === generation.current) setError(describe(e));
     }
-  }, [load]);
+  }, [load, describe]);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);

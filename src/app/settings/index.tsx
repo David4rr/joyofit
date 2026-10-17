@@ -6,6 +6,8 @@ import type { IconName } from '@/components/IconChip';
 import { isIos } from '@/components/IosUnavailable';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { PageHeader, useContentPadding } from '@/components/Screen';
+import { useFamily } from '@/features/family/FamilyProvider';
+import { familySettingsSubtitle } from '@/features/family/format';
 import { useOnboarding } from '@/state/OnboardingProvider';
 import { spacing, useTheme, type Tint } from '@/theme';
 
@@ -22,6 +24,9 @@ interface SettingsGroup {
   title: string;
   data: readonly SettingsRow[];
 }
+
+/** The Keluarga row's destination; its subtitle follows the family state, so the screen finds the row by it. */
+const FAMILY_HREF = '/family';
 
 const GROUPS: readonly SettingsGroup[] = [
   {
@@ -127,6 +132,13 @@ const GROUPS: readonly SettingsGroup[] = [
         tint: 'heart',
         href: '/settings/cycle',
       },
+      {
+        title: 'Keluarga',
+        subtitle: familySettingsSubtitle(0, 0),
+        icon: 'people',
+        tint: 'link',
+        href: FAMILY_HREF,
+      },
     ],
   },
   {
@@ -167,6 +179,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const padding = useContentPadding(true);
   const guide = useOnboarding();
+  const family = useFamily();
+  const familySubtitle = familySettingsSubtitle(family.watching.length, family.watchedBy.length);
 
   return (
     <SectionList
@@ -190,7 +204,7 @@ export default function SettingsScreen() {
           icon={item.icon}
           tint={item.tint}
           title={item.title}
-          subtitle={item.subtitle}
+          subtitle={item.href === FAMILY_HREF ? familySubtitle : item.subtitle}
           onPress={() => (item.href ? router.push(item.href) : guide.open())}
           style={groupedRowStyle(theme, index, section.data.length)}
         />

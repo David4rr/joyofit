@@ -165,6 +165,14 @@
       "expo-secure-store",
       "expo-apple-authentication",
       "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#0A6580",
+          "defaultChannel": "family"
+        }
+      ],
       "expo-font",
       [
         "expo-image-picker",

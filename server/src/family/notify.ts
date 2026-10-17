@@ -18,7 +18,7 @@ const EXPO_URL = "https://exp.host/--/api/v2/push/send";
 export async function sendExpoPush(env: AppEnv, tokens: string[], message: PushMessage): Promise<{ delivered: number; dead: string[] }> {
   if (tokens.length === 0) return { delivered: 0, dead: [] };
   try {
-    const response = await fetch(EXPO_URL, {
+    const response = await fetch(env.EXPO_PUSH_URL || EXPO_URL, {
       method: "POST",
       headers: {
         "content-type": "application/json",
