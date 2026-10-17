@@ -47,7 +47,7 @@ interface FieldProps extends InputProps {
 }
 
 /** Label above an Input. The label doubles as the accessibility label. */
-export function Field({ label, hint, accessibilityLabel, ...input }: FieldProps) {
+export function Field({ label, hint, accessibilityLabel, children, ...input }: FieldProps) {
   return (
     <View style={styles.field}>
       <AppText variant="label" muted>
@@ -59,6 +59,7 @@ export function Field({ label, hint, accessibilityLabel, ...input }: FieldProps)
           {hint}
         </AppText>
       ) : null}
+      {children}
     </View>
   );
 }

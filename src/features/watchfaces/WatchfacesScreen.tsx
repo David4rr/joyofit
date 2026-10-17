@@ -5,7 +5,7 @@ import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { IconChip } from '@/components/IconChip';
-import { Field, Input } from '@/components/Input';
+import { Field } from '@/components/Input';
 import { Card, Section, useContentPadding, useRefreshControl } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
@@ -128,15 +128,15 @@ export function WatchfacesScreen() {
               Connect your watch to install faces directly.
             </Notice>
           ) : null}
-          <Field label="Install from custom URL" hint="Direct link to any public .hwt file">
-            <Input
-              placeholder="https://example.com/watchface.hwt"
-              value={customUrl}
-              onChangeText={setCustomUrl}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </Field>
+          <Field
+            label="Install from custom URL"
+            hint="Direct link to any public .hwt file"
+            placeholder="https://example.com/watchface.hwt"
+            value={customUrl}
+            onChangeText={setCustomUrl}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
           <Button
             label="Download & Install from URL"
             icon="cloud-download-outline"
