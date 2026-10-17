@@ -97,9 +97,11 @@ function WaitlistForm({ kind }: { kind: Kind }) {
 
   if (state.phase === "done") {
     return (
-      <div role="status" className="rounded-2xl bg-makan-soft p-5 text-makan-ink">
-        <p className="flex items-center gap-2 font-bold">
-          <Check className="size-5" aria-hidden />
+      <div role="status" className="rise rounded-2xl bg-makan-soft p-5 text-makan-ink">
+        <p className="flex items-center gap-2.5 font-bold">
+          <span className="pop grid size-7 shrink-0 place-items-center rounded-full bg-makan text-primary-foreground">
+            <Check className="check-draw size-4" strokeWidth={3} aria-hidden />
+          </span>
           Kamu sudah masuk daftar
         </p>
         <p className="mt-1.5 text-[0.9375rem] leading-relaxed">
@@ -178,12 +180,15 @@ function WaitlistForm({ kind }: { kind: Kind }) {
         type="submit"
         disabled={sending}
         {...goal(strava ? "strava_waitlist_submit_click" : "iphone_waitlist_submit_click", kind)}
-        className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-[background-color,transform] duration-150 hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none active:scale-[0.97] disabled:opacity-70 sm:w-auto"
+        className="inline-flex h-14 w-full items-center justify-center rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-[background-color,opacity,scale,translate] duration-150 ease-(--ease-out) hover:-translate-y-px hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none active:translate-y-0 active:scale-[0.97] active:duration-100 disabled:translate-y-0 disabled:scale-100 disabled:opacity-70 motion-reduce:transition-colors motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 sm:w-auto"
       >
-        {sending ? <LoaderCircle className="size-5 animate-spin motion-reduce:animate-none" aria-hidden /> : <Send className="size-5" aria-hidden />}
-        {sending ? "Mengirim" : strava ? "Masuk daftar tunggu Strava" : "Kabari saya"}
+        {/* Keyed so the label and icon crossfade between idle and sending instead of snapping. */}
+        <span key={sending ? "sending" : "idle"} className="fade inline-flex items-center gap-2">
+          {sending ? <LoaderCircle className="size-5 animate-spin motion-reduce:animate-none" aria-hidden /> : <Send className="size-5" aria-hidden />}
+          {sending ? "Mengirim" : strava ? "Masuk daftar tunggu Strava" : "Kabari saya"}
+        </span>
       </button>
-      <p role="alert" className={cn("flex gap-2 text-sm font-semibold text-destructive", state.phase !== "error" && "hidden")}>
+      <p role="alert" className={cn("rise flex gap-2 text-sm font-semibold text-destructive", state.phase !== "error" && "hidden")}>
         <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
         {state.phase === "error" ? state.message : null}
       </p>

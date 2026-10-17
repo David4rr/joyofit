@@ -60,6 +60,7 @@ import {
   JAM_SUDAH_DIUJI,
 } from "./jam";
 import { FAQ } from "./faq";
+import { useScrollReveal } from "./reveal";
 import { PanduanPage } from "./Panduan";
 import { PrivasiPage } from "./Privasi";
 import { isPublicPath, type PublicPath } from "./seo";
@@ -308,13 +309,14 @@ function Hero() {
           <span className="block">Data-mu.</span>
           <span className="block">HP-mu.</span>
         </h1>
+        {/* Headline and lead stay unfaded: the lead is the LCP element on mobile, and a text fade from opacity 0 would hide it from LCP. */}
         <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted-foreground md:text-xl">
           Pendamping jam Huawei yang jalan di HP sendiri. Langkah, detak jantung, tidur, dan olahraga
           ditarik langsung lewat Bluetooth dan disimpan di HP. Tanpa Huawei Health, cloud hanya kalau
           kamu mau.
         </p>
-        <PlatformButtons location="hero" className="mt-8" />
-        <div className="mt-4 grid max-w-lg gap-3 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2">
+        <PlatformButtons location="hero" className="hero-rise mt-8 [--i:1]" />
+        <div className="hero-rise mt-4 grid max-w-lg gap-3 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2 [--i:2]">
           <p className={cn(platform === "ios" && "order-1")}>
             <span className="font-bold text-foreground">Android:</span> tes tertutup Google Play. Gabung grup dulu, lalu
             ketuk{" "}
@@ -336,7 +338,7 @@ function Hero() {
             </p>
           )}
         </div>
-        <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+        <p className="hero-rise mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground [--i:3]">
           Gratis dan open source. Diuji di Huawei Watch Fit 4 Pro, jam lain eksperimen.{" "}
           <a
             href={DUKUNG_JAM_PATH}
@@ -346,7 +348,7 @@ function Hero() {
             Jam-mu belum diuji? Bantu kami mendukungnya.
           </a>
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="hero-rise mt-4 flex flex-wrap items-center gap-3 [--i:4]">
           <ButtonLink variant="secondary" href="#cara">
             Cara pakai
           </ButtonLink>
@@ -360,7 +362,7 @@ function Hero() {
       <figure className="relative mx-auto w-full max-w-[22rem] md:max-w-[26rem]">
         <div
           aria-hidden
-          className="absolute inset-x-4 top-10 bottom-6 rounded-[2.5rem] bg-makan-soft md:inset-x-0"
+          className="hero-backdrop absolute inset-x-4 top-10 bottom-6 rounded-[2.5rem] bg-makan-soft md:inset-x-0"
         />
         <Phone
           priority
@@ -369,7 +371,7 @@ function Hero() {
           alt="Layar Hari ini di JoyoFit: jam terhubung, langkah, detak jantung 80 bpm, baterai 58 persen, dan tombol Sync now. Antarmuka aplikasi berbahasa Inggris."
         />
         <div
-          className="relative z-10 mx-auto -mt-4 w-[13.5rem] rounded-[1.25rem] bg-card p-3.5 shadow-float md:absolute md:bottom-6 md:-left-20 md:mx-0 md:mt-0 md:w-60 md:animate-drift"
+          className="hero-card relative z-10 mx-auto -mt-4 w-[13.5rem] rounded-[1.25rem] bg-card p-3.5 shadow-float md:absolute md:bottom-6 md:-left-20 md:mx-0 md:mt-0 md:w-60"
           role="img"
           aria-label="Skor tidur 84 dari jam, tidur 6 jam 45 menit."
         >
@@ -1674,6 +1676,7 @@ function Switch() {
 }
 
 function HomePage() {
+  useScrollReveal();
   return (
     <>
       <Hero />
