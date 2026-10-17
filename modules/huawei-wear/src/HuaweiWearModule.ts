@@ -36,6 +36,7 @@ import type { WatchfaceInstallResult, WatchfaceList } from './HuaweiWearWatchfac
 import type { FaceApplyResult, FaceCustomization } from './HuaweiWearFaceCustom.types';
 import type { PhotoFace } from './HuaweiWearPhotoFace.types';
 import type { CoursesStatus, HealthyLivingStatus, RunningCourse, RunningCoursePushResult } from './HuaweiWearP2p.types';
+import type { RoutePushResult, RoutesStatus, WatchRoute } from './HuaweiWearRoutes.types';
 import type { HuaweiImportSummary } from './HuaweiWearImport.types';
 import type { FamilyConfig, FamilyUploadResult, FamilyUploadStatus } from './HuaweiWearFamily.types';
 
@@ -410,6 +411,17 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * course, ERR_UPLOAD_REJECTED with the watch's code when it refuses the file.
    */
   pushRunningCourse(course: RunningCourse): Promise<RunningCoursePushResult>;
+
+  /** Whether the watch takes routes, from its ExpandCapability bits. Synchronous; all false while no watch is connected. */
+  getRoutes(): RoutesStatus;
+  /**
+   * Sends a route to the watch: the P2P handshake (type 5, the route's name), then the simplified route as a P2P file (type 6),
+   * the way Huawei Health's "Send to wearable" does. Progress arrives as `onUploadProgress`. Rejects with ERR_NOT_CONNECTED,
+   * ERR_UNSUPPORTED (the watch does not set ExpandCapability 70, or has no P2P service), ERR_INVALID_ARGUMENT (bad route),
+   * ERR_ROUTE_FULL (the watch's route list is full), ERR_ROUTE_NAME (name too long for the watch), ERR_UPLOAD_REJECTED (the watch
+   * refused the file or the handshake failed; the message carries its code) and ERR_TIMEOUT (no handshake answer).
+   */
+  pushRoute(route: WatchRoute): Promise<RoutePushResult>;
 }
 
 export default requireNativeModule<HuaweiWearModule>('HuaweiWear');

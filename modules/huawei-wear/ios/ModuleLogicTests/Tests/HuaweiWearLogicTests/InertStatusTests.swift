@@ -160,6 +160,13 @@ final class InertStatusTests: XCTestCase {
             "CoursesStatus": p2p.coursesStatus(),
             "RunningCoursePushResult": P2pController.pushResultJS(messageId: 12, fileName: "12courseInfo.bin", bytes: 80, uploadStatus: nil, answer: nil),
             "RunningCoursePushResult#answered": P2pController.pushResultJS(messageId: 12, fileName: "12courseInfo.bin", bytes: 80, uploadStatus: 1, answer: [0x01, 0xAB]),
+            "RoutesStatus": p2p.routesStatus(),
+            "RoutePushResult": P2pController.routePushResult(
+                alreadyOnWatch: true, handshakeCode: 3, maxPoints: nil, version: 0, sentPoints: 0, bytes: 0, uploadStatus: nil, answerCode: nil
+            ),
+            "RoutePushResult#sent": P2pController.routePushResult(
+                alreadyOnWatch: false, handshakeCode: 1, maxPoints: 200, version: 2, sentPoints: 57, bytes: 7000, uploadStatus: 1, answerCode: 1
+            ),
             "DeviceInfo": info.toJS(),
             "BondedDevice": ["address": info.address, "name": info.name].merging(WatchModels.match(info.name).toJS()) { a, _ in a },
             "UserProfile": UserProfileData(heightCm: 170, weightKg: 65.5, birthYear: 1990, sex: "male", dailyStepGoal: 8000).toJS(),

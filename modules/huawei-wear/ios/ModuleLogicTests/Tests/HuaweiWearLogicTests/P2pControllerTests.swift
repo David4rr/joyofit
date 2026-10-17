@@ -229,6 +229,10 @@ final class P2pControllerTests: XCTestCase {
         var pingAnswers = true
         var uploadStatus: UInt8 = 1
         var courseAnswer: Bytes? = [0x0A, 0x0B]
+        /// The watch's side of a route push: the ack of the handshake (0xCF = received, nil = none), its answer (code, point limit), its answer to the file.
+        var routeAck: UInt8? = 0xCF
+        var routeHandshake: Bytes? = [1, 0, 0, 0, 200, 0, 0, 0]
+        var routeFile: Bytes? = [1, 0, 0, 0]
         var uploadName = ""
         var hrvPages: [Bytes] = []
         private var seq = 500
@@ -282,6 +286,14 @@ final class P2pControllerTests: XCTestCase {
                     let page: Bytes = hrvPages.isEmpty ? Self.answer(cls, [], 0, 0) : hrvPages.removeFirst()
                     return [frame(2, next(), "hw.watch.health.filesync", "hw.unitedevice.datadictionarysync", data: page)]
                 }
+                if cmd == 2, dst == "in.huawei.fitness", let data = try? r.tlv.bytes(0x07) {
+                    var out = [Bytes]()
+                    if let routeAck { out.append(frame(3, Int(seq), dst, "hw.unitedevice.fitness", code: routeAck)) }
+                    if let message = try? P2PSubMsg(parsing: data), Int(message.type) == RouteFile.businessRouteHandshake, let answer = routeHandshake {
+                        out.append(frame(2, next(), "in.huawei.fitness", "hw.unitedevice.fitness", data: P2PSubMsg(type: RouteFile.businessRouteHandshake, messageId: 77, data: answer).bytes))
+                    }
+                    return out
+                }
                 return []
             case (0x28, 0x02):
                 uploadName = (try? r.tlv.string(0x01)) ?? ""
@@ -313,6 +325,9 @@ final class P2pControllerTests: XCTestCase {
                 var out = [WeatherScriptedWatch.tlvFrame(service: 0x28, command: 0x07, t)]
                 if let answer = courseAnswer, let id = messageId(of: uploadName) {
                     out.append(frame(2, next(), "in.huawei.fitness", "hw.unitedevice.fitness", data: P2PSubMsg(type: 3, messageId: id, data: answer).bytes))
+                }
+                if uploadName == RouteFile.fileName, let answer = routeFile {
+                    out.append(frame(2, next(), "in.huawei.fitness", "hw.unitedevice.fitness", data: P2PSubMsg(type: RouteFile.businessRouteFile, messageId: 4242, data: answer).bytes))
                 }
                 return out
             default:
@@ -536,6 +551,228 @@ final class P2pControllerTests: XCTestCase {
         XCTAssertEqual(result["answered"] as? Bool, false)
         XCTAssertTrue(result["answerHex"] is NSNull)
         XCTAssertGreaterThan(Date().timeIntervalSince(started), 0.25)  // it waited for the answer
+    }
+
+    // MARK: route push
+
+    private func fixes(_ n: Int, altitude: Bool) -> [RouteFix] {
+        (0..<n).map { RouteFix(lat: -7.98 + Double($0) * 0.0004, lon: 112.63 + Double($0) * 0.0002, alt: altitude ? 400 + Double($0) : 0) }
+    }
+
+    private func route(_ n: Int = 40, altitude: Bool = true, name: String = "Lari pagi") -> RouteTrack {
+        RouteTrack(id: "0b8d4c52-5e0a-4f3e-9d27-000000000001", name: name, fixes: fixes(n, altitude: altitude), hasAltitude: altitude, totalTimeSec: 1800)
+    }
+
+    private func routeError(_ h: Harness, _ route: RouteTrack) async -> WearError? {
+        do {
+            _ = try await h.controller.pushRoute(route)
+            return nil
+        } catch let e as WearError { return e } catch { return nil }
+    }
+
+    func testRoutesStatusReportsTheGates() async {
+        let h = Harness(expand: [70, 218])
+        let off = h.controller.routesStatus()
+        XCTAssertEqual(Set(off.keys), ["p2p", "deliver", "altitude", "image", "sceneTypes", "climb"])
+        XCTAssertEqual(off["deliver"] as? Bool, true)  // the harness link is connected from the start
+        await connect(h)
+        let s = h.controller.routesStatus()
+        XCTAssertEqual(s["p2p"] as? Bool, true)
+        XCTAssertEqual(s["deliver"] as? Bool, true)
+        XCTAssertEqual(s["altitude"] as? Bool, false)
+        XCTAssertEqual(s["image"] as? Bool, true)
+        XCTAssertEqual(s["sceneTypes"] as? Bool, false)
+        XCTAssertEqual(s["climb"] as? Bool, false)
+        h.link.setConnected(false)
+        XCTAssertEqual(h.controller.routesStatus()["deliver"] as? Bool, false)
+    }
+
+    func testARoutePushSendsTheHandshakeThenTheVersionTwoFileWhenTheAltitudeGateIsSet() async throws {
+        let h = Harness(expand: [70, 216])
+        await connect(h)
+        let r = route()
+        let result = try await h.controller.pushRoute(r)
+        let body = RouteFile.convert(RouteTrack(id: r.id, name: r.name, fixes: r.fixes, hasAltitude: true, totalTimeSec: 1800, version: 2), maxPoints: 200)
+        let points = RouteFile.pointCount(file: body, version: 2)
+        XCTAssertEqual(result["ok"] as? Bool, true)
+        XCTAssertEqual(result["alreadyOnWatch"] as? Bool, false)
+        XCTAssertEqual(result["handshakeCode"] as? Int, 1)
+        XCTAssertEqual(result["maxPoints"] as? Int, 200)
+        XCTAssertEqual(result["version"] as? Int, 2)
+        XCTAssertEqual(result["sentPoints"] as? Int, points)
+        XCTAssertEqual(result["bytes"] as? Int, 36 + body.count)
+        XCTAssertEqual(result["uploadStatus"] as? Int, 1)
+        XCTAssertEqual(result["answerCode"] as? Int, 1)
+        XCTAssertEqual(Set(result.keys), ["ok", "alreadyOnWatch", "handshakeCode", "maxPoints", "version", "sentPoints", "bytes", "uploadStatus", "answerCode"])
+        XCTAssertEqual(h.uploadName, "byte.bin")
+        // The handshake is a P2P command from the module to the fitness app: a type 5 message whose body is the route name as TLV tag 5.
+        let handshake = try XCTUnwrap(
+            h.p2pWrites.first { (try? $0.tlv.byte(0x01)) == 2 && (try? $0.tlv.string(0x04)) == "in.huawei.fitness" }
+        )
+        let message = try P2PSubMsg(parsing: try handshake.tlv.bytes(0x07))
+        XCTAssertEqual(Int(message.type), 5)
+        XCTAssertEqual(message.data, RouteFile.handshakeBody(name: "Lari pagi"))
+        // The upload announced the fitness app as the destination, like the course push.
+        let info = try XCTUnwrap(h.link.watch.requests.first { $0.key == "28/02" })
+        XCTAssertEqual(try info.tlv.string(0x01), "byte.bin")
+        XCTAssertEqual(try info.tlv.int(0x02), Int32(36 + body.count))
+        XCTAssertEqual(try info.tlv.byte(0x03), 7)
+        XCTAssertEqual(try info.tlv.string(0x08), "hw.unitedevice.fitness")
+        XCTAssertEqual(try info.tlv.string(0x09), "in.huawei.fitness")
+        let messages = h.events.messages()
+        XCTAssertTrue(messages.contains { $0.hasPrefix("Routes: gates ExpandCapability 70 (deliver)=true 216 (altitude)=true") })
+        XCTAssertTrue(messages.contains { $0.contains("Routes: handshake answer body 01000000C8000000 -> code 1, point limit 200") })
+        XCTAssertTrue(messages.contains { $0.contains("version 2, byte.bin \(36 + body.count) bytes") })
+        XCTAssertTrue(messages.contains { $0.contains("file answer body 01000000 -> code 1") })
+    }
+
+    func testWithoutTheAltitudeGateTheFileIsTheVersionOneLine() async throws {
+        let h = Harness(expand: [70])
+        await connect(h)
+        let r = route()
+        let result = try await h.controller.pushRoute(r)
+        let body = RouteFile.convert(RouteTrack(id: r.id, name: r.name, fixes: r.fixes, hasAltitude: false, totalTimeSec: 1800, version: 1), maxPoints: 200)
+        XCTAssertEqual(result["version"] as? Int, 1)
+        XCTAssertEqual(result["sentPoints"] as? Int, RouteFile.pointCount(file: body, version: 1))
+        XCTAssertEqual(result["bytes"] as? Int, 36 + body.count)
+        XCTAssertEqual(result["handshakeCode"] as? Int, 1)
+    }
+
+    func testTheWatchesPointLimitBelowTwoHundredIsRaisedAndAHigherOneIsKept() async throws {
+        let h = Harness(expand: [70, 216])
+        h.routeHandshake = [1, 0, 0, 0, 100, 0, 0, 0]
+        await connect(h)
+        var result = try await h.controller.pushRoute(route())
+        XCTAssertEqual(result["maxPoints"] as? Int, 100)
+        XCTAssertTrue(h.events.messages().contains { $0.contains("(limit 200)") })
+        h.routeHandshake = [1, 0, 0, 0, 0xF4, 1, 0, 0]
+        result = try await h.controller.pushRoute(route())
+        XCTAssertEqual(result["maxPoints"] as? Int, 500)
+        XCTAssertTrue(h.events.messages().contains { $0.contains("(limit 500)") })
+    }
+
+    func testARouteAlreadyOnTheWatchIsNotUploaded() async throws {
+        let h = Harness(expand: [70, 216])
+        h.routeHandshake = [3, 0, 0, 0]
+        await connect(h)
+        let result = try await h.controller.pushRoute(route())
+        XCTAssertEqual(result["ok"] as? Bool, true)
+        XCTAssertEqual(result["alreadyOnWatch"] as? Bool, true)
+        XCTAssertEqual(result["handshakeCode"] as? Int, 3)
+        XCTAssertTrue(result["maxPoints"] is NSNull)
+        XCTAssertEqual(result["version"] as? Int, 0)
+        XCTAssertEqual(result["sentPoints"] as? Int, 0)
+        XCTAssertEqual(result["bytes"] as? Int, 0)
+        XCTAssertTrue(result["uploadStatus"] is NSNull)
+        XCTAssertTrue(result["answerCode"] is NSNull)
+        XCTAssertEqual(h.uploadName, "")
+    }
+
+    func testTheHandshakeAnswersThatRefuseTheRoute() async throws {
+        let h = Harness(expand: [70, 216])
+        await connect(h)
+        h.routeHandshake = [2, 0, 0, 0]
+        var e = await routeError(h, route())
+        XCTAssertEqual(e?.code, .routeFull)
+        XCTAssertEqual(e?.statusCode, 2)
+        h.routeHandshake = [5, 0, 0, 0]
+        e = await routeError(h, route())
+        XCTAssertEqual(e?.code, .routeName)
+        XCTAssertEqual(e?.statusCode, 5)
+        h.routeHandshake = [4, 0, 0, 0]
+        e = await routeError(h, route())
+        XCTAssertEqual(e?.code, .uploadRejected)
+        XCTAssertEqual(e?.statusCode, 4)
+        h.routeHandshake = [1, 0]  // too short to hold a code
+        e = await routeError(h, route())
+        XCTAssertEqual(e?.code, .uploadRejected)
+        XCTAssertNil(e?.statusCode)
+        XCTAssertEqual(h.uploadName, "")
+    }
+
+    func testAHandshakeTheWatchNeverAnswersTimesOut() async throws {
+        let h = Harness(expand: [70, 216])
+        h.routeHandshake = nil
+        await connect(h)
+        let started = Date()
+        let e = await routeError(h, route())
+        XCTAssertEqual(e?.code, .timeout)
+        XCTAssertGreaterThan(Date().timeIntervalSince(started), 0.25)
+        XCTAssertEqual(h.uploadName, "")
+    }
+
+    func testAHandshakeTheWatchDoesNotAcknowledgeIsRejectedWithItsCode() async throws {
+        let h = Harness(expand: [70, 216])
+        h.routeAck = 0x12
+        await connect(h)
+        let e = await routeError(h, route())
+        XCTAssertEqual(e?.code, .uploadRejected)
+        XCTAssertEqual(e?.statusCode, 0x12)
+        XCTAssertEqual(h.uploadName, "")
+    }
+
+    func testARefusalOfTheFileIsReportedAndASilentWatchIsNot() async throws {
+        let h = Harness(expand: [70, 216])
+        await connect(h)
+        h.routeFile = [4, 0, 0, 0]
+        let e = await routeError(h, route())
+        XCTAssertEqual(e?.code, .uploadRejected)
+        XCTAssertEqual(e?.statusCode, 4)
+        XCTAssertEqual(h.uploadName, "byte.bin")
+        // No answer to the file within the wait: the upload itself was accepted, so the result carries no answer code.
+        h.routeFile = nil
+        let result = try await h.controller.pushRoute(route())
+        XCTAssertEqual(result["ok"] as? Bool, true)
+        XCTAssertEqual(result["uploadStatus"] as? Int, 1)
+        XCTAssertTrue(result["answerCode"] is NSNull)
+    }
+
+    func testARoutePushRefusesWhatCannotWork() async throws {
+        let h = Harness(expand: [37])
+        await connect(h)
+        var e = await routeError(h, route(name: " "))
+        XCTAssertEqual(e?.code, .invalidArgument)
+        e = await routeError(h, route())
+        XCTAssertEqual(e?.code, .unsupported)  // ExpandCapability 70 is not set
+        XCTAssertTrue(h.events.messages().contains { $0.hasPrefix("Routes: gates ExpandCapability 70 (deliver)=false") })
+        h.link.setConnected(false)
+        e = await routeError(h, route())
+        XCTAssertEqual(e?.code, .notConnected)
+    }
+
+    func testARouteIsParsedWithTheAndroidRecordDefaults() throws {
+        let raw: [String: Any] = ["name": "  Lari  ", "points": [-7.98, 112.63, 400, -7.97, 112.64, 410.5], "hasAltitude": true, "durationSec": 1800]
+        let r = try P2pController.parseRoute(raw)
+        XCTAssertEqual(r.name, "Lari")
+        XCTAssertEqual(r.fixes, [RouteFix(lat: -7.98, lon: 112.63, alt: 400), RouteFix(lat: -7.97, lon: 112.64, alt: 410.5)])
+        XCTAssertTrue(r.hasAltitude)
+        XCTAssertEqual(r.totalTimeSec, 1800)
+        XCTAssertEqual(r.version, 2)
+        XCTAssertEqual(r.id.count, 36)
+        XCTAssertEqual(r.id, r.id.lowercased())
+        XCTAssertNotEqual(r.id, try P2pController.parseRoute(raw).id)
+        // Without hasAltitude the altitude column is dropped, a negative duration is 0, and integers are numbers too.
+        let plain = try P2pController.parseRoute(["name": "A", "points": [1, 2, 99], "durationSec": -5])
+        XCTAssertEqual(plain.fixes, [RouteFix(lat: 1, lon: 2, alt: 0)])
+        XCTAssertFalse(plain.hasAltitude)
+        XCTAssertEqual(plain.totalTimeSec, 0)
+        XCTAssertEqual(try P2pController.parseRoute([:]).fixes.count, 0)
+    }
+
+    func testAMistypedRouteIsAnInvalidArgument() {
+        func rejects(_ raw: [String: Any], _ message: String, line: UInt = #line) {
+            XCTAssertThrowsError(try P2pController.parseRoute(raw), line: line) {
+                XCTAssertEqual(($0 as? WearError)?.code, .invalidArgument, line: line)
+                XCTAssertEqual(($0 as? WearError)?.message, message, line: line)
+            }
+        }
+        rejects(["name": 5], "'name' must be text")
+        rejects(["points": "1,2,3"], "'points' must be a list of numbers")
+        rejects(["points": [1, "2", 3]], "'points' must be a list of numbers")
+        rejects(["points": [1, 2]], "A route is a list of latitude, longitude, altitude triples")
+        rejects(["hasAltitude": "yes"], "'hasAltitude' must be true or false")
+        rejects(["durationSec": 1.5], "'durationSec' must be a whole number")
+        rejects(["durationSec": "60"], "'durationSec' must be a whole number")
     }
 }
 

@@ -41,6 +41,10 @@ public enum ErrorCode: String, Sendable {
     /// The watch answered the automatic stress setting with an error code.
     case stressRejected = "ERR_STRESS_REJECTED"
     case uploadRejected = "ERR_UPLOAD_REJECTED"
+    /// The watch's route list is full (handshake answer 2): the user has to delete a route on the watch.
+    case routeFull = "ERR_ROUTE_FULL"
+    /// The watch does not take a route name this long (handshake answer 5).
+    case routeName = "ERR_ROUTE_NAME"
     /// Weather: no position (permission missing, no fix yet, no city chosen). Sent to the watch as GPS_PERMISSION_ERROR.
     case weatherLocation = "ERR_WEATHER_LOCATION"
     /// Weather: Open-Meteo unreachable or answering garbage. Sent to the watch as NETWORK_ERROR.

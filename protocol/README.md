@@ -761,6 +761,39 @@ time or distance targets, pace / heart-rate % / cadence intensity and repeat gro
 4. The meaning of intensity types 13 / 17 (zones) and of `instensityValueH/L` for heart-rate range (percent vs bpm) was not confirmed; JoyoFit never sends zones.
 5. Plans (business types 2, 7, 21, 22) and the DataSync trigger `800200002` (ExpandCapability 295, not set on our watch) are not implemented.
 
+### (d) Routes (navigation on the watch): module `fitness` ↔ `in.huawei.fitness` (fingerprint `SystemApp`)
+
+What Huawei Health's "My route -> Send to wearable" does (`RouteTransferDataHolder`, `SportHiWearBusinessType` 5 and 6, Huawei Health 17.0.8.300) and what Gadgetbridge's `HuaweiP2PFitnessData.sendTrack` +
+`HuaweiConvertTrack` reimplement. JoyoFit's code: `RouteFile.kt` / `RouteFile.swift` (converter), `P2pController.pushRoute`, `FitnessCourseService` (answers by business type); the converter is tested byte for byte
+against GB's Java (`GoldenGen/src/GoldenRoute.java`, `Fixtures/route.json`). Nothing but the route polyline goes to the watch: **no turn-by-turn instructions, no waypoints / POIs, no off-route alert** exist in this protocol
+(the watch draws the line and the wearer's position; "marker points" are a Huawei-Health-side feature of version 2 that JoyoFit never fills). A route is for outdoor running, cycling and walking only.
+
+**Gates (ExpandCapability, from `RouteTransferDataHolder`):** `70` = `isSupportRouteDeliver` (without it Huawei Health does not send; JoyoFit rejects with ERR_UNSUPPORTED), `216` = version-2 file (altitude profile and marker points;
+without it Huawei Health clears altitude and markers and sets version 1), `218` = route picture handshake (types 100 to 102, not used), `272` = route scene types, `273` = experience route, `318` = climb/slope for cycling routes.
+On the capability blob the app has logged (`FF7F01EA2E...0404`): 70, 216 and 218 set; 272, 273 and 318 not set, so that watch takes both the version-2 route and the plain one, no scene types, no climb data.
+
+**Flow (all messages are P2P module `fitness`; the 36-byte little-endian header is `businessType, version 1, totalLength, businessHeadLength 0, messageId`):**
+
+| Step | Direction | What |
+|---|---|---|
+| 1 | phone to watch | `34/01` cmd 2, payload = header (type **5**, next message id) + TLV `05` = the route's name (UTF-8, Huawei varint length). The watch acknowledges the packet with `0xcf` |
+| 2 | watch to phone | a P2P data message of type **5**: body `int32 LE code` and, when the watch says it, `int32 LE maxPoints`. Codes (Huawei Health's `setErrorCodeResult`, texts inferred from its string ids): **1** go on, **2** the watch's route list is full, **3** a route with this name is already there, **4** failed, **5** name too long. GB: 0 = error, 1 = success |
+| 3 | phone to watch | the route as a P2P **file** over `28` (file type 7, source `hw.unitedevice.fitness`, destination `in.huawei.fitness`, fingerprints `UniteDeviceManagement` / `SystemApp`), name `byte.bin` (GB), content = header (type **6**) + the converted route below. Huawei Health asks the converter for `max(maxPoints, 200)` points; so does GB |
+| 4 | watch to phone | a message of type **6**, body `int32 LE code` (1 = saved) after the `28/07` upload result. Huawei Health times every step out after 10 s |
+
+**Converted route (version 2, `ExpandCapability 216`):** a `0x108`-byte header `{int32 -1, int32 version 2, int32 totalTimeSec, float32 totalDistanceM, int32 savedPoints, char[36] trackId (UUID), char[128] name,
+float32 total3dDistanceM, int32 hasAltitude, int32 0, int32 0, byte 0, byte 0, int16 0}`, then `savedPoints` records of `0x38` bytes `{double lon, double lat, int32 dxM, int32 dyM, int32 sourceIndex, int32 distanceM, int16 0,
+byte pointType, byte 0, int32 altitudeM, int32 distance3dM, int32 ascentM, int32 descentM, int32 0}` and, when `hasAltitude`, a `0xd38`-byte altitude profile: a 24-byte summary (total distance, 3D distance, ascent, descent in 0.1 m) and 84 records of 40 bytes
+(start, 82 evenly spaced distances, end; altitude, `double lon, lat`, distance, 3D distance, ascent and descent in 0.1 m). **Version 1 (no 216):** `{int32 totalTimeSec, float32 totalDistanceM, int32 savedPoints}` then `savedPoints` records of `0x28` bytes
+`{double lon, double lat, int32 dxM, int32 dyM, int32 sourceIndex, int32 distance (0.1 m), int16 0, byte pointType, 5 zero bytes}`. `dx` / `dy` are metres east / north of the first point
+(`1111949.375` m per degree, scaled by cos(latitude of the first point)). The point list is a simplification (a line-deviation filter with 50 m and 200 m thresholds that keeps the shape: types 1 start,
+2 / 3 / 4 shape points, 8 / 9 the two ends of a gap, 4 also the end), thinned to `maxPoints` by repeatedly merging the two closest neighbours. The file is therefore a few hundred points however long the route.
+
+**Limits, per model (what the protocol and Huawei's help pages say; not measured on every model):** the watch must set ExpandCapability 70 (Huawei: "Workout route syncing to your HUAWEI watch" lists the HUAWEI WATCH range);
+the number of routes the watch holds is capped (answer code 2; the number is not known); point limit is the watch's own `maxPoints`, at least 200 are sent; on the watch the route is used from the pre-workout settings
+(gear icon -> Routes -> pick the route -> workout navigation on; HarmonyOS 6 watches: swipe up on the pre-workout screen -> More -> Routes) in outdoor running, cycling and walking modes only. Routes are deleted on the watch
+(long press in Routes). **Open:** the exact route cap, the name length limit, whether the Fit 4 and Fit 4 Pro show routes in every outdoor mode; see Observations for what was seen on a real watch.
+
 ### Device test steps
 
 1. Connect, tap **Sync now** and read `adb logcat -d -s JoyoFit:V | grep -E "P2P|Health metric|Healthy Living|Courses"`. Expected: `P2P: SupportedCommands 34/01=true; registering P2P services`, `P2P dictionary sync: ping answered 0xca`,
@@ -768,6 +801,8 @@ time or distance targets, pace / heart-rate % / cadence intensity and repeat gro
 2. Open **Healthy Living** on the watch. Expected: `Healthy Living: request payload … bytes`, `request msgType=2001 msgVer=…`, `reporting (request) day … in N report(s)`, and `report 1/N acknowledged by the watch with 0xcf`.
    If the watch shows nothing, the log has both sides of the exchange; the request bytes are enough to correct the schema.
 3. Courses (Settings → Advanced → Running courses, then the editor): `Courses: gates … 41=true 169=true`, the course bytes, the `Upload:` lines of the file transfer and `Courses: upload finished, watch result status=…`.
+4. Routes (Routes library, a saved route, **Kirim ke jam**): `Routes: gates ExpandCapability 70 (deliver)=true 216 (altitude)=...`, `Routes: handshake for "<name>": ...`, `Routes: handshake answer body ... -> code 1, point limit N`,
+   `Routes: <name>: N points -> M (limit L), version V, byte.bin ... bytes`, the `Upload:` lines and `Routes: upload finished, watch result status=1; file answer body ... -> code 1`. Then on the watch: Workout -> outdoor run -> gear icon -> Routes.
 
 ## Auth decision
 

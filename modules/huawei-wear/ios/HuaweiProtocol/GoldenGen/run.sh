@@ -28,6 +28,7 @@ CP="$SLF4J_JAR:$JSON_JAR${ZIP4J_JAR:+:$ZIP4J_JAR}"
 "$JAVAC" -nowarn -d "$OUT/classes" -cp "$CP" \
   $(find "$HERE/stubs" -name '*.java') \
   $(find "$JAVA_SRC/nodomain" -name '*.java') \
+  $(find "$HERE/vendor" -name '*.java') \
   $(find "$HERE/src" -name '*.java') 2>"$OUT/javac.log" || { cat "$OUT/javac.log" >&2; exit 1; }
 
 if [ $# -gt 0 ]; then mains=("$@"); else mains=($(cd "$HERE/src" && ls Golden*.java | grep -v '^GoldenSupport' | sed 's/\.java$//')); fi

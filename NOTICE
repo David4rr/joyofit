@@ -14,6 +14,10 @@ upstream commit bb7a1e83a29837153bf0c3a50e9869dec3dac0dd, licensed AGPL-3.0-or-l
 Original copyright notices are retained in each ported file; modified files carry a
 "Modified for watch-fit" line.
 
+RouteFile.kt and RouteFile.swift (the route file sent to the watch) are ports of Gadgetbridge's HuaweiConvertTrack.java and
+HuaweiRouteTrack.java, and the route push in P2pController follows its HuaweiP2PFitnessData.java; verbatim copies of the two
+converter classes live in modules/huawei-wear/ios/HuaweiProtocol/GoldenGen/vendor/ only to generate the test fixtures.
+
 The importer for Huawei's Privacy Centre health export (HuaweiExport*.kt, HuaweiHealthDetailParser.kt,
 HuaweiMotionPathParser.kt in modules/huawei-wear/android/) was written for this project. Its idea of the export
 layout (folders, record keys, the motion-path track records, the pause marker and the invalid-JSON quirks) comes from

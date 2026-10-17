@@ -51,6 +51,12 @@ internal object ErrorCodes {
   /** The watch refused a file upload or a watch face operation; the message carries the exact code it returned. */
   const val UPLOAD_REJECTED = "ERR_UPLOAD_REJECTED"
 
+  /** The watch's route list is full (handshake answer 2): the user has to delete a route on the watch. */
+  const val ROUTE_FULL = "ERR_ROUTE_FULL"
+
+  /** The watch does not take a route name this long (handshake answer 5). */
+  const val ROUTE_NAME = "ERR_ROUTE_NAME"
+
   /** The 1-minute HRV measurement ended without enough clean beats to compute anything. */
   const val HRV_TOO_FEW_BEATS = "ERR_HRV_TOO_FEW_BEATS"
   const val HRV_CANCELLED = "ERR_HRV_CANCELLED"

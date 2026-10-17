@@ -34,6 +34,8 @@ const sources = {
   HuaweiImportSummary: 'HuaweiWearImport.types',
   HuaweiImportProgressEvent: 'HuaweiWearImport.types',
   RunningCoursePushResult: 'HuaweiWearP2p.types',
+  RoutesStatus: 'HuaweiWearRoutes.types',
+  RoutePushResult: 'HuaweiWearRoutes.types',
 };
 const core = 'HuaweiWear.types';
 

@@ -321,6 +321,7 @@ public final class HuaweiWearModule: Module {
         Function("getActivityGoals") { () -> [String: Any] in runtime.activityGoals.status() }
         Function("getHealthyLiving") { () -> [String: Any] in runtime.p2p.healthLivingStatus() }
         Function("getCourses") { () -> [String: Any] in runtime.p2p.coursesStatus() }
+        Function("getRoutes") { () -> [String: Any] in runtime.p2p.routesStatus() }
 
         AsyncFunction("getNotificationApps") { () async throws -> [[String: Any]] in [] }
         AsyncFunction("getCycle") { () async throws -> [String: Any] in
@@ -527,6 +528,10 @@ public final class HuaweiWearModule: Module {
 
         AsyncFunction("pushRunningCourse") { (course: [String: Any]) async throws -> [String: Any] in
             try await wearCall { try await runtime.p2p.pushCourse(P2pController.parseCourse(course)) }
+        }
+
+        AsyncFunction("pushRoute") { (route: [String: Any]) async throws -> [String: Any] in
+            try await wearCall { try await runtime.p2p.pushRoute(P2pController.parseRoute(route)) }
         }
 
         // MARK: cycle calendar

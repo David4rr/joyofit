@@ -286,6 +286,8 @@ public final class FitnessCourseService: P2PService, @unchecked Sendable {
     private let lock = NSLock()
     private var _pingCode: Int?
     private var waiting: [Int: P2PWaiter<Bytes>] = [:]
+    /// Pending route pushes by business type (5 handshake, 6 file): the watch's answer to a route carries a message id of its own choosing.
+    private var waitingRoute: [Int: P2PWaiter<Bytes>] = [:]
 
     public init(manager: P2PManager, log: @escaping LogSink) {
         self.log = log
@@ -310,8 +312,11 @@ public final class FitnessCourseService: P2PService, @unchecked Sendable {
     public override func unregister() {
         clearPending()
         let pending = lock.p2pLocked { () -> [P2PWaiter<Bytes>] in
-            defer { waiting.removeAll() }
-            return Array(waiting.values)
+            defer {
+                waiting.removeAll()
+                waitingRoute.removeAll()
+            }
+            return Array(waiting.values) + Array(waitingRoute.values)
         }
         for waiter in pending { waiter.cancel() }
     }
@@ -325,11 +330,24 @@ public final class FitnessCourseService: P2PService, @unchecked Sendable {
 
     public func forget(_ messageId: Int) { lock.p2pLocked { _ = waiting.removeValue(forKey: messageId) } }
 
+    /// Expect the watch's message of `businessType` (a route handshake or file answer); the waiter completes with its body.
+    public func expectRouteAnswer(_ businessType: Int) -> P2PWaiter<Bytes> {
+        let waiter = P2PWaiter<Bytes>()
+        lock.p2pLocked { waitingRoute[businessType] = waiter }
+        return waiter
+    }
+
+    public func forgetRouteAnswer(_ businessType: Int) { lock.p2pLocked { _ = waitingRoute.removeValue(forKey: businessType) } }
+
     public override func handleData(_ data: Bytes) throws {
         let message = try P2PSubMsg(parsing: data)
         note(
             "Courses: watch message type=\(message.type) version=\(message.version) length=\(message.totalLength) messageId=\(message.messageId) body=\(message.data?.hexUpper ?? "none")"
         )
+        if let route = lock.p2pLocked({ waitingRoute.removeValue(forKey: Int(message.type)) }) {
+            route.complete(message.data ?? [])
+            return
+        }
         let pending = lock.p2pLocked { waiting.removeValue(forKey: Int(message.messageId)) }
         guard let pending else {
             note("Courses: no push is waiting for message id \(message.messageId)")
