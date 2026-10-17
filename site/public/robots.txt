@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /review/
 
 Sitemap: https://fit.joyorogo.com/sitemap.xml
-Disallow: /review/

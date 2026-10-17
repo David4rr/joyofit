@@ -16,14 +16,13 @@ export const TESTER_GROUP_URL = "https://groups.google.com/g/joyofit-testers";
 export const TESTER_OPTIN_URL = "https://play.google.com/apps/testing/com.joyodigitama.joyofit";
 export const CONTACT_EMAIL = "dzulfikar.at@gmail.com";
 export const DUKUNG_JAM_PATH = "/dukung-jam";
+export const SELF_HOST_PATH = "/self-host";
+export const JAM_PATH = "/jam";
+export const PANDUAN_PATH = "/panduan";
+export const PRIVASI_PATH = "/privasi";
 export const WATCH_REPORTS_URL = `${GITHUB_URL}/issues?q=is%3Aissue+label%3Awatch-report`;
 export const WATCH_REPORT_FORM_URL = `${GITHUB_URL}/issues/new?template=watch-report.yml`;
 export const WATCH_REQUEST_URL = `${GITHUB_URL}/issues/new?title=${encodeURIComponent("[Permintaan jam] ")}&body=${encodeURIComponent("Model jam:\nNama Bluetooth di HP (kalau tahu):\nSaya bisa: bantu uji / pinjamkan jam / hanya meminta\n")}`;
-
-/** Sets one attribute on the first element matching [selector] in the document head. */
-export function setMeta(selector: string, attr: string, value: string) {
-  document.head.querySelector(selector)?.setAttribute(attr, value);
-}
 
 /** RevKlik click goal for a link or button (same attributes as JoyoRogo's data-revklik-goal convention). */
 export function goal(name: string, location: string) {

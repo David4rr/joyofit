@@ -1,19 +1,10 @@
-import { useEffect } from "react";
 import { ArrowLeft, Check } from "lucide-react";
 
-import { GITHUB_URL, setMeta } from "./lib";
-
-export const PRIVASI_PATH = "/privasi";
+import { GITHUB_URL } from "./lib";
 
 const CONTACT = "dzulfikar@joyorogo.com";
 const UPDATED = "17 Oktober 2026";
 const UPDATED_EN = "17 October 2026";
-
-const META = {
-  title: "Kebijakan privasi JoyoFit",
-  description:
-    "Data apa yang JoyoFit simpan di HP-mu, apa yang keluar dari HP (cloud opsional, Strava, cuaca, Health Connect, Apple Health, Masuk dengan Apple), dan cara menghapusnya. Privacy policy in English below.",
-};
 
 function Code({ children }: { children: React.ReactNode }) {
   return <code className="rounded bg-muted px-1.5 py-0.5 text-[0.85em] font-semibold">{children}</code>;
@@ -651,23 +642,6 @@ function English() {
 }
 
 export function PrivasiPage() {
-  useEffect(() => {
-    const { title, description } = META;
-    const url = `https://fit.joyorogo.com${PRIVASI_PATH}`;
-    document.title = `${title} | JoyoFit`;
-    setMeta('meta[name="description"]', "content", description);
-    setMeta('link[rel="canonical"]', "href", url);
-    setMeta('meta[property="og:url"]', "content", url);
-    setMeta('meta[property="og:title"]', "content", title);
-    setMeta('meta[property="og:description"]', "content", description);
-    setMeta('meta[name="twitter:title"]', "content", title);
-    setMeta('meta[name="twitter:description"]', "content", description);
-    // The page renders after load, so the browser cannot jump to #hapus or #english on its own.
-    const target = window.location.hash ? document.getElementById(window.location.hash.slice(1)) : null;
-    if (target) target.scrollIntoView();
-    else window.scrollTo(0, 0);
-  }, []);
-
   return (
     <section data-section="privasi" className="py-12 md:py-16">
       <div className="mx-auto w-full max-w-3xl px-4 md:px-6">

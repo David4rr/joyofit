@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { ArrowLeft, Check, ChevronDown, Users } from "lucide-react";
 
 import {
@@ -10,18 +9,9 @@ import {
   TESTER_OPTIN_URL,
   WATCH_REPORT_FORM_URL,
   goal,
-  setMeta,
 } from "./lib";
 import { JAM_BELUM_PAKE, JAM_BISA_DICOBA, JAM_SUDAH_DIUJI } from "./jam";
 import { ButtonLink } from "./ui";
-
-export const PANDUAN_PATH = "/panduan";
-
-const META = {
-  title: "Panduan pasang dan pakai JoyoFit",
-  description:
-    "Langkah demi langkah: pasang JoyoFit, lepas jam dari Huawei Health, pasangkan jam, beri izin, sinkron, sambungkan Strava, impor riwayat Huawei Health, dan atasi masalah umum. English guide below.",
-};
 
 type Lang = "id" | "en";
 type Pair<T = React.ReactNode> = { id: T; en: T };
@@ -742,23 +732,6 @@ function Guide({ lang }: { lang: Lang }) {
 }
 
 export function PanduanPage() {
-  useEffect(() => {
-    const { title, description } = META;
-    const url = `https://fit.joyorogo.com${PANDUAN_PATH}`;
-    document.title = `${title} | JoyoFit`;
-    setMeta('meta[name="description"]', "content", description);
-    setMeta('link[rel="canonical"]', "href", url);
-    setMeta('meta[property="og:url"]', "content", url);
-    setMeta('meta[property="og:title"]', "content", title);
-    setMeta('meta[property="og:description"]', "content", description);
-    setMeta('meta[name="twitter:title"]', "content", title);
-    setMeta('meta[name="twitter:description"]', "content", description);
-    // The page renders after load, so the browser cannot jump to an anchor on its own.
-    const target = window.location.hash ? document.getElementById(window.location.hash.slice(1)) : null;
-    if (target) target.scrollIntoView();
-    else window.scrollTo(0, 0);
-  }, []);
-
   return (
     <section data-section="panduan" className="py-12 md:py-16">
       <div className="mx-auto w-full max-w-3xl px-4 md:px-6">
@@ -770,7 +743,7 @@ export function PanduanPage() {
           Kembali ke beranda
         </a>
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-balance md:text-[2.75rem] md:leading-[1.1]">
-          Panduan pasang dan pakai JoyoFit
+          Pakai Huawei Watch Fit 4 Pro tanpa Huawei Health: panduan JoyoFit
         </h1>
         <p className="mt-3 text-muted-foreground">
           Dari pasang aplikasi sampai jam tersambung dan data masuk. Bahasa Indonesia di bawah,{" "}

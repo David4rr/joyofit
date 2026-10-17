@@ -92,8 +92,21 @@ export function Ring({
   );
 }
 
-/** Phone frame from JoyoRogo's HeroPhone, around a real app screenshot. */
-export function Phone({ src, alt, className }: { src: string; alt: string; className?: string }) {
+/**
+ * Phone frame from JoyoRogo's HeroPhone, around a real app screenshot. Images
+ * load lazily unless [priority] marks the one the first screen is waiting on.
+ */
+export function Phone({
+  src,
+  alt,
+  className,
+  priority,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  priority?: boolean;
+}) {
   return (
     <div
       className={cn(
@@ -106,7 +119,8 @@ export function Phone({ src, alt, className }: { src: string; alt: string; class
         alt={alt}
         width={640}
         height={1280}
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
         decoding="async"
         className="block w-full rounded-[2.2rem] bg-background"
       />

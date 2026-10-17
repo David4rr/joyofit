@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowLeft,
   Check,
@@ -17,26 +17,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { CONTACT_EMAIL, IOS_TESTFLIGHT_URL, IPHONE_PATH, STRAVA_PATH, WAITLIST_API, cn, goal, setMeta } from "./lib";
-import { PRIVASI_PATH } from "./Privasi";
+import { CONTACT_EMAIL, IOS_TESTFLIGHT_URL, IPHONE_PATH, PRIVASI_PATH, STRAVA_PATH, WAITLIST_API, cn, goal } from "./lib";
 import { ButtonLink } from "./ui";
 
 type Kind = "strava" | "iphone";
-
-function usePageMeta(path: string, title: string, description: string) {
-  useEffect(() => {
-    const url = `https://fit.joyorogo.com${path}`;
-    document.title = `${title} | JoyoFit`;
-    setMeta('meta[name="description"]', "content", description);
-    setMeta('link[rel="canonical"]', "href", url);
-    setMeta('meta[property="og:url"]', "content", url);
-    setMeta('meta[property="og:title"]', "content", title);
-    setMeta('meta[property="og:description"]', "content", description);
-    setMeta('meta[name="twitter:title"]', "content", title);
-    setMeta('meta[name="twitter:description"]', "content", description);
-    window.scrollTo(0, 0);
-  }, [path, title, description]);
-}
 
 const inputClass =
   "block h-12 w-full rounded-xl border border-input bg-background px-4 text-base text-foreground placeholder:text-muted-foreground/70 outline-none transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:opacity-60";
@@ -262,12 +246,6 @@ function Notes({ title, items }: { title: string; items: readonly string[] }) {
   );
 }
 
-const STRAVA_META = {
-  title: "JoyoFit ke Strava: daftar tunggu",
-  description:
-    "JoyoFit mengirim olahraga dari jam Huawei ke Strava dengan jarak, waktu aktif, kalori, langkah, detak jantung, dan rute dari jam. Slot Strava sedang penuh; daftar tunggu ini berlaku untuk JoyoFit dan JoyoRogo.",
-};
-
 const STRAVA_SENT: { Icon: LucideIcon; label: string }[] = [
   { Icon: Route, label: "Jarak dan rute GPS" },
   { Icon: Timer, label: "Waktu aktif" },
@@ -278,7 +256,6 @@ const STRAVA_SENT: { Icon: LucideIcon; label: string }[] = [
 ];
 
 export function StravaPage() {
-  usePageMeta(STRAVA_PATH, STRAVA_META.title, STRAVA_META.description);
   return (
     <section data-section="strava" className="py-12 md:py-16">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
@@ -286,7 +263,7 @@ export function StravaPage() {
         <div className="mt-4 grid gap-4 md:grid-cols-[1.1fr_1fr] md:items-start">
           <div className="rounded-[1.75rem] bg-card p-6 md:p-8">
             <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
-              Olahragamu dari jam, langsung ke Strava
+              Sinkron jam Huawei ke Strava, langsung dari JoyoFit
             </h1>
             <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
               Setelah tersambung, JoyoFit mengunggah olahraga yang kamu rekam di jam Huawei ke akun Strava-mu sendiri.
@@ -395,14 +372,7 @@ export function StravaPage() {
   );
 }
 
-const IPHONE_META = {
-  title: "JoyoFit untuk iPhone: beta publik TestFlight",
-  description:
-    "Aplikasi JoyoFit untuk iPhone sudah bisa dicoba lewat beta publik TestFlight. Versi App Store 1.0 sedang menunggu review Apple.",
-};
-
 export function IphonePage() {
-  usePageMeta(IPHONE_PATH, IPHONE_META.title, IPHONE_META.description);
   return (
     <section data-section="iphone" className="py-12 md:py-16">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
@@ -414,7 +384,7 @@ export function IphonePage() {
                 <Smartphone className="size-6" aria-hidden />
               </span>
               <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
-                JoyoFit di iPhone, beta publik TestFlight
+                Huawei Watch di iPhone: JoyoFit beta publik TestFlight
               </h1>
             </div>
             <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted-foreground">

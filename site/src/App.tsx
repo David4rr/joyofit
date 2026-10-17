@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import {
   ArrowRight,
   AlarmClock,
@@ -36,9 +35,13 @@ import {
   GITHUB_URL,
   HARGA_URL,
   IPHONE_PATH,
+  JAM_PATH,
   JOYOROGO_URL,
   IOS_TESTFLIGHT_LIVE,
   IOS_TESTFLIGHT_URL,
+  PANDUAN_PATH,
+  PRIVASI_PATH,
+  SELF_HOST_PATH,
   STRAVA_PATH,
   TESTER_GROUP_URL,
   TESTER_OPTIN_URL,
@@ -47,7 +50,6 @@ import {
   WATCH_REPORT_FORM_URL,
   WATCH_REQUEST_URL,
   goal,
-  setMeta,
 } from "./lib";
 import {
   JAM_BELUM_PAKE,
@@ -56,8 +58,10 @@ import {
   JAM_EKSPERIMEN_LE,
   JAM_SUDAH_DIUJI,
 } from "./jam";
-import { PANDUAN_PATH, PanduanPage } from "./Panduan";
-import { PRIVASI_PATH, PrivasiPage } from "./Privasi";
+import { FAQ } from "./faq";
+import { PanduanPage } from "./Panduan";
+import { PrivasiPage } from "./Privasi";
+import { isPublicPath, type PublicPath } from "./seo";
 import { Testimonials } from "./testimonials-section";
 import { TESTIMONIALS } from "./testimonials";
 import { ButtonLink, GithubMark, Phone, Ring } from "./ui";
@@ -148,56 +152,6 @@ const FACES: { Icon: LucideIcon; name: string; note: string }[] = [
   { Icon: Download, name: "Face foto", note: "Pasang fotomu sendiri ke face foto." },
 ];
 
-const FAQ = [
-  {
-    q: "Apakah saya perlu akun Huawei?",
-    a: "Tidak. JoyoFit bicara langsung ke jam lewat Bluetooth. Yang perlu kamu lakukan: lepaskan jam dari Huawei Health dulu, karena jam hanya bisa terpasang ke satu aplikasi dalam satu waktu.",
-  },
-  {
-    q: "Jam apa saja yang didukung?",
-    a: (
-      <>
-        Baru Huawei Watch Fit 4 Pro yang sudah diuji. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Di Android, pemindai di aplikasi sekarang juga menemukan band yang tidak muncul di pengaturan Bluetooth (Band 8, 9, 10, dan Fit), dan memberi pesan yang jelas kalau jam sedang dipegang HP lain. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jam-mu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas.{" "}
-        {IOS_TESTFLIGHT_LIVE && (
-          <>Versi iPhone ada sebagai beta publik lewat TestFlight, dan versi App Store 1.0 sedang menunggu review Apple. Baru diuji dengan Huawei Watch Fit 4 Pro.</>
-        )}
-      </>
-    ),
-  },
-  {
-    q: "Sudah stabil dipakai?",
-    a: "Protokol jamnya porting dari Gadgetbridge. Tapi sebagian fitur, seperti kustomisasi tampilan jam, kartu kalori, dan latihan lari terjadwal, masih ditandai belum terverifikasi di Fit 4 di dokumentasi proyek. Kami jujur soal itu; log lengkapnya ada di Pengaturan.",
-  },
-  {
-    q: "Ke mana data saya pergi?",
-    a: "Ke database lokal di HP. Dua pengecualian, dan keduanya hanya jika kamu menyalakannya: cuaca ke Open-Meteo (hanya koordinat yang dibulatkan sekitar 1 km), dan cloud JoyoFit setelah kamu masuk dengan akun JoyoRogo.",
-  },
-  {
-    q: "Apa yang diunggah ke cloud?",
-    a: "Sampel langkah, segmen tidur, olahraga beserta titik rutenya, dan data perangkat. Saat ini aplikasi hanya mengunggah; membaca balik dari cloud belum ada. Penghapusan, profil, alarm, dan pengaturan tidak disinkronkan.",
-  },
-  {
-    q: "Bisa dipakai tanpa cloud sama sekali?",
-    a: "Bisa. Cloud opsional. Tanpa itu semua fitur jam tetap jalan dan data tetap di HP-mu.",
-  },
-  {
-    q: "Bisa mengirim olahraga ke Strava?",
-    a: (
-      <>
-        Bisa, gratis. Strava membatasi aplikasi kami di 10 atlet dan semua slotnya sedang terpakai; kami sudah mengajukan review ke Strava untuk menaikkan batas itu. Sampai disetujui, kamu bisa masuk daftar tunggu. Daftarnya sama untuk JoyoFit dan JoyoRogo, karena keduanya memakai satu aplikasi Strava.{" "}
-        <a className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80" href={STRAVA_PATH} {...goal("strava_waitlist_click", "faq")}>
-          Masuk daftar tunggu Strava
-        </a>
-        .
-      </>
-    ),
-  },
-  {
-    q: "Apa hubungannya dengan JoyoRogo?",
-    a: "JoyoRogo adalah aplikasi catatan makan kami. Asupan kalori dari JoyoRogo bisa tampil di kartu kalori jam, skor Recovery dan Strain JoyoFit ikut tampil di catatan makan JoyoRogo, dan masuk ke cloud JoyoFit memakai akun JoyoRogo. JoyoFit tetap bisa dipakai sendiri tanpa JoyoRogo.",
-  },
-] as const;
-
 function Check2({ className }: { className?: string }) {
   return <Check className={className} aria-hidden />;
 }
@@ -213,7 +167,7 @@ function Header() {
           aria-label="JoyoFit, ke halaman utama"
           className="flex items-center gap-2 rounded-full focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none"
         >
-          <img src="/brand/logo-mark.svg" alt="" className="h-7 w-auto md:h-8" />
+          <img src="/brand/logo-mark.svg" alt="" width={32} height={32} className="h-7 w-auto md:h-8" />
           <span className="text-lg font-extrabold tracking-tight">JoyoFit</span>
         </a>
         <nav aria-label="Utama" className="hidden items-center gap-1 md:flex">
@@ -258,7 +212,7 @@ function Footer() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 md:flex-row md:items-center md:justify-between md:px-6">
         <div>
           <p className="flex items-center gap-2 text-base font-extrabold tracking-tight">
-            <img src="/brand/logo-mark.svg" alt="" className="h-6 w-auto" />
+            <img src="/brand/logo-mark.svg" alt="" width={24} height={24} className="h-6 w-auto" />
             JoyoFit
           </p>
           <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -337,6 +291,9 @@ function Hero() {
     >
       <div>
         <h1 className="max-w-xl text-[2.625rem] leading-[1.04] font-extrabold tracking-tight text-balance md:text-[4rem]">
+          <span className="mb-3 block text-base leading-snug font-bold tracking-normal text-primary md:text-lg">
+            Aplikasi pengganti Huawei Health
+          </span>
           <span className="block">Jam-mu.</span>
           <span className="block">Data-mu.</span>
           <span className="block">HP-mu.</span>
@@ -394,6 +351,7 @@ function Hero() {
           className="absolute inset-x-4 top-10 bottom-6 rounded-[2.5rem] bg-makan-soft md:inset-x-0"
         />
         <Phone
+          priority
           className="relative"
           src="/shots/today.webp"
           alt="Layar Hari ini di JoyoFit: jam terhubung, langkah, detak jantung 80 bpm, baterai 58 persen, dan tombol Sync now. Antarmuka aplikasi berbahasa Inggris."
@@ -577,7 +535,7 @@ function Workouts() {
             <Flame className="size-6" aria-hidden />
             Latihan berjalan
           </h3>
-          <p className="mt-2 text-[0.9375rem] leading-relaxed text-bakar-ink/80">
+          <p className="mt-2 text-[0.9375rem] leading-relaxed text-bakar-ink">
             Yang dilacak selama sesi aktif, dari detak jantung jam.
           </p>
           <ul className="mt-6 grid gap-2 sm:grid-cols-2">
@@ -706,7 +664,7 @@ function Features() {
           href={JOYOROGO_URL}
           className="group mt-6 flex items-center gap-4 rounded-2xl bg-card p-3 pr-5 transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-makan-ink focus-visible:outline-none"
         >
-          <img src="/brand/joyorogo-icon.png" alt="" className="size-14 shrink-0 rounded-xl" />
+          <img src="/brand/joyorogo-icon.webp" alt="" width={56} height={56} loading="lazy" decoding="async" className="size-14 shrink-0 rounded-xl" />
           <span className="min-w-0 flex-1">
             <span className="block text-lg font-extrabold tracking-tight">Coba JoyoRogo</span>
             <span className="block text-sm text-muted-foreground">
@@ -715,7 +673,7 @@ function Features() {
           </span>
           <ArrowRight className="size-5 shrink-0 text-makan-ink transition-transform group-hover:translate-x-0.5" aria-hidden />
         </a>
-        <p className="mt-4 text-xs text-makan-ink/70">
+        <p className="mt-4 text-xs text-makan-ink">
           Kartu kalori dibuat dari hasil reverse engineering Huawei Health dan belum diuji di Fit 4
           Pro.
         </p>
@@ -1111,7 +1069,22 @@ function Faq() {
                 aria-hidden
               />
             </summary>
-            <p className="pb-5 text-[0.9375rem] leading-relaxed text-muted-foreground">{item.a}</p>
+            <p className="pb-5 text-[0.9375rem] leading-relaxed text-muted-foreground">
+              {item.a}
+              {item.link && (
+                <>
+                  {" "}
+                  <a
+                    className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
+                    href={item.link.href}
+                    {...(item.link.goal ? goal(item.link.goal.name, item.link.goal.location) : {})}
+                  >
+                    {item.link.label}
+                  </a>
+                  .
+                </>
+              )}
+            </p>
           </details>
         ))}
       </div>
@@ -1171,7 +1144,7 @@ function Closing() {
         <h2 className="mx-auto max-w-xl text-3xl font-extrabold tracking-tight text-balance md:text-[2.75rem] md:leading-[1.1]">
           Pindahkan data jam-mu ke HP hari ini
         </h2>
-        <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-primary-foreground/80">
+        <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-primary-foreground/95">
           Pasang JoyoFit, sambungkan jam lewat Bluetooth, dan data jam-mu ada di HP-mu hari ini juga.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -1199,29 +1172,7 @@ function Closing() {
   );
 }
 
-const SELF_HOST_PATH = "/self-host";
-
-const SELF_HOST_META = {
-  title: "Pasang cloud JoyoFit di CloudAgni sendiri",
-  description:
-    "Panduan memasang server cloud JoyoFit (Cloudflare Worker, D1, R2) di CloudAgni. Datamu tetap di akunmu sendiri.",
-};
-
 function SelfHostPage() {
-  useEffect(() => {
-    const { title, description } = SELF_HOST_META;
-    const url = `https://fit.joyorogo.com${SELF_HOST_PATH}`;
-    document.title = `${title} | JoyoFit`;
-    setMeta('meta[name="description"]', "content", description);
-    setMeta('link[rel="canonical"]', "href", url);
-    setMeta('meta[property="og:url"]', "content", url);
-    setMeta('meta[property="og:title"]', "content", title);
-    setMeta('meta[property="og:description"]', "content", description);
-    setMeta('meta[name="twitter:title"]', "content", title);
-    setMeta('meta[name="twitter:description"]', "content", description);
-    window.scrollTo(0, 0);
-  }, []);
-
   return (
     <section data-section="self-host" className="py-12 md:py-16">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
@@ -1300,29 +1251,7 @@ function SelfHostPage() {
   );
 }
 
-const JAM_PATH = "/jam";
-
-const JAM_META = {
-  title: "Jam yang didukung JoyoFit",
-  description:
-    "Daftar jam Huawei dan Honor untuk JoyoFit: sudah diuji di Watch Fit 4 Pro, eksperimen, dan yang belum bisa. Cara mengirim laporan dukungan.",
-};
-
 function JamPage() {
-  useEffect(() => {
-    const { title, description } = JAM_META;
-    const url = `https://fit.joyorogo.com${JAM_PATH}`;
-    document.title = `${title} | JoyoFit`;
-    setMeta('meta[name="description"]', "content", description);
-    setMeta('link[rel="canonical"]', "href", url);
-    setMeta('meta[property="og:url"]', "content", url);
-    setMeta('meta[property="og:title"]', "content", title);
-    setMeta('meta[property="og:description"]', "content", description);
-    setMeta('meta[name="twitter:title"]', "content", title);
-    setMeta('meta[name="twitter:description"]', "content", description);
-    window.scrollTo(0, 0);
-  }, []);
-
   return (
     <section data-section="jam" className="py-12 md:py-16">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
@@ -1334,7 +1263,7 @@ function JamPage() {
           Kembali ke beranda
         </a>
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-balance md:text-[2.75rem] md:leading-[1.1]">
-          Jam yang didukung
+          Jam Huawei dan Honor yang didukung JoyoFit
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           Baru Huawei Watch Fit 4 Pro yang sudah kami uji. Jam dan band lain di daftar Gadgetbridge masih
@@ -1393,34 +1322,35 @@ function JamPage() {
           </a>
           .
         </p>
+        <h2 className="mt-12 text-2xl font-extrabold tracking-tight md:text-3xl">Dari Gadgetbridge ke JoyoFit</h2>
+        <p className="mt-3 max-w-3xl text-[0.9375rem] leading-relaxed text-muted-foreground">
+          Protokol jam Huawei di JoyoFit adalah port dari{" "}
+          <a
+            href="https://codeberg.org/Freeyourgadget/Gadgetbridge"
+            target="_blank"
+            rel="noopener"
+            className="font-semibold text-foreground underline underline-offset-4"
+          >
+            Gadgetbridge
+          </a>
+          , proyek open source yang punya dukungan jam Huawei dan Honor. Daftar di atas mengikuti daftar jam
+          Gadgetbridge, jadi ada di daftar Gadgetbridge belum berarti sudah diuji di JoyoFit: baru Watch Fit 4 Pro
+          yang diuji. JoyoFit adalah turunannya, bukan Gadgetbridge itu sendiri. Aplikasinya menambahkan layar
+          harian, olahraga langsung, ekspor ke Health Connect dan Strava, cloud opsional, dan versi iPhone.
+          Mau mencoba tanpa Huawei Health? Ikuti{" "}
+          <a href={PANDUAN_PATH} className="font-semibold text-foreground underline underline-offset-4">
+            panduan pasang dan pakai
+          </a>
+          .
+        </p>
       </div>
     </section>
   );
 }
 
-const DUKUNG_JAM_META = {
-  title: "Dukung jam barumu di JoyoFit",
-  description:
-    "Jam Huawei atau Honor-mu belum diuji di JoyoFit? Laporkan dari aplikasi, pinjamkan jam untuk diuji, atau patungan lewat Trakteer. Daftar jam yang diuji dan eksperimen.",
-};
-
 const DUKUNG_SUBJECT = "Pinjam jam untuk uji JoyoFit";
 
 function DukungJamPage() {
-  useEffect(() => {
-    const { title, description } = DUKUNG_JAM_META;
-    const url = `https://fit.joyorogo.com${DUKUNG_JAM_PATH}`;
-    document.title = `${title} | JoyoFit`;
-    setMeta('meta[name="description"]', "content", description);
-    setMeta('link[rel="canonical"]', "href", url);
-    setMeta('meta[property="og:url"]', "content", url);
-    setMeta('meta[property="og:title"]', "content", title);
-    setMeta('meta[property="og:description"]', "content", description);
-    setMeta('meta[name="twitter:title"]', "content", title);
-    setMeta('meta[name="twitter:description"]', "content", description);
-    window.scrollTo(0, 0);
-  }, []);
-
   const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(DUKUNG_SUBJECT)}&body=${encodeURIComponent(
     "Model jam:\nKondisi (baik / ada cacat):\nKota:\nLama yang bisa dipinjamkan:\n",
   )}`;
@@ -1593,52 +1523,118 @@ function DukungJamPage() {
   );
 }
 
-export function App() {
-  const path = window.location.pathname.replace(/\/+$/, "");
-  const selfHost = path === SELF_HOST_PATH;
-  const jam = path === JAM_PATH;
-  const dukungJam = path === DUKUNG_JAM_PATH;
-  const privasi = path === PRIVASI_PATH;
-  const panduan = path === PANDUAN_PATH;
-  const strava = path === STRAVA_PATH;
-  const iphone = path === IPHONE_PATH;
+const SWITCH_STEPS = [
+  {
+    title: "Lepas jam dari Huawei Health",
+    body: "Jam hanya bisa terpasang ke satu aplikasi dalam satu waktu, jadi putuskan dulu di Huawei Health (Unbind). Kamu tidak perlu akun Huawei di JoyoFit.",
+  },
+  {
+    title: "Pasangkan di JoyoFit",
+    body: "Dekatkan jam ke HP, buka tab Watch, cari jam, lalu setujui permintaan pairing di layar jam. Semuanya lewat Bluetooth.",
+  },
+  {
+    title: "Sinkron, data tetap di HP",
+    body: "Sinkron pertama menarik 7 hari terakhir. Riwayat lama dari Huawei Health bisa diimpor dari ekspor datanya, dan olahraga bisa dikirim ke Strava.",
+  },
+] as const;
+
+function Switch() {
+  return (
+    <section data-section="pengganti" className="mx-auto w-full max-w-6xl px-4 py-16 md:px-6 md:py-24">
+      <div className="max-w-2xl">
+        <SectionTitle>Pakai Huawei Watch tanpa Huawei Health</SectionTitle>
+        <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+          JoyoFit mengambil data langsung dari jam, jadi Huawei Health tidak perlu terpasang. Baru Huawei Watch Fit 4
+          Pro yang sudah diuji; jam lain masih eksperimen.
+        </p>
+      </div>
+      <ol className="mt-8 grid gap-4 md:grid-cols-3">
+        {SWITCH_STEPS.map((step, i) => (
+          <li key={step.title} className="rounded-[1.75rem] bg-card p-6">
+            <span className="flex size-9 items-center justify-center rounded-full bg-muted text-sm font-extrabold tabular-nums">
+              {i + 1}
+            </span>
+            <h3 className="mt-4 font-bold">{step.title}</h3>
+            <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-muted-foreground">{step.body}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-6 text-[0.9375rem] text-muted-foreground">
+        Langkah lengkap, izin, dan jalan keluar kalau macet ada di{" "}
+        <a href={PANDUAN_PATH} className="font-semibold text-foreground underline underline-offset-4">
+          panduan pasang dan pakai
+        </a>
+        . Pakai iPhone? Lihat{" "}
+        <a href={IPHONE_PATH} className="font-semibold text-foreground underline underline-offset-4">
+          JoyoFit di iPhone
+        </a>
+        .
+      </p>
+    </section>
+  );
+}
+
+function HomePage() {
+  return (
+    <>
+      <Hero />
+      <Facts />
+      <Basics />
+      <SleepSection />
+      <Workouts />
+      <Scores />
+      <Features />
+      <WatchSection />
+      <Testimonials items={TESTIMONIALS} />
+      <JamTeaser />
+      <Promises />
+      <Switch />
+      <Options />
+      <Faq />
+      <OpenSource />
+      <Closing />
+    </>
+  );
+}
+
+function NotFoundPage() {
+  return (
+    <section data-section="not-found" className="mx-auto w-full max-w-3xl px-4 py-24 md:px-6">
+      <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-[2.75rem] md:leading-[1.1]">
+        Halaman tidak ditemukan
+      </h1>
+      <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+        Alamat ini tidak ada di JoyoFit. Mungkin tautannya sudah berubah.
+      </p>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <ButtonLink href="/">Ke beranda</ButtonLink>
+        <ButtonLink variant="secondary" href={PANDUAN_PATH}>
+          Panduan
+        </ButtonLink>
+      </div>
+    </section>
+  );
+}
+
+const PAGE_BODIES: Record<PublicPath, () => React.JSX.Element> = {
+  "/": HomePage,
+  [PANDUAN_PATH]: PanduanPage,
+  [STRAVA_PATH]: StravaPage,
+  [IPHONE_PATH]: IphonePage,
+  [JAM_PATH]: JamPage,
+  [DUKUNG_JAM_PATH]: DukungJamPage,
+  [SELF_HOST_PATH]: SelfHostPage,
+  [PRIVASI_PATH]: PrivasiPage,
+};
+
+/** [path] is normalizePath(location.pathname); anything outside PAGES gets the 404 page. */
+export function App({ path }: { path: string }) {
+  const Body = isPublicPath(path) ? PAGE_BODIES[path] : NotFoundPage;
   return (
     <div className="min-h-svh">
       <Header />
       <main>
-        {selfHost ? (
-          <SelfHostPage />
-        ) : jam ? (
-          <JamPage />
-        ) : dukungJam ? (
-          <DukungJamPage />
-        ) : privasi ? (
-          <PrivasiPage />
-        ) : panduan ? (
-          <PanduanPage />
-        ) : strava ? (
-          <StravaPage />
-        ) : iphone ? (
-          <IphonePage />
-        ) : (
-          <>
-            <Hero />
-            <Facts />
-            <Basics />
-            <SleepSection />
-            <Workouts />
-            <Scores />
-            <Features />
-            <WatchSection />
-            <Testimonials items={TESTIMONIALS} />
-            <JamTeaser />
-            <Promises />
-            <Options />
-            <Faq />
-            <OpenSource />
-            <Closing />
-          </>
-        )}
+        <Body />
       </main>
       <Footer />
     </div>

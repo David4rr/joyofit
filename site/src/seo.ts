@@ -1,0 +1,225 @@
+// Per-page SEO data and the <head> tags built from it. Page components read
+// their titles from here, vite.config.ts uses headTags() in dev, and
+// scripts/prerender.ts uses it to write one static HTML file per route.
+import { FAQ } from "./faq.ts";
+import {
+  DUKUNG_JAM_PATH,
+  GITHUB_URL,
+  IOS_TESTFLIGHT_URL,
+  IPHONE_PATH,
+  JAM_PATH,
+  PANDUAN_PATH,
+  PRIVASI_PATH,
+  SELF_HOST_PATH,
+  STRAVA_PATH,
+} from "./lib.ts";
+
+export const SITE_URL = "https://fit.joyorogo.com";
+export const SITE_NAME = "JoyoFit";
+export const NOT_FOUND_PATH = "/404";
+
+const OG_IMAGE = {
+  path: "/og.png",
+  width: 1200,
+  height: 630,
+  alt: "JoyoFit: pengganti Huawei Health untuk jam Huawei, open source.",
+};
+
+export type Page = {
+  /** The whole <title>, brand included. */
+  title: string;
+  description: string;
+  /** Share-card title when it should differ from [title]. */
+  ogTitle?: string;
+  /** Breadcrumb label. */
+  name: string;
+  noindex?: true;
+};
+
+export const PAGES = {
+  "/": {
+    title: "JoyoFit: Pengganti Huawei Health untuk Jam Huawei, Open Source",
+    ogTitle: "JoyoFit: Jam-mu. Data-mu. HP-mu.",
+    name: "Beranda",
+    description:
+      "Pengganti Huawei Health open source: sinkron langkah, tidur, detak jantung, SpO2, dan olahraga dari Huawei Watch Fit 4 Pro (jam lain eksperimen) ke HP Android dan iPhone.",
+  },
+  [PANDUAN_PATH]: {
+    title: "Pakai Huawei Watch Fit 4 Pro Tanpa Huawei Health | Panduan JoyoFit",
+    name: "Panduan",
+    description:
+      "Langkah memakai Huawei Watch Fit 4 Pro tanpa Huawei Health: lepas jam, pasang JoyoFit, pairing, sinkron, Strava, impor riwayat, dan atasi masalah umum. English guide below.",
+  },
+  [STRAVA_PATH]: {
+    title: "Sinkron Jam Huawei ke Strava dengan JoyoFit (Daftar Tunggu)",
+    name: "Strava",
+    description:
+      "Kirim olahraga dari jam Huawei ke Strava lewat JoyoFit, gratis: jarak, waktu aktif, kalori, langkah, detak jantung, dan rute dari jam. Slot Strava sedang penuh, ada daftar tunggu.",
+  },
+  [IPHONE_PATH]: {
+    title: "Huawei Watch di iPhone: JoyoFit Beta Publik TestFlight",
+    name: "iPhone",
+    description:
+      "Pakai Huawei Watch di iPhone tanpa Huawei Health: JoyoFit sudah bisa dicoba lewat beta publik TestFlight, baru diuji dengan Watch Fit 4 Pro. Versi App Store 1.0 sedang menunggu review Apple.",
+  },
+  [JAM_PATH]: {
+    title: "Jam Huawei dan Honor yang Didukung JoyoFit, Turunan Gadgetbridge",
+    name: "Jam yang didukung",
+    description:
+      "Daftar jam Huawei dan Honor di JoyoFit, mengikuti katalog Gadgetbridge: Watch Fit 4 Pro sudah diuji, sisanya eksperimen. Cara mengirim laporan dukungan.",
+  },
+  [DUKUNG_JAM_PATH]: {
+    title: "Dukung Jam Barumu di JoyoFit",
+    name: "Dukung jam",
+    description:
+      "Jam Huawei atau Honor-mu belum diuji di JoyoFit? Laporkan dari aplikasi, pinjamkan jam untuk diuji, atau patungan lewat Trakteer. Daftar jam yang diuji dan eksperimen.",
+  },
+  [SELF_HOST_PATH]: {
+    title: "Pasang Cloud JoyoFit di CloudAgni Sendiri",
+    name: "Pasang cloud sendiri",
+    description:
+      "Panduan memasang server cloud JoyoFit (Cloudflare Worker, D1, R2) di CloudAgni. Datamu tetap di akunmu sendiri.",
+  },
+  [PRIVASI_PATH]: {
+    title: "Kebijakan Privasi JoyoFit",
+    name: "Privasi",
+    description:
+      "Data apa yang JoyoFit simpan di HP-mu, apa yang keluar dari HP (cloud opsional, Strava, cuaca, Health Connect, Apple Health, Masuk dengan Apple), dan cara menghapusnya. Privacy policy in English below.",
+  },
+} as const satisfies Record<string, Page>;
+
+export type PublicPath = keyof typeof PAGES;
+
+export const PUBLIC_PATHS = Object.keys(PAGES) as PublicPath[];
+
+export const NOT_FOUND: Page = {
+  title: "Halaman tidak ditemukan | JoyoFit",
+  description: "Halaman yang kamu cari tidak ada di fit.joyorogo.com.",
+  name: "Tidak ditemukan",
+  noindex: true,
+};
+
+/** A request path as a PAGES key: no trailing slash, "/" kept. */
+export function normalizePath(pathname: string): string {
+  return pathname.replace(/\/+$/, "") || "/";
+}
+
+export function isPublicPath(path: string): path is PublicPath {
+  return Object.hasOwn(PAGES, path);
+}
+
+function esc(s: string): string {
+  return s
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+const ORG_ID = `${SITE_URL}/#organization`;
+const WEBSITE_ID = `${SITE_URL}/#website`;
+
+function homeJsonLd(): object[] {
+  return [
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": ORG_ID,
+          name: SITE_NAME,
+          url: `${SITE_URL}/`,
+          logo: { "@type": "ImageObject", url: `${SITE_URL}/brand/logo-512.png`, width: 512, height: 512 },
+          founder: { "@type": "Person", name: "Dzulfikar" },
+          sameAs: [GITHUB_URL],
+        },
+        {
+          "@type": "WebSite",
+          "@id": WEBSITE_ID,
+          name: SITE_NAME,
+          url: `${SITE_URL}/`,
+          inLanguage: "id",
+          publisher: { "@id": ORG_ID },
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": `${SITE_URL}/#app`,
+          name: SITE_NAME,
+          url: `${SITE_URL}/`,
+          description: PAGES["/"].description,
+          applicationCategory: "HealthApplication",
+          operatingSystem: "Android, iOS",
+          softwareRequirements: "Android 10 atau lebih baru",
+          inLanguage: "id",
+          isAccessibleForFree: true,
+          offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
+          license: "https://www.gnu.org/licenses/agpl-3.0.html",
+          installUrl: IOS_TESTFLIGHT_URL,
+          image: `${SITE_URL}${OG_IMAGE.path}`,
+          screenshot: ["today", "sleep", "watch"].map((name) => `${SITE_URL}/shots/${name}.webp`),
+          sameAs: [GITHUB_URL],
+          publisher: { "@id": ORG_ID },
+        },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: FAQ.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: {
+          "@type": "Answer",
+          // The visible answer ends with its link text, so the markup does too.
+          text: item.link ? `${item.a} ${item.link.label}.` : item.a,
+        },
+      })),
+    },
+  ];
+}
+
+function breadcrumbJsonLd(path: PublicPath): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: PAGES["/"].name, item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: PAGES[path].name, item: `${SITE_URL}${path}` },
+    ],
+  };
+}
+
+/** Everything SEO-related in <head> for [path] (a PUBLIC_PATHS entry or NOT_FOUND_PATH), one tag per line. */
+export function headTags(path: string): string {
+  const notFound = !isPublicPath(path);
+  const page: Page = notFound ? NOT_FOUND : PAGES[path];
+  const url = `${SITE_URL}${path}`;
+  const image = `${SITE_URL}${OG_IMAGE.path}`;
+  const title = page.ogTitle ?? page.title;
+  const tags = [
+    `<title>${esc(page.title)}</title>`,
+    `<meta name="description" content="${esc(page.description)}" />`,
+    page.noindex ? `<meta name="robots" content="noindex" />` : `<link rel="canonical" href="${url}" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="${SITE_NAME}" />`,
+    `<meta property="og:locale" content="id_ID" />`,
+    notFound ? "" : `<meta property="og:url" content="${url}" />`,
+    `<meta property="og:title" content="${esc(title)}" />`,
+    `<meta property="og:description" content="${esc(page.description)}" />`,
+    `<meta property="og:image" content="${image}" />`,
+    `<meta property="og:image:type" content="image/png" />`,
+    `<meta property="og:image:width" content="${OG_IMAGE.width}" />`,
+    `<meta property="og:image:height" content="${OG_IMAGE.height}" />`,
+    `<meta property="og:image:alt" content="${esc(OG_IMAGE.alt)}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:title" content="${esc(title)}" />`,
+    `<meta name="twitter:description" content="${esc(page.description)}" />`,
+    `<meta name="twitter:image" content="${image}" />`,
+    `<meta name="twitter:image:alt" content="${esc(OG_IMAGE.alt)}" />`,
+    // "<" is escaped so no string in the data can close the script element.
+    ...(notFound ? [] : path === "/" ? homeJsonLd() : [breadcrumbJsonLd(path)]).map(
+      (data) => `<script type="application/ld+json">${JSON.stringify(data).replaceAll("<", "\\u003c")}</script>`,
+    ),
+  ];
+  return tags.filter(Boolean).join("\n    ");
+}
