@@ -93,8 +93,10 @@ export function Ring({
 }
 
 /**
- * Phone frame from JoyoRogo's HeroPhone, around a real app screenshot. Images
- * load lazily unless [priority] marks the one the first screen is waiting on.
+ * Phone frame from JoyoRogo's HeroPhone, around a real app screenshot. [src]
+ * is a 640 px WebP with a 480 px twin named `<name>-480.webp`; the frame is
+ * 250 to 266 px wide, so most screens take the smaller file. Images load lazily
+ * unless [priority] marks the one the first screen is waiting on.
  */
 export function Phone({
   src,
@@ -116,6 +118,8 @@ export function Phone({
     >
       <img
         src={src}
+        srcSet={`${src.replace(/\.webp$/, "-480.webp")} 480w, ${src} 640w`}
+        sizes="(min-width: 768px) 266px, 250px"
         alt={alt}
         width={640}
         height={1280}
