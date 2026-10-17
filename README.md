@@ -121,8 +121,9 @@ flowchart LR
 | Find my phone (watch → phone): loud ringtone on the alarm volume, vibration, notification with Stop; works from the background service | implemented, ported from GB; unverified on the Fit 4 |
 | Incoming calls on the watch (caller name or number), accept / reject from the watch | implemented, ported from GB; unverified on the Fit 4 |
 | Alarms: read the five event alarms and the smart alarm, add, edit, delete, enable, push | implemented, ported from GB; unverified on the Fit 4 |
-| Watch faces: list with the active one, set active, delete, install a `.hwt` from Huawei Theme Studio Pro with upload progress | implemented, ported from GB; unverified on the Fit 4 (whether it accepts unsigned faces is not known) |
+| Watch faces: list with the active one, set active, delete, install a `.hwt` from Huawei Theme Studio Pro with upload progress | implemented, ported from GB; **an unsigned face is deleted by the watch** (VERIFIED on the Fit 4 Pro: activation answered 100014, face removed about 3 s later), so install works only for a Huawei-signed face, which has not been tried |
 | Customize the editable faces already on the watch (Watch faces → Customize): read a face's selected style, background, typeface, hands, colour and widget options, change them, Apply, Revert | native codec and `WatchfaceCustomizer` (DataSync events 800100008 / 800100009) **implemented from the Huawei Health RE, UNVERIFIED on the watch**; JVM codec tests pass; options are labelled by position because the watch sends no names or counts |
+| Watch apps (Watch → Apps): the watch's app runtime and installed apps, install a Lite Wearable app from a file, delete an app; link to the JoyoFit Fuel watch app (phone fingerprint, watch app fingerprint, send profile) | **implemented from Gadgetbridge's `0x2a` app service, UNVERIFIED on the Fit 4 Pro**; the watch only runs Huawei-signed apps; JVM tests with a scripted watch pass; Android only |
 | Fall detection switch, SOS text relay (`SmsManager`), DST answer, morning sleep report, cycle log with watch calendar and reminders (Settings → Safety, Settings → Cycle) | implemented from the Huawei Health RE (DataSync, service `0x32`); unverified on the Fit 4 |
 | Health metrics from the watch's data dictionary over P2P (service `0x34`): skin temperature, HRV, stress / emotion, sleep apnea, plus raw capture of arterial stiffness and arrhythmia; stored in `health_metrics`, shown on **Today → Health** with the latest value and a 7-day sparkline; metrics the watch does not support (blood pressure, altitude, AMS here) are skipped and listed as such | implemented, ported from GB (`HuaweiP2PDataDictionarySyncService`), gated by ExpandCapability like GB; unverified on the Fit 4 (see `protocol/README.md` → P2P) |
 | Healthy Living (Health Clover) tasks: answers the watch's request with steps, exercise, sleep, calorie intake and clover progress from JoyoFit data (Settings → Health & cloud) | implemented from the Huawei Health RE (protobuf field numbers read from the APK's generated classes); unverified on the Fit 4, clover leaf mapping is a documented substitution |
@@ -300,17 +301,51 @@ you opened the editor. If the user edits the face on the watch, the watch's repo
   options*, including the device test to run). Codec **VERIFIED by JVM tests** against the byte layout documented in `protocol/README.md`. The screen,
   its hook and the native module compile and lint clean but were **not exercised on the watch**.
 
-*Install from file* opens Android's file picker. Pick a `.hwt` exported from **Huawei Theme Studio Pro**. The Watch Fit 4 and
+*Install from file* opens Android's file picker. Pick a `.hwt` that Huawei signed (for example one from **Huawei Theme Studio Pro**
+with a developer account; see *Unsigned faces* below). The Watch Fit 4 and
 Fit 4 Pro screen is 480 x 408 px (Theme Studio Pro calls it 408 x 480; GB's theme version `HWHD13`). The app checks the package's
 theme version against the screen size the watch reports and refuses a face made for another screen before sending anything.
 The upload shows a progress bar; the watch pulls the data in chunks of its own choosing.
 
-- **Unsigned faces.** Whether the Fit 4 accepts a face that Huawei did not sign is not known yet. If the watch refuses, the screen
-  and the Log tab show the exact status code it returned (`Upload: rejected by the watch at … status code N`). If it takes the
-  upload but the face never shows up in its list, the result says so ("the watch does not list the new face"). Please note either
-  outcome, with the Log lines, in `protocol/README.md` → Observations.
+- **Unsigned faces are deleted by the watch.** **VERIFIED** on the Fit 4 Pro (firmware 6.1.0.117): the upload is accepted, the
+  activation is answered with status 100014 and the watch removes the face about 3 s later (`protocol/README.md` → *Why a face did not
+  install*); Gadgetbridge issue #6199 (HarmonyOS 6.1 cannot install `.hwt`) agrees. Firmware 6.x requires Huawei's signature, which is tied
+  to the Huawei account, the face id and version, and the watch (*What the signature covers*). JoyoFit cannot sign a face, so this
+  screen only works for a face Huawei signed; a signed face has not been tried here. When the watch refuses, the screen and the Log
+  tab show the exact status code it returned (`Upload: rejected by the watch at … status code N`); if it takes the upload but the face
+  never shows up in its list, the result says so ("the watch does not list the new face"). A face that works without a signature is the
+  **photo face** (Watch → Photo face, with a picture from JoyoFit Studio or the gallery).
 - Only one operation runs on the link at a time: a sync that starts during an upload waits for it.
 - GB does not check for the `0x28` upload service in the watch's service list, and neither do we; the Fit 4 does not list it.
+
+### Watch apps (Watch → Apps)
+
+**Watch** tab → *Watch apps* (Android only; iOS has no app install and no Fuel link yet, and the screen says so). Everything here is ported
+from Gadgetbridge's app service (`0x2a`) and **UNVERIFIED on the Watch Fit 4 Pro**; `protocol/README.md` → *Watch apps* has the wire
+format and a device test checklist. The screen needs a connected watch whose supported commands list `2a/06` (Gadgetbridge's gate; the
+decision is logged as `App: SupportedCommands 2a/06=…`).
+
+- **Apps on the watch.** One line with the watch's app runtime (type, API level, OS version, screen, build), then every installed app with
+  name, package and version. *Delete* asks first and waits for the watch's removal report, then reads the list again.
+- **Install from file.** *Choose app file* opens Android's file picker. Pick the signed Lite Wearable build DevEco Studio 3.1.1 writes
+  (`entry-bin-debug-lite-signed.hap`) or the `.bin` Gadgetbridge installs. JoyoFit reads it first and shows the icon, name, version,
+  vendor, package and whether it carries Huawei's `hw signed app` signature. A file that is a zip around the app is unwrapped; any other
+  file is refused with a message. *Install* uploads it as file type 6 named `<package>_INSTALL` (what Gadgetbridge does for first installs and
+  updates alike), then follows the watch's reports (101 started, percentages, 102 installed) and reads the list again. An unsigned file asks
+  for a second confirmation first.
+- **Why a watch refuses an app (103).** A Huawei watch only runs apps Huawei signed: a debug build whose signing profile lists this
+  watch's UDID, or a release from AppGallery (Gadgetbridge issue #4175). JoyoFit cannot sign anything. The result says this and points to
+  `watchapp/fuel/README.md`.
+- **JoyoFit Fuel.** The card shows whether the Fuel app is in the watch's list, whether it answers a P2P ping (`0xca`), its last *hello*, the
+  last profile JoyoFit sent and the last one the watch confirmed. JoyoFit sends the app your weight, age, sex, maximum heart rate (220 - age)
+  and resting heart rate when the app starts (its *hello*), when the watch connects and the app answers the ping, when you tap *Send profile now*,
+  and when weight, birth year or sex changes; this also runs from the background service. A profile goes out with a new time stamp whenever any
+  of those values changed since the last send (a new resting heart rate or the age turning over included), so the watch app takes it.
+  *Phone fingerprint* (SHA-256 of JoyoFit's signing certificate) has a *Copy* button for the watch app's
+  `PEER_FINGERPRINT`; *Watch app fingerprint* is a free text field (empty sends the bundle name). Building and signing the watch app is in
+  `watchapp/fuel/README.md`. The P2P link itself is **UNVERIFIED**: whether a Lite Wearable app can talk to the phone this way, and whether
+  the watch checks the fingerprints, is not known until it has run on a watch.
+- Only one operation runs on the link at a time: a sync that starts during an install waits for it.
 
 ### Safety: fall detection, SOS texts, morning sleep report (Settings → Safety)
 
@@ -355,14 +390,23 @@ ExpandCapability 83 / 84 / 85 / 173). **None of it has been seen working on the 
 
 [`web/`](web/README.md) is a watch face editor for the Fit 4 and Fit 4 Pro, hosted as a Cloudflare Worker with static assets
 at <https://joyofit-studio.dzulfikar-at.workers.dev>. You design a 408 x 480 face in the browser (time, date, analog hands,
-steps, heart rate and battery, progress rings, images, solid, gradient or photo backgrounds, six templates) against a
-simulated watch, and export a `.hwt` that this app installs with **Watch faces → Install from file**. Nothing leaves the
-browser. It builds on [`packages/hwt`](packages/hwt/README.md), the TypeScript `.hwt` codec.
+data fields such as steps, heart rate, battery, altitude and temperature, progress rings, images, solid, gradient or photo
+backgrounds, six templates) against a simulated watch. Nothing leaves the browser. It builds on
+[`packages/hwt`](packages/hwt/README.md), the TypeScript `.hwt` codec.
 
-- Faces are unofficial and unsigned; whether the Fit 4 accepts them is the open question above.
-- Elements whose value ids are known only from sample faces are marked *Unconfirmed* and can be left out of the export;
-  elements with no known id (calories, AM/PM) are *Preview only* and never exported. The export dialog lists both, plus
-  the package size against Huawei's limits.
+- **Photo face (the export that works with JoyoFit).** Export gives a `<Name>.photo.png`: the picture layers (background and
+  images) flattened onto opaque black at exactly 408 x 480. Send it to the phone and pick it in **Watch → Photo face**; a picture
+  of exactly that size is uploaded without the crop step and without resampling. The watch draws its own clock and data over a
+  photo face, so Studio's live layers (time, date, hands, data, rings) are not in the picture; the stage's *Photo face preview*
+  shows what is left. The photo-face upload itself is **VERIFIED** on the Fit 4 Pro (`protocol/README.md` → photo faces); the
+  exact-size shortcut in JoyoFit is new and **UNVERIFIED** on a watch.
+- **`.hwt` export (not installable from JoyoFit).** The file is still written, for Huawei Theme Studio Pro with a Huawei developer
+  account (which signs it) and for inspecting the layout. An unsigned `.hwt` is deleted by the watch (see *Unsigned faces* above).
+- A *field browser* (Add → Fields) lists every `value_type` id the codec knows with its evidence (verified, unconfirmed, unknown),
+  the layer types Huawei allows for it and its container slot, and adds the ones Studio can write as a number, a ring or an icon set.
+  Elements whose ids are known only from sample faces are marked *Unconfirmed* and can be left out of the `.hwt`; elements with no
+  known id (calories, AM/PM) are *Preview only* and never exported. The export dialog lists both, plus the package size against
+  Huawei's limits.
 - Setup, tests, deploy and the element-to-layout mapping are in [`web/README.md`](web/README.md).
 
 ## Permissions
@@ -689,6 +733,7 @@ modules/huawei-wear/
   android/src/test/java/                    Gadgetbridge tests + HuaweiSessionTest
 protocol/README.md        protocol reference + observations
 server/                   JoyoFit cloud Worker (Hono, D1, R2): see server/README.md
+watchapp/fuel/            JoyoFit Fuel, a Lite Wearable JS watch app (live kcal, fat and carbs from heart rate): see watchapp/fuel/README.md
 web/                      JoyoFit Studio watch face editor (Vite + React, Cloudflare Worker with static assets): see web/README.md
 ```
 
