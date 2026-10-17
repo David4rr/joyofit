@@ -127,6 +127,150 @@ export interface RogoScoreDay {
   readiness?: RogoReadiness;
 }
 
+/** `post.visibility`: `publik` is the public feed, `grup` only people who share a group with the author. */
+export type RogoVisibility = 'publik' | 'grup';
+
+export interface RogoAuthor {
+  id: string;
+  name: string;
+  /** Null until the person has a handle; without one their profile page cannot be opened. */
+  handle: string | null;
+}
+
+/**
+ * A post as `social.feed`, `social.post`, `social.myPosts` and `social.publicProfile` return it. `stats` is the post's
+ * `statsJson`; a post made by `createWatchPost` has `source: 'joyofit'` and the keys of {@link RogoWatchStats}.
+ */
+export interface RogoPost {
+  id: string;
+  kind: 'makan' | 'latihan' | 'berat' | 'cerita';
+  title: string;
+  kcal: number | null;
+  durationMin: number | null;
+  stats?: Record<string, number | string | null>;
+  caption: string | null;
+  visibility: RogoVisibility;
+  /** ISO timestamp. */
+  createdAt: string;
+  author: RogoAuthor;
+  kudosCount: number;
+  commentCount: number;
+  kudosByMe?: boolean;
+}
+
+export interface RogoPostPage {
+  items: RogoPost[];
+  /** Pass as `cursor` for the next page; null on the last one. */
+  nextCursor: number | null;
+}
+
+/** `social.myProfile`: the signed-in person's feed profile. The display name is the account's, from the session. */
+export interface RogoSocialProfile {
+  handle: string | null;
+  followerCount: number;
+  followingCount: number;
+  postCount: number;
+}
+
+/** `social.publicProfile`; a private profile comes back with `publicProfile: false`, no `stats` and no posts. */
+export interface RogoPublicProfile {
+  name: string;
+  handle: string | null;
+  bio: string | null;
+  publicProfile: boolean;
+  isSelf: boolean;
+  stats: { postCount: number; followerCount: number; followingCount: number } | null;
+  posts: RogoPostPage;
+}
+
+export interface RogoComment {
+  id: string;
+  body: string;
+  /** ISO timestamp. */
+  createdAt: string;
+  author: RogoAuthor;
+}
+
+export interface RogoCommentPage {
+  items: RogoComment[];
+  nextCursor: number | null;
+}
+
+/** The stats of a post JoyoFit made (`stats.source === 'joyofit'`); every number may be null. */
+export interface RogoWatchStats {
+  source: 'joyofit';
+  distanceM: number | null;
+  avgHr: number | null;
+  maxHr: number | null;
+  /** Epoch milliseconds. */
+  startedAt: number;
+  /** 1 when `social.workoutDetail` has a heart-rate series or a route for the post. */
+  hasDetail: 0 | 1;
+}
+
+/** Heart rate as `post_workout_detail.hr_json`: one reading per `intervalSec`, null where the watch had none. */
+export interface RogoHrSeries {
+  intervalSec: number;
+  bpm: (number | null)[];
+}
+
+/** `[latitude, longitude]` pairs, in time order. */
+export type RogoRoute = [number, number][];
+
+/** Input of `social.createWatchPost`; the limits are the server's (zod), `features/social/watchPost.ts` builds within them. */
+export interface RogoWatchPostInput {
+  workout: {
+    sportName: string;
+    /** Epoch milliseconds. */
+    startedAt: number;
+    durationMin: number;
+    kcal: number | null;
+    distanceM: number | null;
+    avgHr: number | null;
+    maxHr: number | null;
+  };
+  detail?: { hr: RogoHrSeries | null; route: RogoRoute | null };
+  caption?: string;
+  visibility: RogoVisibility;
+}
+
+/** `social.workoutDetail`: what the viewer may see of a watch post's detail. `locked` means the viewer is not Pro. */
+export interface RogoWorkoutDetail {
+  locked: boolean;
+  hr: RogoHrSeries | null;
+  route: RogoRoute | null;
+}
+
+export interface RogoGroup {
+  id: string;
+  name: string;
+  role: string;
+  memberCount: number;
+  inviteCode: string;
+}
+
+/** A member's JoyoFit scores for the day, as `group.detail` shares them. */
+export interface RogoMemberFitness {
+  recoveryPct: number | null;
+  strain: number | null;
+  sleepPct: number | null;
+  readiness: RogoReadiness | null;
+}
+
+export interface RogoGroupMember {
+  userId: string;
+  name: string;
+  role: string;
+  shareFood: boolean;
+  shareFitness: boolean;
+  today: { fitness: RogoMemberFitness | null };
+}
+
+export interface RogoGroupDetail {
+  group: { id: string; name: string; inviteCode: string };
+  members: RogoGroupMember[];
+}
+
 /** Procedures JoyoFit calls. */
 export const rogo = {
   foodDay: (date: string) => rogoCall<RogoFoodDay>('food/listByDate', { date }),
@@ -141,4 +285,26 @@ export const rogo = {
     rogoCall<RogoFoodItem>('food/add', { ...input, source: 'manual' }),
   /** Stores the day's Recovery / Strain / Sleep for JoyoRogo's diary. JoyoRogo answers 404 until it is deployed with the `fitness` router. */
   pushScores: (days: RogoScoreDay[]) => rogoCall<{ saved: number }>('fitness/upsertScores', { days }),
+  group: {
+    list: () => rogoCall<RogoGroup[]>('group/list', {}),
+    join: (code: string) => rogoCall<{ groupId: string }>('group/join', { code }),
+    detail: (groupId: string) => rogoCall<RogoGroupDetail>('group/detail', { groupId }),
+    setShareFitness: (groupId: string, shareFitness: boolean) =>
+      rogoCall<{ ok: true }>('group/setShareFitness', { groupId, shareFitness }),
+    setShareFood: (groupId: string, shareFood: boolean) => rogoCall<{ ok: true }>('group/setShareFood', { groupId, shareFood }),
+  },
+  social: {
+    feed: (tab: 'mengikuti' | 'jelajah', cursor?: number) => rogoCall<RogoPostPage>('social/feed', { tab, cursor }),
+    post: (id: string) => rogoCall<RogoPost>('social/post', { id }),
+    myProfile: () => rogoCall<RogoSocialProfile>('social/myProfile', {}),
+    myPosts: (cursor?: number) => rogoCall<RogoPostPage>('social/myPosts', { cursor }),
+    publicProfile: (handle: string, cursor?: number) => rogoCall<RogoPublicProfile>('social/publicProfile', { handle, cursor }),
+    /** Toggles the signed-in person's kudos; the answer is the new state. */
+    kudos: (postId: string) => rogoCall<{ kudos: boolean; kudosCount: number }>('social/kudos', { postId }),
+    comments: (postId: string, cursor?: number) => rogoCall<RogoCommentPage>('social/comments', { postId, cursor }),
+    addComment: (postId: string, body: string) => rogoCall<{ id: string }>('social/addComment', { postId, body }),
+    createWatchPost: (input: RogoWatchPostInput) =>
+      rogoCall<{ id: string; visibility: RogoVisibility }>('social/createWatchPost', input),
+    workoutDetail: (postId: string) => rogoCall<RogoWorkoutDetail>('social/workoutDetail', { postId }),
+  },
 };

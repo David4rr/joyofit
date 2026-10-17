@@ -18,6 +18,7 @@ function workout(over: Partial<WorkoutRow> = {}): WorkoutRow {
     maxHr: 178,
     steps: 5400,
     complete: true,
+    imported: false,
     ...over,
   };
 }

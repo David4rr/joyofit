@@ -1,0 +1,59 @@
+import { useRouter } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+
+import { Button } from '@/components/Button';
+import { EmptyState, Notice, Skeleton } from '@/components/States';
+import { PostCard } from '@/features/social/PostCard';
+import type { PagedPosts } from '@/features/social/usePagedPosts';
+import { spacing } from '@/theme';
+
+interface PostListProps {
+  posts: PagedPosts<unknown>;
+  empty: { title: string; description: string };
+  /** Passed to each card; off on a profile screen. */
+  linkAuthor?: boolean;
+}
+
+/** The posts of a paged list with its loading, error and empty states and a "Load more" button. */
+export function PostList({ posts, empty, linkAuthor }: PostListProps) {
+  const router = useRouter();
+  const retry = { label: 'Try again', onPress: () => void posts.refresh() };
+
+  if (posts.items === null) {
+    return posts.error !== null ? (
+      <Notice tone="danger" action={retry}>
+        {posts.error}
+      </Notice>
+    ) : (
+      <View style={styles.list}>
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} width="100%" height={168} radius="card" />
+        ))}
+      </View>
+    );
+  }
+  if (posts.items.length === 0) return <EmptyState icon="people" title={empty.title} description={empty.description} />;
+  return (
+    <View style={styles.list}>
+      {posts.error !== null ? (
+        <Notice tone="danger" action={retry}>
+          {posts.error}
+        </Notice>
+      ) : null}
+      {posts.items.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          linkAuthor={linkAuthor}
+          onChange={posts.replace}
+          onOpen={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
+        />
+      ))}
+      {posts.hasMore ? <Button label="Load more" loading={posts.loadingMore} onPress={() => void posts.loadMore()} /> : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  list: { gap: spacing.md },
+});

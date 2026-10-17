@@ -84,7 +84,7 @@ export async function countNightHrvSince(db: SQLiteDatabase, sinceSec: number): 
   return row?.n ?? 0;
 }
 
-/** A `workouts` row. `complete` is false while a part of its download failed; the next sync retries. */
+/** A `workouts` row. `complete` is false while a part of its download failed; the next sync retries. `imported` marks a row that came from a Huawei export or a FIT file instead of the watch. */
 export interface WorkoutRow {
   id: number;
   workoutNumber: number;
@@ -103,6 +103,7 @@ export interface WorkoutRow {
   maxHr: number | null;
   steps: number;
   complete: boolean;
+  imported: boolean;
 }
 
 /** One `workout_points` row: GPS points have lat/lon, data samples have hr and altitude. */
@@ -116,12 +117,12 @@ export interface WorkoutPointRow {
 
 const WORKOUT_COLUMNS = `id, workout_number AS workoutNumber, start, end, sport_type AS sportType,
   sport_name AS sportName, duration, distance, calories, avg_hr AS avgHr, max_hr AS maxHr, steps,
-  complete != 0 AS complete`;
+  complete != 0 AS complete, imported != 0 AS imported`;
 
-type RawWorkout = Omit<WorkoutRow, 'complete'> & { complete: number };
+type RawWorkout = Omit<WorkoutRow, 'complete' | 'imported'> & { complete: number; imported: number };
 
 function toWorkout(row: RawWorkout): WorkoutRow {
-  return { ...row, complete: row.complete !== 0 };
+  return { ...row, complete: row.complete !== 0, imported: row.imported !== 0 };
 }
 
 /** Newest first. */
