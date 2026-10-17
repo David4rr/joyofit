@@ -38,3 +38,7 @@ export function describeConnectFailure(e: unknown): ConnectFailure {
 /** Shown when the list has no watch that is in reach on iOS (a watch linked to another phone does not advertise). */
 export const NO_WATCH_FOUND_HINT =
   'Watch not found. If it is still connected to another phone, disconnect it there first. Make sure the watch is on and close to this phone, then tap Refresh.';
+
+/** Android: a scan that saw no watch. The same cause as on iOS, a watch linked to another phone or app does not advertise. */
+export const NO_WATCH_FOUND_SCAN_HINT =
+  'No watch found nearby. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again.';

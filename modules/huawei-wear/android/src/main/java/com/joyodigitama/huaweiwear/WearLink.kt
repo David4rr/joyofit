@@ -67,7 +67,6 @@ internal class WearLink(
   private val lock = Any()
   private val discoveredDevices = ConcurrentHashMap<String, DiscoveredDevice>()
   private val discoveredNames = ConcurrentHashMap<String, String>()
-  private val discoveredTransports = ConcurrentHashMap<String, ModelTransport>()
   private var scanCallback: ScanCallback? = null
   private val scanHandler = android.os.Handler(android.os.Looper.getMainLooper())
   private val scanTimeoutRunnable = Runnable { stopScan() }
@@ -257,6 +256,9 @@ internal class WearLink(
 
     synchronized(this) {
       if (isScanning) return
+      // Each scan starts from nothing: devices an earlier scan saw (a watch that has since left or moved to another phone) must not stay listed.
+      discoveredDevices.clear()
+      discoveredNames.clear()
       isScanning = true
       scanHandler.removeCallbacks(scanTimeoutRunnable)
       scanHandler.postDelayed(scanTimeoutRunnable, SCAN_TIMEOUT_MS)
@@ -284,7 +286,6 @@ internal class WearLink(
           discoveredNames[address] = rawName
           val match = WatchModels.match(rawName)
           if (match.connectable || isHuaweiService || isHuaweiManufacturer) {
-            discoveredTransports[address] = ModelTransport.LE
             val entry = DiscoveredDevice(
               address = address,
               name = rawName,

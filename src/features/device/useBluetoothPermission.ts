@@ -38,7 +38,7 @@ export function useBluetoothPermission() {
   return { status, request };
 }
 
-/** BLUETOOTH_SCAN, only for the developer Bluetooth LE mode, which scans for the watch's LE address. */
+/** BLUETOOTH_SCAN (declared neverForLocation): the Scan nearby devices button and the developer Bluetooth LE mode, which scan for LE addresses. */
 export async function ensureBluetoothScan(): Promise<Exclude<PermissionStatus, 'checking'>> {
   if (Platform.OS !== 'android' || Number(Platform.Version) < RUNTIME_BLUETOOTH_API) {
     return 'granted';

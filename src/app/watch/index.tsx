@@ -15,7 +15,7 @@ import { FindWatchSection } from '@/features/device/FindWatchSection';
 import { SUPPORT_LABEL, supportRank } from '@/features/device/modelSupport';
 import { SupportReportSection } from '@/features/device/SupportReportSection';
 import { WatchStatusCard } from '@/features/device/WatchStatusCard';
-import { NO_WATCH_FOUND_HINT } from '@/features/device/connectFailure';
+import { NO_WATCH_FOUND_HINT, NO_WATCH_FOUND_SCAN_HINT } from '@/features/device/connectFailure';
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
 import { useBondedDevices } from '@/features/device/useBondedDevices';
 import { useWatch } from '@/state/WatchProvider';
@@ -129,6 +129,9 @@ export default function WatchScreen() {
           {bonded.error ? <Notice tone="danger">Could not read paired devices: {bonded.error}</Notice> : null}
           {showNotInReach ? (
             <Notice action={{ label: 'Refresh', onPress: () => void bonded.refresh() }}>{NO_WATCH_FOUND_HINT}</Notice>
+          ) : null}
+          {!isIos && !bonded.scanning && bonded.scanFound === 0 && !linked ? (
+            <Notice action={{ label: 'Scan again', onPress: () => void bonded.startScan() }}>{NO_WATCH_FOUND_SCAN_HINT}</Notice>
           ) : null}
           {showEmpty ? (
             <EmptyState

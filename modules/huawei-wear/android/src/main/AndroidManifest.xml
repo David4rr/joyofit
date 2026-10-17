@@ -2,7 +2,7 @@
   <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
   <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
   <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-  <!-- Developer Bluetooth LE mode only: scans for the watch's LE address by its name. It never derives a location from the scan. -->
+  <!-- "Scan nearby devices" on the Watch tab and the developer Bluetooth LE mode: list Huawei/Honor watches in range by name or service. It never derives a location from the scan. -->
   <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />

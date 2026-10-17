@@ -45,6 +45,7 @@ Other permissions in the Play build and why (the manifest of `dist/joyofit-play-
 | Permission | User-facing reason |
 |---|---|
 | `BLUETOOTH_CONNECT` (`BLUETOOTH`, `BLUETOOTH_ADMIN` up to Android 11) | Connect to the Huawei/Honor watch you already paired |
+| `BLUETOOTH_SCAN` (declared `neverForLocation`) | "Scan nearby devices" on the Watch tab lists Huawei and Honor watches in range so one can be connected without pairing it in Android Bluetooth settings first (Android 12+ only; a scan only lists, nothing connects or binds). Asked when the button is tapped; no location permission is used for it |
 | `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` | Keep the watch connection alive in the background (Settings, Background) |
 | `POST_NOTIFICATIONS` | The service notification and the optional morning summary |
 | `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK` | Restart the watch connection after a reboot or update; stay awake during a sync |

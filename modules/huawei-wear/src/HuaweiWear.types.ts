@@ -36,6 +36,8 @@ export interface BondedDevice {
   nearby?: boolean;
   /** iOS only: iOS already holds a connection to this watch (paired in Settings > Bluetooth, or held by another app), so no scan shows it. */
   systemConnected?: boolean;
+  /** Android: signal strength in dBm, only on a device the Bluetooth LE scan saw. */
+  rssi?: number;
 }
 
 export interface DeviceInfo {

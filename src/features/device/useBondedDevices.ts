@@ -1,8 +1,10 @@
 import { useEventListener } from 'expo';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 
 import { supportRank } from '@/features/device/modelSupport';
+import { ensureBluetoothScan } from '@/features/device/useBluetoothPermission';
 import { errorMessage } from '@/format';
 import { HuaweiWear, type BondedDevice } from '@/wear';
 
@@ -10,6 +12,8 @@ interface BondedState {
   devices: BondedDevice[];
   loading: boolean;
   scanning: boolean;
+  /** Devices seen by the scan that is running or just ended (the same watch counts each time it is seen); null when none ran. */
+  scanFound: number | null;
   error: string | null;
   /** True once a load has finished, so "no watch found" is not shown before the first answer. */
   loaded: boolean;
@@ -30,6 +34,7 @@ export function useBondedDevices(enabled: boolean) {
     devices: [],
     loading: false,
     scanning: false,
+    scanFound: null,
     error: null,
     loaded: false,
   });
@@ -85,15 +90,30 @@ export function useBondedDevices(enabled: boolean) {
   }, []);
 
   const startScan = useCallback(async () => {
+    if (Platform.OS === 'android') {
+      // Below Android 12 a BLE scan needs the location permission, which JoyoFit does not ask for a Bluetooth scan.
+      if (Number(Platform.Version) < 31) {
+        setState((s) => ({ ...s, error: 'Scanning needs Android 12 or newer. Pair the watch in Android Bluetooth settings instead.' }));
+        return;
+      }
+      if ((await ensureBluetoothScan()) !== 'granted') {
+        setState((s) => ({
+          ...s,
+          error:
+            'The Bluetooth scan permission is needed to find nearby watches. Allow it in the app settings, or pair the watch in Android Bluetooth settings.',
+        }));
+        return;
+      }
+    }
     try {
       clearTimeout(scanTimeoutRef.current ?? undefined);
-      setState((s) => ({ ...s, scanning: true, error: null }));
+      setState((s) => ({ ...s, scanning: true, scanFound: 0, error: null }));
       await HuaweiWear.startScan();
       scanTimeoutRef.current = setTimeout(() => {
         void stopScan();
       }, 12000);
     } catch (e) {
-      setState((s) => ({ ...s, scanning: false, error: errorMessage(e) }));
+      setState((s) => ({ ...s, scanning: false, scanFound: null, error: errorMessage(e) }));
     }
   }, [stopScan]);
 
@@ -104,7 +124,10 @@ export function useBondedDevices(enabled: boolean) {
       setState((s) => ({
         ...s,
         devices: sortBonded(Array.from(map.values())),
+        scanFound: (s.scanFound ?? 0) + 1,
       }));
+    } else {
+      setState((s) => ({ ...s, scanFound: (s.scanFound ?? 0) + 1 }));
     }
   });
 

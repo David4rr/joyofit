@@ -145,7 +145,7 @@ public final class HuaweiWearModule: Module {
 
         Events(
             "onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged",
-            "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress"
+            "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange"
         )
 
         OnCreate {
@@ -181,6 +181,12 @@ public final class HuaweiWearModule: Module {
         Function("confirmBind") { (address: String) -> Void in
             runtime.confirmBind(address)
         }
+
+        // The Android Bluetooth LE scan button. iOS lists nearby watches by itself (getBondedDevices / refreshBondedDevices), so these three
+        // exist only to keep the JS API the same: the events never fire, the list is empty and starting a scan is unsupported.
+        rejects("startScan")
+        AsyncFunction("stopScan") { () -> Void in }
+        Function("getDiscoveredDevices") { () -> [[String: Any]] in [] }
 
         AsyncFunction("connect") { (address: String) async throws -> [String: Any] in
             try await wearCall { try await runtime.connectFromApp(address).toJS() }
