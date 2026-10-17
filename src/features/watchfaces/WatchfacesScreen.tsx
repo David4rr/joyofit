@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, Image, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -242,23 +242,34 @@ export function WatchfacesScreen() {
           const isCurrentInstalling = installing && installingUrl === face.downloadUrl;
           return (
             <Card>
-              <View style={styles.faceHeader}>
-                <IconChip icon="watch" tint={matchesScreen ? 'link' : 'neutral'} />
+              <View style={styles.catalogCardRow}>
+                {face.previewUrl ? (
+                  <View style={[styles.previewFrame, { backgroundColor: colors.muted }]}>
+                    <Image source={{ uri: face.previewUrl }} style={styles.catalogThumbnail} resizeMode="contain" />
+                  </View>
+                ) : (
+                  <IconChip icon="watch" tint={matchesScreen ? 'link' : 'neutral'} />
+                )}
                 <View style={styles.faceText}>
-                  <AppText variant="bodyStrong" numberOfLines={1}>
-                    {face.title}
+                  <View style={styles.titleLine}>
+                    <AppText variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
+                      {face.title}
+                    </AppText>
+                    {matchesScreen ? (
+                      <View style={[styles.pill, { backgroundColor: colors.muted }]}>
+                        <AppText variant="label" color={colors.primary}>
+                          Matches
+                        </AppText>
+                      </View>
+                    ) : null}
+                  </View>
+                  <AppText variant="caption" muted>
+                    by {face.author}
                   </AppText>
                   <AppText variant="caption" muted>
-                    by {face.author} · {face.width}x{face.height} px · {face.sizeLabel}
+                    {face.width}x{face.height} px · {face.sizeLabel}
                   </AppText>
                 </View>
-                {matchesScreen ? (
-                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                    <AppText variant="label" color={colors.primary}>
-                      Matches
-                    </AppText>
-                  </View>
-                ) : null}
               </View>
               <AppText variant="caption">{face.description}</AppText>
               <View style={styles.actions}>
@@ -365,4 +376,16 @@ const styles = StyleSheet.create({
   progress: { gap: spacing.sm },
   track: { height: 8, borderRadius: radius.pill, overflow: 'hidden' },
   bar: { height: 8, borderRadius: radius.pill },
+  catalogCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  previewFrame: {
+    width: 64,
+    height: 84,
+    borderRadius: radius.card / 2,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  catalogThumbnail: { width: '100%', height: '100%', borderRadius: 8 },
+  titleLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });
