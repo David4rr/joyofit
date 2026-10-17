@@ -1,13 +1,16 @@
 import { create } from "zustand";
+import { retainAssets } from "@/model/assets";
 import { emptyProject, newElement, uid } from "@/model/defaults";
+import { assetIdsOf, restoreProject } from "@/model/projectFile";
 import type { Element, ElementType, Project, Sim } from "@/model/types";
-import { PROJECT_VERSION, SCREEN_W } from "@/model/types";
+import { SCREEN_W } from "@/model/types";
 import { elementBounds } from "@/render/scene";
 import { defaultSim } from "@/render/values";
 
-const STORAGE_KEY = "joyofit-studio:project:v1";
+export const STORAGE_KEY = "joyofit-studio:project:v1";
 const HISTORY_LIMIT = 100;
 const COALESCE_MS = 700;
+const AUTOSAVE_MS = 300;
 
 export interface EditorState {
   project: Project;
@@ -18,15 +21,20 @@ export interface EditorState {
   /** `fit` fills the stage; a number is an explicit zoom factor. */
   zoom: "fit" | number;
   snapping: boolean;
+  /** Stage shows only the layers a photo face carries (pictures), not the live ones the watch draws itself. */
+  photoPreview: boolean;
   /** Last coalesced edit, so a slider drag becomes one undo step. */
   lastEdit: { key: string; at: number } | null;
-  /** True while a pointer drag owns a single undo entry. */
+  /** True while a pointer gesture (move, scale, pan) is in progress. */
   dragging: boolean;
+  /** The project when the gesture began. It becomes the undo step on the gesture's first real change; a bare click never does. */
+  dragOrigin: Project | null;
 
   select: (id: string | null) => void;
   setSim: (patch: Partial<Sim>) => void;
   setZoom: (zoom: "fit" | number) => void;
   setSnapping: (on: boolean) => void;
+  setPhotoPreview: (on: boolean) => void;
 
   commit: (next: Project, coalesceKey?: string) => void;
   patchProject: (patch: Partial<Pick<Project, "name" | "author">>, coalesceKey?: string) => void;
@@ -61,42 +69,72 @@ function centredHorizontally(el: Element, sim: Sim): Element {
   return { ...el, x: Math.round((SCREEN_W - b.w) / 2) };
 }
 
-function readSaved(): Project | null {
+/** What the autosave held at start: nothing, a project that restored, or an entry that did not restore (its JSON is still in storage). */
+export type SavedState = { kind: "none" } | { kind: "restored"; project: Project } | { kind: "rejected" };
+
+export function readSavedState(storage?: Pick<Storage, "getItem">): SavedState {
+  let raw: string | null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Project;
-    return parsed.version === PROJECT_VERSION && Array.isArray(parsed.elements) ? parsed : null;
+    raw = (storage ?? localStorage).getItem(STORAGE_KEY);
   } catch {
-    return null;
+    return { kind: "none" };
+  }
+  if (!raw) return { kind: "none" };
+  try {
+    return { kind: "restored", project: restoreProject(JSON.parse(raw)) };
+  } catch {
+    return { kind: "rejected" };
   }
 }
 
+/** The autosaved project, or null when there is none or it does not pass the same checks as a project file. */
+export function readSaved(storage?: Pick<Storage, "getItem">): Project | null {
+  const saved = readSavedState(storage);
+  return saved.kind === "restored" ? saved.project : null;
+}
+
+const saved = readSavedState();
+
 export const useEditor = create<EditorState>((set, get) => ({
-  project: readSaved() ?? emptyProject(),
+  project: saved.kind === "restored" ? saved.project : emptyProject(),
   selectedId: null,
   past: [],
   future: [],
   sim: defaultSim(),
   zoom: "fit",
   snapping: true,
+  photoPreview: false,
   lastEdit: null,
   dragging: false,
+  dragOrigin: null,
 
   select: (id) => set({ selectedId: id }),
   setSim: (patch) => set((s) => ({ sim: { ...s.sim, ...patch } })),
   setZoom: (zoom) => set({ zoom }),
   setSnapping: (snapping) => set({ snapping }),
+  setPhotoPreview: (photoPreview) => set({ photoPreview }),
 
   commit: (next, coalesceKey) => {
     const s = get();
     const now = Date.now();
+    const project = normalise(next);
+    if (s.dragging) {
+      // The first real change of a gesture records the state the gesture started from; later ones only move the element.
+      const first = s.dragOrigin !== null;
+      set({
+        project,
+        past: first ? [...s.past, s.dragOrigin!].slice(-HISTORY_LIMIT) : s.past,
+        future: first ? [] : s.future,
+        dragOrigin: null,
+        lastEdit: null,
+      });
+      return;
+    }
     const coalesce = coalesceKey && s.lastEdit?.key === coalesceKey && now - s.lastEdit.at < COALESCE_MS;
-    const skipHistory = coalesce || s.dragging;
     set({
-      project: normalise(next),
-      past: skipHistory ? s.past : [...s.past, s.project].slice(-HISTORY_LIMIT),
-      future: skipHistory ? s.future : [],
+      project,
+      past: coalesce ? s.past : [...s.past, s.project].slice(-HISTORY_LIMIT),
+      future: coalesce ? s.future : [],
       lastEdit: coalesceKey ? { key: coalesceKey, at: now } : null,
     });
   },
@@ -113,6 +151,9 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   updateElement: (id, patch, coalesceKey) => {
     const { project } = get();
+    const target = project.elements.find((e) => e.id === id);
+    // Setting what is already there (a pointer that did not move, a slider at its value) is not an edit.
+    if (!target || Object.entries(patch).every(([key, value]) => Object.is(target[key as keyof Element], value))) return;
     const elements = project.elements.map((e) => (e.id === id ? ({ ...e, ...patch } as Element) : e));
     get().commit({ ...project, elements }, coalesceKey ?? `el:${id}:${Object.keys(patch).join()}`);
   },
@@ -159,9 +200,9 @@ export const useEditor = create<EditorState>((set, get) => ({
   beginDrag: () => {
     const s = get();
     if (s.dragging) return;
-    set({ past: [...s.past, s.project].slice(-HISTORY_LIMIT), future: [], dragging: true, lastEdit: null });
+    set({ dragging: true, dragOrigin: s.project, lastEdit: null });
   },
-  endDrag: () => set({ dragging: false }),
+  endDrag: () => set({ dragging: false, dragOrigin: null }),
 
   undo: () => {
     const s = get();
@@ -189,32 +230,70 @@ export const useEditor = create<EditorState>((set, get) => ({
     });
   },
 
-  loadProject: (project) =>
+  loadProject: (project) => {
     set((s) => ({
       project: normalise(project),
       past: [...s.past, s.project].slice(-HISTORY_LIMIT),
       future: [],
       selectedId: null,
       lastEdit: null,
-    })),
+    }));
+    // The replaced project stays in the undo history, so its images stay too; anything older is garbage.
+    const { project: open, past, future } = get();
+    void retainAssets(new Set([open, ...past, ...future].flatMap(assetIdsOf)));
+  },
 }));
 
-/** Autosave to localStorage, debounced. Called once from the app root. */
-export function startAutosave(): () => void {
+/**
+ * Asset ids still wanted, for the stored-image sweep: the open project, its undo and redo history and the saved project, as they are
+ * now. Null when a saved project exists but does not restore: its JSON still names images, so nothing may be deleted.
+ */
+export function liveAssetIds(): ReadonlySet<string> | null {
+  const savedNow = readSavedState();
+  if (savedNow.kind === "rejected") return null;
+  const { project, past, future } = useEditor.getState();
+  const projects = savedNow.kind === "restored" ? [project, ...past, ...future, savedNow.project] : [project, ...past, ...future];
+  return new Set(projects.flatMap(assetIdsOf));
+}
+
+export type AutosaveStatus = { ok: true } | { ok: false; message: string };
+
+/**
+ * Autosave to localStorage, debounced, and flushed when the page is hidden or closed so the last edit is not lost.
+ * `onStatus` hears every write: a failure (storage full or blocked) is reported so the user can export the project instead.
+ * Called once from the app root.
+ */
+export function startAutosave(onStatus: (status: AutosaveStatus) => void): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let dirty = false;
+
+  const flush = () => {
+    clearTimeout(timer);
+    if (!dirty) return;
+    dirty = false;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(useEditor.getState().project));
+      onStatus({ ok: true });
+    } catch (err) {
+      onStatus({ ok: false, message: err instanceof Error ? err.message : String(err) });
+    }
+  };
+
   const unsubscribe = useEditor.subscribe((state, prev) => {
     if (state.project === prev.project) return;
+    dirty = true;
     clearTimeout(timer);
-    timer = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.project));
-      } catch {
-        // Storage can be full or blocked; the project stays in memory and can still be exported.
-      }
-    }, 300);
+    timer = setTimeout(flush, AUTOSAVE_MS);
   });
+  const onHide = () => {
+    if (document.visibilityState === "hidden") flush();
+  };
+  window.addEventListener("pagehide", flush);
+  document.addEventListener("visibilitychange", onHide);
   return () => {
-    clearTimeout(timer);
+    flush();
+    window.removeEventListener("pagehide", flush);
+    document.removeEventListener("visibilitychange", onHide);
     unsubscribe();
   };
 }

@@ -16,6 +16,7 @@ import {
 } from "@joyofit/hwt";
 import { describe, expect, it } from "vitest";
 import { emptyProject, newDate, newHand, newImage, newRing, newTime, newWidget } from "@/model/defaults";
+import { LEGACY_CALORIES_ID } from "@/model/fields";
 import type { Element, Project } from "@/model/types";
 import { defaultSim } from "@/render/values";
 import { TEMPLATES } from "@/templates";
@@ -141,7 +142,7 @@ describe("export assembly", () => {
   });
 
   it("leaves preview-only elements out and says so", async () => {
-    const calories = newWidget("calories");
+    const calories = newWidget(LEGACY_CALORIES_ID);
     const ampm = newTime({ ampm: true, name: "Clock" });
     const result = await buildHwt(withElements([calories, ampm]), sim, { includeExperimental: true });
     const left = result.elements.find((e) => e.id === calories.id)!;
@@ -180,7 +181,7 @@ describe("export assembly", () => {
   });
 
   it("builds a ring as a track image plus an arc layer with the sweep as angles", async () => {
-    const ring = newRing("battery", { startAngle: 225, sweep: 270, size: 300, thickness: 12 });
+    const ring = newRing(VALUE_TYPE.powerRatio, { startAngle: 225, sweep: 270, size: 300, thickness: 12 });
     const result = await buildHwt(withElements([ring]), sim, { includeExperimental: true });
     const arc = layers(result.bytes).find(({ layer }) => layer.draw_type === "DRAW_TYPE_ARC_RES")!;
     const body = bodyOf(arc.layer);

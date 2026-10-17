@@ -1,4 +1,6 @@
-import { Maximize, Magnet, Pause, Play, ZoomIn, ZoomOut } from "lucide-react";
+import { Image as ImageIcon, Maximize, Magnet, Pause, Play, ZoomIn, ZoomOut } from "lucide-react";
+import { FIELDS } from "@/model/fields";
+import { simValue } from "@/render/values";
 import { cn } from "@/ui/utils";
 import { useEditor } from "./store";
 import { SliderField } from "./fields";
@@ -8,6 +10,9 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export function SimPanel() {
   const sim = useEditor((s) => s.sim);
   const setSim = useEditor((s) => s.setSim);
+  const elements = useEditor((s) => s.project.elements);
+  // One slider per number field in the registry; a field kept only for old projects (calories) shows when the project uses it.
+  const fields = FIELDS.filter((f) => f.sim && (!f.legacy || elements.some((el) => el.type === "widget" && el.valueType === f.id)));
 
   const d = new Date(sim.timeMs);
   const minutesOfDay = d.getHours() * 60 + d.getMinutes();
@@ -47,11 +52,20 @@ export function SimPanel() {
         onChange={(v) => setClock(v, d.getSeconds())}
       />
       <SliderField label="Seconds" value={d.getSeconds()} min={0} max={59} format={(v) => pad(v)} onChange={(v) => setClock(minutesOfDay, v)} />
-      <SliderField label="Steps" value={sim.steps} min={0} max={30000} step={50} color="var(--steps)" onChange={(steps) => setSim({ steps })} />
       <SliderField label="Step goal" value={sim.stepGoal} min={2000} max={30000} step={500} color="var(--steps)" onChange={(stepGoal) => setSim({ stepGoal })} />
-      <SliderField label="Heart rate" value={sim.heartRate} min={40} max={200} unit="bpm" color="var(--heart)" onChange={(heartRate) => setSim({ heartRate })} />
-      <SliderField label="Battery" value={sim.battery} min={0} max={100} unit="%" color="var(--battery)" onChange={(battery) => setSim({ battery })} />
-      <SliderField label="Calories" value={sim.calories} min={0} max={1500} step={5} unit="kcal" color="var(--calories)" onChange={(calories) => setSim({ calories })} />
+      {fields.map((f) => (
+        <SliderField
+          key={f.id}
+          label={f.label}
+          value={simValue(sim, f.id)}
+          min={f.sim!.min}
+          max={f.sim!.max}
+          step={f.sim!.step}
+          unit={f.sim!.unit}
+          color={f.color}
+          onChange={(v) => setSim({ values: { ...sim.values, [f.id]: v } })}
+        />
+      ))}
     </div>
   );
 }
@@ -63,6 +77,8 @@ export function StageControls({ currentZoom }: { currentZoom: number }) {
   const setZoom = useEditor((s) => s.setZoom);
   const snapping = useEditor((s) => s.snapping);
   const setSnapping = useEditor((s) => s.setSnapping);
+  const photoPreview = useEditor((s) => s.photoPreview);
+  const setPhotoPreview = useEditor((s) => s.setPhotoPreview);
 
   const step = (dir: 1 | -1) => {
     const next = dir > 0 ? ZOOMS.find((z) => z > currentZoom + 0.01) : [...ZOOMS].reverse().find((z) => z < currentZoom - 0.01);
@@ -102,6 +118,17 @@ export function StageControls({ currentZoom }: { currentZoom: number }) {
         onClick={() => setSnapping(!snapping)}
       >
         <Magnet className="size-4" />
+      </button>
+      <button
+        type="button"
+        className={cn(btn, photoPreview && "bg-white/15 text-stage-foreground")}
+        aria-label="Photo face preview"
+        aria-pressed={photoPreview}
+        title="Photo face preview: only the pictures, without the clock and data the watch draws itself"
+        data-testid="photo-preview-toggle"
+        onClick={() => setPhotoPreview(!photoPreview)}
+      >
+        <ImageIcon className="size-4" />
       </button>
     </div>
   );

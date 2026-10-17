@@ -82,12 +82,14 @@ export function fontCss(font: FontRef): string {
 }
 
 const loading = new Map<string, Promise<void>>();
-/** Fonts whose files finished loading. `document.fonts.check` says true for a family it has never heard of, so it cannot be trusted alone. */
+/** Fonts whose files loaded. `document.fonts.check` says true for a family it has never heard of, so it cannot be trusted alone. */
 const loaded = new Set<string>();
+/** Fonts whose loading finished, with success or not. */
+const settled = new Set<string>();
 
 /**
  * Loads the font file and resolves once the canvas can draw with it. A family that is not installed
- * (or any failure) resolves quietly: the browser falls back, and the sprite is simply not cached.
+ * (or any failure) resolves quietly and the browser falls back: `fontFailed` tells callers afterwards.
  */
 export function ensureFont(font: FontRef): Promise<void> {
   const key = `${font.family}@${font.weight}`;
@@ -95,13 +97,20 @@ export function ensureFont(font: FontRef): Promise<void> {
   if (existing) return existing;
   const task = (async () => {
     if (typeof document === "undefined") return;
-    if (font.family !== "Plus Jakarta Sans Variable") {
-      const loader = FONT_CSS[`${packageName(font.family)}-${font.weight}`];
-      if (loader) await loader();
+    try {
+      if (font.family !== "Plus Jakarta Sans Variable") {
+        const loader = FONT_CSS[`${packageName(font.family)}-${font.weight}`];
+        if (loader) await loader();
+      }
+      // `load` resolves with an empty list, not an error, when no @font-face matches.
+      const faces = await document.fonts.load(fontCss(font), "0123456789:APMapm");
+      if (faces.length > 0) loaded.add(key);
+    } catch {
+      // Stays out of `loaded`.
+    } finally {
+      settled.add(key);
     }
-    await document.fonts.load(fontCss(font), "0123456789:APMapm");
-    loaded.add(key);
-  })().catch(() => undefined);
+  })();
   loading.set(key, task);
   return task;
 }
@@ -110,4 +119,17 @@ export function ensureFont(font: FontRef): Promise<void> {
 export function fontReady(font: FontRef): boolean {
   if (typeof document === "undefined") return true;
   return loaded.has(`${font.family}@${font.weight}`) && document.fonts.check(fontCss(font), "0123456789");
+}
+
+/**
+ * True once loading has finished, whether the font arrived or not. Sprites drawn after that are final (a failed font always
+ * draws the same fallback), so they may be cached; sprites drawn while the font is still loading may not be.
+ */
+export function fontSettled(font: FontRef): boolean {
+  return typeof document === "undefined" || settled.has(`${font.family}@${font.weight}`);
+}
+
+/** True when the font could not be loaded: its digits are drawn in the browser's fallback font. */
+export function fontFailed(font: FontRef): boolean {
+  return fontSettled(font) && !fontReady(font);
 }

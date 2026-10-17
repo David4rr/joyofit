@@ -1,26 +1,28 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { ChevronDown, ChevronUp, Copy, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
-import { addAssetFromFile, getAsset } from "@/model/assets";
-import { ELEMENT_LABELS, newWidget } from "@/model/defaults";
+import { addAssetFromFile, assetsVersion, getAsset, subscribeAssets } from "@/model/assets";
+import { ELEMENT_LABELS } from "@/model/defaults";
+import { FIELDS, fieldDef, numberFields, ratioFields, type FieldDef } from "@/model/fields";
 import {
-  WIDGET_LABELS,
   type BackgroundElement,
   type DateElement,
   type DatePart,
   type Element,
   type HandElement,
+  type IconSetElement,
   type ImageElement,
   type RingElement,
   type TimeElement,
   type WidgetElement,
 } from "@/model/types";
-import { elementSupport } from "@/export/support";
+import { elementSupport, levelOfId } from "@/export/support";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { cn } from "@/ui/utils";
 import {
   ColorField,
+  Field,
   FontField,
   NumberInput,
   OutlineField,
@@ -319,21 +321,41 @@ function ImageFields({ el, set }: { el: ImageElement; set: Patch<ImageElement> }
   );
 }
 
+/** Picks a registry field by name. A value the picker does not list (an old project's calories) stays selectable. */
+function FieldPicker({ label, value, options, onChange }: { label: string; value: number; options: FieldDef[]; onChange: (def: FieldDef) => void }) {
+  const current = fieldDef(value);
+  const list = current && !options.includes(current) ? [current, ...options] : options;
+  return (
+    <Field label={label}>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => {
+          const def = fieldDef(Number(e.currentTarget.value));
+          if (def) onChange(def);
+        }}
+        className="h-9 w-full rounded-xl border border-transparent bg-muted px-3 text-[0.8125rem] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
+      >
+        {list.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.label}
+            {levelOfId(f.id) === "verified" ? "" : levelOfId(f.id) === "experimental" ? " (unconfirmed)" : " (preview only)"}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
 function WidgetFields({ el, set }: { el: WidgetElement; set: Patch<WidgetElement> }) {
   return (
     <>
       <Section title="Data">
-        <SegmentedField
+        <FieldPicker
           label="Shows"
-          value={el.source}
-          options={(Object.keys(WIDGET_LABELS) as Array<keyof typeof WIDGET_LABELS>).map((v) => ({
-            value: v,
-            label: v === "heartRate" ? "Heart" : WIDGET_LABELS[v],
-          }))}
-          onChange={(source) => {
-            const fresh = newWidget(source);
-            set({ source, name: fresh.name, iconColor: fresh.iconColor });
-          }}
+          value={el.valueType}
+          options={numberFields()}
+          onChange={(def) => set({ valueType: def.id, name: def.label, iconColor: def.color })}
         />
       </Section>
       <Section title="Number">
@@ -367,15 +389,7 @@ function WidgetFields({ el, set }: { el: WidgetElement; set: Patch<WidgetElement
 function RingFields({ el, set }: { el: RingElement; set: Patch<RingElement> }) {
   return (
     <Section title="Progress ring">
-      <SegmentedField
-        label="Shows"
-        value={el.source}
-        options={[
-          { value: "steps", label: "Steps goal" },
-          { value: "battery", label: "Battery" },
-        ]}
-        onChange={(source) => set({ source, name: source === "steps" ? "Steps ring" : "Battery ring" })}
-      />
+      <FieldPicker label="Shows" value={el.valueType} options={ratioFields()} onChange={(def) => set({ valueType: def.id, name: `${def.label} ring` })} />
       <SliderField label="Diameter" value={el.size} min={48} max={480} unit="px" onChange={(size) => set({ size })} />
       <SliderField label="Thickness" value={el.thickness} min={2} max={60} unit="px" onChange={(thickness) => set({ thickness })} />
       <SliderField label="Start angle" value={el.startAngle} min={0} max={359} unit="°" onChange={(startAngle) => set({ startAngle })} />
@@ -383,6 +397,21 @@ function RingFields({ el, set }: { el: RingElement; set: Patch<RingElement> }) {
       <ColorField label="Progress color" value={el.color} onChange={(color) => set({ color })} />
       <ColorField label="Track color" value={el.trackColor} onChange={(trackColor) => set({ trackColor })} />
       <ToggleRow label="Rounded ends" checked={el.roundCap} onChange={(roundCap) => set({ roundCap })} />
+    </Section>
+  );
+}
+
+function IconSetFields({ el, set }: { el: IconSetElement; set: Patch<IconSetElement> }) {
+  return (
+    <Section title="Icon set">
+      <FieldPicker
+        label="Shows"
+        value={el.valueType}
+        options={FIELDS.filter((f) => f.iconSet)}
+        onChange={(def) => set({ valueType: def.id, name: `${def.label} icons`, color: def.color })}
+      />
+      <SliderField label="Icon size" value={el.size} min={16} max={240} unit="px" onChange={(size) => set({ size })} />
+      <ColorField label="Color" value={el.color} onChange={(color) => set({ color })} />
     </Section>
   );
 }
@@ -395,6 +424,8 @@ export function PropertyPanel() {
   const moveInStack = useEditor((s) => s.moveInStack);
   const stackIndex = useEditor((s) => s.project.elements.findIndex((e) => e.id === s.selectedId));
   const stackSize = useEditor((s) => s.project.elements.length);
+  // Whether an image layer can be exported depends on its bitmap having loaded.
+  useSyncExternalStore(subscribeAssets, assetsVersion);
 
   if (!el) {
     return (
@@ -468,6 +499,7 @@ export function PropertyPanel() {
       {el.type === "image" && <ImageFields el={el} set={set as Patch<ImageElement>} />}
       {el.type === "widget" && <WidgetFields el={el} set={set as Patch<WidgetElement>} />}
       {el.type === "ring" && <RingFields el={el} set={set as Patch<RingElement>} />}
+      {el.type === "iconset" && <IconSetFields el={el} set={set as Patch<IconSetElement>} />}
       {el.type !== "background" && <PositionFields el={el} set={set} pivot={el.type === "hand"} />}
     </div>
   );

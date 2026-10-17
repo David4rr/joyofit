@@ -1,6 +1,6 @@
 import type { FontRef, Outline } from "@/model/types";
-import { fontCss, fontReady } from "./fonts";
-import { context2d, createSurface, newSprite, type Ctx2D, type Sprite } from "./canvas";
+import { fontSettled } from "./fonts";
+import { context2d, createSurface, newSprite, remember, type Ctx2D, type Sprite } from "./canvas";
 
 /**
  * Glyph sprites: the digit images, colons and word images a watch face is made of. The preview draws
@@ -29,6 +29,9 @@ export interface DigitSet {
   baseline: number;
   digits: Sprite[];
   colon: Sprite;
+  /** Hyphen for a number below zero and the degree sign after a temperature; same cell height as the digits. */
+  minus: Sprite;
+  degree: Sprite;
 }
 
 export interface WordSet {
@@ -60,7 +63,7 @@ function digitRatio(font: FontRef): { asc: number; desc: number } {
     desc = Math.max(desc, m.actualBoundingBoxDescent);
   }
   const ratio = { asc: asc / REF_SIZE, desc: desc / REF_SIZE };
-  if (fontReady(font)) ratioCache.set(key, ratio);
+  if (fontSettled(font)) remember(ratioCache, key, ratio);
   return ratio;
 }
 
@@ -115,7 +118,6 @@ export function renderDigitSet(style: GlyphStyle): DigitSet {
   probe.font = fontString(style.font, m.px);
   let advance = 0;
   for (const d of "0123456789") advance = Math.max(advance, probe.measureText(d).width);
-  const colonAdvance = probe.measureText(":").width;
   let ink = 0;
   for (const d of "0123456789") {
     const t = probe.measureText(d);
@@ -136,13 +138,18 @@ export function renderDigitSet(style: GlyphStyle): DigitSet {
     drawGlyph(ctx, String(d), (cellW - w) / 2, baseline, style);
     digits.push(sprite);
   }
-  const colonW = Math.ceil(colonAdvance) + 2 * m.pad;
-  const { sprite: colon, ctx: cctx } = newSprite(colonW, cellH);
-  cctx.font = fontString(style.font, m.px);
-  drawGlyph(cctx, ":", (colonW - cctx.measureText(":").width) / 2, baseline, style);
+  const symbol = (text: string): Sprite => {
+    const w = Math.ceil(probe.measureText(text).width) + 2 * m.pad;
+    const { sprite, ctx } = newSprite(w, cellH);
+    ctx.font = fontString(style.font, m.px);
+    drawGlyph(ctx, text, (w - ctx.measureText(text).width) / 2, baseline, style);
+    return sprite;
+  };
+  const colon = symbol(":");
 
-  const set: DigitSet = { cellW, cellH, baseline, digits, colon };
-  if (fontReady(style.font)) digitCache.set(key, set);
+  const set: DigitSet = { cellW, cellH, baseline, digits, colon, minus: symbol("-"), degree: symbol("°") };
+  // A font still loading would cache fallback-font sprites; once it has settled (loaded or failed) the sprites are final.
+  if (fontSettled(style.font)) remember(digitCache, key, set);
   return set;
 }
 
@@ -181,7 +188,7 @@ export function renderWordSet(words: string[], style: GlyphStyle): WordSet {
     out.set(w, sprite);
   }
   const set: WordSet = { cellW, cellH, baseline, words: out };
-  if (fontReady(style.font)) wordCache.set(key, set);
+  if (fontSettled(style.font)) remember(wordCache, key, set);
   return set;
 }
 
@@ -196,6 +203,11 @@ export function titleCase(word: string): string {
 export function dateWords(kind: "weekday" | "month", upper: boolean): string[] {
   const base: readonly string[] = kind === "weekday" ? WEEKDAYS : MONTHS;
   return upper ? [...base] : base.map(titleCase);
+}
+
+/** Test seam: how many sprite sets the caches hold. */
+export function glyphCacheSizes(): { digits: number; words: number } {
+  return { digits: digitCache.size, words: wordCache.size };
 }
 
 export function clearGlyphCaches(): void {

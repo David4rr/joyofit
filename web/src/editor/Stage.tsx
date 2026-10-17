@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { assetsVersion, getAsset, subscribeAssets } from "@/model/assets";
+import { isStaticElement } from "@/export/support";
 import { SCREEN_H, SCREEN_W, type Element } from "@/model/types";
 import { drawProject, elementBounds, type Rect } from "@/render/scene";
+import { shownSim } from "@/render/values";
 import type { Ctx2D } from "@/render/canvas";
 import { cn } from "@/ui/utils";
 import { useEditor } from "./store";
@@ -38,7 +40,13 @@ export function useStageZoom(container: React.RefObject<HTMLElement | null>): nu
 }
 
 export function Stage({ zoom: z }: { zoom: number }) {
-  const project = useEditor((s) => s.project);
+  const fullProject = useEditor((s) => s.project);
+  const photoPreview = useEditor((s) => s.photoPreview);
+  // Photo face preview: only the pictures a photo face carries; the watch draws its own clock and data over them.
+  const project = useMemo(
+    () => (photoPreview ? { ...fullProject, elements: fullProject.elements.filter(isStaticElement) } : fullProject),
+    [fullProject, photoPreview],
+  );
   const selectedId = useEditor((s) => s.selectedId);
   const sim = useEditor((s) => s.sim);
   const snapping = useEditor((s) => s.snapping);
@@ -71,7 +79,7 @@ export function Stage({ zoom: z }: { zoom: number }) {
     return () => node.removeEventListener("wheel", onWheel);
   }, [z, setZoom]);
 
-  const effectiveSim = useCallback(() => (sim.live ? { ...sim, timeMs: Date.now() } : sim), [sim]);
+  const effectiveSim = useCallback(() => shownSim(sim), [sim]);
 
   const paint = useCallback(() => {
     const node = canvas.current;

@@ -1,18 +1,8 @@
+import { FIELDS, fieldDef } from "@/model/fields";
 import type { Sim } from "@/model/types";
 
-/** What a digit sequence or a selected-by-value image shows. */
-export type DataRole =
-  | "hour"
-  | "minute"
-  | "second"
-  | "ampm"
-  | "weekday"
-  | "day"
-  | "month"
-  | "steps"
-  | "heartRate"
-  | "battery"
-  | "calories";
+/** What a digit sequence or a selected-by-value image shows. `field` is a data number: the part says which id. */
+export type DataRole = "hour" | "minute" | "second" | "ampm" | "weekday" | "day" | "month" | "field";
 
 export interface ClockFields {
   hour: number;
@@ -46,16 +36,37 @@ export function digitList(value: number, minDigits: number): number[] {
 export function defaultSim(now = Date.now()): Sim {
   const d = new Date(now);
   d.setHours(10, 9, 36, 0);
-  return { timeMs: d.getTime(), live: false, steps: 6842, stepGoal: 10000, heartRate: 72, battery: 78, calories: 412 };
+  const values: Record<number, number> = {};
+  for (const f of FIELDS) if (f.sim) values[f.id] = f.sim.default;
+  return { timeMs: d.getTime(), live: false, stepGoal: 10000, values };
 }
 
-/** Value of a numeric data source, clamped to what the watch can show. */
-export function numericValue(role: "steps" | "heartRate" | "battery" | "calories", sim: Sim): number {
-  if (role === "battery") return Math.max(0, Math.min(100, Math.round(sim.battery)));
-  return Math.max(0, Math.round(sim[role]));
+/** The state the stage shows: a running clock reads the real time at the moment of the call. */
+export function shownSim(sim: Sim): Sim {
+  return sim.live ? { ...sim, timeMs: Date.now() } : sim;
 }
 
-export function ringFraction(source: "steps" | "battery", sim: Sim): number {
-  const f = source === "battery" ? sim.battery / 100 : sim.steps / Math.max(1, sim.stepGoal);
-  return Math.max(0, Math.min(1, f));
+/** Preview value of a field before it is clamped to what the watch can show. */
+export function simValue(sim: Sim, id: number): number {
+  return sim.values[id] ?? fieldDef(id)?.sim?.default ?? 0;
+}
+
+/** Value of a number field, clamped to what the watch can show. */
+export function fieldValue(id: number, sim: Sim): number {
+  const spec = fieldDef(id)?.number;
+  const v = Math.round(simValue(sim, id));
+  return spec ? Math.max(spec.min, Math.min(spec.max, v)) : Math.max(0, v);
+}
+
+/** Fraction 0..1 a ratio field fills, from the number it follows. */
+export function fieldFraction(id: number, sim: Sim): number {
+  const spec = fieldDef(id)?.ratio;
+  if (!spec) return 0;
+  return Math.max(0, Math.min(1, spec.scale(fieldValue(spec.follows, sim), sim)));
+}
+
+/** Index of the image an icon set shows. */
+export function iconSetIndex(id: number, sim: Sim): number {
+  const spec = fieldDef(id)?.iconSet;
+  return spec ? spec.index(fieldValue(spec.follows, sim)) : 0;
 }

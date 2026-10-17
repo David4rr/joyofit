@@ -88,6 +88,9 @@ export function scaleElement(el: Element, k: number, corner: Corner, sim: Sim): 
     case "ring":
       next = { ...el, size: clamp(Math.round(el.size * k), 48, 800), thickness: clamp(Math.round(el.thickness * k), 2, 120) };
       break;
+    case "iconset":
+      next = { ...el, size: clamp(Math.round(el.size * k), 8, 480) };
+      break;
     case "image":
       next = { ...el, w: clamp(Math.round(el.w * k), 8, 1600), h: clamp(Math.round(el.h * k), 8, 1600) };
       break;

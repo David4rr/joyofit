@@ -77,3 +77,11 @@ export function frameSize(target: Size, maxWidth: number, maxHeight: number): Si
   if (byWidth.height <= maxHeight) return byWidth;
   return { width: (maxHeight * target.width) / target.height, height: maxHeight };
 }
+
+/**
+ * True when the picture already has the watch's exact screen size. Cropping it would only resample it, so the upload takes it
+ * as it is. Any other size goes through the crop screen.
+ */
+export function isExactScreenSize(image: Size, screen: Size): boolean {
+  return image.width === screen.width && image.height === screen.height;
+}
