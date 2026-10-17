@@ -6,8 +6,8 @@ import { GITHUB_URL, setMeta } from "./lib";
 export const PRIVASI_PATH = "/privasi";
 
 const CONTACT = "dzulfikar@joyorogo.com";
-const UPDATED = "16 Oktober 2026";
-const UPDATED_EN = "16 October 2026";
+const UPDATED = "17 Oktober 2026";
+const UPDATED_EN = "17 October 2026";
 
 const META = {
   title: "Kebijakan privasi JoyoFit",
@@ -268,6 +268,13 @@ function Indonesian() {
           panggilan, tidak membaca kontak, dan tidak mengirim SMS. Tidak ada data panggilan yang disimpan atau
           dikirim keluar HP.
         </p>
+        <p>
+          Panggilan aplikasi (WhatsApp, Telegram, Signal, Meet, LINE) dikenali dari notifikasi panggilannya, dengan
+          akses notifikasi yang sama seperti di atas: nama penelepon dan nama aplikasi dari notifikasi itu dikirim
+          ke jam lewat Bluetooth, dan tombol tolak atau terima di jam menekan tombol yang sama di notifikasi. Hanya
+          bila Tampilkan panggilan masuk menyala dan aplikasinya tidak kamu matikan di daftar aplikasi. Tidak ada
+          yang disimpan atau dikirim keluar HP.
+        </p>
         <p className="text-muted-foreground">
           APK dari situs fit.joyorogo.com dan hasil build sendiri bisa, bila kamu mengizinkan, membaca nomor
           penelepon (izin log panggilan) dan nama kontak, serta mengirim SMS SOS yang diminta jam. Fitur itu
@@ -280,6 +287,19 @@ function Indonesian() {
           Foto yang kamu pilih untuk wajah jam dipotong di HP lalu dikirim ke jam lewat Bluetooth. Foto tidak
           diunggah ke server mana pun. Salinan hasil potongan disimpan di penyimpanan aplikasi untuk pratinjau
           dan dihapus bersama fotonya.
+        </p>
+      </Block>
+
+      <Block title="Gambar bagikan olahraga dan berkas FIT">
+        <p>
+          Gambar untuk membagikan olahraga dibuat di HP. Foto dari galeri atau kamera (izin kamera diminta hanya
+          saat kamu mengetuk Ambil foto) hanya dipakai sebagai latar gambar itu dan tidak diunggah ke server mana
+          pun. Gambar jadi hanya pergi ke aplikasi yang kamu pilih saat membagikan atau ke clipboard saat kamu
+          menyalinnya.
+        </p>
+        <p>
+          Berkas .FIT dari bike computer atau jam lain yang kamu buka dengan JoyoFit dibaca di HP dan disimpan
+          sebagai olahraga impor. Olahraga impor tidak diunggah otomatis ke Strava, cloud, atau Health Connect.
         </p>
       </Block>
 
@@ -551,8 +571,22 @@ function English() {
           the watch asks for.
         </p>
         <p>
+          <span className="font-semibold">App calls:</span> WhatsApp, Telegram, Signal, Meet and LINE calls are
+          recognised from their call notifications, using the same notification access: the caller name and app
+          name from that notification go to the watch over Bluetooth, and the watch&apos;s reject or accept button
+          presses the matching button on the notification. Only while Show incoming calls is on and the app is not
+          switched off in the app list. Nothing is stored or sent off the phone.
+        </p>
+        <p>
           <span className="font-semibold">Watch-face photos:</span> a photo you pick is cropped on the phone and
           sent to the watch over Bluetooth. It is not uploaded to any server.
+        </p>
+        <p>
+          <span className="font-semibold">Workout share images and FIT files:</span> share images are made on the
+          phone. A gallery or camera photo (camera permission is asked only when you tap Take photo) is used only as
+          the image background and is not uploaded anywhere; the image goes only to the app you share it to, or the
+          clipboard when you copy it. A .FIT file you open with JoyoFit is read on the phone and stored as an
+          imported workout, which is never uploaded automatically to Strava, the cloud or Health Connect.
         </p>
         <p>
           <span className="font-semibold">Support report:</span> only when you tap Report on GitHub or Share, JoyoFit
