@@ -23,6 +23,7 @@ import { formatGrams } from '@/features/live/liveWorkout';
 import { startOfLocalDay } from '@/features/today/stats';
 import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/strain';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
+import { ShareWorkoutButton } from '@/features/share/ShareWorkoutSheet';
 import { HeartRateChart } from '@/features/workouts/HeartRateChart';
 import { RouteView } from '@/features/workouts/RouteView';
 import { sportIcon } from '@/features/workouts/sportIcon';
@@ -201,6 +202,7 @@ export default function WorkoutDetailScreen() {
             ) : null}
           </View>
         ) : null}
+        <ShareWorkoutButton workout={workout} summary={summary} route={route} />
       </Card>
 
       <Section title="Strain" icon="pulse" tint="workouts">

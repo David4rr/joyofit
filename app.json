@@ -40,7 +40,6 @@
       },
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
-        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -68,6 +67,14 @@
       "expo-apple-authentication",
       "expo-web-browser",
       "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "JoyoFit reads a photo only when you pick one, for a watch face or for the image of a workout you share.",
+          "cameraPermission": "JoyoFit uses the camera only when you take a photo to put behind the numbers of a workout you share.",
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-splash-screen",
         {

@@ -58,9 +58,9 @@ Other permissions in the Play build and why (the manifest of `dist/joyofit-play-
 | `USE_BIOMETRIC`, `USE_FINGERPRINT` | Added by the `androidx.biometric` library inside `expo-secure-store`. Normal permissions; JoyoFit never asks for biometrics |
 | `com.joyodigitama.joyofit.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | AndroidX internal, signature-level |
 | Notification access (`BIND_NOTIFICATION_LISTENER_SERVICE`, special access the user grants in Android settings) | Forward notifications to the watch (optional switch) |
+| `CAMERA` (from `expo-image-picker`) | "Take photo" in the workout share screen puts a new photo behind the numbers of the share image. Asked only when that button is tapped; the photo stays on the phone and is never uploaded by JoyoFit |
 
-Removed from both builds because no JoyoFit feature uses them (`app.json` `android.blockedPermissions`): `CAMERA` (from `expo-image-picker`,
-JoyoFit only uses the photo library), `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW` (Expo template defaults; debug builds keep the overlay),
+Removed from both builds because no JoyoFit feature uses them (`app.json` `android.blockedPermissions`): `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW` (Expo template defaults; debug builds keep the overlay),
 `READ_EXTERNAL_STORAGE`/`WRITE_EXTERNAL_STORAGE` (from `expo-file-system`, API 32 and lower only; pickers return cache copies) and `ACCESS_WIFI_STATE`
 (from `expo-network`, which no screen imports).
 
