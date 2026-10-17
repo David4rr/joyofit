@@ -214,7 +214,11 @@
     "extra": {
       "joyorogoUrl": "https://api.joyorogo.com",
       "cloudUrl": "https://api.fit.joyorogo.com",
-      "facebookAppId": "1016598258111944"
-    }
+      "facebookAppId": "1016598258111944",
+      "eas": {
+        "projectId": "6175ba14-6962-4cbe-bc80-a5bb46be7fcb"
+      }
+    },
+    "owner": "dzulfikar08"
   }
 }
