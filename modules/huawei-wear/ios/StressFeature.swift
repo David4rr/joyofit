@@ -34,6 +34,7 @@ public final class StressFeature: @unchecked Sendable {
             "enabled": settings.stressEnabled,
             "lastCalibratedAt": storedCalibration().map { $0.endTime / 1000 as Any } ?? NSNull(),
             "supported": supported(),
+            "knownSupported": settings.autoStressListed.map { $0 as Any } ?? NSNull(),
         ]
     }
 
@@ -72,6 +73,12 @@ public final class StressFeature: @unchecked Sendable {
 
     /// A new session: put the stored switch back on the watch (GB sends it on every connect). The observers announce each session once.
     public func linkConnected(_ h: LinkHandle) async {
+        // Stored only when it changed; the log line is the same as on Android.
+        let listed = StressSwitchProtocol.supported(h.caps)
+        if settings.autoStressListed != listed {
+            settings.autoStressListed = listed
+            events.info("Automatic stress (20/09) is \(listed ? "listed" : "not listed") by this watch")
+        }
         guard settings.stressEnabled, let data = storedCalibration() else { return }
         do {
             try await StressSwitchProtocol.transmit(session: h.session, log: events.sink, status: 1, data: data, answerMs: answerMs)

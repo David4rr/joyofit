@@ -92,4 +92,28 @@ final class SupportReportTests: XCTestCase {
         XCTAssertTrue(report["model"] is NSNull)
         XCTAssertEqual(report["support"] as? String, "unknown")
     }
+
+    func testExtraSummaryLinesComeAfterTheCapabilitiesAndBeforeTheClosingLine() {
+        let lines = [SupportReport.nightHrvLine(listed: nil, enabled: false), "Weather: switch on"]
+        let report = SupportReport.build(
+            environment: .init(app: "app", phone: "phone"), watchName: nil, device: nil, linkState: "disconnected", log: [], caps: nil, transport: nil,
+            extraSummary: lines
+        )
+        let summary = report["summary"] as! String
+        XCTAssertTrue(
+            summary.hasSuffix(
+                "ExpandCapability: none\nNight HRV: not read on iPhone (the iOS port has no night HRV sync); automatic stress 20/09 listed=unknown (last connect), switch=off\n"
+                    + "Weather: switch on\nBluetooth addresses and the serial number are left out."
+            ),
+            summary
+        )
+    }
+
+    func testTheNightHrvLineQuotesWhatTheAppKnows() {
+        XCTAssertEqual(
+            SupportReport.nightHrvLine(listed: true, enabled: true),
+            "Night HRV: not read on iPhone (the iOS port has no night HRV sync); automatic stress 20/09 listed=yes (last connect), switch=on"
+        )
+        XCTAssertTrue(SupportReport.nightHrvLine(listed: false, enabled: false).contains("listed=no (last connect), switch=off"))
+    }
 }

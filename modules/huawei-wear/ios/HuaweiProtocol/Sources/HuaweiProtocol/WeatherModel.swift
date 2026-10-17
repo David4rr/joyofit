@@ -99,10 +99,14 @@ public struct WeatherReport: Equatable, Sendable {
     public var hourly: [WeatherHour]
     /// Today first.
     public var daily: [WeatherDay]
+    /// Rows Open-Meteo listed but without a temperature or weather code, left out of `hourly`; the watch wants whole lists.
+    public var skippedHours: Int
+    /// Same for `daily`.
+    public var skippedDays: Int
 
     public init(
         fetchedAtSec: Int64, observedAtSec: Int32, place: WeatherPlace, code: Int32, tempC: Double, feelsLikeC: Double, humidity: Int32,
-        windSpeedKmh: Double, windDirection: Int32, uvIndex: Double?, hourly: [WeatherHour], daily: [WeatherDay]
+        windSpeedKmh: Double, windDirection: Int32, uvIndex: Double?, hourly: [WeatherHour], daily: [WeatherDay], skippedHours: Int = 0, skippedDays: Int = 0
     ) {
         self.fetchedAtSec = fetchedAtSec
         self.observedAtSec = observedAtSec
@@ -116,6 +120,8 @@ public struct WeatherReport: Equatable, Sendable {
         self.uvIndex = uvIndex
         self.hourly = hourly
         self.daily = daily
+        self.skippedHours = skippedHours
+        self.skippedDays = skippedDays
     }
 }
 

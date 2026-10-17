@@ -324,7 +324,33 @@ final class HrvStressTests: XCTestCase {
         let status = rig(caps: caps()).stress.status()
         XCTAssertEqual(status["enabled"] as? Bool, false)
         XCTAssertTrue(status["lastCalibratedAt"] is NSNull)
-        XCTAssertEqual(Set(status.keys), ["enabled", "lastCalibratedAt", "supported"], "same shape as StressStatus")
+        XCTAssertTrue(status["knownSupported"] is NSNull, "nothing is known before the first connect")
+        XCTAssertEqual(Set(status.keys), ["enabled", "lastCalibratedAt", "supported", "knownSupported"], "same shape as StressStatus")
+    }
+
+    func testConnectingRecordsWhetherTheWatchListsAutomaticStressAndLogsOnlyChanges() async {
+        let listing = rig(caps: caps())
+        XCTAssertNil(settings.autoStressListed)
+        await listing.stress.linkConnected(handle!)
+        XCTAssertEqual(settings.autoStressListed, true)
+        XCTAssertEqual(listing.stress.status()["knownSupported"] as? Bool, true)
+        XCTAssertEqual(events.messages().filter { $0 == "Automatic stress (20/09) is listed by this watch" }.count, 1)
+        await listing.stress.linkConnected(handle!)
+        XCTAssertEqual(events.messages().filter { $0.hasPrefix("Automatic stress (20/09) is ") }.count, 1, "unchanged: not stored and not logged again")
+
+        // The answer outlives the connection: a watch that is away still reports what it listed last time.
+        connected = false
+        XCTAssertEqual(listing.stress.status()["supported"] as? Bool, false)
+        XCTAssertEqual(listing.stress.status()["knownSupported"] as? Bool, true)
+
+        // The same phone paired with a watch that does not list it.
+        connected = true
+        let lacking = rig(caps: caps(stress: false))
+        await lacking.stress.linkConnected(handle!)
+        XCTAssertEqual(settings.autoStressListed, false)
+        XCTAssertEqual(lacking.stress.status()["knownSupported"] as? Bool, false)
+        XCTAssertTrue(events.messages().contains("Automatic stress (20/09) is not listed by this watch"))
+        XCTAssertTrue(watch.requests.isEmpty, "nothing is sent: the switch is off")
     }
 
     func testTheStoredSwitchIsPutBackOnTheWatchWhenItReconnects() async throws {

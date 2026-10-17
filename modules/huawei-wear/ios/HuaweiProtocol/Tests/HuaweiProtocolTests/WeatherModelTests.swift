@@ -277,6 +277,78 @@ final class WeatherModelTests: XCTestCase {
         XCTAssertEqual(try WeatherPackets.forecast(settings: allSupported(), report: short, nowSec: now, zone: zone).tlv!.object(0x90).objects(0x91).count, 1)
     }
 
+    func testForecastEntriesCountWhatTheRequestCarries() {
+        let entries = WeatherPackets.forecastEntries(report: report(), nowSec: now, zone: zone)
+        XCTAssertEqual(entries.hours.count, 24)
+        XCTAssertEqual(entries.days.count, 8)
+        XCTAssertEqual(entries.hours[0].timestamp, Int32(day(0) + 3600 * 11))
+        XCTAssertTrue(WeatherPackets.countsAreComplete(entries))
+
+        var short = report()
+        short.hourly = Array(short.hourly.prefix(20)) // 11 of them are already past, so 9 are still ahead
+        XCTAssertEqual(WeatherPackets.forecastEntries(report: short, nowSec: now, zone: zone).hours.count, 9)
+        XCTAssertFalse(WeatherPackets.countsAreComplete(WeatherPackets.forecastEntries(report: short, nowSec: now, zone: zone)))
+        short = report()
+        short.daily = Array(short.daily.prefix(7))
+        XCTAssertFalse(WeatherPackets.countsAreComplete(WeatherPackets.forecastEntries(report: short, nowSec: now, zone: zone)))
+    }
+
+    func testForecastShapeReadsTheTagsBackFromThePacket() {
+        let entries = WeatherPackets.forecastEntries(report: report(), nowSec: now, zone: zone)
+        let all = WeatherPackets.forecast(settings: allSupported(), entries: entries)
+        XCTAssertEqual(
+            WeatherPackets.forecastShape(packet: all, entries: entries),
+            "24 hours (tags 03 04 05 06 07), 8 days (tags 12 13 14 15 16 17 1e)"
+        )
+
+        // A Watch Fit 2 as far as is known: the support bitmap, but no extended bitmap, no sun/moon bitmap and no extended hourly capability.
+        var fit2 = Weather.Settings()
+        fit2.weatherSupported = true
+        fit2.windSupported = true
+        fit2.temperatureSupported = true
+        fit2.locationNameSupported = true
+        fit2.currentTemperatureSupported = true
+        fit2.unitSupported = true
+        let packet = WeatherPackets.forecast(settings: fit2, entries: entries)
+        XCTAssertEqual(WeatherPackets.forecastShape(packet: packet, entries: entries), "24 hours (tags 03 05), 8 days (tags 12 14 15)")
+        XCTAssertTrue(WeatherPackets.countsAreComplete(entries))
+
+        var empty = report()
+        empty.hourly = []
+        let none = WeatherPackets.forecastEntries(report: empty, nowSec: now, zone: zone)
+        XCTAssertEqual(
+            WeatherPackets.forecastShape(packet: WeatherPackets.forecast(settings: fit2, entries: none), entries: none),
+            "0 hours (tags none), 8 days (tags 12 14 15)"
+        )
+    }
+
+    func testRowsWithMissingValuesAreCountedAsSkipped() throws {
+        let place = WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6)
+        let json = """
+        {"current":{"time":1760412600,"temperature_2m":27.6,"weather_code":2},
+         "hourly":{"time":[1760410800,1760414400,1760418000,1760421600],"temperature_2m":[27.0,null,null,29.0],
+           "weather_code":[2,3,null,3]},
+         "daily":{"time":[1760374800,1760461200,1760547600],"weather_code":[61,null,3],"temperature_2m_max":[31.4,30.0,null],
+           "temperature_2m_min":[22.6,22.0,21.0]}}
+        """
+        let report = try OpenMeteo.parseForecast(json, place: place, fetchedAtSec: 1_760_412_700)
+        XCTAssertEqual(report.hourly.count, 2)
+        XCTAssertEqual(report.skippedHours, 2)
+        XCTAssertEqual(report.daily.count, 1)
+        XCTAssertEqual(report.skippedDays, 2)
+
+        let whole = try OpenMeteo.parseForecast(
+            """
+            {"current":{"time":1760412600,"temperature_2m":27.6,"weather_code":2},
+             "hourly":{"time":[1760410800],"temperature_2m":[27.0],"weather_code":[2]},
+             "daily":{"time":[1760374800],"weather_code":[61],"temperature_2m_max":[31.4],"temperature_2m_min":[22.6]}}
+            """, place: place, fetchedAtSec: 0
+        )
+        XCTAssertEqual(whole.skippedHours, 0)
+        XCTAssertEqual(whole.skippedDays, 0)
+        XCTAssertEqual(self.report().skippedHours, 0)
+    }
+
     func testErrorPacketPrefersTheExtendedCommand() throws {
         let caps = DeviceCaps()
         XCTAssertNil(WeatherPackets.error(caps: caps, code: .networkError))

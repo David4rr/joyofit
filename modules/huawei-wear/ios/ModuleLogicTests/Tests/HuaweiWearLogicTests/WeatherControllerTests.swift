@@ -50,14 +50,14 @@ final class WeatherControllerTests: XCTestCase {
         let status = controller.status()
         XCTAssertEqual(
             Set(status.keys),
-            ["enabled", "unit", "locationMode", "intervalMinutes", "city", "locationPermission", "watchSupported", "lastPushAt", "lastError", "lastTemperatureC", "lastCondition", "lastLocationName"]
+            ["enabled", "unit", "locationMode", "intervalMinutes", "city", "locationPermission", "watchSupported", "lastPushAt", "lastError", "lastTemperatureC", "lastCondition", "lastLocationName", "lastForecast"]
         )
         XCTAssertEqual(status["enabled"] as? Bool, false)
         XCTAssertEqual(status["unit"] as? String, "celsius")
         XCTAssertEqual(status["locationMode"] as? String, "current")
         XCTAssertEqual(status["intervalMinutes"] as? Int, 60)
         XCTAssertEqual(status["locationPermission"] as? Bool, false)
-        for key in ["city", "watchSupported", "lastPushAt", "lastError", "lastTemperatureC", "lastCondition", "lastLocationName"] {
+        for key in ["city", "watchSupported", "lastPushAt", "lastError", "lastTemperatureC", "lastCondition", "lastLocationName", "lastForecast"] {
             XCTAssertTrue(status[key] is NSNull, key)
         }
     }
@@ -88,6 +88,45 @@ final class WeatherControllerTests: XCTestCase {
         XCTAssertTrue(rig.events.messages(.info).contains("Weather (connect): pushed"))
         await eventually("the timer sleeping") { rig.clock.sleeping == 1 }
         XCTAssertEqual(rig.clock.delays, [3_600_000], "the next push is one interval away")
+    }
+
+    func testTheStatusCarriesTheForecastStepOfTheLastPush() async throws {
+        let rig = makeRig()
+        _ = try await rig.controller.refreshNow()
+        let forecast = try XCTUnwrap(rig.controller.status()["lastForecast"] as? [String: Any])
+        XCTAssertEqual(Set(forecast.keys), ["state", "hours", "days", "replyCode", "at"], "same shape as WeatherForecastStatus")
+        XCTAssertEqual(forecast["state"] as? String, "sent")
+        XCTAssertEqual(forecast["hours"] as? Int, 24)
+        XCTAssertEqual(forecast["days"] as? Int, 8)
+        XCTAssertEqual(forecast["replyCode"] as? Int, 100_000)
+        XCTAssertEqual(forecast["at"] as? Int64, start)
+        XCTAssertTrue(rig.events.messages(.info).contains("Weather: Open-Meteo gave 192 hours (184 still ahead) and 8 days"))
+        XCTAssertTrue(rig.events.messages(.info).contains("Weather (app): pushed"), "the reason of the push reaches the sender and the log")
+        XCTAssertEqual(WeatherDiagnostics.last?.reason, "app")
+
+        let unsupported = makeRig(commands: [0x0F: [0x01, 0x02, 0x09]])
+        _ = try await unsupported.controller.refreshNow()
+        let skipped = try XCTUnwrap(unsupported.controller.status()["lastForecast"] as? [String: Any])
+        XCTAssertEqual(skipped["state"] as? String, "unsupported")
+        XCTAssertEqual(skipped["hours"] as? Int, 0)
+        XCTAssertEqual(skipped["days"] as? Int, 0)
+        XCTAssertTrue(skipped["replyCode"] is NSNull)
+
+        let rejecting = makeRig()
+        let base = rejecting.link.watch.responder
+        rejecting.link.watch.responder = { request in
+            if request.key == "0f/08" {
+                var tlv = HuaweiTLV()
+                tlv.put(0x7F, int: 0x000186A5)
+                return [WeatherScriptedWatch.tlvFrame(service: request.service, command: request.command, tlv)]
+            }
+            return base(request)
+        }
+        _ = try await rejecting.controller.refreshNow()
+        let refused = try XCTUnwrap(rejecting.controller.status()["lastForecast"] as? [String: Any])
+        XCTAssertEqual(refused["state"] as? String, "rejected")
+        XCTAssertEqual(refused["replyCode"] as? Int, 0x000186A5)
+        XCTAssertTrue(rejecting.controller.status()["lastError"] is NSNull, "a refused forecast does not make the push fail")
     }
 
     func testTheSwitchOffMeansNothingIsSentOnConnect() async {
@@ -238,11 +277,15 @@ final class WeatherControllerTests: XCTestCase {
         rig.meteo.failure = URLError(.timedOut)
         do { _ = try await rig.controller.refreshNow() } catch {}
         XCTAssertEqual(rig.controller.status()["lastPushAt"] as? Int64, start, "the failed attempt does not move the time of the last push")
+        XCTAssertEqual((rig.controller.status()["lastForecast"] as? [String: Any])?["at"] as? Int64, start, "a failed push keeps the last forecast outcome")
         XCTAssertNotNil(rig.controller.status()["lastError"] as? String)
         rig.meteo.failure = nil
         _ = try await rig.controller.refreshNow()
         XCTAssertTrue(rig.controller.status()["lastError"] is NSNull)
         XCTAssertEqual(rig.controller.status()["lastPushAt"] as? Int64, start + 120)
+        let forecast = rig.controller.status()["lastForecast"] as? [String: Any]
+        XCTAssertEqual(forecast?["state"] as? String, "sent")
+        XCTAssertEqual(forecast?["at"] as? Int64, start + 120, "the forecast of the last successful push")
     }
 
     func testRefreshNeedsAConnectedWatchAndAnEnabledSwitch() async {

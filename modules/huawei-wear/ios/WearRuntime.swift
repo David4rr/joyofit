@@ -360,7 +360,9 @@ public final class WearRuntime: @unchecked Sendable {
             log: supportLog.lines(),
             caps: link.lastCaps,
             transport: .le,
-            identifiers: identifiers
+            identifiers: identifiers,
+            extraSummary: weather.supportSummary(caps: link.lastCaps)
+                + [SupportReport.nightHrvLine(listed: settings.autoStressListed, enabled: settings.stressEnabled)]
         )
     }
 

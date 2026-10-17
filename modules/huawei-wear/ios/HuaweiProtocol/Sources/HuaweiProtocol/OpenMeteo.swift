@@ -55,10 +55,14 @@ public enum OpenMeteo {
             let hourCodes = try hourly.array("weather_code")
             let hourPrecip = hourly.optArray("precipitation_probability")
             let hourUv = hourly.optArray("uv_index")
+            var skippedHours = 0
             var hours: [WeatherHour] = []
             hours.reserveCapacity(hourTimes.count)
             for i in 0..<hourTimes.count {
-                if hourTemps.isNull(i) || hourCodes.isNull(i) { continue }
+                if hourTemps.isNull(i) || hourCodes.isNull(i) {
+                    skippedHours += 1
+                    continue
+                }
                 hours.append(
                     WeatherHour(
                         timestamp: try hourTimes.int(i),
@@ -76,10 +80,14 @@ public enum OpenMeteo {
             let dayMin = try daily.array("temperature_2m_min")
             let daySunrise = daily.optArray("sunrise")
             let daySunset = daily.optArray("sunset")
+            var skippedDays = 0
             var days: [WeatherDay] = []
             days.reserveCapacity(dayTimes.count)
             for i in 0..<dayTimes.count {
-                if dayCodes.isNull(i) || dayMax.isNull(i) || dayMin.isNull(i) { continue }
+                if dayCodes.isNull(i) || dayMax.isNull(i) || dayMin.isNull(i) {
+                    skippedDays += 1
+                    continue
+                }
                 days.append(
                     WeatherDay(
                         timestamp: try dayTimes.int(i),
@@ -109,7 +117,9 @@ public enum OpenMeteo {
                 windDirection: Weather.javaRound(current.optDouble("wind_direction_10m") ?? 0),
                 uvIndex: uvIndex,
                 hourly: hours,
-                daily: days
+                daily: days,
+                skippedHours: skippedHours,
+                skippedDays: skippedDays
             )
         } catch let e as JSONReader.Failure {
             throw OpenMeteoBadResponse("Open-Meteo answered something unexpected: \(e.message)")

@@ -136,7 +136,8 @@ public enum SupportReport {
         caps: DeviceCaps?,
         transport: ModelTransport? = .le,
         identifiers: [String] = [],
-        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)
+        nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000),
+        extraSummary: [String] = []
     ) -> [String: Any] {
         let serial = device?.serialNumber
         let name = device?.name ?? watchName
@@ -171,6 +172,7 @@ public enum SupportReport {
             }
         }
         summary.append("ExpandCapability: \(caps?.expandCapabilities?.hexUpper ?? "none")")
+        summary.append(contentsOf: extraSummary)
         // The last line has no trailing newline in the Kotlin builder.
         let summaryText = summary.joined(separator: "\n") + "\nBluetooth addresses and the serial number are left out."
 
@@ -190,6 +192,13 @@ public enum SupportReport {
             "model": match.model?.name ?? NSNull(),
             "support": match.support.rawValue,
         ]
+    }
+
+    /// The night HRV summary line. The iOS port has no night HRV sync, so the report says so and quotes what the app does know: whether the
+    /// watch listed automatic stress (20/09) the last time it connected, and the switch. `listed` is nil before any connect.
+    public static func nightHrvLine(listed: Bool?, enabled: Bool) -> String {
+        let known = listed.map { $0 ? "yes" : "no" } ?? "unknown"
+        return "Night HRV: not read on iPhone (the iOS port has no night HRV sync); automatic stress 20/09 listed=\(known) (last connect), switch=\(enabled ? "on" : "off")"
     }
 
     /// `%02x` without `String(format:)`, which this file avoids because `%@` is not portable to Linux.

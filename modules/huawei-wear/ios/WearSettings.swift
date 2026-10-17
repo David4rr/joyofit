@@ -32,6 +32,7 @@ public final class WearSettings: @unchecked Sendable {
         static let lowHrAlert = "low_hr_alert"
         static let stressEnabled = "stress_enabled"
         static let stressCalibration = "stress_calibration"
+        static let autoStressListed = "stress_auto_listed"
     }
 
     public init(defaults: UserDefaults? = nil) {
@@ -124,6 +125,16 @@ public final class WearSettings: @unchecked Sendable {
     public var stressCalibration: String? {
         get { defaults.string(forKey: Key.stressCalibration) }
         set { set(newValue, forKey: Key.stressCalibration) }
+    }
+
+    /// Whether the watch listed the automatic stress command (20/09) the last time it connected; nil before any connect. The live answer only
+    /// exists while connected, and the app has to tell a watch that cannot record night HRV from one that is just away
+    /// (`StressStatus.knownSupported`).
+    public var autoStressListed: Bool? {
+        get { defaults.object(forKey: Key.autoStressListed) == nil ? nil : defaults.bool(forKey: Key.autoStressListed) }
+        set {
+            if let newValue { defaults.set(newValue, forKey: Key.autoStressListed) } else { defaults.removeObject(forKey: Key.autoStressListed) }
+        }
     }
 
     private func set(_ value: String?, forKey key: String) {

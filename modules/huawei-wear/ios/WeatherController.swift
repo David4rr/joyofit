@@ -52,6 +52,7 @@ public final class WeatherController: LinkObserver, @unchecked Sendable {
     private var lastTempC: Int?
     private var lastCondition: String?
     private var lastPlaceName: String?
+    private var lastForecast: ForecastOutcome?
     private var subscribed: (session: HuaweiSession, id: Int)?
     private var timer: Task<Void, Never>?
     private var timerGeneration = 0
@@ -234,13 +235,15 @@ public final class WeatherController: LinkObserver, @unchecked Sendable {
             throw e
         }
         let at = nowSec()
+        let outcome: ForecastOutcome
         do {
-            try await sender.send(report: report, unit: settings.unit, nowSec: at, zone: zone())
+            outcome = try await sender.send(report: report, unit: settings.unit, nowSec: at, zone: zone(), reason: reason)
         } catch let e as WearError {
             lock.locked { lastError = e.message }
             throw e
         }
         lock.locked {
+            lastForecast = outcome
             lastPushAtSec = nowSec()
             lastError = nil
             lastTempC = Int(WeatherPackets.temperatureByte(report.tempC))
@@ -286,6 +289,11 @@ public final class WeatherController: LinkObserver, @unchecked Sendable {
         } catch {
             throw WearError(.weatherNetwork, "Could not get the weather: \(describe(error))", underlying: error)
         }
+        info(
+            "Weather: Open-Meteo gave \(report.hourly.count) hours (\(report.hourly.filter { Int64($0.timestamp) > at }.count) still ahead) and \(report.daily.count) days"
+                + (report.skippedHours + report.skippedDays > 0
+                    ? ", left out for missing values: \(report.skippedHours) hours, \(report.skippedDays) days" : "")
+        )
         lock.locked {
             cache = report
             cacheKey = key
@@ -362,10 +370,15 @@ public final class WeatherController: LinkObserver, @unchecked Sendable {
         onIntervalChanged()
     }
 
+    /// The weather lines of the support report: the switch, the gates and the last push (`WeatherDiagnostics`).
+    public func supportSummary(caps: DeviceCaps?) -> [String] {
+        WeatherDiagnostics.summary(enabled: settings.enabled, caps: caps ?? DeviceCaps())
+    }
+
     /// `WeatherStatus` in HuaweiWear.types.ts.
     public func status() -> [String: Any] {
         let handle = link.handle()
-        let snapshot = lock.locked { (lastPushAtSec, lastError, lastTempC, lastCondition, lastPlaceName) }
+        let snapshot = lock.locked { (lastPushAtSec, lastError, lastTempC, lastCondition, lastPlaceName, lastForecast) }
         return [
             "enabled": settings.enabled,
             "unit": settings.unit.wire,
@@ -379,6 +392,7 @@ public final class WeatherController: LinkObserver, @unchecked Sendable {
             "lastTemperatureC": orNull(snapshot.2),
             "lastCondition": orNull(snapshot.3),
             "lastLocationName": orNull(snapshot.4),
+            "lastForecast": orNull(snapshot.5?.toJS()),
         ]
     }
 

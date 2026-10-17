@@ -47,6 +47,10 @@ final class InertStatusTests: XCTestCase {
         let features = WatchSettingsFeatures(
             handle: { nil }, settings: WearSettings(defaults: ephemeralDefaults()), syncStore: SyncStore(url: temporaryDatabaseURL()), events: RecordingEvents()
         )
+        // A watch that listed automatic stress (20/09) the last time it connected: `knownSupported` is true even with nothing connected now.
+        let listedSettings = WearSettings(defaults: ephemeralDefaults())
+        listedSettings.autoStressListed = true
+        let listedStress = WatchSettingsFeatures(handle: { nil }, settings: listedSettings, syncStore: SyncStore(url: temporaryDatabaseURL()), events: RecordingEvents())
         let events = RecordingEvents()
         let weather = WeatherController(settings: WeatherSettings(defaults: ephemeralDefaults()), link: FakeLink(events: events), events: events, location: UnavailableLocationSource())
         let runtime = WearRuntime(
@@ -81,6 +85,7 @@ final class InertStatusTests: XCTestCase {
             "city": WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6, detail: "West Java, Indonesia").toJS(),
             "locationPermission": true, "watchSupported": true, "lastPushAt": Int64(1_792_110_700), "lastError": "x", "lastTemperatureC": -3,
             "lastCondition": "LIGHT_RAIN", "lastLocationName": "Bandung",
+            "lastForecast": ForecastOutcome(state: .sent, hours: 24, days: 8, replyCode: 100_000, atSec: 1_792_110_700).toJS(),
         ]
         // The real overview: a fresh install, and one with an open period, symptoms and the watch connected.
         let cycleStore = CycleStore(store: SyncStore(url: temporaryDatabaseURL()))
@@ -132,6 +137,7 @@ final class InertStatusTests: XCTestCase {
             "WatchAlarms": features.cachedAlarms(),
             "HealthSensorsStatus": features.healthSensorsStatus(),
             "StressStatus": features.stress.status(),
+            "StressStatus#listed": listedStress.stress.status(),
             "HrvReading": HrvReadingData(start: 1, end: 61, rmssd: 42.5, sdnn: 50.1, meanRr: 850.2, beats: 70, heartRate: 71).toJS(),
             "WeatherStatus": weather.status(),
             "WeatherStatus#populated": populatedWeather,
