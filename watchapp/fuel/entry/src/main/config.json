@@ -1,0 +1,71 @@
+{
+  "app": {
+    "bundleName": "com.joyodigitama.joyofit.fuel",
+    "vendor": "joyodigitama",
+    "version": {
+      "code": 1,
+      "name": "1.0.0"
+    }
+  },
+  "deviceConfig": {},
+  "module": {
+    "deviceType": [
+      "liteWearable"
+    ],
+    "reqPermissions": [
+      {
+        "name": "ohos.permission.READ_HEALTH_DATA",
+        "reason": "Heart rate for calories, fat and carbs",
+        "usedScene": {
+          "ability": [
+            "default"
+          ],
+          "when": "always"
+        }
+      },
+      {
+        "name": "ohos.permission.VIBRATE",
+        "reason": "Buzz when a session starts and ends",
+        "usedScene": {
+          "ability": [
+            "default"
+          ],
+          "when": "inuse"
+        }
+      }
+    ],
+    "distro": {
+      "deliveryWithInstall": true,
+      "moduleName": "entry",
+      "moduleType": "entry"
+    },
+    "abilities": [
+      {
+        "name": "default",
+        "icon": "$media:icon",
+        "label": "$string:entry_MainAbility",
+        "type": "page"
+      }
+    ],
+    "metaData": {
+      "customizeData": [
+        {
+          "name": "supportLists",
+          "value": "com.joyodigitama.joyofit:PASTE_JOYOFIT_SHA256_HERE",
+          "extra": ""
+        }
+      ]
+    },
+    "js": [
+      {
+        "pages": [
+          "pages/index/index",
+          "pages/session/session",
+          "pages/summary/summary",
+          "pages/profile/profile"
+        ],
+        "name": "default"
+      }
+    ]
+  }
+}

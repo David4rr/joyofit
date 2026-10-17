@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 114 114" width="114" height="114">
+  <defs>
+    <path id="drop" d="M57 17 C57 17 29 50 29 70 A28 28 0 0 0 85 70 C85 50 57 17 57 17 Z"/>
+    <clipPath id="left"><rect x="0" y="0" width="57" height="114"/></clipPath>
+    <clipPath id="right"><rect x="57" y="0" width="57" height="114"/></clipPath>
+  </defs>
+  <rect width="114" height="114" rx="26" fill="#0D1112"/>
+  <use href="#drop" fill="#F0A23C" clip-path="url(#left)"/>
+  <use href="#drop" fill="#58C4DE" clip-path="url(#right)"/>
+  <rect x="55.5" y="30" width="3" height="68" fill="#0D1112"/>
+</svg>

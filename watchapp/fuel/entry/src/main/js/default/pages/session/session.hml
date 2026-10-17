@@ -1,0 +1,30 @@
+<div class="root">
+  <div class="tap" onclick="toggle">
+    <div class="top">
+      <text class="elapsed">{{elapsed}}</text>
+      <text class="hr" style="color: {{zoneColor}};">{{hr}}</text>
+      <text class="bpm">bpm</text>
+    </div>
+    <text class="zone" style="color: {{zoneColor}};">{{zoneText}}</text>
+    <text class="kcal">{{kcal}}</text>
+    <text class="unit">kcal</text>
+    <div class="burn">
+      <div class="col">
+        <text class="grams grams-fat">{{fat}}</text>
+        <text class="label">{{fatLabel}}</text>
+      </div>
+      <div class="col">
+        <text class="grams grams-carbs">{{carbs}}</text>
+        <text class="label">{{carbLabel}}</text>
+      </div>
+    </div>
+    <div class="bar">
+      <div class="bar-fat" style="width: {{fatPx}}px;"></div>
+      <div class="bar-carbs" style="width: {{carbPx}}px;"></div>
+    </div>
+    <text class="hint">{{hint}}</text>
+  </div>
+  <div class="finish" onclick="finish">
+    <text class="finish-text" style="color: {{finishColor}};">{{finishText}}</text>
+  </div>
+</div>
