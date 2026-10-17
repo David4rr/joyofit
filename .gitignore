@@ -48,3 +48,4 @@ yarn-error.*
 /secrets/
 /site/public/play/
 .tmp/
+site/public/review/
