@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { IconChip } from '@/components/IconChip';
+import { Avatar } from '@/components/Avatar';
 import { Metric } from '@/components/Metric';
 import { Card } from '@/components/Screen';
 import { formatCount } from '@/format';
@@ -10,17 +10,18 @@ import { spacing } from '@/theme';
 interface ProfileHeaderProps {
   name: string;
   handle: string | null;
+  image?: string | null;
   bio?: string | null;
   /** Null for a private profile: it shows no numbers. */
   counts: { posts: number; followers: number; following: number } | null;
 }
 
 /** Name, @handle, bio and the post, follower and following counts of a profile. */
-export function ProfileHeader({ name, handle, bio, counts }: ProfileHeaderProps) {
+export function ProfileHeader({ name, handle, image, bio, counts }: ProfileHeaderProps) {
   return (
     <Card>
       <View style={styles.head}>
-        <IconChip icon="person" size="lg" />
+        <Avatar name={name} image={image} size="lg" />
         <View style={styles.title}>
           <AppText variant="heading" numberOfLines={2}>
             {name}

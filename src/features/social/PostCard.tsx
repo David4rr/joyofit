@@ -5,6 +5,7 @@ import { Animated, StyleSheet, View } from 'react-native';
 
 import { rogo, type RogoPost } from '@/cloud/rogo';
 import { AppText } from '@/components/AppText';
+import { Avatar } from '@/components/Avatar';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { useBump } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
@@ -60,7 +61,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
 
   const author = (
     <View style={styles.row}>
-      <IconChip icon="person" size="sm" />
+      <Avatar name={post.author.name} image={post.author.image} size="sm" />
       <View style={styles.grow}>
         <AppText variant="bodyStrong" numberOfLines={1}>
           {post.author.name}

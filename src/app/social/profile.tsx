@@ -15,7 +15,8 @@ import { useCloud } from '@/state/CloudProvider';
 /** The signed-in person's feed profile and their own posts. Tapping a post opens it; other people's names open theirs. */
 export default function MyProfileScreen() {
   const cloud = useCloud();
-  const name = authClient.useSession().data?.user.name ?? '';
+  const user = authClient.useSession().data?.user;
+  const name = user?.name ?? '';
   const profile = useRogoQuery(rogo.social.myProfile, cloud.signedIn);
   const fetchMine = useCallback((cursor?: number) => rogo.social.myPosts(cursor), []);
   const posts = usePagedPosts('mine', fetchMine, wholePage, cloud.signedIn);
@@ -32,6 +33,7 @@ export default function MyProfileScreen() {
           <ProfileHeader
             name={name}
             handle={profile.data.handle}
+            image={user?.image}
             counts={{ posts: profile.data.postCount, followers: profile.data.followerCount, following: profile.data.followingCount }}
           />
         ) : profile.error !== null ? (

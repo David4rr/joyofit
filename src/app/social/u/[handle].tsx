@@ -30,6 +30,7 @@ export default function PublicProfileScreen() {
             <ProfileHeader
               name={profile.name}
               handle={profile.handle}
+              image={profile.image}
               bio={profile.bio}
               counts={profile.stats && { posts: profile.stats.postCount, followers: profile.stats.followerCount, following: profile.stats.followingCount }}
             />

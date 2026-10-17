@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { RogoGroupMember, RogoMemberFitness } from '@/cloud/rogo';
 import { AppText } from '@/components/AppText';
-import { IconChip } from '@/components/IconChip';
+import { Avatar } from '@/components/Avatar';
 import { PillRow, StatPill } from '@/features/social/StatPill';
 import { spacing, type Tint } from '@/theme';
 
@@ -24,7 +24,7 @@ export function MemberRow({ member, isMe }: { member: RogoGroupMember; isMe: boo
   const pills = member.today.fitness ? fitnessPills(member.today.fitness) : [];
   return (
     <View style={styles.row}>
-      <IconChip icon="person" size="sm" />
+      <Avatar name={member.name} image={member.image} size="sm" />
       <View style={styles.body}>
         <AppText variant="bodyStrong">
           {member.name}

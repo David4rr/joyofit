@@ -135,6 +135,8 @@ export interface RogoAuthor {
   name: string;
   /** Null until the person has a handle; without one their profile page cannot be opened. */
   handle: string | null;
+  /** A server-relative `/avatar/...` path or an absolute photo URL; null when they have no photo. */
+  image: string | null;
 }
 
 /**
@@ -176,6 +178,7 @@ export interface RogoSocialProfile {
 export interface RogoPublicProfile {
   name: string;
   handle: string | null;
+  image: string | null;
   bio: string | null;
   publicProfile: boolean;
   isSelf: boolean;
@@ -260,6 +263,7 @@ export interface RogoMemberFitness {
 export interface RogoGroupMember {
   userId: string;
   name: string;
+  image: string | null;
   role: string;
   shareFood: boolean;
   shareFitness: boolean;
