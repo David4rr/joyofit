@@ -43,6 +43,9 @@ import {
   routePoints,
   type WorkoutSummary,
 } from '@/features/workouts/summary';
+import { sourceLabel } from '@/features/fitness/format';
+import { effectWord, trainingEffect } from '@/features/fitness/trainingEffect';
+import { plausibleVo2 } from '@/features/fitness/vo2max';
 import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatClock, formatCount, formatDateTime } from '@/format';
 import { spacing, useColors } from '@/theme';
@@ -151,6 +154,15 @@ export default function WorkoutDetailScreen() {
     if (!own) return null;
     return { ...own, share: strainAddedToDay(loaded.daySamples, loaded.workout, own.trimp, maxHr) };
   }, [loaded, maxHr]);
+  const effect = useMemo(() => trainingEffect(loaded?.summary ?? {}, strain?.trimp ?? null), [loaded, strain]);
+  const vo2 = plausibleVo2(loaded?.summary.vo2max);
+  const effectShown =
+    effect.aerobic !== null ||
+    effect.anaerobic !== null ||
+    effect.points !== null ||
+    effect.load !== null ||
+    (loaded?.summary.recoveryHours ?? 0) > 0 ||
+    vo2 !== null;
   const colors = useColors();
 
   if (!loaded) {
@@ -282,6 +294,26 @@ export default function WorkoutDetailScreen() {
         )}
       </Section>
 
+      {effectShown ? (
+        <Section title="Efek latihan" icon="fitness" tint="workouts">
+          {effect.aerobic ? (
+            <KeyValue icon="fitness-outline" label="Efek aerobik" value={`${effect.aerobic.value.toFixed(1)}, ${effectWord(effect.aerobic.value)} (${sourceLabel(effect.aerobic.source)})`} />
+          ) : null}
+          {effect.anaerobic ? (
+            <KeyValue icon="fitness-outline" label="Efek anaerobik" value={`${effect.anaerobic.value.toFixed(1)}, ${effectWord(effect.anaerobic.value)} (${sourceLabel('watch')})`} />
+          ) : null}
+          {effect.points !== null ? <KeyValue icon="ribbon-outline" label="Poin latihan" value={`${effect.points} (${sourceLabel('watch')})`} /> : null}
+          {effect.load !== null ? <KeyValue icon="barbell-outline" label="Beban latihan jam" value={`${effect.load} (${sourceLabel('watch')})`} /> : null}
+          {summary.recoveryHours !== undefined && summary.recoveryHours > 0 ? (
+            <KeyValue icon="bed-outline" label="Waktu pulih" value={`${summary.recoveryHours.toFixed(0)} jam (${sourceLabel('watch')})`} />
+          ) : null}
+          {vo2 !== null ? <KeyValue icon="pulse-outline" label="VO2max" value={`${vo2} ml/kg/mnt (${sourceLabel('watch')})`} /> : null}
+          <Details title="Cara dihitung">
+            {`Angka dari jam adalah yang dilaporkan jam setelah latihan ini, apa adanya. Efek latihan berskala 0 sampai 5. ${effect.aerobic?.source === 'estimate' ? 'Jam tidak melaporkan efek aerobik, jadi ini perkiraan JoyoFit dari TRIMP latihan ini: 5 x (1 - e^(-TRIMP / 150)). ' : ''}Satuan poin latihan dan beban dari jam belum kami pastikan, dan beban jam bukan TRIMP. VO2max dari jam dibulatkan ke bawah ke bilangan bulat; nilai di luar 10 sampai 90 tidak ditampilkan.`}
+          </Details>
+        </Section>
+      ) : null}
+
       {burn ? (
         <Section title="Fat and carbs burned" icon="flame" tint="workouts">
           <View style={styles.tiles}>
@@ -343,21 +375,6 @@ export default function WorkoutDetailScreen() {
         ) : null}
         {summary.maxDepth !== undefined ? (
           <KeyValue icon="water-outline" label="Maximum depth" value={metres(summary.maxDepth)} />
-        ) : null}
-        {summary.aerobicEffect !== undefined ? (
-          <KeyValue icon="fitness-outline" label="Aerobic training effect" value={summary.aerobicEffect.toFixed(1)} />
-        ) : null}
-        {summary.anaerobicEffect !== undefined ? (
-          <KeyValue icon="fitness-outline" label="Anaerobic training effect" value={summary.anaerobicEffect.toFixed(1)} />
-        ) : null}
-        {summary.workoutLoad !== undefined ? (
-          <KeyValue icon="barbell-outline" label="Workout load" value={String(summary.workoutLoad)} />
-        ) : null}
-        {summary.recoveryHours !== undefined ? (
-          <KeyValue icon="bed-outline" label="Recovery time" value={`${summary.recoveryHours.toFixed(0)} h`} />
-        ) : null}
-        {summary.vo2max !== undefined ? (
-          <KeyValue icon="pulse-outline" label="VO2 max" value={`${summary.vo2max} ml/kg/min`} />
         ) : null}
         {summary.importedFrom !== undefined ? (
           <Notice icon="document-outline">

@@ -21,10 +21,9 @@ import { STAGE_LABELS, stageColor } from '@/features/sleep/stageStyle';
 import { sleepNeedSec } from '@/features/today/readiness';
 import { startOfLocalDay } from '@/features/today/stats';
 import { dailyStrain } from '@/features/today/strain';
-import { DEFAULT_AGE, maxHeartRate } from '@/features/workouts/substrate';
+import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatClock, formatDuration } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
-import { HuaweiWear } from '@/wear';
 import { HIT, radius, spacing, useColors, useTheme } from '@/theme';
 
 /** Stage changes listed before "Show all"; a night has 30 to 60. */
@@ -257,8 +256,7 @@ function useNightNeed(nightStart: number | null): { seconds: number; strain: num
     const day = startOfLocalDay(nightStart - 6 * 3600);
     void listStepSamplesSince(db, day).then((samples) => {
       if (cancelled) return;
-      const birthYear = HuaweiWear.getUserProfile()?.birthYear;
-      const maxHr = maxHeartRate(birthYear ? new Date().getFullYear() - birthYear : DEFAULT_AGE);
+      const maxHr = userMaxHr();
       const strain = dailyStrain(samples.filter((s) => s.timestamp < nightStart), maxHr).find((d) => d.day === day)?.strain ?? null;
       setNeed({ start: nightStart, seconds: sleepNeedSec(strain), strain });
     });

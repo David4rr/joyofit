@@ -2,6 +2,7 @@ import type { NightHrvAvailability } from '@/features/today/nightHrv';
 import type { Recovery, RecoveryState } from '@/features/today/recovery';
 import { type SleepSummary } from '@/features/today/stats';
 import type { DayStrain } from '@/features/today/strain';
+import { loadBalance, MIN_LOAD_DAYS } from '@/features/fitness/trainingLoad';
 
 /**
  * "Should you push today?" from your own history. Each signal is shown with its numbers, and a signal without enough
@@ -11,16 +12,13 @@ import type { DayStrain } from '@/features/today/strain';
  *  - Resting heart rate against your own 30-day average (Lamberts: a resting heart rate a few beats above baseline
  *    goes with fatigue or illness).
  *  - Last night's sleep against a need of 7 h 30 min plus up to 1 h after a hard day (yesterday's strain / 21).
- *  - Training load balance: the average strain of the last 7 days against the last 28 (acute:chronic workload ratio,
- *    Gabbett 2016; above 1.5 raises injury risk, below 0.8 is detraining).
+ *  - Training load balance: the mean daily TRIMP of the last 7 days against the last 28 (acute:chronic workload ratio,
+ *    Gabbett 2016; above 1.5 raises injury risk, below 0.8 is detraining). `fitness/trainingLoad.ts` computes it.
  */
 export const BASE_SLEEP_NEED_SEC = 7.5 * 3600;
 const EXTRA_NEED_SEC = 3600;
 /** Days of history the resting heart rate needs before it is compared. */
 const MIN_BASELINE_DAYS = 7;
-/** Days with heart rate the load balance needs. */
-const MIN_LOAD_DAYS = 14;
-export const LOAD_DAYS = 28;
 
 export type SignalTone = 'good' | 'neutral' | 'bad';
 export interface Signal {
@@ -50,8 +48,30 @@ function mean(values: readonly number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-export function sleepNeedSec(yesterdayStrain: number | null): number {
-  return BASE_SLEEP_NEED_SEC + EXTRA_NEED_SEC * Math.min(1, Math.max(0, (yesterdayStrain ?? 0) / 21));
+/** Share of the 7-night sleep debt asked back each night, and the most it adds to one night. */
+const DEBT_REPAY_SHARE = 0.25;
+const MAX_DEBT_EXTRA_SEC = 3600;
+/** Nights with a sleep record the debt needs before it counts. */
+export const MIN_DEBT_NIGHTS = 3;
+
+/**
+ * The sleep a night needs: 7 h 30 min, plus up to 1 h after a hard day (`strain` / 21), plus a quarter of the sleep debt
+ * (at most 1 h more). The debt term is JoyoFit's own heuristic and has no published source; leave `debtSec` out for
+ * the plain need used to judge a night already slept.
+ */
+export function sleepNeedSec(yesterdayStrain: number | null, debtSec = 0): number {
+  const strainExtra = EXTRA_NEED_SEC * Math.min(1, Math.max(0, (yesterdayStrain ?? 0) / 21));
+  const debtExtra = Math.min(MAX_DEBT_EXTRA_SEC, Math.max(0, debtSec) * DEBT_REPAY_SHARE);
+  return BASE_SLEEP_NEED_SEC + strainExtra + debtExtra;
+}
+
+/**
+ * Sleep debt over the last nights: how far each night fell short of the 7 h 30 min base, summed. Nights without a
+ * record are not counted as zero sleep; fewer than `MIN_DEBT_NIGHTS` records give null. Oversleeping does not pay debt back.
+ */
+export function sleepDebtSec(asleepSecondsPerNight: readonly number[]): number | null {
+  if (asleepSecondsPerNight.length < MIN_DEBT_NIGHTS) return null;
+  return asleepSecondsPerNight.reduce((sum, s) => sum + Math.max(0, BASE_SLEEP_NEED_SEC - s), 0);
 }
 
 function hm(sec: number): string {
@@ -124,29 +144,21 @@ export function readiness(input: {
     });
   }
 
-  const loadDays = strain.filter((d) => d.day < dayStart && d.day >= dayStart - LOAD_DAYS * 86400);
-  if (loadDays.length < MIN_LOAD_DAYS) {
-    missing.push(`Training load: ${loadDays.length} of ${MIN_LOAD_DAYS} days with heart rate so far.`);
+  const load = loadBalance(strain, dayStart);
+  if (load.kind === 'short') {
+    missing.push(`Training load: ${load.daysWithData} of ${MIN_LOAD_DAYS} days with heart rate so far.`);
+  } else if (load.kind === 'none') {
+    missing.push('Training load: no strain in the last 28 days.');
   } else {
-    // Days without stored heart rate count as 0 strain over the window, like rest days.
-    const sum = (from: number) => loadDays.filter((d) => d.day >= from).reduce((a, d) => a + d.strain, 0);
-    const acute = sum(dayStart - 7 * 86400) / 7;
-    // Over the days since the first one with heart rate, so a short history is not diluted by days before it.
-    const span = Math.min(LOAD_DAYS, Math.round((dayStart - loadDays[0].day) / 86400));
-    const chronic = sum(dayStart - LOAD_DAYS * 86400) / span;
-    if (chronic <= 0) {
-      missing.push('Training load: no strain in the last 28 days.');
-    } else {
-      const ratio = acute / chronic;
-      signals.push({
-        key: 'load',
-        title: 'Training load',
-        value: ratio.toFixed(2),
-        detail: `last 7 days average ${acute.toFixed(1)} against 28 days ${chronic.toFixed(1)}${ratio > 1.5 ? ', a sharp rise' : ratio < 0.8 ? ', lighter than usual' : ''}`,
-        tone: ratio > 1.5 ? 'bad' : ratio < 0.8 ? 'neutral' : 'good',
-        amount: ratio,
-      });
-    }
+    const { acute, chronic, ratio } = load;
+    signals.push({
+      key: 'load',
+      title: 'Training load',
+      value: ratio.toFixed(2),
+      detail: `last 7 days average ${Math.round(acute)} TRIMP a day against 28 days ${Math.round(chronic)}${ratio > 1.5 ? ', a sharp rise' : ratio < 0.8 ? ', lighter than usual' : ''}`,
+      tone: ratio > 1.5 ? 'bad' : ratio < 0.8 ? 'neutral' : 'good',
+      amount: ratio,
+    });
   }
 
   return {

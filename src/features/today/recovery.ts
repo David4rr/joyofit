@@ -49,6 +49,13 @@ function missingText(readings: readonly HrvReadingRow[], availability: NightHrvA
     : 'HRV: no reading from last night or today yet.';
 }
 
+/** Mean and sample standard deviation (n - 1) of `values`; the SD is 0 for a single value. The one baseline arithmetic of `recovery` and `hrvStatus`. */
+export function meanSd(values: readonly number[]): { mean: number; sd: number } {
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const sd = values.length > 1 ? Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / (values.length - 1)) : 0;
+  return { mean, sd };
+}
+
 /** Today's recovery from `readings` (oldest first). Prefers last night over a spot reading. */
 export function recovery(
   readings: readonly HrvReadingRow[],
@@ -67,9 +74,7 @@ export function recovery(
       missing: `HRV: ${history.length} of ${MIN_BASELINE_READINGS} earlier ${today.source === 'night' ? 'nights' : 'readings'} needed for your baseline.`,
     };
   }
-  const logs = history.map((r) => Math.log(r.rmssd));
-  const mean = logs.reduce((a, b) => a + b, 0) / logs.length;
-  const sd = Math.sqrt(logs.reduce((a, b) => a + (b - mean) ** 2, 0) / (logs.length - 1));
+  const { mean, sd } = meanSd(history.map((r) => Math.log(r.rmssd)));
   // A few near-identical readings give a tiny spread that would make every change look extreme; 0.1 in ln units is
   // about a 10 % change in RMSSD, a typical day-to-day spread.
   const z = (Math.log(today.rmssd) - mean) / Math.max(sd, 0.1);

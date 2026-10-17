@@ -139,6 +139,7 @@ function RootNavigator() {
                     <Tabs.Screen name="sleep" options={{ href: null }} />
                     <Tabs.Screen name="readiness" options={{ href: null }} />
                     <Tabs.Screen name="trends" options={{ href: null }} />
+                    <Tabs.Screen name="fitness" options={{ href: null }} />
                     {/* Opens by itself when a workout starts on the watch (LiveWorkoutProvider). */}
                     <Tabs.Screen name="workout-live" options={{ href: null }} />
                     {/* Family monitoring: opened from Today, Settings and notifications; its stack draws its own headers. */}

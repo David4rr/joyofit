@@ -239,3 +239,12 @@ export async function listRestingHeartRateByDay(db: SQLiteDatabase, bounds: read
   );
   return new Map(rows.map((r) => [r.day, r.bpm]));
 }
+
+/** One `health_metrics` value of `type` (`ts` unix seconds); rows without a number are left out. */
+export function listMetricSince(db: SQLiteDatabase, type: string, sinceSec: number): Promise<{ ts: number; value: number }[]> {
+  return db.getAllAsync<{ ts: number; value: number }>(
+    'SELECT ts, value FROM health_metrics WHERE type = ? AND ts >= ? AND value IS NOT NULL ORDER BY ts',
+    type,
+    sinceSec,
+  );
+}
