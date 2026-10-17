@@ -14,7 +14,7 @@ type Variant =
   | 'label'
   | 'mono';
 
-interface AppTextProps extends TextProps {
+export interface AppTextProps extends TextProps {
   variant?: Variant;
   muted?: boolean;
   danger?: boolean;

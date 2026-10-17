@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 
 import { rogo, type RogoPost } from '@/cloud/rogo';
 import { AppText } from '@/components/AppText';
 import { IconChip, type IconName } from '@/components/IconChip';
+import { useBump } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
 import { Card } from '@/components/Screen';
 import { Notice } from '@/components/States';
@@ -41,6 +42,8 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
   const figures = postFigures(post);
   const handle = post.author.handle;
   const ago = useAgo(post.createdAt);
+  // A little pop when kudos is given; taking it back is quiet.
+  const kudosScale = useBump(post.kudosByMe, post.kudosByMe === true);
 
   const toggleKudos = async () => {
     setBusy(true);
@@ -133,11 +136,13 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
           hitSlop={8}
           onPress={() => void toggleKudos()}
           style={styles.action}>
-          <Ionicons
-            name={post.kudosByMe ? 'thumbs-up' : 'thumbs-up-outline'}
-            size={20}
-            color={post.kudosByMe ? colors.primary : colors.mutedForeground}
-          />
+          <Animated.View style={{ transform: [{ scale: kudosScale }] }}>
+            <Ionicons
+              name={post.kudosByMe ? 'thumbs-up' : 'thumbs-up-outline'}
+              size={20}
+              color={post.kudosByMe ? colors.primary : colors.mutedForeground}
+            />
+          </Animated.View>
           <AppText variant="label" color={post.kudosByMe ? colors.primary : undefined} muted={!post.kudosByMe}>
             {post.kudosCount} kudos
           </AppText>

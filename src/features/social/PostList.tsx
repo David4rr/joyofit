@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { FadeIn } from '@/components/motion';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { PostCard } from '@/features/social/PostCard';
 import type { PagedPosts } from '@/features/social/usePagedPosts';
@@ -40,14 +41,16 @@ export function PostList({ posts, empty, linkAuthor }: PostListProps) {
           {posts.error}
         </Notice>
       ) : null}
-      {posts.items.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          linkAuthor={linkAuthor}
-          onChange={posts.replace}
-          onOpen={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
-        />
+      {posts.items.map((post, i) => (
+        // Only the first screenful staggers; posts added by "Load more" appear below the fold and just fade in.
+        <FadeIn key={post.id} delay={i < 6 ? i * 45 : 0}>
+          <PostCard
+            post={post}
+            linkAuthor={linkAuthor}
+            onChange={posts.replace}
+            onOpen={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
+          />
+        </FadeIn>
       ))}
       {posts.hasMore ? <Button label="Load more" loading={posts.loadingMore} onPress={() => void posts.loadMore()} /> : null}
     </View>

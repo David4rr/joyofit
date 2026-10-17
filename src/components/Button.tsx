@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react';
 import { ActivityIndicator, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { PopIn } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
 import { fontSize, HIT, spacing, useTheme } from '@/theme';
 
@@ -14,6 +15,8 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'ghost' | 'destructive' | 'inverse';
   disabled?: boolean;
   loading?: boolean;
+  /** A check in place of the icon or spinner: the action just succeeded. The caller clears it after a moment. */
+  done?: boolean;
   icon?: IconName;
   style?: StyleProp<ViewStyle>;
 }
@@ -24,6 +27,7 @@ export function Button({
   variant = 'secondary',
   disabled,
   loading,
+  done,
   icon,
   style,
 }: ButtonProps) {
@@ -45,7 +49,12 @@ export function Button({
       onPress={onPress}
       style={[styles.base, { backgroundColor: scheme.bg, borderRadius: radius.control }, style]}>
       {loading ? <ActivityIndicator size="small" color={scheme.fg} /> : null}
-      {!loading && icon ? <Ionicons name={icon} size={18} color={scheme.fg} /> : null}
+      {!loading && done ? (
+        <PopIn>
+          <Ionicons name="checkmark" size={18} color={scheme.fg} />
+        </PopIn>
+      ) : null}
+      {!loading && !done && icon ? <Ionicons name={icon} size={18} color={scheme.fg} /> : null}
       <Text style={[styles.label, { color: scheme.fg, fontFamily: fonts.medium }]} numberOfLines={1}>
         {label}
       </Text>

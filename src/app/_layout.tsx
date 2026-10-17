@@ -13,8 +13,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Suspense, useEffect } from 'react';
 import { View } from 'react-native';
 
+import { TabIcon } from '@/components/TabIcon';
 import { migrate } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
+import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { CloudProvider } from '@/state/CloudProvider';
 import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
@@ -69,6 +71,7 @@ function RootNavigator() {
               <MealsProvider>
                 <LiveWorkoutProvider>
                   <OnboardingProvider>
+                  <FamilyProvider>
                   <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
                   <View style={{ flex: 1 }}>
                   <Tabs
@@ -85,7 +88,7 @@ function RootNavigator() {
                       options={{
                         title: 'Today',
                         tabBarIcon: ({ focused, color, size }) => (
-                          <Ionicons name={focused ? 'today' : 'today-outline'} size={size} color={color} />
+                          <TabIcon on="today" off="today-outline" focused={focused} size={size} color={color} />
                         ),
                       }}
                     />
@@ -94,7 +97,7 @@ function RootNavigator() {
                       options={{
                         title: 'Workouts',
                         tabBarIcon: ({ focused, color, size }) => (
-                          <Ionicons name={focused ? 'fitness' : 'fitness-outline'} size={size} color={color} />
+                          <TabIcon on="fitness" off="fitness-outline" focused={focused} size={size} color={color} />
                         ),
                       }}
                     />
@@ -103,7 +106,7 @@ function RootNavigator() {
                       options={{
                         title: 'Social',
                         tabBarIcon: ({ focused, color, size }) => (
-                          <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={color} />
+                          <TabIcon on="people" off="people-outline" focused={focused} size={size} color={color} />
                         ),
                       }}
                     />
@@ -112,7 +115,7 @@ function RootNavigator() {
                       options={{
                         title: 'Watch',
                         tabBarIcon: ({ focused, color, size }) => (
-                          <Ionicons name={focused ? 'watch' : 'watch-outline'} size={size} color={color} />
+                          <TabIcon on="watch" off="watch-outline" focused={focused} size={size} color={color} />
                         ),
                       }}
                     />
@@ -121,7 +124,7 @@ function RootNavigator() {
                       options={{
                         title: 'Settings',
                         tabBarIcon: ({ focused, color, size }) => (
-                          <Ionicons name={focused ? 'settings' : 'settings-outline'} size={size} color={color} />
+                          <TabIcon on="settings" off="settings-outline" focused={focused} size={size} color={color} />
                         ),
                       }}
                     />
@@ -138,12 +141,15 @@ function RootNavigator() {
                     <Tabs.Screen name="trends" options={{ href: null }} />
                     {/* Opens by itself when a workout starts on the watch (LiveWorkoutProvider). */}
                     <Tabs.Screen name="workout-live" options={{ href: null }} />
+                    {/* Family monitoring: opened from Today, Settings and notifications; its stack draws its own headers. */}
+                    <Tabs.Screen name="family" options={{ href: null }} />
                     {/* The setup guide: opened by OnboardingProvider on a first run and from Settings; full screen, no tab bar. */}
                     <Tabs.Screen name="onboarding" options={{ href: null, tabBarStyle: { display: 'none' } }} />
                   </Tabs>
                   {/* Android installs from Google Play only: flexible in-app update. */}
                   <UpdateBanner />
                   </View>
+                  </FamilyProvider>
                   </OnboardingProvider>
                 </LiveWorkoutProvider>
               </MealsProvider>

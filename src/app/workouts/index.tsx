@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { SyncButton } from '@/features/device/SyncButton';
 import { IconChip } from '@/components/IconChip';
 import { Metric } from '@/components/Metric';
 import { PressableScale } from '@/components/PressableScale';
@@ -174,14 +175,7 @@ export default function WorkoutsScreen() {
             <PageHeader
               title="Workouts"
               right={
-                <Button
-                  label={syncing ? 'Syncing' : 'Sync now'}
-                  variant="primary"
-                  icon="sync"
-                  disabled={!canSync}
-                  loading={syncing}
-                  onPress={() => void sync()}
-                />
+                <SyncButton variant="primary" />
               }
             />
             <Button

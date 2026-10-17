@@ -6,6 +6,7 @@ import { rogo, type RogoComment } from '@/cloud/rogo';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { FadeIn, useFlash } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
 import { Divider, Section } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
@@ -49,6 +50,7 @@ export function CommentsSection({ postId, onAdded }: { postId: string; onAdded: 
   const [sending, setSending] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [sent, flashSent] = useFlash(1600);
 
   const send = async () => {
     setSending(true);
@@ -58,6 +60,7 @@ export function CommentsSection({ postId, onAdded }: { postId: string; onAdded: 
       setDraft('');
       setData(await rogo.social.comments(postId));
       onAdded();
+      flashSent();
     } catch (e) {
       setProblem(errorMessage(e));
     } finally {
@@ -84,10 +87,10 @@ export function CommentsSection({ postId, onAdded }: { postId: string; onAdded: 
       {data ? (
         data.items.length > 0 ? (
           data.items.map((comment, i) => (
-            <View key={comment.id} style={styles.item}>
+            <FadeIn key={comment.id} delay={i < 6 ? i * 40 : 0} distance={6} style={styles.item}>
               {i > 0 ? <Divider /> : null}
               <CommentRow comment={comment} />
-            </View>
+            </FadeIn>
           ))
         ) : (
           <AppText variant="caption" muted>
@@ -113,7 +116,7 @@ export function CommentsSection({ postId, onAdded }: { postId: string; onAdded: 
         onSubmitEditing={() => draft.trim() && !sending && void send()}
       />
       {problem ? <Notice tone="danger">{problem}</Notice> : null}
-      <Button label="Post comment" variant="primary" icon="send" disabled={draft.trim().length === 0} loading={sending} onPress={() => void send()} />
+      <Button label="Post comment" variant="primary" icon="send" disabled={draft.trim().length === 0} loading={sending} done={sent} onPress={() => void send()} />
     </Section>
   );
 }

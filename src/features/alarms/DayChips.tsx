@@ -1,8 +1,8 @@
-import { StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 
-import { AppText } from '@/components/AppText';
+import { useToggleMix } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
-import { HIT, useColors } from '@/theme';
+import { fontSize, HIT, useTheme } from '@/theme';
 import { ALARM_DAYS } from '@/wear';
 
 interface DayChipsProps {
@@ -13,28 +13,35 @@ interface DayChipsProps {
 
 /** Seven round weekday toggles; each sits in a 48 dp tall hit row. */
 export function DayChips({ value, onChange }: DayChipsProps) {
-  const colors = useColors();
   return (
     <View style={styles.row}>
       {ALARM_DAYS.map((day) => {
         const selected = (value & day.bit) !== 0;
         return (
-          <PressableScale
-            key={day.bit}
-            accessibilityRole="checkbox"
-            accessibilityLabel={day.label}
-            accessibilityState={{ checked: selected }}
-            onPress={() => onChange(selected ? value & ~day.bit : value | day.bit)}
-            style={styles.hit}>
-            <View style={[styles.chip, { backgroundColor: selected ? colors.primary : colors.muted }]}>
-              <AppText variant="label" color={selected ? colors.primaryForeground : colors.foreground}>
-                {day.label.slice(0, 2)}
-              </AppText>
-            </View>
-          </PressableScale>
+          <DayChip key={day.bit} label={day.label} selected={selected} onPress={() => onChange(selected ? value & ~day.bit : value | day.bit)} />
         );
       })}
     </View>
+  );
+}
+
+function DayChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const { colors, fonts } = useTheme();
+  const mix = useToggleMix(selected);
+  return (
+    <PressableScale accessibilityRole="checkbox" accessibilityLabel={label} accessibilityState={{ checked: selected }} onPress={onPress} style={styles.hit}>
+      <Animated.View style={[styles.chip, { backgroundColor: mix.interpolate({ inputRange: [0, 1], outputRange: [colors.muted, colors.primary] }) }]}>
+        <Animated.Text
+          style={{
+            fontFamily: fonts.medium,
+            fontSize: fontSize.sm,
+            lineHeight: 18,
+            color: mix.interpolate({ inputRange: [0, 1], outputRange: [colors.foreground, colors.primaryForeground] }),
+          }}>
+          {label.slice(0, 2)}
+        </Animated.Text>
+      </Animated.View>
+    </PressableScale>
   );
 }
 

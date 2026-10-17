@@ -15,6 +15,7 @@ import { HourlyBars } from '@/features/today/HourlyBars';
 import { scoreFor } from '@/features/sleep/nights';
 import { SleepSummaryView } from '@/features/today/SleepSummaryView';
 import { isLinkUp } from '@/features/device/linkState';
+import { SyncButton } from '@/features/device/SyncButton';
 import {
   heartRateStats,
   hourlySteps,
@@ -111,14 +112,7 @@ export default function TodayScreen() {
           lastSync={lastSync}
           action={
             canSync || syncing ? (
-              <Button
-                label={syncing ? 'Syncing' : 'Sync now'}
-                variant="inverse"
-                icon="sync"
-                disabled={!canSync}
-                loading={syncing}
-                onPress={() => void sync()}
-              />
+              <SyncButton variant="inverse" />
             ) : linkState === 'disconnected' ? (
               <Button label="Connect watch" variant="inverse" icon="bluetooth" onPress={() => router.push('/watch')} />
             ) : null

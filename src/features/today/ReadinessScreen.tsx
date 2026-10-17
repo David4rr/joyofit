@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
+import { FadeIn } from '@/components/motion';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { Screen } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
@@ -30,8 +31,12 @@ export function ReadinessScreen() {
       {error ? <Notice tone="danger">Could not read stored data: {error}</Notice> : null}
       {scores && data ? (
         <>
-          <ReadinessSection readiness={scores.readiness} />
-          <StrainSection days={scores.strain} dayStart={data.dayStart} maxHr={scores.maxHr} />
+          <FadeIn>
+            <ReadinessSection readiness={scores.readiness} />
+          </FadeIn>
+          <FadeIn delay={60}>
+            <StrainSection days={scores.strain} dayStart={data.dayStart} maxHr={scores.maxHr} />
+          </FadeIn>
           <NavRow
             icon="stats-chart"
             tint="link"

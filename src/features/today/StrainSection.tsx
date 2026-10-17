@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Details } from '@/components/Details';
+import { CountUpText } from '@/components/motion';
 import { Ring } from '@/components/Ring';
 import { Section } from '@/components/Screen';
 import { STRAIN_MAX, type DayStrain } from '@/features/today/strain';
@@ -51,9 +52,13 @@ export function StrainSection({ days, dayStart, maxHr }: { days: readonly DayStr
           track={colors.workoutsSoft}
           accessibilityLabel={today ? `Strain ${formatStrain(today.strain)} of ${STRAIN_MAX}` : 'No strain yet today'}>
           <View style={styles.center}>
-            <AppText variant="heading" color={colors.workoutsText} style={styles.value}>
-              {today ? formatStrain(today.strain) : '--'}
-            </AppText>
+            <CountUpText
+              variant="heading"
+              color={colors.workoutsText}
+              value={today ? Number(formatStrain(today.strain)) : null}
+              decimals={1}
+              style={styles.value}
+            />
             <AppText variant="caption" muted style={styles.small}>
               of {STRAIN_MAX}
             </AppText>

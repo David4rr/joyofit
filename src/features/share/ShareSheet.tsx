@@ -10,6 +10,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { IconName } from '@/components/IconChip';
+import { PopIn, useFlash } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
 import { Segmented } from '@/components/Segmented';
 import { Notice } from '@/components/States';
@@ -93,12 +94,14 @@ interface TargetButtonProps {
   label: string;
   icon: ReactNode;
   loading: boolean;
+  /** A check in place of the icon: the target just worked. */
+  done?: boolean;
   disabled: boolean;
   onPress: () => void;
 }
 
 /** One big share target: round icon over a label, as in Strava's share row. */
-function TargetButton({ label, icon, loading, disabled, onPress }: TargetButtonProps) {
+function TargetButton({ label, icon, loading, done = false, disabled, onPress }: TargetButtonProps) {
   const { colors, fonts, radius } = useTheme();
   return (
     <PressableScale
@@ -109,7 +112,15 @@ function TargetButton({ label, icon, loading, disabled, onPress }: TargetButtonP
       onPress={onPress}
       style={[styles.target, { backgroundColor: colors.muted, borderRadius: radius.card }]}>
       <View style={[styles.targetIcon, { backgroundColor: colors.card }]}>
-        {loading ? <ActivityIndicator size="small" color={colors.foreground} /> : icon}
+        {loading ? (
+          <ActivityIndicator size="small" color={colors.foreground} />
+        ) : done ? (
+          <PopIn>
+            <Ionicons name="checkmark" size={24} color={colors.primary} />
+          </PopIn>
+        ) : (
+          icon
+        )}
       </View>
       <AppText variant="label" numberOfLines={1} style={{ fontFamily: fonts.bold }}>
         {label}
@@ -138,6 +149,8 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [installed, setInstalled] = useState(false);
   const [photosRequest, setPhotosRequest] = useState<PhotosRequest | null>(null);
+  const [copied, flashCopied] = useFlash(1400);
+  const [saved, flashSaved] = useFlash(1400);
 
   useEffect(() => {
     if (visible) void instagramInstalled().then(setInstalled);
@@ -221,10 +234,14 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
       if (target === 'copy') {
         await copyCardImage(card);
         show('Copied');
+        flashCopied();
       } else if (target === 'more') {
         await shareCardImage(await captureToFile(card), subject.caption);
       } else if (target === 'save') {
-        if (await saveCardImage(await captureToFile(card), askPhotos)) show('Saved to your photos');
+        if (await saveCardImage(await captureToFile(card), askPhotos)) {
+          show('Saved to your photos');
+          flashSaved();
+        }
       } else {
         await shareToInstagram(await captureToFile(card), background, subject.caption, askPhotos);
       }
@@ -336,9 +353,9 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
           {installed ? (
             <TargetButton label="Instagram" icon={<InstagramGlyph size={24} color={colors.foreground} />} loading={busy === 'instagram'} disabled={!idle} onPress={() => void run('instagram')} />
           ) : null}
-          <TargetButton label="Copy" icon={<Ionicons name="copy-outline" size={24} color={colors.foreground} />} loading={busy === 'copy'} disabled={!idle} onPress={() => void run('copy')} />
+          <TargetButton label="Copy" icon={<Ionicons name="copy-outline" size={24} color={colors.foreground} />} loading={busy === 'copy'} done={copied} disabled={!idle} onPress={() => void run('copy')} />
           {SAVE_AVAILABLE ? (
-            <TargetButton label="Save" icon={<Ionicons name="download-outline" size={24} color={colors.foreground} />} loading={busy === 'save'} disabled={!idle} onPress={() => void run('save')} />
+            <TargetButton label="Save" icon={<Ionicons name="download-outline" size={24} color={colors.foreground} />} loading={busy === 'save'} done={saved} disabled={!idle} onPress={() => void run('save')} />
           ) : null}
           <TargetButton label="More" icon={<Ionicons name="share-outline" size={24} color={colors.foreground} />} loading={busy === 'more'} disabled={!idle} onPress={() => void run('more')} />
         </View>

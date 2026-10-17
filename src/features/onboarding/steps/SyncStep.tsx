@@ -1,9 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEventListener } from 'expo';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { FadeIn, PopIn } from '@/components/motion';
 import { Card } from '@/components/Screen';
 import { LoadingState, Notice } from '@/components/States';
 import { isLinkUp } from '@/features/device/linkState';
@@ -11,7 +13,7 @@ import { Bullet, StepIntro } from '@/features/onboarding/StepIntro';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { formatCount, formatDistance } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
-import { spacing } from '@/theme';
+import { spacing, useColors } from '@/theme';
 import { HuaweiWear, type SyncSummary } from '@/wear';
 
 /**
@@ -67,11 +69,17 @@ export function SyncStep() {
 }
 
 function Result({ summary }: { summary: SyncSummary }) {
+  const colors = useColors();
   const { totals } = summary;
   return (
-    <>
+    <FadeIn style={styles.result}>
       <Card>
-        <AppText variant="heading">What came in</AppText>
+        <View style={styles.resultHead}>
+          <PopIn>
+            <Ionicons name="checkmark-circle" size={20} color={colors.link} />
+          </PopIn>
+          <AppText variant="heading">What came in</AppText>
+        </View>
         <PairGrid>
           <Pair label="Activity samples" value={formatCount(summary.samples)} />
           <Pair label="Sleep segments" value={formatCount(summary.sleep)} />
@@ -89,10 +97,12 @@ function Result({ summary }: { summary: SyncSummary }) {
         </Bullet>
         <Bullet label={'\u2022'}>Zeros are normal on a brand new or freshly reset watch. Wear it and sync again later.</Bullet>
       </View>
-    </>
+    </FadeIn>
   );
 }
 
 const styles = StyleSheet.create({
   notes: { gap: spacing.sm },
+  result: { gap: spacing.lg },
+  resultHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

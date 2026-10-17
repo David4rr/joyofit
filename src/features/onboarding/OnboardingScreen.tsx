@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { FadeIn } from '@/components/motion';
 import { currentStep, footerFor, progress, type StepId } from '@/features/onboarding/flow';
 import { StepProgress } from '@/features/onboarding/StepProgress';
 import { AccountStep } from '@/features/onboarding/steps/AccountStep';
@@ -70,7 +71,9 @@ export function OnboardingScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        {BODIES[step]()}
+        <FadeIn style={styles.body} distance={10}>
+          {BODIES[step]()}
+        </FadeIn>
       </ScrollView>
       {hasButtons ? (
         <View style={[styles.footer, { borderTopColor: colors.hairline, paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
@@ -97,7 +100,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   progress: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
   scroll: { flex: 1 },
-  content: { gap: spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+  body: { gap: spacing.lg },
   footer: { gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
   secondary: { flexDirection: 'row', gap: spacing.sm },
   cell: { flex: 1 },

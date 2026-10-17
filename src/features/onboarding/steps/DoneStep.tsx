@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { isIos } from '@/components/IosUnavailable';
+import { FadeIn } from '@/components/motion';
 import { Card } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { openSteps, type StepId } from '@/features/onboarding/flow';
@@ -59,8 +60,8 @@ export function DoneStep() {
       </StepIntro>
       <Card>
         <View style={styles.tips}>
-          {TIPS.map((tip) => (
-            <View key={tip.title} style={styles.tip}>
+          {TIPS.map((tip, i) => (
+            <FadeIn key={tip.title} delay={120 + i * 50} distance={6} style={styles.tip}>
               <IconChip icon={tip.icon} tint={tip.tint} size="sm" />
               <View style={styles.tipText}>
                 <AppText variant="bodyStrong">{tip.title}</AppText>
@@ -68,7 +69,7 @@ export function DoneStep() {
                   {tip.text}
                 </AppText>
               </View>
-            </View>
+            </FadeIn>
           ))}
         </View>
       </Card>

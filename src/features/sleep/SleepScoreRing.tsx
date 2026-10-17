@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { CountUpText } from '@/components/motion';
 import { Ring } from '@/components/Ring';
 import type { SleepScoreRow } from '@/db/queries';
 import { useColors } from '@/theme';
@@ -18,9 +19,7 @@ export function SleepScoreRing({ score, size = 76 }: { score: SleepScoreRow; siz
       track={colors.sleepSoft}
       accessibilityLabel={`Sleep score ${score.score} out of 100, from the watch`}>
       <View style={styles.center}>
-        <AppText variant="heading" color={colors.sleepText} style={styles.value}>
-          {score.score}
-        </AppText>
+        <CountUpText variant="heading" color={colors.sleepText} value={score.score} style={styles.value} />
         <AppText variant="caption" muted style={styles.caption}>
           Score
         </AppText>
