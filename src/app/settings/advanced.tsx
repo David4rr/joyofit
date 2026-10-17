@@ -3,17 +3,18 @@ import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
+import { Details } from '@/components/Details';
 import { Section, Screen } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
 import { ensureBluetoothConnect, ensureBluetoothScan } from '@/features/device/useBluetoothPermission';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage } from '@/format';
-import { useColors } from '@/theme';
+import { useTheme } from '@/theme';
 import { HuaweiWear } from '@/wear';
 
 export default function AdvancedScreen() {
-  const colors = useColors();
+  const theme = useTheme();
   const router = useRouter();
   const [courses, setCourses] = useState(() => HuaweiWear.getCourses());
   const [coursesBusy, setCoursesBusy] = useState(false);
@@ -63,19 +64,18 @@ export default function AdvancedScreen() {
           title="Log"
           subtitle="Watch traffic and events"
           onPress={() => router.push('/settings/log')}
-          style={groupedRowStyle(colors, 0, 2)}
+          style={groupedRowStyle(theme, 0, 2)}
         />
         <NavRow
           icon="information-circle"
           title="About"
           onPress={() => router.push('/settings/about')}
-          style={groupedRowStyle(colors, 1, 2)}
+          style={groupedRowStyle(theme, 1, 2)}
         />
       </View>
       <Section title="Experimental" icon="flask" tint="workouts">
         <SwitchRow
-          label="Running courses (experimental)"
-          hint="Unverified: the course format comes from static analysis of Huawei Health. The watch may refuse it."
+          label="Running courses"
           value={courses.enabled}
           disabled={coursesBusy}
           onValueChange={(enabled) => void toggleCourses(enabled)}
@@ -84,12 +84,16 @@ export default function AdvancedScreen() {
         {__DEV__ ? (
           <SwitchRow
             label="Bluetooth LE link (developer)"
-            hint="Connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle."
             value={forceBle}
             onValueChange={(enabled) => void toggleForceBle(enabled)}
           />
         ) : null}
         {__DEV__ && bleError ? <Notice tone="danger">{bleError}</Notice> : null}
+        <Details>
+          {__DEV__
+            ? "Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it. Bluetooth LE link: connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle."
+            : 'Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it.'}
+        </Details>
       </Section>
       {courses.enabled ? (
         <NavRow
@@ -98,7 +102,7 @@ export default function AdvancedScreen() {
           title="Running courses"
           subtitle="Build a course and send it to the watch"
           onPress={() => router.push('/settings/courses')}
-          style={groupedRowStyle(colors, 0, 1)}
+          style={groupedRowStyle(theme, 0, 1)}
         />
       ) : null}
     </Screen>

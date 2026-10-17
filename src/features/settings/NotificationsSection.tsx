@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Alert, PermissionsAndroid, Platform } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { KeyValue } from '@/components/KeyValue';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
@@ -58,13 +59,9 @@ function NotificationsSectionAndroid() {
 
   return (
     <Section title="Notifications" icon="notifications">
-      <KeyValue
-        icon="key"
-        label="Notification access"
-        value={access.granted ? 'Granted' : 'Not granted'}
-      />
+      <KeyValue icon="key" label="Notification access" value={access.granted ? 'Granted' : 'Not granted'} />
       <Button
-        label="Open notification access"
+        label="Open access settings"
         variant="secondary"
         icon="open-outline"
         onPress={() =>
@@ -75,20 +72,12 @@ function NotificationsSectionAndroid() {
         }
       />
       {HuaweiWear.distribution === 'sideload' ? (
-        <Notice>
-          On Android 13 and newer, an app installed outside the Play Store must first be allowed to
-          use restricted settings: App info, then the menu (three dots), then Allow restricted
-          settings.
-        </Notice>
+        <Notice>Android 13+: first allow restricted settings (App info, menu, Allow restricted settings).</Notice>
       ) : null}
       <SwitchRow
         icon="notifications"
-        label="Forward notifications to the watch"
-        hint={
-          access.granted
-            ? 'Sends the app name, title and text of each notification.'
-            : 'Grant notification access first.'
-        }
+        label="Forward to the watch"
+        hint={access.granted ? undefined : 'Grant access first.'}
         value={access.enabled}
         onValueChange={(enabled) => run(() => HuaweiWear.setNotificationsEnabled(enabled))}
         disabled={!access.granted}
@@ -96,14 +85,16 @@ function NotificationsSectionAndroid() {
       <SwitchRow
         icon="sunny"
         label="Morning summary"
-        hint="Once a day after the sync that brings in last night's sleep: time asleep and HRV against your usual."
         value={morning}
         onValueChange={toggleMorning}
       />
       {morning && morningDenied ? (
-        <Notice>Notification permission was denied, so the summary cannot be shown.</Notice>
+        <Notice>Notification permission denied: the summary cannot be shown.</Notice>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
+      <Details>
+        {"Forwarding sends the app name, title and text of each notification to the watch over Bluetooth only. Nothing is stored or sent over the internet. Choose which apps are forwarded in Notification apps.\n\nMorning summary: once a day after the sync that brings in last night's sleep, with time asleep and HRV against your usual."}
+      </Details>
     </Section>
   );
 }

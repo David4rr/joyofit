@@ -3,11 +3,13 @@ import { useState } from 'react';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { KeyValue } from '@/components/KeyValue';
+import { ButtonRow } from '@/components/ButtonRow';
+import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { isIos } from '@/components/IosUnavailable';
 import { formatCount, formatDateTime } from '@/format';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useCloud } from '@/state/CloudProvider';
 import { HuaweiWear } from '@/wear';
 
@@ -31,19 +33,9 @@ export function CloudSection() {
 
   return (
     <Section title="Cloud" icon="cloud-upload">
-      <AppText variant="caption" muted>
-        Cloud backup is part of JoyoRogo Pro. It backs up your steps, heart rate, SpO2, sleep and
-        workouts, including GPS tracks and the watch&apos;s Bluetooth address, to the JoyoFit cloud with
-        your JoyoRogo account. Off until you sign in with a Pro account; after that it uploads on
-        its own, starting with your whole history. While signed
-        in, JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. To delete your
-        account and its cloud data, sign in and use Delete JoyoRogo account below (details at
-        fit.joyorogo.com/privasi). The app never reads from the cloud yet.
-      </AppText>
       {!cloud.configured ? (
         <Notice tone="danger">
-          This build has no cloud server URL. Deploy server/ and set EXPO_PUBLIC_JOYOFIT_CLOUD_URL,
-          then rebuild.
+          No cloud server URL in this build. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.
         </Notice>
       ) : null}
       {cloud.signedIn && cloud.locked ? (
@@ -55,55 +47,62 @@ export function CloudSection() {
               : undefined
           }>
           {CAN_LINK_TO_FOUNDER
-            ? 'Cloud backup is part of JoyoRogo Pro. This account is not Pro yet, so nothing is uploaded. Your data stays on this phone, and anything already in the cloud stays readable.'
-            : 'Cloud backup is part of JoyoRogo Pro, which you can get in JoyoRogo. This account is not Pro yet, so nothing is uploaded. Your data stays on this phone, and anything already in the cloud stays readable.'}
+            ? 'Not a Pro account, so nothing is uploaded. Your data stays on this phone; what is already in the cloud stays readable.'
+            : 'Not a Pro account (get Pro in JoyoRogo), so nothing is uploaded. Your data stays on this phone; what is already in the cloud stays readable.'}
         </Notice>
       ) : null}
       {cloud.error ? <Notice tone="danger">{cloud.error}</Notice> : null}
-      <KeyValue icon="person-circle" label="Account" value={cloud.signedIn ? cloud.email : null} />
+      <PairGrid>
+        <Pair label="Account" value={cloud.signedIn ? cloud.email : null} wide />
+        {cloud.signedIn ? (
+          <>
+            <Pair label="Last cloud sync" value={cloud.lastSyncAt ? formatDateTime(cloud.lastSyncAt) : null} />
+            <Pair label="Waiting to upload" value={cloud.pending == null ? null : `${formatCount(cloud.pending)} rows`} />
+          </>
+        ) : null}
+      </PairGrid>
       {cloud.signedIn ? (
         <>
-          <KeyValue icon="time" label="Last cloud sync" value={cloud.lastSyncAt ? formatDateTime(cloud.lastSyncAt) : null} />
-          <KeyValue icon="cloud-upload" label="Waiting to upload" value={cloud.pending == null ? null : `${formatCount(cloud.pending)} rows`} />
-          <Button
-            label="Sync now"
-            variant="primary"
-            icon="sync"
-            onPress={() => void cloud.syncNow()}
-            disabled={!cloud.configured}
-            loading={cloud.uploading}
-          />
-          <Button
-            label="Sign out"
-            variant="secondary"
-            icon="log-out-outline"
-            onPress={() => void cloud.signOut()}
-            disabled={cloud.uploading || cloud.deleting}
-          />
+          <ButtonRow>
+            <Button
+              label="Sync now"
+              variant="primary"
+              icon="sync"
+              onPress={() => void cloud.syncNow()}
+              disabled={!cloud.configured}
+              loading={cloud.uploading}
+            />
+            <Button
+              label="Sign out"
+              variant="secondary"
+              icon="log-out-outline"
+              onPress={() => void cloud.signOut()}
+              disabled={cloud.uploading || cloud.deleting}
+            />
+          </ButtonRow>
           {confirmingDelete ? (
             <Notice tone="danger" icon="trash">
-              This deletes your JoyoRogo account, the same one JoyoRogo uses, along with everything it holds in the
-              cloud: your JoyoRogo diary, groups and photos, and the data JoyoFit backed up. It cannot be undone, and
-              you will be signed out of both apps. Data already on this phone, including what your watch synced,
-              stays here.{withApple ? ' If you signed in with Apple, Apple will ask you to confirm first.' : ''}
+              Deletes your JoyoRogo account (the one JoyoRogo uses) and everything it holds in the cloud: your JoyoRogo
+              diary, groups and photos, and the data JoyoFit backed up. Cannot be undone; you are signed out of both
+              apps. Data on this phone stays.{withApple ? ' Apple will ask you to confirm first.' : ''}
             </Notice>
           ) : null}
           {confirmingDelete ? (
-            <>
+            <ButtonRow>
               <Button
-                label="Delete account permanently"
+                label="Delete permanently"
                 variant="destructive"
                 icon="trash"
                 loading={cloud.deleting}
                 onPress={() => void cloud.deleteAccount().then((deleted) => deleted && setConfirmingDelete(false))}
               />
               <Button
-                label="Keep my account"
+                label="Keep account"
                 variant="secondary"
                 disabled={cloud.deleting}
                 onPress={() => setConfirmingDelete(false)}
               />
-            </>
+            </ButtonRow>
           ) : (
             <Button
               label="Delete JoyoRogo account"
@@ -114,27 +113,47 @@ export function CloudSection() {
             />
           )}
         </>
-      ) : (
+      ) : withApple ? (
         <>
-          {withApple ? (
+          <AppText variant="label" muted>
+            Sign in with
+          </AppText>
+          <ButtonRow>
             <Button
-              label="Sign in with Apple"
+              label="Apple"
               variant="primary"
               icon="logo-apple"
               onPress={() => void cloud.signInApple()}
               disabled={cloud.sessionPending}
             />
-          ) : null}
-          <Button
-            label={withApple ? 'Sign in with Google' : 'Sign in with JoyoRogo'}
-            variant={withApple ? 'secondary' : 'primary'}
-            icon={withApple ? 'logo-google' : 'log-in-outline'}
-            onPress={() => void cloud.signIn()}
-            disabled={cloud.sessionPending}
-            loading={cloud.sessionPending}
-          />
+            <Button
+              label="Google"
+              variant="secondary"
+              icon="logo-google"
+              onPress={() => void cloud.signIn()}
+              disabled={cloud.sessionPending}
+              loading={cloud.sessionPending}
+            />
+          </ButtonRow>
         </>
+      ) : (
+        <Button
+          label="Sign in with JoyoRogo"
+          variant="primary"
+          icon="log-in-outline"
+          onPress={() => void cloud.signIn()}
+          disabled={cloud.sessionPending}
+          loading={cloud.sessionPending}
+        />
       )}
+      <Details>
+        Cloud backup is part of JoyoRogo Pro. It backs up your steps, heart rate, SpO2, sleep and workouts, including GPS
+        tracks and the watch&apos;s Bluetooth address, to the JoyoFit cloud with your JoyoRogo account. Off until you
+        sign in with a Pro account; after that it uploads on its own, starting with your whole history. While signed
+        in, JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. To delete your account and its cloud
+        data, sign in and use Delete JoyoRogo account (details at fit.joyorogo.com/privasi). The app never reads from
+        the cloud yet.
+      </Details>
     </Section>
   );
 }

@@ -4,6 +4,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { Field } from '@/components/Input';
 import { isIos } from '@/components/IosUnavailable';
 import { KeyValue } from '@/components/KeyValue';
@@ -37,14 +38,17 @@ export function HuaweiImportSection() {
 
   return (
     <>
-      <Section title="Import from Huawei Health" icon="cloud-download" tint="heart">
-        <AppText variant="caption" muted>
-          Bring the heart rate, sleep, steps and workouts from your Huawei Health account into JoyoFit. It is free, runs
-          on this phone and sends nothing anywhere.
-        </AppText>
-      </Section>
-
       <Section title="Request your data from Huawei" icon="mail" tint="heart">
+        <AppText variant="caption" muted>
+          Heart rate, sleep, steps and workouts from your Huawei Health account. Free, runs on this phone, sends nothing.
+        </AppText>
+        <Button
+          label="Request your data from Huawei"
+          variant="secondary"
+          icon="open"
+          onPress={() => void Linking.openURL(REQUEST_URL_SEA)}
+        />
+        <Details title="How to request it (6 steps)">
         <View style={styles.steps}>
           <Step n={1}>Tap the button below and sign in with your Huawei ID.</Step>
           <Step n={2}>Choose Request your data and tick Health data.</Step>
@@ -65,16 +69,11 @@ export function HuaweiImportSection() {
               : 'Download the ZIP, then tap it in your email or Files app and choose JoyoFit, or choose it below. Enter the password.'}
           </Step>
         </View>
-        <Button
-          label="Request your data from Huawei"
-          variant="secondary"
-          icon="open"
-          onPress={() => void Linking.openURL(REQUEST_URL_SEA)}
-        />
         <AppText variant="caption" muted>
           An account outside South-East Asia: use {REQUEST_HOST_OTHER} instead. If the page fails for an Indonesian
-          account, the link above is the one that works; the in-app Privacy Center does not.
+          account, the button above is the one that works; the in-app Privacy Center does not.
         </AppText>
+        </Details>
       </Section>
 
       <Section title="Import the file" icon="document" tint="heart">
@@ -88,7 +87,6 @@ export function HuaweiImportSection() {
         {file ? <KeyValue icon="document" label="File" value={file.name} /> : null}
         <Field
           label="ZIP password"
-          hint="The password you set when you requested the data. It is only kept while this screen is open."
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -113,11 +111,12 @@ export function HuaweiImportSection() {
         ) : (
           <Button label="Import" variant="primary" icon="cloud-download" onPress={() => void start()} disabled={!ready} />
         )}
-        <AppText variant="caption" muted>
-          Data the watch already stored on this phone is never replaced. Importing the same file twice adds nothing the
-          second time. Imported days stay on this phone: they are not uploaded to the cloud, written to {HEALTH_APP}
-          or sent to Strava.
-        </AppText>
+        <Details>
+          The password is the one you set when you requested the data; it is only kept while this screen is open. Data
+          the watch already stored on this phone is never replaced. Importing the same file twice adds nothing the second
+          time. Imported days stay on this phone: they are not uploaded to the cloud, written to {HEALTH_APP} or sent to
+          Strava.
+        </Details>
       </Section>
 
       {summary ? <Summary summary={summary} /> : null}
@@ -133,6 +132,19 @@ function Step({ n, children }: { n: number; children: ReactNode }) {
       </AppText>
       <AppText variant="caption" style={styles.stepText}>
         {children}
+      </AppText>
+    </View>
+  );
+}
+
+function Pair({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.pair}>
+      <AppText variant="caption" muted numberOfLines={2}>
+        {label}
+      </AppText>
+      <AppText variant="bodyStrong" style={styles.pairValue}>
+        {value}
       </AppText>
     </View>
   );
@@ -155,9 +167,11 @@ function ProgressBar({ fraction }: { fraction: number }) {
 function Counts({ summary }: { summary: HuaweiImportSummary }) {
   return (
     <>
-      <KeyValue label="Workouts added" value={formatCount(summary.workoutsAdded)} />
-      <KeyValue label="Heart rate readings" value={formatCount(summary.heartRateReadings)} />
-      <KeyValue label="Sleep stages found" value={formatCount(summary.sleepSegmentsFound)} />
+      <View style={styles.grid}>
+        <Pair label="Workouts added" value={formatCount(summary.workoutsAdded)} />
+        <Pair label="Heart rate readings" value={formatCount(summary.heartRateReadings)} />
+        <Pair label="Sleep stages found" value={formatCount(summary.sleepSegmentsFound)} />
+      </View>
     </>
   );
 }
@@ -177,36 +191,35 @@ function Summary({ summary }: { summary: HuaweiImportSummary }) {
         </Notice>
       ) : null}
       <KeyValue icon="calendar" label="History read" value={range} />
-      <KeyValue icon="barbell" label="Workouts added" value={formatCount(summary.workoutsAdded)} />
-      <KeyValue icon="moon" label="Sleep stages added" value={formatCount(summary.sleepSegmentsAdded)} />
-      <KeyValue icon="heart" label="Heart rate readings" value={formatCount(summary.heartRateReadings)} />
-      <KeyValue label="Resting heart rate readings" value={formatCount(summary.restingHeartRateReadings)} />
-      <KeyValue label="Blood oxygen readings" value={formatCount(summary.spo2Readings)} />
-      <KeyValue label="Stress readings added" value={formatCount(summary.stressAdded)} />
-      <KeyValue icon="footsteps" label="Minutes with data written" value={formatCount(summary.minutesWritten)} />
-      {skippedWorkouts > 0 ? (
-        <KeyValue label="Workouts already on the phone" value={formatCount(skippedWorkouts)} />
-      ) : null}
-      {skippedSleep > 0 ? (
-        <KeyValue label="Sleep stages skipped (watch data kept)" value={formatCount(skippedSleep)} />
-      ) : null}
-      {summary.badRecords + summary.rejectedSamples > 0 ? (
-        <KeyValue label="Unreadable records skipped" value={formatCount(summary.badRecords + summary.rejectedSamples)} />
-      ) : null}
+      <View style={styles.grid}>
+        <Pair label="Workouts added" value={formatCount(summary.workoutsAdded)} />
+        <Pair label="Sleep stages added" value={formatCount(summary.sleepSegmentsAdded)} />
+        <Pair label="Heart rate readings" value={formatCount(summary.heartRateReadings)} />
+        <Pair label="Resting HR readings" value={formatCount(summary.restingHeartRateReadings)} />
+        <Pair label="Blood oxygen readings" value={formatCount(summary.spo2Readings)} />
+        <Pair label="Stress readings added" value={formatCount(summary.stressAdded)} />
+        <Pair label="Minutes with data" value={formatCount(summary.minutesWritten)} />
+        {skippedWorkouts > 0 ? <Pair label="Workouts already here" value={formatCount(skippedWorkouts)} /> : null}
+        {skippedSleep > 0 ? <Pair label="Sleep skipped (watch data kept)" value={formatCount(skippedSleep)} /> : null}
+        {summary.badRecords + summary.rejectedSamples > 0 ? (
+          <Pair label="Unreadable skipped" value={formatCount(summary.badRecords + summary.rejectedSamples)} />
+        ) : null}
+      </View>
       {summary.filesFailed > 0 ? (
         <Notice tone="danger">
           {summary.filesFailed === 1 ? 'One file' : `${summary.filesFailed} files`} in the ZIP could not be read. The rest
-          was imported; download the export again and import it to fill the gap.
+          was imported; download the export again to fill the gap.
         </Notice>
       ) : null}
-      <AppText variant="caption" muted>
-        Calories per minute and weight are not imported. Workout calories are.
-      </AppText>
+      <Details>Calories per minute and weight are not imported. Workout calories are.</Details>
     </Section>
   );
 }
 
 const styles = StyleSheet.create({
+  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.sm, columnGap: spacing.md },
+  pair: { width: '47%' },
+  pairValue: { fontVariant: ['tabular-nums'] },
   steps: { gap: spacing.sm },
   step: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   stepNumber: { width: 18, textAlign: 'center' },

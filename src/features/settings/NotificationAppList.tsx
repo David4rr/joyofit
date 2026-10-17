@@ -3,6 +3,7 @@ import { FlatList, StyleSheet, Switch, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Chip } from '@/components/Chip';
+import { Details } from '@/components/Details';
 import { IconChip } from '@/components/IconChip';
 import { isIos } from '@/components/IosUnavailable';
 import { Field } from '@/components/Input';
@@ -10,7 +11,7 @@ import { groupedRowStyle } from '@/components/NavRow';
 import { useContentPadding } from '@/components/Screen';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { errorMessage } from '@/format';
-import { spacing, useColors } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 import { HuaweiWear, type NotificationApp } from '@/wear';
 
 const ROW_HEIGHT = 64;
@@ -30,7 +31,8 @@ export function NotificationAppList() {
 }
 
 function NotificationAppListAndroid() {
-  const colors = useColors();
+  const theme = useTheme();
+  const { colors } = theme;
   const padding = useContentPadding(false);
   const [apps, setApps] = useState<NotificationApp[] | null>(null);
   const [filter, setFilter] = useState('');
@@ -119,9 +121,7 @@ function NotificationAppListAndroid() {
           {apps ? `${enabledCount} of ${apps.length} on` : ''}
         </AppText>
       </View>
-      <AppText variant="caption" muted>
-        Apps you haven&apos;t chosen are on, except system apps.
-      </AppText>
+      <Details>Apps you haven&apos;t chosen are on, except system apps.</Details>
       {error ? <Notice tone="danger">{error}</Notice> : null}
     </View>
   );
@@ -141,7 +141,7 @@ function NotificationAppListAndroid() {
       windowSize={9}
       removeClippedSubviews
       renderItem={({ item, index }) => (
-        <View style={[styles.row, groupedRowStyle(colors, index, visible.length)]}>
+        <View style={[styles.row, groupedRowStyle(theme, index, visible.length)]}>
           <IconChip icon="apps" size="md" />
           <View style={styles.text}>
             <AppText variant="bodyStrong" numberOfLines={1}>
@@ -164,7 +164,7 @@ function NotificationAppListAndroid() {
         apps === null && !error ? (
           <View accessibilityLabel="Loading apps">
             {Array.from({ length: SKELETON_ROWS }, (_, i) => (
-              <View key={i} style={[styles.row, groupedRowStyle(colors, i, SKELETON_ROWS)]}>
+              <View key={i} style={[styles.row, groupedRowStyle(theme, i, SKELETON_ROWS)]}>
                 <Skeleton width={40} height={40} radius={20} />
                 <View style={styles.text}>
                   <Skeleton width="55%" height={14} />
@@ -187,7 +187,7 @@ function NotificationAppListAndroid() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.md, paddingBottom: spacing.md },
+  header: { gap: spacing.sm, paddingBottom: spacing.sm },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   row: {
     height: ROW_HEIGHT,

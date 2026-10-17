@@ -41,7 +41,7 @@ import {
 } from '@/features/workouts/summary';
 import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatClock, formatCount, formatDateTime } from '@/format';
-import { radius, spacing, useColors } from '@/theme';
+import { spacing, useColors } from '@/theme';
 import type { StepSample } from '@/wear';
 
 interface Loaded {
@@ -133,9 +133,9 @@ export default function WorkoutDetailScreen() {
           <Notice tone="danger">{error}</Notice>
         ) : (
           <>
-            <Skeleton width="100%" height={216} radius={radius.card} />
-            <Skeleton width="100%" height={280} radius={radius.card} />
-            <Skeleton width="100%" height={200} radius={radius.card} />
+            <Skeleton width="100%" height={216} radius="card" />
+            <Skeleton width="100%" height={280} radius="card" />
+            <Skeleton width="100%" height={200} radius="card" />
           </>
         )}
       </Screen>

@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import type { IconName } from '@/components/IconChip';
-import { fonts, spacing, useColors } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 
 interface KeyValueProps {
   label: string;
@@ -13,14 +13,14 @@ interface KeyValueProps {
 
 /** Label/value row; a missing value renders as an em dash instead of being hidden. */
 export function KeyValue({ label, value, icon }: KeyValueProps) {
-  const colors = useColors();
+  const { colors, fonts } = useTheme();
   return (
     <View style={styles.row}>
       {icon ? <Ionicons name={icon} size={18} color={colors.mutedForeground} /> : null}
       <AppText variant="caption" muted style={styles.label}>
         {label}
       </AppText>
-      <AppText variant="caption" selectable style={styles.value}>
+      <AppText variant="caption" selectable style={[styles.value, { fontFamily: fonts.medium }]}>
         {value ?? '\u2014'}
       </AppText>
     </View>
@@ -33,7 +33,6 @@ const styles = StyleSheet.create({
   value: {
     flex: 1,
     textAlign: 'right',
-    fontFamily: fonts.medium,
     fontVariant: ['tabular-nums'],
   },
 });

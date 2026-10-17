@@ -3,9 +3,9 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { IconChip } from '@/components/IconChip';
-import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { Card, Screen, Section } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
@@ -42,7 +42,7 @@ export function LiveWorkoutScreen() {
         <EmptyState
           icon="walk"
           title="No workout running"
-          description="An outdoor walk, run or ride started on the watch opens this screen by itself. For an indoor workout, start it on the watch and tap Start here."
+          description="Outdoor walks, runs and rides started on the watch open here. Indoors, start on the watch, then tap Start."
           action={{ label: 'Start', icon: 'play', onPress: () => HuaweiWear.startLiveWorkout() }}
         />
       </Screen>
@@ -67,6 +67,19 @@ export function LiveWorkoutScreen() {
         <Button label="Finish" icon="stop" onPress={() => HuaweiWear.finishLiveWorkout()} />
       ) : null}
     </Screen>
+  );
+}
+
+function Pair({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.pair}>
+      <AppText variant="caption" muted>
+        {label}
+      </AppText>
+      <AppText variant="bodyStrong" style={styles.pairValue}>
+        {value}
+      </AppText>
+    </View>
   );
 }
 
@@ -117,6 +130,15 @@ function LiveBody({ live }: { live: LiveWorkout }) {
         </View>
       </Card>
 
+      <View style={styles.tiles}>
+        <StatTile icon="trail-sign" tint="steps" label="Distance" value={distance?.value ?? DASH} unit={distance?.unit} />
+        {speed ? (
+          <StatTile icon="speedometer" tint="steps" label="Speed" value={live.speedKmh !== null ? live.speedKmh.toFixed(1) : DASH} unit="km/h" />
+        ) : (
+          <StatTile icon="speedometer" tint="steps" label="Pace" value={live.paceSecPerKm ? paceValue(live.paceSecPerKm) : DASH} unit="/km" />
+        )}
+      </View>
+
       <Section title="Burned so far" icon="flame" tint="workouts">
         <View style={styles.burnRow}>
           <BurnFigure label="Fat" grams={live.fatGrams} color={colors.workoutsText} />
@@ -129,43 +151,34 @@ function LiveBody({ live }: { live: LiveWorkout }) {
           </View>
         </View>
         <FuelBar fatShare={live.fatShare} lead="Right now" />
-        <AppText variant="caption" muted>
-          An estimate by JoyoFit, the watch does not measure it: each calorie is split by your heart rate at that moment, with a
-          maximum of {live.maxHeartRate} bpm (220 minus your age from the profile). Easier effort burns a larger share of fat.
-          {live.source !== 'watch'
-            ? ' The watch sends no live calories to JoyoFit, so they too come from its live heart rate, your weight, age and sex (Keytel 2005); the watch screen may differ.'
-            : ''}
-        </AppText>
+        <Details title="How is this calculated?">
+          {`An estimate by JoyoFit, the watch does not measure it: each calorie is split by your heart rate at that moment, with a maximum of ${live.maxHeartRate} bpm (220 minus your age from the profile). Easier effort burns a larger share of fat.${
+            live.source !== 'watch'
+              ? ' The watch sends no live calories to JoyoFit, so they too come from its live heart rate, your weight, age and sex (Keytel 2005); the watch screen may differ.'
+              : ''
+          }`}
+        </Details>
       </Section>
 
-      <View style={styles.tiles}>
-        <StatTile icon="trail-sign" tint="steps" label="Distance" value={distance?.value ?? DASH} unit={distance?.unit} />
-        {speed ? (
-          <StatTile icon="speedometer" tint="steps" label="Speed" value={live.speedKmh !== null ? live.speedKmh.toFixed(1) : DASH} unit="km/h" />
-        ) : (
-          <StatTile icon="speedometer" tint="steps" label="Pace" value={live.paceSecPerKm ? paceValue(live.paceSecPerKm) : DASH} unit="/km" />
-        )}
-      </View>
-
-      <Section title="Details" icon="list">
-        {live.steps !== null ? <KeyValue icon="footsteps" label="Steps" value={formatCount(live.steps)} /> : null}
-        {live.stepRate !== null ? <KeyValue icon="pulse" label="Cadence" value={`${live.stepRate} steps/min`} /> : null}
-        {live.cadence !== null && live.cadence > 0 ? <KeyValue icon="bicycle" label="Cadence" value={`${live.cadence} rpm`} /> : null}
-        {speed ? null : live.speedKmh !== null ? <KeyValue icon="speedometer" label="Speed" value={`${live.speedKmh.toFixed(1)} km/h`} /> : null}
-        {live.altitudeM !== null ? <KeyValue icon="triangle" label="Altitude" value={`${live.altitudeM} m`} /> : null}
-        {live.riseM !== null ? <KeyValue icon="trending-up" label="Climb" value={`${live.riseM} m`} /> : null}
-        {live.descentM !== null ? <KeyValue icon="trending-down" label="Descent" value={`${live.descentM} m`} /> : null}
-        {live.aerobicTe !== null ? <KeyValue icon="heart" label="Aerobic training effect" value={live.aerobicTe.toFixed(1)} /> : null}
-        {live.anaerobicTe !== null ? <KeyValue icon="flash" label="Anaerobic training effect" value={live.anaerobicTe.toFixed(1)} /> : null}
+      <Section title="More" icon="list">
+        <View style={styles.grid}>
+          {live.steps !== null ? <Pair label="Steps" value={formatCount(live.steps)} /> : null}
+          {live.stepRate !== null ? <Pair label="Cadence" value={`${live.stepRate} steps/min`} /> : null}
+          {live.cadence !== null && live.cadence > 0 ? <Pair label="Cadence" value={`${live.cadence} rpm`} /> : null}
+          {speed ? null : live.speedKmh !== null ? <Pair label="Speed" value={`${live.speedKmh.toFixed(1)} km/h`} /> : null}
+          {live.altitudeM !== null ? <Pair label="Altitude" value={`${live.altitudeM} m`} /> : null}
+          {live.riseM !== null ? <Pair label="Climb" value={`${live.riseM} m`} /> : null}
+          {live.descentM !== null ? <Pair label="Descent" value={`${live.descentM} m`} /> : null}
+          {live.aerobicTe !== null ? <Pair label="Aerobic effect" value={live.aerobicTe.toFixed(1)} /> : null}
+          {live.anaerobicTe !== null ? <Pair label="Anaerobic effect" value={live.anaerobicTe.toFixed(1)} /> : null}
+        </View>
         {live.durationSec === null ? (
           <AppText variant="caption" muted>
             Waiting for the first numbers from the watch.
           </AppText>
         ) : null}
         {live.status === 'ended' ? (
-          <AppText variant="caption" muted>
-            The full record (route, splits, heart-rate chart) arrives with the next sync and appears under Workouts.
-          </AppText>
+          <Details>The full record (route, splits, heart-rate chart) arrives with the next sync and appears under Workouts.</Details>
         ) : null}
       </Section>
     </>
@@ -177,10 +190,13 @@ const styles = StyleSheet.create({
   headText: { flex: 1, gap: 2 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  clock: { alignItems: 'center', paddingVertical: spacing.sm },
+  clock: { alignItems: 'center' },
   heartRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   zone: { borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   burnRow: { flexDirection: 'row', gap: spacing.md },
   burnFigure: { flex: 1, gap: 2 },
   tiles: { flexDirection: 'row', gap: spacing.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.sm, columnGap: spacing.md },
+  pair: { width: '47%' },
+  pairValue: { fontVariant: ['tabular-nums'] },
 });

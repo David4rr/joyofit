@@ -1,5 +1,6 @@
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
@@ -16,11 +17,6 @@ export function HistorySection() {
 
   return (
     <Section title="Watch history" icon="time" tint="heart">
-      <AppText variant="caption" muted>
-        {isIos
-          ? 'Pulls every day of steps, heart rate, sleep and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept.'
-          : 'Pulls every day of steps, heart rate, sleep, HRV and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept.'}
-      </AppText>
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <Button
         label={syncing ? 'Fetching' : 'Fetch all history from watch'}
@@ -35,6 +31,11 @@ export function HistorySection() {
           Connect your watch first.
         </AppText>
       ) : null}
+      <Details>
+        {isIos
+          ? 'Pulls every day of steps, heart rate, sleep and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept.'
+          : 'Pulls every day of steps, heart rate, sleep, HRV and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept.'}
+      </Details>
     </Section>
   );
 }

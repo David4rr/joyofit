@@ -11,12 +11,12 @@ import { computeScores } from '@/features/today/scores';
 import { StrainSection } from '@/features/today/StrainSection';
 import { useTodayData } from '@/features/today/useTodayData';
 import { useWatch } from '@/state/WatchProvider';
-import { radius, useColors } from '@/theme';
+import { useTheme } from '@/theme';
 
 /** What the three rings on Today stand for, with every signal and the strain week behind them. */
 export function ReadinessScreen() {
   const router = useRouter();
-  const colors = useColors();
+  const theme = useTheme();
   const { linkState, device, dataVersion, sync } = useWatch();
   const { data, error } = useTodayData(dataVersion);
   const scores = useMemo(() => (data ? computeScores(data) : null), [data]);
@@ -36,12 +36,12 @@ export function ReadinessScreen() {
             title="Trends"
             subtitle="Recovery, strain, sleep, HRV and resting heart rate over 30 or 90 days"
             onPress={() => router.push('/trends')}
-            style={groupedRowStyle(colors, 0, 1)}
+            style={groupedRowStyle(theme, 0, 1)}
           />
           <JoyoRogoCard />
         </>
       ) : error ? null : (
-        <Skeleton width="100%" height={260} radius={radius.card} />
+        <Skeleton width="100%" height={260} radius="card" />
       )}
     </Screen>
   );

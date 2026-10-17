@@ -4,6 +4,7 @@ import { StyleSheet, Switch, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { Divider, Screen, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -199,10 +200,10 @@ export function AlarmsScreen() {
 
       {alarms.smartSupported ? (
         <Section title="Smart alarm" icon="moon" tint="sleep">
-          <AppText variant="caption" muted>
-            Wakes you at a light moment of sleep within the chosen window before the time. The watch
-            keeps one smart alarm and cannot delete it, only switch it off.
-          </AppText>
+          <Details>
+            Wakes you at a light moment of sleep within the chosen window before the time. The watch keeps one smart alarm and
+            cannot delete it, only switch it off.
+          </Details>
           {editing?.kind === 'smart' ? (
             editor
           ) : (

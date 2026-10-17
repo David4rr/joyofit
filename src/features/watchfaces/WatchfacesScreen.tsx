@@ -3,6 +3,7 @@ import { Alert, FlatList, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { IconChip } from '@/components/IconChip';
 import { Card, Section, useContentPadding, useRefreshControl } from '@/components/Screen';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
@@ -80,17 +81,13 @@ export function WatchfacesScreen() {
   const header = (
     <View style={styles.header}>
       <Section title="Install a watch face" icon="cloud-upload">
-        <AppText variant="caption">
-          Make faces in Huawei Theme Studio Pro and export them as .hwt files.{' '}
-          {list?.width && list.height
-            ? `This watch's screen is ${list.width} x ${list.height} px.`
-            : 'Make them for your watch\'s screen size.'}{' '}
-          A face made for another screen is refused before it is sent.
-        </AppText>
-        <AppText variant="caption" muted>
-          Whether the watch accepts a face that Huawei did not sign is not known. If it refuses, the exact status
-          code it returned is shown here and in the log.
-        </AppText>
+        <Details>
+          {`Make faces in Huawei Theme Studio Pro and export them as .hwt files. ${
+            list?.width && list.height
+              ? `This watch's screen is ${list.width} x ${list.height} px.`
+              : "Make them for your watch's screen size."
+          } A face made for another screen is refused before it is sent.\n\nWhether the watch accepts a face that Huawei did not sign is not known. If it refuses, the exact status code it returned is shown here and in the log.`}
+        </Details>
         {!connected ? (
           <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
             Connect your watch to manage its faces.

@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
@@ -32,14 +33,7 @@ export function FitImportSection() {
     <>
       <Section title="Import a FIT file" icon="bicycle" tint="workouts">
         <AppText variant="caption" muted>
-          Bring a ride or run recorded by a bike computer or sports watch into JoyoFit as a workout, with its route, heart
-          rate, speed, power and cadence. Works with the .fit files of iGPSPORT, Garmin, Wahoo, Bryton, Magene and XOSS. It
-          is free, runs on this phone and sends nothing anywhere.
-        </AppText>
-        <AppText variant="caption" muted>
-          {isIos
-            ? 'In Files or the app that has the file, choose Share, then JoyoFit. Or pick the file below.'
-            : 'In your file manager or the bike computer app, open the .fit file with JoyoFit, or share it to JoyoFit. Or pick the file below.'}
+          A ride or run from a bike computer or sports watch, with route, heart rate, speed, power and cadence. Free, runs on this phone.
         </AppText>
         <Button
           label={running ? 'Importing' : 'Choose a .fit file'}
@@ -62,11 +56,13 @@ export function FitImportSection() {
             <Notice tone="danger">{result.message}</Notice>
           )
         ) : null}
-        <AppText variant="caption" muted>
-          Importing the same file twice adds nothing, and a file that overlaps a workout your watch already recorded is
-          skipped: the workout from the watch is kept. Imported workouts count for strain, readiness and trends, stay on this
-          phone and are not uploaded to the cloud, written to {HEALTH_APP} or sent to Strava on their own.
-        </AppText>
+        <Details title="How does it work?">
+          {`Works with the .fit files of iGPSPORT, Garmin, Wahoo, Bryton, Magene and XOSS. ${
+            isIos
+              ? 'In Files or the app that has the file, choose Share, then JoyoFit.'
+              : 'In your file manager or the bike computer app, open the .fit file with JoyoFit, or share it to JoyoFit.'
+          } Importing the same file twice adds nothing, and a file that overlaps a workout your watch already recorded is skipped: the workout from the watch is kept. Imported workouts count for strain, readiness and trends, stay on this phone and are not uploaded to the cloud, written to ${HEALTH_APP} or sent to Strava on their own.`}
+        </Details>
       </Section>
     </>
   );

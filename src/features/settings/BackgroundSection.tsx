@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { KeyValue } from '@/components/KeyValue';
+import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { SwitchRow } from '@/components/SwitchRow';
 import { Notice } from '@/components/States';
 import { ensureBluetoothConnect } from '@/features/device/useBluetoothPermission';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useBackgroundStatus } from '@/features/settings/useBackgroundStatus';
 import { errorMessage } from '@/format';
 import { HuaweiWear } from '@/wear';
@@ -67,29 +68,22 @@ export function BackgroundSection() {
     <Section title="Background" icon="sync">
       <SwitchRow
         icon="sync"
-        label="Keep connected in the background"
-        hint={
-          !status.address
-            ? 'Connect your watch first.'
-            : 'Keeps the link to the watch up while the app is closed.'
-        }
+        label="Stay connected in background"
+        hint={!status.address ? 'Connect your watch first.' : undefined}
         value={status.enabled}
         onValueChange={toggle}
         disabled={busy || (!status.enabled && !status.address)}
       />
       {notificationHidden ? (
-        <Notice>Notification permission was denied, so the service notification is hidden.</Notice>
+        <Notice>Notification permission denied: the service notification is hidden.</Notice>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      <KeyValue icon="watch" label="Watch" value={status.name ?? status.address} />
-      <KeyValue icon="pulse" label="Service" value={status.running ? 'Running' : 'Stopped'} />
-      {status.enabled ? (
-        <KeyValue
-          icon="refresh"
-          label="Auto-reconnect"
-          value={status.paused ? 'Paused. Connect again to resume.' : 'Active'}
-        />
-      ) : null}
+      <PairGrid>
+        <Pair label="Watch" value={status.name ?? status.address} />
+        <Pair label="Service" value={status.running ? 'Running' : 'Stopped'} />
+        {status.enabled ? <Pair label="Auto-reconnect" value={status.paused ? 'Paused' : 'Active'} /> : null}
+      </PairGrid>
+      {status.enabled && status.paused ? <Notice>Auto-reconnect paused. Connect again to resume.</Notice> : null}
       <AppText variant="label" muted>
         Sync interval
       </AppText>
@@ -99,6 +93,7 @@ export function BackgroundSection() {
         onChange={(minutes) => run(() => HuaweiWear.setSyncIntervalMinutes(minutes))}
         disabled={busy}
       />
+      <Details>Keeps the link to the watch up while the app is closed.</Details>
     </Section>
   );
 }

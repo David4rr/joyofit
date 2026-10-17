@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { KeyValue } from '@/components/KeyValue';
+import { ButtonRow } from '@/components/ButtonRow';
+import { Details } from '@/components/Details';
 import { isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatDateTime } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
@@ -79,11 +81,6 @@ export function HealthConnectSection() {
       <SwitchRow
         icon="heart"
         label={`Write to ${STORE}`}
-        hint={
-          status && unavailable
-            ? AVAILABILITY_TEXT[status.availability]
-            : 'Sends steps, distance, calories, heart rate, blood oxygen, sleep and workouts after every sync, so other apps such as JoyoRogo can read them. Turning it on also writes what is already stored.'
-        }
         value={status?.enabled ?? false}
         onValueChange={toggle}
         disabled={busy != null || status == null || unavailable}
@@ -95,63 +92,66 @@ export function HealthConnectSection() {
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
       {status?.lastError ? <Notice tone="danger">Last export failed: {status.lastError}</Notice> : null}
-      <KeyValue icon="fitness" label={STORE} value={status ? AVAILABILITY_TEXT[status.availability] : null} />
-      <KeyValue
-        icon="key"
-        label="Write permission"
-        value={status && !unavailable ? `${grantedCount} of ${RECORD_TYPE_COUNT} types` : null}
-      />
+      <PairGrid>
+        <Pair label={STORE} value={status ? AVAILABILITY_TEXT[status.availability] : null} />
+        <Pair
+          label="Write permission"
+          value={status && !unavailable ? `${grantedCount} of ${RECORD_TYPE_COUNT} types` : null}
+        />
+        <Pair label="Last export" value={status?.lastExportSec ? formatDateTime(status.lastExportSec) : null} />
+      </PairGrid>
       {status && status.missing.length > 0 && !unavailable && grantedCount > 0 ? (
         <AppText variant="caption" muted>
           Not allowed, so skipped: {status.missing.join(', ')}.
         </AppText>
       ) : null}
-      <KeyValue
-        icon="time"
-        label="Last export"
-        value={status?.lastExportSec ? formatDateTime(status.lastExportSec) : null}
-      />
       {status?.lastCounts ? (
         <AppText variant="caption" muted selectable>
           {status.lastCounts}
         </AppText>
       ) : null}
-      {status && !unavailable && grantedCount < RECORD_TYPE_COUNT ? (
-        <Button
-          label="Continue"
-          variant="secondary"
-          icon="add-circle-outline"
-          onPress={() =>
-            run('Asking for permission', async () => {
-              setStatus(await HuaweiWear.requestHealthConnectPermissions());
-            })
-          }
-          disabled={busy != null}
-        />
-      ) : null}
-      {status?.enabled && !unavailable ? (
-        <Button
-          label="Write everything again"
-          variant="secondary"
-          icon="refresh"
-          onPress={() =>
-            run('Writing stored data', async () => {
-              await HuaweiWear.backfillHealthConnect();
-            })
-          }
-          disabled={busy != null}
-          loading={busy === 'Writing stored data'}
-        />
-      ) : null}
       {status ? (
-        <Button
-          label={`Open ${STORE}`}
-          variant="ghost"
-          icon="open-outline"
-          onPress={() => run('Opening', () => HuaweiWear.openHealthConnectSettings())}
-          disabled={busy != null}
-        />
+        <ButtonRow>
+          {!unavailable && grantedCount < RECORD_TYPE_COUNT ? (
+            <Button
+              label="Continue"
+              variant="secondary"
+              icon="add-circle-outline"
+              onPress={() =>
+                run('Asking for permission', async () => {
+                  setStatus(await HuaweiWear.requestHealthConnectPermissions());
+                })
+              }
+              disabled={busy != null}
+            />
+          ) : null}
+          {status.enabled && !unavailable ? (
+            <Button
+              label="Write all again"
+              variant="secondary"
+              icon="refresh"
+              onPress={() =>
+                run('Writing stored data', async () => {
+                  await HuaweiWear.backfillHealthConnect();
+                })
+              }
+              disabled={busy != null}
+              loading={busy === 'Writing stored data'}
+            />
+          ) : null}
+          <Button
+            label="Open"
+            variant="ghost"
+            icon="open-outline"
+            onPress={() => run('Opening', () => HuaweiWear.openHealthConnectSettings())}
+            disabled={busy != null}
+          />
+        </ButtonRow>
       ) : null}
+      <Details>
+        Sends steps, distance, calories, heart rate, blood oxygen, sleep and workouts after every sync, so other apps such
+        as JoyoRogo can read them. Turning it on also writes what is already stored.
+      </Details>
     </Section>
   );
 }

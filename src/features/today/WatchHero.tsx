@@ -10,7 +10,7 @@ import { StatusDot } from '@/components/StatusDot';
 import { isLinkLive, isLinkUp, LINK_LABEL } from '@/features/device/linkState';
 import type { HeartReading } from '@/features/today/stats';
 import { formatAgo, formatCount, formatSyncTime } from '@/format';
-import { radius, spacing, useColors } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 import type { LinkState } from '@/wear';
 
 const LOW_BATTERY = 20;
@@ -43,14 +43,14 @@ function batteryIcon(level: number) {
  * the live link state. Dark in both themes on purpose, so the live numbers read like a watch face.
  */
 export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, battery, lastSync, onEnableHeartRate, action }: WatchHeroProps) {
-  const colors = useColors();
+  const { colors, radius } = useTheme();
   const up = isLinkUp(linkState);
   const dot = up ? colors.heroLink : linkState === 'disconnected' ? colors.heroMuted : colors.heroWarn;
   const lowBattery = battery !== null && battery <= LOW_BATTERY;
   const batteryColor = lowBattery ? colors.heroWarn : colors.heroLink;
 
   return (
-    <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+    <View style={[styles.hero, { backgroundColor: colors.hero, borderRadius: radius.card }]}>
       <View
         style={styles.top}
         accessible
@@ -142,7 +142,7 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
 }
 
 const styles = StyleSheet.create({
-  hero: { borderRadius: radius.card, padding: spacing.md + 4, gap: spacing.md },
+  hero: { padding: spacing.md + 4, gap: spacing.md },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: -8, minHeight: 28 },
   link: { flexShrink: 0 },
   device: { flex: 1, textAlign: 'right' },

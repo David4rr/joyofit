@@ -1,15 +1,18 @@
 import { useCallback, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ButtonRow } from '@/components/ButtonRow';
+import { Details } from '@/components/Details';
 import { Field } from '@/components/Input';
-import { KeyValue } from '@/components/KeyValue';
-import { Section } from '@/components/Screen';
+import { Divider, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatDateTime } from '@/format';
 import { HuaweiWear, type ActivityGoals } from '@/wear';
+import { spacing } from '@/theme';
 
 /** Huawei Health's defaults: 10 000 steps, 300 active kcal, 30 exercise minutes, 12 stand hours, all reminders on. */
 const HUAWEI_DEFAULTS: ActivityGoals = {
@@ -106,53 +109,68 @@ export function GoalsSection() {
   };
 
   return (
-    <>
-      <Section title="Activity goals" icon="flag">
-        <AppText variant="caption" muted>
-          The three rings and the calorie goal on the watch. The steps goal is also your daily step goal in Profile and goal. Sent on
-          save and whenever the watch connects.
-        </AppText>
-        <Field label="Steps per day" icon="footsteps" keyboardType="number-pad" value={fields.steps} onChangeText={edit('steps')} />
-        <Field label="Active calories (kcal)" icon="flame" keyboardType="number-pad" value={fields.calories} onChangeText={edit('calories')} />
-        <Field label="Exercise (minutes)" icon="timer" keyboardType="number-pad" value={fields.exercise} onChangeText={edit('exercise')} />
-        <Field label="Stand (hours)" icon="body" keyboardType="number-pad" value={fields.stand} onChangeText={edit('stand')} />
-        {message ? <Notice tone={message.danger ? 'danger' : 'info'}>{message.text}</Notice> : null}
+    <Section title="Activity goals" icon="flag">
+      <View style={styles.row}>
+        <View style={styles.cell}>
+          <Field label="Steps / day" icon="footsteps" keyboardType="number-pad" value={fields.steps} onChangeText={edit('steps')} />
+        </View>
+        <View style={styles.cell}>
+          <Field label="Active kcal" icon="flame" keyboardType="number-pad" value={fields.calories} onChangeText={edit('calories')} />
+        </View>
+      </View>
+      <View style={styles.row}>
+        <View style={styles.cell}>
+          <Field label="Exercise (min)" icon="timer" keyboardType="number-pad" value={fields.exercise} onChangeText={edit('exercise')} />
+        </View>
+        <View style={styles.cell}>
+          <Field label="Stand (hours)" icon="body" keyboardType="number-pad" value={fields.stand} onChangeText={edit('stand')} />
+        </View>
+      </View>
+      {message ? <Notice tone={message.danger ? 'danger' : 'info'}>{message.text}</Notice> : null}
+      <ButtonRow>
         <Button label="Save and send" variant="primary" icon="send" loading={busy} onPress={save} />
-        <Button label="Use Huawei defaults" variant="secondary" disabled={busy} onPress={reset} />
-      </Section>
-
-      <Section title="Reminders" icon="notifications">
-        <SwitchRow
-          icon="walk"
-          label="Stand reminder"
-          hint="The watch nudges you when you have been sitting."
-          value={status.remindStand}
-          disabled={busy}
-          onValueChange={toggle('remindStand')}
-        />
-        <SwitchRow
-          icon="speedometer"
-          label="Progress reminder"
-          hint="Tells you how far along the day's goals are."
-          value={status.remindProgress}
-          disabled={busy}
-          onValueChange={toggle('remindProgress')}
-        />
-        <SwitchRow
-          icon="trophy"
-          label="Goal reached"
-          hint="Celebrates when a ring closes."
-          value={status.remindGoalReached}
-          disabled={busy}
-          onValueChange={toggle('remindGoalReached')}
-        />
-        <KeyValue
-          icon="watch"
+        <Button label="Huawei defaults" variant="secondary" disabled={busy} onPress={reset} />
+      </ButtonRow>
+      <Divider />
+      <SwitchRow
+        icon="walk"
+        label="Stand reminder"
+        value={status.remindStand}
+        disabled={busy}
+        onValueChange={toggle('remindStand')}
+      />
+      <SwitchRow
+        icon="speedometer"
+        label="Progress reminder"
+        value={status.remindProgress}
+        disabled={busy}
+        onValueChange={toggle('remindProgress')}
+      />
+      <SwitchRow
+        icon="trophy"
+        label="Goal reached"
+        value={status.remindGoalReached}
+        disabled={busy}
+        onValueChange={toggle('remindGoalReached')}
+      />
+      <PairGrid>
+        <Pair
           label="Watch accepts goals"
           value={status.configSupported === null ? 'Not connected' : status.configSupported ? 'Yes' : 'Not in its capabilities'}
         />
-        <KeyValue icon="send" label="Last send" value={status.lastSentAt ? formatDateTime(status.lastSentAt / 1000) : null} />
-      </Section>
-    </>
+        <Pair label="Last send" value={status.lastSentAt ? formatDateTime(status.lastSentAt / 1000) : null} />
+      </PairGrid>
+      <Details>
+        The three rings and the calorie goal on the watch. The steps goal is also your daily step goal in Profile and
+        goal. Sent on save and whenever the watch connects. Stand reminder: the watch nudges you when you have been
+        sitting. Progress reminder: tells you how far along the day&apos;s goals are. Goal reached: celebrates when a
+        ring closes.
+      </Details>
+    </Section>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: spacing.md },
+  cell: { flex: 1 },
+});

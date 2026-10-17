@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import type { IconName } from '@/components/IconChip';
 import { Field } from '@/components/Input';
 import { Section } from '@/components/Screen';
@@ -11,6 +12,7 @@ import { Notice } from '@/components/States';
 import { DEFAULT_STEP_GOAL } from '@/features/today/useStepGoal';
 import { errorMessage } from '@/format';
 import { HuaweiWear, type UserProfile, type UserSex } from '@/wear';
+import { spacing } from '@/theme';
 
 const DEFAULT_PROFILE: UserProfile = {
   heightCm: 175,
@@ -115,12 +117,22 @@ export function ProfileSection() {
 
   return (
     <Section title="Profile and goal" icon="person">
-      <AppText variant="caption" muted>
-        The watch uses these for calories and its step goal. Nothing is sent until you save.
-      </AppText>
-      <NumberField label="Height (cm)" value={fields.height} onChangeText={edit('height')} icon="resize" />
-      <NumberField label="Weight (kg)" value={fields.weight} onChangeText={edit('weight')} icon="barbell" decimal />
-      <NumberField label="Birth year" value={fields.birthYear} onChangeText={edit('birthYear')} icon="calendar" />
+      <View style={styles.row}>
+        <View style={styles.cell}>
+          <NumberField label="Height (cm)" value={fields.height} onChangeText={edit('height')} icon="resize" />
+        </View>
+        <View style={styles.cell}>
+          <NumberField label="Weight (kg)" value={fields.weight} onChangeText={edit('weight')} icon="barbell" decimal />
+        </View>
+      </View>
+      <View style={styles.row}>
+        <View style={styles.cell}>
+          <NumberField label="Birth year" value={fields.birthYear} onChangeText={edit('birthYear')} icon="calendar" />
+        </View>
+        <View style={styles.cell}>
+          <NumberField label="Daily step goal" value={fields.steps} onChangeText={edit('steps')} icon="footsteps" />
+        </View>
+      </View>
       <View style={styles.field}>
         <AppText variant="label" muted>
           Sex
@@ -134,13 +146,15 @@ export function ProfileSection() {
           }}
         />
       </View>
-      <NumberField label="Daily step goal" value={fields.steps} onChangeText={edit('steps')} icon="footsteps" />
       {message ? <Notice tone={message.danger ? 'danger' : 'info'}>{message.text}</Notice> : null}
       <Button label="Save" variant="primary" onPress={save} loading={saving} />
+      <Details>The watch uses these for calories and its step goal. Nothing is sent until you save.</Details>
     </Section>
   );
 }
 
 const styles = StyleSheet.create({
   field: { gap: 6 },
+  row: { flexDirection: 'row', gap: spacing.md },
+  cell: { flex: 1 },
 });

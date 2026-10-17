@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { Metric } from '@/components/Metric';
-import { radius, spacing, tintColors, useColors, type Tint } from '@/theme';
+import { spacing, tintColors, useTheme, type Tint } from '@/theme';
 
 interface StatTileProps {
   icon: IconName;
@@ -16,13 +16,13 @@ interface StatTileProps {
 
 /** Soft-tinted tile for one number: chip, label, big value with a small unit. */
 export function StatTile({ icon, tint, label, value, unit, sub }: StatTileProps) {
-  const colors = useColors();
+  const { colors, radius } = useTheme();
   const scheme = tintColors(colors, tint);
   return (
     <View
       accessible
       accessibilityLabel={`${label}: ${value}${unit ? ` ${unit}` : ''}`}
-      style={[styles.tile, { backgroundColor: scheme.soft }]}>
+      style={[styles.tile, { backgroundColor: scheme.soft, borderRadius: radius.tile }]}>
       <View style={styles.head}>
         <IconChip icon={icon} tint={tint} size="sm" background={colors.card} />
         <AppText variant="label" color={scheme.text} numberOfLines={1} style={styles.label}>
@@ -42,7 +42,7 @@ export function StatTile({ icon, tint, label, value, unit, sub }: StatTileProps)
 }
 
 const styles = StyleSheet.create({
-  tile: { flex: 1, borderRadius: radius.tile, padding: spacing.md, gap: spacing.sm },
+  tile: { flex: 1, padding: spacing.md, gap: spacing.sm },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   label: { flex: 1 },
   body: { gap: 0 },

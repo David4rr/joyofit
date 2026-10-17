@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Linking, PermissionsAndroid, type Permission } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { KeyValue } from '@/components/KeyValue';
-import { IosUnavailable, isIos } from '@/components/IosUnavailable';
-import { Divider, Section } from '@/components/Screen';
+import { ButtonRow } from '@/components/ButtonRow';
+import { Details } from '@/components/Details';
+import { isIos } from '@/components/IosUnavailable';
+import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage } from '@/format';
 import { HuaweiWear } from '@/wear';
@@ -32,18 +34,13 @@ export function PhoneSection() {
 /** What iOS does not allow, said once per feature instead of three switches that cannot work. */
 function PhoneSectionIos() {
   return (
-    <>
-      <IosUnavailable
-        title="Find my phone from the watch"
-        icon="locate"
-        reason="iOS suspends JoyoFit when it is not on screen and does not let it ring the phone on request, so the watch button cannot find this iPhone. Use Find My on another Apple device or iCloud.com instead."
-      />
-      <IosUnavailable
-        title="Calls on the watch"
-        icon="call"
-        reason="iOS does not let an app see, answer or reject phone calls. If the watch shows incoming calls at all, it does so itself through the notifications iOS shares with it (Notifications settings); answering from the watch is not possible."
-      />
-    </>
+    <Section title="Phone and calls" icon="call">
+      <Notice icon="locate">Find my phone from the watch: not possible on iOS.</Notice>
+      <Notice icon="call">Answering or rejecting calls from the watch: not possible on iOS.</Notice>
+      <Details>
+        {"Find my phone: iOS suspends JoyoFit when it is not on screen and does not let it ring the phone on request, so the watch button cannot find this iPhone. Use Find My on another Apple device or iCloud.com instead.\n\nCalls: iOS does not let an app see, answer or reject phone calls. If the watch shows incoming calls at all, it does so itself through the notifications iOS shares with it (Notifications settings)."}
+      </Details>
+    </Section>
   );
 }
 
@@ -112,62 +109,65 @@ function PhoneSectionAndroid() {
       <SwitchRow
         icon="locate"
         label="Find my phone from the watch"
-        hint="The watch button rings this phone loudly, even with the app closed. Stop it on the watch or from the notification."
         value={features.findPhoneEnabled}
         onValueChange={(enabled) => run(() => HuaweiWear.setFindPhoneEnabled(enabled))}
       />
-      <Divider />
       <SwitchRow
         icon="call"
         label="Show incoming calls on the watch"
-        hint={
-          features.callerIdSupported
-            ? 'Without call log access Android hides the caller number. Without contacts access you see the number instead of the name.'
-            : 'The watch shows that the phone is ringing. This version of JoyoFit does not read your call log or contacts, so it cannot show who is calling.'
-        }
         value={features.callsEnabled}
         onValueChange={toggleCalls}
       />
-      <KeyValue icon="phone-portrait" label="Phone state" value={features.readPhoneState ? 'Granted' : 'Not granted'} />
-      {features.callerIdSupported ? (
-        <>
-          <KeyValue icon="list" label="Caller number (call log)" value={features.readCallLog ? 'Granted' : 'Not granted'} />
-          <KeyValue icon="people" label="Contact names" value={features.readContacts ? 'Granted' : 'Not granted'} />
-        </>
-      ) : null}
-      <Divider />
       <SwitchRow
         icon="call-outline"
         label="Answer and reject calls from the watch"
         value={features.callControlEnabled}
         onValueChange={toggleCallControl}
       />
-      <KeyValue icon="checkmark-circle" label="Answer phone calls" value={features.answerPhoneCalls ? 'Granted' : 'Not granted'} />
-      <Divider />
-      <KeyValue icon="navigate" label="Phone GPS for outdoor workouts" value={gps === null ? null : gps ? 'Granted' : 'Not granted'} />
-      {gps === false ? (
-        <Button
-          label="Continue"
-          variant="secondary"
-          icon="location"
-          onPress={() =>
-            run(async () => {
-              setBlocked(false);
-              const result = await PermissionsAndroid.request(PERMISSIONS.ACCESS_FINE_LOCATION);
-              setBlocked(result === RESULTS.NEVER_ASK_AGAIN);
-            })
-          }
-        />
-      ) : null}
+      <PairGrid>
+        <Pair label="Phone state" value={features.readPhoneState ? 'Granted' : 'Not granted'} />
+        <Pair label="Answer phone calls" value={features.answerPhoneCalls ? 'Granted' : 'Not granted'} />
+        {features.callerIdSupported ? (
+          <>
+            <Pair label="Caller number (call log)" value={features.readCallLog ? 'Granted' : 'Not granted'} />
+            <Pair label="Contact names" value={features.readContacts ? 'Granted' : 'Not granted'} />
+          </>
+        ) : null}
+        <Pair label="Phone GPS (outdoor workouts)" value={gps === null ? null : gps ? 'Granted' : 'Not granted'} />
+      </PairGrid>
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      {blocked ? (
-        <Button
-          label="Open app settings"
-          variant="secondary"
-          icon="settings-outline"
-          onPress={() => void Linking.openSettings()}
-        />
+      {gps === false || blocked ? (
+        <ButtonRow>
+          {gps === false ? (
+            <Button
+              label="Allow location"
+              variant="secondary"
+              icon="location"
+              onPress={() =>
+                run(async () => {
+                  setBlocked(false);
+                  const result = await PermissionsAndroid.request(PERMISSIONS.ACCESS_FINE_LOCATION);
+                  setBlocked(result === RESULTS.NEVER_ASK_AGAIN);
+                })
+              }
+            />
+          ) : null}
+          {blocked ? (
+            <Button
+              label="App settings"
+              variant="secondary"
+              icon="settings-outline"
+              onPress={() => void Linking.openSettings()}
+            />
+          ) : null}
+        </ButtonRow>
       ) : null}
+      <Details>
+        {(features.callerIdSupported
+          ? 'Without call log access Android hides the caller number. Without contacts access you see the number instead of the name.'
+          : 'The watch shows that the phone is ringing. This version of JoyoFit does not read your call log or contacts, so it cannot show who is calling.') +
+          '\n\nFind my phone: the watch button rings this phone loudly, even with the app closed. Stop it on the watch or from the notification.'}
+      </Details>
     </Section>
   );
 }

@@ -4,8 +4,8 @@ import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { KeyValue } from '@/components/KeyValue';
 import { NavRow } from '@/components/NavRow';
 import { Divider, Screen, Section } from '@/components/Screen';
 import { isIos } from '@/components/IosUnavailable';
@@ -20,7 +20,7 @@ import { NO_WATCH_FOUND_HINT, NO_WATCH_FOUND_SCAN_HINT } from '@/features/device
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
 import { useBondedDevices } from '@/features/device/useBondedDevices';
 import { useWatch } from '@/state/WatchProvider';
-import { fonts, spacing, useColors } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 
 const CONNECT_STEPS = isIos
   ? [
@@ -36,21 +36,23 @@ const CONNECT_STEPS = isIos
 
 /** The three things that have to be true before the first connect, in the order they happen. */
 function ConnectSteps() {
-  const colors = useColors();
+  const { colors, fonts } = useTheme();
   return (
     <Section title="Before you connect" icon="list">
-      {CONNECT_STEPS.map((step, index) => (
-        <View key={step} style={styles.step}>
-          <View style={[styles.stepNumber, { backgroundColor: colors.muted }]}>
-            <AppText variant="label" style={styles.stepDigit}>
-              {index + 1}
+      <Details title="3 steps before the first connect">
+        {CONNECT_STEPS.map((step, index) => (
+          <View key={step} style={styles.step}>
+            <View style={[styles.stepNumber, { backgroundColor: colors.muted }]}>
+              <AppText variant="label" style={[styles.stepDigit, { fontFamily: fonts.bold }]}>
+                {index + 1}
+              </AppText>
+            </View>
+            <AppText variant="caption" style={styles.stepText}>
+              {step}
             </AppText>
           </View>
-          <AppText variant="caption" style={styles.stepText}>
-            {step}
-          </AppText>
-        </View>
-      ))}
+        ))}
+      </Details>
       <GuideLink />
     </Section>
   );
@@ -217,15 +219,17 @@ export default function WatchScreen() {
 
   const watchDetails = device ? (
     <Section title="Watch details" icon="watch">
-      <KeyValue icon="pricetag" label="Name" value={device.name} />
-      <KeyValue icon="watch" label="Model" value={device.model ?? device.productModel} />
-      <KeyValue icon="flask" label="JoyoFit support" value={SUPPORT_LABEL[device.support]} />
-      {device.model ? <KeyValue icon="hardware-chip" label="Product code" value={device.productModel} /> : null}
-      <KeyValue icon="code-slash" label="Software" value={device.softwareVersion} />
-      <KeyValue icon="hardware-chip" label="Hardware" value={device.hardwareVersion} />
-      <KeyValue icon="barcode" label="Serial" value={device.serialNumber} />
-      <KeyValue icon="key" label="Auth mode" value={device.authMode} />
-      <KeyValue icon="battery-half" label="Battery" value={watch.battery === null ? null : `${watch.battery}%`} />
+      <View style={styles.grid}>
+        <Pair label="Name" value={device.name} />
+        <Pair label="Model" value={device.model ?? device.productModel} />
+        <Pair label="Support" value={SUPPORT_LABEL[device.support]} />
+        {device.model ? <Pair label="Product code" value={device.productModel} /> : null}
+        <Pair label="Software" value={device.softwareVersion} />
+        <Pair label="Hardware" value={device.hardwareVersion} />
+        <Pair label="Serial" value={device.serialNumber} />
+        <Pair label="Auth mode" value={device.authMode} />
+        <Pair label="Battery" value={watch.battery === null ? null : `${watch.battery}%`} />
+      </View>
       {watch.linkState !== 'connected' ? (
         <AppText variant="caption" muted>
           {watch.linkState === 'syncing' ? 'Available when the sync finishes.' : 'Connect your watch first.'}
@@ -245,7 +249,7 @@ export default function WatchScreen() {
       <NavRow
         icon="color-palette"
         title="Watch faces"
-        subtitle="List, switch, delete and install faces"
+        subtitle="Switch, delete, install"
         style={styles.navRow}
         onPress={() => router.push('/watch/faces')}
       />
@@ -253,7 +257,7 @@ export default function WatchScreen() {
       <NavRow
         icon="images"
         title="Photo face"
-        subtitle="Put your own photos on the photo face"
+        subtitle="Your photos on the watch"
         style={styles.navRow}
         onPress={() => router.push('/watch/photos')}
       />
@@ -261,7 +265,7 @@ export default function WatchScreen() {
       <NavRow
         icon="alarm"
         title="Alarms"
-        subtitle="Read and change the watch alarms"
+        subtitle="Read and change"
         style={styles.navRow}
         onPress={() => router.push('/watch/alarms')}
       />
@@ -309,12 +313,27 @@ export default function WatchScreen() {
   );
 }
 
+function Pair({ label, value }: { label: string; value: string | null }) {
+  return (
+    <View style={styles.pair}>
+      <AppText variant="caption" muted>
+        {label}
+      </AppText>
+      <AppText variant="label" selectable numberOfLines={1}>
+        {value ?? '\u2014'}
+      </AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.sm, columnGap: spacing.md },
+  pair: { width: '47%' },
   bonded: { gap: spacing.md },
   bondedNext: { paddingTop: spacing.md },
   navRow: { paddingHorizontal: 0 },
   step: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   stepNumber: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  stepDigit: { fontFamily: fonts.bold, fontVariant: ['tabular-nums'] },
+  stepDigit: { fontVariant: ['tabular-nums'] },
   stepText: { flex: 1, paddingTop: 6 },
 });

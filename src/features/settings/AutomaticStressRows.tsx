@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 
-import { Divider } from '@/components/Screen';
 import { NavRow } from '@/components/NavRow';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -9,9 +8,6 @@ import { isCancelled, useHrvProgress } from '@/features/hrv/useHrvProgress';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatDateTime } from '@/format';
 import { HuaweiWear } from '@/wear';
-
-const TURN_ON_HINT =
-  'Turning it on takes 1 minute of sitting still with the watch snug. The phone measures your beat intervals and sends the watch a baseline.';
 
 /**
  * The watch's automatic stress switch and the way to Measure HRV, inside the Heart rate and sensors section.
@@ -45,12 +41,14 @@ export function AutomaticStressRows({ connected }: { connected: boolean }) {
   };
 
   const hint = !connected
-    ? 'Connect the watch to change it.'
+    ? undefined
     : !status.supported
       ? 'This watch does not offer it.'
       : status.enabled
-        ? `On, as last set here${status.lastCalibratedAt !== null ? `. Calibrated ${formatDateTime(status.lastCalibratedAt)}` : ''}.`
-        : TURN_ON_HINT;
+        ? status.lastCalibratedAt !== null
+          ? `Calibrated ${formatDateTime(status.lastCalibratedAt)}`
+          : undefined
+        : 'Takes 1 min to calibrate.';
 
   return (
     <>
@@ -74,12 +72,11 @@ export function AutomaticStressRows({ connected }: { connected: boolean }) {
         </Notice>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      <Divider />
       <NavRow
         icon="pulse"
         tint="heart"
         title="Measure HRV"
-        subtitle="One minute, from your beat-to-beat intervals"
+        subtitle="1 min, from beat-to-beat intervals"
         onPress={() => router.push('/hrv')}
       />
     </>

@@ -8,7 +8,7 @@ import { isLinkLive, isLinkUp, LINK_LABEL } from '@/features/device/linkState';
 import { useBackgroundStatus } from '@/features/settings/useBackgroundStatus';
 import { formatSyncTime } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
-import { radius, spacing, useColors } from '@/theme';
+import { radius, spacing, useTheme } from '@/theme';
 
 /** Battery at or under this percent turns the bar to the warning color. */
 const LOW_BATTERY = 20;
@@ -18,7 +18,7 @@ const LOW_BATTERY = 20;
  * last sync. The dot pulses only while the link is up or being set up.
  */
 export function WatchStatusCard() {
-  const colors = useColors();
+  const { colors, radius: themeRadius } = useTheme();
   const { linkState, device, battery, lastSync, error, retryAddress, connect } = useWatch();
   const { status: background } = useBackgroundStatus();
 
@@ -27,29 +27,33 @@ export function WatchStatusCard() {
   const batteryColor = battery !== null && battery <= LOW_BATTERY ? colors.heroWarn : colors.heroLink;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.hero }]}>
+    <View style={[styles.card, { backgroundColor: colors.hero, borderRadius: themeRadius.card }]}>
       <View style={styles.linkRow} accessible accessibilityLabel={`Link state: ${label}`}>
         <StatusDot color={dotColor} live={isLinkLive(linkState)} />
-        <AppText variant="heading" color={colors.heroForeground}>
+        <AppText variant="heading" color={colors.heroForeground} style={styles.linkLabel}>
           {label}
         </AppText>
+        {battery !== null ? (
+          <View style={styles.batteryRow} accessible accessibilityLabel={`Battery ${battery}%`}>
+            <AppText variant="label" color={colors.heroMuted}>
+              Battery
+            </AppText>
+            <Metric value={String(battery)} unit="%" size="md" color={colors.heroForeground} unitColor={colors.heroMuted} />
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.identity}>
-        <AppText variant="title" color={colors.heroForeground} numberOfLines={1}>
+        <AppText variant="heading" color={colors.heroForeground} numberOfLines={1}>
           {device?.name ?? 'No watch connected'}
         </AppText>
         <AppText variant="caption" color={colors.heroMuted} numberOfLines={1}>
-          {device ? (device.productModel ?? 'Model not reported') : 'Connect a paired watch to see it here.'}
+          {device ? (device.productModel ?? 'Model not reported') : 'Connect a paired watch below.'}
         </AppText>
       </View>
 
       {battery !== null ? (
-        <View style={styles.battery} accessible accessibilityLabel={`Battery ${battery}%`}>
-          <AppText variant="label" color={colors.heroMuted}>
-            Battery
-          </AppText>
-          <Metric value={String(battery)} unit="%" size="hero" color={colors.heroForeground} unitColor={colors.heroMuted} />
+        <View style={styles.battery} importantForAccessibility="no-hide-descendants">
           <View style={[styles.track, { backgroundColor: colors.heroTrack }]}>
             <View style={[styles.fill, { backgroundColor: batteryColor, width: `${Math.min(100, Math.max(0, battery))}%` }]} />
           </View>
@@ -72,8 +76,8 @@ export function WatchStatusCard() {
             </AppText>
           ) : null}
           {background.address ? (
-            <AppText variant="caption" color={colors.heroMuted}>
-              Remembered for background: {background.name ?? background.address}
+            <AppText variant="caption" color={colors.heroMuted} numberOfLines={1}>
+              Background: {background.name ?? background.address}
             </AppText>
           ) : null}
         </View>
@@ -83,11 +87,13 @@ export function WatchStatusCard() {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.card, padding: spacing.lg, gap: spacing.lg },
-  linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 32 },
+  card: { padding: spacing.md + 4, gap: spacing.sm + 2 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 28 },
+  linkLabel: { flex: 1 },
+  batteryRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   identity: { gap: 2 },
   battery: { gap: spacing.xs },
-  track: { height: 6, borderRadius: radius.pill, overflow: 'hidden', marginTop: spacing.sm },
+  track: { height: 6, borderRadius: radius.pill, overflow: 'hidden' },
   fill: { height: 6, borderRadius: radius.pill },
-  footer: { gap: spacing.xs, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
+  footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: spacing.md, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth },
 });

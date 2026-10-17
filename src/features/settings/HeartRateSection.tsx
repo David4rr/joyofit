@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { AppText } from '@/components/AppText';
+import { Details } from '@/components/Details';
 import { Divider, Section } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { Notice } from '@/components/States';
@@ -67,43 +68,42 @@ export function HeartRateSection() {
   const supported = sensors.supported;
   // Capabilities are only known while connected; until then everything stays switchable.
   const off = (key: keyof NonNullable<typeof supported>) => supported !== null && !supported[key];
-  const hint = (key: keyof NonNullable<typeof supported>, text: string) => (off(key) ? UNSUPPORTED : text);
+  const hint = (key: keyof NonNullable<typeof supported>) => (off(key) ? UNSUPPORTED : undefined);
 
   return (
     <Section title="Heart rate and sensors" icon="heart" tint="heart">
       <SwitchRow
         icon="heart"
         label="Continuous heart rate"
-        hint={hint('heartRate', 'The watch records your heart rate about every minute. Without it Today shows no heart rate.')}
+        hint={hint('heartRate')}
         value={sensors.automaticHeartRate}
         onValueChange={(value) => change({ automaticHeartRate: value })}
         disabled={busy || off('heartRate')}
       />
-      <Divider />
       <SwitchRow
         icon="water"
         label="Automatic SpO2"
-        hint={hint('spo2', 'Measures blood oxygen in the background.')}
+        hint={hint('spo2')}
         value={sensors.automaticSpo2}
         onValueChange={(value) => change({ automaticSpo2: value })}
         disabled={busy || off('spo2')}
       />
-      <Divider />
       <SwitchRow
         icon="moon"
         label="Sleep tracking (TruSleep)"
-        hint={hint('truSleep', 'Needed for the sleep stages and the sleep history.')}
+        hint={hint('truSleep')}
         value={sensors.truSleep}
         onValueChange={(value) => change({ truSleep: value })}
         disabled={busy || off('truSleep')}
       />
-      <Divider />
       <AutomaticStressRows connected={supported !== null} />
       <Divider />
       <AppText variant="bodyStrong">High heart-rate alert (bpm)</AppText>
-      <AppText variant="caption" muted>
-        {hint('highHeartRateAlert', 'The watch warns when your heart rate stays above this. Needs continuous heart rate.')}
-      </AppText>
+      {off('highHeartRateAlert') ? (
+        <AppText variant="caption" muted>
+          {UNSUPPORTED}
+        </AppText>
+      ) : null}
       <Segmented
         options={HIGH_ALERTS}
         value={sensors.highHeartRateAlert}
@@ -111,9 +111,11 @@ export function HeartRateSection() {
         disabled={busy || off('highHeartRateAlert') || !sensors.automaticHeartRate}
       />
       <AppText variant="bodyStrong">Low heart-rate alert (bpm)</AppText>
-      <AppText variant="caption" muted>
-        {hint('lowHeartRateAlert', 'The watch warns when your heart rate stays below this.')}
-      </AppText>
+      {off('lowHeartRateAlert') ? (
+        <AppText variant="caption" muted>
+          {UNSUPPORTED}
+        </AppText>
+      ) : null}
       <Segmented
         options={LOW_ALERTS}
         value={sensors.lowHeartRateAlert}
@@ -121,11 +123,21 @@ export function HeartRateSection() {
         disabled={busy || off('lowHeartRateAlert') || !sensors.automaticHeartRate}
       />
       {supported === null ? (
-        <Notice>Connect the watch to apply changes. They are saved and sent on the next connect.</Notice>
+        <Notice>Not connected: changes are saved and sent on the next connect.</Notice>
       ) : notSent ? (
         <Notice>The watch did not confirm every change. See the Log.</Notice>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
+      <Details>
+        {[
+          'Continuous heart rate: the watch records your heart rate about every minute. Without it Today shows no heart rate.',
+          'Automatic SpO2: measures blood oxygen in the background.',
+          'Sleep tracking: needed for the sleep stages and the sleep history.',
+          'Automatic stress: turning it on takes 1 minute of sitting still with the watch snug. The phone measures your beat intervals and sends the watch a baseline.',
+          'High alert: the watch warns when your heart rate stays above this. Needs continuous heart rate.',
+          'Low alert: the watch warns when your heart rate stays below this.',
+        ].join(' ')}
+      </Details>
     </Section>
   );
 }

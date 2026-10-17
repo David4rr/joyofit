@@ -2,6 +2,7 @@ import { Image, StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { KeyValue } from '@/components/KeyValue';
 import { PressableScale } from '@/components/PressableScale';
 import { Section } from '@/components/Screen';
@@ -32,25 +33,27 @@ export function StravaSection() {
   return (
     <Section title="Strava" icon="fitness" tint="workouts">
       <AppText variant="caption" muted>
-        Send your watch workouts to Strava, with the distance, calories, heart rate and route the watch recorded. It is free
-        and does not need JoyoRogo Pro. After you connect, workouts that finish from then on are sent after each sync;
-        earlier ones stay on the phone unless you send them from the workout screen. JoyoFit only sends workouts to your
-        own Strava account and never reads your Strava activities.
+        Send watch workouts to Strava. Free, no JoyoRogo Pro needed.
       </AppText>
+      <Details title="How does it work?">
+        Workouts go to Strava with the distance, calories, heart rate and route the watch recorded. After you connect,
+        workouts that finish from then on are sent after each sync; earlier ones stay on the phone unless you send them
+        from the workout screen. JoyoFit only sends workouts to your own Strava account and never reads your Strava
+        activities.
+      </Details>
       {!strava.configured ? (
         <Notice tone="danger">
-          This build has no cloud server URL, which Strava needs to connect. Deploy server/ and set
-          EXPO_PUBLIC_JOYOFIT_CLOUD_URL, then rebuild.
+          No cloud server URL in this build, which Strava needs. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.
         </Notice>
       ) : null}
       {strava.configured && strava.serverReady === false ? (
-        <Notice tone="danger">Strava is not set up on the JoyoFit server yet, so it cannot be connected.</Notice>
+        <Notice tone="danger">Strava is not set up on the JoyoFit server yet.</Notice>
       ) : null}
       {strava.error ? <Notice tone="danger">{strava.error}</Notice> : null}
       {strava.configured && !strava.signedIn && !connected ? (
         <>
           <Notice icon="person-circle">
-            Sign in with your JoyoRogo account first. JoyoFit uses it only to keep your Strava connection on its server.
+            Sign in with JoyoRogo first; it only keeps your Strava connection on the server.
           </Notice>
           <Button
             label="Sign in with JoyoRogo"
@@ -75,15 +78,14 @@ export function StravaSection() {
       ) : null}
       {connected ? (
         <>
-          <KeyValue icon="checkmark-circle" label="Strava" value="Connected" />
           <KeyValue
-            icon="time"
-            label="Sending workouts since"
+            icon="checkmark-circle"
+            label="Connected, sending since"
             value={strava.settings.connectedAt ? formatDateTime(strava.settings.connectedAt) : null}
           />
           <SwitchRow
             label="Add fit.joyorogo.com to the description"
-            hint="Plain text in the activity description. Never in the title. Off by default."
+            hint="Plain text, never in the title."
             value={strava.settings.addLink}
             onValueChange={(on) => void strava.setAddLink(on)}
           />
@@ -97,7 +99,7 @@ export function StravaSection() {
           />
           {!strava.signedIn ? (
             <AppText variant="caption" muted>
-              Sign in with JoyoRogo to disconnect or to send workouts.
+              Sign in with JoyoRogo to disconnect or send.
             </AppText>
           ) : null}
         </>
@@ -108,10 +110,10 @@ export function StravaSection() {
         accessibilityLabel="Compatible with Strava"
         accessibilityIgnoresInvertColors
       />
-      <AppText variant="caption" muted>
+      <Details>
         Compatible with Strava. JoyoFit is not made, sponsored or endorsed by Strava. What you send follows your Strava
         privacy settings; you can remove JoyoFit any time in Strava under Settings, My Apps.
-      </AppText>
+      </Details>
     </Section>
   );
 }
@@ -119,5 +121,5 @@ export function StravaSection() {
 const styles = StyleSheet.create({
   connect: { alignSelf: 'flex-start', height: BUTTON_SIZE.height, marginVertical: spacing.xs },
   dim: { opacity: 0.5 },
-  logo: { alignSelf: 'flex-start', marginTop: spacing.sm },
+  logo: { alignSelf: 'flex-start' },
 });

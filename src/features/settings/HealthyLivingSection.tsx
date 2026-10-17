@@ -2,10 +2,11 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { KeyValue } from '@/components/KeyValue';
+import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatAgo } from '@/format';
 import { useNow } from '@/hooks/useNow';
@@ -54,23 +55,23 @@ export function HealthyLivingSection() {
     <Section title="Healthy Living" icon="leaf" tint="link">
       <SwitchRow
         icon="checkmark-done"
-        label="Answer the watch's Healthy Living requests"
-        hint="On by default. Switching on takes effect on the next connect, switching off at once."
+        label="Answer watch requests"
         value={status.enabled}
         disabled={busy}
         onValueChange={(enabled) => run(() => HuaweiWear.setHealthyLivingEnabled(enabled))}
       />
-      <KeyValue icon="watch" label="Watch support" value={status.supported ? 'Supported' : 'Not supported'} />
+      <PairGrid>
+        <Pair label="Watch support" value={status.supported ? 'Supported' : 'Not supported'} />
+        <Pair
+          label="Last request"
+          value={status.lastRequestAt === null ? 'Not yet' : formatAgo(status.lastRequestAt / 1000, nowSec)}
+        />
+        <Pair label="Message version" value={status.msgVer === null ? null : String(status.msgVer)} />
+        <Pair label="Last report" value={status.lastReport} />
+      </PairGrid>
       <AppText variant="caption" muted>
         {status.gate}
       </AppText>
-      <KeyValue
-        icon="time"
-        label="Last request"
-        value={status.lastRequestAt === null ? 'The watch has not asked yet' : `The watch has asked ${formatAgo(status.lastRequestAt / 1000, nowSec)}`}
-      />
-      <KeyValue icon="git-branch" label="Message version" value={status.msgVer === null ? null : String(status.msgVer)} />
-      <KeyValue icon="document-text" label="Last report" value={status.lastReport} />
       <Button
         label="Send today to the watch"
         variant="secondary"
@@ -85,9 +86,11 @@ export function HealthyLivingSection() {
       />
       {note ? <Notice>{note}</Notice> : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      <AppText variant="caption" muted>
-        Unverified on the watch: based on Huawei Health&apos;s protocol.
-      </AppText>
+      <Details>
+        On by default. Switching on takes effect on the next connect, switching off at once. The watch asks for its
+        tasks itself; the button sends today&apos;s tasks without waiting for a request. Unverified on the watch: based on
+        Huawei Health&apos;s protocol.
+      </Details>
     </Section>
   );
 }

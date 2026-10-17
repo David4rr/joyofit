@@ -2,8 +2,9 @@ import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { Linking, Share } from 'react-native';
 
-import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ButtonRow } from '@/components/ButtonRow';
+import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { issueUrl, reportText } from '@/features/device/supportIssue';
@@ -50,11 +51,11 @@ export function SupportReportSection() {
 
   return (
     <Section title="Help support your watch" icon="chatbubbles">
-      <AppText variant="caption" muted>
+      <Details>
         JoyoFit is tested on the Huawei Watch Fit 4 Pro. Other Huawei and Honor watches are experimental. If something
         does not work, connect once, then send a report. It lists what your watch answered on its last connect, without
         Bluetooth addresses or the serial number.
-      </AppText>
+      </Details>
       {copied ? (
         <Notice>
           The full report is on your clipboard. On GitHub, say what works and what does not, then paste the report into
@@ -62,21 +63,23 @@ export function SupportReportSection() {
         </Notice>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      <Button
-        label="Report on GitHub"
-        variant="primary"
-        icon="logo-github"
-        loading={busy === 'github'}
-        disabled={busy !== null}
-        onPress={() => void reportOnGitHub()}
-      />
-      <Button
-        label="Share as text"
-        icon="share-social"
-        loading={busy === 'share'}
-        disabled={busy !== null}
-        onPress={() => void shareText()}
-      />
+      <ButtonRow>
+        <Button
+          label="GitHub report"
+          variant="primary"
+          icon="logo-github"
+          loading={busy === 'github'}
+          disabled={busy !== null}
+          onPress={() => void reportOnGitHub()}
+        />
+        <Button
+          label="Share text"
+          icon="share-social"
+          loading={busy === 'share'}
+          disabled={busy !== null}
+          onPress={() => void shareText()}
+        />
+      </ButtonRow>
     </Section>
   );
 }

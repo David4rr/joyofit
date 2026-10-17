@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { PressableScale } from '@/components/PressableScale';
-import { radius, spacing, useColors, type Tint } from '@/theme';
+import { spacing, useColors, useTheme, type Tint } from '@/theme';
 
 export interface RefreshProps {
   refreshing: boolean;
@@ -95,10 +95,10 @@ export function Screen({ title, caption, right, refresh, children }: ScreenProps
   );
 }
 
-/** Borderless white card, radius 24, padding 16. Sits flat: no border, no shadow. */
+/** Borderless white card, themed radius, padding 16. Sits flat: no border, no shadow. */
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  const colors = useColors();
-  return <View style={[styles.card, { backgroundColor: colors.card }, style]}>{children}</View>;
+  const { colors, radius } = useTheme();
+  return <View style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.card }, style]}>{children}</View>;
 }
 
 interface SectionProps {
@@ -148,6 +148,6 @@ const styles = StyleSheet.create({
   section: { gap: spacing.sm },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 28 },
   sectionTitle: { flex: 1 },
-  card: { borderRadius: radius.card, padding: spacing.md + 4, gap: spacing.sm + 2 },
+  card: { padding: spacing.md + 4, gap: spacing.sm + 2 },
   divider: { height: StyleSheet.hairlineWidth, alignSelf: 'stretch' },
 });

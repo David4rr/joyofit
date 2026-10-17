@@ -4,12 +4,13 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { Details } from '@/components/Details';
 import { Field } from '@/components/Input';
-import { KeyValue } from '@/components/KeyValue';
-import { Divider, Section } from '@/components/Screen';
+import { Section } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { LoadingState, Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage } from '@/format';
 import { spacing } from '@/theme';
@@ -108,38 +109,38 @@ export function CycleScreen() {
 
   return (
     <>
-      <Notice>
-        Dates for the next period and the fertile window are an estimate from the average of your logged cycles. They are not
-        medical advice and cannot tell irregular cycles, illness, stress, hormones or pregnancy. Do not use them to avoid or plan a
-        pregnancy.
-      </Notice>
+      <Notice>Estimates only, not medical advice. Do not use them to avoid or plan a pregnancy.</Notice>
       {error ? <Notice tone="danger">{error}</Notice> : null}
 
       <Section title="Next period" icon="calendar" tint="heart">
         {next ? (
           <>
-            <KeyValue
-              icon="water"
-              label="Estimated start"
-              value={
-                cycle.daysLate > 0
-                  ? `${formatDay(next.start)} (${cycle.daysLate} day${cycle.daysLate === 1 ? '' : 's'} late)`
-                  : `${formatDay(next.start)} (${untilNext === 0 ? 'today' : `in ${untilNext} days`})`
-              }
-            />
-            <KeyValue icon="time" label="Estimated length" value={`${cycle.averagePeriodDays} days`} />
-            <KeyValue
-              icon="flower"
-              label="Fertile window before it"
-              value={`${formatDay(next.fertileStart)} to ${formatDay(next.fertileEnd)}`}
-            />
-            <KeyValue icon="repeat" label="Average cycle" value={`${cycle.averageCycleDays} days`} />
+            <PairGrid>
+              <Pair
+                label="Estimated start"
+                value={
+                  cycle.daysLate > 0
+                    ? `${formatDay(next.start)} (${cycle.daysLate} day${cycle.daysLate === 1 ? '' : 's'} late)`
+                    : `${formatDay(next.start)} (${untilNext === 0 ? 'today' : `in ${untilNext} days`})`
+                }
+              />
+              <Pair label="Estimated length" value={`${cycle.averagePeriodDays} days`} />
+              <Pair label="Fertile window" value={`${formatDay(next.fertileStart)} to ${formatDay(next.fertileEnd)}`} />
+              <Pair label="Average cycle" value={`${cycle.averageCycleDays} days`} />
+            </PairGrid>
+            <Details>
+              {'The next period and the fertile window before it are estimated from the average of your logged cycles. They cannot tell irregular cycles, illness, stress, hormones or pregnancy.'}
+            </Details>
           </>
         ) : (
-          <AppText variant="caption" muted>
-            Log the first day of a period and JoyoFit estimates the next one. With one cycle it assumes 28 days, with more it
-            averages them.
-          </AppText>
+          <>
+            <AppText variant="caption" muted>
+              Log a period to get an estimate.
+            </AppText>
+            <Details>
+              {'Log the first day of a period and JoyoFit estimates the next one. With one cycle it assumes 28 days, with more it averages them. Estimates cannot tell irregular cycles, illness, stress, hormones or pregnancy.'}
+            </Details>
+          </>
         )}
       </Section>
 
@@ -171,7 +172,6 @@ export function CycleScreen() {
             onPress={() => run(() => HuaweiWear.startPeriod(selected))}
           />
         )}
-        <Divider />
         <AppText variant="label" muted>
           Flow on {offset === 0 ? 'today' : formatDay(selected)}
         </AppText>
@@ -220,12 +220,17 @@ export function CycleScreen() {
             </View>
           ))
         )}
-        <Divider />
         <AppText variant="label" muted>
           Add an earlier period
         </AppText>
-        <Field label="First day" placeholder="YYYY-MM-DD" value={pastStart} onChangeText={setPastStart} autoCapitalize="none" />
-        <Field label="Last day" placeholder="YYYY-MM-DD" value={pastEnd} onChangeText={setPastEnd} autoCapitalize="none" />
+        <View style={styles.dates}>
+          <View style={styles.date}>
+            <Field label="First day" placeholder="YYYY-MM-DD" value={pastStart} onChangeText={setPastStart} autoCapitalize="none" />
+          </View>
+          <View style={styles.date}>
+            <Field label="Last day" placeholder="YYYY-MM-DD" value={pastEnd} onChangeText={setPastEnd} autoCapitalize="none" />
+          </View>
+        </View>
         <Button
           label="Add period"
           icon="add"
@@ -243,23 +248,17 @@ export function CycleScreen() {
       <Section title="On the watch" icon="watch">
         <SwitchRow
           icon="calendar"
-          label="Show the cycle calendar on the watch"
-          hint={
-            cycle.watchSupported
-              ? 'Sends your estimates and symptoms to the watch when it asks. Off by default.'
-              : `Not available right now: ${cycle.watchNote}. It is sent on the next connection with a watch that supports it.`
-          }
+          label="Cycle calendar on the watch"
+          hint={cycle.watchSupported ? undefined : `Not available right now: ${cycle.watchNote}.`}
           value={cycle.enabled}
           disabled={busy}
           onValueChange={(enabled) => run(() => HuaweiWear.setCycleEnabled(enabled))}
         />
         {cycle.enabled ? (
           <>
-            <Divider />
             <SwitchRow
               icon="notifications"
               label="Reminders on the watch"
-              hint="Master switch for the reminders below."
               value={cycle.switches.master}
               disabled={busy}
               onValueChange={(value) => setSwitch('master', value)}
@@ -275,6 +274,12 @@ export function CycleScreen() {
             ))}
           </>
         ) : null}
+        <Details>
+          {cycle.watchSupported
+            ? 'Sends your estimates and symptoms to the watch when it asks. Off by default.'
+            : 'Sent on the next connection with a watch that supports it.'}
+          {' The reminders switch is the master switch for the reminders below it.'}
+        </Details>
       </Section>
     </>
   );
@@ -284,4 +289,6 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   periodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   periodText: { flex: 1, gap: 2 },
+  dates: { flexDirection: 'row', gap: spacing.md },
+  date: { flex: 1 },
 });

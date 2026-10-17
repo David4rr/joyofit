@@ -49,11 +49,8 @@ export function BondedRow({
           <AppText variant="bodyStrong" numberOfLines={1}>
             {device.name || 'Unnamed device'}
           </AppText>
-          <AppText variant="mono" muted>
-            {device.address}
-          </AppText>
-          <AppText variant="caption" muted>
-            {device.model ? `${device.model} · ${SUPPORT_LABEL[device.support]}` : SUPPORT_LABEL[device.support]}
+          <AppText variant="mono" muted numberOfLines={1}>
+            {device.address} · {device.model ? `${device.model}, ${SUPPORT_LABEL[device.support]}` : SUPPORT_LABEL[device.support]}
           </AppText>
           {device.reason ? (
             <AppText variant="caption" muted>
@@ -62,11 +59,11 @@ export function BondedRow({
           ) : null}
           {device.systemConnected ? (
             <AppText variant="caption" muted>
-              Already connected to this iPhone through Bluetooth. Tap Connect to use it here.
+              Already connected to this iPhone. Tap Connect to use it here.
             </AppText>
           ) : device.nearby === false && !isActive ? (
             <AppText variant="caption" muted>
-              Not in reach right now. If it is connected to another phone, disconnect it there first.
+              Not in reach. If it is on another phone, disconnect it there first.
             </AppText>
           ) : null}
         </View>
@@ -95,7 +92,7 @@ export function BondedRow({
 }
 
 const styles = StyleSheet.create({
-  row: { gap: spacing.md },
+  row: { gap: spacing.sm },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   dimmed: { opacity: 0.55 },
   text: { flex: 1, gap: 2 },

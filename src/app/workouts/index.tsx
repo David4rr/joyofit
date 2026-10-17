@@ -19,7 +19,7 @@ import { formatElapsed, formatWorkoutDistance } from '@/features/workouts/summar
 import { useWorkoutStrain } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatCount, formatDateTime } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
-import { radius, spacing, tintColors, useColors } from '@/theme';
+import { spacing, tintColors, useColors, useTheme } from '@/theme';
 
 interface MonthGroup {
   title: string;
@@ -40,7 +40,7 @@ function groupByMonth(workouts: readonly WorkoutRow[]): MonthGroup[] {
 
 function WorkoutCard({ workout }: { workout: WorkoutRow }) {
   const router = useRouter();
-  const colors = useColors();
+  const { colors, radius } = useTheme();
   const heart = tintColors(colors, 'heart');
   // `formatWorkoutDistance` returns "2.34 km"; the card shows the number big and the unit small.
   const [distance, distanceUnit] = formatWorkoutDistance(workout.distance).split(' ');
@@ -50,7 +50,7 @@ function WorkoutCard({ workout }: { workout: WorkoutRow }) {
       accessibilityRole="button"
       accessibilityLabel={`${workout.sportName}, ${formatDateTime(workout.start)}`}
       onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: String(workout.id) } })}
-      style={[styles.card, { backgroundColor: colors.card }]}>
+      style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.card }]}>
       <View style={styles.cardHead}>
         <IconChip icon={sportIcon(workout.sportName)} tint="workouts" />
         <View style={styles.cardTitle}>
@@ -90,7 +90,7 @@ function WorkoutSkeletons() {
   return (
     <View style={styles.skeletons}>
       {[0, 1, 2, 3].map((i) => (
-        <Skeleton key={i} width="100%" height={96} radius={radius.card} />
+        <Skeleton key={i} width="100%" height={96} radius="card" />
       ))}
     </View>
   );
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   header: { gap: spacing.sm, marginBottom: spacing.xs },
   sectionHeader: { paddingTop: spacing.sm, paddingBottom: spacing.xs },
   gap: { height: spacing.sm },
-  card: { borderRadius: radius.card, padding: spacing.md + 4, gap: spacing.sm },
+  card: { padding: spacing.md + 4, gap: spacing.sm },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardTitle: { flex: 1, gap: 2 },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, rowGap: 0 },

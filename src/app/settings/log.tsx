@@ -53,25 +53,29 @@ export default function LogScreen() {
           <Chip key={f} label={f} role="tab" selected={f === filter} onPress={() => setFilter(f)} />
         ))}
       </View>
-      <Input
-        icon="search"
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search, e.g. TruSleep"
-        autoCapitalize="none"
-        autoCorrect={false}
-        clearButtonMode="while-editing"
-        accessibilityLabel="Search log"
-      />
-      <Button
-        label={copied === 'shown' ? 'Copied' : `Copy ${rows.length} shown`}
-        variant="secondary"
-        icon="copy-outline"
-        disabled={rows.length === 0}
-        onPress={copyShown}
-      />
+      <View style={styles.searchRow}>
+        <View style={styles.search}>
+          <Input
+            icon="search"
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search, e.g. TruSleep"
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+            accessibilityLabel="Search log"
+          />
+        </View>
+        <Button
+          label={copied === 'shown' ? 'Copied' : 'Copy'}
+          variant="secondary"
+          icon="copy-outline"
+          disabled={rows.length === 0}
+          onPress={copyShown}
+        />
+      </View>
       <AppText variant="caption" muted>
-        {rows.length} shown, {buffer.length} of {LOG_CAPACITY} buffered. Long-press a line to copy it.
+        {rows.length} shown, {buffer.length} of {LOG_CAPACITY} buffered. Long-press a line to copy.
         {copied === 'line' ? ' Line copied.' : ''}
       </AppText>
     </View>
@@ -127,6 +131,8 @@ export default function LogScreen() {
 }
 
 const styles = StyleSheet.create({
-  toolbar: { gap: spacing.md, paddingBottom: spacing.md },
+  toolbar: { gap: spacing.sm, paddingBottom: spacing.sm },
   filters: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  search: { flex: 1 },
 });
