@@ -89,7 +89,7 @@ Present on this machine; see the header of `scripts/build-ios-linux.sh` for the 
   reads as `Constants.expoConfig` (the cloud URL in `extra`), so builds shipped the config of the first build for ever, and a
   changed `cloudUrl` never reached the phone. Step 6 now removes that stamp every run and `assemble-app.py` refuses an
   `app.config` whose `extra` differs from `app.json`.
-- `expo-image-picker` has a plugin entry in `app.json` that sets the photo library and camera usage strings (the camera is used for
+- `expo-image-picker` and `expo-media-library` have plugin entries in `app.json` that set the photo library, photo-add and camera usage strings (the camera is used for
   "Take photo" on the workout share screen) and drops the microphone string; `expo-secure-store` still adds a default Face ID string
   that JoyoFit does not need.
 - Nothing here installs or launches the app: a build that links and passes `asc.py validate` / `macho-lint`

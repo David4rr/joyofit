@@ -524,6 +524,26 @@ How imported data is kept apart: migration `imported` adds `imported INTEGER NOT
 The format is undocumented and was written from what community converters report (`NOTICE` credits them); it has not
 been checked against a real export yet. The first real file may need field-name or scale adjustments.
 
+## Share a workout or your day (Share on a workout, share icon on Today)
+
+A story card rendered on the phone as a 1080 px PNG (`src/features/share/`, `react-native-view-shot`): 9:16 story or 1:1 square, on a dark JoyoFit
+card (with the GPS route as an SVG polyline when the workout has one), over your own photo, or as a transparent sticker. A workout card shows type,
+date, distance, moving time, pace or speed, average heart rate, calories and elevation; the Today card shows steps, sleep, recovery, strain and
+readiness (whatever is computed; nothing is shown as a dash). Four targets sit under the preview:
+
+| Target | What it does |
+| --- | --- |
+| Instagram | Only shown when Instagram is installed (`Share.isPackageInstalled` on Android, `canOpenURL('instagram://app')` on iOS; the `instagram` and `instagram-stories` schemes and the `com.instagram.android` query come from the `react-native-share` plugin in `app.json`). With a Facebook App ID it opens Instagram's Story composer directly (sticker as `stickerImage`, route and photo cards as `backgroundImage`). Without one it hands the PNG to the Instagram app's share target, where you pick Story or post |
+| Copy | PNG to the clipboard (`expo-clipboard`), toast "Copied" |
+| Save | PNG to Photos / Pictures (`expo-media-library`). iOS asks for add-only access after an in-app "Continue" dialog; Android 11+ needs no permission; hidden on Android 10 |
+| More | The system share sheet with the PNG and a caption |
+
+The Facebook App ID is `1016598258111944` (the "JoyoDigitama" Meta app, shared with JoyoRogo; public, the App Secret is not used). It is read from
+`EXPO_PUBLIC_FB_APP_ID` at build time, else `expo.extra.facebookAppId` in `app.json`; clear both and the Instagram button uses the fallback.
+What the App ID buys: Instagram opens straight in the Story editor, and the sticker lands on Instagram's sticker layer over your own photo.
+Without it, on iOS the PNG goes through Photos (Instagram opens the saved image; it is flattened to JPEG, so the sticker option uses the system
+share sheet instead to keep its transparency), and on Android it opens Instagram's share chooser.
+
 ## Import a FIT file (Settings → Import a FIT file, Workouts → Import a FIT file, free)
 
 A ride or run recorded by a bike computer or sports watch (iGPSPORT first; Garmin, Wahoo, Bryton, Magene, XOSS and

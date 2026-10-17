@@ -6,7 +6,19 @@ import {
   type WorkoutSummary,
 } from '@/features/workouts/summary';
 
-export type ShareStatKey = 'distance' | 'time' | 'pace' | 'speed' | 'hr' | 'calories' | 'elevation';
+export type ShareStatKey =
+  | 'distance'
+  | 'time'
+  | 'pace'
+  | 'speed'
+  | 'hr'
+  | 'calories'
+  | 'elevation'
+  | 'steps'
+  | 'sleep'
+  | 'recovery'
+  | 'strain'
+  | 'readiness';
 
 /** One number on the share image; the unit is drawn smaller next to the value. */
 export interface ShareStat {

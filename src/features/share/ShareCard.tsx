@@ -275,7 +275,7 @@ export function ShareCard({
           {primary ? (
             <View style={{ flex: 1 }}>
               <Text style={text(m.label, fonts.medium, soft)}>{primary.label}</Text>
-              <Text numberOfLines={1} style={text(m.primary, fonts.heavy, ink, { letterSpacing: -px(3) })}>
+              <Text numberOfLines={1} adjustsFontSizeToFit style={text(m.primary, fonts.heavy, ink, { letterSpacing: -px(3) })}>
                 {primary.value}
                 {primary.unit ? <Text style={text(m.primaryUnit, fonts.bold, soft)}> {primary.unit}</Text> : null}
               </Text>
@@ -295,7 +295,7 @@ export function ShareCard({
                       {stat ? (
                         <>
                           <Text style={text(m.label, fonts.medium, soft)}>{stat.label}</Text>
-                          <Text numberOfLines={1} style={text(m.value, fonts.heavy, ink, { letterSpacing: -px(1.5) })}>
+                          <Text numberOfLines={1} adjustsFontSizeToFit style={text(m.value, fonts.heavy, ink, { letterSpacing: -px(1.5) })}>
                             {stat.value}
                             {stat.unit ? <Text style={text(m.unit, fonts.bold, soft)}> {stat.unit}</Text> : null}
                           </Text>

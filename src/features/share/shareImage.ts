@@ -1,9 +1,12 @@
+import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
+import * as MediaLibrary from 'expo-media-library';
 import { Linking, Platform, type View } from 'react-native';
 import Share, { Social } from 'react-native-share';
 import { captureRef } from 'react-native-view-shot';
 
 import type { ShareBackground } from '@/features/share/ShareCard';
+import { instagramRoute, resolveFacebookAppId, type InstagramRoute } from '@/features/share/shareTargets';
 
 /** Resolves after the next frame, so a just-loaded photo has been drawn once. */
 function nextFrame(): Promise<void> {
@@ -49,41 +52,89 @@ export async function shareCardImage(fileUri: string, caption: string): Promise<
   }
 }
 
-/** Facebook App ID of the "JoyoDigitama" Meta app (shared with JoyoRogo). Public: Instagram needs it as `source_application`. */
-const INSTAGRAM_APP_ID = '1016598258111944';
+/**
+ * Facebook App ID of the "JoyoDigitama" Meta app (shared with JoyoRogo), from `EXPO_PUBLIC_FB_APP_ID` at build time or
+ * `expo.extra.facebookAppId`. Instagram needs it as `source_application` to open its Story composer directly; without
+ * it the Instagram button hands the PNG to the Instagram app's share target instead.
+ */
+const FACEBOOK_APP_ID = resolveFacebookAppId(
+  process.env.EXPO_PUBLIC_FB_APP_ID,
+  (Constants.expoConfig?.extra as { facebookAppId?: string } | undefined)?.facebookAppId,
+);
 
-/** Android asks the package manager, iOS asks whether the `instagram-stories` scheme opens (listed in `LSApplicationQueriesSchemes` by the plugin). */
-async function instagramInstalled(): Promise<boolean> {
+const OS = Platform.OS === 'ios' ? 'ios' : 'android';
+
+/** Android asks the package manager, iOS asks whether the `instagram` scheme opens (listed in `LSApplicationQueriesSchemes` by the react-native-share plugin). */
+export async function instagramInstalled(): Promise<boolean> {
   try {
-    if (Platform.OS === 'android') return (await Share.isPackageInstalled('com.instagram.android')).isInstalled;
-    return await Linking.canOpenURL('instagram-stories://share');
+    if (OS === 'android') return (await Share.isPackageInstalled('com.instagram.android')).isInstalled;
+    return await Linking.canOpenURL('instagram://app');
   } catch {
     return false;
   }
 }
 
+/** Photos access is off and cannot be asked for again; only the system Settings can turn it on. */
+export class PhotosDeniedError extends Error {
+  constructor() {
+    super('Photos access is off for JoyoFit. Turn it on in Settings.');
+  }
+}
+
+/** Asked before the system dialog so the person knows why; resolves `false` when they back out. */
+export type PhotosPrompt = (purpose: 'save' | 'instagram') => Promise<boolean>;
+
 /**
- * Opens Instagram's Story composer with the PNG. The transparent sticker goes in as `stickerImage` (the user places
- * it over their own Story), the route and photo cards as the full-bleed `backgroundImage`. Without Instagram the system
- * share sheet takes the PNG instead; returns `false` in that case so the caller can say so.
+ * Photos permission on iOS: add-only for Save, read-write for Instagram's iOS share path (it saves the image to Photos
+ * and opens it by id). Android needs none for these. Resolves `false` when the person declines the pre-prompt; throws
+ * `PhotosDeniedError` when iOS will not ask again or the system dialog is refused.
  */
-export async function shareToInstagramStory(
+async function ensurePhotosAccess(purpose: 'save' | 'instagram', prompt: PhotosPrompt): Promise<boolean> {
+  if (OS === 'android') return true;
+  const writeOnly = purpose === 'save';
+  const current = await MediaLibrary.getPermissionsAsync(writeOnly);
+  if (current.granted) return true;
+  if (!current.canAskAgain) throw new PhotosDeniedError();
+  if (!(await prompt(purpose))) return false;
+  if (!(await MediaLibrary.requestPermissionsAsync(writeOnly)).granted) throw new PhotosDeniedError();
+  return true;
+}
+
+/** Adds the PNG to the photo library (Photos on iOS, Pictures on Android). Resolves `false` when the person declines the pre-prompt. */
+export async function saveCardImage(fileUri: string, prompt: PhotosPrompt): Promise<boolean> {
+  if (!(await ensurePhotosAccess('save', prompt))) return false;
+  await MediaLibrary.Asset.create(fileUri);
+  return true;
+}
+
+/**
+ * Instagram button. With a Facebook App ID the Story composer opens directly: the transparent sticker goes in as
+ * `stickerImage` (placed over the person's own Story), the route and photo cards as the full-bleed `backgroundImage`.
+ * Without one the PNG goes to the Instagram app's share target, where the person picks Story or post. Returns the route
+ * taken, or `null` when the person backed out of the Photos pre-prompt.
+ */
+export async function shareToInstagram(
   fileUri: string,
   background: ShareBackground,
   caption: string,
-): Promise<boolean> {
-  if (!(await instagramInstalled())) {
-    await shareCardImage(fileUri, caption);
-    return false;
-  }
+  prompt: PhotosPrompt,
+): Promise<InstagramRoute | null> {
+  const route = instagramRoute(FACEBOOK_APP_ID, OS, background);
   try {
-    await Share.shareSingle({
-      social: Social.InstagramStories,
-      appId: INSTAGRAM_APP_ID,
-      ...(background === 'sticker' ? { stickerImage: fileUri } : { backgroundImage: fileUri }),
-    });
+    if (route === 'stories' && FACEBOOK_APP_ID) {
+      await Share.shareSingle({
+        social: Social.InstagramStories,
+        appId: FACEBOOK_APP_ID,
+        ...(background === 'sticker' ? { stickerImage: fileUri } : { backgroundImage: fileUri }),
+      });
+    } else if (route === 'instagram') {
+      if (OS === 'ios' && !(await ensurePhotosAccess('instagram', prompt))) return null;
+      await Share.shareSingle({ social: Social.Instagram, url: fileUri, type: 'image/png' });
+    } else {
+      await shareCardImage(fileUri, caption);
+    }
   } catch (error) {
     if (!isShareCancel(error)) throw error;
   }
-  return true;
+  return route;
 }

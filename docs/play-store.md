@@ -61,7 +61,8 @@ Other permissions in the Play build and why (the manifest of `dist/joyofit-play-
 | `CAMERA` (from `expo-image-picker`) | "Take photo" in the workout share screen puts a new photo behind the numbers of the share image. Asked only when that button is tapped; the photo stays on the phone and is never uploaded by JoyoFit |
 
 Removed from both builds because no JoyoFit feature uses them (`app.json` `android.blockedPermissions`): `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW` (Expo template defaults; debug builds keep the overlay),
-`READ_EXTERNAL_STORAGE`/`WRITE_EXTERNAL_STORAGE` (from `expo-file-system`, API 32 and lower only; pickers return cache copies) and `ACCESS_WIFI_STATE`
+`READ_EXTERNAL_STORAGE`/`WRITE_EXTERNAL_STORAGE` (from `expo-file-system` and `expo-media-library`, API 32 and lower only; pickers return cache copies, and Save on the share sheet writes through MediaStore, which needs no permission on Android 11+; the button is hidden on Android 10),
+`READ_MEDIA_VISUAL_USER_SELECTED` (from `expo-media-library`; the plugin's `granularPermissions` is empty so no `READ_MEDIA_*` photo permission is declared) and `ACCESS_WIFI_STATE`
 (from `expo-network`, which no screen imports).
 
 ## 1. Account: personal or organization

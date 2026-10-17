@@ -30,6 +30,7 @@ import { computeScores } from '@/features/today/scores';
 import { MorningCheckin } from '@/features/today/MorningCheckin';
 import { ScoresCard } from '@/features/today/ScoresCard';
 import { useRogoScoresPush } from '@/features/today/useRogoScoresPush';
+import { ShareTodayButton } from '@/features/share/ShareTodayButton';
 import { formatElapsed } from '@/features/workouts/summary';
 import { formatClock, formatCount, formatDistance } from '@/format';
 import { useNow } from '@/hooks/useNow';
@@ -61,15 +62,18 @@ export default function TodayScreen() {
     if (!data) return null;
     const watchTotals = totals && totals.at >= data.dayStart ? totals : null;
     const sleep = lastSleepSession(data.sleep);
+    const dayTotals = watchTotals ?? sumTotals(data.samples);
+    const scores = computeScores(data);
     return {
-      totals: watchTotals ?? sumTotals(data.samples),
+      totals: dayTotals,
+      share: { steps: dayTotals.steps, sleep, readiness: scores.readiness, strain: scores.today },
       totalsFromWatch: watchTotals !== null,
       heart: heartRateStats(data.samples),
       hourly: hourlySteps(data.samples),
       sleep,
       sleepScore: sleep ? scoreFor(sleep.start, sleep.end, data.sleepScores) : null,
       hasSamples: data.samples.length > 0,
-      scores: computeScores(data),
+      scores,
     };
   }, [data, totals]);
 
@@ -86,6 +90,11 @@ export default function TodayScreen() {
     <Screen
       title="Today"
       caption={new Date().toLocaleDateString(undefined, WEEKDAY_FORMAT)}
+      right={
+        data && view ? (
+          <ShareTodayButton day={view.share} nowMs={data.nowSec * 1000} />
+        ) : null
+      }
       refresh={{ refreshing: syncing, onRefresh: () => void sync(), enabled: canSync }}>
       <View style={styles.stack}>
         <WatchHero

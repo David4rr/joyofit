@@ -166,6 +166,6 @@ The package also type-checks against the iPhoneOS SDK (`swiftc -typecheck -sdk <
   the in-app part never ran on an iPhone); an upload of a Swift-written workout to Strava (the FIT builder and the rows are checked, Strava's
   answer is not); that the automatic pass sends a workout the watch synced while the app was in the background once the app is opened.
 - `ITSAppUsesNonExemptEncryption=false` is set; the protocol link implements AES/HMAC itself (not through Apple's OS crypto), so the owner has to
-  confirm that answer before App Store submission. The `expo-image-picker` plugin entry in `app.json` sets the photo library and camera strings
+  confirm that answer before App Store submission. The `expo-image-picker` and `expo-media-library` plugin entries in `app.json` set the photo library, photo-add and camera strings
   (camera: "Take photo" on the workout share screen) and drops the microphone string; `expo-secure-store` still adds a default Face ID string
   that JoyoFit does not need.
