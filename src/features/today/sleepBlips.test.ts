@@ -28,11 +28,11 @@ describe('sleep blips (an HRV check recorded as sleep)', () => {
     expect(lastSleepSession([...night, blip])?.end).toBe(wake);
   });
 
-  it('a real 30-minute nap stays', () => {
-    const nap: SleepSegment = { start: wake + 6 * H, end: wake + 6 * H + 30 * 60, type: 6, stage: 'light' };
+  it('a real 15-minute nap stays', () => {
+    const nap: SleepSegment = { start: wake + 6 * H, end: wake + 6 * H + 15 * 60, type: 6, stage: 'light' };
     const nights = buildNights([...night, nap], []);
     expect(nights).toHaveLength(2);
-    expect(nights.some((n) => n.nap && n.asleepSeconds === 30 * 60)).toBe(true);
+    expect(nights.some((n) => n.nap && n.asleepSeconds === 15 * 60)).toBe(true);
   });
 
   it('only blips: no sleep at all', () => {

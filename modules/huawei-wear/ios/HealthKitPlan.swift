@@ -207,7 +207,7 @@ public enum HealthKitPlan {
     /// Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap (`BLIP_GAP_SEC` in stats.ts).
     public static let blipGapSec: Int64 = 3600
     /// A stretch with less sleep than this (awake excluded) is not sleep, e.g. a 1-minute HRV check (`MIN_SLEEP_SEC` in stats.ts).
-    public static let minSleepSec: Int64 = 20 * 60
+    public static let minSleepSec: Int64 = 5 * 60
 
     /// `withoutBlips` (SleepReport.kt): drops stretches of sleep (gaps up to `blipGapSec`) holding less than `minSleepSec` asleep, the
     /// few still minutes of an HRV or stress check the watch records as sleep. Returns the kept segments sorted by start.

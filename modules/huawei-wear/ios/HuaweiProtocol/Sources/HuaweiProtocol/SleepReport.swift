@@ -50,7 +50,7 @@ public enum SleepReport {
     /// Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap (`BLIP_GAP_SEC` in `stats.ts`).
     public static let blipGapSec: Int64 = 3600
     /// A stretch with less sleep than this (awake excluded) is not sleep, e.g. a 1-minute HRV check (`MIN_SLEEP_SEC` in `stats.ts`).
-    public static let minSleepSec: Int64 = 20 * 60
+    public static let minSleepSec: Int64 = 5 * 60
 
     /// Drops unstaged segments within `sessionGapSec` of a staged one (`withoutStrayUnstaged` in `stats.ts`).
     public static func withoutStrayUnstaged(_ segments: [SleepSegment]) -> [SleepSegment] {

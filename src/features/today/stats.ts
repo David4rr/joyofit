@@ -93,8 +93,8 @@ export function withoutStrayUnstaged<T extends SleepSegment>(segments: readonly 
 /** Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap. */
 export const BLIP_GAP_SEC = 3600;
 
-/** A stretch with less sleep than this (awake excluded) is not sleep. */
-export const MIN_SLEEP_SEC = 20 * 60;
+/** A stretch with less sleep than this (awake excluded) is not sleep: a 1-2 minute HRV or stress check, not a short nap. */
+export const MIN_SLEEP_SEC = 5 * 60;
 
 /**
  * Drops stretches of sleep (segments chained with gaps up to {@link BLIP_GAP_SEC}) holding less than

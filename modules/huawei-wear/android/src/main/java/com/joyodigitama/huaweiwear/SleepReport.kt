@@ -88,7 +88,7 @@ internal object SleepReport {
   const val BLIP_GAP_SEC = 3600L
 
   /** A stretch with less sleep than this (awake excluded) is not sleep, e.g. a 1-minute HRV check (`MIN_SLEEP_SEC` in `stats.ts`). */
-  const val MIN_SLEEP_SEC = 20 * 60L
+  const val MIN_SLEEP_SEC = 5 * 60L
 
   /** A report is only pushed this long after waking up at most; later it is not a morning report any more. */
   const val MAX_AGE_SEC = 8 * 3600L
