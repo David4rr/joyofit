@@ -161,6 +161,7 @@ internal class WearRuntime private constructor(context: Context) {
 
   val forwarder = NotificationForwarder(appContext, settings, link, events, scope)
   val features = PhoneFeatures(appContext, PhoneFeatureSettings(appContext), link, events, scope, forwarder::nextMessageId)
+  val voipCalls = VoipCallNotifications(appContext, settings, features.calls)
   val healthConnect = HealthConnectExporter(appContext, syncStore, events, scope)
   val weatherSettings = WeatherSettings(appContext)
   val weather = WeatherController(appContext, weatherSettings, link, events, scope)

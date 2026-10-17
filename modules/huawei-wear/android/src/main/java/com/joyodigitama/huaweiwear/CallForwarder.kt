@@ -4,6 +4,7 @@
 package com.joyodigitama.huaweiwear
 
 import android.Manifest
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -25,8 +26,9 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Notifications
 /**
  * Shows incoming phone calls on the watch (Notifications 02/01 with the call type, stopped with the
  * stop/start-call types) and runs the watch's accept/reject answer (Calls 04/01) on the phone.
- * Phone state comes from the manifest [PhoneStateReceiver], so it works with the UI closed. All
- * packets go through one queue so ringing, stop and start-call keep their order.
+ * Phone state comes from the manifest [PhoneStateReceiver], so it works with the UI closed. VoIP calls
+ * (see [VoipCallNotifications]) ring the same way from their notification and are answered/declined
+ * through that notification's actions. All packets go through one queue so ringing, stop and start-call keep their order.
  */
 internal class CallForwarder(
   context: Context,
@@ -156,8 +158,11 @@ internal class CallForwarder(
     }
   }
 
-  /** HuaweiSupportProvider.onSetCallState(CALL_INCOMING): notification type `call`, name as text, number as `flight` text when the watch takes one. */
-  private suspend fun sendRinging(name: String, callerNumber: String?) {
+  /**
+   * HuaweiSupportProvider.onSetCallState(CALL_INCOMING): notification type `call`, name as text, number as `flight`
+   * text when the watch takes one. VoIP calls put the app name where a phone call puts the number.
+   */
+  private suspend fun sendRinging(name: String, callerNumber: String?, what: String = "Incoming call") {
     val handle = link.handle()
     if (handle == null) {
       log(LogDirection.INFO, "Incoming call not sent: the watch is not connected")
@@ -188,7 +193,7 @@ internal class CallForwarder(
       null,
       null,
     )
-    log(LogDirection.INFO, "Incoming call -> watch: \"$name\"")
+    log(LogDirection.INFO, "$what -> watch: \"$name\"")
     handle.session.request(packet, Timeouts.QUERY_MS, "IncomingCall")
   }
 
@@ -209,6 +214,49 @@ internal class CallForwarder(
     handle.session.send(packet, "StopCallNotification")
   }
 
+  // VoIP calls (WhatsApp, Telegram, Signal, Meet, LINE ...): CATEGORY_CALL notifications from the listener.
+
+  private val voip = VoipCallTracker<VoipCall>()
+
+  /**
+   * A VoIP call notification was posted or updated. An incoming one rings the watch like a phone call (the
+   * same Notifications 02/01 packet, type `call`); the same notification turning into an ongoing call sends
+   * start-call. Needs the same "Show incoming calls" setting as phone calls.
+   */
+  fun onVoipPosted(call: VoipCall, incoming: Boolean) {
+    if (incoming && !settings.callsEnabled) return
+    when (voip.onPosted(call.key, incoming, call)) {
+      VoipCallPolicy.Step.RING -> queue.trySend { sendRinging(call.caller, call.appName, "Incoming ${call.appName} call") }
+      VoipCallPolicy.Step.ANSWERED -> queue.trySend { stopNotification(startCall = true) }
+      else -> Unit
+    }
+  }
+
+  /** The VoIP call notification went away (answered or declined elsewhere, missed, ended): stop the ring. */
+  fun onVoipRemoved(key: String) {
+    if (voip.onRemoved(key) == VoipCallPolicy.Step.STOP) queue.trySend { stopNotification(startCall = false) }
+  }
+
+  /**
+   * The watch's accept/reject for a ringing VoIP call: fires the notification's own answer or decline
+   * action. Apps that offer no such action are ignored, as is an answer that Android refuses to start
+   * from the background (answer actions are often activities).
+   */
+  private fun onVoipWatchAnswer(call: VoipCall, accept: Boolean) {
+    val label = if (accept) "accept" else "reject"
+    val action = if (accept) call.answer else call.decline
+    if (action == null) {
+      log(LogDirection.INFO, "Call $label from the watch ignored: ${call.appName} has no $label action")
+      return
+    }
+    try {
+      action.send()
+      log(LogDirection.INFO, "${call.appName} call ${label}ed through its notification action")
+    } catch (e: PendingIntent.CanceledException) {
+      log(LogDirection.ERROR, "Call $label from the watch: the ${call.appName} action is gone")
+    }
+  }
+
   /** AsynchronousResponse.handleCallControls + GBCallControlReceiver (TelecomManager, API 28+; the app's minSdk is 29). */
   fun onWatchAnswer(action: Calls.AnswerCallResponse.Action) {
     val accept = when (action) {
@@ -225,8 +273,10 @@ internal class CallForwarder(
       log(LogDirection.INFO, "Call $label from the watch ignored: disabled in settings")
       return
     }
-    if (synchronized(lock) { lastState } != TelephonyManager.CALL_STATE_RINGING) {
-      log(LogDirection.INFO, "Call $label from the watch ignored: the phone is not ringing")
+    val ringing = synchronized(lock) { lastState } == TelephonyManager.CALL_STATE_RINGING
+    if (!ringing) {
+      val voipCall = voip.current()
+      if (voipCall != null) onVoipWatchAnswer(voipCall, accept) else log(LogDirection.INFO, "Call $label from the watch ignored: the phone is not ringing")
       return
     }
     if (!granted(Manifest.permission.ANSWER_PHONE_CALLS)) {

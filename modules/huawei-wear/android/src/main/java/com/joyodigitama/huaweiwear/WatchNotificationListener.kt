@@ -10,10 +10,15 @@ import android.service.notification.StatusBarNotification
  */
 class WatchNotificationListener : NotificationListenerService() {
   override fun onNotificationPosted(sbn: StatusBarNotification) {
-    WearRuntime.get(this).forwarder.onPosted(sbn)
+    val runtime = WearRuntime.get(this)
+    // Call notifications (VoIP) ring the watch as calls and are never forwarded as ordinary notifications.
+    if (runtime.voipCalls.onPosted(sbn)) return
+    runtime.forwarder.onPosted(sbn)
   }
 
   override fun onNotificationRemoved(sbn: StatusBarNotification) {
-    WearRuntime.get(this).forwarder.onRemoved(sbn)
+    val runtime = WearRuntime.get(this)
+    runtime.voipCalls.onRemoved(sbn)
+    runtime.forwarder.onRemoved(sbn)
   }
 }

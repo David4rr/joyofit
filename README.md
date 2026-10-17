@@ -190,7 +190,7 @@ request are in the neighbouring `Sync:`, `StepDataCount` and `Workout` lines.
 
 In Settings, grant **notification access** (on Android 13+ a sideloaded app must first be allowed
 under App info → ⋮ → *Allow restricted settings*), then switch on forwarding. Ongoing notifications,
-group summaries, local-only ones, calls, media controls, progress bars and JoyoFit's own are skipped.
+group summaries, local-only ones, calls (VoIP calls ring the watch as calls, see *Calls* below), media controls, progress bars and JoyoFit's own are skipped.
 Apps you have not chosen are on, except system apps; **Notification apps** (Settings → Notifications & calls) overrides either way.
 Notifications only reach the watch while it is connected, so use background mode to keep it connected.
 
@@ -226,6 +226,16 @@ when the watch connects, whenever the watch asks for it (opening its weather app
   calls from the watch* on (needs the Answer phone calls permission), the watch's accept and reject buttons
   call `TelecomManager.acceptRingingCall()` / `endCall()`. There is no mute button: the watch protocol
   Gadgetbridge knows only has accept and reject. Outgoing calls are not shown.
+- **VoIP calls** (WhatsApp, WhatsApp Business, Telegram, Signal, Google Meet/Duo, LINE ...): the same *Show incoming
+  calls on the watch* switch also rings the watch for an app's incoming-call notification (notification category
+  *call*, or a `CallStyle` of type incoming), with the caller from the notification and the app name on the
+  number line when the watch has one. The dialer is left to the phone-state path, so a normal call never rings twice.
+  An *ongoing* call notification never rings: a `CallStyle` type decides when there is one; otherwise only a
+  notification with a full-screen intent, an insistent alert or both an answer and a decline action counts as ringing.
+  The ring stops when the notification goes away (answered, declined or missed), and an answer on the phone sends
+  start-call. **Notification apps** still applies: an app you switched off does not ring. The watch's reject button
+  fires the notification's decline action; the accept button fires its answer action, or is ignored if there is none
+  (an app may refuse to start its call screen from the background). Both follow *Answer and reject calls from the watch*.
 - **Alarms**: Watch tab → *Alarms*. The screen reads the watch whenever it opens with the watch connected,
   keeps the last copy on the phone, and every change pushes the whole list and shows what the watch reports
   back. Five event alarms (name, time, weekdays) and, if the watch has one, the smart alarm.
