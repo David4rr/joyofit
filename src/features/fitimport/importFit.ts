@@ -16,7 +16,8 @@
  *   `workouts` table, so each minute of the ride's heart rate is written there too, `imported = 1`, as the Huawei
  *   import does for its minutes. A minute that already exists (the watch was recording it) is never touched.
  *
- * Cadence and power have no column in `workout_points`; their averages and maxima go into `summary_json`.
+ * Per-sample cadence, power, speed and step length go into `workout_points`; the averages and maxima of cadence and
+ * power also stay in `summary_json`, and a file with two or more laps adds them as `summary_json.laps`.
  */
 import type { SQLiteDatabase } from 'expo-sqlite';
 
@@ -47,8 +48,8 @@ export type FitImportDb = Pick<SQLiteDatabase, 'getAllAsync' | 'withExclusiveTra
 /** Over this share of the file's own time span, a stored workout is the same activity. */
 export const OVERLAP_SHARE = 0.5;
 
-/** Rows per multi-row INSERT: 150 rows of 6 bound values stay under the 999-variable limit of older SQLite builds. */
-const CHUNK = 150;
+/** Rows per multi-row INSERT: 90 rows of 10 bound values stay under the 999-variable limit of older SQLite builds. */
+const CHUNK = 90;
 
 function summaryOf(a: FitActivity): string {
   const summary: Record<string, unknown> = {
@@ -70,6 +71,7 @@ function summaryOf(a: FitActivity): string {
     avgPower: a.avgPower ?? undefined,
     maxPower: a.maxPower ?? undefined,
     normalizedPower: a.normalizedPower ?? undefined,
+    laps: a.laps.length > 0 ? a.laps : undefined,
     importedFrom: a.manufacturer ?? 'FIT file',
   };
   return JSON.stringify(summary);
@@ -133,8 +135,9 @@ async function insertAll(txn: Pick<SQLiteDatabase, 'runAsync'>, a: FitActivity):
   for (let i = 0; i < a.points.length; i += CHUNK) {
     const chunk = a.points.slice(i, i + CHUNK);
     await txn.runAsync(
-      `INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr) VALUES ${chunk.map(() => '(?, ?, ?, ?, ?, ?)').join(', ')}`,
-      chunk.flatMap((p) => [id, p.ts, p.lat, p.lon, p.alt, p.hr]),
+      `INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power)
+       VALUES ${chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')}`,
+      chunk.flatMap((p) => [id, p.ts, p.lat, p.lon, p.alt, p.hr, p.speed, p.cadence, p.stride, p.power]),
     );
   }
   const minutes = minuteHeartRates(a);

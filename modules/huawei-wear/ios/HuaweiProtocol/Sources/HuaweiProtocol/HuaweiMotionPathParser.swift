@@ -28,7 +28,7 @@ public struct GpsFix: Equatable {
     public let startsSegment: Bool
 }
 
-/// One sensor reading (heart rate in bpm, barometric altitude in metres) at `ts` unix seconds.
+/// One sensor reading (heart rate in bpm, barometric altitude in metres, cadence in steps per minute) at `ts` unix seconds.
 public struct SensorReading: Equatable {
     public let ts: Int64
     public let value: Double
@@ -38,6 +38,7 @@ public struct MotionTrack {
     public let gps: [GpsFix]
     public let heartRates: [SensorReading]
     public let altitudes: [SensorReading]
+    public let cadences: [SensorReading]
 }
 
 /// The fields of one `Motion path detail data` object that the importer reads. Times are milliseconds.
@@ -74,8 +75,9 @@ public struct RawMotionPath {
 /// `HW_EXT_TRACK_DETAIL@i` followed by one record per line:
 ///
 ///  - `tp=lbs;k=N;lat=;lon=;alt=;t=<seconds, scientific notation>;` a GPS fix. `lat=90.0;lon=-80.0` is a pause marker.
-///  - `tp=h-r;k=<ms>;v=<bpm>;` heart rate, `tp=alti;k=<ms>;v=<m>;` barometric altitude, `tp=s-r` cadence (not stored).
-///  - `tp=p-m`, `sec`, `rs`, `b-p-m` summaries (not used).
+///  - `tp=h-r;k=<ms>;v=<bpm>;` heart rate, `tp=alti;k=<ms>;v=<m>;` barometric altitude, `tp=s-r;k=<ms>;v=<steps/min>;` cadence.
+///  - `tp=p-m;k=<km index>;v=<seconds for that km>`, `sec`, `rs`, `b-p-m` per-kilometre or per-session summaries, not per-timestamp
+///    readings, so not stored.
 ///
 /// The object is sometimes invalid JSON. `fromBrokenText` reads the same fields straight off the raw text then: the line records do not depend
 /// on the JSON around them.
@@ -85,6 +87,7 @@ public enum HuaweiMotionPathParser {
 
     private static let hrRangeMin = 20
     private static let hrRangeMax = 250
+    private static let cadenceRangeMax = 300
 
     /// No human burns more than this many kcal a minute, so a larger figure is not kcal.
     private static let maxKcalPerMinute = 40.0
@@ -162,6 +165,7 @@ public enum HuaweiMotionPathParser {
         var gps = [GpsFix]()
         var heartRates = [SensorReading]()
         var altitudes = [SensorReading]()
+        var cadences = [SensorReading]()
         var pendingBreak = false
         let bytes = Array(attribute.utf8)
         let tp = Array("tp=".utf8)
@@ -237,10 +241,17 @@ public enum HuaweiMotionPathParser {
                 if let ms = double(field("k")), let metres = double(field("v")) {
                     altitudes.append(SensorReading(ts: KotlinNumbers.toLong(ms / 1000.0), value: metres))
                 }
+            case "s-r":
+                if let ms = double(field("k")), let d = double(field("v")) {
+                    let spm = KotlinNumbers.roundToInt(d)
+                    if spm >= 1 && spm <= cadenceRangeMax {
+                        cadences.append(SensorReading(ts: KotlinNumbers.toLong(ms / 1000.0), value: Double(spm)))
+                    }
+                }
             default: break
             }
         }
-        return MotionTrack(gps: gps, heartRates: heartRates, altitudes: altitudes)
+        return MotionTrack(gps: gps, heartRates: heartRates, altitudes: altitudes, cadences: cadences)
     }
 
     /// The workout `raw` describes, or nil when it has no usable start or no duration at all.
@@ -249,6 +260,7 @@ public enum HuaweiMotionPathParser {
         var times = track.gps.map(\.ts)
         times += track.heartRates.map(\.ts)
         times += track.altitudes.map(\.ts)
+        times += track.cadences.map(\.ts)
         guard let start = raw.startMs.map({ $0 / 1000 }) ?? times.min() else { return nil }
         let elapsedMs = raw.endMs.map { $0 - start * 1000 }
         let movingSec = totalTimeSeconds(raw.totalTime, elapsedMs)
@@ -269,10 +281,11 @@ public enum HuaweiMotionPathParser {
         let kind = WorkoutSportTypes.kind(HuaweiExportSports.joyofitType(raw.sportType))
 
         var points = [WorkoutPoint]()
-        points.reserveCapacity(track.gps.count + track.heartRates.count + track.altitudes.count)
+        points.reserveCapacity(track.gps.count + track.heartRates.count + track.altitudes.count + track.cadences.count)
         for g in track.gps { points.append(WorkoutPoint(ts: g.ts, lat: g.lat, lon: g.lon, alt: g.alt, hr: nil)) }
         for h in track.heartRates { points.append(WorkoutPoint(ts: h.ts, lat: nil, lon: nil, alt: nil, hr: Int(h.value))) }
         for a in track.altitudes { points.append(WorkoutPoint(ts: a.ts, lat: nil, lon: nil, alt: a.value, hr: nil)) }
+        for c in track.cadences { points.append(WorkoutPoint(ts: c.ts, lat: nil, lon: nil, alt: nil, hr: nil, cadence: Int(c.value))) }
         // Stable: GPS fixes before sensor readings of the same second.
         let order = points.indices.sorted { points[$0].ts != points[$1].ts ? points[$0].ts < points[$1].ts : $0 < $1 }
         let sorted = order.map { points[$0] }

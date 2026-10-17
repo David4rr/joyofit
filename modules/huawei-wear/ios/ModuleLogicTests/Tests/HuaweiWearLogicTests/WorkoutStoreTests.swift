@@ -135,6 +135,22 @@ final class WorkoutStoreTests: XCTestCase {
         XCTAssertEqual(stored[1], [-6.2, 106.8, nil, nil])
     }
 
+    func testSavesSpeedCadenceStrideAndPowerOfEachPoint() throws {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let workouts = WorkoutStore(store)
+        let points = [
+            WorkoutPoint(ts: 1_700_000_000, lat: nil, lon: nil, alt: nil, hr: 150, speed: 3.1, cadence: 172, stride: 1.05, power: 240),
+            WorkoutPoint(ts: 1_700_000_010, lat: -6.2, lon: 106.8, alt: nil, hr: nil),
+        ]
+
+        XCTAssertTrue(try workouts.save(record(points: points)))
+
+        let stored = try rows(store, "SELECT speed, cadence, stride, power FROM workout_points ORDER BY ts") { s in
+            (0..<4).map { s.isNull(Int32($0)) ? nil : s.double(Int32($0)) } as [Double?]
+        }
+        XCTAssertEqual(stored, [[3.1, 172, 1.05, 240], [nil, nil, nil, nil]])
+    }
+
     func testSavingAgainReplacesTheWorkoutAndItsPointsKeepingTheId() throws {
         let store = SyncStore(url: temporaryDatabaseURL())
         let workouts = WorkoutStore(store)

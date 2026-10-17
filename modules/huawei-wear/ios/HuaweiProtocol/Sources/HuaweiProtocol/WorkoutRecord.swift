@@ -4,20 +4,34 @@
 import Foundation
 
 /// One sample of the route / heart-rate series. GPS points carry lat/lon (and the GPS altitude when the file has one); data samples carry the
-/// heart rate and the barometric altitude. A point has only the fields its source had.
+/// heart rate, the barometric altitude and the per-sample motion fields. A point has only the fields its source had; a missing or zero reading
+/// is nil.
+///
+/// Units: `speed` metres per second, `cadence` steps per minute (revolutions per minute when cycling), `stride` metres per step, `power` watts.
 public struct WorkoutPoint: Equatable, Sendable {
     public let ts: Int64
     public let lat: Double?
     public let lon: Double?
     public let alt: Double?
     public let hr: Int?
+    public let speed: Double?
+    public let cadence: Int?
+    public let stride: Double?
+    public let power: Int?
 
-    public init(ts: Int64, lat: Double?, lon: Double?, alt: Double?, hr: Int?) {
+    public init(
+        ts: Int64, lat: Double?, lon: Double?, alt: Double?, hr: Int?,
+        speed: Double? = nil, cadence: Int? = nil, stride: Double? = nil, power: Int? = nil
+    ) {
         self.ts = ts
         self.lat = lat
         self.lon = lon
         self.alt = alt
         self.hr = hr
+        self.speed = speed
+        self.cadence = cadence
+        self.stride = stride
+        self.power = power
     }
 }
 
@@ -213,10 +227,30 @@ public enum WorkoutBuilder {
     public static func points(_ parts: WorkoutParts) -> [WorkoutPoint] {
         var out = [WorkoutPoint]()
         out.reserveCapacity(parts.samples.count + parts.gps.count)
+        let kind = WorkoutSportTypes.kind(Int(UInt8(bitPattern: parts.totals.type)))
+        // Same cadence field choice as SampleStats.of: the step-rate byte for new-algorithm walking, the cadence short otherwise.
+        let walkingSteps = parts.newSteps && (kind == "WALKING" || kind == "OUTDOOR_WALKING")
         for d in parts.samples {
             let hr = validHeartRate(d.heartRate)
             let alt = d.altitude.map { Double($0) / 10.0 }
-            if hr != nil || alt != nil { out.append(WorkoutPoint(ts: Int64(UInt32(bitPattern: d.timestamp)), lat: nil, lon: nil, alt: alt, hr: hr)) }
+            // The wire speed is decimetres per second (SampleStats.maxSpeed divides by 10 the same way); step length is centimetres.
+            // 0 and -1 (0xFF in the step-rate byte) are "no reading".
+            let speed: Double? = d.speed > 0 ? Double(d.speed) / 10.0 : nil
+            let cadence: Int?
+            if walkingSteps {
+                let rate = Int(UInt8(bitPattern: d.stepRate))
+                cadence = (1...0xFE).contains(rate) ? rate : nil
+            } else {
+                cadence = d.cadence > 0 ? Int(d.cadence) : nil
+            }
+            let stride: Double? = d.stepLength > 0 ? Double(d.stepLength) / 100.0 : nil
+            let power: Int? = d.cyclingPower > 0 ? Int(d.cyclingPower) : nil
+            if hr != nil || alt != nil || speed != nil || cadence != nil || stride != nil || power != nil {
+                out.append(WorkoutPoint(
+                    ts: Int64(UInt32(bitPattern: d.timestamp)), lat: nil, lon: nil, alt: alt, hr: hr,
+                    speed: speed, cadence: cadence, stride: stride, power: power
+                ))
+            }
         }
         for p in parts.gps {
             out.append(WorkoutPoint(ts: Int64(UInt32(bitPattern: p.timestamp)), lat: p.latitude, lon: p.longitude, alt: p.altitudeSupported ? p.altitude : nil, hr: nil))

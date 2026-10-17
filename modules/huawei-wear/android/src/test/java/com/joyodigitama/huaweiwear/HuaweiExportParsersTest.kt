@@ -202,6 +202,12 @@ class HuaweiExportParsersTest {
     assertEquals(7.5, gps[1].alt!!, 0.0)
     assertEquals(2, workout.points.count { it.hr != null })
     assertEquals(1, workout.points.count { it.lat == null && it.alt != null })
+    // tp=s-r is cadence in steps per minute at its own timestamp; tp=p-m (a per-km pace summary) is not a point.
+    val cadence = workout.points.filter { it.cadence != null }
+    assertEquals(1, cadence.size)
+    assertEquals(1_750_000_100L, cadence[0].ts)
+    assertEquals(160, cadence[0].cadence)
+    assertTrue(workout.points.all { it.speed == null && it.stride == null && it.power == null })
     assertEquals(workout.points.map { it.ts }, workout.points.map { it.ts }.sorted())
 
     val summary = JSONObject(workout.summaryJson)

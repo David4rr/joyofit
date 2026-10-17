@@ -106,13 +106,22 @@ export interface WorkoutRow {
   imported: boolean;
 }
 
-/** One `workout_points` row: GPS points have lat/lon, data samples have hr and altitude. */
+/**
+ * One `workout_points` row. Every source stores only the fields it had: GPS points have lat/lon, data samples have
+ * hr and altitude, and the per-sample motion fields come from the watch (all four), a FIT file (cadence, power,
+ * speed, stride) or a Huawei export (cadence only). `speed` is metres per second, `cadence` steps per minute
+ * (revolutions per minute when cycling), `stride` metres per step, `power` watts.
+ */
 export interface WorkoutPointRow {
   ts: number;
   lat: number | null;
   lon: number | null;
   alt: number | null;
   hr: number | null;
+  speed: number | null;
+  cadence: number | null;
+  stride: number | null;
+  power: number | null;
 }
 
 const WORKOUT_COLUMNS = `id, workout_number AS workoutNumber, start, end, sport_type AS sportType,
@@ -148,7 +157,7 @@ export async function getWorkout(
 
 export function listWorkoutPoints(db: SQLiteDatabase, workoutId: number): Promise<WorkoutPointRow[]> {
   return db.getAllAsync<WorkoutPointRow>(
-    'SELECT ts, lat, lon, alt, hr FROM workout_points WHERE workout_id = ? ORDER BY ts',
+    'SELECT ts, lat, lon, alt, hr, speed, cadence, stride, power FROM workout_points WHERE workout_id = ? ORDER BY ts',
     workoutId,
   );
 }

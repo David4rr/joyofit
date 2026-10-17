@@ -26,6 +26,12 @@ export interface FixtureOptions {
   /** Metres. */
   distance?: number;
   calories?: number;
+  /** Number of `lap` messages that split the file evenly (default 1, the single lap a bike computer writes without lap presses). */
+  laps?: number;
+  /** Adds `step_length` (1050 mm) to every record. */
+  stepLength?: boolean;
+  /** Adds `fractional_cadence` (0.5) to every record. */
+  fractionalCadence?: boolean;
 }
 
 const MESG = { fileId: 0, session: 18, lap: 19, record: 20, activity: 34 } as const;
@@ -65,6 +71,8 @@ export function buildActivityFile(options: FixtureOptions): Uint8Array {
   const fields: FitFieldDef[] = [{ num: 253, type: 'uint32' }];
   if (gps) fields.push({ num: 0, type: 'sint32' }, { num: 1, type: 'sint32' });
   fields.push({ num: 2, type: 'uint16' }, { num: 3, type: 'uint8' }, { num: 4, type: 'uint8' }, { num: 5, type: 'uint32' }, { num: 6, type: 'uint16' }, { num: 7, type: 'uint16' });
+  if (options.fractionalCadence) fields.push({ num: 53, type: 'uint8' });
+  if (options.stepLength) fields.push({ num: 85, type: 'uint16' });
   const record = fit.define(1, MESG.record, fields);
   const count = Math.floor(elapsed / step) + 1;
   for (let i = 0; i < count; i++) {
@@ -73,18 +81,27 @@ export function buildActivityFile(options: FixtureOptions): Uint8Array {
     if (gps) values.push(toSemicircles(-6.2 + i * 0.0001), toSemicircles(106.8));
     // Altitude (m + 500) * 5: 10 m rising 1 m per record.
     values.push((10 + i + 500) * 5, 120 + (i % 40), 85, Math.round(((distance * t) / elapsed) * 100), Math.round((distance / timer) * 1000), 200);
+    if (options.fractionalCadence) values.push(64);
+    if (options.stepLength) values.push(10_500);
     fit.write(record, values);
   }
 
   if (options.withSession ?? true) {
     const avgSpeed = Math.round((distance / timer) * 1000);
-    message(fit, 2, MESG.lap, [
-      [253, 'uint32', start + elapsed],
-      [2, 'uint32', start],
-      [7, 'uint32', elapsed * 1000],
-      [8, 'uint32', timer * 1000],
-      [9, 'uint32', distance * 100],
-    ]);
+    const laps = options.laps ?? 1;
+    for (let n = 0; n < laps; n++) {
+      const lapElapsed = elapsed / laps;
+      message(fit, 2, MESG.lap, [
+        [253, 'uint32', start + Math.round(lapElapsed * (n + 1))],
+        [2, 'uint32', start + Math.round(lapElapsed * n)],
+        [7, 'uint32', Math.round(lapElapsed * 1000)],
+        [8, 'uint32', Math.round((lapElapsed * timer * 1000) / elapsed)],
+        [9, 'uint32', Math.round((distance * 100) / laps)],
+        [15, 'uint8', 130 + n],
+        [16, 'uint8', 160 + n],
+        [17, 'uint8', 80 + n],
+      ]);
+    }
     message(fit, 3, MESG.session, [
       [253, 'uint32', start + elapsed],
       [2, 'uint32', start],

@@ -5,6 +5,7 @@ import { hrChartProps, routeViewPoints } from '@/features/social/detailAdapter';
 import { buildWatchPost, canShareToRogo, hrSeries, routePairs } from '@/features/social/watchPost';
 
 const START = 1_760_000_000;
+const NO_MOTION = { speed: null, cadence: null, stride: null, power: null };
 
 function workout(over: Partial<WorkoutRow> = {}): WorkoutRow {
   return {
@@ -28,11 +29,11 @@ function workout(over: Partial<WorkoutRow> = {}): WorkoutRow {
 
 /** One heart-rate reading per second, `bpm` constant. */
 function hrPoints(seconds: number, bpm = 140): WorkoutPointRow[] {
-  return Array.from({ length: seconds }, (_, i) => ({ ts: START + i, lat: null, lon: null, alt: null, hr: bpm }));
+  return Array.from({ length: seconds }, (_, i) => ({ ts: START + i, lat: null, lon: null, alt: null, hr: bpm, ...NO_MOTION }));
 }
 
 function fixes(n: number): WorkoutPointRow[] {
-  return Array.from({ length: n }, (_, i) => ({ ts: START + i, lat: -6.2 + i * 1e-5, lon: 106.8 + i * 1e-5, alt: null, hr: null }));
+  return Array.from({ length: n }, (_, i) => ({ ts: START + i, lat: -6.2 + i * 1e-5, lon: 106.8 + i * 1e-5, alt: null, hr: null, ...NO_MOTION }));
 }
 
 describe('canShareToRogo', () => {
@@ -73,9 +74,9 @@ describe('hrSeries', () => {
 
   test('averages the readings of one bucket and leaves a gap null', () => {
     const points: WorkoutPointRow[] = [
-      { ts: START, lat: null, lon: null, alt: null, hr: 100 },
-      { ts: START + 1, lat: null, lon: null, alt: null, hr: 111 },
-      { ts: START + 7, lat: null, lon: null, alt: null, hr: 150 },
+      { ts: START, lat: null, lon: null, alt: null, hr: 100, ...NO_MOTION },
+      { ts: START + 1, lat: null, lon: null, alt: null, hr: 111, ...NO_MOTION },
+      { ts: START + 7, lat: null, lon: null, alt: null, hr: 150, ...NO_MOTION },
     ];
     const expected = Array<number | null>(600).fill(null);
     expected[0] = 106;
@@ -102,7 +103,7 @@ describe('routePairs', () => {
   });
 
   test('drops fixes outside the globe and needs two valid ones', () => {
-    const bad: WorkoutPointRow[] = [{ ts: START, lat: 91, lon: 0, alt: null, hr: null }, ...fixes(1)];
+    const bad: WorkoutPointRow[] = [{ ts: START, lat: 91, lon: 0, alt: null, hr: null, ...NO_MOTION }, ...fixes(1)];
     expect(routePairs(bad)).toBeNull();
     expect(routePairs([])).toBeNull();
   });
@@ -151,8 +152,8 @@ describe('detail adapter', () => {
   test('hrChartProps places readings intervalSec apart and skips gaps', () => {
     expect(hrChartProps({ intervalSec: 5, bpm: [100, null, 120] }, START)).toEqual({
       points: [
-        { ts: START, lat: null, lon: null, alt: null, hr: 100 },
-        { ts: START + 10, lat: null, lon: null, alt: null, hr: 120 },
+        { ts: START, lat: null, lon: null, alt: null, hr: 100, ...NO_MOTION },
+        { ts: START + 10, lat: null, lon: null, alt: null, hr: 120, ...NO_MOTION },
       ],
       start: START,
       end: START + 15,

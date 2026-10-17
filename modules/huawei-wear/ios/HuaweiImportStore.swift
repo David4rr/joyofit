@@ -129,10 +129,15 @@ public final class SqliteHuaweiImportStore: HuaweiImportStore {
                 )
                 if db.changes == 0 { return WorkoutWrite(added: false, points: 0) }
                 let id = db.lastInsertRowId
-                let point = try db.prepare("INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr) VALUES (?, ?, ?, ?, ?, ?)")
+                let point = try db.prepare(
+                    "INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                )
                 for p in workout.points {
                     point.reset()
-                    try point.bind([.int(id), .int(p.ts), p.lat.map { .double($0) } ?? .null, p.lon.map { .double($0) } ?? .null, p.alt.map { .double($0) } ?? .null, .integer(p.hr)])
+                    try point.bind([
+                        .int(id), .int(p.ts), p.lat.map { .double($0) } ?? .null, p.lon.map { .double($0) } ?? .null, p.alt.map { .double($0) } ?? .null,
+                        .integer(p.hr), p.speed.map { .double($0) } ?? .null, .integer(p.cadence), p.stride.map { .double($0) } ?? .null, .integer(p.power),
+                    ])
                     while try point.step() {}
                 }
                 return WorkoutWrite(added: true, points: workout.points.count)

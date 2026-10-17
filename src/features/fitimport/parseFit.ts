@@ -6,8 +6,8 @@
  * What is read: `file_id` (must be an activity; the manufacturer names the workout), the `session` messages (totals:
  * start, elapsed and timer time, distance, calories, heart rate, speed, ascent, cadence, power; several sessions, as
  * after a pause in some head units, are added up into one workout) and the `record` messages (one per sample: time,
- * position, altitude, heart rate), which become `workout_points`. Cadence and power exist only as session totals: the
- * `workout_points` table has no columns for them.
+ * position, altitude, heart rate, speed, cadence, power, step length), which become `workout_points`, and the `lap`
+ * messages (kept as `laps` when the file has two or more).
  */
 import { Decoder, type FitMessages, Stream } from '@garmin/fitsdk';
 
@@ -105,6 +105,27 @@ export interface FitPoint {
   lon: number | null;
   alt: number | null;
   hr: number | null;
+  /** Metres per second (`enhanced_speed`, else `speed`); 0 while stopped. */
+  speed: number | null;
+  /**
+   * Steps per minute for a foot sport, rpm for a bike. FIT counts running and walking cadence per leg (strides per
+   * minute), so a foot sport's `cadence` + `fractional_cadence` is doubled to steps per minute; a bike's is stored as is.
+   */
+  cadence: number | null;
+  /** Metres per step (`step_length` is millimetres). */
+  stride: number | null;
+  /** Watts; 0 while coasting. */
+  power: number | null;
+}
+
+/** One `lap` message. Times are unix seconds, cadence is steps per minute (foot) or rpm (bike) as in `FitPoint.cadence`. */
+export interface FitLap {
+  startTs: number;
+  endTs: number;
+  distanceM: number | null;
+  avgHr: number | null;
+  maxHr: number | null;
+  avgCadence: number | null;
 }
 
 export interface FitActivity {
@@ -142,11 +163,14 @@ export interface FitActivity {
   avgPower: number | null;
   maxPower: number | null;
   normalizedPower: number | null;
+  /** The file's laps in time order; empty unless it has at least two. */
+  laps: FitLap[];
   points: FitPoint[];
 }
 
 type Session = NonNullable<FitMessages['sessionMesgs']>[number];
 type RecordMesg = NonNullable<FitMessages['recordMesgs']>[number];
+type LapMesg = NonNullable<FitMessages['lapMesgs']>[number];
 
 /** Decoded without `convertDateTimesToDates`, so a timestamp is a number of seconds although the SDK types it as a Date. */
 const seconds = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
@@ -154,6 +178,10 @@ const num = (value: unknown): number | null => (typeof value === 'number' && Num
 const positive = (value: unknown): number | null => {
   const n = num(value);
   return n !== null && n > 0 ? n : null;
+};
+const nonNegative = (value: unknown): number | null => {
+  const n = num(value);
+  return n !== null && n >= 0 ? n : null;
 };
 
 /** FIT timestamps below this are time since the device powered on, not UTC (the profile's `date_time` rule). */
@@ -163,7 +191,7 @@ const failure = (reason: FitImportFailure, message: string): FitImportError => (
 
 const semicirclesToDegrees = (value: number): number => (value * 180) / 2 ** 31;
 
-function point(record: RecordMesg): FitPoint | null {
+function point(record: RecordMesg, foot: boolean): FitPoint | null {
   const t = seconds(record.timestamp);
   if (t === null || t < MIN_UTC_FIT_TIME) return null;
   const rawLat = num(record.positionLat);
@@ -180,12 +208,44 @@ function point(record: RecordMesg): FitPoint | null {
     }
   }
   const hr = num(record.heartRate);
+  const speed = nonNegative(record.enhancedSpeed) ?? nonNegative(record.speed);
+  const power = nonNegative(record.power);
+  const stepLength = positive(record.stepLength);
   return {
     ts: t + FIT_EPOCH_OFFSET,
     lat,
     lon,
     alt: num(record.enhancedAltitude) ?? num(record.altitude),
     hr: hr !== null && hr > 0 && hr < 255 ? Math.round(hr) : null,
+    speed,
+    cadence: cadenceOf(record.cadence, record.fractionalCadence, foot),
+    stride: stepLength === null ? null : stepLength / 1000,
+    power: power === null ? null : Math.round(power),
+  };
+}
+
+/** `cadence` (+ `fractional_cadence`) in the unit the point stores; null when the file has no reading. */
+function cadenceOf(cadence: unknown, fractional: unknown, foot: boolean): number | null {
+  const whole = nonNegative(cadence);
+  if (whole === null) return null;
+  return Math.round((whole + (nonNegative(fractional) ?? 0)) * (foot ? 2 : 1));
+}
+
+/** One lap of a file; null without a start or a length. */
+function lap(mesg: LapMesg, foot: boolean): FitLap | null {
+  const start = seconds(mesg.startTime);
+  const elapsed = positive(mesg.totalElapsedTime) ?? positive(mesg.totalTimerTime);
+  if (start === null || start < MIN_UTC_FIT_TIME || elapsed === null) return null;
+  const avgHr = positive(mesg.avgHeartRate);
+  const maxHr = positive(mesg.maxHeartRate);
+  const cadence = cadenceOf(mesg.avgCadence, mesg.avgFractionalCadence, foot);
+  return {
+    startTs: start + FIT_EPOCH_OFFSET,
+    endTs: Math.round(start + elapsed) + FIT_EPOCH_OFFSET,
+    distanceM: positive(mesg.totalDistance),
+    avgHr: avgHr === null ? null : Math.round(avgHr),
+    maxHr: maxHr === null ? null : Math.round(maxHr),
+    avgCadence: cadence !== null && cadence > 0 ? cadence : null,
   };
 }
 
@@ -261,22 +321,27 @@ export function parseFitActivity(bytes: Uint8Array): FitActivity | FitImportErro
     .sort((a, b) => (seconds(a.startTime) ?? 0) - (seconds(b.startTime) ?? 0));
   if (sessions.length === 0) return failure('no-session', 'This FIT file has no activity session (no totals for a ride or run), so there is nothing to import.');
 
-  const points = (messages.recordMesgs ?? [])
-    .map(point)
-    .filter((p): p is FitPoint => p !== null)
-    .sort((a, b) => a.ts - b.ts);
-
   const startFit = Math.min(...sessions.map((s) => seconds(s.startTime) as number));
   if (startFit < MIN_UTC_FIT_TIME) return failure('no-session', 'This FIT file has no real start time (the device had no clock set), so it cannot be placed in your history.');
   const start = startFit + FIT_EPOCH_OFFSET;
+
+  const longest = sessions.reduce((a, b) => ((positive(b.totalTimerTime) ?? 0) > (positive(a.totalTimerTime) ?? 0) ? b : a));
+  const sport = sportFor(longest.sport, longest.subSport);
+  const points = (messages.recordMesgs ?? [])
+    .map((r) => point(r, sport.foot))
+    .filter((p): p is FitPoint => p !== null)
+    .sort((a, b) => a.ts - b.ts);
+  const laps = (messages.lapMesgs ?? [])
+    .map((l) => lap(l, sport.foot))
+    .filter((l): l is FitLap => l !== null)
+    .sort((a, b) => a.startTs - b.startTs);
+
   const elapsedOf = (s: Session): number | null => positive(s.totalElapsedTime) ?? positive(s.totalTimerTime);
   let end = Math.max(...sessions.map((s) => (seconds(s.startTime) as number) + (elapsedOf(s) ?? 0))) + FIT_EPOCH_OFFSET;
   const lastPoint = points[points.length - 1];
   if (end <= start && lastPoint) end = lastPoint.ts;
   if (end <= start) return failure('no-session', 'This FIT file has no duration, so there is nothing to import.');
 
-  const longest = sessions.reduce((a, b) => ((positive(b.totalTimerTime) ?? 0) > (positive(a.totalTimerTime) ?? 0) ? b : a));
-  const sport = sportFor(longest.sport, longest.subSport);
   const timer = Math.round(sumOf(sessions, (s) => positive(s.totalTimerTime)) ?? end - start);
   const lastRecord = messages.recordMesgs?.[messages.recordMesgs.length - 1];
   const distance = sumOf(sessions, (s) => positive(s.totalDistance)) ?? positive(lastRecord?.distance) ?? 0;
@@ -312,6 +377,7 @@ export function parseFitActivity(bytes: Uint8Array): FitActivity | FitImportErro
     avgPower: rounded(weighted(sessions, (s) => positive(s.avgPower))),
     maxPower: maxOf(sessions, (s) => positive(s.maxPower)),
     normalizedPower: rounded(weighted(sessions, (s) => positive(s.normalizedPower))),
+    laps: laps.length >= 2 ? laps : [],
     points,
   };
 }

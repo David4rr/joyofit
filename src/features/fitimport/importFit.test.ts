@@ -91,6 +91,50 @@ describe('parseFitActivity', () => {
     expect(a.points[3]?.hr).toBe(123);
   });
 
+  it('keeps speed, cadence and power of every record; a bike cadence stays in rpm and a file with one lap has no laps', () => {
+    const a = parseFitActivity(buildActivityFile({ start: START, elapsed: 3600, distance: 20_000 }));
+    if (!('start' in a)) throw new Error(a.message);
+    expect(a.points[0]?.speed).toBeCloseTo(20_000 / 3600, 2);
+    expect(a.points[0]?.cadence).toBe(85);
+    expect(a.points[0]?.power).toBe(200);
+    expect(a.points[0]?.stride).toBeNull();
+    expect(a.laps).toEqual([]);
+  });
+
+  it('doubles the per-leg cadence of a foot sport, adds fractional_cadence first, and converts step_length from millimetres', () => {
+    const a = parseFitActivity(buildActivityFile({ start: START, elapsed: 1800, distance: 5000, sport: 1, stepLength: true, fractionalCadence: true }));
+    if (!('start' in a)) throw new Error(a.message);
+    // (85 + 0.5) strides per minute are 171 steps per minute.
+    expect(a.points[0]?.cadence).toBe(171);
+    expect(a.points[0]?.stride).toBeCloseTo(1.05, 6);
+    expect(a.points.every((p) => p.cadence === 171 && p.stride !== null)).toBe(true);
+  });
+
+  it('reads the lap messages of a file with two or more laps', () => {
+    const a = parseFitActivity(buildActivityFile({ start: START, elapsed: 3600, distance: 20_000, laps: 3 }));
+    if (!('start' in a)) throw new Error(a.message);
+    expect(a.laps).toHaveLength(3);
+    expect(a.laps[0]).toEqual({ startTs: START, endTs: START + 1200, distanceM: expect.closeTo(6666.67, 1), avgHr: 130, maxHr: 160, avgCadence: 80 });
+    expect(a.laps[2]).toMatchObject({ startTs: START + 2400, endTs: START + 3600, avgHr: 132, maxHr: 162, avgCadence: 82 });
+
+    const run = parseFitActivity(buildActivityFile({ start: START, elapsed: 1800, distance: 5000, sport: 1, laps: 2 }));
+    if (!('start' in run)) throw new Error(run.message);
+    expect(run.laps.map((l) => l.avgCadence)).toEqual([160, 162]);
+  });
+
+  it('reads enhanced_speed, leaves absent readings null and keeps real zeros', () => {
+    const encoder = new Encoder();
+    const at = (offset: number) => new Date((START + offset) * 1000);
+    encoder.onMesg(Profile.MesgNum.FILE_ID, { type: 'activity', manufacturer: 'garmin', product: 1, timeCreated: at(0) });
+    encoder.onMesg(Profile.MesgNum.RECORD, { timestamp: at(0), heartRate: 100, enhancedSpeed: 3.5, cadence: 90, power: 0 });
+    encoder.onMesg(Profile.MesgNum.RECORD, { timestamp: at(1), heartRate: 101, speed: 0 });
+    encoder.onMesg(Profile.MesgNum.SESSION, { timestamp: at(60), startTime: at(0), sport: 'cycling', totalElapsedTime: 60, totalTimerTime: 60, totalDistance: 200 });
+    const a = parseFitActivity(encoder.close());
+    if (!('start' in a)) throw new Error(a.message);
+    expect(a.points[0]).toMatchObject({ speed: 3.5, cadence: 90, power: 0, stride: null });
+    expect(a.points[1]).toMatchObject({ speed: 0, cadence: null, power: null });
+  });
+
   it('reads a file written by Garmin\'s own encoder (enhanced speed fields, two sessions added up)', () => {
     const encoder = new Encoder();
     const at = (offset: number) => new Date((START + offset) * 1000);
@@ -272,6 +316,31 @@ describe('importFit', () => {
     const w = one<{ sport_type: number; sport_name: string; summary_json: string }>('SELECT sport_type, sport_name, summary_json FROM workouts');
     expect(w).toMatchObject({ sport_type: 1, sport_name: 'Run (Garmin)' });
     expect(JSON.parse(w.summary_json).avgPaceSecPerKm).toBeCloseTo(360, 0);
+  });
+
+  it('stores speed, cadence, stride and power per point and the laps in the summary', async () => {
+    const { db, one, all } = openDb();
+    const result = await importFit(db, buildActivityFile({ start: START, elapsed: 1800, distance: 5000, sport: 1, laps: 3, stepLength: true, fractionalCadence: true }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const points = all<{ speed: number; cadence: number; stride: number; power: number }>(
+      'SELECT speed, cadence, stride, power FROM workout_points WHERE workout_id = ? ORDER BY ts',
+      result.workoutId,
+    );
+    expect(points).toHaveLength(181);
+    expect(points[0]?.speed).toBeCloseTo(5000 / 1800, 2);
+    expect(points[0]).toMatchObject({ cadence: 171, power: 200 });
+    expect(points[0]?.stride).toBeCloseTo(1.05, 6);
+    const summary = JSON.parse(one<{ summary_json: string }>('SELECT summary_json FROM workouts').summary_json);
+    expect(summary.laps).toHaveLength(3);
+    expect(summary.laps[1]).toMatchObject({ startTs: START + 600, endTs: START + 1200, avgHr: 131, maxHr: 161, avgCadence: 162 });
+    expect(summary.laps[1].distanceM).toBeCloseTo(5000 / 3, 1);
+  });
+
+  it('leaves laps out of the summary for a file with a single lap', async () => {
+    const { db, one } = openDb();
+    await importFit(db, ride());
+    expect(JSON.parse(one<{ summary_json: string }>('SELECT summary_json FROM workouts').summary_json).laps).toBeUndefined();
   });
 
   it('stores a six-hour ride sampled every second in full', async () => {

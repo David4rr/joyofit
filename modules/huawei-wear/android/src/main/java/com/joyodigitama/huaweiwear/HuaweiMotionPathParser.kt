@@ -30,10 +30,15 @@ internal object HuaweiExportSports {
 /** One GPS fix of a track; [startsSegment] after a pause marker. */
 internal class GpsFix(val ts: Long, val lat: Double, val lon: Double, val alt: Double?, val startsSegment: Boolean)
 
-/** One sensor reading (heart rate in bpm, barometric altitude in metres) at [ts] unix seconds. */
+/** One sensor reading (heart rate in bpm, barometric altitude in metres, cadence in steps per minute) at [ts] unix seconds. */
 internal class SensorReading(val ts: Long, val value: Double)
 
-internal class MotionTrack(val gps: List<GpsFix>, val heartRates: List<SensorReading>, val altitudes: List<SensorReading>)
+internal class MotionTrack(
+  val gps: List<GpsFix>,
+  val heartRates: List<SensorReading>,
+  val altitudes: List<SensorReading>,
+  val cadences: List<SensorReading>,
+)
 
 /** The fields of one `Motion path detail data` object that the importer reads. Times are milliseconds. */
 internal class RawMotionPath(
@@ -55,8 +60,9 @@ internal class RawMotionPath(
  * `HW_EXT_TRACK_DETAIL@i` followed by one record per line:
  *
  *  - `tp=lbs;k=N;lat=;lon=;alt=;t=<seconds, scientific notation>;` a GPS fix. `lat=90.0;lon=-80.0` is a pause marker.
- *  - `tp=h-r;k=<ms>;v=<bpm>;` heart rate, `tp=alti;k=<ms>;v=<m>;` barometric altitude, `tp=s-r` cadence (not stored).
- *  - `tp=p-m`, `sec`, `rs`, `b-p-m` summaries (not used).
+ *  - `tp=h-r;k=<ms>;v=<bpm>;` heart rate, `tp=alti;k=<ms>;v=<m>;` barometric altitude, `tp=s-r;k=<ms>;v=<steps/min>;` cadence.
+ *  - `tp=p-m;k=<km index>;v=<seconds for that km>`, `sec`, `rs`, `b-p-m` per-kilometre or per-session summaries, not per-timestamp
+ *    readings, so not stored.
  *
  * The object is sometimes invalid JSON. [fromBrokenText] reads the same fields straight off the raw text then: the
  * line records do not depend on the JSON around them.
@@ -67,6 +73,7 @@ internal object HuaweiMotionPathParser {
 
   private const val HR_RANGE_MIN = 20
   private const val HR_RANGE_MAX = 250
+  private const val CADENCE_RANGE_MAX = 300
 
   /** No human burns more than this many kcal a minute, so a larger figure is not kcal. */
   private const val MAX_KCAL_PER_MINUTE = 40.0
@@ -110,6 +117,7 @@ internal object HuaweiMotionPathParser {
     val gps = ArrayList<GpsFix>()
     val heartRates = ArrayList<SensorReading>()
     val altitudes = ArrayList<SensorReading>()
+    val cadences = ArrayList<SensorReading>()
     var pendingBreak = false
     for (line in attribute.split('\n')) {
       val at = line.indexOf("tp=")
@@ -145,15 +153,20 @@ internal object HuaweiMotionPathParser {
           val metres = HuaweiExportJson.number(fields["v"])
           if (ms != null && metres != null) altitudes.add(SensorReading((ms / 1000.0).toLong(), metres))
         }
+        "s-r" -> {
+          val ms = HuaweiExportJson.number(fields["k"])
+          val spm = HuaweiExportJson.number(fields["v"])?.roundToInt()
+          if (ms != null && spm != null && spm in 1..CADENCE_RANGE_MAX) cadences.add(SensorReading((ms / 1000.0).toLong(), spm.toDouble()))
+        }
       }
     }
-    return MotionTrack(gps, heartRates, altitudes)
+    return MotionTrack(gps, heartRates, altitudes, cadences)
   }
 
   /** The workout [raw] describes, or null when it has no usable start or no duration at all. */
   fun build(raw: RawMotionPath): ImportedWorkout? {
     val track = parseTrack(raw.attribute)
-    val trackTimes = track.gps.map { it.ts } + track.heartRates.map { it.ts } + track.altitudes.map { it.ts }
+    val trackTimes = track.gps.map { it.ts } + track.heartRates.map { it.ts } + track.altitudes.map { it.ts } + track.cadences.map { it.ts }
     val start = raw.startMs?.div(1000) ?: trackTimes.minOrNull() ?: return null
     val elapsedMs = raw.endMs?.let { it - start * 1000 }
     val movingSec = totalTimeSeconds(raw.totalTime, elapsedMs)
@@ -168,10 +181,11 @@ internal object HuaweiMotionPathParser {
     val maxHr = heartRates.maxOrNull()
     val kind = WorkoutSportTypes.kind(HuaweiExportSports.joyofitType(raw.sportType))
 
-    val points = ArrayList<WorkoutPoint>(track.gps.size + track.heartRates.size + track.altitudes.size)
+    val points = ArrayList<WorkoutPoint>(track.gps.size + track.heartRates.size + track.altitudes.size + track.cadences.size)
     for (g in track.gps) points.add(WorkoutPoint(g.ts, g.lat, g.lon, g.alt, null))
     for (h in track.heartRates) points.add(WorkoutPoint(h.ts, null, null, null, h.value.toInt()))
     for (a in track.altitudes) points.add(WorkoutPoint(a.ts, null, null, a.value, null))
+    for (c in track.cadences) points.add(WorkoutPoint(c.ts, null, null, null, null, cadence = c.value.toInt()))
     // Stable: GPS fixes before sensor readings of the same second.
     val sorted = points.sortedBy { it.ts }
 

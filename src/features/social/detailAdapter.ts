@@ -9,7 +9,9 @@ import type { RoutePoint } from '@/features/workouts/summary';
 export function hrChartProps(hr: RogoHrSeries, start: number): { points: WorkoutPointRow[]; start: number; end: number } {
   const points: WorkoutPointRow[] = [];
   hr.bpm.forEach((bpm, i) => {
-    if (bpm !== null) points.push({ ts: start + i * hr.intervalSec, lat: null, lon: null, alt: null, hr: bpm });
+    if (bpm !== null) {
+      points.push({ ts: start + i * hr.intervalSec, lat: null, lon: null, alt: null, hr: bpm, speed: null, cadence: null, stride: null, power: null });
+    }
   });
   return { points, start, end: start + hr.bpm.length * hr.intervalSec };
 }

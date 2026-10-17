@@ -60,5 +60,11 @@
   ],
   [
     "CREATE TABLE strava_upload (workout_start INTEGER PRIMARY KEY NOT NULL, status TEXT NOT NULL, upload_id INTEGER, activity_id INTEGER, error TEXT, attempts INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL)"
+  ],
+  [
+    "ALTER TABLE workout_points ADD COLUMN speed REAL",
+    "ALTER TABLE workout_points ADD COLUMN cadence INTEGER",
+    "ALTER TABLE workout_points ADD COLUMN stride REAL",
+    "ALTER TABLE workout_points ADD COLUMN power INTEGER"
   ]
 ]

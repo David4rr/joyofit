@@ -155,7 +155,9 @@ internal class SqliteHuaweiImportStore(private val store: SyncStore) : HuaweiImp
         db.setTransactionSuccessful()
         return WorkoutWrite(added = false, points = 0)
       }
-      val point = db.compileStatement("INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr) VALUES (?, ?, ?, ?, ?, ?)")
+      val point = db.compileStatement(
+        "INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      )
       try {
         for (p in workout.points) {
           point.clearBindings()
@@ -165,6 +167,10 @@ internal class SqliteHuaweiImportStore(private val store: SyncStore) : HuaweiImp
           p.lon?.let { point.bindDouble(4, it) } ?: point.bindNull(4)
           p.alt?.let { point.bindDouble(5, it) } ?: point.bindNull(5)
           p.hr?.let { point.bindLong(6, it.toLong()) } ?: point.bindNull(6)
+          p.speed?.let { point.bindDouble(7, it) } ?: point.bindNull(7)
+          p.cadence?.let { point.bindLong(8, it.toLong()) } ?: point.bindNull(8)
+          p.stride?.let { point.bindDouble(9, it) } ?: point.bindNull(9)
+          p.power?.let { point.bindLong(10, it.toLong()) } ?: point.bindNull(10)
           point.executeInsert()
         }
       } finally {

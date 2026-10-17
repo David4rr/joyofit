@@ -29,13 +29,18 @@ final class WorkoutRecordTests: XCTestCase {
         try XCTUnwrap(JSONSerialization.jsonObject(with: Data(record.summaryJson.utf8)) as? [String: Any])
     }
 
-    private func sample(hr: Int8 = -1, altitude: Int32? = nil, speed: Int16 = -1, cadence: Int16 = -1, stepRate: Int8 = -1, timestamp: Int32 = 1_700_000_000) -> Workout.WorkoutData.Response.Data {
+    private func sample(
+        hr: Int8 = -1, altitude: Int32? = nil, speed: Int16 = -1, cadence: Int16 = -1, stepRate: Int8 = -1, stepLength: Int16 = -1, power: Int16 = -1,
+        timestamp: Int32 = 1_700_000_000
+    ) -> Workout.WorkoutData.Response.Data {
         var d = Workout.WorkoutData.Response.Data()
         d.heartRate = hr
         d.altitude = altitude
         d.speed = speed
         d.cadence = cadence
         d.stepRate = stepRate
+        d.stepLength = stepLength
+        d.cyclingPower = power
         d.timestamp = timestamp
         return d
     }
@@ -314,5 +319,32 @@ final class WorkoutRecordTests: XCTestCase {
         XCTAssertEqual(points[1], WorkoutPoint(ts: 1_700_000_010, lat: nil, lon: nil, alt: 5.5, hr: 120))
         XCTAssertEqual(points[2], WorkoutPoint(ts: 1_700_000_010, lat: -6.2, lon: 106.8, alt: 12, hr: nil))
         XCTAssertEqual(points.count, 3, "a sample with neither heart rate nor altitude is dropped")
+    }
+
+    func testSamplePointsKeepSpeedCadenceStrideAndPowerInSiUnits() throws {
+        let parts = WorkoutParts(totals: try totalsResponse { $0.put(0x14, byte: 1) })
+        parts.samples = [
+            sample(hr: 150, speed: 31, cadence: 172, stepLength: 105, power: 240, timestamp: 1_700_000_000),
+            // Zero and -1 are "no reading"; a sample with nothing else is dropped.
+            sample(speed: 0, cadence: 0, stepLength: 0, power: 0, timestamp: 1_700_000_005),
+            sample(timestamp: 1_700_000_010),
+            sample(speed: 28, timestamp: 1_700_000_015),
+        ]
+
+        let points = WorkoutBuilder.points(parts)
+
+        XCTAssertEqual(points.count, 2)
+        XCTAssertEqual(points[0], WorkoutPoint(ts: 1_700_000_000, lat: nil, lon: nil, alt: nil, hr: 150, speed: 3.1, cadence: 172, stride: 1.05, power: 240))
+        XCTAssertEqual(points[1], WorkoutPoint(ts: 1_700_000_015, lat: nil, lon: nil, alt: nil, hr: nil, speed: 2.8))
+    }
+
+    func testWalkingWithTheNewStepAlgorithmReadsCadenceFromTheStepRateByte() throws {
+        let walking = WorkoutParts(totals: try totalsResponse { $0.put(0x14, byte: 2) })
+        walking.newSteps = true
+        walking.samples = [sample(cadence: 99, stepRate: 110, timestamp: 1_700_000_000), sample(cadence: 99, stepRate: -1, timestamp: 1_700_000_005)]
+        XCTAssertEqual(WorkoutBuilder.points(walking).map(\.cadence), [110], "0xFF in the step-rate byte is the no-reading marker")
+
+        walking.newSteps = false
+        XCTAssertEqual(WorkoutBuilder.points(walking).map(\.cadence), [99, 99])
     }
 }

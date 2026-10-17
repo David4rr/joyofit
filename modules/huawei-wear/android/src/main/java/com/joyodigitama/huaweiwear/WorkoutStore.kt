@@ -62,7 +62,9 @@ internal class WorkoutStore(private val store: SyncStore) : WorkoutSink {
         it.getLong(0)
       }
       db.execSQL("DELETE FROM workout_points WHERE workout_id = ?", arrayOf(id))
-      val insert = db.compileStatement("INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr) VALUES (?, ?, ?, ?, ?, ?)")
+      val insert = db.compileStatement(
+        "INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      )
       try {
         for (p in record.points) {
           insert.clearBindings()
@@ -72,6 +74,10 @@ internal class WorkoutStore(private val store: SyncStore) : WorkoutSink {
           p.lon?.let { insert.bindDouble(4, it) } ?: insert.bindNull(4)
           p.alt?.let { insert.bindDouble(5, it) } ?: insert.bindNull(5)
           p.hr?.let { insert.bindLong(6, it.toLong()) } ?: insert.bindNull(6)
+          p.speed?.let { insert.bindDouble(7, it) } ?: insert.bindNull(7)
+          p.cadence?.let { insert.bindLong(8, it.toLong()) } ?: insert.bindNull(8)
+          p.stride?.let { insert.bindDouble(9, it) } ?: insert.bindNull(9)
+          p.power?.let { insert.bindLong(10, it.toLong()) } ?: insert.bindNull(10)
           insert.executeInsert()
         }
       } finally {

@@ -65,4 +65,51 @@ class WorkoutRecordTest {
     assertNull(WorkoutBuilder.validHeartRate(-1))
     assertEquals(200, WorkoutBuilder.validHeartRate(200.toByte()))
   }
+
+  private fun data(ts: Int, configure: Workout.WorkoutData.Response.Data.() -> Unit) =
+    Workout.WorkoutData.Response.Data().also { it.timestamp = ts; it.configure() }
+
+  private fun parts(type: Int, newSteps: Boolean, vararg samples: Workout.WorkoutData.Response.Data): WorkoutParts {
+    val totals = Workout.WorkoutTotals.Response(null)
+    totals.type = type.toByte()
+    return WorkoutParts(totals).also {
+      it.newSteps = newSteps
+      it.samples.addAll(samples)
+    }
+  }
+
+  @Test
+  fun samplePointsKeepSpeedCadenceStrideAndPowerInSiUnits() {
+    val points = WorkoutBuilder.points(
+      parts(
+        1, false,
+        data(1_700_000_000) { heartRate = 150.toByte(); speed = 31; cadence = 172; stepLength = 105; cyclingPower = 240 },
+        // Zero and -1 are "no reading"; a sample with nothing else is dropped.
+        data(1_700_000_005) { speed = 0; cadence = 0; stepLength = 0; cyclingPower = 0 },
+        data(1_700_000_010) { speed = -1; cadence = -1; stepLength = -1; cyclingPower = -1 },
+        data(1_700_000_015) { speed = 28 },
+      ),
+    )
+
+    assertEquals(2, points.size)
+    assertEquals(150, points[0].hr)
+    assertEquals(3.1, points[0].speed!!, 1e-9) // decimetres per second on the wire
+    assertEquals(172, points[0].cadence)
+    assertEquals(1.05, points[0].stride!!, 1e-9) // centimetres on the wire
+    assertEquals(240, points[0].power)
+    assertEquals(2.8, points[1].speed!!, 1e-9)
+    assertNull(points[1].hr)
+    assertNull(points[1].cadence)
+    assertNull(points[1].stride)
+    assertNull(points[1].power)
+  }
+
+  @Test
+  fun walkingWithTheNewStepAlgorithmReadsCadenceFromTheStepRateByte() {
+    val sample = { data(1_700_000_000) { stepRate = 110; cadence = 99 } }
+    assertEquals(110, WorkoutBuilder.points(parts(2, true, sample()))[0].cadence)
+    assertEquals(99, WorkoutBuilder.points(parts(2, false, sample()))[0].cadence)
+    // 0xFF in the step-rate byte (-1) is the "no reading" marker.
+    assertTrue(WorkoutBuilder.points(parts(2, true, data(1_700_000_000) { stepRate = -1; cadence = 99 })).isEmpty())
+  }
 }

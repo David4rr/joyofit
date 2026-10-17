@@ -60,12 +60,14 @@ public final class WorkoutStore: WorkoutSink {
                     throw SQLiteError(code: -1, message: "workout row for start \(record.start) is missing right after its upsert")
                 }
                 try db.run("DELETE FROM workout_points WHERE workout_id = ?", [.int(id)])
-                let insert = try db.prepare("INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr) VALUES (?, ?, ?, ?, ?, ?)")
+                let insert = try db.prepare(
+                    "INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                )
                 for p in record.points {
                     insert.reset()
                     try insert.bind([
                         .int(id), .int(p.ts), p.lat.map { .double($0) } ?? .null, p.lon.map { .double($0) } ?? .null, p.alt.map { .double($0) } ?? .null,
-                        .integer(p.hr),
+                        .integer(p.hr), p.speed.map { .double($0) } ?? .null, .integer(p.cadence), p.stride.map { .double($0) } ?? .null, .integer(p.power),
                     ])
                     while try insert.step() {}
                 }

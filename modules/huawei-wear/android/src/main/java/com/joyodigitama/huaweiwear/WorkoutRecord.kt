@@ -11,9 +11,23 @@ import org.json.JSONObject
 
 /**
  * One sample of the route / heart-rate series. GPS points carry lat/lon (and the GPS altitude when the file has
- * one); data samples carry the heart rate and the barometric altitude. A point has only the fields its source had.
+ * one); data samples carry the heart rate, the barometric altitude and the per-sample motion fields. A point has
+ * only the fields its source had; a missing or zero reading is null.
+ *
+ * Units: [speed] metres per second, [cadence] steps per minute (revolutions per minute when cycling), [stride]
+ * metres per step, [power] watts.
  */
-internal class WorkoutPoint(val ts: Long, val lat: Double?, val lon: Double?, val alt: Double?, val hr: Int?)
+internal class WorkoutPoint(
+  val ts: Long,
+  val lat: Double?,
+  val lon: Double?,
+  val alt: Double?,
+  val hr: Int?,
+  val speed: Double? = null,
+  val cadence: Int? = null,
+  val stride: Double? = null,
+  val power: Int? = null,
+)
 
 /** One workout as stored (`workouts` row plus its points). Times are unix seconds, distance metres. */
 internal class WorkoutRecord(
@@ -97,10 +111,21 @@ internal object WorkoutBuilder {
 
   fun points(parts: WorkoutParts): List<WorkoutPoint> {
     val out = ArrayList<WorkoutPoint>(parts.samples.size + parts.gps.size)
+    val kind = WorkoutSportTypes.kind(parts.totals.type.toInt() and 0xFF)
+    // Same cadence field choice as SampleStats.of: the step-rate byte for new-algorithm walking, the cadence short otherwise.
+    val walkingSteps = parts.newSteps && (kind == "WALKING" || kind == "OUTDOOR_WALKING")
     for (d in parts.samples) {
       val hr = validHeartRate(d.heartRate)
       val alt = d.altitude?.let { it / 10.0 }
-      if (hr != null || alt != null) out.add(WorkoutPoint(d.timestamp.toLong() and 0xFFFFFFFFL, null, null, alt, hr))
+      // The wire speed is decimetres per second (SampleStats.maxSpeed divides by 10 the same way); step length is
+      // centimetres. 0 and -1 (0xFF in the step-rate byte) are "no reading".
+      val speed = d.speed.toInt().takeIf { it > 0 }?.let { it / 10.0 }
+      val cadence = if (walkingSteps) (d.stepRate.toInt() and 0xFF).takeIf { it in 1..0xFE } else d.cadence.toInt().takeIf { it > 0 }
+      val stride = d.stepLength.toInt().takeIf { it > 0 }?.let { it / 100.0 }
+      val power = d.cyclingPower.toInt().takeIf { it > 0 }
+      if (hr != null || alt != null || speed != null || cadence != null || stride != null || power != null) {
+        out.add(WorkoutPoint(d.timestamp.toLong() and 0xFFFFFFFFL, null, null, alt, hr, speed, cadence, stride, power))
+      }
     }
     for (p in parts.gps) {
       out.add(

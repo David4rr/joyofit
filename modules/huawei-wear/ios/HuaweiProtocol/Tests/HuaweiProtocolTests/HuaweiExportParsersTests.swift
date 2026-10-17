@@ -209,6 +209,11 @@ final class HuaweiExportParsersTests: XCTestCase {
         XCTAssertEqual(gps[1].alt, 7.5)
         XCTAssertEqual(workout.points.filter { $0.hr != nil }.count, 2)
         XCTAssertEqual(workout.points.filter { $0.lat == nil && $0.alt != nil }.count, 1)
+        // tp=s-r is cadence in steps per minute at its own timestamp; tp=p-m (a per-km pace summary) is not a point.
+        let cadence = workout.points.filter { $0.cadence != nil }
+        XCTAssertEqual(cadence.map(\.ts), [1_750_000_100])
+        XCTAssertEqual(cadence.map(\.cadence), [160])
+        XCTAssertTrue(workout.points.allSatisfy { $0.speed == nil && $0.stride == nil && $0.power == nil })
         XCTAssertEqual(workout.points.map(\.ts), workout.points.map(\.ts).sorted())
 
         let s = summary(workout)

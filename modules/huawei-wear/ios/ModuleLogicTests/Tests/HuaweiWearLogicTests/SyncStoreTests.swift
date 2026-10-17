@@ -118,6 +118,39 @@ final class SyncStoreTests: XCTestCase {
         XCTAssertTrue(try native.read { try $0.tableExists("strava_upload") })
     }
 
+    /// Migration 12 only adds nullable columns to `workout_points`: a database that has the workout tables (migration 3) with stored points comes
+    /// out at the latest version with every old row untouched and the new columns NULL.
+    func testPerSamplePointColumnsAreAddedWithoutTouchingStoredPoints() throws {
+        let url = temporaryDatabaseURL()
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let old = try SQLiteDatabase(path: url.path)
+        let shared = try SyncStore.sharedMigrations()
+        for (i, statements) in shared.prefix(3).enumerated() {
+            for s in statements { try old.exec(s) }
+            try old.setUserVersion(i + 1)
+        }
+        try old.run("""
+            INSERT INTO workouts (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete)
+            VALUES (1, 1700000000, 1700000600, 1, 'Running', 600, 5000, 321, 135, 170, 100, '{}', 1)
+            """)
+        try old.run("INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr) VALUES (1, 1700000001, -6.2, 106.8, 12.5, 140), (1, 1700000002, NULL, NULL, NULL, 142)")
+
+        let native = SyncStore(url: url)
+        XCTAssertEqual(try native.read { try $0.userVersion }, shared.count)
+        let columns: [String] = try native.read { try $0.query("PRAGMA table_info(workout_points)") { $0.text(1)! } }
+        XCTAssertEqual(columns, ["workout_id", "ts", "lat", "lon", "alt", "hr", "speed", "cadence", "stride", "power"])
+        let rows: [[Double?]] = try native.read {
+            try $0.query("SELECT ts, lat, lon, alt, hr, speed, cadence, stride, power FROM workout_points ORDER BY ts") { s in
+                (0..<9).map { s.isNull(Int32($0)) ? nil : s.double(Int32($0)) }
+            }
+        }
+        XCTAssertEqual(rows, [
+            [1_700_000_001, -6.2, 106.8, 12.5, 140, nil, nil, nil, nil],
+            [1_700_000_002, nil, nil, nil, 142, nil, nil, nil, nil],
+        ])
+        XCTAssertEqual(try native.read { try $0.query("SELECT COUNT(*) FROM workouts") { $0.int(0) } }, [1])
+    }
+
     func testADatabaseNewerThanTheAppIsRefused() throws {
         let url = temporaryDatabaseURL()
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
