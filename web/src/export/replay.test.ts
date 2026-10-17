@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { SCREEN_H, SCREEN_W } from "@/model/types";
 import { renderProjectSprite, handAngle } from "@/render/scene";
 import { spriteRgba } from "@/render/canvas";
-import { clockFields, defaultSim, numericValue, ringFraction } from "@/render/values";
+import { clockFields, defaultSim, fieldFraction, fieldValue } from "@/render/values";
 import { TEMPLATES } from "@/templates";
 import { buildHwt } from "./build";
 
@@ -47,11 +47,9 @@ function valueOf(valueType: number): { value: number; pad: number } {
     case VALUE_TYPE.secondLow:
       return { value: clock.second % 10, pad: 1 };
     case VALUE_TYPE.steps:
-      return { value: numericValue("steps", sim), pad: 1 };
     case VALUE_TYPE.heartRate:
-      return { value: numericValue("heartRate", sim), pad: 1 };
     case VALUE_TYPE.power:
-      return { value: numericValue("battery", sim), pad: 1 };
+      return { value: fieldValue(valueType, sim), pad: 1 };
     default:
       throw new Error(`replay does not know value type ${valueType}`);
   }
@@ -66,9 +64,8 @@ function ratioOf(valueType: number): number {
     case VALUE_TYPE.secondRatio:
       return handAngle("second", sim.timeMs) / 360;
     case VALUE_TYPE.stepsRatio:
-      return ringFraction("steps", sim);
     case VALUE_TYPE.powerRatio:
-      return ringFraction("battery", sim);
+      return fieldFraction(valueType, sim);
     default:
       throw new Error(`replay does not know ratio ${valueType}`);
   }

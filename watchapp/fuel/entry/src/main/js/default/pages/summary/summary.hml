@@ -1,0 +1,49 @@
+<div class="root">
+  <list class="list">
+    <list-item class="item item-head">
+      <text class="head">{{title}}</text>
+      <text class="kcal">{{kcal}}</text>
+      <text class="unit">kcal in {{elapsed}}</text>
+    </list-item>
+    <list-item class="item item-burn">
+      <div class="burn">
+        <div class="col">
+          <text class="grams grams-fat">{{fat}} g</text>
+          <text class="label">{{fatLabel}}</text>
+        </div>
+        <div class="col">
+          <text class="grams grams-carbs">{{carbs}} g</text>
+          <text class="label">{{carbLabel}}</text>
+        </div>
+      </div>
+      <div class="bar">
+        <div class="bar-fat" style="width: {{fatPx}}px;"></div>
+        <div class="bar-carbs" style="width: {{carbPx}}px;"></div>
+      </div>
+    </list-item>
+    <list-item class="item item-hr">
+      <div class="burn">
+        <div class="col">
+          <text class="hrval">{{avgHr}}</text>
+          <text class="label">AVG BPM</text>
+        </div>
+        <div class="col">
+          <text class="hrval">{{maxHr}}</text>
+          <text class="label">MAX BPM</text>
+        </div>
+      </div>
+    </list-item>
+    <list-item class="zone-item" for="{{zones}}" tid="zone">
+      <text class="zone-name">{{$item.name}}</text>
+      <text class="zone-time">{{$item.time}}</text>
+    </list-item>
+    <list-item class="item item-note">
+      <text class="note">{{note}}</text>
+    </list-item>
+    <list-item class="item item-done">
+      <div class="done" onclick="done">
+        <text class="done-text">Done</text>
+      </div>
+    </list-item>
+  </list>
+</div>

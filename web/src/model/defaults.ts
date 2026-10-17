@@ -1,21 +1,22 @@
 import { DEFAULT_FONT } from "@/render/fonts";
+import { VALUE_TYPE } from "@joyofit/hwt";
+import { fieldDef, type FieldDef } from "./fields";
 import {
   PROJECT_VERSION,
   SCREEN_H,
   SCREEN_W,
-  WIDGET_LABELS,
   type BackgroundElement,
   type DateElement,
   type Element,
   type ElementType,
   type HandElement,
   type HandKind,
+  type IconSetElement,
   type ImageElement,
   type Project,
   type RingElement,
   type TimeElement,
   type WidgetElement,
-  type WidgetSource,
 } from "./types";
 
 export function uid(): string {
@@ -121,51 +122,70 @@ export function newImage(assetId: string | null, w: number, h: number, patch: Pa
   };
 }
 
-export function newWidget(source: WidgetSource, patch: Partial<WidgetElement> = {}): WidgetElement {
-  const colors: Record<WidgetSource, string> = {
-    steps: "#5FD3EE",
-    heartRate: "#FF8FA4",
-    battery: "#6EE7A0",
-    calories: "#F5B35A",
-  };
+function field(valueType: number): FieldDef {
+  const def = fieldDef(valueType);
+  if (!def) throw new Error(`value type ${valueType} is not in the field registry`);
+  return def;
+}
+
+export function newWidget(valueType: number, patch: Partial<WidgetElement> = {}): WidgetElement {
+  const def = field(valueType);
   return {
     id: uid(),
     type: "widget",
-    name: WIDGET_LABELS[source],
+    name: def.label,
     visible: true,
     locked: false,
     x: 120,
     y: 360,
-    source,
+    valueType,
     font: DEFAULT_FONT,
     size: 34,
     color: INK,
     outline: null,
     showIcon: true,
-    iconColor: colors[source],
+    iconColor: def.color,
     layout: "side",
     tracking: 1,
     ...patch,
   };
 }
 
-export function newRing(source: RingElement["source"], patch: Partial<RingElement> = {}): RingElement {
+export function newRing(valueType: number, patch: Partial<RingElement> = {}): RingElement {
+  const def = field(valueType);
   return {
     id: uid(),
     type: "ring",
-    name: source === "steps" ? "Steps ring" : "Battery ring",
+    name: `${def.label} ring`,
     visible: true,
     locked: false,
     x: 12,
     y: 36,
-    source,
+    valueType,
     size: 384,
     thickness: 14,
     startAngle: 0,
     sweep: 360,
-    color: source === "steps" ? "#5FD3EE" : "#6EE7A0",
+    color: def.color,
     trackColor: "#24505E",
     roundCap: true,
+    ...patch,
+  };
+}
+
+export function newIconSet(valueType: number, patch: Partial<IconSetElement> = {}): IconSetElement {
+  const def = field(valueType);
+  return {
+    id: uid(),
+    type: "iconset",
+    name: `${def.label} icons`,
+    visible: true,
+    locked: false,
+    x: 180,
+    y: 360,
+    valueType,
+    size: 48,
+    color: def.color,
     ...patch,
   };
 }
@@ -183,9 +203,11 @@ export function newElement(type: ElementType): Element {
     case "image":
       return newImage(null, 120, 120);
     case "widget":
-      return newWidget("steps");
+      return newWidget(VALUE_TYPE.steps);
     case "ring":
-      return newRing("steps");
+      return newRing(VALUE_TYPE.stepsRatio);
+    case "iconset":
+      return newIconSet(VALUE_TYPE.powerEnum);
   }
 }
 
@@ -206,6 +228,7 @@ export const ELEMENT_LABELS: Record<ElementType, string> = {
   image: "Image or sticker",
   widget: "Data widget",
   ring: "Progress ring",
+  iconset: "Icon set",
 };
 
 /** A `.hwt` file name: letters and digits only, as Huawei requires. */

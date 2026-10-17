@@ -1,5 +1,5 @@
 import type { DateElement, TimeElement, WidgetElement } from "@/model/types";
-import { WIDGET_DIGITS, WIDGET_ICON } from "@/model/types";
+import { fieldDef } from "@/model/fields";
 import { dateWords, renderDigitSet, renderWordSet, type DigitSet, type GlyphStyle, type WordSet } from "./glyphs";
 import { renderIcon } from "./shapes";
 import type { Sprite } from "./canvas";
@@ -22,6 +22,10 @@ export type Part =
       align: "left" | "center";
       /** Pads with leading zeros up to `count` when true; data numbers show only the digits they need. */
       zeroPad: boolean;
+      /** Data number: the codec value id, whether a minus sign shows for a negative value, and the glyph after the digits. */
+      field?: number;
+      minus?: boolean;
+      sign?: "degree";
     }
   | { kind: "colon"; set: DigitSet; x: number; y: number }
   | { kind: "words"; role: DataRole; set: WordSet; words: string[]; x: number; y: number }
@@ -124,35 +128,44 @@ export function layoutDate(el: DateElement): Layout {
 }
 
 export function layoutWidget(el: WidgetElement): Layout {
+  const def = fieldDef(el.valueType);
+  const spec = def?.number;
+  if (!def || !spec) throw new Error(`value type ${el.valueType} is not a number field`);
   const set = renderDigitSet(style(el, el.size));
-  const count = WIDGET_DIGITS[el.source];
-  const numW = digitsWidth(set, count);
+  const minusW = spec.min < 0 ? set.minus.width : 0;
+  const signW = spec.sign ? set[spec.sign].width : 0;
+  const digitsW = digitsWidth(set, spec.digits);
+  // The run is [minus][digits][sign]; the minus shows only for a negative value but its room is always reserved.
+  const numW = minusW + digitsW + signW;
   const parts: Part[] = [];
   const number = (x: number, y: number, align: "left" | "center"): Part => ({
     kind: "digits",
-    role: el.source,
+    role: "field",
+    field: def.id,
+    minus: spec.min < 0,
+    sign: spec.sign,
     set,
     x,
     y,
-    count,
+    count: spec.digits,
     align,
     zeroPad: false,
   });
   if (!el.showIcon) {
-    parts.push(number(0, 0, "left"));
+    parts.push(number(minusW, 0, "left"));
     return { w: numW, h: set.cellH, parts };
   }
   const iconSize = Math.round(el.size * 1.1);
-  const icon = renderIcon(WIDGET_ICON[el.source], iconSize, el.iconColor);
+  const icon = renderIcon(def.icon, iconSize, el.iconColor);
   const gap = Math.round(el.size * 0.28);
   if (el.layout === "side") {
     const h = Math.max(set.cellH, icon.height);
     parts.push({ kind: "icon", sprite: icon, x: 0, y: Math.round((h - icon.height) / 2) });
-    parts.push(number(icon.width + gap, Math.round((h - set.cellH) / 2), "left"));
+    parts.push(number(icon.width + gap + minusW, Math.round((h - set.cellH) / 2), "left"));
     return { w: icon.width + gap + numW, h, parts };
   }
   const w = Math.max(numW, icon.width);
   parts.push({ kind: "icon", sprite: icon, x: Math.round((w - icon.width) / 2), y: 0 });
-  parts.push(number(w / 2, icon.height + gap, "center"));
+  parts.push(number((w - numW) / 2 + minusW + digitsW / 2, icon.height + gap, "center"));
   return { w, h: icon.height + gap + set.cellH, parts };
 }

@@ -104,12 +104,12 @@ export interface ImageElement extends Base {
   h: number;
 }
 
-export type WidgetSource = "steps" | "heartRate" | "battery" | "calories";
-export type IconName = "steps" | "heart" | "battery" | "flame";
+export type IconName = "steps" | "heart" | "battery" | "flame" | "mountain" | "thermometer";
 
 export interface WidgetElement extends Base {
   type: "widget";
-  source: WidgetSource;
+  /** Codec `value_type` id of a number field (`model/fields.ts`). */
+  valueType: number;
   font: FontRef;
   size: number;
   color: string;
@@ -120,11 +120,20 @@ export interface WidgetElement extends Base {
   tracking: number;
 }
 
-export type RingSource = "steps" | "battery";
+/** An enum value drawn as a set of images, one per value (`SELECTED_RES`). */
+export interface IconSetElement extends Base {
+  type: "iconset";
+  /** Codec `value_type` id of an enum field with a known image set. */
+  valueType: number;
+  /** Edge of the square icons, px. */
+  size: number;
+  color: string;
+}
 
 export interface RingElement extends Base {
   type: "ring";
-  source: RingSource;
+  /** Codec `value_type` id of a ratio field (`model/fields.ts`). */
+  valueType: number;
   /** Outer diameter. */
   size: number;
   thickness: number;
@@ -144,7 +153,8 @@ export type Element =
   | HandElement
   | ImageElement
   | WidgetElement
-  | RingElement;
+  | RingElement
+  | IconSetElement;
 
 export type ElementType = Element["type"];
 
@@ -156,35 +166,15 @@ export interface Project {
   elements: Element[];
 }
 
-/** The simulated watch state that drives the live preview. */
+/**
+ * The simulated watch state that drives the live preview. Data values are keyed by codec `value_type` id (see
+ * `model/fields.ts`); an id without an entry shows the registry's default.
+ */
 export interface Sim {
   /** Epoch ms shown by the clock when `live` is false. */
   timeMs: number;
   live: boolean;
-  steps: number;
+  /** Daily step goal the steps ratio is measured against. */
   stepGoal: number;
-  heartRate: number;
-  battery: number;
-  calories: number;
+  values: Record<number, number>;
 }
-
-export const WIDGET_LABELS: Record<WidgetSource, string> = {
-  steps: "Steps",
-  heartRate: "Heart rate",
-  battery: "Battery",
-  calories: "Calories",
-};
-
-export const WIDGET_ICON: Record<WidgetSource, IconName> = {
-  steps: "steps",
-  heartRate: "heart",
-  battery: "battery",
-  calories: "flame",
-};
-
-export const WIDGET_DIGITS: Record<WidgetSource, number> = {
-  steps: 5,
-  heartRate: 3,
-  battery: 3,
-  calories: 4,
-};

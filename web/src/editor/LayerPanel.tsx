@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   BatteryFull,
   CalendarDays,
@@ -12,15 +12,21 @@ import {
   Image as ImageIcon,
   Lock,
   LockOpen,
+  Mountain,
   Paintbrush,
   Plus,
+  Thermometer,
   Timer,
   type LucideIcon,
 } from "lucide-react";
+import { VALUE_TYPE } from "@joyofit/hwt";
 import { newHand, newRing, newWidget, newDate, newImage, newTime } from "@/model/defaults";
-import type { Element, WidgetSource } from "@/model/types";
+import { assetsVersion, subscribeAssets } from "@/model/assets";
+import { fieldDef } from "@/model/fields";
+import type { Element, IconName } from "@/model/types";
 import { elementSupport } from "@/export/support";
 import { cn } from "@/ui/utils";
+import { FieldBrowser } from "./FieldBrowser";
 import { useEditor } from "./store";
 
 interface Look {
@@ -30,12 +36,30 @@ interface Look {
 }
 
 const NEUTRAL = "bg-muted text-muted-foreground";
-const WIDGET_LOOK: Record<WidgetSource, Look> = {
-  steps: { icon: Footprints, chip: "bg-steps-soft text-steps-ink" },
-  heartRate: { icon: Heart, chip: "bg-heart-soft text-heart-ink" },
-  battery: { icon: BatteryFull, chip: "bg-battery-soft text-battery-ink" },
-  calories: { icon: Flame, chip: "bg-calories-soft text-calories-ink" },
+const ICONS: Record<IconName, LucideIcon> = {
+  steps: Footprints,
+  heart: Heart,
+  battery: BatteryFull,
+  flame: Flame,
+  mountain: Mountain,
+  thermometer: Thermometer,
 };
+
+/** Chip colors by metric. The metrics that have a theme token use it; the others stay neutral. */
+function chipOf(id: number): string {
+  switch (fieldDef(id)?.icon) {
+    case "steps":
+      return "bg-steps-soft text-steps-ink";
+    case "heart":
+      return "bg-heart-soft text-heart-ink";
+    case "battery":
+      return "bg-battery-soft text-battery-ink";
+    case "flame":
+      return "bg-calories-soft text-calories-ink";
+    default:
+      return NEUTRAL;
+  }
+}
 
 function lookOf(el: Element): Look {
   switch (el.type) {
@@ -50,9 +74,11 @@ function lookOf(el: Element): Look {
     case "image":
       return { icon: ImageIcon, chip: NEUTRAL };
     case "widget":
-      return WIDGET_LOOK[el.source];
+      return { icon: ICONS[fieldDef(el.valueType)?.icon ?? "steps"], chip: chipOf(el.valueType) };
     case "ring":
-      return { icon: CircleDashed, chip: el.source === "steps" ? WIDGET_LOOK.steps.chip : WIDGET_LOOK.battery.chip };
+      return { icon: CircleDashed, chip: chipOf(el.valueType) };
+    case "iconset":
+      return { icon: ICONS[fieldDef(el.valueType)?.icon ?? "battery"], chip: chipOf(el.valueType) };
   }
 }
 
@@ -83,19 +109,16 @@ const ADD_GROUPS: Array<{ title: string; actions: AddAction[] }> = [
   },
   {
     title: "Data",
-    actions: (Object.keys(WIDGET_LOOK) as WidgetSource[]).map((source) => ({
-      label: newWidget(source).name,
-      short: source === "heartRate" ? "Heart" : newWidget(source).name,
-      icon: WIDGET_LOOK[source].icon,
-      chip: WIDGET_LOOK[source].chip,
-      make: () => [newWidget(source)],
-    })),
+    actions: [VALUE_TYPE.steps, VALUE_TYPE.heartRate, VALUE_TYPE.power].map((id) => {
+      const def = fieldDef(id)!;
+      return { label: def.label, short: def.label, icon: ICONS[def.icon], chip: chipOf(id), make: () => [newWidget(id)] };
+    }),
   },
   {
     title: "Rings and images",
     actions: [
-      { label: "Steps ring", short: "Steps ring", icon: CircleDashed, chip: WIDGET_LOOK.steps.chip, make: () => [newRing("steps")] },
-      { label: "Battery ring", short: "Battery ring", icon: CircleDashed, chip: WIDGET_LOOK.battery.chip, make: () => [newRing("battery", { size: 120, thickness: 10, x: 24, y: 24 })] },
+      { label: "Steps ring", short: "Steps ring", icon: CircleDashed, chip: chipOf(VALUE_TYPE.stepsRatio), make: () => [newRing(VALUE_TYPE.stepsRatio)] },
+      { label: "Battery ring", short: "Battery ring", icon: CircleDashed, chip: chipOf(VALUE_TYPE.powerRatio), make: () => [newRing(VALUE_TYPE.powerRatio, { size: 120, thickness: 10, x: 24, y: 24 })] },
       { label: "Image or sticker", short: "Image", icon: ImageIcon, chip: NEUTRAL, make: () => [newImage(null, 120, 120)] },
     ],
   },
@@ -168,6 +191,9 @@ export function LayerPanel() {
   const updateElement = useEditor((s) => s.updateElement);
   const reorder = useEditor((s) => s.reorder);
   const [adding, setAdding] = useState(false);
+  const [tab, setTab] = useState<"elements" | "fields">("elements");
+  // Whether an image layer is exportable depends on its bitmap having loaded.
+  useSyncExternalStore(subscribeAssets, assetsVersion);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
@@ -190,8 +216,26 @@ export function LayerPanel() {
       </div>
 
       {adding && (
-        <div className="panel-scroll mx-3 mb-2 max-h-[60%] shrink-0 overflow-y-auto rounded-2xl bg-card p-3 ring-1 ring-border">
-          <AddElements />
+        <div className={cn("panel-scroll mx-3 mb-2 shrink-0 overflow-y-auto rounded-2xl bg-card p-3 ring-1 ring-border", tab === "fields" ? "max-h-[75%]" : "max-h-[60%]")}>
+          <div role="tablist" aria-label="Add" className="mb-3 grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+            {(["elements", "fields"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={tab === t}
+                data-testid={`add-tab-${t}`}
+                onClick={() => setTab(t)}
+                className={cn(
+                  "h-7 rounded-full text-xs font-semibold transition-colors duration-150 focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
+                  tab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+                )}
+              >
+                {t === "elements" ? "Elements" : "Fields"}
+              </button>
+            ))}
+          </div>
+          {tab === "elements" ? <AddElements /> : <FieldBrowser />}
         </div>
       )}
 

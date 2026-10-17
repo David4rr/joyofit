@@ -8,16 +8,17 @@ import { PropertyPanel } from "@/editor/PropertyPanel";
 import { SimPanel, StageControls } from "@/editor/SimPanel";
 import { Stage, useStageZoom } from "@/editor/Stage";
 import { TemplatesDialog } from "@/editor/TemplatesDialog";
-import { startAutosave, useEditor } from "@/editor/store";
+import { liveAssetIds, startAutosave, useEditor } from "@/editor/store";
 import { useShortcuts } from "@/editor/shortcuts";
-import { loadAllAssets } from "@/model/assets";
-import { downloadBlob, parseProjectFile, ProjectFileError, serializeProject } from "@/model/projectFile";
+import { loadProjectAssets } from "@/model/assets";
+import { assetIdsOf, downloadBlob, parseProjectFile, ProjectFileError, serializeProject } from "@/model/projectFile";
 import { hwtFileName } from "@/model/defaults";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { cn } from "@/ui/utils";
 
 const HELP_SEEN = "joyofit-studio:help-seen";
+const AUTOSAVE_TOAST = "autosave-failed";
 type Panel = "layers" | "stage" | "props";
 
 function useTheme(): [boolean, () => void] {
@@ -104,8 +105,17 @@ export function App() {
   const openInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    void loadAllAssets();
-    return startAutosave();
+    void loadProjectAssets(assetIdsOf(useEditor.getState().project), { liveIds: liveAssetIds });
+    return startAutosave((status) => {
+      if (status.ok) toast.dismiss(AUTOSAVE_TOAST);
+      else {
+        toast.error("This browser could not save your work", {
+          id: AUTOSAVE_TOAST,
+          duration: Infinity,
+          description: "Storage is full or blocked. Download the project JSON from the header so the face is not lost.",
+        });
+      }
+    });
   }, []);
   useShortcuts(!help && !templates && !exporting);
 
@@ -178,12 +188,12 @@ export function App() {
         <Button variant="ghost" size="icon" className={cn(iconBtn, "max-sm:hidden")} aria-label={dark ? "Light theme" : "Dark theme"} title={dark ? "Light theme" : "Dark theme"} onClick={toggleTheme}>
           {dark ? <Sun /> : <Moon />}
         </Button>
-        <Button variant="ghost" size="icon" className={iconBtn} aria-label="Help and install guide" title="Help and install guide" onClick={() => setHelp(true)} data-testid="open-help">
+        <Button variant="ghost" size="icon" className={iconBtn} aria-label="Help and export guide" title="Help and export guide" onClick={() => setHelp(true)} data-testid="open-help">
           <CircleHelp />
         </Button>
-        <Button className="h-10 px-3 sm:px-4" onClick={() => setExporting(true)} data-testid="export-hwt" aria-label="Export .hwt">
+        <Button className="h-10 px-3 sm:px-4" onClick={() => setExporting(true)} data-testid="export-open" aria-label="Export face">
           <Download />
-          <span className="max-sm:hidden">Export .hwt</span>
+          <span className="max-sm:hidden">Export</span>
         </Button>
       </header>
 

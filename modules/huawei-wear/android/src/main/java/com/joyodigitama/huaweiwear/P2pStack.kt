@@ -33,6 +33,8 @@ internal class P2pStack(
   private val healthModelFactory: (HuaweiP2PManager) -> HealthModelService,
   /** Age for the default heart-rate zones, read at each send (the profile can change). */
   private val heartRateAge: () -> Int,
+  /** Builds the JoyoFit Fuel service (the watch app's P2P peer) once the manager exists. */
+  private val fuelFactory: (HuaweiP2PManager) -> FuelService,
 ) : HuaweiP2PManager.Transport {
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
   private val inbound = Channel<HuaweiPacket>(Channel.UNLIMITED)
@@ -54,6 +56,10 @@ internal class P2pStack(
 
   @Volatile
   var dictionaryPing: Int? = null
+    private set
+
+  @Volatile
+  var fuel: FuelService? = null
     private set
 
   fun start() {
@@ -127,6 +133,13 @@ internal class P2pStack(
       trackService = service
       service.register()
     }
+
+    // The JoyoFit Fuel watch app is a third-party app: no ExpandCapability gate is known for it, so it is registered whenever the
+    // watch lists the P2P service. The registration pings the app; a 0xca answer sends it the profile.
+    val fuelService = fuelFactory(manager)
+    fuel = fuelService
+    log("Fuel: registering ${FuelContract.WATCH_PACKAGE} (the watch app answers the ping with 0xca when it is installed)")
+    fuelService.register()
   }
 
   /** Re-sends the zones after the profile age changed; false when this watch takes them another way. */

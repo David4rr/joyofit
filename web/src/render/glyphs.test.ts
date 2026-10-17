@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { spriteRgba } from "./canvas";
-import { dateWords, digitsOf, fontSizeForDigitHeight, renderDigitSet, renderWordSet, WEEKDAYS, type GlyphStyle } from "./glyphs";
+import { dateWords, digitsOf, fontSizeForDigitHeight, glyphCacheSizes, renderDigitSet, renderWordSet, WEEKDAYS, type GlyphStyle } from "./glyphs";
 import { digitList, clockFields } from "./values";
 
 const style: GlyphStyle = { font: { family: "Outfit", weight: 500 }, digitHeight: 80, color: "#FFFFFF", outline: null };
@@ -116,5 +116,28 @@ describe("value helpers", () => {
     expect(clockFields(t, false)).toMatchObject({ hour: 15, minute: 5, second: 9, pm: true, day: 14, month: 9, weekday: 2 });
     expect(clockFields(t, true).hour).toBe(3);
     expect(clockFields(new Date(2026, 9, 14, 0, 0, 0).getTime(), true).hour).toBe(12);
+  });
+});
+
+describe("glyph caches", () => {
+  it("stay bounded however many colours and sizes are tried", () => {
+    for (let i = 0; i < 160; i++) {
+      renderDigitSet({ ...style, digitHeight: 20, color: `#${(0x100000 + i * 997).toString(16).padStart(6, "0")}` });
+      renderWordSet(["ON", "OFF"], { ...style, digitHeight: 20, color: `#${(0x200000 + i * 991).toString(16).padStart(6, "0")}` });
+    }
+    const sizes = glyphCacheSizes();
+    expect(sizes.digits).toBeLessThanOrEqual(96);
+    expect(sizes.words).toBeLessThanOrEqual(96);
+    // The newest set is still cached.
+    const latest = { ...style, digitHeight: 20, color: `#${(0x100000 + 159 * 997).toString(16).padStart(6, "0")}` };
+    expect(renderDigitSet(latest)).toBe(renderDigitSet(latest));
+  });
+
+  it("make a minus and a degree sign with the digit cell's height", () => {
+    const set = renderDigitSet(style);
+    for (const glyph of [set.minus, set.degree]) {
+      expect(glyph.height).toBe(set.cellH);
+      expect(inkBox(glyph).maxX).toBeGreaterThan(0);
+    }
   });
 });

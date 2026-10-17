@@ -144,7 +144,7 @@ public final class HuaweiWearModule: Module {
         Constant("distribution") { "sideload" }
 
         Events(
-            "onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged",
+            "onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onAppInstallStatus", "onHeartRate", "onWatchMealLogged",
             "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange"
         )
 
@@ -555,6 +555,15 @@ public final class HuaweiWearModule: Module {
 
         rejects("openNotificationAccess")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
+
+        // Watch apps (the 0x2a app service) and the JoyoFit Fuel link are Android only for now.
+        rejects("listWatchApps")
+        rejects("inspectWatchApp", String.self)
+        rejects("installWatchApp", String.self, Bool.self)
+        rejects("deleteWatchApp", String.self)
+        rejects("getFuelLink")
+        rejects("setFuelWatchFingerprint", String.self)
+        rejects("sendFuelProfile")
     }
 }
 

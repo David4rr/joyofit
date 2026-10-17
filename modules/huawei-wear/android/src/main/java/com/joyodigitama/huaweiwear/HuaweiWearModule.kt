@@ -73,6 +73,10 @@ class HuaweiWearModule : Module() {
       emit("onUploadResult", mapOf("ok" to ok, "fileName" to fileName, "code" to code, "message" to message))
     }
 
+    override fun appInstallStatus(status: Int, packageName: String) {
+      emit("onAppInstallStatus", mapOf("status" to status, "packageName" to packageName, "phase" to appStatusPhase(status)))
+    }
+
     override fun heartRate(bpm: Int, tsMs: Long) {
       emit("onHeartRate", mapOf("bpm" to bpm, "ts" to tsMs))
     }
@@ -133,7 +137,7 @@ class HuaweiWearModule : Module() {
     // "play" for the Google Play build, "sideload" otherwise (see Distribution.kt).
     Constant("distribution") { Distribution.name }
 
-    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange")
+    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onAppInstallStatus", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange")
 
     OnCreate {
       val runtime = runtime()
@@ -332,6 +336,9 @@ class HuaweiWearModule : Module() {
 
     // P2P (service 0x34): Healthy Living replies and the experimental running courses (P2pModuleApi.kt).
     p2pApi { runtime() }
+
+    // Watch apps: the 0x2a app service (list, install a Lite Wearable app, delete) and the JoyoFit Fuel link (WatchAppModuleApi.kt).
+    watchAppApi { runtime() }
 
     OnDestroy {
       destroyed = true

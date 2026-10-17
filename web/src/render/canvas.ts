@@ -80,3 +80,13 @@ export async function surfaceToPng(surface: Surface): Promise<Uint8Array> {
   if (s.encode) return new Uint8Array(await s.encode("png"));
   throw new Error("This canvas cannot encode PNG");
 }
+
+/** Most entries a sprite cache keeps: every colour or size step of a slider makes new sprites, and none may pile up. */
+export const CACHE_LIMIT = 96;
+
+/** Stores `value` in an insertion-ordered cache, dropping the oldest entry once it holds `CACHE_LIMIT`. */
+export function remember<T>(cache: Map<string, T>, key: string, value: T): void {
+  cache.delete(key);
+  if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value as string);
+  cache.set(key, value);
+}

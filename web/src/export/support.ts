@@ -1,5 +1,7 @@
 import { VALUE_TYPE, valueTypeInfo } from "@joyofit/hwt";
-import type { Element, HandKind, RingSource, WidgetSource } from "@/model/types";
+import { getAsset } from "@/model/assets";
+import { fieldDef } from "@/model/fields";
+import type { Element, HandKind } from "@/model/types";
 
 /**
  * What the exporter can write for an element, from how well the codec knows the value ids it needs
@@ -27,18 +29,6 @@ export const HAND_VALUE: Record<HandKind, number> = {
   hour: VALUE_TYPE.hourRatio,
   minute: VALUE_TYPE.minuteRatio,
   second: VALUE_TYPE.secondRatio,
-};
-
-export const RING_VALUE: Record<RingSource, number> = {
-  steps: VALUE_TYPE.stepsRatio,
-  battery: VALUE_TYPE.powerRatio,
-};
-
-/** Widgets with a known number id; calories has none in any sample. */
-export const NUMBER_VALUE: Partial<Record<WidgetSource, number>> = {
-  steps: VALUE_TYPE.steps,
-  heartRate: VALUE_TYPE.heartRate,
-  battery: VALUE_TYPE.power,
 };
 
 const ORDER: SupportLevel[] = ["verified", "experimental", "preview-only"];
@@ -71,12 +61,23 @@ function fromIds(ids: number[], what: string): Support {
   };
 }
 
+const previewOnly = (note: string): Support => ({ ...verified, level: "preview-only", note });
+
+/** What stays preview only about a number that can be negative: `FaceBuilder.digits` has one `res_sign` image and no minus. */
+export const MINUS_DROPPED = "minus sign for values below zero (the codec has no field for it)";
+
+/** An uploaded image that is set but not decoded (browser storage unavailable, or the file would not decode). */
+const NOT_LOADED = "The image is set but did not load (browser storage blocked or the file is damaged). Upload it again.";
+
 export function elementSupport(el: Element): Support {
   switch (el.type) {
     case "background":
-      return el.fill.kind === "image" && !el.fill.assetId ? { ...verified, level: "preview-only", note: "No photo chosen." } : verified;
+      if (el.fill.kind !== "image") return verified;
+      if (!el.fill.assetId) return previewOnly("No photo chosen.");
+      return getAsset(el.fill.assetId) ? verified : previewOnly(NOT_LOADED);
     case "image":
-      return el.assetId ? verified : { ...verified, level: "preview-only", note: "No image chosen." };
+      if (!el.assetId) return previewOnly("No image chosen.");
+      return getAsset(el.assetId) ? verified : previewOnly(NOT_LOADED);
     case "time": {
       const base = fromIds([VALUE_TYPE.hour, VALUE_TYPE.minute], "the hour and minute digits");
       const seconds = el.showSeconds ? fromIds([VALUE_TYPE.secondHigh, VALUE_TYPE.secondLow], "the seconds digits") : verified;
@@ -92,15 +93,34 @@ export function elementSupport(el: Element): Support {
       return fromIds(ids, "the date");
     }
     case "hand":
-      if (el.shape === "custom" && !el.assetId) return { ...verified, level: "preview-only", note: "No hand PNG chosen." };
+      if (el.shape === "custom") {
+        if (!el.assetId) return previewOnly("No hand PNG chosen.");
+        if (!getAsset(el.assetId)) return previewOnly(NOT_LOADED);
+      }
       return fromIds([HAND_VALUE[el.hand]], `the ${el.hand} hand`);
     case "widget": {
-      const id = NUMBER_VALUE[el.source];
-      if (id === undefined) return { ...verified, level: "preview-only", note: "No value id for calories is known from the samples." };
-      return fromIds([id], "the number");
+      const def = fieldDef(el.valueType);
+      if (!def?.number) return previewOnly(`Value id ${el.valueType} is not a number field Studio can draw.`);
+      const ids = fromIds([def.id], `the ${def.label.toLowerCase()} number`);
+      if (ids.level === "preview-only") return ids;
+      if (def.slot === undefined) return previewOnly(`No container slot is known for ${def.label.toLowerCase()}.`);
+      const dropped = def.number.min < 0 ? [MINUS_DROPPED] : [];
+      return { ...ids, dropped };
     }
-    case "ring":
-      return fromIds([RING_VALUE[el.source]], "the progress arc");
+    case "ring": {
+      const def = fieldDef(el.valueType);
+      if (!def?.ratio) return previewOnly(`Value id ${el.valueType} is not a ratio Studio can draw as a ring.`);
+      const ids = fromIds([def.id], "the progress arc");
+      if (ids.level === "preview-only") return ids;
+      return def.slot === undefined ? previewOnly(`No container slot is known for ${def.label.toLowerCase()}.`) : ids;
+    }
+    case "iconset": {
+      const def = fieldDef(el.valueType);
+      if (!def?.iconSet) return previewOnly(`Value id ${el.valueType} has no image set Studio can draw.`);
+      const ids = fromIds([def.id], "the icon set");
+      if (ids.level === "preview-only") return ids;
+      return def.slot === undefined ? previewOnly(`No container slot is known for ${def.label.toLowerCase()}.`) : ids;
+    }
   }
 }
 
@@ -108,4 +128,12 @@ export function isExportable(el: Element, includeExperimental: boolean): boolean
   const s = elementSupport(el);
   if (s.level === "preview-only") return false;
   return s.level === "verified" || includeExperimental;
+}
+
+/**
+ * Layers a photo face can carry: pictures that never change. A photo face is only a background image; the watch draws its own
+ * clock and data over it, so Time, Date, Hand, Data and Ring layers cannot be part of it.
+ */
+export function isStaticElement(el: Element): boolean {
+  return el.type === "background" || el.type === "image";
 }
