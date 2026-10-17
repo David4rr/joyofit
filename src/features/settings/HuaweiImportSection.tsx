@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -13,7 +14,8 @@ import { formatCount, formatDateTime } from '@/format';
 import { radius, spacing, useColors } from '@/theme';
 import type { HuaweiImportSummary } from '@/wear';
 
-const REQUEST_URL = 'privacy.consumer.huawei.com';
+const REQUEST_URL_SEA = 'https://privacy-sg.consumer.huawei.com/privacycenter';
+const REQUEST_HOST_OTHER = 'privacy.consumer.huawei.com';
 const HEALTH_APP = isIos ? 'Apple Health' : 'Health Connect';
 
 /**
@@ -22,7 +24,15 @@ const HEALTH_APP = isIos ? 'Apple Health' : 'Health Connect';
  * phone: they are not sent to the cloud, Apple Health / Health Connect or Strava.
  */
 export function HuaweiImportSection() {
-  const { file, password, setPassword, running, progress, summary, error, pick, start, cancel } = useHuaweiImport();
+  const { file, password, setPassword, running, progress, summary, error, pick, select, start, cancel } = useHuaweiImport();
+  const { uri } = useLocalSearchParams<{ uri?: string }>();
+  const handled = useRef<string | null>(null);
+  // A ZIP opened with or shared to JoyoFit arrives here from `+native-intent` with its address in `uri`.
+  useEffect(() => {
+    if (!uri || handled.current === uri) return;
+    handled.current = uri;
+    select(uri);
+  }, [uri, select]);
   const ready = file !== null && password.length > 0;
 
   return (
@@ -32,25 +42,39 @@ export function HuaweiImportSection() {
           Bring the heart rate, sleep, steps and workouts from your Huawei Health account into JoyoFit. It is free, runs
           on this phone and sends nothing anywhere.
         </AppText>
+      </Section>
+
+      <Section title="Request your data from Huawei" icon="mail" tint="heart">
         <View style={styles.steps}>
-          <Step n={1}>
-            Request your data from Huawei: open {REQUEST_URL} and sign in with your Huawei ID, or in Huawei Health go to
-            Me, your account, Privacy Center. Choose Request Your Data and tick Health.
-          </Step>
-          <Step n={2}>
-            Set a password for the ZIP and remember it. Huawei prepares the file and emails you a download link. This can
-            take up to 7 days, and the link works for 21 days.
-          </Step>
+          <Step n={1}>Tap the button below and sign in with your Huawei ID.</Step>
+          <Step n={2}>Choose Request your data and tick Health data.</Step>
           <Step n={3}>
+            Set a password for the ZIP and remember it: Huawei cannot show it again and the file does not open without it.
+          </Step>
+          <Step n={4}>
+            Wait for the email from Huawei. This can take up to 7 days, and the link works for 21 days. Large exports come
+            as several ZIP parts of up to 5 GB each.
+          </Step>
+          <Step n={5}>
             Before you unbind the watch from Huawei Health, open Huawei Health and pull down to sync once more. What is
             only on the watch and not yet in your account is lost when you unbind it.
           </Step>
-          <Step n={4}>
+          <Step n={6}>
             {isIos
               ? 'Download the ZIP (on iPhone it ends up in the Files app), then choose it below and enter the password.'
-              : 'Download the ZIP, then choose it below and enter the password.'}
+              : 'Download the ZIP, then tap it in your email or Files app and choose JoyoFit, or choose it below. Enter the password.'}
           </Step>
         </View>
+        <Button
+          label="Request your data from Huawei"
+          variant="secondary"
+          icon="open"
+          onPress={() => void Linking.openURL(REQUEST_URL_SEA)}
+        />
+        <AppText variant="caption" muted>
+          An account outside South-East Asia: use {REQUEST_HOST_OTHER} instead. If the page fails for an Indonesian
+          account, the link above is the one that works; the in-app Privacy Center does not.
+        </AppText>
       </Section>
 
       <Section title="Import the file" icon="document" tint="heart">

@@ -1,6 +1,6 @@
-// A .fit file shared to JoyoFit (ACTION_SEND, the file in EXTRA_STREAM) is turned into a view intent whose data is that
+// A .fit file or a Huawei export .zip shared to JoyoFit (ACTION_SEND, the file in EXTRA_STREAM) is turned into a view intent whose data is that
 // file, the shape React Native, expo-linking and expo-router already deliver as a URL (src/app/+native-intent.ts sends
-// it to the FIT import screen). "Open with" (ACTION_VIEW) needs no code, only the intent filters in app.json.
+// it to the FIT or Huawei import screen). "Open with" (ACTION_VIEW) needs no code, only the intent filters in app.json.
 const { withMainActivity } = require('expo/config-plugins');
 
 const MARKER = '// joyofit-shared-fit';

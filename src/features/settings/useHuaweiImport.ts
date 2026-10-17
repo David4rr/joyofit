@@ -1,5 +1,6 @@
 import { useEventListener } from 'expo';
 import * as DocumentPicker from 'expo-document-picker';
+import { File } from 'expo-file-system';
 import { useCallback, useState } from 'react';
 
 import { errorMessage } from '@/format';
@@ -56,6 +57,23 @@ export function useHuaweiImport() {
     }
   }, []);
 
+  /** Preselects a ZIP another app opened with or shared to JoyoFit; the password is still asked for. */
+  const select = useCallback((uri: string) => {
+    let name = 'Huawei export.zip';
+    let size: number | null = null;
+    try {
+      const f = new File(uri);
+      name = f.name || name;
+      size = f.size ?? null;
+    } catch {
+      // the import itself reports an unreadable file
+    }
+    setFile({ uri, name, size });
+    setError(null);
+    setSummary(null);
+    setProgress(null);
+  }, []);
+
   const start = useCallback(async () => {
     if (!file || running) return;
     setRunning(true);
@@ -75,5 +93,5 @@ export function useHuaweiImport() {
 
   const cancel = useCallback(() => HuaweiWear.cancelHuaweiImport(), []);
 
-  return { file, password, setPassword, running, progress, summary, error, pick, start, cancel };
+  return { file, password, setPassword, running, progress, summary, error, pick, select, start, cancel };
 }

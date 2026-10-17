@@ -33,11 +33,12 @@ describe('with-shared-fit plugin', () => {
     expect(() => applySharedFit('class Other {}')).toThrow('MainActivity layout changed');
   });
 
-  it('is registered in app.json with the intent filters for .fit files', () => {
+  it('is registered in app.json with the intent filters for .fit and .zip files', () => {
     const { expo } = JSON.parse(readFileSync('app.json', 'utf8'));
     expect(expo.plugins).toContain('./plugins/with-shared-fit');
     const actions = expo.android.intentFilters.map((f: { action: string }) => f.action);
-    expect(actions).toEqual(['VIEW', 'VIEW', 'VIEW', 'SEND']);
+    expect(actions).toEqual(['VIEW', 'VIEW', 'VIEW', 'VIEW', 'VIEW', 'VIEW', 'SEND']);
     expect(JSON.stringify(expo.android.intentFilters)).toContain('application/vnd.ant.fit');
+    expect(JSON.stringify(expo.android.intentFilters)).toContain('application/x-zip-compressed');
   });
 });
