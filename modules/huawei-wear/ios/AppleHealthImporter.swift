@@ -101,7 +101,7 @@ public final class AppleHealthImporter: @unchecked Sendable {
         for sample in try await samples(HKQuantityType(.stepCount), from, to, sources) {
             guard let q = sample as? HKQuantitySample else { continue }
             let at = Int64(q.startDate.timeIntervalSince1970)
-            minutes.steps(atSec: at, count: q.quantity.doubleValue(for: .count()))
+            minutes.steps(atSec: at, count: q.quantity.doubleValue(for: .count()), fromPhone: AppleHealthImporter.isPhone(q))
             summary.seen(at)
         }
         let perMinute = HKUnit.count().unitDivided(by: .minute())
@@ -163,24 +163,50 @@ public final class AppleHealthImporter: @unchecked Sendable {
         }
     }
 
+    /// Whether the sample came from the iPhone's own sensors (see `AppleHealthPlan.isPhoneSource`).
+    private static func isPhone(_ sample: HKSample) -> Bool {
+        AppleHealthPlan.isPhoneSource(productType: sample.sourceRevision.productType, bundleId: sample.sourceRevision.source.bundleIdentifier)
+    }
+
+    /// The workout's totals. Steps and active energy come from ONE source tier (a non-phone source wins, the iPhone is the fallback, see
+    /// `PreferredSum`); heart rate is averaged over every source.
     private func importedWorkout(_ workout: HKWorkout, _ sources: [HKSampleType: Set<HKSource>]) async throws -> ImportedWorkout {
         let start = Int64(workout.startDate.timeIntervalSince1970)
         let end = Int64(workout.endDate.timeIntervalSince1970)
         let sport = AppleHealthSports.sportType(key: AppleHealthImporter.activityKey(workout.workoutActivityType))
         let perMinute = HKUnit.count().unitDivided(by: .minute())
-        let heart = try await statistics(HKQuantityType(.heartRate), [.discreteAverage, .discreteMax], workout, sources)
-        let stepStats = try await statistics(HKQuantityType(.stepCount), .cumulativeSum, workout, sources)
+
+        var steps = PreferredSum()
+        for sample in try await samples(HKQuantityType(.stepCount), start, end, sources) {
+            guard let q = sample as? HKQuantitySample else { continue }
+            steps.add(q.quantity.doubleValue(for: .count()), fromPhone: AppleHealthImporter.isPhone(q))
+        }
         var kcal = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie())
         if kcal == nil {
-            kcal = try await statistics(HKQuantityType(.activeEnergyBurned), .cumulativeSum, workout, sources)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+            var energy = PreferredSum()
+            for sample in try await samples(HKQuantityType(.activeEnergyBurned), start, end, sources) {
+                guard let q = sample as? HKQuantitySample else { continue }
+                energy.add(q.quantity.doubleValue(for: .kilocalorie()), fromPhone: AppleHealthImporter.isPhone(q))
+            }
+            kcal = energy.value
         }
-        let avg = heart?.averageQuantity()?.doubleValue(for: perMinute).rounded()
-        let peak = heart?.maximumQuantity()?.doubleValue(for: perMinute).rounded()
+        var heartSum = 0.0
+        var heartCount = 0
+        var heartMax = 0.0
+        for sample in try await samples(HKQuantityType(.heartRate), start, end, sources) {
+            guard let q = sample as? HKQuantitySample else { continue }
+            let bpm = q.quantity.doubleValue(for: perMinute)
+            guard AppleHealthPlan.plausibleHeartRate(bpm) != nil else { continue }
+            heartSum += bpm
+            heartCount += 1
+            heartMax = Swift.max(heartMax, bpm)
+        }
         return ImportedWorkout(
             start: start, end: end, sportType: sport, sportName: AppleHealthSports.name(sport), duration: Int(workout.duration.rounded()),
             distance: Int((workout.totalDistance?.doubleValue(for: .meter()) ?? 0).rounded()), calories: Int((kcal ?? 0).rounded()),
-            steps: Int((stepStats?.sumQuantity()?.doubleValue(for: .count()) ?? 0).rounded()),
-            avgHr: avg.flatMap { AppleHealthPlan.plausibleHeartRate($0) }, maxHr: peak.flatMap { AppleHealthPlan.plausibleHeartRate($0) },
+            steps: Int(steps.value.rounded()),
+            avgHr: heartCount > 0 ? AppleHealthPlan.plausibleHeartRate(heartSum / Double(heartCount)) : nil,
+            maxHr: heartCount > 0 ? AppleHealthPlan.plausibleHeartRate(heartMax) : nil,
             summaryJson: "{\"source\":\"apple-health\"}", points: []
         )
     }
@@ -283,21 +309,6 @@ public final class AppleHealthImporter: @unchecked Sendable {
                 sourceBundleId: $0.sourceRevision.source.bundleIdentifier, ownBundleId: own,
                 syncIdentifier: $0.metadata?[HKMetadataKeySyncIdentifier] as? String
             )
-        }
-    }
-
-    private func statistics(
-        _ type: HKQuantityType, _ options: HKStatisticsOptions, _ workout: HKWorkout, _ sources: [HKSampleType: Set<HKSource>]
-    ) async throws -> HKStatistics? {
-        guard let allowed = sources[type], !allowed.isEmpty else { return nil }
-        let window = HKQuery.predicateForSamples(withStart: workout.startDate, end: workout.endDate, options: [])
-        let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [window, sourcePredicate(allowed)])
-        return try await withCheckedThrowingContinuation { continuation in
-            let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: predicate, options: options) { _, result, error in
-                // No samples in the range is an error of code `errorNoData`, not a failure.
-                if let error, (error as? HKError)?.code != .errorNoData { continuation.resume(throwing: error) } else { continuation.resume(returning: result) }
-            }
-            store.execute(query)
         }
     }
 }

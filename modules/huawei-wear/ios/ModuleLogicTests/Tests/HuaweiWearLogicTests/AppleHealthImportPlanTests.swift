@@ -11,8 +11,8 @@ final class AppleHealthImportPlanTests: XCTestCase {
 
     func testMinutesSumStepsAverageHeartRateAndKeepLastRestingAndSpo2() {
         var minutes = AppleHealthMinutes()
-        minutes.steps(atSec: 130, count: 10)
-        minutes.steps(atSec: 150, count: 5.4)
+        minutes.steps(atSec: 130, count: 10, fromPhone: false)
+        minutes.steps(atSec: 150, count: 5.4, fromPhone: false)
         XCTAssertTrue(minutes.heartRate(atSec: 121, bpm: 60))
         XCTAssertTrue(minutes.heartRate(atSec: 179, bpm: 71))
         XCTAssertFalse(minutes.heartRate(atSec: 125, bpm: 300))
@@ -25,6 +25,37 @@ final class AppleHealthImportPlanTests: XCTestCase {
         XCTAssertEqual(rows[0].spo2, 97)
         XCTAssertEqual(rows[1].steps, 15)
         XCTAssertEqual(rows[1].heartRate, 66)
+    }
+
+    func testPhoneSourcesAreRecognisedByDeviceThenByBundle() {
+        XCTAssertTrue(AppleHealthPlan.isPhoneSource(productType: "iPhone15,2", bundleId: "com.apple.health.ABC"))
+        XCTAssertFalse(AppleHealthPlan.isPhoneSource(productType: "Watch6,1", bundleId: "com.apple.health.ABC"))
+        XCTAssertFalse(AppleHealthPlan.isPhoneSource(productType: nil, bundleId: "com.huawei.iossporthealth"))
+        XCTAssertTrue(AppleHealthPlan.isPhoneSource(productType: nil, bundleId: "com.apple.health.ABC"))
+        XCTAssertFalse(AppleHealthPlan.isPhoneSource(productType: "", bundleId: nil))
+    }
+
+    func testAMinuteTakesOneSourceTheNonPhoneOneWinningAndThePhoneFallingBack() {
+        var minutes = AppleHealthMinutes()
+        // Minute 0: iPhone and Huawei both count steps; only Huawei's, summed within the source, counts.
+        minutes.steps(atSec: 5, count: 30, fromPhone: true)
+        minutes.steps(atSec: 10, count: 12, fromPhone: false)
+        minutes.steps(atSec: 40, count: 8, fromPhone: false)
+        // Minute 60: only the iPhone has it, so the iPhone is the fallback.
+        minutes.steps(atSec: 65, count: 25, fromPhone: true)
+        let rows = minutes.rows()
+        XCTAssertEqual(rows.map(\.ts), [0, 60])
+        XCTAssertEqual(rows[0].steps, 20)
+        XCTAssertEqual(rows[1].steps, 25)
+    }
+
+    func testPreferredSumNeverAddsTheTiers() {
+        var energy = PreferredSum()
+        energy.add(100, fromPhone: true)
+        XCTAssertEqual(energy.value, 100)
+        energy.add(40, fromPhone: false)
+        energy.add(2, fromPhone: false)
+        XCTAssertEqual(energy.value, 42)
     }
 
     func testSleepValuesMapToStagesAndInBedIsSkipped() {
@@ -55,7 +86,7 @@ final class AppleHealthImportPlanTests: XCTestCase {
         let store = SyncStore(url: temporaryDatabaseURL())
         let target = SqliteHuaweiImportStore(store)
         var minutes = AppleHealthMinutes()
-        minutes.steps(atSec: 600, count: 20)
+        minutes.steps(atSec: 600, count: 20, fromPhone: false)
         minutes.heartRate(atSec: 600, bpm: 70)
         XCTAssertEqual(try target.writeMinutes(minutes.rows()), 1)
         XCTAssertEqual(try target.writeMinutes(minutes.rows()), 0)

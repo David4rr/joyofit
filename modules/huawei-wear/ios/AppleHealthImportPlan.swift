@@ -65,13 +65,37 @@ public enum AppleHealthPlan {
         guard endSec > startSec, let kind = sleepKind(healthKitValue: healthKitValue) else { return nil }
         return ImportedSleep(start: startSec, end: endSec, type: kind.type, stage: kind.stage)
     }
+
+    /// The iPhone's own motion sensor (and an iPad's): `productType` of the sample's source revision is `iPhone15,2`; when the device is unknown,
+    /// the built-in Health source `com.apple.health.<uuid>` counts as the phone. Huawei Health and a watch's own device are not the phone.
+    public static func isPhoneSource(productType: String?, bundleId: String?) -> Bool {
+        if let type = productType, !type.isEmpty { return type.hasPrefix("iPhone") || type.hasPrefix("iPad") }
+        return bundleId?.hasPrefix("com.apple.health") ?? false
+    }
 }
 
-/// What one window of Apple Health readings becomes: one `ImportedMinute` per minute that has data. Steps add up, heart rate is the mean of
-/// the minute, resting heart rate and SpO2 keep the last reading.
+/// A value that more than one source reports for the same stretch of time (steps, active energy). The iPhone's pedometer and Huawei Health both
+/// write steps for the same minutes, so values add up WITHIN a tier and the tiers are never summed: a non-phone source wins, and the phone
+/// is the fallback only when no other source has the value.
+public struct PreferredSum {
+    public private(set) var other = 0.0
+    public private(set) var phone = 0.0
+
+    public init() {}
+
+    public mutating func add(_ value: Double, fromPhone: Bool) {
+        if fromPhone { phone += value } else { other += value }
+    }
+
+    public var value: Double { other > 0 ? other : phone }
+}
+
+/// What one window of Apple Health readings becomes: one `ImportedMinute` per minute that has data. Steps come from one source (`PreferredSum`), heart rate is the
+/// mean of the minute, resting heart rate and SpO2 keep the last reading.
 public struct AppleHealthMinutes {
     private var minutes = [Int64: ImportedMinute]()
     private var heartSum = [Int64: (sum: Int, count: Int)]()
+    private var stepSums = [Int64: PreferredSum]()
 
     public init() {}
 
@@ -83,9 +107,13 @@ public struct AppleHealthMinutes {
         return created
     }
 
-    public mutating func steps(atSec: Int64, count: Double) {
-        let n = Int(count.rounded())
-        if n > 0 { minute(atSec).steps += n }
+    /// Steps of one sample; `fromPhone` is `AppleHealthPlan.isPhoneSource` of its source.
+    public mutating func steps(atSec: Int64, count: Double, fromPhone: Bool) {
+        guard count > 0 else { return }
+        _ = minute(atSec)
+        var sum = stepSums[AppleHealthPlan.minuteOf(atSec)] ?? PreferredSum()
+        sum.add(count, fromPhone: fromPhone)
+        stepSums[AppleHealthPlan.minuteOf(atSec)] = sum
     }
 
     /// Returns false when the reading is implausible.
@@ -115,10 +143,13 @@ public struct AppleHealthMinutes {
 
     public var isEmpty: Bool { minutes.isEmpty }
 
-    /// The minutes, oldest first, with the mean heart rate filled in.
+    /// The minutes, oldest first, with the mean heart rate and the one-source step count filled in.
     public func rows() -> [ImportedMinute] {
         for (key, heart) in heartSum {
             if let row = minutes[key] { row.heartRate = Int((Double(heart.sum) / Double(heart.count)).rounded()) }
+        }
+        for (key, sum) in stepSums {
+            if let row = minutes[key] { row.steps = Int(sum.value.rounded()) }
         }
         return minutes.keys.sorted().compactMap { minutes[$0] }
     }
