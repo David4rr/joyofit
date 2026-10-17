@@ -51,6 +51,7 @@
     },
     "android": {
       "package": "com.joyodigitama.joyofit",
+      "googleServicesFile": "./google-services.json",
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#F9F6F1",
