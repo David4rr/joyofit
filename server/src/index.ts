@@ -11,6 +11,7 @@ import { family, familyDevice } from "./family/routes";
 import { runScheduled } from "./family/cron";
 import { gear } from "./gear";
 import { imports } from "./imports";
+import { livePage, livePublic, liveSession } from "./live";
 import { MAX_SYNC_BODY_BYTES, PULL_DEFAULT_LIMIT, PULL_MAX_LIMIT, RESTORE_DEFAULT_LIMIT, RESTORE_MAX_AGE_DAYS, RESTORE_MAX_LIMIT } from "./limits";
 import { syncBodySchema } from "./schemas";
 import { strava, stravaPublic } from "./strava";
@@ -25,6 +26,10 @@ app.get("/", (c) => c.json({ service: "joyofit-api", ok: true }));
 app.route("/v1/waitlist", waitlist);
 // Device-token auth, not a session: the monitored phone uploads from native background code.
 app.route("/v1/family", familyDevice);
+// Live tracking link: the phone posts with its write key (Bearer) and anyone with the link reads; neither uses a session.
+// Only `POST /v1/live` (start) needs the session, so it is mounted under `v1` below.
+app.route("/v1/live", livePublic);
+app.route("/live", livePage);
 
 const v1 = new Hono<AppContext>();
 v1.use("*", requireUser);
@@ -96,6 +101,7 @@ v1.route("/data", syncedData);
 v1.route("/imports", imports);
 v1.route("/strava", strava);
 v1.route("/gear", gear);
+v1.route("/live", liveSession);
 v1.route("/family", family);
 app.route("/v1", v1);
 app.route("/strava", stravaPublic);

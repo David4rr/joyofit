@@ -48,3 +48,22 @@ export const STRAVA_WEBHOOK_BROKER_TIMEOUT_MS = 1_500;
 export const WAITLIST_MAX_PER_HOUR = 5;
 export const WAITLIST_MAX_BODY_BYTES = 4_096;
 export const WAITLIST_MAX_ENTRIES = 5_000;
+
+/** Live tracking (src/live.ts). Points per batch, the largest batch body read, and the write rate per session. */
+export const LIVE_MAX_POINTS_PER_POST = 30;
+export const LIVE_MAX_BODY_BYTES = 8_192;
+/** Requests per session per clock minute; the app posts every 20 s, so this leaves room for retries after an outage. */
+export const LIVE_MAX_POSTS_PER_MINUTE = 12;
+/** Rows one session may hold (about 28 h at one point per 5 s). */
+export const LIVE_MAX_POINTS_PER_SESSION = 20_000;
+/** New sessions one user may start per hour. */
+export const LIVE_MAX_STARTS_PER_HOUR = 10;
+/** A point's `ts` may be this far in the past or future of the server clock. */
+export const LIVE_TS_PAST_MS = 6 * 3_600_000;
+export const LIVE_TS_FUTURE_MS = 10 * 60_000;
+/** The link stops answering this long after the last accepted batch. */
+export const LIVE_EXPIRE_MS = 12 * 3_600_000;
+/** Sessions and points are deleted this long after the last batch or the end. */
+export const LIVE_PURGE_MS = 24 * 3_600_000;
+/** The most track points `GET /v1/live/:token` returns (first and last always kept). */
+export const LIVE_MAX_TRACK_POINTS = 300;
