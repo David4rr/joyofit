@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
+import { applyLocale } from '@/i18n';
 import { energyNow, energyWord, wakeLevel, type EnergyInput } from './energy';
 
 const H = 3600;
@@ -102,6 +103,14 @@ describe('energyNow', () => {
 });
 
 describe('energyWord', () => {
+  it('speaks English when asked', async () => {
+    await applyLocale('en');
+    try {
+      expect([80, 60, 30, 5].map(energyWord)).toEqual(['Full', 'Enough', 'Running low', 'Almost empty']);
+    } finally {
+      await applyLocale('id');
+    }
+  });
   it('has bands at 25, 50 and 75', () => {
     expect([100, 75, 74, 50, 49, 25, 24, 0].map(energyWord)).toEqual(['Penuh', 'Penuh', 'Cukup', 'Cukup', 'Menipis', 'Menipis', 'Hampir habis', 'Hampir habis']);
   });

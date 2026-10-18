@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
+import { applyLocale } from '@/i18n';
 import { aerobicEffectFromTrimp, effectWord, plausibleEffect, trainingEffect } from './trainingEffect';
 
 describe('plausibleEffect', () => {
@@ -44,6 +45,14 @@ describe('trainingEffect', () => {
 });
 
 describe('effectWord', () => {
+  it('speaks English when asked', async () => {
+    await applyLocale('en');
+    try {
+      expect([0.5, 3, 5].map(effectWord)).toEqual(['Barely any', 'Improving', 'Too much']);
+    } finally {
+      await applyLocale('id');
+    }
+  });
   it('has a band per whole step', () => {
     expect([0.5, 1, 2, 3, 4, 5].map(effectWord)).toEqual(['Hampir tidak ada', 'Ringan', 'Menjaga kebugaran', 'Meningkatkan', 'Sangat meningkatkan', 'Sangat berat']);
   });

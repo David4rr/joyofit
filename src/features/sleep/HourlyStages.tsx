@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import type { HourStages, NightStage } from '@/features/sleep/nights';
+import { fmtClock, useTranslation } from '@/i18n';
 import { STAGE_LABELS, stageColor } from '@/features/sleep/stageStyle';
 import { useColors } from '@/theme';
 
@@ -11,17 +12,18 @@ const STACK: readonly NightStage[] = ['deep', 'light', 'asleep', 'rem', 'awake']
 
 /** One bar per clock hour, full height = 60 minutes, split into the minutes of each stage. Plain Views. */
 export function HourlyStages({ hours }: { hours: readonly HourStages[] }) {
+  const { t } = useTranslation('health');
   const colors = useColors();
   const labelEvery = hours.length > 10 ? 2 : 1;
   const label = hours
     .map((h) => {
-      const parts = STACK.filter((s) => h.seconds[s] >= 60).map((s) => `${STAGE_LABELS[s]} ${Math.round(h.seconds[s] / 60)} min`);
-      return `${new Date(h.hour * 1000).getHours()}:00, ${parts.length > 0 ? parts.join(', ') : 'no sleep recorded'}`;
+      const parts = STACK.filter((s) => h.seconds[s] >= 60).map((s) => t('hourly.part', { stage: STAGE_LABELS[s], minutes: Math.round(h.seconds[s] / 60) }));
+      return t('hourly.line', { hour: fmtClock(h.hour), parts: parts.length > 0 ? parts.join(', ') : t('hourly.none') });
     })
     .join('. ');
 
   return (
-    <View accessible accessibilityLabel={`Minutes per stage for each hour. ${label}`} style={styles.wrap}>
+    <View accessible accessibilityLabel={t('hourly.a11y', { details: label })} style={styles.wrap}>
       <View style={styles.bars}>
         {hours.map((h) => (
           <View key={h.hour} style={[styles.slot, { backgroundColor: colors.muted }]}>

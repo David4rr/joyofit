@@ -1,22 +1,21 @@
+import { fmtDuration, fmtInt, t } from '@/i18n';
+
 /** Where a number comes from, shown next to it: the watch measured it, or JoyoFit worked it out. */
 export type Source = 'watch' | 'estimate';
 
 export function sourceLabel(source: Source): string {
-  return source === 'watch' ? 'dari jam' : 'perkiraan';
+  return t(`health:fitness.source.${source}`);
 }
 
-/** `1 j 05 m` for 3900 s; `45 m` under an hour. */
+/** `1 j 05 mnt` for 3900 s; `45 mnt` under an hour (`1 h 05 min` / `45 min` in English). */
 export function formatHm(totalSec: number): string {
-  const min = Math.round(totalSec / 60);
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return h === 0 ? `${m} m` : `${h} j ${String(m).padStart(2, '0')} m`;
+  return fmtDuration(totalSec);
 }
 
 /** Recovery left: `Sudah pulih` at under half an hour, else whole hours (`14 j`). */
 export function formatRecovery(hoursLeft: number): { value: string; unit: string | undefined } {
-  if (hoursLeft < 0.5) return { value: 'Sudah pulih', unit: undefined };
-  return { value: String(Math.round(hoursLeft)), unit: 'jam' };
+  if (hoursLeft < 0.5) return { value: t('health:fitness.recovery.done'), unit: undefined };
+  return { value: fmtInt(hoursLeft), unit: t('health:fitness.recovery.unit') };
 }
 
 /** `52:07` under an hour, `1:52:07` from an hour on. */

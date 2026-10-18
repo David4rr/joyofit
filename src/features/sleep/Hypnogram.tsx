@@ -6,6 +6,7 @@ import { AppText } from '@/components/AppText';
 import { NIGHT_STAGES, nightHasStages, type Night, type NightStage } from '@/features/sleep/nights';
 import { STAGE_LABELS, stageColor } from '@/features/sleep/stageStyle';
 import { formatClock, formatDuration } from '@/format';
+import { useTranslation } from '@/i18n';
 import { useColors } from '@/theme';
 
 const ROW_HEIGHT = 34;
@@ -18,6 +19,7 @@ const TICK_LABEL_WIDTH = 36;
  * its row, joined by thin verticals where the stage changes. Hour lines mark the local clock.
  */
 export function Hypnogram({ night }: { night: Night }) {
+  const { t } = useTranslation('health');
   const colors = useColors();
   const [width, setWidth] = useState(0);
 
@@ -40,9 +42,12 @@ export function Hypnogram({ night }: { night: Night }) {
   const labelEvery = hours.length > 9 ? 2 : 1;
 
   const changes = night.periods.length - 1;
-  const label =
-    `Sleep stages from ${formatClock(night.start)} to ${formatClock(night.end)}, ${changes} stage ${changes === 1 ? 'change' : 'changes'}. ` +
-    rows.map((stage) => `${STAGE_LABELS[stage]} ${formatDuration(night.seconds[stage])}`).join(', ');
+  const label = t('hypnogram.a11y', {
+    from: formatClock(night.start),
+    to: formatClock(night.end),
+    count: changes,
+    stages: rows.map((stage) => t('hypnogram.stageDuration', { stage: STAGE_LABELS[stage], duration: formatDuration(night.seconds[stage]) })).join(', '),
+  });
 
   return (
     <View accessible accessibilityLabel={label} style={styles.wrap}>
@@ -118,10 +123,10 @@ export function Hypnogram({ night }: { night: Night }) {
       </View>
       <View style={styles.ends}>
         <AppText variant="caption" muted>
-          Fell asleep {formatClock(night.start)}
+          {t('hypnogram.fellAsleep', { time: formatClock(night.start) })}
         </AppText>
         <AppText variant="caption" muted>
-          Woke {formatClock(night.end)}
+          {t('hypnogram.woke', { time: formatClock(night.end) })}
         </AppText>
       </View>
     </View>

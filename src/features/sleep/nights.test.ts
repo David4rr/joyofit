@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
+import { applyLocale } from '@/i18n';
 import type { SleepSegment } from '@/wear';
 
 import { buildNights, nightHasStages } from './nights';
@@ -21,7 +22,7 @@ describe('a night the watch gave no stages for (Watch Fit 2: only the TruSleep s
     expect(night.asleepSeconds).toBe(7 * H);
     expect(night.nap).toBe(false);
     expect(nightHasStages(night)).toBe(false);
-    expect(STAGE_LABELS.asleep).toBe('Sleep (no stages)');
+    expect(STAGE_LABELS.asleep).toBe('Tidur (tanpa fase)');
   });
 
   it('a staged night is staged', () => {
@@ -56,14 +57,14 @@ describe('noStagesHint', () => {
   it('asks to turn TruSleep on when it is off', () => {
     const hint = noStagesHint({ truSleep: false, supported });
     expect(hint.openSettings).toBe(true);
-    expect(hint.text).toContain('Turn on TruSleep');
+    expect(hint.text).toContain('Nyalakan TruSleep');
   });
 
   it('with TruSleep on, says the watch gave no stages and that off may give light and deep', () => {
     const hint = noStagesHint({ truSleep: true, supported });
     expect(hint.openSettings).toBe(true);
-    expect(hint.text).toContain('not the stages');
-    expect(hint.text).toContain('with TruSleep off');
+    expect(hint.text).toContain('tanpa fase');
+    expect(hint.text).toContain('saat TruSleep mati');
   });
 
   it('points nowhere when the watch has no TruSleep command', () => {
@@ -73,5 +74,18 @@ describe('noStagesHint', () => {
 
   it('keeps the switch reachable while no watch is connected', () => {
     expect(noStagesHint({ truSleep: false, supported: null }).openSettings).toBe(true);
+  });
+});
+
+describe('English copy', () => {
+  it('names stages and hints in English', async () => {
+    await applyLocale('en');
+    try {
+      expect(STAGE_LABELS.asleep).toBe('Sleep (no stages)');
+      expect(STAGE_LABELS.deep).toBe('Deep');
+      expect(noStagesHint({ truSleep: false, supported: null }).text).toContain('Turn on TruSleep');
+    } finally {
+      await applyLocale('id');
+    }
   });
 });

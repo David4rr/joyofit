@@ -1,3 +1,5 @@
+import { t } from '@/i18n';
+
 /**
  * Training effect of one workout. The watch's aerobic and anaerobic effect (0 to 5) and its training points are shown
  * as the watch reported them. Without an aerobic effect from the watch, JoyoFit estimates one from the workout's
@@ -54,10 +56,10 @@ export function trainingEffect(
 
 /** Plain word for an effect, JoyoFit's bands: under 1 none, then barely, maintains, improves, strongly, too much. */
 export function effectWord(value: number): string {
-  if (value < 1) return 'Hampir tidak ada';
-  if (value < 2) return 'Ringan';
-  if (value < 3) return 'Menjaga kebugaran';
-  if (value < 4) return 'Meningkatkan';
-  if (value < 5) return 'Sangat meningkatkan';
-  return 'Sangat berat';
+  if (value < 1) return t('health:fitness.effect.none');
+  if (value < 2) return t('health:fitness.effect.light');
+  if (value < 3) return t('health:fitness.effect.maintain');
+  if (value < 4) return t('health:fitness.effect.improve');
+  if (value < 5) return t('health:fitness.effect.strong');
+  return t('health:fitness.effect.heavy');
 }

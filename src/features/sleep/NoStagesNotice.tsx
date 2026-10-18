@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Notice } from '@/components/States';
 import { noStagesHint } from '@/features/sleep/noStagesHint';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
+import { useTranslation } from '@/i18n';
 import { HuaweiWear } from '@/wear';
 
 /**
@@ -11,12 +12,13 @@ import { HuaweiWear } from '@/wear';
  * Settings. Reads the switch and what the connected watch supports; both refresh when the screen regains focus.
  */
 export function NoStagesNotice() {
+  const { t } = useTranslation('health');
   const [sensors, setSensors] = useState(() => HuaweiWear.getHealthSensors());
   useNativeRefresh(useCallback(() => setSensors(HuaweiWear.getHealthSensors()), []));
 
   const hint = noStagesHint(sensors);
   return (
-    <Notice action={hint.openSettings ? { label: 'Open TruSleep setting', onPress: () => router.push('/settings/sync') } : undefined}>
+    <Notice action={hint.openSettings ? { label: t('noStages.openSetting'), onPress: () => router.push('/settings/sync') } : undefined}>
       {hint.text}
     </Notice>
   );

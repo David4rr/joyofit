@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { buildNights } from '@/features/sleep/nights';
 import type { EffortSeconds } from '@/features/workouts/analysis/efforts';
 import type { NightHrvAvailability } from '@/features/today/nightHrv';
@@ -16,7 +17,6 @@ import { vo2maxStatus, type Vo2Status } from '@/features/fitness/vo2max';
 const DAY_SEC = 86400;
 /** Last night's sleep is the latest night that ended within this long ago. */
 const LAST_NIGHT_SEC = 36 * 3600;
-const NO_SLEEP = 'Belum ada data tidur semalam. Pakai jam saat tidur lalu sinkronkan.';
 
 export interface DailyFitness {
   energy: Energy | null;
@@ -35,7 +35,8 @@ export function computeDailyFitness(d: FitnessData, availability?: NightHrvAvail
   const rec = recovery(d.hrv, nowSec, availability);
 
   let energy: Energy | null = null;
-  let energyMissing: string | null = NO_SLEEP;
+  const noSleep = t('health:fitness.noSleep');
+  let energyMissing: string | null = noSleep;
   if (last) {
     energy = energyNow({
       nowSec,
@@ -49,7 +50,7 @@ export function computeDailyFitness(d: FitnessData, availability?: NightHrvAvail
       naps: nights.filter((n) => n.nap && n.start >= last.end).map((n) => ({ start: n.start, end: n.end })),
       restingHr: d.resting.get(dayStart) ?? null,
     });
-    energyMissing = energy ? null : NO_SLEEP;
+    energyMissing = energy ? null : noSleep;
   }
 
   return {

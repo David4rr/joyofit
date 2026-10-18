@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import type { HealthSensorsStatus } from '@/wear';
 
 export interface NoStagesHint {
@@ -15,17 +16,15 @@ export interface NoStagesHint {
 export function noStagesHint(sensors: Pick<HealthSensorsStatus, 'truSleep' | 'supported'>): NoStagesHint {
   if (sensors.supported !== null && !sensors.supported.truSleep) {
     return {
-      text: 'The watch told us when you slept but not the stages, and it has no TruSleep switch that JoyoFit can set.',
+      text: t('health:noStages.unsupported'),
       openSettings: false,
     };
   }
   if (!sensors.truSleep) {
-    return { text: 'Turn on TruSleep so the watch records sleep stages, then sleep a night and sync.', openSettings: true };
+    return { text: t('health:noStages.turnOn'), openSettings: true };
   }
   return {
-    text:
-      'The watch told us when you slept but not the stages. Newer watches send them with TruSleep on. Some older ones ' +
-      'cannot, and may give light and deep sleep with TruSleep off instead.',
+    text: t('health:noStages.unknown'),
     openSettings: true,
   };
 }

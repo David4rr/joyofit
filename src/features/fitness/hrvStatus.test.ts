@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 
 import type { HrvReadingRow } from '@/db/queries';
+import { applyLocale } from '@/i18n';
 import { hrvStatus, MIN_BASELINE_NIGHTS, MIN_RECENT_NIGHTS } from './hrvStatus';
 
 const DAY = 86400;
@@ -51,6 +52,15 @@ describe('hrvStatus', () => {
     const flat = Array.from({ length: 20 }, (_, i) => night(8 + i, 50));
     expect(status([...flat, ...week(48.5)]).state).toBe('balanced');
     expect(status([...flat, ...week(44)]).state).toBe('low');
+  });
+
+  it('explains what is missing in English', async () => {
+    await applyLocale('en');
+    try {
+      expect(hrvStatus([...baseline(MIN_BASELINE_NIGHTS - 1), ...week(50)], NOW)).toEqual({ missing: '13 of 14 nights for your baseline' });
+    } finally {
+      await applyLocale('id');
+    }
   });
 
   it('needs 14 baseline nights and 3 recent ones', () => {

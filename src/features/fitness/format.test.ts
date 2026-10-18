@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 
+import { applyLocale } from '@/i18n';
+
 import { formatHm, formatRaceTime, formatRecovery, sourceLabel } from './format';
 
 describe('format', () => {
@@ -8,16 +10,28 @@ describe('format', () => {
     expect(sourceLabel('estimate')).toBe('perkiraan');
   });
   it('writes hours and minutes', () => {
-    expect(formatHm(3900)).toBe('1 j 05 m');
-    expect(formatHm(8.25 * 3600)).toBe('8 j 15 m');
-    expect(formatHm(45 * 60)).toBe('45 m');
-    expect(formatHm(0)).toBe('0 m');
+    expect(formatHm(3900)).toBe('1 j 05 mnt');
+    expect(formatHm(8.25 * 3600)).toBe('8 j 15 mnt');
+    expect(formatHm(45 * 60)).toBe('45 mnt');
+    expect(formatHm(0)).toBe('0 mnt');
   });
   it('says recovered under half an hour', () => {
     expect(formatRecovery(0)).toEqual({ value: 'Sudah pulih', unit: undefined });
     expect(formatRecovery(0.49).value).toBe('Sudah pulih');
-    expect(formatRecovery(0.5)).toEqual({ value: '1', unit: 'jam' });
-    expect(formatRecovery(14.4)).toEqual({ value: '14', unit: 'jam' });
+    expect(formatRecovery(0.5)).toEqual({ value: '1', unit: 'j' });
+    expect(formatRecovery(14.4)).toEqual({ value: '14', unit: 'j' });
+  });
+  it('writes the same figures in English', async () => {
+    await applyLocale('en');
+    try {
+      expect(sourceLabel('watch')).toBe('from watch');
+      expect(formatHm(3900)).toBe('1 h 05 min');
+      expect(formatHm(45 * 60)).toBe('45 min');
+      expect(formatRecovery(0)).toEqual({ value: 'Recovered', unit: undefined });
+      expect(formatRecovery(14.4)).toEqual({ value: '14', unit: 'h' });
+    } finally {
+      await applyLocale('id');
+    }
   });
   it('writes race times', () => {
     expect(formatRaceTime(3127)).toBe('52:07');

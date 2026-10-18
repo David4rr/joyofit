@@ -13,6 +13,7 @@ import { EmptyState, Notice } from '@/components/States';
 import { listHrvReadingsSince, type HrvReadingRow } from '@/db/queries';
 import { isCancelled, useHrvProgress } from '@/features/hrv/useHrvProgress';
 import { errorMessage, formatClock } from '@/format';
+import { fmtDate, fmtInt, useTranslation } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { radius, spacing, useColors } from '@/theme';
 import { HuaweiWear, type HrvReading } from '@/wear';
@@ -23,10 +24,9 @@ const MEASURE_SECONDS = 60;
 const HISTORY_DAYS = 30;
 const HISTORY_ROWS = 10;
 
-const DAY_FORMAT: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
-
 /** A one-minute HRV measurement from the watch's beat-to-beat intervals, and the earlier ones. */
 export function MeasureHrvScreen() {
+  const { t } = useTranslation('health');
   const db = useSQLiteContext();
   const colors = useColors();
   const router = useRouter();
@@ -79,16 +79,16 @@ export function MeasureHrvScreen() {
 
   return (
     <Screen>
-      <HiddenTabHeader title="Measure HRV" />
+      <HiddenTabHeader title={t('hrvMeasure.title')} />
 
       {!connected && !measuring ? (
-        <Notice action={{ label: 'Open Watch', onPress: () => router.push('/watch') }}>Connect the watch to measure.</Notice>
+        <Notice action={{ label: t('hrvMeasure.openWatch'), onPress: () => router.push('/watch') }}>{t('hrvMeasure.connectNotice')}</Notice>
       ) : null}
 
-      <Section title="One-minute measurement" icon="pulse" tint="heart">
+      <Section title={t('hrvMeasure.sectionOneMinute')} icon="pulse" tint="heart">
         {measuring ? (
           <View accessibilityLiveRegion="polite" style={styles.block}>
-            <Metric value={String(secondsLeft)} unit="s left" size="lg" color={colors.heartText} />
+            <Metric value={String(secondsLeft)} unit={t('hrvMeasure.secondsLeft')} size="lg" color={colors.heartText} />
             <View
               accessibilityRole="progressbar"
               accessibilityValue={{ min: 0, max: MEASURE_SECONDS, now: Math.round(elapsed * MEASURE_SECONDS) }}
@@ -97,52 +97,48 @@ export function MeasureHrvScreen() {
             </View>
             <AppText variant="caption" muted>
               {progress && progress.beats > 0
-                ? `${progress.beats} beats received. Keep still.`
-                : 'Finding your pulse. Keep still.'}
+                ? t('hrvMeasure.beatsReceived', { count: progress.beats })
+                : t('hrvMeasure.findingPulse')}
             </AppText>
-            <Button label="Cancel" variant="ghost" onPress={cancel} />
+            <Button label={t('hrvMeasure.cancel')} variant="ghost" onPress={cancel} />
           </View>
         ) : (
           <View style={styles.block}>
-            <AppText variant="body">Sit down, rest your arm, watch snug.</AppText>
-            <Details title="How to measure">
-              Wear the watch snug, about a finger above the wrist bone. Stay still and quiet for the whole minute; moving or talking spoils the reading. Live heart rate pauses meanwhile.
-            </Details>
-            <Button label={result ? 'Measure again' : 'Start measuring'} variant="primary" icon="pulse" disabled={!connected} onPress={() => void start()} />
+            <AppText variant="body">{t('hrvMeasure.prompt')}</AppText>
+            <Details title={t('hrvMeasure.howTitle')}>{t('hrvMeasure.howBody')}</Details>
+            <Button label={result ? t('hrvMeasure.measureAgain') : t('hrvMeasure.start')} variant="primary" icon="pulse" disabled={!connected} onPress={() => void start()} />
           </View>
         )}
         {error ? <Notice tone="danger">{error}</Notice> : null}
       </Section>
 
       {result && !measuring ? (
-        <Section title="Result" icon="analytics" tint="heart">
+        <Section title={t('hrvMeasure.result')} icon="analytics" tint="heart">
           <View style={styles.resultRow}>
-            <Metric value={String(Math.round(result.rmssd))} unit="ms RMSSD" size="lg" color={colors.heartText} />
-            <Metric value={String(result.heartRate)} unit="bpm" size="md" />
+            <Metric value={String(Math.round(result.rmssd))} unit={t('hrvMeasure.rmssdUnit')} size="lg" color={colors.heartText} />
+            <Metric value={fmtInt(result.heartRate)} unit="bpm" size="md" />
           </View>
           <View style={styles.resultRow}>
             <Stat label="SDNN" value={`${Math.round(result.sdnn)} ms`} />
-            <Stat label="Beat interval" value={`${Math.round(result.meanRr)} ms`} />
-            <Stat label="Beats" value={String(result.beats)} />
+            <Stat label={t('hrvMeasure.beatInterval')} value={`${Math.round(result.meanRr)} ms`} />
+            <Stat label={t('hrvMeasure.beats')} value={fmtInt(result.beats)} />
           </View>
-          <Details>
-            A single minute is a rough reading: posture, breathing and the time of day move it. Measure under the same conditions to compare.
-          </Details>
+          <Details title={t('hrvMeasure.caveatTitle')}>{t('hrvMeasure.caveat')}</Details>
         </Section>
       ) : null}
 
-      <Section title="Earlier measurements" icon="time" tint="heart">
+      <Section title={t('hrvMeasure.earlier')} icon="time" tint="heart">
         {history === null ? null : history.length === 0 ? (
-          <EmptyState icon="pulse" title="No measurements yet" description="One-minute readings are listed here." />
+          <EmptyState icon="pulse" title={t('hrvMeasure.emptyTitle')} description={t('hrvMeasure.emptyDescription')} />
         ) : (
           history.map((row, i) => (
             <View key={`${row.start}-${row.source}`}>
               {i > 0 ? <Divider /> : null}
               <View style={styles.historyRow}>
                 <View style={styles.historyText}>
-                  <AppText variant="bodyStrong">{new Date(row.end * 1000).toLocaleDateString(undefined, DAY_FORMAT)}</AppText>
+                  <AppText variant="bodyStrong">{fmtDate(row.end, 'weekday')}</AppText>
                   <AppText variant="caption" muted>
-                    {formatClock(row.start)}, {row.beats} beats
+                    {t('hrvMeasure.historyLine', { time: formatClock(row.start), count: row.beats })}
                   </AppText>
                 </View>
                 <Metric value={String(Math.round(row.rmssd))} unit="ms" size="sm" />

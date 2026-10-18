@@ -1,1 +1,290 @@
-{}
+{
+  "metrics": {
+    "skin_temperature": {
+      "label": "Skin temperature"
+    },
+    "hrv": {
+      "label": "HRV",
+      "hint": "RMSSD"
+    },
+    "emotion": {
+      "label": "Stress / emotion",
+      "hint": "Status 0 to 100"
+    },
+    "sleep_apnea": {
+      "label": "Sleep apnea",
+      "hint": "Level 1 to 4"
+    },
+    "arterial_stiffness": {
+      "label": "Arterial stiffness"
+    },
+    "blood_pressure": {
+      "label": "Blood pressure"
+    },
+    "altitude": {
+      "label": "Altitude"
+    },
+    "ams": {
+      "label": "Altitude sickness"
+    },
+    "arrhythmia": {
+      "label": "Arrhythmia"
+    },
+    "level": "Level {{value}}"
+  },
+  "overview": {
+    "title": "Health",
+    "error": "Could not read stored data: {{error}}",
+    "emptyTitle": "No health metrics yet",
+    "emptyDescription": "Connect the watch and sync. The metrics it supports appear here after the first sync.",
+    "syncNow": "Sync now",
+    "connectWatch": "Connect watch",
+    "unverified": "Unverified on the watch: these layouts come from Gadgetbridge and Huawei Health, not from a Fit 4.",
+    "unsupported": "Not supported by this watch"
+  },
+  "card": {
+    "nothingStored": "Nothing stored yet. Sync to pull it from the watch.",
+    "weekLabel": "{{title}}, daily means of the last 7 days",
+    "rawValues": "Raw values: the layout of this class is not known yet"
+  },
+  "hrvMeasure": {
+    "title": "Measure HRV",
+    "connectNotice": "Connect the watch to measure.",
+    "openWatch": "Open Watch",
+    "sectionOneMinute": "One-minute measurement",
+    "secondsLeft": "s left",
+    "beatsReceived_one": "{{count}} beat received. Keep still.",
+    "beatsReceived_other": "{{count}} beats received. Keep still.",
+    "findingPulse": "Finding your pulse. Keep still.",
+    "cancel": "Cancel",
+    "prompt": "Sit down, rest your arm, watch snug.",
+    "howTitle": "How to measure",
+    "howBody": "Wear the watch snug, about a finger above the wrist bone. Stay still and quiet for the whole minute; moving or talking spoils the reading. Live heart rate pauses meanwhile.",
+    "measureAgain": "Measure again",
+    "start": "Start measuring",
+    "result": "Result",
+    "rmssdUnit": "ms RMSSD",
+    "beatInterval": "Beat interval",
+    "beats": "Beats",
+    "caveat": "A single minute is a rough reading: posture, breathing and the time of day move it. Measure under the same conditions to compare.",
+    "earlier": "Earlier measurements",
+    "emptyTitle": "No measurements yet",
+    "emptyDescription": "One-minute readings are listed here.",
+    "historyLine_one": "{{time}}, {{count}} beat",
+    "historyLine_other": "{{time}}, {{count}} beats",
+    "caveatTitle": "Note"
+  },
+  "sleep": {
+    "title": "Sleep",
+    "error": "Could not read stored sleep: {{error}}",
+    "emptyTitle": "No sleep stored",
+    "emptyDescription": "Wear the watch to bed, then sync after waking up.",
+    "earlierNight": "Earlier night",
+    "laterNight": "Later night",
+    "periodNight": "Night, {{from}} to {{to}}",
+    "periodNap": "Nap, {{from}} to {{to}}",
+    "sectionNight": "Sleep",
+    "sectionNap": "Nap",
+    "hoursUnit": "h",
+    "minutesUnit": "min",
+    "asleepA11y": "Asleep {{duration}}",
+    "stageSummary_one": "{{awakenings}} awake · {{count}} stage change",
+    "stageSummary_other": "{{awakenings}} awake · {{count}} stage changes",
+    "noStages": "No stages from the watch",
+    "needSummary": "needed {{need}}, got {{percent}}%",
+    "detailsAsleep": "Asleep time excludes time awake.",
+    "detailsScore": "Score is the watch's.",
+    "detailsScoreEfficiency": "Score is the watch's, {{efficiency}}% of the time in bed asleep.",
+    "detailsNeed": "Need is 7 h 30 min.",
+    "detailsNeedStrain": "Need is 7 h 30 min plus extra after a strain of {{strain}} that day.",
+    "stages": "Stages",
+    "eachHour": "Each hour",
+    "eachHourNote": "A full bar is 60 minutes; grey is time with nothing recorded.",
+    "stageChanges": "Stage changes",
+    "changeStart": "Start, {{stage}}",
+    "changeTo": "{{from}} to {{to}}",
+    "changeWithGap": "{{line}} ({{duration}} not recorded)",
+    "showFewer": "Show fewer",
+    "showAll": "Show all {{total}}",
+    "earlierNights": "Earlier nights",
+    "historyNap": "{{date}}, nap",
+    "historyA11yNight": "{{date}}, night, asleep {{duration}}",
+    "historyA11yNap": "{{date}}, nap, asleep {{duration}}",
+    "historyA11yScore": "{{base}}, score {{score}}",
+    "detailsTitle": "Details"
+  },
+  "stage": {
+    "light": "Light",
+    "deep": "Deep",
+    "rem": "REM",
+    "awake": "Awake",
+    "asleep": "Sleep (no stages)"
+  },
+  "hypnogram": {
+    "a11y_one": "Sleep stages from {{from}} to {{to}}, {{count}} stage change. {{stages}}",
+    "a11y_other": "Sleep stages from {{from}} to {{to}}, {{count}} stage changes. {{stages}}",
+    "stageDuration": "{{stage}} {{duration}}",
+    "fellAsleep": "Fell asleep {{time}}",
+    "woke": "Woke {{time}}"
+  },
+  "hourly": {
+    "a11y": "Minutes per stage for each hour. {{details}}",
+    "part": "{{stage}} {{minutes}} min",
+    "line": "{{hour}}, {{parts}}",
+    "none": "no sleep recorded"
+  },
+  "score": {
+    "a11y": "Sleep score {{score}} out of 100, from the watch",
+    "caption": "Score"
+  },
+  "noStages": {
+    "unsupported": "The watch told us when you slept but not the stages, and it has no TruSleep switch that JoyoFit can set.",
+    "turnOn": "Turn on TruSleep so the watch records sleep stages, then sleep a night and sync.",
+    "unknown": "The watch told us when you slept but not the stages. Newer watches send them with TruSleep on. Some older ones cannot, and may give light and deep sleep with TruSleep off instead.",
+    "openSetting": "Open TruSleep setting"
+  },
+  "fitness": {
+    "title": "Fitness",
+    "source": {
+      "watch": "from watch",
+      "estimate": "estimate"
+    },
+    "recovery": {
+      "done": "Recovered",
+      "unit": "h"
+    },
+    "effect": {
+      "none": "Barely any",
+      "light": "Light",
+      "maintain": "Maintaining",
+      "improve": "Improving",
+      "strong": "Strongly improving",
+      "heavy": "Too much"
+    },
+    "energyWord": {
+      "full": "Full",
+      "enough": "Enough",
+      "low": "Running low",
+      "empty": "Almost empty"
+    },
+    "race": {
+      "5k": "5K",
+      "10k": "10K",
+      "half": "Half marathon",
+      "full": "Marathon"
+    },
+    "hrvState": {
+      "balanced": "Balanced",
+      "unbalanced": "Unbalanced",
+      "low": "Low"
+    },
+    "hrvHint": {
+      "balanced": "Your HRV over the last 7 nights is inside your normal range.",
+      "low": "Your HRV over the last 7 nights is below your normal range. Usually a sign of fatigue, too little sleep or illness.",
+      "unbalanced": "Your HRV over the last 7 nights is above your normal range. Often seen after illness or a break from training."
+    },
+    "hrvMissing": {
+      "baseline": "{{have}} of {{need}} nights for your baseline",
+      "recent": "{{have}} of {{need}} nights in the last 7 days"
+    },
+    "trainingStatus": {
+      "productive": {
+        "word": "Productive",
+        "hint": "This week's load is above your usual: fitness is building."
+      },
+      "maintaining": {
+        "word": "Maintaining",
+        "hint": "This week's load matches your usual."
+      },
+      "recovery": {
+        "word": "Recovery",
+        "hint": "This week's load is lighter than usual."
+      },
+      "overreaching": {
+        "word": "Overreaching",
+        "hint": "Load jumped sharply. Give your body time to recover."
+      },
+      "detraining": {
+        "word": "Detraining",
+        "hint": "Load is well below your usual: fitness may drop."
+      }
+    },
+    "noSleep": "No sleep data for last night yet. Wear the watch to bed, then sync.",
+    "today": {
+      "energyTitle": "Body Energy",
+      "energyA11y": "Body Energy {{level}} out of 100",
+      "energyA11yNone": "No Body Energy yet",
+      "energyLine": "{{word}} - estimate",
+      "energySeries": "Body Energy since waking up",
+      "howTitle": "How it is calculated",
+      "howEnergy": "A JoyoFit estimate, not a watch figure. Wake-up level = 30 + 60 x (your sleep / sleep need, at most 1) + up to 10 points from overnight HRV. It then drops 0.8 per hour awake, up to 55 points from strain since waking, and up to 1 point per hour when stress is above 40. It rises 5 per hour of naps and 0.4 per hour of resting with a heart rate near your resting rate. The result is capped between 0 and 100.",
+      "howEnergyNow": "Right now: wake-up {{wake}}, awake {{awake}}, strain {{strain}}, stress {{stress}}, naps {{naps}}, rest {{rest}}.",
+      "recoveryLabel": "Recovery time",
+      "recoveryNone": "No workouts or heart rate data yet",
+      "sleepTonightLabel": "Sleep tonight",
+      "estimate": "estimate",
+      "howRecoveryTitle": "How recovery time is calculated",
+      "howRecoveryWatch": "From the watch: the recovery time of the latest workout the watch reported, counted down from when the workout ended. With several workouts, the longest one is used.",
+      "howRecoveryEstimate": "A JoyoFit estimate: the watch gave no recovery time, so it is worked out from today's and yesterday's strain. Below strain 5 there is no recovery time, at strain 5 about 6 hours, rising in a straight line to 48 hours at strain 21. Yesterday's strain counts down from midnight.",
+      "howNeedTitle": "How sleep need is calculated",
+      "howNeed": "A JoyoFit estimate: a base of 7 h 30 min, plus up to 1 hour from today's strain (strain / 21), plus a quarter of the sleep debt of the last 7 nights (the shortfall from 7 h 30 min a night), at most 1 hour.",
+      "howNeedStrain": "Today adds {{duration}}.",
+      "howNeedDebt": "Sleep debt adds {{duration}}.",
+      "howNeedNoDebt": "Sleep debt is not counted yet: it needs at least 3 recorded nights.",
+      "navTitle": "Fitness",
+      "navSubtitle": "VO2max, training status, race predictions, HRV, intensity minutes"
+    },
+    "screen": {
+      "loadError": "Could not read stored data: {{error}}",
+      "howTitle": "How it is calculated",
+      "vo2": {
+        "title": "VO2max",
+        "unit": "ml/kg/min",
+        "delta": "{{delta}} since {{date}}",
+        "trend": "VO2max trend",
+        "none": "No VO2max yet. The watch reports it after a run or GPS walk, or JoyoFit estimates it from your resting heart rate after 5 recorded days.",
+        "how": "From the watch: the VO2max the watch reported on the latest workout (90 days). The watch sends maximum METs; JoyoFit multiplies by 3.5 ml/kg/min per MET and rounds down to a whole number, so it can be 1 below the watch's figure. Values outside 10 to 90 are ignored. Estimate (when the watch reports none): Uth-Sorensen 2004, VO2max = 15.3 x maximum heart rate / resting heart rate. Maximum is 220 minus the age from your profile, resting is the median of the daily lowest heart rates of the last 14 days. Rough: the real figure can be off by a few points."
+      },
+      "load": {
+        "title": "Training status",
+        "ratio": "Ratio {{ratio}} - estimate",
+        "avg7": "Average, last 7 days",
+        "avg28": "Average, last 28 days",
+        "perDay": "{{value}} TRIMP/day",
+        "chart": "TRIMP per day, last 28 days",
+        "short_one": "Needs at least {{need}} days with stored heart rate: only {{count}} day so far.",
+        "short_other": "Needs at least {{need}} days with stored heart rate: only {{count}} days so far.",
+        "none": "No training load in the last 28 days.",
+        "how": "A JoyoFit estimate from the heart rate the watch stored. Daily load = Edwards TRIMP (minutes in zones 1 to 5 times 1 to 5). Ratio = mean TRIMP of the last 7 days divided by the mean of the last 28 days (Gabbett 2016), today excluded. Above 1.5 is overreaching, 1.1 to 1.5 productive, 0.8 to 1.1 maintaining, 0.5 to 0.8 recovery, below 0.5 detraining. The same figure feeds Readiness. Days without data count as rest."
+      },
+      "races": {
+        "title": "Race predictions",
+        "note": "An estimate, from your best efforts in runs of the last 90 days.",
+        "short_one": "Needs at least {{need}} runs of 5 km or more in the last 90 days (GPS): only {{count}} so far.",
+        "short_other": "Needs at least {{need}} runs of 5 km or more in the last 90 days (GPS): only {{count}} so far.",
+        "how": "A JoyoFit estimate with Riegel's formula (1981): T2 = T1 x (D2 / D1)^1.06. T1 is your fastest 5K, 10K or half marathon effort from runs of the last 90 days (the same as the best efforts in workout details). Each distance uses the effort closest to it. A marathon from a 5K effort tends to be too optimistic if you have not trained long runs."
+      },
+      "hrv": {
+        "title": "HRV status",
+        "iosFallback": "Night HRV is not read on iPhone yet",
+        "estimate": "{{value}} ms, estimate",
+        "range": "Your normal range",
+        "rangeValue": "{{low}} to {{high}} ms",
+        "avg": "7-night average",
+        "avgValue_one": "{{value}} ms ({{count}} night)",
+        "avgValue_other": "{{value}} ms ({{count}} nights)",
+        "missing": "No status yet: {{reason}}.",
+        "how": "A JoyoFit estimate from the overnight HRV (RMSSD) the watch records while you sleep, Android only. The mean ln(RMSSD) of the last 7 nights is compared with your normal range: the mean of the 60 days before that week, plus or minus 1 standard deviation (Plews 2013, Buchheit 2014). Inside the range: balanced. Below: low. Above: unbalanced. Needs 14 baseline nights and 3 nights in the last 7 days."
+      },
+      "intensity": {
+        "title": "Intensity minutes",
+        "a11y": "{{value}} of {{target}} intensity minutes this week",
+        "headline": "This week, target {{target}} minutes",
+        "breakdown": "{{moderate}} moderate minutes + 2 x {{vigorous}} vigorous minutes. Estimate.",
+        "chart": "Intensity minutes per day, Monday to Sunday",
+        "endLabel": "Sunday",
+        "how": "A JoyoFit estimate from the per-minute heart rate the watch stored (maximum {{maxHr}} bpm). Minutes at 60 to 80 percent of maximum (zones 2 and 3) count 1, minutes at 80 percent and above (zones 4 and 5) count 2. The week runs Monday to Sunday. The target of 150 minutes a week follows WHO 2020 and ACSM 2018 advice."
+      }
+    }
+  }
+}

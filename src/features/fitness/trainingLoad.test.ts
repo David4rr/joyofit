@@ -82,11 +82,11 @@ describe('readiness load signal', () => {
     const signal = readiness({ ...rest, strain }).signals.find((s) => s.key === 'load');
     expect(signal?.amount).toBeCloseTo(1.6);
     expect(signal?.tone).toBe('bad');
-    expect(signal?.value).toBe('1.60');
+    expect(signal?.value).toBe('1,60');
   });
 
   it('lists the missing days when the history is short', () => {
     const strain = flat(5, 100).map((d) => strainDay((TODAY - d.day) / DAY, d.trimp));
-    expect(readiness({ ...rest, strain }).missing).toContain('Training load: 5 of 14 days with heart rate so far.');
+    expect(readiness({ ...rest, strain }).missing).toContain('Beban latihan: baru 5 dari 14 hari dengan data detak jantung.');
   });
 });

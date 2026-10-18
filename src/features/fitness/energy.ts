@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { dailyStrain, strainFromTrimp, STRAIN_MAX } from '@/features/today/strain';
 import type { StepSample } from '@/wear';
 
@@ -123,8 +124,8 @@ export function energyNow(input: EnergyInput): Energy | null {
 
 /** Words for a level, JoyoFit's bands. */
 export function energyWord(level: number): string {
-  if (level >= 75) return 'Penuh';
-  if (level >= 50) return 'Cukup';
-  if (level >= 25) return 'Menipis';
-  return 'Hampir habis';
+  if (level >= 75) return t('health:fitness.energyWord.full');
+  if (level >= 50) return t('health:fitness.energyWord.enough');
+  if (level >= 25) return t('health:fitness.energyWord.low');
+  return t('health:fitness.energyWord.empty');
 }

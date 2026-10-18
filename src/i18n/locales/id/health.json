@@ -1,1 +1,283 @@
-{}
+{
+  "metrics": {
+    "skin_temperature": {
+      "label": "Suhu kulit"
+    },
+    "hrv": {
+      "label": "HRV",
+      "hint": "RMSSD"
+    },
+    "emotion": {
+      "label": "Stres / emosi",
+      "hint": "Status 0 sampai 100"
+    },
+    "sleep_apnea": {
+      "label": "Apnea tidur",
+      "hint": "Level 1 sampai 4"
+    },
+    "arterial_stiffness": {
+      "label": "Kekakuan arteri"
+    },
+    "blood_pressure": {
+      "label": "Tekanan darah"
+    },
+    "altitude": {
+      "label": "Ketinggian"
+    },
+    "ams": {
+      "label": "Penyakit ketinggian"
+    },
+    "arrhythmia": {
+      "label": "Aritmia"
+    },
+    "level": "Level {{value}}"
+  },
+  "overview": {
+    "title": "Kesehatan",
+    "error": "Gagal membaca data tersimpan: {{error}}",
+    "emptyTitle": "Belum ada metrik kesehatan",
+    "emptyDescription": "Hubungkan jam lalu sinkronkan. Metrik yang didukung jam akan muncul di sini setelah sinkron pertama.",
+    "syncNow": "Sinkronkan sekarang",
+    "connectWatch": "Hubungkan jam",
+    "unverified": "Belum diverifikasi di jam: tata letak ini berasal dari Gadgetbridge dan Huawei Health, bukan dari Fit 4.",
+    "unsupported": "Tidak didukung jam ini"
+  },
+  "card": {
+    "nothingStored": "Belum ada data tersimpan. Sinkronkan untuk mengambilnya dari jam.",
+    "weekLabel": "{{title}}, rata-rata harian 7 hari terakhir",
+    "rawValues": "Nilai mentah: tata letak kelas ini belum dikenal"
+  },
+  "hrvMeasure": {
+    "title": "Ukur HRV",
+    "connectNotice": "Hubungkan jam untuk mengukur.",
+    "openWatch": "Buka Jam",
+    "sectionOneMinute": "Pengukuran satu menit",
+    "secondsLeft": "dtk lagi",
+    "beatsReceived_other": "{{count}} detak diterima. Tetap diam.",
+    "findingPulse": "Mencari denyut nadimu. Tetap diam.",
+    "cancel": "Batal",
+    "prompt": "Duduk, istirahatkan lenganmu, kenakan jam dengan pas.",
+    "howTitle": "Cara mengukur",
+    "howBody": "Kenakan jam dengan pas, sekitar satu jari di atas tulang pergelangan tangan. Diam dan jangan bicara selama satu menit penuh; bergerak atau bicara merusak hasil. Detak jantung langsung berhenti sementara.",
+    "measureAgain": "Ukur lagi",
+    "start": "Mulai mengukur",
+    "result": "Hasil",
+    "rmssdUnit": "ms RMSSD",
+    "beatInterval": "Interval detak",
+    "beats": "Detak",
+    "caveat": "Satu menit hanya memberi gambaran kasar: posisi tubuh, napas, dan waktu dalam sehari memengaruhinya. Ukur dalam kondisi yang sama untuk membandingkan.",
+    "earlier": "Pengukuran sebelumnya",
+    "emptyTitle": "Belum ada pengukuran",
+    "emptyDescription": "Hasil pengukuran satu menit tercatat di sini.",
+    "historyLine_other": "{{time}}, {{count}} detak",
+    "caveatTitle": "Catatan"
+  },
+  "sleep": {
+    "title": "Tidur",
+    "error": "Gagal membaca data tidur: {{error}}",
+    "emptyTitle": "Belum ada data tidur",
+    "emptyDescription": "Pakai jam saat tidur, lalu sinkronkan setelah bangun.",
+    "earlierNight": "Malam sebelumnya",
+    "laterNight": "Malam berikutnya",
+    "periodNight": "Malam, {{from}} sampai {{to}}",
+    "periodNap": "Tidur siang, {{from}} sampai {{to}}",
+    "sectionNight": "Tidur",
+    "sectionNap": "Tidur siang",
+    "hoursUnit": "j",
+    "minutesUnit": "mnt",
+    "asleepA11y": "Tertidur {{duration}}",
+    "stageSummary_other": "{{awakenings}} terbangun · {{count}} perubahan fase",
+    "noStages": "Tidak ada fase dari jam",
+    "needSummary": "butuh {{need}}, tercapai {{percent}}",
+    "detailsAsleep": "Waktu tidur tidak termasuk waktu terjaga.",
+    "detailsScore": "Skor ini dari jam.",
+    "detailsScoreEfficiency": "Skor ini dari jam; {{efficiency}}% waktu di tempat tidur kamu habiskan untuk tidur.",
+    "detailsNeed": "Kebutuhan tidur 7 j 30 mnt.",
+    "detailsNeedStrain": "Kebutuhan tidur 7 j 30 mnt, ditambah ekstra setelah strain {{strain}} di hari itu.",
+    "stages": "Fase",
+    "eachHour": "Tiap jam",
+    "eachHourNote": "Satu batang penuh adalah 60 menit; abu-abu berarti tidak ada yang tercatat.",
+    "stageChanges": "Perubahan fase",
+    "changeStart": "Mulai, {{stage}}",
+    "changeTo": "{{from}} ke {{to}}",
+    "changeWithGap": "{{line}} ({{duration}} tidak tercatat)",
+    "showFewer": "Tampilkan lebih sedikit",
+    "showAll": "Tampilkan semua {{total}}",
+    "earlierNights": "Malam sebelumnya",
+    "historyNap": "{{date}}, tidur siang",
+    "historyA11yNight": "{{date}}, malam, tertidur {{duration}}",
+    "historyA11yNap": "{{date}}, tidur siang, tertidur {{duration}}",
+    "historyA11yScore": "{{base}}, skor {{score}}",
+    "detailsTitle": "Detail"
+  },
+  "stage": {
+    "light": "Ringan",
+    "deep": "Dalam",
+    "rem": "REM",
+    "awake": "Terjaga",
+    "asleep": "Tidur (tanpa fase)"
+  },
+  "hypnogram": {
+    "a11y_other": "Fase tidur dari {{from}} sampai {{to}}, {{count}} perubahan fase. {{stages}}",
+    "stageDuration": "{{stage}} {{duration}}",
+    "fellAsleep": "Tidur {{time}}",
+    "woke": "Bangun {{time}}"
+  },
+  "hourly": {
+    "a11y": "Menit per fase tiap jam. {{details}}",
+    "part": "{{stage}} {{minutes}} mnt",
+    "line": "{{hour}}, {{parts}}",
+    "none": "tidak ada tidur tercatat"
+  },
+  "score": {
+    "a11y": "Skor tidur {{score}} dari 100, dari jam",
+    "caption": "Skor"
+  },
+  "noStages": {
+    "unsupported": "Jam memberi tahu kapan kamu tidur tapi tanpa fase, dan jam ini tidak punya sakelar TruSleep yang bisa diatur JoyoFit.",
+    "turnOn": "Nyalakan TruSleep agar jam mencatat fase tidur, lalu tidur semalam dan sinkronkan.",
+    "unknown": "Jam memberi tahu kapan kamu tidur tapi tanpa fase. Jam yang lebih baru mengirimnya saat TruSleep nyala. Sebagian jam lama tidak bisa, dan mungkin memberi tidur ringan dan dalam saat TruSleep mati.",
+    "openSetting": "Buka pengaturan TruSleep"
+  },
+  "fitness": {
+    "title": "Kebugaran",
+    "source": {
+      "watch": "dari jam",
+      "estimate": "perkiraan"
+    },
+    "recovery": {
+      "done": "Sudah pulih",
+      "unit": "j"
+    },
+    "effect": {
+      "none": "Hampir tidak ada",
+      "light": "Ringan",
+      "maintain": "Menjaga kebugaran",
+      "improve": "Meningkatkan",
+      "strong": "Sangat meningkatkan",
+      "heavy": "Sangat berat"
+    },
+    "energyWord": {
+      "full": "Penuh",
+      "enough": "Cukup",
+      "low": "Menipis",
+      "empty": "Hampir habis"
+    },
+    "race": {
+      "5k": "5K",
+      "10k": "10K",
+      "half": "Setengah maraton",
+      "full": "Maraton"
+    },
+    "hrvState": {
+      "balanced": "Seimbang",
+      "unbalanced": "Tidak seimbang",
+      "low": "Rendah"
+    },
+    "hrvHint": {
+      "balanced": "HRV 7 malam terakhir ada di rentang normalmu.",
+      "low": "HRV 7 malam terakhir di bawah rentang normalmu. Biasanya tanda lelah, kurang tidur, atau sakit.",
+      "unbalanced": "HRV 7 malam terakhir di atas rentang normalmu. Sering terjadi setelah sakit atau jeda latihan."
+    },
+    "hrvMissing": {
+      "baseline": "{{have}} dari {{need}} malam untuk baseline kamu",
+      "recent": "{{have}} dari {{need}} malam dalam 7 hari terakhir"
+    },
+    "trainingStatus": {
+      "productive": {
+        "word": "Produktif",
+        "hint": "Beban minggu ini di atas biasanya: kebugaran sedang dibangun."
+      },
+      "maintaining": {
+        "word": "Menjaga",
+        "hint": "Beban minggu ini setara dengan biasanya."
+      },
+      "recovery": {
+        "word": "Pemulihan",
+        "hint": "Beban minggu ini lebih ringan dari biasanya."
+      },
+      "overreaching": {
+        "word": "Terlalu berat",
+        "hint": "Beban naik tajam. Beri badanmu waktu untuk pulih."
+      },
+      "detraining": {
+        "word": "Menurun",
+        "hint": "Beban jauh di bawah biasanya: kebugaran bisa turun."
+      }
+    },
+    "noSleep": "Belum ada data tidur semalam. Pakai jam saat tidur lalu sinkronkan.",
+    "today": {
+      "energyTitle": "Energi Tubuh",
+      "energyA11y": "Energi Tubuh {{level}} dari 100",
+      "energyA11yNone": "Energi Tubuh belum ada",
+      "energyLine": "{{word}} - perkiraan",
+      "energySeries": "Energi Tubuh sejak bangun tidur",
+      "howTitle": "Cara dihitung",
+      "howEnergy": "Perkiraan JoyoFit, bukan angka dari jam. Level bangun tidur = 30 + 60 x (tidurmu / kebutuhan tidur, maksimal 1) + sampai 10 poin dari HRV malam. Lalu berkurang 0,8 per jam terjaga, sampai 55 poin dari strain sejak bangun, dan sampai 1 poin per jam saat stres di atas 40. Bertambah 5 per jam tidur siang dan 0,4 per jam saat diam dengan detak jantung dekat istirahat. Hasilnya dibatasi 0 sampai 100.",
+      "howEnergyNow": "Sekarang: bangun {{wake}}, terjaga {{awake}}, strain {{strain}}, stres {{stress}}, tidur siang {{naps}}, istirahat {{rest}}.",
+      "recoveryLabel": "Waktu pulih",
+      "recoveryNone": "Belum ada latihan atau data detak jantung",
+      "sleepTonightLabel": "Tidur malam ini",
+      "estimate": "perkiraan",
+      "howRecoveryTitle": "Cara dihitung waktu pulih",
+      "howRecoveryWatch": "Dari jam: waktu pemulihan dari latihan terakhir yang dilaporkan jam, dihitung mundur sejak latihan selesai. Kalau ada beberapa latihan, yang terlama yang dipakai.",
+      "howRecoveryEstimate": "Perkiraan JoyoFit: tidak ada waktu pemulihan dari jam, jadi dihitung dari strain hari ini dan kemarin. Di bawah strain 5 tidak ada waktu pulih, di strain 5 sekitar 6 jam, naik lurus sampai 48 jam di strain 21. Strain kemarin dihitung mundur sejak tengah malam.",
+      "howNeedTitle": "Cara dihitung kebutuhan tidur",
+      "howNeed": "Perkiraan JoyoFit: dasar 7 j 30 mnt, ditambah sampai 1 jam dari strain hari ini (strain / 21), ditambah seperempat utang tidur 7 malam terakhir (kurangnya dari 7 j 30 mnt per malam), maksimal 1 jam.",
+      "howNeedStrain": "Hari ini menambah {{duration}}.",
+      "howNeedDebt": "Utang tidur menambah {{duration}}.",
+      "howNeedNoDebt": "Utang tidur belum dihitung: butuh minimal 3 malam tercatat.",
+      "navTitle": "Kebugaran",
+      "navSubtitle": "VO2max, status latihan, prediksi lomba, HRV, menit intensitas"
+    },
+    "screen": {
+      "loadError": "Gagal membaca data tersimpan: {{error}}",
+      "howTitle": "Cara dihitung",
+      "vo2": {
+        "title": "VO2max",
+        "unit": "ml/kg/mnt",
+        "delta": "{{delta}} sejak {{date}}",
+        "trend": "Tren VO2max",
+        "none": "Belum ada VO2max. Jam melaporkannya setelah latihan lari atau jalan dengan GPS, atau JoyoFit memperkirakannya dari detak jantung istirahat setelah 5 hari tercatat.",
+        "how": "Dari jam: nilai VO2max yang dilaporkan jam pada latihan terakhir (90 hari). Jam mengirim METs maksimal; JoyoFit mengalikannya 3,5 ml/kg/mnt per MET, dengan pembulatan ke bawah ke bilangan bulat, jadi bisa 1 di bawah angka di jam. Nilai di luar 10 sampai 90 diabaikan. Perkiraan (kalau jam tidak melaporkan): Uth-Sorensen 2004, VO2max = 15,3 x detak jantung maksimal / detak jantung istirahat. Maksimal dihitung 220 dikurangi umur dari profil, istirahat adalah median detak jantung terendah harian 14 hari terakhir. Kasar: angka sebenarnya bisa meleset beberapa poin."
+      },
+      "load": {
+        "title": "Status latihan",
+        "ratio": "Rasio {{ratio}} - perkiraan",
+        "avg7": "Rata-rata 7 hari terakhir",
+        "avg28": "Rata-rata 28 hari terakhir",
+        "perDay": "{{value}} TRIMP/hari",
+        "chart": "TRIMP per hari, 28 hari terakhir",
+        "short_other": "Butuh minimal {{need}} hari dengan detak jantung tersimpan: baru {{count}} hari.",
+        "none": "Tidak ada beban latihan dalam 28 hari terakhir.",
+        "how": "Perkiraan JoyoFit dari detak jantung yang disimpan jam. Beban harian = TRIMP Edwards (menit di zona 1 sampai 5 dikali 1 sampai 5). Rasio = rata-rata TRIMP 7 hari terakhir dibagi rata-rata 28 hari terakhir (Gabbett 2016), hari ini tidak ikut. Di atas 1,5 terlalu berat, 1,1 sampai 1,5 produktif, 0,8 sampai 1,1 menjaga, 0,5 sampai 0,8 pemulihan, di bawah 0,5 menurun. Angka yang sama dipakai di Kesiapan. Hari tanpa data dianggap istirahat."
+      },
+      "races": {
+        "title": "Prediksi lomba",
+        "note": "Perkiraan, dari catatan terbaikmu di lari 90 hari terakhir.",
+        "short_other": "Butuh minimal {{need}} lari dengan jarak 5 km atau lebih dalam 90 hari terakhir (GPS): baru {{count}}.",
+        "how": "Perkiraan JoyoFit dengan rumus Riegel (1981): T2 = T1 x (D2 / D1)^1,06. T1 adalah catatan tercepat 5K, 10K, atau setengah maraton dari lari 90 hari terakhir (sama dengan rekor terbaik di rincian latihan). Tiap jarak memakai catatan dengan jarak terdekat. Maraton dari catatan 5K cenderung terlalu optimis kalau kamu belum latihan lari panjang."
+      },
+      "hrv": {
+        "title": "Status HRV",
+        "iosFallback": "HRV malam belum dibaca di iPhone",
+        "estimate": "{{value}} ms, perkiraan",
+        "range": "Rentang normalmu",
+        "rangeValue": "{{low}} sampai {{high}} ms",
+        "avg": "Rata-rata 7 malam",
+        "avgValue_other": "{{value}} ms ({{count}} malam)",
+        "missing": "Belum ada status: {{reason}}.",
+        "how": "Perkiraan JoyoFit dari HRV malam (RMSSD) yang dicatat jam saat tidur, hanya di Android. Rata-rata ln(RMSSD) 7 malam terakhir dibandingkan dengan rentang normalmu: rata-rata 60 hari sebelum minggu itu, plus minus 1 simpangan baku (Plews 2013, Buchheit 2014). Di dalam rentang: seimbang. Di bawah: rendah. Di atas: tidak seimbang. Butuh 14 malam baseline dan 3 malam dalam 7 hari terakhir."
+      },
+      "intensity": {
+        "title": "Menit intensitas",
+        "a11y": "{{value}} dari {{target}} menit intensitas minggu ini",
+        "headline": "Minggu ini, target {{target}} menit",
+        "breakdown": "{{moderate}} menit sedang + 2 x {{vigorous}} menit berat. Perkiraan.",
+        "chart": "Menit intensitas per hari, Senin sampai Minggu",
+        "endLabel": "Minggu",
+        "how": "Perkiraan JoyoFit dari detak jantung per menit yang disimpan jam (maksimal {{maxHr}} bpm). Menit di 60 sampai 80 persen maksimal (zona 2 dan 3) dihitung 1, menit di 80 persen ke atas (zona 4 dan 5) dihitung 2. Minggu dihitung Senin sampai Minggu. Target 150 menit per minggu mengikuti anjuran WHO 2020 dan ACSM 2018."
+      }
+    }
+  }
+}

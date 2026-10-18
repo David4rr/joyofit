@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import type { EffortSeconds } from '@/features/workouts/analysis/efforts';
 import { BEST_EFFORT_DISTANCES, type BestEffortKey } from '@/features/workouts/analysis/types';
 
@@ -18,18 +19,22 @@ export const MAX_REDUCTION = 5;
 
 export type RaceKey = '5k' | '10k' | 'half' | 'full';
 
-export const RACES: readonly { key: RaceKey; label: string; distance: number }[] = [
-  { key: '5k', label: '5K', distance: 5000 },
-  { key: '10k', label: '10K', distance: 10000 },
-  { key: 'half', label: 'Setengah maraton', distance: 21097.5 },
-  { key: 'full', label: 'Maraton', distance: 42195 },
+export const RACES: readonly { key: RaceKey; distance: number }[] = [
+  { key: '5k', distance: 5000 },
+  { key: '10k', distance: 10000 },
+  { key: 'half', distance: 21097.5 },
+  { key: 'full', distance: 42195 },
 ];
+
+/** The race's name in the current language. */
+export function raceLabel(key: RaceKey): string {
+  return t(`health:fitness.race.${key}`);
+}
 
 const BASES: readonly BestEffortKey[] = ['5k', '10k', 'half'];
 
 export interface RacePrediction {
   key: RaceKey;
-  label: string;
   distance: number;
   seconds: number;
   /** The best effort the time was projected from. */
@@ -64,7 +69,7 @@ export function predictRaces(efforts: readonly EffortSeconds[]): RacePredictions
     }
     if (pick === null) continue;
     const seconds = riegel(best.get(pick.key) as number, BEST_EFFORT_DISTANCES[pick.key], race.distance);
-    predictions.push({ key: race.key, label: race.label, distance: race.distance, seconds: Math.round(seconds), basedOn: pick.key });
+    predictions.push({ key: race.key, distance: race.distance, seconds: Math.round(seconds), basedOn: pick.key });
   }
   return { kind: 'ok', predictions };
 }

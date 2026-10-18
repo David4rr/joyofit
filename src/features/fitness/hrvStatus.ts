@@ -1,4 +1,5 @@
 import type { HrvReadingRow } from '@/db/queries';
+import { t } from '@/i18n';
 import { meanSd } from '@/features/today/recovery';
 
 /**
@@ -43,10 +44,10 @@ export function hrvStatus(readings: readonly HrvReadingRow[], nowSec: number): H
   const recent = nights.filter((r) => r.end > nowSec - RECENT_DAYS * DAY_SEC);
   const baseline = nights.filter((r) => r.end <= nowSec - RECENT_DAYS * DAY_SEC && r.end > nowSec - (RECENT_DAYS + BASELINE_DAYS) * DAY_SEC);
   if (baseline.length < MIN_BASELINE_NIGHTS) {
-    return { missing: `${baseline.length} dari ${MIN_BASELINE_NIGHTS} malam untuk baseline kamu` };
+    return { missing: t('health:fitness.hrvMissing.baseline', { have: baseline.length, need: MIN_BASELINE_NIGHTS }) };
   }
   if (recent.length < MIN_RECENT_NIGHTS) {
-    return { missing: `${recent.length} dari ${MIN_RECENT_NIGHTS} malam dalam 7 hari terakhir` };
+    return { missing: t('health:fitness.hrvMissing.recent', { have: recent.length, need: MIN_RECENT_NIGHTS }) };
   }
   const base = meanSd(baseline.map((r) => Math.log(r.rmssd)));
   const sd = Math.max(base.sd, SD_FLOOR);
