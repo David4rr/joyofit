@@ -47,6 +47,7 @@ import {
   type PlannedInput,
   type RestContext,
 } from '@/features/strength/draft';
+import { strengthHr } from '@/features/strength/hrInstance';
 import { holdScreenOn, releaseScreen } from '@/features/strength/keepAwake';
 import { attachWorkoutRow, detachWorkoutRow, isImported } from '@/features/strength/link';
 import {
@@ -62,7 +63,7 @@ import {
   timerText,
   type PreviousSet,
 } from '@/features/strength/logFormat';
-import { userWeightKg } from '@/features/strength/profile';
+import { userEnergyProfile, userWeightKg } from '@/features/strength/profile';
 import {
   cancelRestEnd,
   declineRestPermission,
@@ -93,6 +94,8 @@ import { ExerciseInfoSheet } from '@/features/strength/ui/ExerciseInfoSheet';
 import { ExercisePicker } from '@/features/strength/ui/ExercisePicker';
 import { RestBar, RestOverBanner } from '@/features/strength/ui/RestBar';
 import { BottomSheet, MenuSheet, TextPrompt, type MenuItem } from '@/features/strength/ui/Sheet';
+import { StrapCard } from '@/features/strength/ui/StrapCard';
+import { StrapChip } from '@/features/strength/ui/StrapChip';
 import { useStrengthDraft, useTicker } from '@/features/strength/ui/useStrengthDraft';
 
 const one = (value: string | string[] | undefined): string | undefined => (Array.isArray(value) ? value[0] : value);
@@ -138,6 +141,8 @@ export default function ActiveWorkoutScreen() {
   const [permission, setPermission] = useState<RestPermission>('blocked');
   const [restOver, setRestOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** The workout is being finished or discarded: its heart rate strap is shutting down and must not be started again. */
+  const [closing, setClosing] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
 
   const [picker, setPicker] = useState<Picker>(null);
@@ -313,6 +318,11 @@ export default function ActiveWorkoutScreen() {
   // The notification that says the rest is over while the app is not in front.
   const rest = draft?.rest ?? null;
   const paused = draft?.pausedAt != null;
+  useEffect(() => {
+    strengthHr.setPaused(paused);
+  }, [paused]);
+  /** The workout the heart rate strap records for: only one in progress, never a finished one being edited. */
+  const strapWorkoutId = !editing && !closing && phase === 'ready' && draft ? draft.id : null;
   const restExerciseName = rest && draft ? nameOf(draft.exercises.find((e) => e.key === rest.exerciseKey)?.exerciseId ?? '') : null;
   useEffect(() => {
     if (phase !== 'ready' || editing) return;
@@ -402,6 +412,8 @@ export default function ActiveWorkoutScreen() {
   const discard = useCallback(async () => {
     setConfirm(null);
     handle.close();
+    setClosing(true);
+    void strengthHr.end();
     await saveDraft(db, null);
     await cancelRestEnd();
     leave();
@@ -433,11 +445,14 @@ export default function ActiveWorkoutScreen() {
         setConfirm('nothing');
         return;
       }
-      const linked = await attachWorkoutRow(db, workout, weight);
+      // The strap's heart rate goes into the logger's own row; a watch workout of the same session wins and drops it (see `link.ts`).
+      const linked = await attachWorkoutRow(db, workout, weight, strengthHr.result(workout, userEnergyProfile()));
       await saveWorkout(db, linked);
       handle.close();
       await saveDraft(db, null);
       await cancelRestEnd();
+      setClosing(true);
+      void strengthHr.end();
       void afterStrengthSaved(db, linked, 'saved');
       router.replace(`/strength/summary/${linked.id}?fresh=1`);
     } catch {
@@ -580,7 +595,10 @@ export default function ActiveWorkoutScreen() {
               {t('strength:active.editing', { done: progress.doneSets })}
             </AppText>
           ) : (
-            <ElapsedLine draft={draft} progress={progress} />
+            <View style={styles.clockRow}>
+              <ElapsedLine draft={draft} progress={progress} />
+              <StrapChip workoutId={strapWorkoutId} />
+            </View>
           )}
         </View>
         {!editing ? (
@@ -629,6 +647,7 @@ export default function ActiveWorkoutScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}>
+        <StrapCard workoutId={strapWorkoutId} />
         {draft.exercises.length === 0 ? (
           <View style={styles.empty}>
             <AppText variant="heading" style={styles.centered}>
@@ -914,6 +933,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, minHeight: 60 },
   iconButton: { width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' },
   headerText: { flex: 1, minWidth: 0, paddingLeft: spacing.xs },
+  clockRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.sm, rowGap: 2 },
   nameRow: { paddingHorizontal: spacing.md, paddingBottom: spacing.xs },
   nameInput: { fontSize: fontSize.lg, paddingVertical: 0, paddingHorizontal: 0, minHeight: 32 },
   finish: { minHeight: 40, paddingHorizontal: spacing.md },

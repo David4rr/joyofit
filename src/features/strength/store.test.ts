@@ -2,7 +2,12 @@ import { Database } from 'bun:sqlite';
 import { describe, expect, it } from 'bun:test';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { buildFit } from '@/features/strava/activityFile';
+import { decodeFit } from '@/features/strava/testDecode';
 import migrationsJson from '../../../modules/huawei-wear/schema/joyofit-db-migrations.json';
+import { minuteHeartRates } from '../record/save';
+import { ensureSensorSchema } from '../sensors/store';
+import { recordedSamplesOf, type StrapResult } from './hr';
 import { attachWorkoutRow, detachWorkoutRow, ensureRows, reconcileLinks } from './link';
 import {
   applyRemote,
@@ -52,6 +57,7 @@ async function open() {
     },
   } as unknown as SQLiteDatabase;
   await ensureStrengthSchema(db);
+  await ensureSensorSchema(db);
   return { raw, db };
 }
 
@@ -303,5 +309,167 @@ describe('the workouts row', () => {
     expect(rows(raw)).toHaveLength(1);
     expect(changed).toHaveLength(1);
     expect(await ensureRows(db, [pulled], 70)).toEqual([]);
+  });
+});
+
+describe('the heart rate strap in the workouts row', () => {
+  const start = Math.floor(T0 / 1000);
+  const strapOf = (over: Partial<StrapResult> = {}): StrapResult => ({
+    samples: Array.from({ length: 720 }, (_, i) => ({ ts: start + i * 5, hr: 120 + (i % 20) })),
+    avgHr: 130,
+    maxHr: 139,
+    minHr: 120,
+    kcal: 480,
+    sensors: [{ id: 'AA:BB', name: 'Polar H10', kinds: ['hr'] }],
+    ...over,
+  });
+  const count = (raw: Database, sql: string): number => {
+    const found = raw.query(sql).get() as { n: number };
+    return found.n;
+  };
+
+  it('gives the own row the strap heart rate, points, minute samples, sensor and energy (kcalSource hr)', async () => {
+    const { raw, db } = await open();
+    const strap = strapOf();
+    const w = await attachWorkoutRow(db, workout(), 70, strap);
+    expect(w).toMatchObject({ workoutStart: start, kcal: 480, kcalSource: 'hr' });
+    const row = raw.query('SELECT id, calories, avg_hr AS avgHr, max_hr AS maxHr, imported, summary_json AS summary FROM workouts').get() as {
+      id: number;
+      calories: number;
+      avgHr: number;
+      maxHr: number;
+      imported: number;
+      summary: string;
+    };
+    expect(row).toMatchObject({ calories: 480, avgHr: 130, maxHr: 139, imported: 1 });
+    expect(JSON.parse(row.summary)).toMatchObject({
+      kind: 'strength',
+      strengthWorkoutId: w.id,
+      minHr: 120,
+      kcalSource: 'hr',
+      sensors: [{ id: 'AA:BB', name: 'Polar H10', kinds: ['hr'] }],
+    });
+    const points = raw.query('SELECT ts, hr FROM workout_points WHERE workout_id = ? ORDER BY ts').all(row.id) as { ts: number; hr: number }[];
+    expect(points).toHaveLength(720);
+    expect(points[0]).toEqual({ ts: start, hr: 120 });
+    expect(points[719]).toEqual({ ts: start + 3595, hr: 139 });
+    const minutes = minuteHeartRates(recordedSamplesOf(strap.samples));
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM step_samples WHERE imported = 1')).toBe(minutes.length);
+    expect(raw.query('SELECT timestamp, heart_rate AS hr FROM step_samples ORDER BY timestamp').all()).toEqual(minutes.map(([timestamp, hr]) => ({ timestamp, hr })));
+    expect(raw.query('SELECT sensor_id AS id, name FROM workout_sensor WHERE workout_id = ?').all(row.id)).toEqual([{ id: 'AA:BB', name: 'Polar H10' }]);
+  });
+
+  it('keeps the MET energy but still stores the points when the strap covered too little of the session', async () => {
+    const { raw, db } = await open();
+    const w = await attachWorkoutRow(db, workout(), 70, strapOf({ kcal: null }));
+    expect(w.kcalSource).toBe('estimate');
+    expect(w.kcal).toBe(rows(raw)[0]!.calories);
+    expect(JSON.parse(rows(raw)[0]!.summary)).toMatchObject({ kcalSource: 'met', minHr: 120 });
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_points')).toBe(720);
+  });
+
+  it('does not duplicate the points when the same finish is saved again', async () => {
+    const { raw, db } = await open();
+    const first = workout();
+    await attachWorkoutRow(db, first, 70, strapOf());
+    await attachWorkoutRow(db, first, 70, strapOf());
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_points')).toBe(720);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_sensor')).toBe(1);
+  });
+
+  it('keeps the strap data and its energy when the sets of the finished workout are edited', async () => {
+    const { raw, db } = await open();
+    const first = await attachWorkoutRow(db, workout(), 70, strapOf());
+    await saveWorkout(db, first);
+    const edited = await attachWorkoutRow(db, { ...first, name: 'Pull', updatedAt: first.updatedAt + 1 }, 70);
+    expect(edited).toMatchObject({ kcal: 480, kcalSource: 'hr', workoutStart: start });
+    const row = rows(raw)[0]!;
+    expect(row.calories).toBe(480);
+    expect(raw.query('SELECT avg_hr AS a, max_hr AS m FROM workouts').get()).toEqual({ a: 130, m: 139 });
+    expect(JSON.parse(row.summary)).toMatchObject({ minHr: 120, kcalSource: 'hr', sensors: [{ id: 'AA:BB' }] });
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_points')).toBe(720);
+  });
+
+  it('lets a watch workout of the same session win and writes nothing of the strap', async () => {
+    const { raw, db } = await open();
+    watchRow(raw, start + 60, start + 3500, 140, 412);
+    const w = await attachWorkoutRow(db, workout(), 70, strapOf());
+    expect(w).toMatchObject({ workoutStart: start + 60, kcal: 412, kcalSource: 'watch' });
+    expect(rows(raw)).toHaveLength(1);
+    expect(raw.query('SELECT avg_hr AS a, max_hr AS m FROM workouts').get()).toEqual({ a: 120, m: 160 });
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_points')).toBe(0);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_sensor')).toBe(0);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM step_samples')).toBe(0);
+  });
+
+  it('drops the strap data when the watch workout syncs after the session', async () => {
+    const { raw, db } = await open();
+    const own = await attachWorkoutRow(db, workout(), 70, strapOf());
+    await saveWorkout(db, own);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_points')).toBe(720);
+    watchRow(raw, start + 60, start + 3560, 140, 388);
+    const changed = await reconcileLinks(db, 70);
+    expect(changed[0]).toMatchObject({ workoutStart: start + 60, kcal: 388, kcalSource: 'watch' });
+    expect(rows(raw).map((r) => r.imported)).toEqual([0]);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_points')).toBe(0);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_sensor')).toBe(0);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM step_samples')).toBe(0);
+  });
+
+  it('deleting the workout removes the strap data but leaves minutes another source wrote', async () => {
+    const { raw, db } = await open();
+    const own = await attachWorkoutRow(db, workout(), 70, strapOf());
+    const minute = minuteHeartRates(recordedSamplesOf(strapOf().samples))[2]![0];
+    // a minute that has steps (the watch's) is not the strap's: it stays
+    raw.exec(`UPDATE step_samples SET steps = 14 WHERE timestamp = ${minute}`);
+    await detachWorkoutRow(db, own);
+    expect(rows(raw)).toEqual([]);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_points')).toBe(0);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_sensor')).toBe(0);
+    expect(raw.query('SELECT timestamp FROM step_samples').all()).toEqual([{ timestamp: minute }]);
+  });
+
+  it('gives a workout pulled from the cloud its row with the strap energy it carries, without points', async () => {
+    const { raw, db } = await open();
+    const pulled = workout({ workoutStart: start, kcal: 480, kcalSource: 'hr' });
+    const changed = await ensureRows(db, [pulled], 70);
+    expect(changed).toEqual([]);
+    expect(rows(raw)[0]!.calories).toBe(480);
+    expect(count(raw, 'SELECT COUNT(*) AS n FROM workout_points')).toBe(0);
+    const fresh = await attachWorkoutRow(db, workout({ kcal: 480, kcalSource: 'hr' }), 70);
+    expect(fresh).toMatchObject({ kcal: 480, kcalSource: 'hr' });
+  });
+
+  it('puts the heart rate into the Strava file', async () => {
+    const { raw, db } = await open();
+    const w = await attachWorkoutRow(db, workout(), 70, strapOf());
+    const row = raw.query('SELECT id, start, "end" AS "end", sport_type AS sportType, sport_name AS sportName, duration, distance, calories, avg_hr AS avgHr, max_hr AS maxHr FROM workouts').get() as {
+      id: number;
+      start: number;
+      end: number;
+      sportType: number;
+      sportName: string;
+      duration: number;
+      distance: number;
+      calories: number;
+      avgHr: number | null;
+      maxHr: number | null;
+    };
+    const points = raw.query('SELECT ts, lat, lon, alt, hr FROM workout_points WHERE workout_id = ? ORDER BY ts').all(row.id) as {
+      ts: number;
+      lat: number | null;
+      lon: number | null;
+      alt: number | null;
+      hr: number | null;
+    }[];
+    const decoded = decodeFit(buildFit(row, points, { utcOffsetSeconds: 7 * 3600 }).bytes);
+    expect(decoded.errors).toEqual([]);
+    expect(decoded.integrity).toBe(true);
+    const heartRates = (decoded.messages.recordMesgs ?? []).flatMap((r) => (r.heartRate === undefined ? [] : [r.heartRate]));
+    expect(heartRates.length).toBeGreaterThanOrEqual(720);
+    expect(Math.max(...heartRates)).toBe(139);
+    expect(Math.min(...heartRates)).toBe(120);
+    expect(decoded.messages.sessionMesgs?.[0]).toMatchObject({ avgHeartRate: 130, maxHeartRate: 139 });
+    expect(w.kcalSource).toBe('hr');
   });
 });

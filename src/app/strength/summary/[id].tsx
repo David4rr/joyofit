@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
@@ -15,6 +15,7 @@ import { Card, Screen, Section } from '@/components/Screen';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { StatTile } from '@/components/StatTile';
 import { useToast } from '@/components/Toast';
+import { loadStoredWorkout } from '@/cloud/workoutAnalysis';
 import type { WorkoutRow } from '@/db/queries';
 import { fmtDateTime, fmtDecimal, fmtDuration, fmtInt, useLocale } from '@/i18n';
 import { spacing, useColors } from '@/theme';
@@ -47,6 +48,10 @@ import type { StrengthWorkout } from '@/features/strength/types';
 import { TextPrompt } from '@/features/strength/ui/Sheet';
 import { StrengthActions } from '@/features/strength/ui/StrengthActions';
 import { useWorkoutStrain } from '@/features/workouts/useWorkoutStrain';
+import { WorkoutAnalysisView, useAnalysisT } from '@/features/workouts/analysis/ui';
+import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/palette';
+import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
+import { parseSummary } from '@/features/workouts/summary';
 
 interface Loaded {
   workout: StrengthWorkout;
@@ -54,6 +59,8 @@ interface Loaded {
   catalog: Catalog;
   /** The watch's `workouts` row when the workout was merged with a watch workout. */
   watch: WorkoutRow | null;
+  /** The heart rate a strap recorded in the session, kept in the logger's own `workouts` row. */
+  strap: StrapRow | null;
 }
 
 const PR_KINDS: readonly PrKind[] = ['weight', 'e1rm', 'volume', 'reps', 'time'];
@@ -71,6 +78,8 @@ export default function StrengthSummaryScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [routinePrompt, setRoutinePrompt] = useState(false);
   const [savingRoutine, setSavingRoutine] = useState(false);
+  /** A chart of the analysis is being dragged: the page stops scrolling. */
+  const [scrubbing, setScrubbing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -82,7 +91,7 @@ export default function StrengthSummaryScreen() {
           setMissing(true);
           return;
         }
-        const [all, custom, watch] = await Promise.all([
+        const [all, custom, watch, strapRow] = await Promise.all([
           listStrengthWorkouts(db),
           customExerciseIndex(db),
           workout.workoutStart === null
@@ -92,14 +101,25 @@ export default function StrengthSummaryScreen() {
                         calories, avg_hr AS avgHr, max_hr AS maxHr, steps, complete, imported FROM workouts WHERE start = ? AND imported = 0`,
                 workout.workoutStart,
               ),
+          workout.workoutStart === null
+            ? Promise.resolve(null)
+            : db.getFirstAsync<{ id: number; avgHr: number; maxHr: number | null; summary: string }>(
+                'SELECT id, avg_hr AS avgHr, max_hr AS maxHr, summary_json AS summary FROM workouts WHERE start = ? AND imported = 1 AND avg_hr IS NOT NULL',
+                workout.workoutStart,
+              ),
         ]);
         if (cancelled) return;
         const earlier = all.filter((w) => w.id !== workout.id && w.deletedAt === null && w.startedAt < workout.startedAt);
+        const summary = strapRow ? parseSummary(strapRow.summary) : null;
         setLoaded({
           workout,
           records: findPersonalRecords(workout, bestsByExercise(earlier)),
           catalog: buildCatalog([...custom.values()]),
           watch: watch ? { ...watch, complete: !!watch.complete, imported: !!watch.imported } : null,
+          strap:
+            strapRow && summary
+              ? { rowId: strapRow.id, avgHr: strapRow.avgHr, maxHr: strapRow.maxHr, minHr: summary.minHr ?? null, sensors: (summary.sensors ?? []).map((s) => s.name) }
+              : null,
         });
       })().catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -173,13 +193,13 @@ export default function StrengthSummaryScreen() {
     );
   }
 
-  const { workout, records, catalog, watch } = loaded;
+  const { workout, records, catalog, watch, strap } = loaded;
   const nameOf = (exerciseId: string) => catalog.name(exerciseId, locale) ?? t('strength:removedExercise');
   const recordSets = new Set(records.map((r) => r.setId));
 
   return (
     <View style={styles.root}>
-      <Screen>
+      <Screen scrollEnabled={!scrubbing}>
         <Stack.Screen options={{ title: t('strength:summary.title') }} />
         {fresh === '1' ? <FreshHeader name={workout.name} records={records.length} /> : (
           <View style={styles.titleBlock}>
@@ -209,7 +229,7 @@ export default function StrengthSummaryScreen() {
                 tint="heart"
                 label={t('strength:summary.kcal')}
                 value={fmtInt(workout.kcal)}
-                sub={workout.kcalSource === 'watch' ? t('strength:summary.kcalWatch') : t('strength:summary.kcalEstimate')}
+                sub={t(workout.kcalSource === 'watch' ? 'strength:summary.kcalWatch' : workout.kcalSource === 'hr' ? 'strength:summary.kcalHr' : 'strength:summary.kcalEstimate')}
               />
             ) : (
               <View style={styles.tileRow} />
@@ -224,6 +244,7 @@ export default function StrengthSummaryScreen() {
         ) : null}
 
         {watch ? <WatchTiles watch={watch} /> : null}
+        {strap ? <StrapTiles strap={strap} /> : null}
 
         {records.length > 0 ? (
           <Section title={t('strength:summary.records')} icon="trophy-outline" tint="workouts">
@@ -278,6 +299,8 @@ export default function StrengthSummaryScreen() {
             <AppText variant="body">{workout.note}</AppText>
           </Section>
         ) : null}
+
+        {strap ? <StrapAnalysis rowId={strap.rowId} onScrubActive={setScrubbing} /> : null}
 
         <StrengthActions workout={workout} catalog={catalog} records={records} />
 
@@ -376,6 +399,68 @@ function SetLine({ position, type, text, rpe, record }: { position: number; type
       {record ? <Ionicons name="trophy" size={16} color={colors.warning} accessibilityLabel={t('summary.records')} /> : null}
     </View>
   );
+}
+
+/** The row of the logger's own `workouts` entry that carries the strap's heart rate. */
+interface StrapRow {
+  rowId: number;
+  avgHr: number;
+  maxHr: number | null;
+  minHr: number | null;
+  /** The names of the sensors that recorded it. */
+  sensors: string[];
+}
+
+function StrapTiles({ strap }: { strap: StrapRow }) {
+  const { t } = useTranslation('strength');
+  return (
+    <Section
+      title={t('summary.strap')}
+      icon="heart-outline"
+      tint="heart"
+      onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: String(strap.rowId) } })}>
+      {strap.sensors.length > 0 ? (
+        <AppText variant="caption" muted>
+          {t('summary.strapFrom', { name: strap.sensors.join(', ') })}
+        </AppText>
+      ) : null}
+      <View style={styles.tileRow}>
+        <StatTile icon="heart-outline" tint="heart" label={t('summary.avgHr')} value={fmtInt(strap.avgHr)} unit={t('summary.bpm')} />
+        <StatTile icon="pulse-outline" tint="heart" label={t('summary.maxHr')} value={strap.maxHr ? fmtInt(strap.maxHr) : t('table.dash')} unit={t('summary.bpm')} />
+      </View>
+      <View style={styles.tileRow}>
+        <StatTile icon="trending-down-outline" tint="heart" label={t('summary.minHr')} value={strap.minHr ? fmtInt(strap.minHr) : t('table.dash')} unit={t('summary.bpm')} />
+        <View style={styles.tileRow} />
+      </View>
+    </Section>
+  );
+}
+
+/** The workout analysis of the strap's heart rate (curve, zones, strain), the same one the Workouts tab shows for the row. */
+function StrapAnalysis({ rowId, onScrubActive }: { rowId: number; onScrubActive: (active: boolean) => void }) {
+  const { t } = useTranslation('workouts');
+  const db = useSQLiteContext();
+  const palette = useAnalysisPalette();
+  const mapTheme = useMapTheme();
+  const analysisT = useAnalysisT();
+  const [state, setState] = useState<{ analysis: WorkoutAnalysis } | { error: string } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadStoredWorkout(db, rowId).then(
+      (stored) => {
+        if (!cancelled && stored) setState({ analysis: stored.analysis });
+      },
+      (e: unknown) => {
+        if (!cancelled) setState({ error: e instanceof Error ? e.message : String(e) });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [db, rowId]);
+  if (state === null) return <Skeleton width="100%" height={320} radius="card" />;
+  if ('error' in state) return <Notice tone="danger">{t('detail.errors.analysis', { message: state.error })}</Notice>;
+  return <WorkoutAnalysisView analysis={state.analysis} palette={palette} t={analysisT} mapTheme={mapTheme} onScrubActive={onScrubActive} />;
 }
 
 const styles = StyleSheet.create({

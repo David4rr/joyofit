@@ -62,9 +62,9 @@ export interface StrengthWorkout {
   exercises: StrengthExercise[];
   /** `workouts.start` (unix seconds) of the row this workout is stored as: its own (`imported = 1`) or the watch's it was merged with. */
   workoutStart: number | null;
-  /** Burned kcal; `watch` = the watch's figure of the merged workout, `estimate` = `estimateKcal` (MET). */
+  /** Burned kcal; `watch` = the watch's figure of the merged workout, `hr` = from a heart rate strap worn in the session (Keytel), `estimate` = `estimateKcal` (MET). */
   kcal: number | null;
-  kcalSource: 'watch' | 'estimate' | null;
+  kcalSource: 'watch' | 'hr' | 'estimate' | null;
   updatedAt: number;
   deletedAt: number | null;
 }

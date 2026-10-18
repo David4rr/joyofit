@@ -36,6 +36,14 @@ describe('desiredKcal', () => {
     });
   });
 
+  it('pushes the energy measured with a heart rate strap exactly like the estimate, on the logger own row only', () => {
+    const estimated = desiredKcal(workout(), true, label);
+    expect(desiredKcal(workout({ kcalSource: 'hr' }), true, label)).toEqual(estimated);
+    expect(desiredKcal(workout({ kcalSource: 'hr', kcal: 301.6 }), true, label)?.kcal).toBe(302);
+    expect(desiredKcal(workout({ kcalSource: 'hr' }), false, label)).toBeNull();
+    expect(desiredKcal(workout({ kcalSource: 'hr', kcal: null }), true, label)).toBeNull();
+  });
+
   it('uses the WIB day, not the phone day', () => {
     expect(desiredKcal(workout({ startedAt: Date.UTC(2026, 9, 18, 16, 59) }), true, label)?.date).toBe('2026-10-18');
     expect(desiredKcal(workout({ startedAt: Date.UTC(2026, 9, 18, 17, 0) }), true, label)?.date).toBe('2026-10-19');

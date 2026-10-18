@@ -140,6 +140,30 @@
     "notes": "Catatan",
     "notesHint": "Tambah catatan untuk latihan ini"
   },
+  "hr": {
+    "searching": "Mencari strap",
+    "waiting": "Menunggu detak",
+    "searchingA11y": "Mencari strap detak jantung",
+    "waitingA11y": "Strap tersambung, belum ada detak jantung",
+    "chipA11y": "Detak jantung {{bpm}} bpm",
+    "chipA11yZone": "Detak jantung {{bpm}} bpm, zona {{zone}}: {{label}}",
+    "zoneShort": "Z{{zone}}",
+    "bluetoothOff": "Bluetooth mati, jadi strap detak jantung belum tersambung. Latihan tetap dicatat dengan kalori perkiraan.",
+    "ask": {
+      "title": "Pakai strap detak jantung?",
+      "body": "{{name}} sudah dipasangkan. JoyoFit perlu izin Bluetooth untuk menyambung ke strap. Setelah itu detak jantungmu ikut tercatat dan kalori latihan dihitung dari detak jantung.",
+      "continue": "Lanjut",
+      "skip": "Lewati"
+    },
+    "denied": {
+      "body": "Izin Bluetooth belum diberikan, jadi strap detak jantung tidak bisa tersambung. Latihan tetap dicatat dengan kalori perkiraan. Kamu bisa mengizinkannya di pengaturan aplikasi.",
+      "action": "Buka pengaturan"
+    },
+    "session": {
+      "title": "Latihan beban",
+      "text": "Mencatat detak jantung dari strap"
+    }
+  },
   "discard": {
     "title": "Buang latihan ini?",
     "message": "Semua set yang sudah kamu catat akan hilang.",
@@ -217,10 +241,14 @@
     "kcal": "Energi",
     "kcalWatch": "dari jam",
     "kcalEstimate": "perkiraan (MET)",
+    "kcalHr": "dari detak jantung",
     "watch": "Dari jam",
+    "strap": "Dari strap detak jantung",
+    "strapFrom": "Direkam oleh {{name}}.",
     "avgHr": "Detak rata-rata",
     "maxHr": "Detak maksimum",
     "bpm": "bpm",
+    "minHr": "Detak minimum",
     "strain": "Beban latihan",
     "records": "Rekor baru",
     "recordLine": "{{kind}}: {{value}} (sebelumnya {{previous}})",

@@ -141,6 +141,30 @@
     "notes": "Notes",
     "notesHint": "Add a note for this workout"
   },
+  "hr": {
+    "searching": "Looking for strap",
+    "waiting": "Waiting for heartbeat",
+    "searchingA11y": "Looking for the heart rate strap",
+    "waitingA11y": "Strap connected, no heart rate yet",
+    "chipA11y": "Heart rate {{bpm}} bpm",
+    "chipA11yZone": "Heart rate {{bpm}} bpm, zone {{zone}}: {{label}}",
+    "zoneShort": "Z{{zone}}",
+    "bluetoothOff": "Bluetooth is off, so the heart rate strap is not connected. The workout is still logged with estimated calories.",
+    "ask": {
+      "title": "Use your heart rate strap?",
+      "body": "{{name}} is paired. JoyoFit needs Bluetooth permission to connect to it. Your heart rate is then recorded and the workout calories are worked out from it.",
+      "continue": "Continue",
+      "skip": "Skip"
+    },
+    "denied": {
+      "body": "Bluetooth permission was not granted, so the heart rate strap cannot connect. The workout is still logged with estimated calories. You can allow it in the app settings.",
+      "action": "Open settings"
+    },
+    "session": {
+      "title": "Strength training",
+      "text": "Recording heart rate from the strap"
+    }
+  },
   "discard": {
     "title": "Discard this workout?",
     "message": "Every set you logged will be lost.",
@@ -221,10 +245,14 @@
     "kcal": "Energy",
     "kcalWatch": "from the watch",
     "kcalEstimate": "estimated (MET)",
+    "kcalHr": "from heart rate",
     "watch": "From the watch",
+    "strap": "From the heart rate strap",
+    "strapFrom": "Recorded by {{name}}.",
     "avgHr": "Average heart rate",
     "maxHr": "Max heart rate",
     "bpm": "bpm",
+    "minHr": "Min heart rate",
     "strain": "Strain",
     "records": "New records",
     "recordLine": "{{kind}}: {{value}} (was {{previous}})",

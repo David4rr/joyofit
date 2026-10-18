@@ -5,8 +5,8 @@ import type { StrengthWorkout } from '@/features/strength/types';
 /**
  * What JoyoRogo's diary should hold for a strength workout, and what to do to get there. Pure; `strengthKcal.ts` runs it.
  * One `exercise_log` row per workout (source `joyofit`, external id `strength:<workout id>`), only for workouts whose energy is
- * JoyoFit's own estimate on the logger's own `workouts` row. A workout merged with a watch workout reaches JoyoRogo through
- * Health Connect / Apple Health like every watch workout; pushing it as well would count it twice.
+ * JoyoFit's own figure (`estimate`: MET, `hr`: from a heart rate strap) on the logger's own `workouts` row. A workout merged with a
+ * watch workout reaches JoyoRogo through Health Connect / Apple Health like every watch workout; pushing it as well would count it twice.
  */
 
 /** `exercise.upsertJoyofit` limits (packages/api lib/exercise-edit.ts). */
@@ -45,7 +45,7 @@ export const externalIdFor = (workoutId: string): string => `strength:${workoutI
  */
 export function desiredKcal(workout: StrengthWorkout, ownRow: boolean, label: (name: string) => string): KcalPayload | null {
   if (workout.deletedAt !== null || isImported(workout)) return null;
-  if (workout.kcalSource !== 'estimate' || !ownRow || workout.kcal === null) return null;
+  if ((workout.kcalSource !== 'estimate' && workout.kcalSource !== 'hr') || !ownRow || workout.kcal === null) return null;
   const kcal = Math.min(MAX_KCAL, Math.round(workout.kcal));
   if (!(kcal > 0)) return null;
   return {
