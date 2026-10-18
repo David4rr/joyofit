@@ -42,8 +42,6 @@ interface Phone {
   markSent(id: string, at: number): void;
 }
 
-let active: Phone | null = null;
-
 beforeAll(() => {
   spyOn(Date, 'now').mockImplementation(() => clock.t);
 });
@@ -96,7 +94,6 @@ const flush = settleContentEdits;
 
 /** Binds the content adapters to this phone (as a sync does) and lets the store listeners attach. */
 async function bind(phone: Phone) {
-  active = phone;
   const adapters = contentAdapters(phone.db, async () => phone.io);
   await flush();
   return adapters;
