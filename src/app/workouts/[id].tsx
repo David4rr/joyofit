@@ -1,4 +1,4 @@
-import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,7 @@ import { isIos } from '@/components/IosUnavailable';
 import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { Ring } from '@/components/Ring';
+import { HeaderIconButton } from '@/components/HeaderIconButton';
 import { Card, Screen, Section } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
 import {
@@ -40,6 +41,8 @@ import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/pa
 import { workoutElevation } from '@/features/workouts/analysis/elevation';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import { WorkoutAnalysisView, useAnalysisT } from '@/features/workouts/analysis/ui';
+import { DeleteWorkoutDialog } from '@/features/workouts/ui/DeleteWorkoutDialog';
+import { MenuSheet, type MenuItem } from '@/features/strength/ui/Sheet';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { splitWorkout } from '@/features/workouts/substrate';
@@ -123,7 +126,10 @@ type AnalysisState = { status: 'pending' } | { status: 'none' } | { status: 'rea
 
 export default function WorkoutDetailScreen() {
   const db = useSQLiteContext();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: 'pending' });
@@ -265,7 +271,22 @@ export default function WorkoutDetailScreen() {
 
   return (
     <Screen scrollEnabled={!scrubbing}>
-      <Stack.Screen options={{ title: sport }} />
+      <Stack.Screen
+        options={{
+          title: sport,
+          headerRight: () => <HeaderIconButton icon="ellipsis-vertical" label={t('delete.menu')} onPress={() => setMenuOpen(true)} />,
+        }}
+      />
+      <MenuSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={[{ key: 'delete', label: t('delete.action'), icon: 'trash-outline', danger: true, onPress: () => setDeleteOpen(true) }] satisfies MenuItem[]}
+      />
+      <DeleteWorkoutDialog
+        target={deleteOpen ? { start: workout.start, sportName: workout.sportName, name: loaded.strength?.name } : null}
+        onClose={() => setDeleteOpen(false)}
+        onConfirmed={() => (router.canGoBack() ? router.back() : router.replace('/workouts'))}
+      />
       <Card>
         <View style={styles.summaryHead}>
           <IconChip icon={sportIcon(workout.sportName)} tint="workouts" size="lg" />

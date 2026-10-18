@@ -30,6 +30,7 @@ import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
 import { LivePill } from '@/features/record/ui/LivePill';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
+import { DeleteSnackbar } from '@/features/workouts/ui/DeleteSnackbar';
 import { CloudProvider } from '@/state/CloudProvider';
 import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
 import { OnboardingProvider } from '@/state/OnboardingProvider';
@@ -230,6 +231,7 @@ function RootNavigator() {
                   </Tabs>
                   {/* Android installs from Google Play only: flexible in-app update. */}
                   <UpdateBanner />
+                  <DeleteSnackbar />
                   </View>
                   </FamilyProvider>
                   </OnboardingProvider>

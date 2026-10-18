@@ -619,5 +619,18 @@
     "unsaved": "Not saved",
     "detail": "{{sport}} · {{time}}",
     "a11y": "{{status}}. {{detail}}. Open the recording."
+  },
+  "delete": {
+    "menu": "Workout menu",
+    "action": "Delete workout",
+    "title": "Delete this workout?",
+    "message": "{{sport}}, {{date}}. This workout is removed from JoyoFit on this phone, from the cloud and from the JoyoRogo diary, and your watch will not bring it back. The activity on Strava is not deleted.",
+    "withPost": "{{sport}}, {{date}}. This workout is removed from JoyoFit on this phone, from the cloud and from the JoyoRogo diary, and your watch will not bring it back. The activity on Strava is not deleted.\n\nAlso delete the post in the feed?",
+    "confirm": "Delete",
+    "withPostYes": "Delete workout and post",
+    "withPostNo": "Delete workout only",
+    "done": "Workout deleted",
+    "undo": "Undo",
+    "undoA11y": "Undo deleting {{sport}}"
   }
 }

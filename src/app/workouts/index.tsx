@@ -30,6 +30,8 @@ import { sportIcon } from '@/features/workouts/sportIcon';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { formatElapsed, workoutDistanceParts } from '@/features/workouts/summary';
 import { workoutTimes } from '@/features/workouts/times';
+import { usePendingDelete } from '@/features/workouts/pendingDelete';
+import { DeleteWorkoutDialog, type DeleteTarget } from '@/features/workouts/ui/DeleteWorkoutDialog';
 import { StartWorkoutSheet } from '@/features/workouts/ui/StartWorkoutSheet';
 import { useWorkoutStrain } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatCount, formatDateTime } from '@/format';
@@ -55,7 +57,7 @@ function groupByMonth(workouts: readonly WorkoutRow[]): MonthGroup[] {
   return groups;
 }
 
-function WorkoutCard({ workout, strength }: { workout: WorkoutRow; strength?: StrengthWorkout }) {
+function WorkoutCard({ workout, strength, onDelete }: { workout: WorkoutRow; strength?: StrengthWorkout; onDelete: (target: DeleteTarget) => void }) {
   const router = useRouter();
   const { colors, radius } = useTheme();
   const heart = tintColors(colors, 'heart');
@@ -69,6 +71,9 @@ function WorkoutCard({ workout, strength }: { workout: WorkoutRow; strength?: St
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={t('list.cardA11y', { sport, date: formatDateTime(workout.start) })}
+      accessibilityActions={[{ name: 'delete', label: t('delete.action') }]}
+      onAccessibilityAction={() => onDelete({ start: workout.start, sportName: workout.sportName, name: strength?.name })}
+      onLongPress={() => onDelete({ start: workout.start, sportName: workout.sportName, name: strength?.name })}
       onPress={() =>
         strength
           ? router.push({ pathname: '/strength/summary/[id]', params: { id: strength.id } })
@@ -149,6 +154,9 @@ export default function WorkoutsScreen() {
   const [pulling, setPulling] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
   const [startOpen, setStartOpen] = useState(false);
+  const [deleting, setDeleting] = useState<DeleteTarget | null>(null);
+  // A deleted workout leaves the list at once; it is really deleted when the 5 seconds of "Urungkan" are up.
+  const pendingDelete = usePendingDelete();
   // Strength workouts by the `workouts.start` they are stored as (their own row, or the watch row they merged with).
   const { workouts: strengthWorkouts } = useStrengthHistory();
   const strengthByStart = useMemo(() => {
@@ -181,7 +189,7 @@ export default function WorkoutsScreen() {
 
   const canSync = linkState === 'connected' && device !== null;
   const syncing = linkState === 'syncing';
-  const sections = useMemo(() => groupByMonth(workouts ?? []), [workouts, locale]);
+  const sections = useMemo(() => groupByMonth((workouts ?? []).filter((w) => w.start !== pendingDelete?.start)), [workouts, locale, pendingDelete?.start]);
   const refreshControl = useRefreshControl({
     refreshing: pulling,
     enabled: canSync,
@@ -270,8 +278,9 @@ export default function WorkoutsScreen() {
             </AppText>
           </View>
         )}
-        renderItem={({ item }) => <WorkoutCard workout={item} strength={strengthByStart.get(item.start)} />}
+        renderItem={({ item }) => <WorkoutCard workout={item} strength={strengthByStart.get(item.start)} onDelete={setDeleting} />}
       />
+      <DeleteWorkoutDialog target={deleting} onClose={() => setDeleting(null)} />
       <StartWorkoutSheet
         visible={startOpen}
         onClose={() => setStartOpen(false)}

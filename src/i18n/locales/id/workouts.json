@@ -614,5 +614,18 @@
     "unsaved": "Belum tersimpan",
     "detail": "{{sport}} · {{time}}",
     "a11y": "{{status}}. {{detail}}. Buka rekaman."
+  },
+  "delete": {
+    "menu": "Menu latihan",
+    "action": "Hapus latihan",
+    "title": "Hapus latihan ini?",
+    "message": "{{sport}}, {{date}}. Latihan ini dihapus dari JoyoFit di HP ini, dari cloud, dan dari catatan olahraga di JoyoRogo, dan jam-mu tidak akan membawanya kembali. Aktivitas di Strava tidak ikut terhapus.",
+    "withPost": "{{sport}}, {{date}}. Latihan ini dihapus dari JoyoFit di HP ini, dari cloud, dan dari catatan olahraga di JoyoRogo, dan jam-mu tidak akan membawanya kembali. Aktivitas di Strava tidak ikut terhapus.\n\nHapus juga postingan di feed?",
+    "confirm": "Hapus",
+    "withPostYes": "Hapus latihan dan postingan",
+    "withPostNo": "Hapus latihan saja",
+    "done": "Latihan dihapus",
+    "undo": "Urungkan",
+    "undoA11y": "Urungkan penghapusan {{sport}}"
   }
 }

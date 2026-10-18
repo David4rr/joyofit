@@ -52,6 +52,7 @@ export const USER_DATA_TABLES = [
   'gear_default',
   'workout_gear',
   'strava_gear_sent',
+  'workout_deleted',
   'coach_doc',
   'sync_item',
 ] as const;

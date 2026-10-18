@@ -3,6 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { CloudHttpError } from '@/cloud/api';
 import { isSyncPaused } from '@/cloud/syncGate';
 import { DETACHED_HASH, getCloudState } from '@/db/cloud';
+import { purgeDeletedWorkouts } from '@/features/workouts/purgeDeleted';
 import { sportLabel } from '@/features/workouts/sportLabel';
 
 import { noteDiaryError, noteDiarySent } from './diaryNotes';
@@ -18,8 +19,8 @@ export type { WatchKcalPass };
  * JoyoRogo was told is remembered in `watch_kcal_sent`, created from JS like `phone_kcal_sent`, with the account it was told to: a workout
  * is sent once per account, sent again when its energy or day changes, and picked up by the next pass when the phone was offline or
  * signed out. Every sync runs the pass, so a workout that was missed (a JoyoRogo that could not read Health Connect, a phone without
- * network) arrives by itself, and a repeat is harmless: the row is keyed by `watch:<start>`. A workout deleted on the phone stays in the
- * diary, like a record Health Connect already holds.
+ * network) arrives by itself, and a repeat is harmless: the row is keyed by `watch:<start>`. A workout deleted on the phone is taken out of the
+ * diary by `features/workouts/deleteWorkout.ts` (`exercise.removeJoyofit`); its deleted-start tombstone keeps this pass from sending it again.
  */
 const SCHEMA = `CREATE TABLE IF NOT EXISTS watch_kcal_sent (
   workout_start INTEGER PRIMARY KEY NOT NULL, account_id TEXT NOT NULL, external_id TEXT NOT NULL, date TEXT NOT NULL, kcal INTEGER NOT NULL, sent_at INTEGER NOT NULL)`;
@@ -116,6 +117,7 @@ export function pushWatchKcal(db: SQLiteDatabase, accountId: string): Promise<Wa
       await noteDiaryError(db, 'workout energy', error);
       return { sent: 0, stopped: true };
     }
+    await purgeDeletedWorkouts(db);
     return runWatchKcalPass(ioFor(db), accountId);
   });
 }

@@ -18,6 +18,7 @@ import {
 } from '@/db/cloud';
 import { ensureCoachSchema } from '@/features/coach/store';
 import { ensureGearSchema, saveGear } from '@/features/gear/store';
+import { ensureDeletedSchema } from '@/features/workouts/deleteCore';
 import { ensureStrengthSchema, putRecord, setStrengthMeta, listDirty } from '@/features/strength/store';
 import { ANALYSIS_ENGINE_REV } from '@/features/workouts/analysis/engineRev';
 
@@ -34,6 +35,7 @@ async function phone(): Promise<Phone> {
   await ensureStrengthSchema(db);
   await ensureCoachSchema(db);
   await ensureSyncItemSchema(db);
+  await ensureDeletedSchema(db);
   raw.exec('CREATE TABLE IF NOT EXISTS strength_kcal_sent (workout_id TEXT PRIMARY KEY NOT NULL, external_id TEXT NOT NULL, date TEXT NOT NULL, kcal INTEGER NOT NULL, sent_at INTEGER NOT NULL)');
   return { raw, db };
 }
@@ -136,6 +138,7 @@ describe('deleteLocalRows', () => {
     p.raw.query('INSERT INTO workout_points (workout_id, ts) VALUES (1, 1)').run();
     p.raw.query("INSERT INTO diet_day (date, meals_json, updated_at) VALUES ('2026-01-01', '[]', 1)").run();
     p.raw.query("INSERT INTO cycle_days (day, modified) VALUES ('2026-01-01', 1)").run();
+    p.raw.query('INSERT INTO workout_deleted (start, deleted_at) VALUES (1000000, 1)').run();
     await setStrengthMeta(p.db, META.user, 'user-a');
     await p.db.runAsync("UPDATE cloud_cursor SET uploaded = 99");
 

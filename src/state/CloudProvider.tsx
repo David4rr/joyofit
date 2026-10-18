@@ -26,6 +26,7 @@ import { onUnmeteredNetwork, readSyncSettings, writeAutoSync, writeWifiOnly, typ
 import { syncStrength } from '@/cloud/strengthSync';
 import { runUpload } from '@/cloud/uploader';
 import { pushWatchKcal } from '@/cloud/watchKcal';
+import { flushWorkoutDeletes } from '@/features/workouts/deleteWorkout';
 import {
   bindAccount,
   fetchCloudWorkoutStatus,
@@ -297,6 +298,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           // Before anything is bound or sent: another account's phone data is never adopted without asking.
           if (await reviewAccount(account.id)) return;
           await bindAccount(db, account.id, account.email);
+          // Workouts deleted on this phone that the account has not heard about yet go first, so the pull below cannot restore them (never throws).
+          await flushWorkoutDeletes(db);
           // A manual sync or one that follows an account choice: the watch workouts' energy for JoyoRogo's diary (idempotent, never throws).
           await pushWatchKcal(db, account.id);
           await pullWorkouts(db);
@@ -368,6 +371,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     const { autoSync, wifiOnly } = settingsRef.current;
     const account = userRef.current;
     if (!account || !autoSync || (wifiOnly && !(await onUnmeteredNetwork()))) return;
+    await flushWorkoutDeletes(db);
     await pushWatchKcal(db, account.id);
   }, [db]);
 

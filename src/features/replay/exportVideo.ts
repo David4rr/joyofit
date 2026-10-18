@@ -58,8 +58,8 @@ function cacheDir(): Directory {
   return dir;
 }
 
-/** Old exports go: the cache must not keep a video per attempt. */
-function clearOldVideos(): void {
+/** Old exports go: the cache must not keep a video per attempt. Also what a deleted workout's replay leaves behind. */
+export function clearReplayVideos(): void {
   for (const entry of cacheDir().list()) {
     if (entry instanceof File && entry.name.endsWith('.mp4')) {
       try {
@@ -74,7 +74,7 @@ function clearOldVideos(): void {
 export async function encodeReplay(opts: EncodeOptions): Promise<EncodedVideo> {
   const support = await ReplayEncoder.getSupport().catch(() => null);
   if (!support || !support.available || !support.h264) throw new EncoderUnsupportedError();
-  clearOldVideos();
+  clearReplayVideos();
   const file = new File(cacheDir(), `replay-${Date.now()}.mp4`);
   const session = await ReplayEncoder.begin({ path: file.uri, width: EXPORT_WIDTH, height: EXPORT_HEIGHT, fps: EXPORT_FPS }).catch((e: unknown) => {
     // No encoder takes 1080 x 1920 H.264 on this phone: say so, rather than a code.

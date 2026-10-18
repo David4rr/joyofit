@@ -146,6 +146,15 @@ flowchart LR
   the same bytes (the gzip header carries no clock, so the same workout always compresses to the same bytes).
 - **Not synced:** deletions made on the phone, the profile, alarms and settings.
 
+## Deleting a workout
+
+Workout screen → ⋮ → **Hapus latihan**, or a long press on a card in the Workouts list (also offered as a screen reader action). A dialog says what goes and that the activity on Strava stays; when the workout was shared to the JoyoRogo feed it asks whether the post goes too (the person's newest 200 posts are searched for `stats.startedAt`). After **Hapus** the workout leaves the list at once and a snackbar offers **Urungkan** for 5 s; only then is it deleted (`features/workouts/pendingDelete.ts`; leaving the app commits at once, another delete commits the waiting one).
+
+- **Local.** The `workouts` row, its `workout_points`, `workout_sensor`, `cloud_workout`, `workout_gear`, `strava_gear_sent`, `ride_metrics`, `watch_kcal_sent` and `phone_kcal_sent` rows, the heart-rate minutes a phone recording wrote to `step_samples`, the e-bike mark, the replay video cache, the Coach plan link (the session is open again) and the strength record stored as it (a tombstone; strength sync tells the cloud). `strava_upload` stays on purpose, so the workout is never uploaded to Strava twice (`features/workouts/deleteCore.ts`, `deleteWorkout.ts`).
+- **Never comes back.** `workout_deleted` (created from JS) keeps the start of every deleted workout. The native watch sync re-downloads everything after the newest workout it knows of, so the deleted one is written again by the next sync; `purgeDeletedWatchRows` removes that copy (only `imported = 0` rows) at start, when the app returns, after every sync and ahead of every push. The cloud pull never restores a deleted start, and a tombstone pulled from the cloud (a delete on another phone or the web) is recorded the same way.
+- **Account.** What the account has to be told is stored in the tombstone and retried at every sync (and by the diary push) until it is sent: `watchWorkout.remove` (the cloud tombstone, which other phones pull and answer by deleting their copy; a phone that uploads it later gets `410`), `exercise.removeJoyofit` for `watch:<start>`, `phone:<start>` and `strength:<id>`, and `social.deletePost` for the posts the person agreed to remove. Nothing is sent while nobody is signed in or sync is paused, and a tombstone made under another account waits for that account. A workout JoyoRogo's server absorbed into a Health Connect / Apple Health row has no `joyofit` row to remove.
+- **Strava** is left alone.
+
 ## Strava
 
 Settings → **Strava** sends watch workouts to the wearer's own Strava account. It is **free**: no JoyoRogo Pro, no gate

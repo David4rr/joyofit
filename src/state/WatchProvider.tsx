@@ -10,8 +10,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { AppState } from 'react-native';
 
 import { getLastSync } from '@/db/queries';
+import { purgeDeletedWorkouts } from '@/features/workouts/purgeDeleted';
 import { useWatchList, type WatchListActions } from '@/features/device/useWatchList';
 import type { WatchRow } from '@/features/device/watches';
 import { describeConnectFailure } from '@/features/device/connectFailure';
@@ -269,6 +271,24 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   );
 
   const dataChanged = useCallback(() => setDataVersion((v) => v + 1), []);
+
+  // The watch's history brings back a workout the person deleted (it re-sends everything after the newest one it knows of): the copy
+  // goes again after every sync, at start, and when the app returns from a background sync, before any screen or upload reads it.
+  useEffect(() => {
+    let live = true;
+    void purgeDeletedWorkouts(db).then((purged) => {
+      if (live && purged > 0) setDataVersion((v) => v + 1);
+    });
+    return () => {
+      live = false;
+    };
+  }, [db, dataVersion]);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void purgeDeletedWorkouts(db).then((purged) => purged > 0 && setDataVersion((v) => v + 1));
+    });
+    return () => subscription.remove();
+  }, [db]);
 
   const sync = useCallback(() => runSync(() => HuaweiWear.syncActivity()), [runSync]);
   const syncFullHistory = useCallback(() => runSync(() => HuaweiWear.syncFullHistory()), [runSync]);
