@@ -361,6 +361,58 @@ final class WeatherSendTests: XCTestCase {
         XCTAssertTrue(h.log.contains("Weather flags the packets will follow: icon=true"))
     }
 
+    func testAFit2ClassWatchThatTakesCurrentWeatherAndGpsWithoutReceiptGetsTheWholeForecast() async throws {
+        // What the reports of a Watch Fit 2 say, as far as they go: it lists current weather, unit and forecast (0f/01, 05, 08) and the position service,
+        // but not 0f/06 or 0f/0a, and it takes the current weather and the position without a receipt. Its support bitmap is not known; 0x7b is a plausible
+        // one (icon, wind, temperature range, place, current temperature, unit; no pm2.5, no air quality).
+        let h = SleepFilesHarness()
+        installWatch(h, support: 0x7B, silent: ["0f/01", "18/07"])
+        let watchCaps = caps(commands: [0x0F: [0x01, 0x05, 0x08], 0x18: [0x06]])
+        let outcome = try await sender(h, watchCaps).send(report: report(), unit: .celsius, nowSec: now, zone: zone)
+
+        XCTAssertEqual(outcome, ForecastOutcome(state: .sent, hours: 24, days: 8, replyCode: 0x000186A0, atSec: now))
+        XCTAssertEqual(keys(h), ["0f/09", "0f/05", "0f/02", "0f/01", "18/07", "0f/08"])
+        XCTAssertTrue(h.log.containsError("Weather step WeatherCurrent: no answer within 300 ms"))
+        XCTAssertTrue(h.log.containsError("Weather step WeatherGps: no answer within 300 ms"))
+        XCTAssertTrue(h.log.contains("Weather: the watch lists no 0f/06, so the icon flag follows bit 0 of the support bitmap (true)"))
+
+        // Current weather: the condition from bit 0 of the support bitmap, wind, today's range, place, temperature and unit; nothing the watch did not announce.
+        let current = h.watch.requests[3].tlv
+        let head = try current.object(0x81)
+        XCTAssertEqual(head.entries.map { Int($0.tag) }, [0x02, 0x03])
+        XCTAssertEqual(try head.byte(0x02), 0x01)
+        XCTAssertEqual(try head.short(0x03), 0x0203)
+        XCTAssertEqual(try current.object(0x85).byte(0x06), 23)
+        XCTAssertEqual(try current.object(0x85).byte(0x07), 31)
+        XCTAssertEqual(try current.string(0x08), "Bandung")
+        XCTAssertEqual(try current.byte(0x09), 28)
+        XCTAssertEqual(try current.byte(0x0A), 0)
+        for tag in [0x04, 0x0B, 0x0C, 0x0E, 0x0F, 0x10, 0x11, 0x12] { XCTAssertFalse(current.contains(tag), "tag \(tag)") }
+
+        // Forecast: the 24 next hours and 8 days, today first, each row with the tags the watch announced and no others.
+        let forecast = h.watch.requests[5].tlv
+        let hours = try forecast.object(0x81).objects(0x82)
+        let days = try forecast.object(0x90).objects(0x91)
+        XCTAssertEqual(hours.count, 24)
+        XCTAssertEqual(days.count, 8)
+        XCTAssertTrue(hours.allSatisfy { $0.entries.map { Int($0.tag) } == [0x03, 0x04, 0x05] })
+        XCTAssertTrue(days.allSatisfy { $0.entries.map { Int($0.tag) } == [0x12, 0x13, 0x14, 0x15] })
+
+        let hourStamps = try hours.map { Int64(try $0.int(0x03)) }
+        XCTAssertEqual(hourStamps.first, dayStart(0) + 11 * 3600)
+        XCTAssertTrue(hourStamps[0] > now)
+        XCTAssertTrue(zip(hourStamps, hourStamps.dropFirst()).allSatisfy { $1 - $0 == 3600 })
+        XCTAssertEqual(try hours.map { try $0.byte(0x05) }, (35...58).map { Int8($0) })
+        // Sample hours alternate sunny (even) and rain (odd), starting at 11:00.
+        XCTAssertEqual(try hours.map { try $0.byte(0x04) }, (11...34).map { $0 % 2 == 0 ? Int8(0x00) : Int8(0x08) })
+
+        // Today carries the observation time and the current icon, the next days a whole day more each, with the day's own icon (light rain).
+        XCTAssertEqual(try days.map { Int64(try $0.int(0x12)) }, (0..<8).map { now + 86400 * Int64($0) })
+        XCTAssertEqual(try days.map { try $0.byte(0x13) }, [0x01] + Array(repeating: Int8(0x07), count: 7))
+        XCTAssertEqual(try days.map { try $0.byte(0x14) }, (0..<8).map { Int8(31 + $0) })
+        XCTAssertEqual(try days.map { try $0.byte(0x15) }, (0..<8).map { Int8(23 - $0) })
+    }
+
     func testAWatchWithoutExtendedSupportAndWithoutBitZeroGetsNoIcons() async throws {
         let h = SleepFilesHarness()
         installWatch(h, support: 0xFE)

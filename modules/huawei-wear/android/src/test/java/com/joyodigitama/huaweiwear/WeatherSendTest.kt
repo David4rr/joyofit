@@ -5,6 +5,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.Collections
 import kotlinx.coroutines.runBlocking
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiPacket
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
 import nodomain.freeyourgadget.gadgetbridge.util.CheckSums
 import org.junit.After
@@ -36,9 +37,12 @@ class WeatherSendTest {
   private class Watch(private val reply: (Int, Int) -> HuaweiTLV?) : FrameSink {
     lateinit var session: HuaweiSession
     val seen: MutableList<Pair<Int, Int>> = Collections.synchronizedList(ArrayList())
+    /** Every frame the phone wrote, in order, for decoding what the watch actually received. */
+    val written: MutableList<ByteArray> = Collections.synchronizedList(ArrayList())
 
     override suspend fun write(frames: List<ByteArray>) {
       for (f in frames) {
+        written.add(f)
         // Unsliced: 5A len2 00 svc cmd. Sliced: 5A len2 01 flag svc cmd; the next slices carry no command.
         val (service, command) = when (f[3].toInt()) {
           0 -> (f[4].toInt() and 0xFF) to (f[5].toInt() and 0xFF)
@@ -133,6 +137,27 @@ class WeatherSendTest {
   private fun send(rig: Rig, report: WeatherReport = sampleReport()): ForecastOutcome = runBlocking {
     HuaweiWeatherSender(rig.session, rig.events, answerTimeoutMs = 60).send(report, TemperatureUnit.CELSIUS, now, zone, "test")
   }
+
+  /** The packets the watch received, put back together from the frames the phone wrote and decrypted: what is on the wire, not what was meant. */
+  private fun received(rig: Rig): List<HuaweiPacket> {
+    val packets = ArrayList<HuaweiPacket>()
+    var pending: HuaweiPacket? = null
+    for (frame in rig.watch.written.toList()) {
+      val packet = (pending ?: HuaweiPacket(rig.session.params)).parseOutgoing(frame)
+      if (!packet.complete) {
+        pending = packet
+        continue
+      }
+      pending = null
+      packet.attemptDecrypt()
+      packets.add(packet)
+    }
+    return packets
+  }
+
+  private fun HuaweiPacket.command(): Pair<Int, Int> = (serviceId.toInt() and 0xFF) to (commandId.toInt() and 0xFF)
+
+  private fun HuaweiTLV.tags(): List<Int> = get().map { it.tag.toInt() and 0xFF }
 
   @Before
   fun clean() {
@@ -273,6 +298,83 @@ class WeatherSendTest {
 
     assertEquals("24 hours (tags 03 05), 8 days (tags 12 14 15)", WeatherDiagnostics.last!!.shape)
     assertFalse(rig.events.logs.any { it.contains("lists no 0f/06") })
+  }
+
+  /**
+   * What the reports of a Watch Fit 2 say, as far as they go: it lists current weather, unit and forecast (0f/01, 05, 08) and the
+   * position service, but not 0f/06 or 0f/0a, and it takes the current weather and the position without a receipt. Its support bitmap
+   * is not known; 0x7b is a plausible one (icon, wind, temperature range, place, current temperature, unit; no pm2.5, no air quality).
+   */
+  private fun fit2Answers(service: Int, command: Int, forecastCode: Int?): HuaweiTLV? = when (service to command) {
+    0x0f to 0x02 -> HuaweiTLV().put(0x01, 0x7b.toByte())
+    0x0f to 0x01, 0x18 to 0x07 -> null
+    else -> fullAnswers(service, command, forecastCode = forecastCode)
+  }
+
+  private fun assertFit2ForecastOnTheWire(forecastCode: Int?, sliceSize: Int) {
+    caps(0x01, 0x05, 0x08)
+    val rig = newRig { s, c -> fit2Answers(s, c, forecastCode) }
+    rig.session.params.setSliceSize(sliceSize)
+    val outcome = send(rig)
+
+    assertEquals(if (forecastCode == null) ForecastState.UNACKNOWLEDGED else ForecastState.SENT, outcome.state)
+    assertEquals(24, outcome.hours)
+    assertEquals(8, outcome.days)
+    assertTrue(rig.events.logs.any { it == "error: Weather step WeatherCurrent: no answer within 60 ms" })
+    assertTrue(rig.events.logs.any { it == "error: Weather step WeatherGps: no answer within 60 ms" })
+    assertTrue(rig.events.logs.any { it == "info: Weather: the watch lists no 0f/06, so the icon flag follows bit 0 of the support bitmap (true)" })
+
+    val packets = received(rig)
+    assertEquals(
+      listOf(0x0f to 0x09, 0x0f to 0x05, 0x0f to 0x02, 0x0f to 0x01, 0x18 to 0x07, 0x0f to 0x08),
+      packets.map { it.command() },
+    )
+    // The forecast is the only packet longer than a slice, and it still arrives whole.
+    assertTrue("the forecast went out in slices", rig.watch.written.count { it[3].toInt() in 1..3 } >= 2)
+
+    // Current weather: the condition from bit 0 of the support bitmap, wind, today's range, place, temperature and unit; nothing the watch did not announce.
+    val current = packets.first { it.command() == 0x0f to 0x01 }.tlv
+    val head = current.getObject(0x81)
+    assertEquals(listOf(0x02, 0x03), head.tags())
+    assertEquals(0x01.toByte(), head.getByte(0x02))
+    assertEquals(0x0203.toShort(), head.getShort(0x03))
+    assertEquals(23.toByte(), current.getObject(0x85).getByte(0x06))
+    assertEquals(31.toByte(), current.getObject(0x85).getByte(0x07))
+    assertEquals("Bandung", current.getString(0x08))
+    assertEquals(28.toByte(), current.getByte(0x09))
+    assertEquals(0.toByte(), current.getByte(0x0a))
+    for (tag in listOf(0x04, 0x0b, 0x0c, 0x0e, 0x0f, 0x10, 0x11, 0x12)) assertFalse("tag %02x".format(tag), current.contains(tag))
+
+    // Forecast: the 24 next hours and 8 days, today first, each row with the tags the watch announced and no others.
+    val forecast = packets.first { it.command() == 0x0f to 0x08 }.tlv
+    val hours = forecast.getObject(0x81).getObjects(0x82)
+    val days = forecast.getObject(0x90).getObjects(0x91)
+    assertEquals(24, hours.size)
+    assertEquals(8, days.size)
+    assertTrue(hours.all { it.tags() == listOf(0x03, 0x04, 0x05) })
+    assertTrue(days.all { it.tags() == listOf(0x12, 0x13, 0x14, 0x15) })
+
+    val hourStamps = hours.map { it.getInteger(0x03).toLong() }
+    assertEquals(day(0) + 11 * 3600, hourStamps.first())
+    assertTrue(hourStamps.first() > now)
+    assertTrue(hourStamps.zipWithNext().all { (a, b) -> b - a == 3600L })
+    assertEquals((35..58).map { it.toByte() }, hours.map { it.getByte(0x05) })
+    assertTrue(hours.all { it.getByte(0x04) == 0x01.toByte() })
+
+    // Today carries the observation time and the current icon, the next days a whole day more each, with the day's own icon (light rain).
+    assertEquals((0 until 8).map { now + 86400L * it }, days.map { it.getInteger(0x12).toLong() })
+    assertEquals(listOf<Byte>(0x01) + List(7) { 0x07.toByte() }, days.map { it.getByte(0x13) })
+    assertTrue(days.all { it.getByte(0x14) == 31.toByte() && it.getByte(0x15) == 23.toByte() })
+  }
+
+  @Test
+  fun aFit2ClassWatchThatTakesCurrentWeatherAndPositionWithoutReceiptGetsTheWholeForecastOnTheWire() {
+    assertFit2ForecastOnTheWire(forecastCode = OK, sliceSize = 0xF4)
+  }
+
+  @Test
+  fun theSameForecastArrivesWholeInSmallSlicesAndWhenTheWatchNeverAcknowledgesIt() {
+    assertFit2ForecastOnTheWire(forecastCode = null, sliceSize = 0x64)
   }
 
   @Test
