@@ -4,6 +4,7 @@ import { AppState, Platform } from 'react-native';
 
 import { playUpdates } from '@/features/updates/play';
 import { isDismissed, isPlayInstaller, parseTimestamp, shouldCheck } from '@/features/updates/updatePolicy';
+import { OTA_ENABLED, restartOta, useOtaUpdate } from '@/features/updates/useOtaUpdate';
 
 /** What the banner renders. */
 export type UpdateBannerModel =
@@ -20,10 +21,11 @@ type Phase =
 const DISMISSED_KEY = 'joyofit_update_dismissed_at';
 
 /**
- * Drives the in-app update banner for installs made by the Play Store (any track). Everything else gets
- * nothing: iOS (TestFlight and the App Store notify on their own) and sideloaded APKs (JoyoFit has no public
- * APK and no self-updater). Checks on cold start and when the app returns to the foreground, at most once
- * per 6 hours. "Later" hides the banner for 24 hours.
+ * Drives the in-app update banner. A downloaded OTA update (see useOtaUpdate) shows "Restart to update" on
+ * any install. Binary updates only exist for installs made by the Play Store (any track): iOS (TestFlight and
+ * the App Store notify on their own) and sideloaded APKs (JoyoFit has no public APK and no self-updater) get
+ * nothing there. Checks on cold start and when the app returns to the foreground, at most once per 6 hours.
+ * "Later" hides the banner for 24 hours.
  */
 export function useAppUpdate() {
   const [enabled, setEnabled] = useState(false);
@@ -32,6 +34,10 @@ export function useAppUpdate() {
   const [readyHidden, setReadyHidden] = useState(false);
   const lastCheckedAt = useRef<number | null>(null);
   const dismissedAt = useRef<number | null>(null);
+  const { phase: otaState, check: checkOta } = useOtaUpdate();
+  const [otaHidden, setOtaHidden] = useState(false);
+  const lastOtaCheckAt = useRef<number | null>(Date.now());
+  const otaBannerShown = otaState === 'ready' && !otaHidden;
 
   const remember = useCallback((now: number) => {
     dismissedAt.current = now;
@@ -106,10 +112,22 @@ export function useAppUpdate() {
     return () => sub.remove();
   }, [enabled, check]);
 
+  // OTA resume re-check, throttled. The launch check is expo-updates' own (ON_LOAD).
+  useEffect(() => {
+    if (!OTA_ENABLED) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || !shouldCheck(lastOtaCheckAt.current, Date.now())) return;
+      lastOtaCheckAt.current = Date.now();
+      void checkOta();
+    });
+    return () => sub.remove();
+  }, [checkOta]);
+
   const dismiss = useCallback(() => {
-    if (phase.step === 'ready') setReadyHidden(true);
+    if (otaBannerShown) setOtaHidden(true);
+    else if (phase.step === 'ready') setReadyHidden(true);
     else remember(Date.now());
-  }, [phase.step, remember]);
+  }, [otaBannerShown, phase.step, remember]);
 
   const update = useCallback(async () => {
     if (!playUpdates) return;
@@ -122,11 +140,15 @@ export function useAppUpdate() {
   }, []);
 
   const restart = useCallback(() => {
-    playUpdates?.restart();
-  }, []);
+    if (otaBannerShown) void restartOta();
+    else playUpdates?.restart();
+  }, [otaBannerShown]);
 
   let banner: UpdateBannerModel | null = null;
-  if (enabled) {
+  if (otaBannerShown) {
+    // A downloaded OTA update beats every other prompt: one tap and the fix is live.
+    banner = { kind: 'ready' };
+  } else if (enabled) {
     if (phase.step === 'downloading') banner = { kind: 'downloading', percent: phase.percent };
     else if (phase.step === 'ready') banner = readyHidden ? null : { kind: 'ready' };
     else if (phase.step === 'available' && !hidden) {

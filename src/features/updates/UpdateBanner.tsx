@@ -10,9 +10,10 @@ import { useAppUpdate, type UpdateBannerModel } from '@/features/updates/useAppU
 import { radius, spacing, useTheme } from '@/theme';
 
 /**
- * Banner for a newer JoyoFit build on installs made by Google Play: Play's flexible in-app update
- * (download in the background, then "Restart to update"). Renders nothing on iOS, sideloaded APKs, or
- * when there is no update.
+ * Banner for a newer JoyoFit. A downloaded over-the-air JS update (expo-updates, iOS and Android) shows
+ * "Restart to update" and wins over everything else. Installs made by Google Play also get Play's flexible
+ * in-app update (download in the background, then "Restart to update"). Renders nothing when there is
+ * nothing to offer.
  */
 export function UpdateBanner() {
   const { banner, update, restart, dismiss } = useAppUpdate();

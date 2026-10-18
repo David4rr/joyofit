@@ -4,6 +4,7 @@ import { Details } from '@/components/Details';
 import { GuideLink } from '@/features/device/GuideLink';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { Section, Screen } from '@/components/Screen';
+import { OtaSection } from '@/features/updates/OtaSection';
 
 export default function AboutScreen() {
   return (
@@ -20,6 +21,7 @@ export default function AboutScreen() {
           rounded coordinates to Open-Meteo. Privacy policy: fit.joyorogo.com/privasi
         </Details>
       </Section>
+      <OtaSection />
     </Screen>
   );
 }

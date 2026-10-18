@@ -237,6 +237,7 @@
       "./plugins/with-release-signing",
       "./plugins/with-version-code",
       "./plugins/with-shared-fit",
+      "./plugins/with-no-badge-permissions",
       [
         "expo-build-properties",
         {
@@ -303,6 +304,23 @@
         "projectId": "6175ba14-6962-4cbe-bc80-a5bb46be7fcb"
       }
     },
-    "owner": "dzulfikar08"
+    "owner": "dzulfikar08",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6175ba14-6962-4cbe-bc80-a5bb46be7fcb",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "codeSigningCertificate": "./code-signing/certificate.pem",
+      "codeSigningMetadata": {
+        "keyid": "main",
+        "alg": "rsa-v1_5-sha256"
+      },
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
+    }
   }
 }
