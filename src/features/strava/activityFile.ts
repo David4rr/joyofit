@@ -12,6 +12,7 @@
 
 import { type FitFieldDef, type FitFieldType, type FitValue, FitWriter, toFitTime, toSemicircles } from './fitEncoder';
 import { movingOf, PAUSE_MIN_SEC } from '../workouts/times';
+import { FIT_MANUFACTURER_DEVELOPMENT, type StravaDevice } from './device';
 
 export interface StravaWorkout {
   /** Unix seconds. */
@@ -313,8 +314,6 @@ const MESG = { fileId: 0, session: 18, lap: 19, record: 20, event: 21, deviceInf
 /** FIT enum values used below. */
 const FIT = {
   fileActivity: 4,
-  /** Manufacturer 255: for development, the one a company without an ANT+ assigned id may use. */
-  manufacturerDevelopment: 255,
   eventTimer: 0,
   eventSession: 8,
   eventLap: 9,
@@ -326,12 +325,16 @@ const FIT = {
   sessionTriggerActivityEnd: 0,
   intensityActive: 0,
   activityManual: 0,
-  /** `device_index` of the device that made the file. */
+  /** `device_index` of the device that made the file: the watch (creator), then the software that wrote the file. */
   deviceCreator: 0,
+  deviceSoftware: 1,
+  /** `source_type` `local`: the device is the recorder itself, not a paired sensor. */
+  sourceLocal: 6,
 } as const;
 
-const PRODUCT_ID = 1;
-const PRODUCT_NAME = 'JoyoFit';
+/** The software that writes the file; the recording device is the watch when it is known (`options.device`). */
+const APP_PRODUCT_ID = 1;
+const APP_PRODUCT_NAME = 'JoyoFit';
 
 type Entry = readonly [num: number, type: FitFieldType, value: FitValue];
 
@@ -352,9 +355,11 @@ export interface BuiltFit {
  * 30 s or more explains it, else the elapsed time, so the file agrees with itself and with the app) and `total_distance` the watch's
  * distance. Foot sports get the watch's step count as strides (a stride is two steps) and an average cadence of strides
  * per minute over the active time, as Garmin devices write it. `utcOffsetSeconds` is the wearer's offset from UTC at the
- * workout; it defaults to this device's.
+ * workout; it defaults to this device's. `device` is the watch that recorded the workout (`stravaDevice`): it becomes
+ * the file's manufacturer, product and product name and the creator `device_info`, with JoyoFit as a second device
+ * (the software that wrote the file). Without it the file is JoyoFit's own, manufacturer 255.
  */
-export function buildFit(workout: StravaWorkout, points: readonly StravaPoint[], options: { utcOffsetSeconds?: number } = {}): BuiltFit {
+export function buildFit(workout: StravaWorkout, points: readonly StravaPoint[], options: { utcOffsetSeconds?: number; device?: StravaDevice | null } = {}): BuiltFit {
   const samples = collectSamples(workout, points);
   const total = workout.distance > 0 ? workout.distance : 0;
   const pause = findPause(workout, samples);
@@ -400,22 +405,39 @@ export function buildFit(workout: StravaWorkout, points: readonly StravaPoint[],
       [4, 'uint8', 0],
     ]);
 
+  const recorder = {
+    manufacturer: options.device?.manufacturer ?? FIT_MANUFACTURER_DEVELOPMENT,
+    product: options.device?.product ?? APP_PRODUCT_ID,
+    name: options.device?.name ?? APP_PRODUCT_NAME,
+  };
   message(0, MESG.fileId, [
     [0, 'enum', FIT.fileActivity],
-    [1, 'uint16', FIT.manufacturerDevelopment],
-    [2, 'uint16', PRODUCT_ID],
+    [1, 'uint16', recorder.manufacturer],
+    [2, 'uint16', recorder.product],
     // JoyoFit has no device serial; the workout's start is unique per file.
     [3, 'uint32z', start],
     [4, 'uint32', toFitTime(start)],
-    [8, 'string', PRODUCT_NAME],
+    [8, 'string', recorder.name],
   ]);
   message(1, MESG.deviceInfo, [
     [253, 'uint32', toFitTime(start)],
     [0, 'uint8', FIT.deviceCreator],
-    [2, 'uint16', FIT.manufacturerDevelopment],
-    [4, 'uint16', PRODUCT_ID],
-    [27, 'string', PRODUCT_NAME],
+    [2, 'uint16', recorder.manufacturer],
+    [4, 'uint16', recorder.product],
+    // Hundredths of the firmware's major.minor (the field is a uint16 scaled by 100).
+    [5, 'uint16', options.device?.softwareVersion ?? null],
+    [25, 'enum', FIT.sourceLocal],
+    [27, 'string', recorder.name],
   ]);
+  if (options.device) {
+    message(7, MESG.deviceInfo, [
+      [253, 'uint32', toFitTime(start)],
+      [0, 'uint8', FIT.deviceSoftware],
+      [2, 'uint16', FIT_MANUFACTURER_DEVELOPMENT],
+      [4, 'uint16', APP_PRODUCT_ID],
+      [27, 'string', APP_PRODUCT_NAME],
+    ]);
+  }
   event(start, FIT.eventTypeStart);
 
   const hasAlt = samples.some((s) => s.alt !== null);
