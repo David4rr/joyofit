@@ -69,6 +69,7 @@ import {
 } from "./jam";
 import { FAQ } from "./faq";
 import { useScrollReveal } from "./reveal";
+import { FooterLandscape } from "./footer-landscape";
 import { BlogIndexPage, BlogPostPage } from "./Blog";
 import { KeluargaPage } from "./Keluarga";
 import { PanduanPage } from "./Panduan";
@@ -220,77 +221,99 @@ function Header() {
   );
 }
 
-function Footer() {
-  const link = "inline-flex min-h-11 items-center hover:text-primary";
+function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <footer className="border-t border-border/70">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 md:flex-row md:items-center md:justify-between md:px-6">
-        <div>
-          <p className="flex items-center gap-2 text-base font-extrabold tracking-tight">
-            <img src="/brand/logo-mark.svg" alt="" width={24} height={24} className="h-6 w-auto" />
+    <div>
+      <p className="text-[0.6875rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">{title}</p>
+      <div className="mt-2 flex flex-col">{children}</div>
+    </div>
+  );
+}
+
+function Footer() {
+  const link = "inline-flex min-h-11 items-center text-sm font-semibold hover:text-primary";
+  return (
+    <footer className="mt-8">
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-x-6 gap-y-8 px-4 pt-14 pb-4 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-10 md:px-6">
+        <div className="col-span-2 max-w-sm md:col-span-1">
+          <p className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
+            <img src="/brand/logo-mark.svg" alt="" width={28} height={28} className="h-7 w-auto" />
             JoyoFit
           </p>
-          <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <ShieldCheck className="size-4" aria-hidden />
+          <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
+            Jam Huawei dan Honor tanpa Huawei Health: langkah, detak jantung, dan{" "}
+            <span className="font-semibold text-tidur-ink">tidur</span> masuk ke HP, kalori{" "}
+            <span className="font-semibold text-makan-ink">makan</span> dari JoyoRogo tampil di jammu.
+          </p>
+          <p className="mt-4 flex items-start gap-1.5 text-sm text-muted-foreground">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
             Dibuat di Malang oleh Dzulfikar. Turunan Gadgetbridge, lisensi AGPL-3.0. Tidak berafiliasi dengan Huawei atau Honor.
           </p>
         </div>
-        <nav aria-label="Tautan" className="flex flex-wrap gap-x-6 gap-y-1 text-sm font-semibold">
-          <a href="/#cara" className={link}>
-            Tiga cara pakai
-          </a>
-          <a href={HARGA_URL} className={link} {...goal("founder_cta_click", "footer")}>
-            Harga
-          </a>
-          <a href={JOYOROGO_URL} className={link}>
-            JoyoRogo
-          </a>
-          <a href={CLOUDAGNI_URL} className={link}>
-            CloudAgni
-          </a>
-          <a href={GITHUB_URL} className={link}>
-            Kode sumber
-          </a>
-          <a href={DUKUNG_JAM_PATH} className={link} {...goal("dukung_jam_click", "footer")}>
-            Dukung jam
-          </a>
-          <a
-            href={TRAKTEER_URL}
-            className={link}
-            target="_blank"
-            rel="noopener"
-            {...goal("trakteer_click", "footer")}
-          >
-            Dukung di Trakteer
-          </a>
-          <a href={STRAVA_PATH} className={link} {...goal("strava_waitlist_click", "footer")}>
-            Strava
-          </a>
-          <a href="/#tester" className={cn(link, "gap-1.5")}>
-            <AndroidMark className="size-4" />
-            Android
-          </a>
-          <a href={IPHONE_PATH} className={cn(link, "gap-1.5")} {...goal("iphone_waitlist_click", "footer")}>
-            <AppleMark className="size-4" />
-            iPhone
-          </a>
-          <a href={PANDUAN_PATH} className={link}>
-            Panduan
-          </a>
-          <a href={BLOG_PATH} className={link}>
-            Blog
-          </a>
-          <a href={PRIVASI_PATH} className={link}>
-            Privasi
-          </a>
-          <a href={`${GITHUB_URL}/blob/master/LEGAL.md`} className={link} target="_blank" rel="noopener">
-            Hukum
-          </a>
+        <nav aria-label="Tautan" className="contents">
+          <FooterColumn title="Pakai">
+            <a href="/#cara" className={link}>
+              Tiga cara pakai
+            </a>
+            <a href="/#tester" className={cn(link, "gap-1.5")}>
+              <AndroidMark className="size-4" />
+              Android
+            </a>
+            <a href={IPHONE_PATH} className={cn(link, "gap-1.5")} {...goal("iphone_waitlist_click", "footer")}>
+              <AppleMark className="size-4" />
+              iPhone
+            </a>
+            <a href={STRAVA_PATH} className={link} {...goal("strava_waitlist_click", "footer")}>
+              Strava
+            </a>
+            <a href={PANDUAN_PATH} className={link}>
+              Panduan
+            </a>
+            <a href={BLOG_PATH} className={link}>
+              Blog
+            </a>
+          </FooterColumn>
+          <FooterColumn title="Ekosistem">
+            <a href={HARGA_URL} className={link} {...goal("founder_cta_click", "footer")}>
+              Harga
+            </a>
+            <a href={JOYOROGO_URL} className={link}>
+              JoyoRogo
+            </a>
+            <a href={CLOUDAGNI_URL} className={link}>
+              CloudAgni
+            </a>
+            <a href={DUKUNG_JAM_PATH} className={link} {...goal("dukung_jam_click", "footer")}>
+              Dukung jam
+            </a>
+            <a
+              href={TRAKTEER_URL}
+              className={link}
+              target="_blank"
+              rel="noopener"
+              {...goal("trakteer_click", "footer")}
+            >
+              Dukung di Trakteer
+            </a>
+          </FooterColumn>
+          <FooterColumn title="Terbuka">
+            <a href={GITHUB_URL} className={link}>
+              Kode sumber
+            </a>
+            <a href={PRIVASI_PATH} className={link}>
+              Privasi
+            </a>
+            <a href={`${GITHUB_URL}/blob/master/LEGAL.md`} className={link} target="_blank" rel="noopener">
+              Hukum
+            </a>
+          </FooterColumn>
         </nav>
       </div>
-      <p className="mx-auto w-full max-w-6xl px-4 pb-8 text-xs leading-relaxed text-muted-foreground md:px-6">
-        {ANDROID_ROBOT_CREDIT}
-      </p>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 pt-4 pb-2 text-xs leading-relaxed text-muted-foreground md:px-6">
+        <p>© {new Date().getFullYear()} JoyoFit · AGPL-3.0</p>
+        <p>{ANDROID_ROBOT_CREDIT}</p>
+      </div>
+      <FooterLandscape />
     </footer>
   );
 }
