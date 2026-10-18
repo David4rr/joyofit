@@ -8,6 +8,7 @@
  *
  * No React Native imports: runs under bun test.
  */
+import { virtualSpeedMs } from '@/features/cycling/series';
 import { haversineM } from '../workouts/analysis/geo';
 import { SPORT_ROWS, type ManualSport } from '../workouts/manual';
 import { SensorTracker, type SensorReadings } from '../sensors/gatt';
@@ -84,6 +85,8 @@ export interface RecordedWorkout {
   avgPower: number | null;
   maxPower: number | null;
   normalizedPower: number | null;
+  /** Mean percent of the left pedal while pedalling, when the power meter reports balance. */
+  balanceLeftPct: number | null;
   samples: RecordedSample[];
   laps: RecordedLap[];
 }
@@ -157,6 +160,8 @@ export class Recorder {
   private kcalHr = 0;
   private kcalMet = 0;
   private hrSeconds = 0;
+  /** Left pedal share of each second that had one, percent. */
+  private balances: number[] = [];
   private laps: RecordedLap[] = [];
   private lapStartIndex = 0;
   private lapStartDistance = 0;
@@ -297,6 +302,11 @@ export class Recorder {
     if (cycling && r.speedMps !== undefined) {
       delta = wheelDelta;
       speed = r.speedMps;
+    } else if (cycling && !gps && r.watts !== undefined) {
+      // An indoor ride with a power meter but no wheel sensor: the speed a rider makes with those watts on the flat (`virtualSpeedMs`).
+      const recent = [...this.samples.slice(-4).map((p) => p.power ?? 0), r.watts];
+      speed = virtualSpeedMs(recent.reduce((a, b) => a + b, 0) / recent.length, profile.weightKg);
+      delta = speed;
     } else if (gps) {
       delta = gpsDelta;
       speed = fix ? (this.lastFixSpeed !== null && this.lastFixSpeed >= 0 ? this.lastFixSpeed : delta) : null;
@@ -309,6 +319,7 @@ export class Recorder {
     const cadence = cycling ? (r.cadenceRpm !== undefined ? Math.round(r.cadenceRpm) : null) : r.podCadenceSpm ?? null;
     if (!cycling && cadence !== null) this.steps += cadence / 60;
     const hr = r.hr ?? null;
+    if (cycling && r.balanceLeftPct !== undefined && r.watts !== undefined && r.watts > 0) this.balances.push(r.balanceLeftPct);
 
     this.kcalMet += metKcalPerSec(row.met, profile.weightKg);
     if (hr !== null) {
@@ -489,6 +500,7 @@ export class Recorder {
       avgPower: watts.length > 0 ? Math.round(mean(watts)) : null,
       maxPower: watts.length > 0 ? Math.max(...watts) : null,
       normalizedPower: watts.length > 0 ? normalizedPower(watts) : null,
+      balanceLeftPct: this.balances.length > 0 ? Math.round((mean(this.balances) * 10)) / 10 : null,
       samples: s,
       laps: this.laps,
     };

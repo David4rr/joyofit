@@ -75,6 +75,7 @@ function summaryOf(a: FitActivity): string {
     avgPower: a.avgPower ?? undefined,
     maxPower: a.maxPower ?? undefined,
     normalizedPower: a.normalizedPower ?? undefined,
+    balanceLeftPct: a.balanceLeftPct ?? undefined,
     laps: a.laps.length > 0 ? a.laps : undefined,
     importedFrom: a.manufacturer ?? 'FIT file',
   };

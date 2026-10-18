@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { virtualSpeedMs } from '@/features/cycling/series';
 import { bytesToHex } from '../sensors/gatt';
 import { Recorder, type GpsFix, type RecorderConfig, normalizedPower } from './recorder';
 
@@ -297,6 +298,48 @@ describe('sensors', () => {
       gpsOnly.tick(T0 + s * 1000);
     }
     expect(gpsOnly.live(T0 + 5000).distanceM).toBeGreaterThan(45);
+  });
+
+  it('an indoor ride with a power meter and no wheel sensor rides at the speed those watts make on the flat', () => {
+    const r = new Recorder(config('indoorRide'));
+    r.start(T0);
+    for (let s = 0; s <= 60; s++) {
+      r.sensor('2a63', bytesToHex(new Uint8Array([0, 0, ...u16(200)])), T0 + s * 1000);
+      r.tick(T0 + s * 1000);
+    }
+    const w = r.finish(T0 + 60_000)!;
+    const v = virtualSpeedMs(200, 70);
+    expect(w.samples[30]!.speed).toBeCloseTo(v, 1);
+    expect(w.distanceM).toBeGreaterThan(v * 58);
+    expect(w.distanceM).toBeLessThan(v * 62);
+    // A wheel sensor, when there is one, still wins.
+    const wheel = new Recorder(config('indoorRide'));
+    wheel.start(T0);
+    wheel.sensor('2a5b', csc(0, 0, 0, 0), T0);
+    wheel.tick(T0);
+    for (let s = 1; s <= 5; s++) {
+      wheel.sensor('2a63', bytesToHex(new Uint8Array([0, 0, ...u16(200)])), T0 + s * 1000);
+      wheel.sensor('2a5b', csc(s * 5, s * 1024, 0, 0), T0 + s * 1000);
+      wheel.tick(T0 + s * 1000);
+    }
+    expect(wheel.finish(T0 + 5000)!.distanceM).toBe(Math.round(25 * 2.105));
+  });
+
+  it('keeps the mean pedal balance of a power meter that reports it, while pedalling', () => {
+    const r = new Recorder(config('indoorRide'));
+    r.start(T0);
+    // flags 0x0001: pedal power balance in half percent after the power: 97 = 48.5 % left, then 100 = 50 %; the first second is taken before the first reading and a second without watts counts for nothing.
+    for (const [s, watts, half] of [[0, 200, 60], [1, 200, 97], [2, 200, 100], [3, 0, 60]] as const) {
+      r.sensor('2a63', bytesToHex(new Uint8Array([1, 0, ...u16(watts), half])), T0 + s * 1000);
+      r.tick(T0 + s * 1000);
+    }
+    const w = r.finish(T0 + 3000)!;
+    expect(w.balanceLeftPct).toBe(49.3);
+    const none = new Recorder(config('indoorRide'));
+    none.start(T0);
+    none.sensor('2a63', bytesToHex(new Uint8Array([0, 0, ...u16(200)])), T0);
+    none.tick(T0);
+    expect(none.finish(T0)!.balanceLeftPct).toBeNull();
   });
 
   it('power and a foot pod end up in the sample', () => {

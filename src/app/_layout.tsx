@@ -21,6 +21,7 @@ import { serializeQueries } from '@/db/serialize';
 import { ensureGearSchema } from '@/features/gear/store';
 import { ensureStrengthSchema } from '@/features/strength/store';
 import { ensureRecordingSchema } from '@/features/record/journal';
+import { ensureCyclingSchema } from '@/features/cycling/store';
 import { ensureSensorSchema } from '@/features/sensors/store';
 import { ensureCoachSchema } from '@/features/coach/store';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
@@ -47,6 +48,7 @@ async function initDatabase(db: SQLiteDatabase): Promise<void> {
   await ensureStrengthSchema(db);
   await ensureCoachSchema(db);
   await ensureSensorSchema(db);
+  await ensureCyclingSchema(db);
   await ensureRecordingSchema(db);
   serializeQueries(db);
 }

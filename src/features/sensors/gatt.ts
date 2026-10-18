@@ -372,6 +372,8 @@ export interface SensorReadings {
   hrContact?: SensorContact;
   rrMs?: number[];
   watts?: number;
+  /** Share of the left pedal in percent, from a power meter that measures balance. */
+  balanceLeftPct?: number;
   /** Crank cadence in rpm (cycling). */
   cadenceRpm?: number;
   /** Wheel speed in m/s from a speed sensor. */
@@ -397,6 +399,8 @@ export class SensorTracker {
   private contact: SensorContact = 'unsupported';
   private rr: number[] = [];
   private power: Timed<number> | null = null;
+  /** The left pedal's share (percent) the power meter last reported, when it reports one. */
+  private balance: Timed<number> | null = null;
   private cadence: Timed<number> | null = null;
   private speed: Timed<number> | null = null;
   private pod: Timed<{ speed: number; cadence: number; stride?: number }> | null = null;
@@ -436,6 +440,7 @@ export class SensorTracker {
         const m = parsePower(bytes);
         if (!m) return false;
         this.power = { value: Math.max(0, m.watts), at: ts };
+        if (m.balancePct !== undefined) this.balance = { value: m.balancePct, at: ts };
         if (m.wheel) this.wheelEvent(m.wheel, POWER_WHEEL_TICKS, ts, 'power');
         if (m.crank) this.crankEvent(m.crank, ts, 'power');
         return true;
@@ -496,6 +501,7 @@ export class SensorTracker {
       this.rr = [];
     }
     if (this.power && nowMs - this.power.at <= VALUE_FRESH_MS) out.watts = this.power.value;
+    if (this.balance && nowMs - this.balance.at <= VALUE_FRESH_MS) out.balanceLeftPct = this.balance.value;
     if (this.cadence) out.cadenceRpm = nowMs - this.cadence.at > COAST_TIMEOUT_MS ? 0 : this.cadence.value;
     if (this.speed) out.speedMps = nowMs - this.speed.at > COAST_TIMEOUT_MS ? 0 : this.speed.value;
     if (this.pod && nowMs - this.pod.at <= VALUE_FRESH_MS) {

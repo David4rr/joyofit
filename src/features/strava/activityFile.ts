@@ -42,6 +42,28 @@ export interface StravaWorkout {
   /** Steps per minute on foot, rpm on a bike, from `summary_json`; a foot sport without `steps` takes its cadence from here. */
   avgCadence?: number | null;
   maxCadence?: number | null;
+  /** The person marked this ride as an e-bike ride: Strava's `EBikeRide` instead of `Ride`. */
+  ebike?: boolean;
+  /** Ride metrics of a bike workout (`cycling/analyzeRide`) that the session carries where FIT has a field for them. */
+  ride?: StravaRideMetrics;
+}
+
+/** What FIT's session message can hold of a ride's analysis; everything is optional and a missing value is not written. */
+export interface StravaRideMetrics {
+  /** Training stress score. */
+  tss?: number | null;
+  /** Intensity factor, 0.00 to about 1.5. */
+  intensityFactor?: number | null;
+  /** Functional threshold power the TSS and IF were computed with, watts. */
+  ftp?: number | null;
+  /** Mechanical work, kJ. */
+  workKj?: number | null;
+  /** Mean percent of the left pedal. */
+  balanceLeftPct?: number | null;
+  /** Net grade over the ride, and the steepest ascent and descent, percent. */
+  avgGradePct?: number | null;
+  maxGradePct?: number | null;
+  minGradePct?: number | null;
 }
 
 export interface StravaPoint {
@@ -107,6 +129,7 @@ const FIT_SUB_SPORT = {
   treadmill: 1,
   trail: 3,
   indoorCycling: 6,
+  eBikeFitness: 28,
   indoorRowing: 14,
   elliptical: 15,
   stairClimbing: 16,
@@ -136,7 +159,7 @@ const SPORTS: Readonly<Record<number, StravaSport>> = {
   4: entry('Hike', FIT_SPORT.hiking, FIT_SUB_SPORT.generic),
   5: entry('Run', FIT_SPORT.running, FIT_SUB_SPORT.treadmill, true),
   6: entry('Swim', FIT_SPORT.swimming, FIT_SUB_SPORT.lapSwimming),
-  7: entry('Ride', FIT_SPORT.cycling, FIT_SUB_SPORT.indoorCycling, true),
+  7: entry('VirtualRide', FIT_SPORT.cycling, FIT_SUB_SPORT.indoorCycling),
   8: entry('Swim', FIT_SPORT.swimming, FIT_SUB_SPORT.openWater),
   11: entry('TrailRun', FIT_SPORT.running, FIT_SUB_SPORT.trail),
   13: entry('Walk', FIT_SPORT.walking, FIT_SUB_SPORT.indoorWalking, true),
@@ -151,7 +174,7 @@ const SPORTS: Readonly<Record<number, StravaSport>> = {
   137: entry('Yoga', FIT_SPORT.training, FIT_SUB_SPORT.yoga),
   138: entry('Pilates', FIT_SPORT.training, FIT_SUB_SPORT.pilates),
   140: entry('WeightTraining', FIT_SPORT.training, FIT_SUB_SPORT.strengthTraining),
-  141: entry('Ride', FIT_SPORT.cycling, FIT_SUB_SPORT.indoorCycling, true),
+  141: entry('VirtualRide', FIT_SPORT.cycling, FIT_SUB_SPORT.indoorCycling),
   143: entry('HighIntensityIntervalTraining', FIT_SPORT.hiit, FIT_SUB_SPORT.generic),
   145: entry('Crossfit', FIT_SPORT.training, FIT_SUB_SPORT.generic),
   163: entry('InlineSkate', FIT_SPORT.inlineSkating, FIT_SUB_SPORT.generic),
@@ -167,8 +190,15 @@ const SPORTS: Readonly<Record<number, StravaSport>> = {
   210: entry('RockClimbing', FIT_SPORT.rockClimbing, FIT_SUB_SPORT.generic),
 };
 
-export function stravaSport(huaweiSportType: number): StravaSport {
-  return SPORTS[huaweiSportType] ?? entry('Workout', FIT_SPORT.training, FIT_SUB_SPORT.generic);
+/**
+ * Strava activity type and FIT sport of a Huawei sport. A bike ride outdoors is `Ride`, one indoors (trainer, spinning: the
+ * Huawei indoor-cycling sports) is `VirtualRide`, and an outdoor ride the person marked as an e-bike ride is `EBikeRide` (FIT sport
+ * stays cycling, so gear and the sport kind do not change; the sub sport says e-bike). Strava takes the `sport_type` upload field
+ * over the file's sport.
+ */
+export function stravaSport(huaweiSportType: number, ebike = false): StravaSport {
+  const sport = SPORTS[huaweiSportType] ?? entry('Workout', FIT_SPORT.training, FIT_SUB_SPORT.generic);
+  return ebike && sport.sportType === 'Ride' ? entry('EBikeRide', FIT_SPORT.cycling, FIT_SUB_SPORT.eBikeFitness) : sport;
 }
 
 /** Stable per workout (its start is unique), so Strava refuses a second upload of the same workout as a duplicate. */
@@ -440,7 +470,7 @@ export function buildFit(
   const total = workout.distance > 0 ? workout.distance : 0;
   const pause = findPause(workout, samples);
   withDistance(samples, total, pause);
-  const sport = stravaSport(workout.sportType);
+  const sport = stravaSport(workout.sportType, workout.ebike);
   // `collectSamples` always has a sample at the start and at the end.
   const start = (samples[0] as Sample).ts;
   const end = (samples[samples.length - 1] as Sample).ts;
@@ -612,6 +642,10 @@ export function buildFit(
     normalized: positive(workout.normalizedPower),
   };
 
+  const ride = workout.ride;
+  /** FIT `left_right_balance_100`: the percent x 100 in the low 14 bits and 0x8000 when the share is the right pedal's; ours is the left's. */
+  const balance = ride?.balanceLeftPct != null && ride.balanceLeftPct > 0 && ride.balanceLeftPct < 100 ? Math.round(ride.balanceLeftPct * 100) : null;
+
   if (laps) {
     laps.forEach((lap, index) => {
       const last = index === laps.length - 1;
@@ -679,6 +713,7 @@ export function buildFit(
       [20, 'uint16', sessionPower.max],
       [21, 'uint16', ascent],
       [22, 'uint16', descent],
+      [33, 'uint16', sessionPower.normalized],
       [0, 'enum', FIT.eventLap],
       [1, 'enum', FIT.eventTypeStop],
       [23, 'enum', FIT.intensityActive],
@@ -716,6 +751,14 @@ export function buildFit(
     [26, 'uint16', laps ? laps.length : 1],
     [28, 'enum', FIT.sessionTriggerActivityEnd],
     [34, 'uint16', sessionPower.normalized],
+    [35, 'uint16', ride?.tss != null && ride.tss > 0 ? ride.tss * 10 : null],
+    [36, 'uint16', ride?.intensityFactor != null && ride.intensityFactor > 0 ? ride.intensityFactor * 1000 : null],
+    [37, 'uint16', balance],
+    [45, 'uint16', positive(ride?.ftp)],
+    [48, 'uint32', ride?.workKj != null && ride.workKj > 0 ? ride.workKj * 1000 : null],
+    [52, 'sint16', ride?.avgGradePct != null ? ride.avgGradePct * 100 : null],
+    [55, 'sint16', ride?.maxGradePct != null ? ride.maxGradePct * 100 : null],
+    [56, 'sint16', ride?.minGradePct != null ? ride.minGradePct * 100 : null],
     [0, 'enum', FIT.eventSession],
     [1, 'enum', FIT.eventTypeStop],
     [124, 'uint32', avgSpeed === null ? null : avgSpeed * 1000],
@@ -761,7 +804,7 @@ export function buildUploadForm(
   file: Uint8Array,
   options: { addLink: boolean; /** Replaces the sport name as the activity title. */ name?: string; /** Text above the optional link. */ description?: string },
 ): UploadForm {
-  const sport = stravaSport(workout.sportType);
+  const sport = stravaSport(workout.sportType, workout.ebike);
   const boundary = `----joyofit${workout.start.toString(36)}${file.length.toString(36)}`;
   const fields: Record<string, string> = {
     data_type: 'fit',

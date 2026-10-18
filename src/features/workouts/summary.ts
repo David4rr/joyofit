@@ -48,6 +48,8 @@ export interface WorkoutSummary {
   avgPower?: number;
   maxPower?: number;
   normalizedPower?: number;
+  /** Mean percent of the left pedal of a power meter that measures balance (a phone recording or an imported file). */
+  balanceLeftPct?: number;
   avgCadence?: number;
   maxCadence?: number;
   /** Set on workouts imported from a FIT file: the device brand, or `FIT file` when the file does not say. */

@@ -51,6 +51,7 @@ export function summaryOf(w: RecordedWorkout, sensors: readonly WorkoutSensor[],
     avgPower: w.avgPower ?? undefined,
     maxPower: w.maxPower ?? undefined,
     normalizedPower: w.normalizedPower ?? undefined,
+    balanceLeftPct: w.balanceLeftPct ?? undefined,
     laps:
       w.laps.length >= 2
         ? w.laps.map((l) => ({ startTs: l.startTs, endTs: l.endTs, distanceM: Math.round(l.distanceM), avgHr: l.avgHr, maxHr: l.maxHr, avgCadence: l.avgCadence }))

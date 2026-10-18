@@ -14,6 +14,8 @@ import { listDevices } from '@/db/cloud';
 import { getWorkout, listWorkoutPoints } from '@/db/queries';
 import { gearSport, stravaGearFits } from '@/features/gear/model';
 import { gearOfWorkout, getStravaGearSent, reconcileDefaults, setStravaGearSent } from '@/features/gear/store';
+import { rideUploadFields } from '@/features/cycling/forStrava';
+import { isEbike, rideProfile } from '@/features/cycling/settings';
 import { buildFit, buildUploadForm, duplicateOf } from '@/features/strava/activityFile';
 import { stravaDevice } from '@/features/strava/device';
 import { strengthUploadExtras } from '@/features/strength/share/uploadExtras';
@@ -202,6 +204,7 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
       const watch = watches.sort((a, b) => (b.lastSync ?? 0) - (a.lastSync ?? 0))[0];
       // A strength workout from the logger sends its sets, its own name and a summary of the lifts.
       const strength = await strengthUploadExtras(db, workout.start);
+      const ride = rideUploadFields(workout, summary, points, rideProfile());
       const fit = buildFit(
         {
           ...workout,
@@ -213,6 +216,8 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
           normalizedPower: summary.normalizedPower,
           avgCadence: summary.avgCadence,
           maxCadence: summary.maxCadence,
+          ...ride,
+          ebike: isEbike(workout.start),
         },
         points,
         {
@@ -222,7 +227,7 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
           ...(summary.source === 'phone' && summary.laps ? { laps: summary.laps } : {}),
         },
       );
-      const form = buildUploadForm(workout, fit.bytes, {
+      const form = buildUploadForm({ ...workout, ebike: isEbike(workout.start) }, fit.bytes, {
         addLink,
         ...(strength ? { ...(strength.name ? { name: strength.name } : {}), description: strength.description } : {}),
       });
