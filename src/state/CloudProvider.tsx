@@ -32,6 +32,7 @@ import {
 import { releaseFamilyDevice } from '@/features/family/device';
 import { forgetCloudWorkouts, resetCloudCursors, setCloudState } from '@/db/cloud';
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 
 /** Wait this long after a local sync (or app start) so bursts of events become one upload. */
@@ -180,7 +181,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
 
   const syncNow = useCallback((): Promise<void> => {
     if (!CLOUD_CONFIGURED) {
-      setError('The cloud server URL is not set in this build.');
+      setError(t('common:errors.cloudUrlMissing'));
       return Promise.resolve();
     }
     if (running.current) {
@@ -291,7 +292,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const result = await authClient.signIn.social({ provider: 'google', callbackURL: Linking.createURL('/') });
-      if (result.error) setError(result.error.message ?? 'Sign-in failed.');
+      if (result.error) setError(result.error.message ?? t('common:errors.signInFailed'));
     } catch (e) {
       setError(errorMessage(e));
     }

@@ -105,9 +105,7 @@ export type ThemeId = 'classic' | 'sport' | 'ocean';
 
 export interface Theme {
   id: ThemeId;
-  name: string;
-  /** One line under the name in the picker. */
-  tagline: string;
+  // Display name and tagline are translated at render: `common:theme.<id>.name` and `.tagline`.
   /** `system` follows the phone's light/dark setting; the others pin it. */
   appearance: 'system' | Scheme;
   palettes: { light: Colors; dark: Colors };
@@ -370,8 +368,6 @@ const sportType: Typography = {
 export const THEMES: readonly Theme[] = [
   {
     id: 'classic',
-    name: 'Classic',
-    tagline: 'Warm paper and ink teal. Follows the phone.',
     appearance: 'system',
     palettes: { light: classicLight, dark: classicDark },
     radius: { card: 24, tile: 18, input: 14, control: 999 },
@@ -379,8 +375,6 @@ export const THEMES: readonly Theme[] = [
   },
   {
     id: 'sport',
-    name: 'Sport',
-    tagline: 'Black and volt, bold numbers. Always dark.',
     appearance: 'dark',
     palettes: { light: sportDark, dark: sportDark },
     radius: { card: 12, tile: 10, input: 8, control: 8 },
@@ -388,8 +382,6 @@ export const THEMES: readonly Theme[] = [
   },
   {
     id: 'ocean',
-    name: 'Ocean',
-    tagline: 'Clean blue and white. Follows the phone.',
     appearance: 'system',
     palettes: { light: oceanLight, dark: oceanDark },
     radius: { card: 20, tile: 16, input: 12, control: 999 },

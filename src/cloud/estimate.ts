@@ -1,3 +1,4 @@
+import { fmtDecimal, fmtInt, t } from '@/i18n';
 import type { UploadedStats } from '@/db/cloud';
 
 /** Stored bytes per point of a workout that has none uploaded to learn from: an hour with GPS, heart rate and cadence is about 32 KB. */
@@ -24,9 +25,9 @@ export function estimateBytes(workouts: number, points: number, uploaded: Upload
 
 /** `850 KB`, `4.2 MB`; a figure for a person, not for arithmetic. */
 export function formatSize(bytes: number): string {
-  if (bytes < 1_000_000) return `${Math.max(1, Math.round(bytes / 1000))} KB`;
+  if (bytes < 1_000_000) return t('common:units.kb', { value: fmtInt(Math.max(1, Math.round(bytes / 1000))) });
   const mb = bytes / 1_000_000;
-  return `${mb < 100 ? mb.toFixed(1) : Math.round(mb)} MB`;
+  return t('common:units.mb', { value: mb < 100 ? fmtDecimal(mb, 1) : fmtInt(Math.round(mb)) });
 }
 
 /** The one line the workout detail shows about the cloud copy of a workout. */
@@ -42,8 +43,8 @@ export function cloudLineText(input: {
 }): string {
   const { cloudBytes, stale, estimateBytes: estimate, locked } = input;
   if (cloudBytes === null) {
-    return locked ? 'Cloud: stays on this phone (JoyoRogo Pro syncs it)' : `Cloud: not uploaded yet (about ${formatSize(estimate)})`;
+    return locked ? t('common:cloudLine.stays') : t('common:cloudLine.notUploaded', { size: formatSize(estimate) });
   }
-  const inCloud = `Cloud: in cloud (${formatSize(cloudBytes)})`;
-  return stale && !locked ? `${inCloud}, update waiting (about ${formatSize(estimate)})` : inCloud;
+  if (stale && !locked) return t('common:cloudLine.inCloudStale', { size: formatSize(cloudBytes), estimate: formatSize(estimate) });
+  return t('common:cloudLine.inCloud', { size: formatSize(cloudBytes) });
 }

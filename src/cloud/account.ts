@@ -2,6 +2,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 
 import { authClient } from '@/cloud/auth';
+import { t } from '@/i18n';
 import { CLOUD_CONFIGURED, CLOUD_URL, JOYOROGO_URL } from '@/cloud/config';
 import { NotSignedInError } from '@/cloud/api';
 import { isIos } from '@/components/IosUnavailable';
@@ -34,7 +35,7 @@ export async function signInWithApple(): Promise<boolean> {
       ],
       nonce: hashedNonce,
     });
-    if (!credential.identityToken) throw new Error('Apple did not send sign-in data. Try again.');
+    if (!credential.identityToken) throw new Error(t('common:errors.appleNoData'));
     // Apple returns the name only on the very first authorization, and not inside the token.
     const { givenName, familyName } = credential.fullName ?? {};
     const { error } = await authClient.signIn.social({
@@ -47,7 +48,7 @@ export async function signInWithApple(): Promise<boolean> {
           : {}),
       },
     });
-    if (error) throw new Error(error.message || 'Sign in with Apple failed. Try again in a moment.');
+    if (error) throw new Error(error.message || t('common:errors.appleFailed'));
     return true;
   } catch (e) {
     if (isCanceled(e)) return false;
@@ -71,7 +72,7 @@ export async function deleteJoyoRogoAccount(): Promise<boolean> {
     if ((accounts.data ?? []).some((a) => a.providerId === 'apple')) {
       try {
         const credential = await AppleAuthentication.signInAsync({ requestedScopes: [] });
-        if (!credential.authorizationCode) throw new Error('Apple did not send an authorization code. Try again.');
+        if (!credential.authorizationCode) throw new Error(t('common:errors.appleNoCode'));
         appleAuthorizationCode = credential.authorizationCode;
       } catch (e) {
         if (isCanceled(e)) return false;
@@ -89,7 +90,7 @@ export async function deleteJoyoRogoAccount(): Promise<boolean> {
       credentials: 'omit',
     });
     if (!wiped.ok && wiped.status !== 401) {
-      throw new Error(`Deleting the JoyoFit cloud data failed (${wiped.status}). Try again in a moment.`);
+      throw new Error(t('common:errors.deleteCloudFailed', { status: wiped.status }));
     }
   }
 
@@ -108,8 +109,8 @@ export async function deleteJoyoRogoAccount(): Promise<boolean> {
       typeof message === 'string' && message
         ? message
         : response.status === 401
-          ? 'The JoyoRogo session was rejected. Sign out, sign in again and retry.'
-          : `Deleting the account failed (${response.status}). Try again in a moment.`,
+          ? t('common:errors.sessionRejectedRetry')
+          : t('common:errors.deleteAccountFailed', { status: response.status }),
     );
   }
   return true;

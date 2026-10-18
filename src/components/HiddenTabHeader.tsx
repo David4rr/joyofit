@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { HIT, spacing, useTheme } from '@/theme';
@@ -7,11 +8,12 @@ import { HIT, spacing, useTheme } from '@/theme';
 /** Back arrow (or Today when there is no history) for a header that has none of its own. */
 export function HeaderBackButton() {
   const router = useRouter();
+  const { t } = useTranslation('common');
   const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back"
+      accessibilityLabel={t('actions.back')}
       hitSlop={8}
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       style={styles.back}>

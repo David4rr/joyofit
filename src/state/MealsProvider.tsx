@@ -15,6 +15,7 @@ import { authClient } from '@/cloud/auth';
 import { rogo } from '@/cloud/rogo';
 import { bodyMetricsFrom, buildDay, localDate, rogoMealFor } from '@/features/meals/mealMap';
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { pushLog } from '@/state/logStore';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type DietStatus, type LogDirection } from '@/wear';
@@ -86,12 +87,12 @@ export function MealsProvider({ children }: { children: ReactNode }) {
           await rogo.addFood({
             date: localDate(meal.eatTime * 1000),
             meal: rogoMealFor(meal.whichMeal),
-            name: 'Logged on the watch',
+            name: t('common:meals.watchMealName'),
             kcal: Math.round(meal.kcal),
           });
           written.push(meal.id);
         } catch (e) {
-          notes.push(`a watch meal could not be written to JoyoRogo: ${errorMessage(e)}`);
+          notes.push(t('common:meals.watchMealFailed', { error: errorMessage(e) }));
           log('error', `Meals: watch meal ${meal.id} not written to JoyoRogo: ${errorMessage(e)}`);
         }
       }
@@ -104,7 +105,7 @@ export function MealsProvider({ children }: { children: ReactNode }) {
       const [food, my, weighIn] = await Promise.allSettled([rogo.foodDay(date), rogo.myProfile(), rogo.latestWeighIn()]);
       if (food.status === 'rejected') throw food.reason;
       const profile = my.status === 'fulfilled' ? my.value : null;
-      if (my.status === 'rejected') notes.push(`goals not read: ${errorMessage(my.reason)}`);
+      if (my.status === 'rejected') notes.push(t('common:meals.goalsNotRead', { error: errorMessage(my.reason) }));
       const latest = weighIn.status === 'fulfilled' ? weighIn.value : null;
 
       const body = bodyMetricsFrom(profile, latest);
@@ -113,10 +114,15 @@ export function MealsProvider({ children }: { children: ReactNode }) {
       const day = buildDay(date, food.value.items, profile);
       const sent = await HuaweiWear.setDietDay(day);
       const kcal = Math.round(day.meals.reduce((sum, m) => sum + m.kcal, 0));
-      const note = `${day.meals.length} meal${day.meals.length === 1 ? '' : 's'}, ${kcal}${day.goals ? ` of ${day.goals.dailyKcal}` : ''} kcal${sent ? ', sent to the watch' : ', stored for the watch'}`;
+      const count = day.meals.length;
+      const goal = day.goals?.dailyKcal;
+      const note =
+        goal === undefined
+          ? t(sent ? 'common:meals.noteSent' : 'common:meals.noteStored', { count, kcal })
+          : t(sent ? 'common:meals.noteSentGoal' : 'common:meals.noteStoredGoal', { count, kcal, goal });
       log('info', `Meals (${reason}): ${note}`);
       setLastRefreshAt(Date.now());
-      setLastRefreshNote(notes.length > 0 ? `${note}; ${notes.join('; ')}` : note);
+      setLastRefreshNote(notes.length > 0 ? t('common:meals.withIssues', { note, issues: notes.join('; ') }) : note);
     },
     [],
   );

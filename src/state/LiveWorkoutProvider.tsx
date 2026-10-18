@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import Storage from 'expo-sqlite/kv-store';
 import { Alert, AppState, PermissionsAndroid, Platform } from 'react-native';
 
+import { t } from '@/i18n';
 import { isActive } from '@/features/live/liveWorkout';
 import { HuaweiWear, type LiveWorkout } from '@/wear';
 
@@ -53,14 +54,10 @@ export function LiveWorkoutProvider({ children }: { children: ReactNode }) {
       if (await PermissionsAndroid.check(fine)) return;
       if ((await Storage.getItem(GPS_EXPLAINED_KEY)) === '1') return;
       await Storage.setItem(GPS_EXPLAINED_KEY, '1');
-      Alert.alert(
-        'Phone GPS for outdoor workouts',
-        'When you start an outdoor workout on your watch, the watch asks for this phone\'s GPS. JoyoFit then reads your precise location while the workout runs and sends it to the watch over Bluetooth. It is not stored or uploaded, and JoyoFit does not ask for location access in the background.',
-        [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Continue', onPress: () => void PermissionsAndroid.request(fine) },
-        ],
-      );
+      Alert.alert(t('common:gps.title'), t('common:gps.body'), [
+        { text: t('common:gps.notNow'), style: 'cancel' },
+        { text: t('common:gps.continue'), onPress: () => void PermissionsAndroid.request(fine) },
+      ]);
     })();
   }, []);
 

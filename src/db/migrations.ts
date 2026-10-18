@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { t } from '@/i18n';
 import migrationsJson from '../../modules/huawei-wear/schema/joyofit-db-migrations.json';
 
 /**
@@ -15,9 +16,7 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
   const current = row?.user_version ?? 0;
   if (current > MIGRATIONS.length) {
-    throw new Error(
-      `Database schema v${current} is newer than this app supports (v${MIGRATIONS.length})`,
-    );
+    throw new Error(t('common:errors.dbNewer', { current, max: MIGRATIONS.length }));
   }
   for (let version = current; version < MIGRATIONS.length; version++) {
     const sql = MIGRATIONS[version].join(';\n');

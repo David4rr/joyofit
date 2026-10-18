@@ -15,6 +15,7 @@ import {
 import { isIos } from '@/components/IosUnavailable';
 import { getStravaSettings, setStravaAddLink, type StravaSettings } from '@/db/strava';
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 
 /** Same debounce as the cloud upload: a burst of sync events becomes one pass. */
@@ -49,10 +50,10 @@ export function useStrava(): StravaContextValue {
   return value;
 }
 
-const FAILURES: Record<string, string> = {
-  access_denied: 'Strava was not connected: access was declined.',
-  scope_missing: 'Strava was not connected: JoyoFit needs the "upload your activities" permission. Connect again and keep it ticked.',
-  invalid_state: 'The Strava connection took too long. Try again.',
+const FAILURES: Record<string, 'accessDenied' | 'scopeMissing' | 'invalidState'> = {
+  access_denied: 'accessDenied',
+  scope_missing: 'scopeMissing',
+  invalid_state: 'invalidState',
 };
 
 /**
@@ -131,7 +132,7 @@ export function StravaProvider({ children }: { children: ReactNode }) {
       const result = await WebBrowser.openAuthSessionAsync(url, RETURN_URL);
       if (result.type === 'success') {
         const { reason } = Linking.parse(result.url).queryParams ?? {};
-        if (typeof reason === 'string') setError(FAILURES[reason] ?? 'Strava could not be connected. Try again.');
+        if (typeof reason === 'string') setError(t(`common:strava.${FAILURES[reason] ?? 'failed'}`));
       }
       await refresh();
     } catch (e) {

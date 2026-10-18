@@ -5,6 +5,7 @@ import { AppText } from '@/components/AppText';
 import { cloudLineText, estimateBytes } from '@/cloud/estimate';
 import { getUploadedStats, getWorkoutCloudInfo } from '@/db/cloud';
 import { ANALYSIS_ENGINE_REV } from '@/features/workouts/analysis/engineRev';
+import { useLocale } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
 
 /**
@@ -16,6 +17,7 @@ export function CloudWorkoutLine({ start }: { start: number }) {
   const db = useSQLiteContext();
   const { signedIn, locked, lastSyncAt, uploading } = useCloud();
   const [text, setText] = useState<string | null>(null);
+  const locale = useLocale();
 
   useEffect(() => {
     let live = true;
@@ -35,7 +37,7 @@ export function CloudWorkoutLine({ start }: { start: number }) {
     return () => {
       live = false;
     };
-  }, [db, start, locked, lastSyncAt, uploading]);
+  }, [db, start, locked, lastSyncAt, uploading, locale]);
 
   if (!signedIn || text === null) return null;
   return (

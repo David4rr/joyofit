@@ -37,7 +37,14 @@
   },
   "units": {
     "km": "{{value}} km",
-    "m": "{{value}} m"
+    "m": "{{value}} m",
+    "bpm": "{{value}} bpm",
+    "kcal": "{{value}} kcal",
+    "steps": "{{value}} steps",
+    "spm": "{{value}} spm",
+    "w": "{{value}} W",
+    "kb": "{{value}} KB",
+    "mb": "{{value}} MB"
   },
   "nav": {
     "today": "Today",
@@ -52,5 +59,79 @@
     "id": "Indonesia",
     "en": "English",
     "hint": "Automatic follows your phone's language. Your choice applies across the whole app."
+  },
+  "details": {
+    "title": "Details"
+  },
+  "iosNotYet": "This is not available on iOS yet.",
+  "errors": {
+    "notSignedIn": "Not signed in to JoyoRogo.",
+    "cloudNotConfigured": "The cloud server URL is not set. Set EXPO_PUBLIC_JOYOFIT_CLOUD_URL (or expo.extra.cloudUrl in app.json) and rebuild.",
+    "cloudUrlMissing": "The cloud server URL is not set in this build.",
+    "sessionRejected": "The JoyoRogo session was rejected. Sign out and sign in again.",
+    "sessionRejectedRetry": "The JoyoRogo session was rejected. Sign out, sign in again and retry.",
+    "sessionRejectedShort": "The JoyoRogo session was rejected. Sign in again.",
+    "serverAnswered": "Cloud server answered {{status}}.",
+    "serverAnsweredCode": "Cloud server answered {{status}} ({{code}}).",
+    "cloudLocked": "Cloud backup is part of JoyoRogo Pro.",
+    "rogoAnswered": "JoyoRogo answered {{status}}.",
+    "appleNoData": "Apple did not send sign-in data. Try again.",
+    "appleNoCode": "Apple did not send an authorization code. Try again.",
+    "appleFailed": "Sign in with Apple failed. Try again in a moment.",
+    "signInFailed": "Sign-in failed.",
+    "deleteCloudFailed": "Deleting the JoyoFit cloud data failed ({{status}}). Try again in a moment.",
+    "deleteAccountFailed": "Deleting the account failed ({{status}}). Try again in a moment.",
+    "workoutGone": "This workout is no longer stored.",
+    "dbNewer": "Database schema v{{current}} is newer than this app supports (v{{max}})."
+  },
+  "strava": {
+    "stravaNotConnected": "Strava is not connected. Connect it again in Settings.",
+    "refused": "Strava refused the file ({{status}}).",
+    "rateLimit": "Strava rate limit reached; will retry later.",
+    "answered": "Strava answered {{status}}.",
+    "accessDenied": "Strava was not connected: access was declined.",
+    "scopeMissing": "Strava was not connected: JoyoFit needs the \"upload your activities\" permission. Connect again and keep it ticked.",
+    "invalidState": "The Strava connection took too long. Try again.",
+    "failed": "Strava could not be connected. Try again."
+  },
+  "cloudLine": {
+    "stays": "Cloud: stays on this phone (JoyoRogo Pro syncs it)",
+    "notUploaded": "Cloud: not uploaded yet (about {{size}})",
+    "inCloud": "Cloud: in cloud ({{size}})",
+    "inCloudStale": "Cloud: in cloud ({{size}}), update waiting (about {{estimate}})"
+  },
+  "gps": {
+    "title": "Phone GPS for outdoor workouts",
+    "body": "When you start an outdoor workout on your watch, the watch asks for this phone's GPS. JoyoFit then reads your precise location while the workout runs and sends it to the watch over Bluetooth. It is not stored or uploaded, and JoyoFit does not ask for location access in the background.",
+    "notNow": "Not now",
+    "continue": "Continue"
+  },
+  "meals": {
+    "watchMealName": "Logged on the watch",
+    "watchMealFailed": "a watch meal could not be written to JoyoRogo: {{error}}",
+    "goalsNotRead": "goals not read: {{error}}",
+    "withIssues": "{{note}}; {{issues}}",
+    "noteSent_one": "{{count}} meal, {{kcal}} kcal, sent to the watch",
+    "noteSent_other": "{{count}} meals, {{kcal}} kcal, sent to the watch",
+    "noteStored_one": "{{count}} meal, {{kcal}} kcal, stored for the watch",
+    "noteStored_other": "{{count}} meals, {{kcal}} kcal, stored for the watch",
+    "noteSentGoal_one": "{{count}} meal, {{kcal}} of {{goal}} kcal, sent to the watch",
+    "noteSentGoal_other": "{{count}} meals, {{kcal}} of {{goal}} kcal, sent to the watch",
+    "noteStoredGoal_one": "{{count}} meal, {{kcal}} of {{goal}} kcal, stored for the watch",
+    "noteStoredGoal_other": "{{count}} meals, {{kcal}} of {{goal}} kcal, stored for the watch"
+  },
+  "theme": {
+    "classic": {
+      "name": "Classic",
+      "tagline": "Warm paper and ink teal. Follows the phone."
+    },
+    "sport": {
+      "name": "Sport",
+      "tagline": "Black and volt, bold numbers. Always dark."
+    },
+    "ocean": {
+      "name": "Ocean",
+      "tagline": "Clean blue and white. Follows the phone."
+    }
   }
 }

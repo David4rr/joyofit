@@ -1,6 +1,7 @@
 import { NotSignedInError } from '@/cloud/api';
 import { authClient } from '@/cloud/auth';
 import { JOYOROGO_URL } from '@/cloud/config';
+import { t } from '@/i18n';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 
 /**
@@ -51,8 +52,8 @@ export async function rogoCall<T>(path: string, input: unknown): Promise<T> {
     if (!response.ok) {
       const error = (body?.json ?? null) as { code?: unknown; message?: unknown } | null;
       const code = typeof error?.code === 'string' ? error.code : null;
-      const message = typeof error?.message === 'string' ? error.message : `JoyoRogo answered ${response.status}.`;
-      throw new RogoError(response.status, code, response.status === 401 ? 'The JoyoRogo session was rejected. Sign in again.' : message);
+      const message = typeof error?.message === 'string' ? error.message : t('common:errors.rogoAnswered', { status: response.status });
+      throw new RogoError(response.status, code, response.status === 401 ? t('common:errors.sessionRejectedShort') : message);
     }
     return body?.json as T;
   } finally {

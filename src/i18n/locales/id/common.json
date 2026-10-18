@@ -35,7 +35,14 @@
   },
   "units": {
     "km": "{{value}} km",
-    "m": "{{value}} m"
+    "m": "{{value}} m",
+    "bpm": "{{value}} bpm",
+    "kcal": "{{value}} kcal",
+    "steps": "{{value}} langkah",
+    "spm": "{{value}} spm",
+    "w": "{{value}} W",
+    "kb": "{{value}} KB",
+    "mb": "{{value}} MB"
   },
   "nav": {
     "today": "Hari ini",
@@ -50,5 +57,75 @@
     "id": "Indonesia",
     "en": "English",
     "hint": "Otomatis mengikuti bahasa HP kamu. Pilihan di sini berlaku untuk seluruh aplikasi."
+  },
+  "details": {
+    "title": "Detail"
+  },
+  "iosNotYet": "Ini belum tersedia di iOS.",
+  "errors": {
+    "notSignedIn": "Kamu belum masuk ke JoyoRogo.",
+    "cloudNotConfigured": "URL server cloud belum diatur. Isi EXPO_PUBLIC_JOYOFIT_CLOUD_URL (atau expo.extra.cloudUrl di app.json) lalu build ulang.",
+    "cloudUrlMissing": "URL server cloud belum diatur di build ini.",
+    "sessionRejected": "Sesi JoyoRogo ditolak. Keluar lalu masuk lagi.",
+    "sessionRejectedRetry": "Sesi JoyoRogo ditolak. Keluar, masuk lagi, lalu coba lagi.",
+    "sessionRejectedShort": "Sesi JoyoRogo ditolak. Masuk lagi.",
+    "serverAnswered": "Server cloud menjawab {{status}}.",
+    "serverAnsweredCode": "Server cloud menjawab {{status}} ({{code}}).",
+    "cloudLocked": "Cadangan cloud adalah bagian dari JoyoRogo Pro.",
+    "rogoAnswered": "JoyoRogo menjawab {{status}}.",
+    "appleNoData": "Apple tidak mengirim data masuk. Coba lagi.",
+    "appleNoCode": "Apple tidak mengirim kode otorisasi. Coba lagi.",
+    "appleFailed": "Masuk dengan Apple gagal. Coba lagi sebentar lagi.",
+    "signInFailed": "Gagal masuk.",
+    "deleteCloudFailed": "Gagal menghapus data cloud JoyoFit ({{status}}). Coba lagi sebentar lagi.",
+    "deleteAccountFailed": "Gagal menghapus akun ({{status}}). Coba lagi sebentar lagi.",
+    "workoutGone": "Latihan ini sudah tidak tersimpan.",
+    "dbNewer": "Skema database v{{current}} lebih baru dari yang didukung aplikasi ini (v{{max}})."
+  },
+  "strava": {
+    "stravaNotConnected": "Strava belum terhubung. Hubungkan lagi di Pengaturan.",
+    "refused": "Strava menolak berkasnya ({{status}}).",
+    "rateLimit": "Batas permintaan Strava tercapai; akan dicoba lagi nanti.",
+    "answered": "Strava menjawab {{status}}.",
+    "accessDenied": "Strava tidak terhubung: akses ditolak.",
+    "scopeMissing": "Strava tidak terhubung: JoyoFit butuh izin \"unggah aktivitasmu\". Hubungkan lagi dan biarkan izinnya tercentang.",
+    "invalidState": "Penghubungan Strava terlalu lama. Coba lagi.",
+    "failed": "Strava tidak bisa dihubungkan. Coba lagi."
+  },
+  "cloudLine": {
+    "stays": "Cloud: tetap di HP ini (JoyoRogo Pro menyinkronkannya)",
+    "notUploaded": "Cloud: belum diunggah (sekitar {{size}})",
+    "inCloud": "Cloud: sudah di cloud ({{size}})",
+    "inCloudStale": "Cloud: sudah di cloud ({{size}}), pembaruan menunggu (sekitar {{estimate}})"
+  },
+  "gps": {
+    "title": "GPS HP untuk latihan outdoor",
+    "body": "Saat kamu memulai latihan outdoor di jam, jam akan meminta GPS HP ini. JoyoFit lalu membaca lokasi presisimu selama latihan berjalan dan mengirimnya ke jam lewat Bluetooth. Lokasi tidak disimpan atau diunggah, dan JoyoFit tidak meminta akses lokasi di latar belakang.",
+    "notNow": "Nanti saja",
+    "continue": "Lanjut"
+  },
+  "meals": {
+    "watchMealName": "Dicatat di jam",
+    "watchMealFailed": "makanan dari jam tidak bisa ditulis ke JoyoRogo: {{error}}",
+    "goalsNotRead": "target tidak terbaca: {{error}}",
+    "withIssues": "{{note}}; {{issues}}",
+    "noteSent_other": "{{count}} makanan, {{kcal}} kcal, terkirim ke jam",
+    "noteStored_other": "{{count}} makanan, {{kcal}} kcal, disimpan untuk jam",
+    "noteSentGoal_other": "{{count}} makanan, {{kcal}} dari {{goal}} kcal, terkirim ke jam",
+    "noteStoredGoal_other": "{{count}} makanan, {{kcal}} dari {{goal}} kcal, disimpan untuk jam"
+  },
+  "theme": {
+    "classic": {
+      "name": "Classic",
+      "tagline": "Kertas hangat dan tinta teal. Mengikuti HP."
+    },
+    "sport": {
+      "name": "Sport",
+      "tagline": "Hitam dan hijau neon, angka tebal. Selalu gelap."
+    },
+    "ocean": {
+      "name": "Ocean",
+      "tagline": "Biru dan putih yang bersih. Mengikuti HP."
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -19,21 +20,23 @@ function isPlainText(node: ReactNode): boolean {
 }
 
 /** Collapsed-by-default disclosure for explanations, disclaimers and "how it works" text, so the data stays on one screen. */
-export function Details({ title = 'Details', children }: DetailsProps) {
+export function Details({ title, children }: DetailsProps) {
+  const { t } = useTranslation('common');
+  const label = title ?? t('details.title');
   const colors = useColors();
   const [open, setOpen] = useState(false);
   return (
     <View style={styles.wrap}>
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel={title}
+        accessibilityLabel={label}
         accessibilityState={{ expanded: open }}
         hitSlop={8}
         scaleTo={0.99}
         onPress={() => setOpen((v) => !v)}
         style={styles.header}>
         <AppText variant="caption" muted>
-          {title}
+          {label}
         </AppText>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={colors.mutedForeground} />
       </PressableScale>

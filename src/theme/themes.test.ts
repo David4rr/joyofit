@@ -19,7 +19,7 @@ function contrast(a: string, b: string): number {
 const TINTS: readonly Tint[] = ['steps', 'heart', 'sleep', 'workouts', 'link'];
 
 const palettes = THEMES.flatMap((theme) =>
-  (['light', 'dark'] as const).map((scheme) => ({ label: `${theme.name} ${scheme}`, colors: theme.palettes[scheme] })),
+  (['light', 'dark'] as const).map((scheme) => ({ label: `${theme.id} ${scheme}`, colors: theme.palettes[scheme] })),
 );
 
 describe.each(palettes)('contrast: $label', ({ colors }) => {

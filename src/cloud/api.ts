@@ -1,16 +1,17 @@
+import { t } from '@/i18n';
 import { authClient } from '@/cloud/auth';
 import { CLOUD_CONFIGURED, CLOUD_URL } from '@/cloud/config';
 
 /** The phone holds no JoyoRogo session (never signed in, or signed out). */
 export class NotSignedInError extends Error {
   constructor() {
-    super('Not signed in to JoyoRogo.');
+    super(t('common:errors.notSignedIn'));
   }
 }
 
 export class CloudNotConfiguredError extends Error {
   constructor() {
-    super('The cloud server URL is not set. Set EXPO_PUBLIC_JOYOFIT_CLOUD_URL (or expo.extra.cloudUrl in app.json) and rebuild.');
+    super(t('common:errors.cloudNotConfigured'));
   }
 }
 
@@ -23,8 +24,10 @@ export class CloudHttpError extends Error {
   ) {
     super(
       status === 401
-        ? 'The JoyoRogo session was rejected. Sign out and sign in again.'
-        : `Cloud server answered ${status}${code ? ` (${code})` : ''}.`,
+        ? t('common:errors.sessionRejected')
+        : code
+          ? t('common:errors.serverAnsweredCode', { status, code })
+          : t('common:errors.serverAnswered', { status }),
     );
   }
 }
@@ -36,7 +39,7 @@ export class CloudHttpError extends Error {
 export class CloudLockedError extends CloudHttpError {
   constructor() {
     super(402, 'founder_required', null);
-    this.message = 'Cloud backup is part of JoyoRogo Pro.';
+    this.message = t('common:errors.cloudLocked');
   }
 }
 

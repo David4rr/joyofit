@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { t } from '@/i18n';
 import { CloudHttpError, cloudRequest } from '@/cloud/api';
 import {
   applyStravaConnection,
@@ -42,7 +43,7 @@ export interface StravaStatus {
 /** The Worker has no Strava connection for this account (never connected, revoked, or deauthorized on strava.com). */
 export class StravaNotConnectedError extends Error {
   constructor() {
-    super('Strava is not connected. Connect it again in Settings.');
+    super(t('common:strava.stravaNotConnected'));
   }
 }
 
@@ -120,13 +121,13 @@ async function stravaFetch(
     const text = await response.text().catch(() => '');
     // Strava answers a duplicate external_id with 400 and the existing upload's error text (parsed by the caller).
     if (response.status === 400 || response.status === 413 || response.status === 422) {
-      throw new StravaRefusedError(duplicateOf(text) !== null ? text : `Strava refused the file (${response.status}).`);
+      throw new StravaRefusedError(duplicateOf(text) !== null ? text : t('common:strava.refused', { status: response.status }));
     }
     if (response.status === 401 || response.status === 403) {
       token = null;
       throw new StravaNotConnectedError();
     }
-    throw new Error(response.status === 429 ? 'Strava rate limit reached; will retry later.' : `Strava answered ${response.status}.`);
+    throw new Error(response.status === 429 ? t('common:strava.rateLimit') : t('common:strava.answered', { status: response.status }));
   } finally {
     clearTimeout(timer);
   }
@@ -164,7 +165,7 @@ export function sendWorkoutToStrava(db: SQLiteDatabase, workoutId: number): Prom
 
 async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUploadRow> {
   const found = await getWorkout(db, workoutId);
-  if (!found) throw new Error('This workout is no longer stored.');
+  if (!found) throw new Error(t('common:errors.workoutGone'));
   const { workout, summaryJson } = found;
   const previous = await getStravaUpload(db, workout.start);
   if (previous?.status === 'done') return previous;
