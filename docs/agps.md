@@ -157,3 +157,16 @@ Differences, all forced by the platform:
 - **Background**: the prefetch after a sync runs on the process's own task. An iOS background sync that ends the app's run time may suspend it
   mid-download; the next sync tries again (the download timeout and the retry schedule are unchanged).
 - **Not verified on a device**: like the Android side, UNVERIFIED on the Fit 4 Pro until a device run; "Device findings" is the place for it.
+
+### Observed on the watch's own ask (2026-10-18 22:06 to 22:07, build 1471119, master 375f052)
+
+Settings > Workout settings > Location Services > Satellite updates > Update ended with "Update timed out. Open Huawei Health and check the internet connection".
+Logcat (tag `JoyoFit`), repeated four times, about 20 s apart (22:06:29, 22:06:51, 22:07:01, 22:07:20):
+
+- `RX svc=1f cmd=01 ... AGPS: watch asks for ephemeris data: op 1`, answered `100000` and `1F/02` sent; the watch answered the consult in 0.07 to 0.15 s.
+- `consult answer: download version 3, tag 67 chars (HW_PGNSS_PRED), 0 urls`; full tag `com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;`.
+- JoyoFit sent `1F/03` state 4 (failed); the watch acked `7f=000186A0` (100000). No `1C` request followed.
+
+So the Fit 4 Pro asks for version 3 / `HW_PGNSS_PRED` (Huawei's predicted ephemeris, Huawei servers only), never version 0 (Broadcom LTO). There is no handler,
+parse or timing fault: the phone answered within milliseconds each time. The watch's "timed out" text is its wording for an update that ended without data.
+Nothing in the policy (Broadcom LTO only, no Huawei servers) can satisfy this kind, so there is no code fix; the decline is the intended behaviour.
