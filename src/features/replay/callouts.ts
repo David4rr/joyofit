@@ -25,7 +25,7 @@ export interface CalloutDef {
 
 export const MAX_CALLOUTS = 4;
 /** Pins closer than this share of the route are merged (the higher priority stays). */
-export const MIN_PIN_GAP = 0.06;
+export const MIN_PIN_GAP = 0.05;
 /** Pins this close to either end are dropped: the start and the finish already have their own marks. */
 export const EDGE_MARGIN = 0.04;
 export const MIN_ALT_RANGE_M = 25;

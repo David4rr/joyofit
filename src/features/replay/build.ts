@@ -87,11 +87,12 @@ export function ridgePath(seed: number, layer: number, width: number, base: numb
   return `${d}L${width} ${bottom}L0 ${bottom}Z`;
 }
 
-interface Builder {
+/** Frame state -> scene; holds the caches (tile groups, silhouette, chart) between calls. */
+export interface SceneBuilder {
   (frame: FrameState): ReplayScene;
 }
 
-export function createSceneBuilder(ctx: BuildContext): Builder {
+export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
   const { plan, theme, locale, t, fonts, store, options } = ctx;
   const W = 1080;
   const H = 1920;
@@ -125,7 +126,7 @@ export function createSceneBuilder(ctx: BuildContext): Builder {
     y: 0,
     w: W,
     h: 700,
-    fill: { linear: { x1: 0, y1: 0, x2: 0, y2: 700, stops: [{ at: 0, color: theme.bg }, { at: 0.4, color: theme.bg }, { at: 1, color: `${theme.bg}00` }] } },
+    fill: { linear: { x1: 0, y1: 0, x2: 0, y2: 700, stops: [{ at: 0, color: theme.bg }, { at: 0.3, color: theme.bg }, { at: 1, color: `${theme.bg}00` }] } },
   };
   const fogBottom: SceneNode = {
     k: 'rect',
@@ -141,10 +142,17 @@ export function createSceneBuilder(ctx: BuildContext): Builder {
     return Math.min(1, Math.max(0.35, (Math.max(...alts) - Math.min(...alts)) / 500));
   })();
   const ridgeDefs = [
-    { d: ridgePath(plan.seed, 0, 2 * W, 330, 150 * relief + 60, 520), speed: 0.2, fill: theme.ridges[0] },
-    { d: ridgePath(plan.seed, 1, 2 * W, 400, 170 * relief + 70, 560), speed: 0.45, fill: theme.ridges[1] },
-    { d: ridgePath(plan.seed, 2, 2 * W, 450, 190 * relief + 80, 600), speed: 0.85, fill: theme.ridges[2] },
-  ];
+    { base: 360, amp: 150 * relief + 60, speed: 0.2, color: theme.ridges[0] },
+    { base: 430, amp: 170 * relief + 70, speed: 0.45, color: theme.ridges[1] },
+    { base: 500, amp: 190 * relief + 80, speed: 0.85, color: theme.ridges[2] },
+  ].map((r, layer) => {
+    const bottom = r.base + 170;
+    return {
+      d: ridgePath(plan.seed, layer, 2 * W, r.base, r.amp, bottom),
+      speed: r.speed,
+      fill: { linear: { x1: 0, y1: r.base - r.amp, x2: 0, y2: bottom, stops: [{ at: 0, color: r.color }, { at: 1, color: `${r.color}00` }] } },
+    };
+  });
 
   // Chart paths (once): altitude area and the line over it, full and clipped to the played part per frame.
   const chart = plan.chart;
@@ -381,8 +389,6 @@ export function createSceneBuilder(ctx: BuildContext): Builder {
     // The ridges melt into the sky as the camera flattens for the overview.
     const ridgeAlpha = 1 - 0.6 * smoothstep(0, 1, f.outroP);
 
-    const nodes: ReplayNode[] = [bg, map, fogTop, group(ridges, ridgeAlpha), fogBottom];
-
     // Screen-space marks.
     const marks: SceneNode[] = [];
     for (const mk of f.marks) {
@@ -397,22 +403,28 @@ export function createSceneBuilder(ctx: BuildContext): Builder {
         ),
       );
     }
-    nodes.push(group(marks));
-    for (const pin of f.pins) nodes.push(group(pinNodes(pin)));
 
-    const riderScale = f.phase === 'intro' ? 0.4 + 0.6 * f.introP : f.phase === 'outro' ? 1 - 0.5 * smoothstep(0, 0.5, f.outroP) : 1;
-    const rs = riderScale;
-    nodes.push(
-      group([
-        { k: 'ellipse', cx: f.rider.x, cy: f.rider.y, rx: 46 * rs, ry: 46 * rs, fill: `${theme.accent}33` },
-        { k: 'ellipse', cx: f.rider.x, cy: f.rider.y, rx: 24 * rs, ry: 24 * rs, fill: '#ffffff', stroke: { color: theme.accent, width: 9 * rs } },
-      ]),
-    );
+    const rs = f.phase === 'intro' ? 0.4 + 0.6 * f.introP : f.phase === 'outro' ? 1 - 0.5 * smoothstep(0, 0.5, f.outroP) : 1;
+    const rider: SceneNode[] = [
+      { k: 'ellipse', cx: f.rider.x, cy: f.rider.y, rx: 46 * rs, ry: 46 * rs, fill: `${theme.accent}33` },
+      { k: 'ellipse', cx: f.rider.x, cy: f.rider.y, rx: 24 * rs, ry: 24 * rs, fill: '#ffffff', stroke: { color: theme.accent, width: 9 * rs } },
+    ];
 
-    if (f.counterAlpha > 0.01) nodes.push(group(counterNodes(f), f.counterAlpha));
-    nodes.push(...chartNodes(f));
-    if (f.summaryAlpha > 0.01) nodes.push(group(summaryNodes(), f.summaryAlpha));
-    nodes.push(...watermark);
+    // A fixed number of top-level slots, so a painter that keys by position never remounts a node when a pin appears.
+    const nodes: ReplayNode[] = [
+      bg,
+      map,
+      fogTop,
+      group(ridges, ridgeAlpha),
+      fogBottom,
+      group(marks),
+      group(f.pins.flatMap(pinNodes)),
+      group(rider),
+      group(f.counterAlpha > 0.01 ? counterNodes(f) : [], f.counterAlpha),
+      group(chartNodes(f)),
+      group(f.summaryAlpha > 0.01 ? summaryNodes() : [], f.summaryAlpha),
+      ...watermark,
+    ];
     return { width: W, height: H, nodes };
   };
 }

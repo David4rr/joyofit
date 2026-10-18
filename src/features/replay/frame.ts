@@ -10,7 +10,7 @@ import { odometerAt, pointAt, sampleAt } from './route';
 import { phaseAt, timeOfProgress, type Phase } from './timing';
 
 /** Seconds a pin's chip stays up after the rider reaches it (replay time), and its fade in and out. */
-export const CHIP_HOLD_SEC = 2.8;
+export const CHIP_HOLD_SEC = 2.4;
 export const CHIP_IN_SEC = 0.3;
 export const CHIP_OUT_SEC = 0.45;
 export const POP_SEC = 0.45;
