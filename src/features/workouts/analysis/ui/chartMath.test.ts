@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 
+import { applyLocale, getT } from '@/i18n';
+
 import type { AnalysisSeries, AnalysisSplit } from '../types';
 import {
   availableMetrics,
@@ -36,7 +38,7 @@ import {
   yPosition,
 } from './chartMath';
 import { createScrubStore } from './scrub';
-import { makeEnglishT } from './text';
+import { makeAnalysisT } from './text';
 
 /** 11 samples, 5 s apart, 10 m per sample, so distance 0..100 m. */
 function series(over: Partial<AnalysisSeries> = {}): AnalysisSeries {
@@ -154,7 +156,7 @@ describe('ticks', () => {
     expect(axisTicks(0, true, 5)).toEqual([]);
   });
   it('formats axis ticks', () => {
-    expect(formatAxisTick(2500, true)).toBe('2.5 km');
+    expect(formatAxisTick(2500, true)).toBe('2,5 km');
     expect(formatAxisTick(2000, true)).toBe('2 km');
     expect(formatAxisTick(600, false)).toBe('10:00');
   });
@@ -308,7 +310,7 @@ describe('splits', () => {
 
   it('labels full splits by number and the partial one by its distance', () => {
     expect(splitLabel(splits[0]!)).toBe('1');
-    expect(splitLabel(splits[2]!)).toBe('0.42 km');
+    expect(splitLabel(splits[2]!)).toBe('0,42 km');
   });
 
   it('ends each split at the sample nearest its cumulative distance, the last at the final sample', () => {
@@ -329,7 +331,7 @@ describe('splits', () => {
 
 describe('formatting helpers', () => {
   it('splits a distance into value and unit', () => {
-    expect(distanceParts(8352)).toEqual({ value: '8.35', unit: 'km' });
+    expect(distanceParts(8352)).toEqual({ value: '8,35', unit: 'km' });
     expect(distanceParts(640.4)).toEqual({ value: '640', unit: 'm' });
   });
   it('computes kcal per hour', () => {
@@ -340,9 +342,9 @@ describe('formatting helpers', () => {
     expect(signedDuration(17)).toBe('+0:17');
     expect(signedDuration(-65)).toBe('-1:05');
     expect(signedDuration(0.2)).toBe('0:00');
-    expect(signedNumber(0.25, 2)).toBe('+0.25');
+    expect(signedNumber(0.25, 2)).toBe('+0,25');
     expect(signedNumber(-3, 0)).toBe('-3');
-    expect(signedNumber(0.001, 2)).toBe('0.00');
+    expect(signedNumber(0.001, 2)).toBe('0,00');
   });
   it('averages comparison items ignoring missing values', () => {
     const avg = comparisonAverage([
@@ -375,13 +377,33 @@ describe('scrub store', () => {
   });
 });
 
-describe('English text', () => {
-  it('interpolates placeholders and leaves unknown ones visible', () => {
-    const t = makeEnglishT();
-    expect(t('zones.maxHrAge', { value: 188 })).toBe('Max HR 188 bpm (from your age)');
-    expect(t('zones.maxHrSetting', { value: 188 })).toBe('Max HR 188 bpm (your setting)');
-    expect(t('effort.addedToDay', { value: '10.8' })).toBe('+10.8 to the day');
-    expect(t('zones.below', {})).toBe('Below zone 1: {time}');
-    expect(t('chart.hint')).toBe('Touch and drag the chart to inspect the workout');
+describe('Analysis text', () => {
+  it('interpolates placeholders in the default language (Indonesian)', () => {
+    const t = makeAnalysisT(getT('id'));
+    expect(t('zones.maxHrAge', { value: 188 })).toBe('HR maks 188 bpm (dari usiamu)');
+    expect(t('effort.addedToDay', { value: '10,8' })).toBe('+10,8 ke hari ini');
+    expect(t('chart.hint')).toBe('Sentuh dan geser grafik untuk melihat detail latihan');
+  });
+  it('renders English and Indonesian from the same keys', async () => {
+    await applyLocale('en');
+    try {
+      const t = makeAnalysisT(getT('en'));
+      expect(t('zones.maxHrAge', { value: 188 })).toBe('Max HR 188 bpm (from your age)');
+      expect(t('zones.maxHrSetting', { value: 188 })).toBe('Max HR 188 bpm (your setting)');
+      expect(t('effort.addedToDay', { value: '10.8' })).toBe('+10.8 to the day');
+      expect(t('chart.hint')).toBe('Touch and drag the chart to inspect the workout');
+      expect(formatAxisTick(2500, true)).toBe('2.5 km');
+      expect(signedNumber(0.25, 2)).toBe('+0.25');
+    } finally {
+      await applyLocale('id');
+    }
+  });
+  it('picks the plural form of the comparison basis', () => {
+    const en = makeAnalysisT(getT('en'));
+    expect(en('compare.basisDistance', { count: 1 })).toBe('Compared with your last workout of similar distance (within 20%).');
+    expect(en('compare.basisDuration', { count: 4 })).toBe('Compared with your last 4 workouts of similar duration (within 25%).');
+    const id = makeAnalysisT(getT('id'));
+    expect(id('compare.basisDistance', { count: 1 })).toBe('Dibandingkan dengan 1 latihan terakhirmu dengan jarak serupa (selisih maks 20%).');
+    expect(id('compare.basisDuration', { count: 4 })).toBe('Dibandingkan dengan 4 latihan terakhirmu dengan durasi serupa (selisih maks 25%).');
   });
 });

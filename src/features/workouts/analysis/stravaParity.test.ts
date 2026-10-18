@@ -72,7 +72,7 @@ describe('distance: the watch total, everywhere', () => {
     const post = buildWatchPost(workout, points, { caption: '', visibility: 'grup', includeHr: true, includeRoute: true, includeComparison: true }, analysis);
     expect(post.workout.distanceM).toBe(WALK.strava.distanceM);
     expect(post.detail && 'analysis' in post.detail ? post.detail.analysis.distanceM : null).toBe(WALK.strava.distanceM);
-    expect(buildShareStats(workout, summary)[0]).toEqual({ key: 'distance', label: 'Distance', value: '2.01', unit: 'km' });
+    expect(buildShareStats(workout, summary)[0]).toEqual({ key: 'distance', label: 'Jarak', value: '2,01', unit: 'km' });
   });
 
   it('spreads the watch distance as the Strava file does: the unrecorded start and end move at the average speed', () => {
@@ -119,7 +119,7 @@ describe('time: moving and elapsed as Strava has them', () => {
     expect(formatElapsed(times.movingSec)).toBe('25:26');
     expect(analysis.elapsedSec).toBe(WALK.strava.elapsedSec);
     expect(analysis.movingSec).toBe(WALK.strava.movingSec);
-    expect(buildShareStats(workout, summary)[1]).toEqual({ key: 'time', label: 'Time', value: '25:26' });
+    expect(buildShareStats(workout, summary)[1]).toEqual({ key: 'time', label: 'Waktu', value: '25:26' });
     const post = buildWatchPost(workout, points, { caption: '', visibility: 'grup', includeHr: true, includeRoute: true, includeComparison: true }, analysis);
     expect(post.workout.durationMin).toBe(25);
   });

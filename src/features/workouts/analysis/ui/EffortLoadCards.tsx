@@ -3,6 +3,8 @@ import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
+import { fmtDecimal, fmtInt } from '@/i18n';
+
 import type { EffortBand, WorkoutAnalysis } from '../types';
 import { loadBarFractions, loadVerdict, strainFraction, type LoadVerdict } from './chartMath';
 import { useAnalysisContext } from './context';
@@ -44,7 +46,7 @@ function EffortCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
           style={styles.ring}
           accessible
           accessibilityRole="image"
-          accessibilityLabel={t('effort.a11y', { value: effort.strain.toFixed(1), band })}
+          accessibilityLabel={t('effort.a11y', { value: fmtDecimal(effort.strain, 1), band })}
         >
           <Svg width={RING} height={RING}>
             <Circle cx={RING / 2} cy={RING / 2} r={radius} stroke={palette.surfaceAlt} strokeWidth={STROKE} fill="none" />
@@ -63,7 +65,7 @@ function EffortCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
           </Svg>
           <View style={styles.ringCenter} pointerEvents="none">
             <Txt size={26} bold align="center">
-              {effort.strain.toFixed(1)}
+              {fmtDecimal(effort.strain, 1)}
             </Txt>
             <Txt size={11} muted align="center">
               {t('effort.outOf')}
@@ -74,11 +76,11 @@ function EffortCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
           <Chip label={band} color={color} filled labelColor={palette.isDark ? '#14100A' : '#FFFFFF'} />
           {effort.addedToDay !== null ? (
             <Txt size={15} bold style={styles.added}>
-              {t('effort.addedToDay', { value: effort.addedToDay.toFixed(1) })}
+              {t('effort.addedToDay', { value: fmtDecimal(effort.addedToDay, 1) })}
             </Txt>
           ) : null}
           <Txt size={12} muted style={styles.added}>
-            {t('effort.explain', { trimp: Math.round(effort.trimp) })}
+            {t('effort.explain', { trimp: fmtInt(effort.trimp) })}
           </Txt>
         </View>
       </View>
@@ -118,24 +120,24 @@ function LoadCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
   const color = verdict ? verdictColor(palette, verdict) : palette.accent;
 
   const extras: { key: string; label: string; value: string }[] = [];
-  if (load.aerobicEffect !== null) extras.push({ key: 'aerobic', label: t('load.aerobic'), value: load.aerobicEffect.toFixed(1) });
-  if (load.anaerobicEffect !== null) extras.push({ key: 'anaerobic', label: t('load.anaerobic'), value: load.anaerobicEffect.toFixed(1) });
-  if (load.recoveryHours !== null) extras.push({ key: 'recovery', label: t('load.recovery'), value: t('load.recoveryHours', { value: Math.round(load.recoveryHours) }) });
-  if (load.watchLoad !== null) extras.push({ key: 'watch', label: t('load.watchLoad'), value: String(Math.round(load.watchLoad)) });
+  if (load.aerobicEffect !== null) extras.push({ key: 'aerobic', label: t('load.aerobic'), value: fmtDecimal(load.aerobicEffect, 1) });
+  if (load.anaerobicEffect !== null) extras.push({ key: 'anaerobic', label: t('load.anaerobic'), value: fmtDecimal(load.anaerobicEffect, 1) });
+  if (load.recoveryHours !== null) extras.push({ key: 'recovery', label: t('load.recovery'), value: t('load.recoveryHours', { value: fmtInt(load.recoveryHours) }) });
+  if (load.watchLoad !== null) extras.push({ key: 'watch', label: t('load.watchLoad'), value: fmtInt(load.watchLoad) });
 
   return (
     <Card title={t('section.load')}>
       <View style={styles.loadTop}>
         <View
           accessible
-          accessibilityLabel={`${t('load.thisWorkout')} ${t('load.trimp')} ${Math.round(load.trimp)}`}
+          accessibilityLabel={`${t('load.thisWorkout')} ${t('load.trimp')} ${fmtInt(load.trimp)}`}
         >
           <Txt size={11} muted>
             {t('load.thisWorkout')}
           </Txt>
           <View style={styles.trimpRow}>
             <Txt size={26} bold>
-              {Math.round(load.trimp)}
+              {fmtInt(load.trimp)}
             </Txt>
             <Txt size={12} muted>
               {t('load.trimp')}
@@ -153,13 +155,13 @@ function LoadCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
       </View>
       {hasChronic ? (
         <View style={styles.bars}>
-          <LoadBar label={t('load.last7')} value={String(Math.round(load.acute))} fraction={bars.acute} color={color} />
-          <LoadBar label={t('load.weeklyAverage')} value={String(Math.round(load.chronicWeekly))} fraction={bars.chronic} color={palette.textMuted} />
+          <LoadBar label={t('load.last7')} value={fmtInt(load.acute)} fraction={bars.acute} color={color} />
+          <LoadBar label={t('load.weeklyAverage')} value={fmtInt(load.chronicWeekly)} fraction={bars.chronic} color={palette.textMuted} />
         </View>
       ) : null}
       {verdict && load.ratio !== null ? (
         <Txt size={12} muted style={styles.verdictText}>
-          {`${t(`load.verdictText.${verdict}`)} ${t('load.ratio', { percent: Math.round(load.ratio * 100) })}`}
+          {t('load.verdictLine', { verdict: t(`load.verdictText.${verdict}`), ratio: t('load.ratio', { percent: fmtInt(load.ratio * 100) }) })}
         </Txt>
       ) : null}
       {extras.length > 0 ? (

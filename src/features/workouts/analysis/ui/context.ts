@@ -16,6 +16,6 @@ export const AnalysisContext = createContext<AnalysisContextValue | null>(null);
 
 export function useAnalysisContext(): AnalysisContextValue {
   const value = useContext(AnalysisContext);
-  if (!value) throw new Error('Analysis components must render inside WorkoutAnalysisView or BasicDetail');
+  if (!value) throw new Error('Analysis components must render inside WorkoutAnalysisView or BasicDetail'); // i18n-ok: developer error, never shown
   return value;
 }

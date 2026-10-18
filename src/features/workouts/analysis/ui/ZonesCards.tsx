@@ -1,6 +1,8 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { fmtPercent } from '@/i18n';
+
 import { formatDuration, formatPace, type PaceZoneKey, type WorkoutAnalysis } from '../types';
 import { shares } from './chartMath';
 import { useAnalysisContext } from './context';
@@ -50,7 +52,7 @@ function ZoneRow({ n, name, range, sec, share, color }: ZoneRowProps) {
             {time}
           </Txt>
           <Txt size={11} muted align="right">
-            {`${percent}%`}
+            {fmtPercent(share * 100)}
           </Txt>
         </View>
       </View>
@@ -74,7 +76,7 @@ function HrZonesCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
           key={key}
           n={i + 1}
           name={t(ZONE_NAME[key])}
-          range={`${zones.bounds[i]}-${zones.bounds[i + 1]} ${t('unit.bpm')}`}
+          range={t('zones.hrRange', { from: zones.bounds[i]!, to: zones.bounds[i + 1]! })}
           sec={zones.sec[i] ?? 0}
           share={fractions[i] ?? 0}
           color={palette.zones[i]!}
@@ -106,7 +108,7 @@ function PaceZonesCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
             ? t('zones.slowerThan', { pace: formatPace(z.toSecKm) })
             : z.toSecKm === null
               ? t('zones.fasterThan', { pace: formatPace(z.fromSecKm) })
-              : `${formatPace(z.fromSecKm)}-${formatPace(z.toSecKm)} ${t('unit.perKm')}`;
+              : t('zones.paceRange', { from: formatPace(z.fromSecKm), to: formatPace(z.toSecKm) });
         return (
           <ZoneRow
             key={z.key}

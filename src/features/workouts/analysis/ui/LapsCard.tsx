@@ -1,7 +1,9 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { formatDistance, formatDuration, formatPace, type WorkoutAnalysis } from '../types';
+import { fmtDecimal, fmtDistance } from '@/i18n';
+
+import { formatDuration, formatPace, type WorkoutAnalysis } from '../types';
 import { speedKmhFromPace } from './chartMath';
 import { useAnalysisContext } from './context';
 import { Card, Txt } from './primitives';
@@ -40,7 +42,7 @@ function LapsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
       {laps.map((lap) => {
         const kmh = speedKmhFromPace(lap.paceSecKm);
         return (
-          <View key={lap.n} style={styles.row} accessible accessibilityLabel={`${t('laps.lap')} ${lap.n}, ${formatDuration(lap.sec)}`}>
+          <View key={lap.n} style={styles.row} accessible accessibilityLabel={t('laps.a11yRow', { n: lap.n, time: formatDuration(lap.sec) })}>
             <View style={{ flex: FLEX.lap, minWidth: 0 }}>
               <Txt size={13} bold>
                 {lap.n}
@@ -54,14 +56,14 @@ function LapsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
             {show.dist ? (
               <View style={{ flex: FLEX.dist, minWidth: 0 }}>
                 <Txt size={12} align="right" numberOfLines={1} fit>
-                  {lap.distM !== null ? formatDistance(lap.distM) : '--'}
+                  {lap.distM !== null ? fmtDistance(lap.distM) : '--'}
                 </Txt>
               </View>
             ) : null}
             {show.pace ? (
               <View style={{ flex: FLEX.pace, minWidth: 0 }}>
                 <Txt size={12} align="right">
-                  {speed ? (kmh !== null ? kmh.toFixed(1) : '--') : formatPace(lap.paceSecKm)}
+                  {speed ? (kmh !== null ? fmtDecimal(kmh, 1) : '--') : formatPace(lap.paceSecKm)}
                 </Txt>
               </View>
             ) : null}

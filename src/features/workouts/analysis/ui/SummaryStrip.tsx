@@ -1,6 +1,8 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { fmtDecimal, fmtInt } from '@/i18n';
+
 import { formatDuration, formatPace, type WorkoutAnalysis } from '../types';
 import { distanceParts, kcalPerHour } from './chartMath';
 import { useAnalysisContext } from './context';
@@ -58,7 +60,7 @@ function SummaryStripImpl({ analysis }: { analysis: WorkoutAnalysis }) {
   if ((sport.kind === 'run' || sport.kind === 'walk') && stats.avgPaceSecKm !== null) {
     hero.push({ key: 'pace', label: t('summary.avgPace'), value: formatPace(stats.avgPaceSecKm), unit: t('unit.perKm') });
   } else if (sport.kind === 'ride' && stats.avgSpeedMs !== null && stats.avgSpeedMs > 0) {
-    hero.push({ key: 'speed', label: t('summary.avgSpeed'), value: (stats.avgSpeedMs * 3.6).toFixed(1), unit: t('unit.kmh') });
+    hero.push({ key: 'speed', label: t('summary.avgSpeed'), value: fmtDecimal(stats.avgSpeedMs * 3.6, 1), unit: t('unit.kmh') });
   }
 
   const grid: Cell[] = [];
@@ -66,7 +68,7 @@ function SummaryStripImpl({ analysis }: { analysis: WorkoutAnalysis }) {
     grid.push({
       key: 'elevation',
       label: t('summary.elevation'),
-      value: `+${Math.round(elevation.gainM)} / -${Math.round(elevation.lossM)}`,
+      value: `+${fmtInt(elevation.gainM)} / -${fmtInt(elevation.lossM)}`,
       unit: t('unit.m'),
     });
   }
@@ -75,9 +77,9 @@ function SummaryStripImpl({ analysis }: { analysis: WorkoutAnalysis }) {
     grid.push({
       key: 'calories',
       label: t('summary.calories'),
-      value: String(Math.round(calories.kcal)),
+      value: fmtInt(calories.kcal),
       unit: t('unit.kcal'),
-      sub: perHour !== null ? `${perHour} ${t('unit.kcalPerHour')}` : undefined,
+      sub: perHour !== null ? `${fmtInt(perHour)} ${t('unit.kcalPerHour')}` : undefined,
     });
   }
   if (stats.avgHr !== null) {
@@ -102,9 +104,9 @@ function SummaryStripImpl({ analysis }: { analysis: WorkoutAnalysis }) {
     grid.push({
       key: 'power',
       label: t('summary.power'),
-      value: String(Math.round(stats.avgPower)),
+      value: fmtInt(stats.avgPower),
       unit: t('unit.w'),
-      sub: stats.normalizedPower !== null ? t('summary.normalizedPower', { value: Math.round(stats.normalizedPower) }) : undefined,
+      sub: stats.normalizedPower !== null ? t('summary.normalizedPower', { value: fmtInt(stats.normalizedPower) }) : undefined,
     });
   }
 
@@ -131,7 +133,7 @@ function SummaryStripImpl({ analysis }: { analysis: WorkoutAnalysis }) {
       ) : null}
       {fuel.length > 0 ? (
         <Txt size={12} muted style={styles.fuel}>
-          {`${t('summary.fuel')}: ${fuel.join(', ')}`}
+          {t('summary.fuelValue', { label: t('summary.fuel'), parts: fuel.join(', ') })}
         </Txt>
       ) : null}
     </Card>

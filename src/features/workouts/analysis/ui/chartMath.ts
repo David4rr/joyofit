@@ -13,6 +13,7 @@ import {
   type AnalysisSplit,
   type SportKind,
 } from '../types';
+import { fmtDate, fmtDecimal, fmtNumber, t } from '@/i18n';
 
 export type ChartMetric = 'pace' | 'speed' | 'hr' | 'alt' | 'cad' | 'power';
 
@@ -171,7 +172,7 @@ export function axisTicks(axisMax: number, isDistance: boolean, maxTicks: number
 }
 
 export function formatAxisTick(value: number, isDistance: boolean): string {
-  return isDistance ? `${+(value / 1000).toFixed(2)} km` : formatDuration(value);
+  return isDistance ? t('common:units.km', { value: fmtNumber(value / 1000, 2) }) : formatDuration(value);
 }
 
 // --- Axis and scrub index --------------------------------------------------------------------
@@ -411,7 +412,7 @@ export function strainFraction(strain: number): number {
 
 /** `3` for a full kilometre, `0.42 km` for a partial split. */
 export function splitLabel(split: Pick<AnalysisSplit, 'n' | 'distM'>): string {
-  return split.distM >= 999.5 ? String(split.n) : `${(split.distM / 1000).toFixed(2)} km`;
+  return split.distM >= 999.5 ? String(split.n) : t('common:units.km', { value: fmtDecimal(split.distM / 1000, 2) });
 }
 
 /** Sample index where each split ends (nearest sample to the cumulative distance; the last split ends at the last sample). */
@@ -439,19 +440,16 @@ export function speedKmhFromPace(paceSecKm: number | null): number | null {
 
 /** `8.35` + `km`, or `640` + `m` below a kilometre. */
 export function distanceParts(meters: number): { value: string; unit: 'km' | 'm' } {
-  return meters >= 1000 ? { value: (meters / 1000).toFixed(2), unit: 'km' } : { value: String(Math.round(meters)), unit: 'm' };
+  return meters >= 1000 ? { value: fmtDecimal(meters / 1000, 2), unit: 'km' } : { value: fmtNumber(Math.round(meters)), unit: 'm' };
 }
 
 export function kcalPerHour(kcal: number, elapsedSec: number): number | null {
   return elapsedSec > 0 ? Math.round(kcal / (elapsedSec / 3600)) : null;
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** `18 Oct`, in the device's local time. */
+/** `18 Okt` / `Oct 18`, in the device's local time. */
 export function formatShortDate(epochMs: number): string {
-  const d = new Date(epochMs);
-  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  return fmtDate(new Date(epochMs), 'short');
 }
 
 /** `+0:17` / `-1:05` for a difference in seconds; `0:00` when equal. */
@@ -462,8 +460,8 @@ export function signedDuration(sec: number): string {
 }
 
 export function signedNumber(value: number, decimals: number): string {
-  const text = Math.abs(value).toFixed(decimals);
-  if (Number(text) === 0) return (0).toFixed(decimals);
+  const text = fmtDecimal(Math.abs(value), decimals);
+  if (Number(Math.abs(value).toFixed(decimals)) === 0) return fmtDecimal(0, decimals);
   return `${value > 0 ? '+' : '-'}${text}`;
 }
 

@@ -1,6 +1,7 @@
 import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { CloudWorkoutLine } from '@/cloud/CloudWorkoutLine';
@@ -21,7 +22,6 @@ import {
   type WorkoutRow,
 } from '@/db/queries';
 import { BurnFigure, FuelBar } from '@/features/live/FuelBar';
-import { formatGrams } from '@/features/live/liveWorkout';
 import { startOfLocalDay } from '@/features/today/stats';
 import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/strain';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
@@ -33,16 +33,17 @@ import { loadAnalysisHistory } from '@/features/workouts/analysis/history';
 import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/palette';
 import { workoutElevation } from '@/features/workouts/analysis/elevation';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
-import { WorkoutAnalysisView, makeEnglishT } from '@/features/workouts/analysis/ui';
+import { WorkoutAnalysisView, useAnalysisT } from '@/features/workouts/analysis/ui';
 import { sportIcon } from '@/features/workouts/sportIcon';
+import { sportLabel } from '@/features/workouts/sportLabel';
 import { splitWorkout } from '@/features/workouts/substrate';
 import {
   formatElapsed,
   formatPace,
   formatSpeed,
-  formatWorkoutDistance,
   parseSummary,
   routePoints,
+  workoutDistanceParts,
   type WorkoutSummary,
 } from '@/features/workouts/summary';
 import { averagePaceSec, averageSpeedMs, workoutTimes } from '@/features/workouts/times';
@@ -51,6 +52,7 @@ import { effectWord, trainingEffect } from '@/features/fitness/trainingEffect';
 import { plausibleVo2 } from '@/features/fitness/vo2max';
 import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatClock, formatCount, formatDateTime } from '@/format';
+import { fmtDecimal, fmtInt, t as translate } from '@/i18n';
 import { spacing, useColors } from '@/theme';
 import type { StepSample } from '@/wear';
 
@@ -62,38 +64,43 @@ interface Loaded {
   daySamples: StepSample[];
 }
 
-/** `x.y m`, or null when the summary does not have the value. */
+/** `x,y m`, or null when the summary does not have the value. */
 function metres(value: number | undefined): string | null {
-  return value === undefined ? null : `${value.toFixed(1)} m`;
+  return value === undefined ? null : translate('common:units.m', { value: fmtDecimal(value, 1) });
+}
+
+/** `5,5 g` under 10 g, whole grams above. */
+function grams(value: number): string {
+  return value < 10 ? fmtDecimal(value, 1) : fmtInt(value);
 }
 
 /** The pace or speed rows that fit the sport: swimming per 100 m, running and walking per km, the rest km/h. */
-function paceRows(summary: WorkoutSummary, distanceM: number, movingSec: number): { label: string; value: string }[] {
+function paceRows(summary: WorkoutSummary, distanceM: number, movingSec: number): { key: string; label: string; value: string }[] {
+  const avgPace = translate('workouts:detail.more.avgPace');
+  const bestPace = translate('workouts:detail.more.bestPace');
   if (summary.avgPaceSecPer100m !== undefined) {
-    const rows = [{ label: 'Average pace', value: formatPace(averagePaceSec(distanceM, movingSec, 100) ?? summary.avgPaceSecPer100m, '100 m') }];
+    const rows = [{ key: 'avg', label: avgPace, value: formatPace(averagePaceSec(distanceM, movingSec, 100) ?? summary.avgPaceSecPer100m, '100 m') }];
     if (summary.minPaceSecPer100m !== undefined) {
-      rows.push({ label: 'Best pace', value: formatPace(summary.minPaceSecPer100m, '100 m') });
+      rows.push({ key: 'best', label: bestPace, value: formatPace(summary.minPaceSecPer100m, '100 m') });
     }
     return rows;
   }
   if (summary.avgPaceSecPerKm !== undefined) {
-    const rows = [{ label: 'Average pace', value: formatPace(averagePaceSec(distanceM, movingSec) ?? summary.avgPaceSecPerKm, 'km') }];
+    const rows = [{ key: 'avg', label: avgPace, value: formatPace(averagePaceSec(distanceM, movingSec) ?? summary.avgPaceSecPerKm, 'km') }];
     if (summary.minPaceSecPerKm !== undefined) {
-      rows.push({ label: 'Best pace', value: formatPace(summary.minPaceSecPerKm, 'km') });
+      rows.push({ key: 'best', label: bestPace, value: formatPace(summary.minPaceSecPerKm, 'km') });
     }
     return rows;
   }
-  const rows: { label: string; value: string }[] = [];
+  const rows: { key: string; label: string; value: string }[] = [];
   const avgSpeed = averageSpeedMs(distanceM, movingSec) ?? summary.avgSpeed;
-  if (avgSpeed !== undefined && avgSpeed !== null) rows.push({ label: 'Average speed', value: formatSpeed(avgSpeed) });
-  if (summary.maxSpeed !== undefined) rows.push({ label: 'Top speed', value: formatSpeed(summary.maxSpeed) });
+  if (avgSpeed !== undefined && avgSpeed !== null) rows.push({ key: 'avgSpeed', label: translate('workouts:detail.more.avgSpeed'), value: formatSpeed(avgSpeed) });
+  if (summary.maxSpeed !== undefined) rows.push({ key: 'topSpeed', label: translate('workouts:detail.more.topSpeed'), value: formatSpeed(summary.maxSpeed) });
   return rows;
 }
 
 /** The analysis of the workout on screen: computed after the rest of the screen is drawn. */
 type AnalysisState = { status: 'pending' } | { status: 'ready'; analysis: WorkoutAnalysis } | { status: 'error'; message: string };
-
-const ANALYSIS_T = makeEnglishT();
 
 export default function WorkoutDetailScreen() {
   const db = useSQLiteContext();
@@ -104,6 +111,8 @@ export default function WorkoutDetailScreen() {
   const [scrubbing, setScrubbing] = useState(false);
   const palette = useAnalysisPalette();
   const mapTheme = useMapTheme();
+  const { t } = useTranslation('workouts');
+  const analysisT = useAnalysisT();
 
   useFocusEffect(
     useCallback(() => {
@@ -112,7 +121,7 @@ export default function WorkoutDetailScreen() {
       setAnalysisState({ status: 'pending' });
       (async () => {
         const found = await getWorkout(db, workoutId);
-        if (!found) throw new Error('This workout is no longer stored');
+        if (!found) throw new Error(translate('workouts:detail.errors.notStored'));
         const points = await listWorkoutPoints(db, workoutId);
         const day = startOfLocalDay(found.workout.start);
         const daySamples = (await listStepSamplesSince(db, day)).filter((s) => s.timestamp < day + 86400);
@@ -179,7 +188,7 @@ export default function WorkoutDetailScreen() {
   if (!loaded) {
     return (
       <Screen>
-        <Stack.Screen options={{ title: 'Workout' }} />
+        <Stack.Screen options={{ title: t('detail.title') }} />
         {error !== null ? (
           <Notice tone="danger">{error}</Notice>
         ) : (
@@ -196,28 +205,28 @@ export default function WorkoutDetailScreen() {
   const { workout, summary } = loaded;
   const jumpRope = summary.kind === 'JUMP_ROPING';
   const swim = summary.swim;
-  // `formatWorkoutDistance` returns "2.34 km"; the summary shows the number big and the unit small.
-  const [distance, distanceUnit] = formatWorkoutDistance(workout.distance).split(' ');
-  const swimRows: { label: string; value: string | null }[] = swim
+  const sport = sportLabel(workout.sportName);
+  const { value: distance, unit: distanceUnit } = workoutDistanceParts(workout.distance);
+  const swimRows: { key: string; label: string; value: string | null }[] = swim
     ? [
-        { label: 'Style', value: swim.style ?? null },
-        { label: 'Laps', value: swim.laps !== undefined ? String(swim.laps) : null },
-        { label: 'Pool length', value: swim.poolLengthCm !== undefined ? `${swim.poolLengthCm / 100} m` : null },
-        { label: 'Strokes', value: swim.strokes !== undefined ? String(swim.strokes) : null },
-        { label: 'Stroke rate', value: swim.avgStrokeRate !== undefined ? `${swim.avgStrokeRate} /min` : null },
-        { label: 'SWOLF', value: swim.avgSwolf !== undefined ? String(swim.avgSwolf) : null },
+        { key: 'style', label: t('detail.swim.style'), value: swim.style ?? null },
+        { key: 'laps', label: t('detail.swim.laps'), value: swim.laps !== undefined ? fmtInt(swim.laps) : null },
+        { key: 'pool', label: t('detail.swim.pool'), value: swim.poolLengthCm !== undefined ? translate('common:units.m', { value: fmtDecimal(swim.poolLengthCm / 100, 0) }) : null },
+        { key: 'strokes', label: t('detail.swim.strokes'), value: swim.strokes !== undefined ? fmtInt(swim.strokes) : null },
+        { key: 'rate', label: t('detail.swim.strokeRate'), value: swim.avgStrokeRate !== undefined ? t('detail.value.perMin', { value: fmtInt(swim.avgStrokeRate) }) : null },
+        { key: 'swolf', label: t('detail.swim.swolf'), value: swim.avgSwolf !== undefined ? fmtInt(swim.avgSwolf) : null },
       ].filter((row) => row.value !== null)
     : [];
 
   return (
     <Screen scrollEnabled={!scrubbing}>
-      <Stack.Screen options={{ title: workout.sportName }} />
+      <Stack.Screen options={{ title: sport }} />
       <Card>
         <View style={styles.summaryHead}>
           <IconChip icon={sportIcon(workout.sportName)} tint="workouts" size="lg" />
           <View style={styles.summaryTitle}>
             <AppText variant="heading" numberOfLines={2}>
-              {workout.sportName}
+              {sport}
             </AppText>
             <AppText variant="caption" muted>
               {formatDateTime(workout.start)}
@@ -225,37 +234,37 @@ export default function WorkoutDetailScreen() {
           </View>
         </View>
         <View style={styles.figures}>
-          <Figure label={times.elapsedSec > times.movingSec ? 'Moving time' : 'Duration'}>
+          <Figure label={times.elapsedSec > times.movingSec ? t('detail.figure.movingTime') : t('detail.figure.duration')}>
             <Metric value={formatElapsed(times.movingSec)} size="md" />
           </Figure>
           {times.elapsedSec > times.movingSec ? (
-            <Figure label="Elapsed time">
+            <Figure label={t('detail.figure.elapsed')}>
               <Metric value={formatElapsed(times.elapsedSec)} size="md" />
             </Figure>
           ) : null}
           {workout.distance > 0 ? (
-            <Figure label="Distance">
+            <Figure label={t('detail.figure.distance')}>
               <Metric value={distance} unit={distanceUnit} size="md" />
             </Figure>
           ) : null}
           {workout.calories > 0 ? (
-            <Figure label="Calories">
-              <Metric value={formatCount(workout.calories)} unit="kcal" size="md" />
+            <Figure label={t('detail.figure.calories')}>
+              <Metric value={formatCount(workout.calories)} unit={t('detail.unit.kcal')} size="md" />
             </Figure>
           ) : null}
           {workout.steps > 0 ? (
-            <Figure label={jumpRope ? 'Jumps' : 'Steps'}>
+            <Figure label={jumpRope ? t('detail.figure.jumps') : t('detail.figure.steps')}>
               <Metric value={formatCount(workout.steps)} size="md" />
             </Figure>
           ) : null}
           {workout.avgHr !== null ? (
-            <Figure label="Avg HR">
-              <Metric value={String(workout.avgHr)} unit="bpm" size="md" color={colors.heartText} />
+            <Figure label={t('detail.figure.avgHr')}>
+              <Metric value={String(workout.avgHr)} unit={t('detail.unit.bpm')} size="md" color={colors.heartText} />
             </Figure>
           ) : null}
           {workout.maxHr !== null ? (
-            <Figure label="Max HR">
-              <Metric value={String(workout.maxHr)} unit="bpm" size="md" color={colors.heartText} />
+            <Figure label={t('detail.figure.maxHr')}>
+              <Metric value={String(workout.maxHr)} unit={t('detail.unit.bpm')} size="md" color={colors.heartText} />
             </Figure>
           ) : null}
         </View>
@@ -271,15 +280,15 @@ export default function WorkoutDetailScreen() {
       </Card>
 
       {analysisState.status === 'ready' ? (
-        <WorkoutAnalysisView analysis={analysisState.analysis} palette={palette} t={ANALYSIS_T} mapTheme={mapTheme} onScrubActive={setScrubbing} />
+        <WorkoutAnalysisView analysis={analysisState.analysis} palette={palette} t={analysisT} mapTheme={mapTheme} onScrubActive={setScrubbing} />
       ) : analysisState.status === 'error' ? (
-        <Notice tone="danger">{`The analysis could not be computed: ${analysisState.message}`}</Notice>
+        <Notice tone="danger">{t('detail.errors.analysis', { message: analysisState.message })}</Notice>
       ) : (
         <Skeleton width="100%" height={320} radius="card" />
       )}
-      {summary.gps === 'failed' ? <Notice icon="location-outline">The watch did not provide a GPS file for this workout.</Notice> : null}
+      {summary.gps === 'failed' ? <Notice icon="location-outline">{t('detail.gpsFailed')}</Notice> : null}
 
-      <Section title="Strain" icon="pulse" tint="workouts">
+      <Section title={t('detail.strain.title')} icon="pulse" tint="workouts">
         {strain ? (
           <>
             <View style={styles.strainRow}>
@@ -290,126 +299,142 @@ export default function WorkoutDetailScreen() {
                 max={STRAIN_MAX}
                 color={colors.workouts}
                 track={colors.workoutsSoft}
-                accessibilityLabel={`Workout strain ${strain.strain.toFixed(1)} of ${STRAIN_MAX}`}>
+                accessibilityLabel={t('detail.strain.a11y', { value: fmtDecimal(strain.strain, 1), max: STRAIN_MAX })}>
                 <AppText variant="heading" style={styles.strainValue}>
-                  {strain.strain.toFixed(1)}
+                  {fmtDecimal(strain.strain, 1)}
                 </AppText>
               </Ring>
               <View style={styles.strainText}>
-                <Metric value={`+${strain.share.added.toFixed(1)}`} unit="to the day" size="md" color={colors.workoutsText} unitColor={colors.workoutsText} />
+                <Metric value={`+${fmtDecimal(strain.share.added, 1)}`} unit={t('detail.strain.toTheDay')} size="md" color={colors.workoutsText} unitColor={colors.workoutsText} />
                 <AppText variant="caption" muted>
-                  Day strain now {strain.share.dayStrain.toFixed(1)}
+                  {t('detail.strain.dayNow', { value: fmtDecimal(strain.share.dayStrain, 1) })}
                 </AppText>
               </View>
             </View>
-            <Details title="How is this calculated?">
-              {`An estimate by JoyoFit, the watch does not report it: the heart-rate zones of this workout, with a maximum of ${maxHr} bpm, are summed (Edwards TRIMP: zones 1 to 5 count 1 to 5 per minute) and mapped onto 0 to 21 like the strain of a day. Zones are 50 to 60 % of max for Z1 up to 90 to 100 % for Z5. Pauses over two minutes count for nothing. The added part is the strain of the day with this workout minus the strain of the day without its minutes, so the same workout adds less on a day that already carried load.`}
-            </Details>
+            <Details title={t('detail.strain.how')}>{t('detail.strain.explain', { maxHr })}</Details>
           </>
         ) : (
-          <Notice icon="heart-outline">No heart rate stored for this workout, so no strain.</Notice>
+          <Notice icon="heart-outline">{t('detail.strain.noHr')}</Notice>
         )}
       </Section>
 
       {effectShown ? (
-        <Section title="Efek latihan" icon="fitness" tint="workouts">
+        <Section title={t('detail.effect.title')} icon="fitness" tint="workouts">
           {effect.aerobic ? (
-            <KeyValue icon="fitness-outline" label="Efek aerobik" value={`${effect.aerobic.value.toFixed(1)}, ${effectWord(effect.aerobic.value)} (${sourceLabel(effect.aerobic.source)})`} />
+            <KeyValue
+              icon="fitness-outline"
+              label={t('detail.effect.aerobic')}
+              value={t('detail.effect.valueWord', { value: fmtDecimal(effect.aerobic.value, 1), word: effectWord(effect.aerobic.value), source: sourceLabel(effect.aerobic.source) })}
+            />
           ) : null}
           {effect.anaerobic ? (
-            <KeyValue icon="fitness-outline" label="Efek anaerobik" value={`${effect.anaerobic.value.toFixed(1)}, ${effectWord(effect.anaerobic.value)} (${sourceLabel('watch')})`} />
+            <KeyValue
+              icon="fitness-outline"
+              label={t('detail.effect.anaerobic')}
+              value={t('detail.effect.valueWord', { value: fmtDecimal(effect.anaerobic.value, 1), word: effectWord(effect.anaerobic.value), source: sourceLabel('watch') })}
+            />
           ) : null}
-          {effect.points !== null ? <KeyValue icon="ribbon-outline" label="Poin latihan" value={`${effect.points} (${sourceLabel('watch')})`} /> : null}
-          {effect.load !== null ? <KeyValue icon="barbell-outline" label="Beban latihan jam" value={`${effect.load} (${sourceLabel('watch')})`} /> : null}
+          {effect.points !== null ? (
+            <KeyValue icon="ribbon-outline" label={t('detail.effect.points')} value={t('detail.effect.valueSource', { value: fmtInt(effect.points), source: sourceLabel('watch') })} />
+          ) : null}
+          {effect.load !== null ? (
+            <KeyValue icon="barbell-outline" label={t('detail.effect.watchLoad')} value={t('detail.effect.valueSource', { value: fmtInt(effect.load), source: sourceLabel('watch') })} />
+          ) : null}
           {summary.recoveryHours !== undefined && summary.recoveryHours > 0 ? (
-            <KeyValue icon="bed-outline" label="Waktu pulih" value={`${summary.recoveryHours.toFixed(0)} jam (${sourceLabel('watch')})`} />
+            <KeyValue
+              icon="bed-outline"
+              label={t('detail.effect.recovery')}
+              value={t('detail.effect.recoveryValue', { count: Math.round(summary.recoveryHours), value: fmtInt(summary.recoveryHours), source: sourceLabel('watch') })}
+            />
           ) : null}
-          {vo2 !== null ? <KeyValue icon="pulse-outline" label="VO2max" value={`${vo2} ml/kg/mnt (${sourceLabel('watch')})`} /> : null}
-          <Details title="Cara dihitung">
-            {`Angka dari jam adalah yang dilaporkan jam setelah latihan ini, apa adanya. Efek latihan berskala 0 sampai 5. ${effect.aerobic?.source === 'estimate' ? 'Jam tidak melaporkan efek aerobik, jadi ini perkiraan JoyoFit dari TRIMP latihan ini: 5 x (1 - e^(-TRIMP / 150)). ' : ''}Satuan poin latihan dan beban dari jam belum kami pastikan, dan beban jam bukan TRIMP. VO2max dari jam dibulatkan ke bawah ke bilangan bulat; nilai di luar 10 sampai 90 tidak ditampilkan.`}
+          {vo2 !== null ? (
+            <KeyValue icon="pulse-outline" label={t('detail.effect.vo2max')} value={t('detail.effect.vo2Value', { value: vo2, source: sourceLabel('watch') })} />
+          ) : null}
+          <Details title={t('detail.effect.how')}>
+            {t(effect.aerobic?.source === 'estimate' ? 'detail.effect.explainEstimate' : 'detail.effect.explainWatch')}
           </Details>
         </Section>
       ) : null}
 
       {burn ? (
-        <Section title="Fat and carbs burned" icon="flame" tint="workouts">
+        <Section title={t('detail.burn.title')} icon="flame" tint="workouts">
           <View style={styles.tiles}>
-            <BurnFigure label="Fat" grams={burn.fatGrams} color={colors.workoutsText} />
-            <BurnFigure label="Carbs" grams={burn.carbGrams} color={colors.stepsText} />
+            <BurnFigure label={t('detail.burn.fat')} grams={burn.fatGrams} color={colors.workoutsText} />
+            <BurnFigure label={t('detail.burn.carbs')} grams={burn.carbGrams} color={colors.stepsText} />
           </View>
-          <FuelBar fatShare={burn.fatShare} lead="Overall" />
-          {burn.zones.map((z) => (
-            <KeyValue
-              key={z.zone}
-              label={z.zone === 0 ? `${z.label} · ${formatElapsed(z.seconds)}` : `Zone ${z.zone} ${z.label} · ${formatElapsed(z.seconds)}`}
-              value={`fat ${formatGrams(z.fatGrams)} g, carbs ${formatGrams(z.carbGrams)} g`}
-            />
-          ))}
-          <Details title="How is this calculated?">
-            {`An estimate by JoyoFit, the watch does not measure it: the ${formatCount(workout.calories)} kcal are split over the time you actually spent at each heart rate, with a maximum of ${maxHr} bpm (220 minus your age from the profile). Easier effort burns a larger share of fat.`}
-          </Details>
+          <FuelBar fatShare={burn.fatShare} />
+          {burn.zones.map((z) => {
+            const time = formatElapsed(z.seconds);
+            const zoneName = t(`detail.burn.zone.${z.zone as 0 | 1 | 2 | 3 | 4 | 5}`);
+            return (
+              <KeyValue
+                key={z.zone}
+                label={z.zone === 0 ? t('detail.burn.zoneRowBelow', { label: zoneName, time }) : t('detail.burn.zoneRow', { zone: z.zone, label: zoneName, time })}
+                value={t('detail.burn.grams', { fat: grams(z.fatGrams), carbs: grams(z.carbGrams) })}
+              />
+            );
+          })}
+          <Details title={t('detail.burn.how')}>{t('detail.burn.explain', { kcal: formatCount(workout.calories), maxHr })}</Details>
         </Section>
       ) : null}
 
       <StravaWorkoutSection workout={workout} />
 
-      <Section title="More stats" icon="list">
+      <Section title={t('detail.more.title')} icon="list">
         <KeyValue
           icon="time-outline"
-          label="Time of day"
-          value={`${formatClock(workout.start)} to ${formatClock(workout.end)}`}
+          label={t('detail.more.timeOfDay')}
+          value={t('detail.more.timeRange', { from: formatClock(workout.start), to: formatClock(workout.end) })}
         />
         {paceRows(summary, workout.distance, times.movingSec).map((row) => (
-          <KeyValue key={row.label} icon="speedometer-outline" label={row.label} value={row.value} />
+          <KeyValue key={row.key} icon="speedometer-outline" label={row.label} value={row.value} />
         ))}
         {summary.minHr !== undefined ? (
-          <KeyValue icon="heart-outline" label="Lowest heart rate" value={`${summary.minHr} bpm`} />
+          <KeyValue icon="heart-outline" label={t('detail.more.lowestHr')} value={`${summary.minHr} ${t('detail.unit.bpm')}`} />
         ) : null}
         {elevation !== null ? (
           <>
-            <KeyValue icon="trending-up-outline" label="Elevation gain" value={`${Math.round(elevation.gainM)} m`} />
-            <KeyValue icon="trending-down-outline" label="Elevation loss" value={`${Math.round(elevation.lossM)} m`} />
+            <KeyValue icon="trending-up-outline" label={t('detail.more.elevGain')} value={translate('common:units.m', { value: fmtInt(elevation.gainM) })} />
+            <KeyValue icon="trending-down-outline" label={t('detail.more.elevLoss')} value={translate('common:units.m', { value: fmtInt(elevation.lossM) })} />
           </>
         ) : null}
         {summary.maxAltitude !== undefined ? (
-          <KeyValue icon="chevron-up-circle-outline" label="Highest point" value={metres(summary.maxAltitude)} />
+          <KeyValue icon="chevron-up-circle-outline" label={t('detail.more.highest')} value={metres(summary.maxAltitude)} />
         ) : null}
         {summary.minAltitude !== undefined ? (
-          <KeyValue icon="chevron-down-circle-outline" label="Lowest point" value={metres(summary.minAltitude)} />
+          <KeyValue icon="chevron-down-circle-outline" label={t('detail.more.lowest')} value={metres(summary.minAltitude)} />
         ) : null}
         {summary.avgPower !== undefined ? (
-          <KeyValue icon="flash-outline" label="Average power" value={`${summary.avgPower} W`} />
+          <KeyValue icon="flash-outline" label={t('detail.more.avgPower')} value={`${fmtInt(summary.avgPower)} ${t('analysis.unit.w')}`} />
         ) : null}
         {summary.normalizedPower !== undefined ? (
-          <KeyValue icon="flash-outline" label="Normalized power" value={`${summary.normalizedPower} W`} />
+          <KeyValue icon="flash-outline" label={t('detail.more.normPower')} value={`${fmtInt(summary.normalizedPower)} ${t('analysis.unit.w')}`} />
         ) : null}
-        {summary.maxPower !== undefined ? <KeyValue icon="flash-outline" label="Peak power" value={`${summary.maxPower} W`} /> : null}
+        {summary.maxPower !== undefined ? (
+          <KeyValue icon="flash-outline" label={t('detail.more.peakPower')} value={`${fmtInt(summary.maxPower)} ${t('analysis.unit.w')}`} />
+        ) : null}
         {summary.avgCadence !== undefined ? (
-          <KeyValue icon="sync-outline" label="Average cadence" value={`${summary.avgCadence} rpm`} />
+          <KeyValue icon="sync-outline" label={t('detail.more.avgCadence')} value={`${fmtInt(summary.avgCadence)} ${t('analysis.unit.rpm')}`} />
         ) : null}
         {summary.maxCadence !== undefined ? (
-          <KeyValue icon="sync-outline" label="Peak cadence" value={`${summary.maxCadence} rpm`} />
+          <KeyValue icon="sync-outline" label={t('detail.more.peakCadence')} value={`${fmtInt(summary.maxCadence)} ${t('analysis.unit.rpm')}`} />
         ) : null}
         {summary.maxDepth !== undefined ? (
-          <KeyValue icon="water-outline" label="Maximum depth" value={metres(summary.maxDepth)} />
+          <KeyValue icon="water-outline" label={t('detail.more.maxDepth')} value={metres(summary.maxDepth)} />
         ) : null}
         {summary.importedFrom !== undefined ? (
           <Notice icon="document-outline">
-            Imported from a {summary.importedFrom} FIT file. Stays on this phone, not sent to the cloud or {isIos ? 'Apple Health' : 'Health Connect'}.
+            {t('detail.more.imported', { brand: summary.importedFrom, health: isIos ? t('detail.more.healthIos') : t('detail.more.healthAndroid') })}
           </Notice>
         ) : null}
-        {!workout.complete ? (
-          <Notice icon="cloud-download-outline">Partly downloaded; the next sync fetches the rest.</Notice>
-        ) : null}
-        {summary.missingData ? (
-          <Notice>The watch refused to return some data for this workout, so parts may be missing.</Notice>
-        ) : null}
+        {!workout.complete ? <Notice icon="cloud-download-outline">{t('detail.more.partial')}</Notice> : null}
+        {summary.missingData ? <Notice>{t('detail.more.missing')}</Notice> : null}
       </Section>
 
       {swimRows.length > 0 ? (
-        <Section title="Swimming" icon="water" tint="workouts">
+        <Section title={t('detail.swim.title')} icon="water" tint="workouts">
           {swimRows.map((row) => (
-            <KeyValue key={row.label} label={row.label} value={row.value} />
+            <KeyValue key={row.key} label={row.label} value={row.value} />
           ))}
         </Section>
       ) : null}

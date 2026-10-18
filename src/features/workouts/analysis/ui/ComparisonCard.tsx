@@ -1,6 +1,8 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { fmtDecimal } from '@/i18n';
+
 import { formatDuration, formatPace, type WorkoutAnalysis } from '../types';
 import { comparisonAverage, difference, formatShortDate, signedDuration, signedNumber, speedKmhFromPace } from './chartMath';
 import { useAnalysisContext } from './context';
@@ -32,13 +34,16 @@ function ComparisonCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
     paceSecKm: analysis.stats.avgPaceSecKm,
     avgHr: analysis.stats.avgHr,
   };
-  const previous: Row = { key: 'prev', label: `${t('compare.previous')} ${formatShortDate(items[0]!.startedAt)}`, ...pick(items[0]!) };
+  const previous: Row = { key: 'prev', label: t('compare.previousOn', { date: formatShortDate(items[0]!.startedAt) }), ...pick(items[0]!) };
   const average: Row = { key: 'avg', label: t('compare.average', { n: items.length }), ...pick(avg) };
   const showDist = current.distM !== null && items.some((i) => i.distM !== null);
   const showPace = current.paceSecKm !== null && items.some((i) => i.paceSecKm !== null);
   const showHr = current.avgHr !== null && items.some((i) => i.avgHr !== null);
 
-  const paceText = (p: number | null) => (speed ? (speedKmhFromPace(p)?.toFixed(1) ?? '--') : formatPace(p));
+  const paceText = (p: number | null) => {
+    const kmh = speedKmhFromPace(p);
+    return speed ? (kmh !== null ? fmtDecimal(kmh, 1) : '--') : formatPace(p);
+  };
   const cell = (flex: number, text: string, opts?: { bold?: boolean; color?: string; muted?: boolean }) => (
     <View style={{ flex, minWidth: 0 }}>
       <Txt size={12} bold={opts?.bold} muted={opts?.muted} color={opts?.color} align="right" numberOfLines={1} fit>
@@ -53,7 +58,7 @@ function ComparisonCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
           {r.label}
         </Txt>
       </View>
-      {showDist ? cell(FLEX.value, r.distM !== null ? `${(r.distM / 1000).toFixed(2)}` : '--', { bold }) : null}
+      {showDist ? cell(FLEX.value, r.distM !== null ? fmtDecimal(r.distM / 1000, 2) : '--', { bold }) : null}
       {cell(FLEX.value, r.sec !== null ? formatDuration(r.sec) : '--', { bold })}
       {showPace ? cell(FLEX.value, paceText(r.paceSecKm), { bold }) : null}
       {showHr ? cell(FLEX.value, r.avgHr !== null ? String(Math.round(r.avgHr)) : '--', { bold }) : null}
@@ -81,20 +86,13 @@ function ComparisonCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
   };
 
   const n = items.length;
-  const basisKey =
-    comparison.basis === 'distance'
-      ? n === 1
-        ? 'compare.basisDistanceOne'
-        : 'compare.basisDistance'
-      : n === 1
-        ? 'compare.basisDurationOne'
-        : 'compare.basisDuration';
+  const basisKey = comparison.basis === 'distance' ? 'compare.basisDistance' : 'compare.basisDuration';
 
   return (
     <Card title={t('section.comparison')}>
       <View style={styles.row}>
         <View style={{ flex: FLEX.label }} />
-        {showDist ? cell(FLEX.value, `${t('compare.dist')} ${t('unit.km')}`, { muted: true }) : null}
+        {showDist ? cell(FLEX.value, t('compare.distKm'), { muted: true }) : null}
         {cell(FLEX.value, t('compare.time'), { muted: true })}
         {showPace ? cell(FLEX.value, t(speed ? 'compare.speed' : 'compare.pace'), { muted: true }) : null}
         {showHr ? cell(FLEX.value, t('compare.hr'), { muted: true }) : null}
@@ -106,7 +104,7 @@ function ComparisonCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
       <Divider />
       {deltaRow('dprev', t('compare.vsPrevious'), previous)}
       {n > 1 ? deltaRow('davg', t('compare.vsAverage'), average) : null}
-      <Note>{t(basisKey, { n })}</Note>
+      <Note>{t(basisKey, { count: n })}</Note>
     </Card>
   );
 }

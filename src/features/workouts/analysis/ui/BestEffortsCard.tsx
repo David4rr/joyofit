@@ -55,7 +55,7 @@ function BestEffortsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
                 {time}
               </Txt>
               <Txt size={11} muted align="right">
-                {`${pace} ${t('unit.perKm')}`}
+                {t('best.paceValue', { pace })}
               </Txt>
             </View>
           </View>

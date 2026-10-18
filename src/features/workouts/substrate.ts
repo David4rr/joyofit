@@ -46,7 +46,6 @@ export function fatShare(heartRate: number, maxHr: number): number {
 /** Time and burn in one heart-rate zone (Huawei's: 50/60/70/80/90 % of maximum; zone 0 is below 50 %). */
 export interface ZoneBurn {
   zone: number;
-  label: string;
   seconds: number;
   fatGrams: number;
   carbGrams: number;
@@ -60,8 +59,6 @@ export interface SubstrateSplit {
   /** Zones the workout spent time in, lowest first. */
   zones: ZoneBurn[];
 }
-
-const ZONE_LABELS = ['Below zones', 'Warm-up', 'Fat burning', 'Aerobic', 'Anaerobic', 'Extreme'];
 
 /** Huawei's zones by share of maximum heart rate: 50, 60, 70, 80, 90 %. */
 export function zoneOf(heartRate: number, maxHr: number): number {
@@ -97,7 +94,7 @@ export function splitWorkout(calories: number, points: readonly WorkoutPointRow[
     const fat = kcal * fatShare(s.hr, maxHr);
     fatKcal += fat;
     const z = zoneOf(s.hr, maxHr);
-    const entry = zones.get(z) ?? { zone: z, label: ZONE_LABELS[z], seconds: 0, fatGrams: 0, carbGrams: 0 };
+    const entry = zones.get(z) ?? { zone: z, seconds: 0, fatGrams: 0, carbGrams: 0 };
     entry.seconds += s.dt;
     entry.fatGrams += fat / KCAL_PER_G_FAT;
     entry.carbGrams += (kcal - fat) / KCAL_PER_G_CARB;

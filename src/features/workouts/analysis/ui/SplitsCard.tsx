@@ -1,6 +1,8 @@
 import { memo, useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { fmtDecimal } from '@/i18n';
+
 import { formatPace, type AnalysisSplit, type WorkoutAnalysis } from '../types';
 import { fastestIndex, paceBarFractions, speedKmhFromPace, splitAtIndex, splitEndIndices, splitLabel } from './chartMath';
 import { useAnalysisContext } from './context';
@@ -34,7 +36,7 @@ interface RowProps {
 const SplitRow = memo(function SplitRow({ split, index, fraction, fastest, active, speed, columns, tappable, onSelect }: RowProps) {
   const { palette, t } = useAnalysisContext();
   const kmh = speedKmhFromPace(split.paceSecKm);
-  const valueText = speed ? (kmh !== null ? kmh.toFixed(1) : '--') : formatPace(split.paceSecKm);
+  const valueText = speed ? (kmh !== null ? fmtDecimal(kmh, 1) : '--') : formatPace(split.paceSecKm);
   const label = splitLabel(split);
   const elev =
     split.gainM !== null || split.lossM !== null ? `+${Math.round(split.gainM ?? 0)}/-${Math.round(split.lossM ?? 0)}` : '--';

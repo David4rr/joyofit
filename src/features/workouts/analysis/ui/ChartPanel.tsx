@@ -2,6 +2,8 @@ import { memo, useId, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 
+import { fmtDecimal } from '@/i18n';
+
 import { formatDuration, formatPace, type AnalysisSeries, type SportKind } from '../types';
 import {
   chartGeometry,
@@ -155,13 +157,13 @@ export const Readout = memo(function Readout({ series, metric, kind }: ReadoutPr
   }
   const r = readoutAt(series, index);
   const cells: ReadoutCell[] = [];
-  if (r.distM !== null) cells.push({ key: 'dist', value: (r.distM / 1000).toFixed(2), unit: t('unit.km') });
+  if (r.distM !== null) cells.push({ key: 'dist', value: fmtDecimal(r.distM / 1000, 2), unit: t('unit.km') });
   cells.push({ key: 'time', value: formatDuration(r.sec), unit: t('unit.time') });
   if (series.pace) {
     const speed = kind === 'ride';
     cells.push(
       speed
-        ? { key: 'speed', value: r.speedKmh !== null ? r.speedKmh.toFixed(1) : '--', unit: t('unit.kmh') }
+        ? { key: 'speed', value: r.speedKmh !== null ? fmtDecimal(r.speedKmh, 1) : '--', unit: t('unit.kmh') }
         : { key: 'pace', value: formatPace(r.pace), unit: t('unit.perKm') },
     );
   }
