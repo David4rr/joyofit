@@ -6,20 +6,19 @@
 #   scripts/ota.sh --channel preview "Try the new notice"            preview channel (needs a binary built for it)
 #
 # Steps: typecheck + unit tests, then a release `expo export` (bundle sanity checks), then `eas update` with that
-# bundle, signed with the OTA code-signing key. Prints the update group id. Nothing is uploaded to a store.
+# bundle. Prints the update group id. Nothing is uploaded to a store.
 #
 # JS and asset changes only. A change that touches native code (modules/, plugins/), native config (app.json,
 # permissions, entitlements), a native dependency or the lockfile changes the fingerprint runtimeVersion: the update
 # would then target a runtimeVersion that no installed binary has, so nobody receives it. Ship a new binary for those
 # (docs/ota.md "When OTA is not enough").
 #
-# Needs: bun, jq, an EAS login (`bunx eas-cli login`, owner dzulfikar08) or EXPO_TOKEN, and the private key
-# ~/.config/joyofit/ota/private-key.pem (OTA_PRIVATE_KEY_PATH overrides; the CI workflow writes it from a secret).
+# Needs: bun, jq and an EAS login (`bunx eas-cli login`, owner dzulfikar08) or EXPO_TOKEN. EAS Update code signing needs a paid EAS plan the account
+# does not have, so updates are unsigned.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$PWD
 EAS=(bunx "eas-cli@${EAS_CLI_VERSION:-25.1.1}")
-KEY=${OTA_PRIVATE_KEY_PATH:-$HOME/.config/joyofit/ota/private-key.pem}
 
 usage() { sed -n '2,8p' "$0" >&2; exit 2; }
 
@@ -29,6 +28,7 @@ while [ $# -gt 0 ]; do
     --channel) channel=${2:?--channel needs production or preview}; shift ;;
     --platform) platform=${2:?--platform needs android, ios or all}; shift ;;
     -h|--help) usage ;;
+    --) shift; message=${message:+$message }$*; break ;;
     -*) echo "unknown option: $1" >&2; usage ;;
     *) message=${message:+$message }$1 ;;
   esac
@@ -37,7 +37,6 @@ done
 [ -n "$message" ] || { echo "an update message is required" >&2; usage; }
 case $channel in production|preview) ;; *) echo "channel must be production or preview" >&2; exit 2 ;; esac
 case $platform in android|ios|all) ;; *) echo "platform must be android, ios or all" >&2; exit 2 ;; esac
-[ -f "$KEY" ] || { echo "no OTA signing key at $KEY (docs/ota.md: Signing)" >&2; exit 1; }
 command -v jq > /dev/null || { echo "jq is required" >&2; exit 1; }
 
 step() { printf '\n== %s ==\n' "$*"; }
@@ -72,7 +71,7 @@ publish() {
 
   step "3. $p: eas update --channel $channel (runtimeVersion $runtime)"
   "${EAS[@]}" update --channel "$channel" --platform "$p" --message "$message" \
-    --skip-bundler --input-dir "$out" --private-key-path "$KEY" --environment "$channel" \
+    --skip-bundler --input-dir "$out" --environment "$channel" \
     --non-interactive --json > "$json"
   local group
   group=$(jq -r '[.[]? | .group] | map(select(. != null)) | .[0] // empty' "$json")
