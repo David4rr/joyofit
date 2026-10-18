@@ -1,6 +1,5 @@
 import type { Post } from "../types.ts";
 
-/** DRAFT. Not imported by the app. Publish with the steps at the top of ../index.ts when Coach has shipped (OTA or store build). */
 export const coach: Post = {
   slug: "coach",
   title: "Coach di JoyoFit: saran harian, rencana lari dan latihan kekuatan, dan Tanya coach",
@@ -42,10 +41,4 @@ export const coach: Post = {
     },
   ],
   more: [{ href: "/panduan", label: "Panduan JoyoFit" }],
-  verify: [
-    "Terbitkan hanya setelah fase 2 (kekuatan, perpustakaan, tombol Mulai latihan) dan fase 3 (Tanya coach) benar-benar jalan di build; coret butir yang belum rilis.",
-    "Cocokkan aturan saran harian dan penyesuaian mingguan dengan docs/coach.md di repo aplikasi.",
-    "Tambahkan bagian Coach di Panduan (SECTIONS di src/Panduan.tsx) dan satu kartu di landing sebelum terbit; perbarui privasi (rencana disimpan di JoyoRogo, pesan chat tidak disimpan).",
-    "Ganti date ke tanggal rilis, hapus verify, dan butuh screenshot baru: kartu Hari Ini, layar rencana, detail sesi, perpustakaan, chat.",
-  ],
 };

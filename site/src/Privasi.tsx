@@ -377,6 +377,12 @@ function Indonesian() {
         </p>
       </Block>
 
+      <Block id="coach" title="Coach (Pro)">
+        <p>
+          Rencana latihan Coach (tujuan, level, hari latihan, sesi yang selesai) disimpan di akun JoyoRogo-mu agar ikut ke ponsel lain, dan ikut terhapus bersama akunmu. Pesan Tanya coach dan ringkasan datamu (metrik hari ini, rencana, latihan terakhir, dan catatan makan di JoyoRogo) dikirim ke AI JoyoRogo (Cloudflare Workers AI) untuk dijawab. Pesan tidak disimpan di server; yang dicatat hanya jumlah pesan per hari dan pemakaian token. Obrolan hanya tersimpan di ponselmu dan bisa dihapus dari layar chat. Pesan tentang nyeri atau cedera dijawab dengan anjuran menemui tenaga medis tanpa memanggil AI.
+        </p>
+      </Block>
+
       <Block id="keluarga" title="Pantau keluarga (opsional)">
         <List
           items={[
