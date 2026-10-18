@@ -111,7 +111,7 @@ afterEach(async () => {
 
 describe('prepare and cancel', () => {
   it('starts the native session, connects only the auto-connect sensors and reports readiness', async () => {
-    const { controller, hub, session } = await setup();
+    const { controller, hub, session, run } = await setup();
     live = controller;
     await controller.prepare('run', 'Lari');
     expect(session.starts).toEqual([{ title: 'Lari', text: 'Lari', gps: true }]);
@@ -120,6 +120,10 @@ describe('prepare and cancel', () => {
     expect(s).toMatchObject({ phase: 'ready', sport: 'run', gps: true, sensorIds: [strap.id], status: 'idle', live: null });
     hub.emitFix(T0, 0);
     expect(controller.getSnapshot().fix).toEqual({ accuracyM: 5, ageSec: 0 });
+    // nothing is recorded yet, but the age of the fix keeps counting on screen
+    run(3);
+    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 5, ageSec: 3 });
+    expect(controller.getSnapshot().live).toBeNull();
   });
 
   it('an indoor sport asks for no GPS', async () => {

@@ -148,6 +148,7 @@ export class RecordingController {
     const noService = await this.beginSession(gps, title);
     const ids = this.deps.sensors().filter((s) => s.autoConnect).map((s) => s.id);
     this.snap = { ...idleSnapshot(), phase: 'ready', sport, gps, noService };
+    this.beginTimer();
     const sensorError = await this.connectAll(ids);
     this.publish({ sensorIds: ids, sensorError });
   }
@@ -262,6 +263,11 @@ export class RecordingController {
 
   /** One second of the clock; also called when the app comes back to the foreground to fill the seconds a throttled thread missed. */
   tick(): void {
+    // While getting ready nothing is recorded, but the GPS age on the screen keeps counting.
+    if (this.snap.phase === 'ready') {
+      this.publish();
+      return;
+    }
     const recorder = this.recorder;
     if (!recorder || this.snap.phase !== 'active') return;
     const now = this.deps.now();
