@@ -23,6 +23,7 @@ import { WatchStatusCard } from '@/features/device/WatchStatusCard';
 import { WatchesSection } from '@/features/device/WatchesSection';
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
 import { useBondedDevices } from '@/features/device/useBondedDevices';
+import { SensorsSection } from '@/features/sensors/ui/SensorsSection';
 import { useWatch } from '@/state/WatchProvider';
 import { fmtPercent } from '@/i18n';
 import { spacing, useTheme } from '@/theme';
@@ -147,6 +148,7 @@ function WatchHub() {
       <WatchStatusCard />
       <SilentWatchHelp />
       <WatchesSection onAdd={addWatch} />
+      <SensorsSection />
       {/* Connected, the list is only needed to disconnect or switch, so the watch's own pages come first. */}
       {linked ? (
         <>

@@ -5,7 +5,8 @@
     "alarms": "Alarms",
     "faces": "Watch faces",
     "faceEdit": "Customize face",
-    "photo": "Photo face"
+    "photo": "Photo face",
+    "sensors": "Sensors"
   },
   "link": {
     "disconnected": "Disconnected",
@@ -520,6 +521,115 @@
       "title": "Remove this watch?",
       "message": "{{name}} is removed from the list and its pairing key is deleted from this phone. Health data already stored stays. Connecting it again is a first pairing and has to be confirmed on the watch.",
       "confirm": "Remove"
+    }
+  },
+  "sensors": {
+    "title": "Sensors",
+    "kind": {
+      "hr": "Heart rate",
+      "csc": "Speed and cadence",
+      "power": "Power",
+      "rsc": "Running pod"
+    },
+    "battery": "Battery {{value}}",
+    "unnamed": "Unnamed sensor ({{tail}})",
+    "reading": {
+      "rpm": "{{value}} rpm",
+      "kmh": "{{value}} km/h"
+    },
+    "link": {
+      "connected": "Connected",
+      "connecting": "Connecting",
+      "disconnected": "Not connected"
+    },
+    "signal": {
+      "strong": "Strong signal",
+      "good": "Good signal",
+      "fair": "Fair signal",
+      "weak": "Weak signal"
+    },
+    "hint": {
+      "signalLost": "Signal lost. Bring the sensor closer to the phone; the app is trying to reconnect.",
+      "failed": "Could not connect. Make sure the sensor is on, close by, and not connected to another app or watch.",
+      "contactLost": "The strap is not touching your skin. Wet the electrodes and tighten it on your chest.",
+      "waitingHr": "No heartbeat yet. Wear the strap on your chest and wet its electrodes.",
+      "waitingBike": "No data yet. Turn the pedals or the wheel to wake the sensor.",
+      "waitingPod": "No data yet. Start walking or running to wake the pod."
+    },
+    "hub": {
+      "empty": "Pair a heart rate strap, a speed and cadence sensor, a power meter or a running pod over Bluetooth. Workouts recorded on the phone use them; a watch is not required.",
+      "add": "Add a sensor",
+      "manage": "Manage sensors",
+      "manageSub": "Pair, rename, test the connection"
+    },
+    "intro": {
+      "title": "Got a heart rate strap or a bike sensor?",
+      "subtitle": "Pair it straight to the phone, no watch needed."
+    },
+    "paired": {
+      "title": "Your sensors",
+      "empty": "No sensors paired yet. Search for one below.",
+      "connect": "Connect",
+      "cancel": "Cancel",
+      "disconnect": "Disconnect",
+      "connectHint": "Connect to see live numbers. The connection stays on until you disconnect.",
+      "autoConnect": {
+        "label": "Connect automatically for workouts",
+        "hint": "This sensor connects when you start a workout on the phone."
+      },
+      "kinds": "Type",
+      "batteryLabel": "Battery",
+      "maker": "Manufacturer",
+      "model": "Model",
+      "rename": {
+        "action": "Rename",
+        "title": "Sensor name",
+        "placeholder": "For example: Chest strap",
+        "save": "Save",
+        "reset": "Use original name"
+      },
+      "remove": {
+        "action": "Remove sensor",
+        "title": "Remove this sensor?",
+        "message": "{{name}} is removed from the list and disconnected. Past workouts keep their data. Pair it again any time from Find sensors.",
+        "confirm": "Remove"
+      }
+    },
+    "scan": {
+      "title": "Find sensors",
+      "intro": "Look for Bluetooth sensors near you. The phone asks for Bluetooth permission first. It is only used to find and connect to sensors.",
+      "continue": "Continue",
+      "start": "Find sensors",
+      "again": "Search again",
+      "stop": "Stop",
+      "scanning": "Looking for nearby sensors",
+      "found_one": "{{count}} found",
+      "found_other": "{{count}} found",
+      "none": "No sensors found yet. Try the tips below, then search again.",
+      "pair": "Pair",
+      "paired": "Already paired",
+      "tips": "Chest strap: wet the electrodes and wear it on your chest. Bike sensor: turn the pedals or the wheel to wake it. Keep the sensor close to the phone and disconnect it from other apps or watches."
+    },
+    "problem": {
+      "bluetoothOff": "Bluetooth is off. Turn Bluetooth on, then try again.",
+      "unsupported": "This phone does not support Bluetooth LE, so sensors cannot be used.",
+      "permission": "Bluetooth permission is not granted, so sensors cannot be found or connected. Allow it in the app settings.",
+      "openSettings": "Open settings",
+      "scanFailed": "The sensor search failed. Turn Bluetooth off and on, then try again.",
+      "connectFailed": "Could not connect to the sensor. Try again."
+    },
+    "wheel": {
+      "title": "Wheel size",
+      "body": "Speed and distance from a wheel sensor are worked out from the wheel's circumference. Pick your tyre size, or enter the circumference yourself.",
+      "presets": "Tyre size",
+      "field": "Wheel circumference (mm)",
+      "hint": "Between {{min}} and {{max}} mm. A size you measured yourself is the most accurate.",
+      "invalid": "Enter the circumference as a whole number from {{min}} to {{max}} mm."
+    },
+    "notes": {
+      "title": "Good to know",
+      "ant": "ANT+ is not supported (it needs ANT hardware). Use a Bluetooth sensor.",
+      "huawei": "A Huawei watch cannot take an external strap. A strap is used by workouts recorded on the phone."
     }
   }
 }

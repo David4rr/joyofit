@@ -5,7 +5,8 @@
     "alarms": "Alarm",
     "faces": "Tampilan jam",
     "faceEdit": "Atur tampilan",
-    "photo": "Tampilan foto"
+    "photo": "Tampilan foto",
+    "sensors": "Sensor"
   },
   "link": {
     "disconnected": "Terputus",
@@ -518,6 +519,114 @@
       "title": "Hapus jam ini?",
       "message": "{{name}} dihapus dari daftar dan kunci pairing-nya dibuang dari HP. Data kesehatan yang sudah tersimpan tetap ada. Menghubungkannya lagi jadi pairing pertama dan harus dikonfirmasi di jam.",
       "confirm": "Hapus"
+    }
+  },
+  "sensors": {
+    "title": "Sensor",
+    "kind": {
+      "hr": "Detak jantung",
+      "csc": "Kecepatan dan kadence",
+      "power": "Daya",
+      "rsc": "Pod lari"
+    },
+    "battery": "Baterai {{value}}",
+    "unnamed": "Sensor tanpa nama ({{tail}})",
+    "reading": {
+      "rpm": "{{value}} rpm",
+      "kmh": "{{value}} km/j"
+    },
+    "link": {
+      "connected": "Tersambung",
+      "connecting": "Menyambung",
+      "disconnected": "Tidak tersambung"
+    },
+    "signal": {
+      "strong": "Sinyal kuat",
+      "good": "Sinyal bagus",
+      "fair": "Sinyal cukup",
+      "weak": "Sinyal lemah"
+    },
+    "hint": {
+      "signalLost": "Sinyal hilang. Dekatkan sensor ke HP, aplikasi mencoba menyambung lagi.",
+      "failed": "Gagal tersambung. Pastikan sensor menyala, dekat, dan tidak tersambung ke aplikasi atau jam lain.",
+      "contactLost": "Strap tidak menyentuh kulit. Basahi elektrodanya dan kencangkan di dada.",
+      "waitingHr": "Belum ada detak. Pakai strap di dada dan basahi elektrodanya.",
+      "waitingBike": "Belum ada data. Putar pedal atau roda supaya sensor bangun.",
+      "waitingPod": "Belum ada data. Mulai jalan atau lari supaya pod bangun."
+    },
+    "hub": {
+      "empty": "Pasangkan strap detak jantung, sensor kecepatan dan kadence, power meter, atau pod lari lewat Bluetooth. Latihan yang direkam di HP memakainya, jam tidak wajib.",
+      "add": "Tambah sensor",
+      "manage": "Kelola sensor",
+      "manageSub": "Pasangkan, ganti nama, tes sambungan"
+    },
+    "intro": {
+      "title": "Punya sensor detak jantung atau sensor sepeda?",
+      "subtitle": "Pasangkan langsung ke HP, tanpa jam."
+    },
+    "paired": {
+      "title": "Sensor kamu",
+      "empty": "Belum ada sensor yang dipasangkan. Cari sensor di bawah.",
+      "connect": "Sambungkan",
+      "cancel": "Batal",
+      "disconnect": "Putuskan",
+      "connectHint": "Sambungkan untuk melihat angka langsung. Sambungan tetap aktif sampai kamu putuskan.",
+      "autoConnect": {
+        "label": "Sambungkan otomatis saat latihan",
+        "hint": "Sensor ini ikut tersambung saat kamu mulai latihan di HP."
+      },
+      "kinds": "Jenis",
+      "batteryLabel": "Baterai",
+      "maker": "Pabrikan",
+      "model": "Model",
+      "rename": {
+        "action": "Ganti nama",
+        "title": "Nama sensor",
+        "placeholder": "Contoh: Strap dada",
+        "save": "Simpan",
+        "reset": "Pakai nama asli"
+      },
+      "remove": {
+        "action": "Hapus sensor",
+        "title": "Hapus sensor ini?",
+        "message": "{{name}} dihapus dari daftar dan sambungannya diputus. Latihan lama tetap menyimpan datanya. Pasangkan lagi kapan saja lewat Cari sensor.",
+        "confirm": "Hapus"
+      }
+    },
+    "scan": {
+      "title": "Cari sensor",
+      "intro": "Cari sensor Bluetooth di dekatmu. HP akan minta izin Bluetooth dulu. Izin ini hanya dipakai untuk menemukan dan menyambung ke sensor.",
+      "continue": "Lanjut",
+      "start": "Cari sensor",
+      "again": "Cari lagi",
+      "stop": "Berhenti",
+      "scanning": "Mencari sensor di sekitar",
+      "found_other": "{{count}} ditemukan",
+      "none": "Belum ada sensor yang ketemu. Coba tips di bawah, lalu cari lagi.",
+      "pair": "Pasangkan",
+      "paired": "Sudah dipasangkan",
+      "tips": "Strap dada: basahi elektrodanya dan pakai di dada. Sensor sepeda: putar pedal atau roda supaya sensornya bangun. Dekatkan sensor ke HP dan lepas dari aplikasi atau jam lain."
+    },
+    "problem": {
+      "bluetoothOff": "Bluetooth mati. Nyalakan Bluetooth di HP, lalu coba lagi.",
+      "unsupported": "HP ini tidak mendukung Bluetooth LE, jadi sensor tidak bisa dipakai.",
+      "permission": "Izin Bluetooth belum diberikan, jadi sensor tidak bisa dicari atau disambungkan. Izinkan di pengaturan aplikasi.",
+      "openSettings": "Buka pengaturan",
+      "scanFailed": "Pencarian sensor gagal. Matikan lalu nyalakan Bluetooth, lalu coba lagi.",
+      "connectFailed": "Tidak bisa menyambung ke sensor. Coba lagi."
+    },
+    "wheel": {
+      "title": "Ukuran roda",
+      "body": "Kecepatan dan jarak dari sensor roda dihitung dari keliling roda. Pilih ukuran ban, atau isi kelilingnya sendiri.",
+      "presets": "Ukuran ban",
+      "field": "Keliling roda (mm)",
+      "hint": "Antara {{min}} dan {{max}} mm. Hasil ukur sendiri paling akurat.",
+      "invalid": "Isi keliling roda dengan angka bulat {{min}} sampai {{max}} mm."
+    },
+    "notes": {
+      "title": "Perlu tahu",
+      "ant": "ANT+ tidak didukung (butuh perangkat keras ANT). Pakai sensor Bluetooth.",
+      "huawei": "Jam Huawei tidak bisa menerima strap dari luar. Strap dipakai oleh latihan yang direkam di HP."
     }
   }
 }

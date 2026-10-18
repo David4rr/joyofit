@@ -1,9 +1,11 @@
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { IconChip } from '@/components/IconChip';
+import { NavRow } from '@/components/NavRow';
 import { Card, Screen } from '@/components/Screen';
 
 import { SupportedWatches } from './SupportedWatches';
@@ -15,6 +17,7 @@ import { spacing } from '@/theme';
  */
 export function WatchIntro({ onContinue }: { onContinue: () => void }) {
   const { t } = useTranslation(['nowatch', 'watch']);
+  const router = useRouter();
   return (
     <Screen title={t('watch:title')}>
       <Card>
@@ -30,6 +33,16 @@ export function WatchIntro({ onContinue }: { onContinue: () => void }) {
         </AppText>
         <Button label={t('nowatch:intro.continue')} variant="primary" icon="bluetooth" onPress={onContinue} />
       </Card>
+      <Card>
+        <NavRow
+          icon="heart"
+          tint="heart"
+          title={t('watch:sensors.intro.title')}
+          subtitle={t('watch:sensors.intro.subtitle')}
+          style={styles.sensorRow}
+          onPress={() => router.push('/watch/sensors')}
+        />
+      </Card>
       <SupportedWatches />
     </Screen>
   );
@@ -37,4 +50,5 @@ export function WatchIntro({ onContinue }: { onContinue: () => void }) {
 
 const styles = StyleSheet.create({
   head: { gap: spacing.sm },
+  sensorRow: { paddingHorizontal: 0 },
 });
