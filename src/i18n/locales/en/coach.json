@@ -1,0 +1,55 @@
+{
+  "library": {
+    "credits": "Exercise images from wger.de under Creative Commons licences (CC BY-SA); author and licence of every image are listed at fit.joyorogo.com/exercises/ATTRIBUTION.txt. Muscle and level data from free-exercise-db (public domain)."
+  },
+  "muscle": {
+    "abs": "Abs",
+    "abductors": "Outer thighs",
+    "adductors": "Inner thighs",
+    "biceps": "Biceps",
+    "calves": "Calves",
+    "chest": "Chest",
+    "forearms": "Forearms",
+    "glutes": "Glutes",
+    "hamstrings": "Hamstrings",
+    "lats": "Lats",
+    "lower_back": "Lower back",
+    "middle_back": "Mid back",
+    "neck": "Neck",
+    "quadriceps": "Quads",
+    "shoulders": "Shoulders",
+    "traps": "Traps",
+    "triceps": "Triceps"
+  },
+  "equipment": {
+    "bodyweight": "Bodyweight",
+    "band": "Resistance band",
+    "dumbbell": "Dumbbell",
+    "kettlebell": "Kettlebell",
+    "barbell": "Barbell",
+    "machine": "Machine",
+    "cable": "Cable",
+    "bench": "Bench",
+    "bar": "Bar",
+    "other": "Other"
+  },
+  "pattern": {
+    "squat": "Squat",
+    "hinge": "Hinge",
+    "lunge": "Lunge",
+    "push_h": "Push forward",
+    "push_v": "Push overhead",
+    "pull_h": "Pull to body",
+    "pull_v": "Pull down",
+    "core": "Core",
+    "glute": "Glutes",
+    "calf": "Calves",
+    "arms": "Arms",
+    "cardio": "Cardio"
+  },
+  "level": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "library": {
+    "credits": "Gambar latihan dari wger.de, lisensi Creative Commons (CC BY-SA); pembuat dan lisensi tiap gambar ada di fit.joyorogo.com/exercises/ATTRIBUTION.txt. Data otot dan tingkat dari free-exercise-db (domain publik)."
+  },
+  "muscle": {
+    "abs": "Perut",
+    "abductors": "Paha luar",
+    "adductors": "Paha dalam",
+    "biceps": "Bisep",
+    "calves": "Betis",
+    "chest": "Dada",
+    "forearms": "Lengan bawah",
+    "glutes": "Bokong",
+    "hamstrings": "Paha belakang",
+    "lats": "Punggung samping (lat)",
+    "lower_back": "Punggung bawah",
+    "middle_back": "Punggung tengah",
+    "neck": "Leher",
+    "quadriceps": "Paha depan",
+    "shoulders": "Bahu",
+    "traps": "Punggung atas (trapesius)",
+    "triceps": "Trisep"
+  },
+  "equipment": {
+    "bodyweight": "Berat badan",
+    "band": "Resistance band",
+    "dumbbell": "Dumbbell",
+    "kettlebell": "Kettlebell",
+    "barbell": "Barbell",
+    "machine": "Mesin",
+    "cable": "Kabel",
+    "bench": "Bangku",
+    "bar": "Bar",
+    "other": "Lainnya"
+  },
+  "pattern": {
+    "squat": "Squat",
+    "hinge": "Hinge (engsel pinggul)",
+    "lunge": "Lunge",
+    "push_h": "Dorong ke depan",
+    "push_v": "Dorong ke atas",
+    "pull_h": "Tarik ke badan",
+    "pull_v": "Tarik ke bawah",
+    "core": "Perut dan inti",
+    "glute": "Bokong",
+    "calf": "Betis",
+    "arms": "Lengan",
+    "cardio": "Kardio"
+  },
+  "level": {
+    "beginner": "Pemula",
+    "intermediate": "Menengah",
+    "advanced": "Lanjutan"
+  }
+}
