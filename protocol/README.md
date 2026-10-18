@@ -186,7 +186,7 @@ altitude is present), start time, longitude, latitude (degrees, plus altitude), 
 15 / 19-byte records `(time delta s, ?, lon delta f32, lat delta f32, ?, ?, pause[, altitude i16, ?])`. GB's loop
 leaves out a final record that would end exactly at the end of the file.
 
-### AGPS / ephemeris (service `1F` + file service `1C`; `Ephemeris.kt`, `EphemerisDownload.kt`; UNVERIFIED on the Fit 4 Pro)
+### AGPS / ephemeris (service `1F` + file service `1C`; Android `Ephemeris.kt`, `EphemerisDownload.kt`; iOS `Ephemeris.swift`, `AgpsWire.swift`, `AgpsSource.swift`; UNVERIFIED on the Fit 4 Pro)
 
 Without it an outdoor workout sits on "Locating..." until the watch finds the satellites unaided. The watch drives; the source is
 Gadgetbridge `HuaweiEphemerisManager`. Log lines carry `AGPS:`.
@@ -207,7 +207,9 @@ address, whatever URL the watch names. Versions 1 to 3 name sources run by the w
 "Pakai server satelit Huawei" (off by default), which serves only `HW_AGNSS`. The phone can also start the exchange itself ("Perbarui sekarang"):
 it sends `1F/02` with no op 1 before it, and carries on from the watch's consult answer; a watch that does not answer within 15 s is left alone.
 The watch's consult tag names and version are kept (`getAgps().lastAskVersion`, `lastAskTags`: tag names only); the full tag and URLs go to
-logcat only (tag `JoyoFit`, `AGPS: consult tag=...`). Policy, safety rules and sources: [docs/agps.md](../docs/agps.md).
+the platform console only (Android logcat tag `JoyoFit`, iOS unified log category `JoyoFit`; line `AGPS: consult tag=...`), never to the support log.
+The two platforms send the same bytes (the iOS `1C/05` frames are `HuaweiPacket.serializeFileChunk1c`, GB `serializeFileChunk1c`). On iOS the
+stored file name uses the peripheral identifier in place of the watch's Bluetooth address. Policy, safety rules and sources: [docs/agps.md](../docs/agps.md).
 
 ### Live workout (`LiveWorkout.kt`, `LiveWorkoutCodec.kt`; as Huawei Health 17.0.8.300 behaves, UNVERIFIED on the Fit 4 Pro)
 

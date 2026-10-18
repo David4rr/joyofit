@@ -2,11 +2,14 @@
 
 The Huawei Watch Fit 4 Pro (and the rest of the family) shows a warning that its GNSS data has expired and says it needs Huawei Health.
 That is the watch's satellite assistance data (ephemeris / almanac): Huawei Health normally downloads it and hands it to the watch every
-few days. Without it GPS fixes get slow. JoyoFit does this job on Android (iOS: see the end).
+few days. Without it GPS fixes get slow. JoyoFit does this job on Android and on iOS, with the same wire messages, constants and safety rules.
 
-Code: `modules/huawei-wear/android/.../Ephemeris.kt` (exchange, status, update now), `EphemerisDownload.kt` (HTTP, cache),
+Code (Android): `modules/huawei-wear/android/.../Ephemeris.kt` (exchange, status, update now), `EphemerisDownload.kt` (HTTP, cache),
 `AgpsSource.kt` (where the data comes from), `AgpsPolicy.kt` (schedule, validation), `AgpsStore.kt` (persisted state),
-`AgpsModuleApi.kt` (JS API); UI: `src/features/device/AgpsSection.tsx`, `agps.ts`. Wire details: `protocol/README.md`, section "AGPS / ephemeris".
+`AgpsModuleApi.kt` (JS API). Code (iOS, `modules/huawei-wear/ios`): `Ephemeris.swift` (`AgpsExchange`, `EphemerisLink`), `AgpsSource.swift`
+(source, HTTP, Caches copy), `AgpsStore.swift`, `AgpsReachability.swift`, and in `HuaweiProtocol/Sources/HuaweiProtocol`: `AgpsWire.swift`
+(`AgpsPolicy`, `AgpsMessages`) and `Packet+FileChunk.swift` (the `1C/05` frames). UI: `src/features/device/AgpsSection.tsx`, `agps.ts`.
+Wire details: `protocol/README.md`, section "AGPS / ephemeris".
 
 ## Research findings
 
@@ -66,7 +69,8 @@ if the switch ships" below. The predictive kinds stay declined either way.
 ## When data is sent
 
 1. **When the watch asks** (`1F/01` op 1): the whole exchange above, answered from the phone copy when it is under 6 h old.
-2. **Kept ready**: every completed sync, app or background (`WearRuntime.syncComplete` -> `EphemerisLink.onSyncCycle`), refreshes the phone
+2. **Kept ready**: every completed sync, app or background (Android `WearRuntime.syncComplete` -> `EphemerisLink.onSyncCycle`; iOS the same
+   names in `WearRuntime.handleSyncComplete`), refreshes the phone
    copy when it is missing or 6 h old, with the retry schedule, so the watch's next ask is answered at once. Only while the watch has not asked
    for another kind of data.
 3. **"Perbarui sekarang"** (Watch tab, Data satelit): downloads fresh data, and with a watch connected asks the watch for its parameters
@@ -116,7 +120,25 @@ Not applied. Apply together with the owner's yes.
 
 ## iOS
 
-The iOS BLE transport can carry this: `modules/huawei-wear/ios/HuaweiProtocol` already has the packet layer, a file uploader (`0x28`) and a
-file downloader. What is missing is the `0x1F` / `0x1C` exchange itself (a Swift port of `AgpsExchange`, `AgpsMessages` and `AgpsPolicy`), the
-store, the JS API on the Swift module and Swift tests. It is not part of the Android fix; until it lands the Watch tab row is hidden on iOS
-(`AgpsSection` renders only where `HuaweiWear.getAgps` exists).
+The Swift port mirrors the Kotlin code one to one: `AgpsExchange` (an actor; the watch's messages go through one inbox and are handled in
+order, the download runs on its own task), `EphemerisLink` (a `LinkObserver` attached to every new session by `WearRuntime`, poked after every
+completed sync), `AgpsStore` (UserDefaults suite `joyofit_agps`), `NetworkAgpsSource`, `AgpsPolicy` and `AgpsMessages`. The constants, outcome
+strings, wire bytes and safety rules are the Android ones, and the Swift tests (`AgpsTests`, `AgpsExchangeTests`) are ports of `AgpsTest` and
+`AgpsExchangeTest` with the same cases and spec bytes. JS API: `getAgps`, `refreshAgps`, `cancelAgps`, `setAgpsHuaweiServers` on the Swift module;
+the Watch tab row shows on iOS wherever `HuaweiWear.getAgps` exists.
+
+Differences, all forced by the platform:
+
+- **Network**: `URLSession` with an ephemeral configuration, no cookies, credentials or cache, https only, bodies capped while they arrive
+  (a delegate cancels the request once the cap is passed), 30 s without data and 120 s overall. URLSession's default `User-Agent` names the
+  app, so it is replaced by the plain `CFNetwork`; no other identifying header is sent. The Android `HttpURLConnection` sends only its
+  platform agent.
+- **Copy on the phone**: the `Caches/agps` directory (iOS may empty it; that costs a refetch), pruned after a day, aged by the file's
+  modification time.
+- **Online check**: `NWPathMonitor` instead of `ConnectivityManager`.
+- **Watch address**: the stored file name the watch is told (`sha256(address) + name`) is built from the peripheral identifier iOS gives the
+  app, since iOS never exposes the watch's Bluetooth address. The watch only stores the file under the name it is given.
+- **Background**: the prefetch after a sync runs on the process's own task. An iOS background sync that ends the app's run time may suspend
+  it mid-download; the next sync tries again (the download timeout and the retry schedule are unchanged).
+- **Not verified on a device**: like the Android side, UNVERIFIED on the Fit 4 Pro until a device run; this file's "Device findings" section is
+  the place for it.

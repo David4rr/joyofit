@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
 
 import { Button } from "@/components/Button";
 import { ButtonRow } from "@/components/ButtonRow";
@@ -27,12 +26,12 @@ function read(): AgpsStatus | null {
 
 /**
  * The satellite-data (A-GPS) row of the Watch tab: when the watch last took data, how big it was, "Update now", the last result
- * in words, and, once the watch has asked for Huawei's own data, the switch that allows their servers. Android only: the
- * exchange lives in the native module. OTA bundles on an older binary have no `getAgps` and show nothing.
+ * in words, and, once the watch has asked for Huawei's own data, the switch that allows their servers. The exchange lives in the
+ * native module (Kotlin and Swift). OTA bundles on an older binary have no `getAgps` and show nothing.
  */
 export function AgpsSection() {
   const { t } = useTranslation("watch");
-  const supported = Platform.OS === "android" && hasNative("getAgps");
+  const supported = hasNative("getAgps");
   const [status, setStatus] = useState<AgpsStatus | null>(() =>
     supported ? read() : null,
   );
