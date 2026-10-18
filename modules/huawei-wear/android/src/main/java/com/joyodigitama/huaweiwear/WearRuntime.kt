@@ -247,6 +247,8 @@ internal class WearRuntime private constructor(context: Context) {
   /** Single use: the consent ends with this connect, whatever its outcome. */
   suspend fun connectFromApp(address: String): Map<String, Any?> {
     paused = false
+    // A background visit to another watch gives the link back to the user.
+    controller?.abortVisit()
     return link.connect(address, allowFirstBind = bindConsent.take(address))
   }
 
