@@ -67,6 +67,13 @@ JoyoFit also sends the energy of each watch workout straight to JoyoRogo's diary
 see [strength-cloud.md](strength-cloud.md)), so burned calories reach JoyoRogo even when JoyoRogo has no read access to Health Connect;
 JoyoRogo's server stores a workout that arrives both ways once. Status and "Kirim sekarang": Settings → Koneksi → JoyoRogo.
 
+JoyoFit also sends the watch's **all-day active energy** to JoyoRogo with the daily scores (`fitness.upsertScores`, field `activeKcal`,
+whole kcal per day, 0..20000). It is the day's sum of the watch-recorded per-minute `step_samples.calories` (`imported = 0`, small
+calories / 1000: the same data written to Health Connect as ActiveCaloriesBurned), per local (WIB) calendar day, for today and the
+two days before it (`src/features/today/rogoActive.ts`, `useRogoActiveKcal`, `rogoScoreDays`), so a total that grew after the last
+push is corrected. A day with no samples or a 0 total leaves the field out (JoyoRogo keeps what it stored; the server keeps the larger
+of the old and new value). JoyoRogo counts it in Sisa as exercise credit (its own percentage and cap). Pure JS: no native change.
+
 ## Cloud sync
 
 Settings → Health & cloud → **Cloud sync** signs in with your **JoyoRogo account**. Steps and sleep go to a separate

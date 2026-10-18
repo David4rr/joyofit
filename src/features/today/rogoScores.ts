@@ -3,7 +3,9 @@ import { computeDailyFitness, computeFitnessOverview } from '@/features/fitness/
 import type { FitnessData } from '@/features/fitness/useFitnessData';
 import { localDate } from '@/features/meals/mealMap';
 import { buildNights } from '@/features/sleep/nights';
+import { cleanActiveKcal } from '@/features/today/rogoActive';
 import type { Scores } from '@/features/today/scores';
+import { dayStarts } from '@/features/trends/series';
 
 /** Today and the days before it that are sent, so a day whose strain grew after the last push is corrected. */
 export const ROGO_SCORE_DAYS = 3;
@@ -11,23 +13,44 @@ export const ROGO_SCORE_DAYS = 3;
 export const ROGO_MAX_DAYS_PER_CALL = 14;
 
 /**
- * The scores JoyoRogo gets, oldest first. Earlier days carry strain only: recovery, sleep, the readiness word and the
+ * The scores JoyoRogo gets, oldest first. Earlier days carry strain and the day's active energy only: recovery, sleep, the readiness word and the
  * body metrics are computed for today and are not recomputed for past days, and JoyoRogo keeps what it already stored for
  * them. Days are the phone's calendar days, the same key the meals sync uses; for Indonesian time zones that is JoyoRogo's
  * WIB day. Values are rounded as the Today card shows them. Empty when there is nothing to send.
  *
  * `metrics` are today's body metrics from {@link rogoDailyMetrics}; they are sent as given, so a metric that is missing
  * there is missing here (JoyoRogo keeps its stored value instead of getting a zero).
+ *
+ * `activeKcal` is the watch's all-day active energy per date (`activeKcalByDate`). Today and every earlier day of the window
+ * carry it, so a day whose total grew after the last push is corrected; a past day with energy but no strain still gets an
+ * entry. Dates outside the window and totals that are 0 or invalid are left out.
  */
-export function rogoScoreDays(scores: Scores, dayStart: number, metrics: RogoScoreMetrics = {}): RogoScoreDay[] {
+export function rogoScoreDays(
+  scores: Scores,
+  dayStart: number,
+  metrics: RogoScoreMetrics = {},
+  activeKcal: ReadonlyMap<string, number> = new Map(),
+): RogoScoreDay[] {
   const days: RogoScoreDay[] = [];
   for (const entry of scores.strain) {
     if (entry.day >= dayStart || entry.day <= dayStart - ROGO_SCORE_DAYS * 86400) continue;
     days.push({ date: localDate(entry.day * 1000), strain: roundStrain(entry.strain) });
   }
 
+  const todayDate = localDate(dayStart * 1000);
+  for (const start of dayStarts(dayStart, ROGO_SCORE_DAYS)) {
+    const date = localDate(start * 1000);
+    const kcal = date === todayDate ? null : cleanActiveKcal(activeKcal.get(date));
+    if (kcal === null) continue;
+    const day = days.find((d) => d.date === date);
+    if (day) day.activeKcal = kcal;
+    else days.push({ date, activeKcal: kcal });
+  }
+
   const sleep = scores.readiness.signals.find((s) => s.key === 'sleep');
-  const today: RogoScoreDay = { date: localDate(dayStart * 1000) };
+  const today: RogoScoreDay = { date: todayDate };
+  const todayKcal = cleanActiveKcal(activeKcal.get(todayDate));
+  if (todayKcal !== null) today.activeKcal = todayKcal;
   if (scores.today) today.strain = roundStrain(scores.today.strain);
   if (scores.readiness.recovery) today.recoveryPct = scores.readiness.recovery.percent;
   if (sleep) today.sleepPct = Math.min(300, Math.max(0, Math.round(sleep.amount * 100)));

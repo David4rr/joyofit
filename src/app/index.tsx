@@ -36,6 +36,7 @@ import { CoachTodayCard } from '@/features/coach/ui/CoachTodayCard';
 import { FamilyCard } from '@/features/today/FamilyCard';
 import { ScoresCard } from '@/features/today/ScoresCard';
 import { useRogoScoresPush } from '@/features/today/useRogoScoresPush';
+import { useRogoActiveKcal } from '@/features/today/useRogoActiveKcal';
 import { rogoDailyMetrics } from '@/features/today/rogoScores';
 import { useFitnessData } from '@/features/fitness/useFitnessData';
 import { ShareTodayButton } from '@/features/stickers/ui/ShareTodayButton';
@@ -96,7 +97,8 @@ function WatchToday() {
   // One read of the fitness inputs for the cards below and for the body metrics JoyoRogo gets.
   const { data: fitness } = useFitnessData(dataVersion, 'full');
   const rogoMetrics = useMemo(() => (fitness && data ? rogoDailyMetrics(fitness, data.dayStart) : undefined), [fitness, data]);
-  useRogoScoresPush(view?.scores ?? null, data?.dayStart ?? null, rogoMetrics);
+  const rogoActiveKcal = useRogoActiveKcal(dataVersion);
+  useRogoScoresPush(view?.scores ?? null, data?.dayStart ?? null, rogoMetrics, rogoActiveKcal);
 
   const canSync = linkState === 'connected' && device !== null;
   const syncing = linkState === 'syncing';

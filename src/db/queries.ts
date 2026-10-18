@@ -35,6 +35,17 @@ export function listStepSamplesSince(db: SQLiteDatabase, sinceSec: number): Prom
   );
 }
 
+/**
+ * The watch's own minutes that carry energy since `sinceSec` (`imported = 0`: restored, FIT and strap minutes are not the
+ * watch's all-day energy), `calories` in small calories (1/1000 kcal). What JoyoRogo's day active-energy total sums.
+ */
+export function listWatchCaloriesSince(db: SQLiteDatabase, sinceSec: number): Promise<{ timestamp: number; calories: number }[]> {
+  return db.getAllAsync<{ timestamp: number; calories: number }>(
+    'SELECT timestamp, calories FROM step_samples WHERE timestamp >= ? AND imported = 0 AND calories > 0 ORDER BY timestamp',
+    sinceSec,
+  );
+}
+
 /** The newest stored heart-rate reading of any day, or null when the watch never recorded one. */
 export function getLatestHeartRate(db: SQLiteDatabase): Promise<{ bpm: number; timestamp: number } | null> {
   return db.getFirstAsync<{ bpm: number; timestamp: number }>(

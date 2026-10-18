@@ -148,8 +148,8 @@ export interface RogoScoreMetrics {
 
 /**
  * One day of scores for `fitness.upsertScores`. `date` is `YYYY-MM-DD`; a score that is left out keeps what JoyoRogo has
- * stored for that day. Ranges: recoveryPct 0..100, strain 0..21, sleepPct 0..300. Past days carry strain only; today's
- * entry also carries the {@link RogoScoreMetrics} JoyoFit has computed for it.
+ * stored for that day. Ranges: recoveryPct 0..100, strain 0..21, sleepPct 0..300, activeKcal 0..20000. Past days carry strain
+ * and activeKcal only; today's entry also carries the {@link RogoScoreMetrics} JoyoFit has computed for it.
  */
 export interface RogoScoreDay extends RogoScoreMetrics {
   date: string;
@@ -157,6 +157,13 @@ export interface RogoScoreDay extends RogoScoreMetrics {
   strain?: number;
   sleepPct?: number;
   readiness?: RogoReadiness;
+  /**
+   * The watch's all-day active energy of that day in whole kcal: the day's sum of the watch-recorded per-minute samples'
+   * calories (small calories / 1000), the amount written to Health Connect as ActiveCaloriesBurned. JoyoRogo counts it in
+   * Sisa (as exercise credit) and keeps the larger of the stored and the sent value, since a day's total only grows. Left
+   * out when the day has no samples or the total is 0 (never 0 for "no data"), in which case JoyoRogo keeps what it stored.
+   */
+  activeKcal?: number;
 }
 
 /** `post.visibility`: `publik` is the public feed, `grup` only people who share a group with the author. */
