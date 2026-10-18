@@ -75,6 +75,7 @@ jobs:
 
       - name: Publish
         run: |
+          set -o pipefail
           args=(--channel "$CHANNEL" --platform "$PLATFORM")
           [ -z "$RUNTIME_VERSION" ] || args+=(--runtime-version "$RUNTIME_VERSION")
           scripts/ota.sh "${args[@]}" -- "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"
