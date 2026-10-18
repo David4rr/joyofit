@@ -430,7 +430,7 @@ Health Connect mark (`docs/brand-marks.md`).
   === 'pro'`, the same gate as Coach); free accounts always carry it.
 - Photos: `photoSize.ts` + `photo.ts` downscale the pick to 2048 px (JPEG 0.9) before it is drawn.
 
-### Catalog (58 templates, 9 kinds)
+### Catalog (75 templates, 10 kinds)
 
 Ids are `<kind>.<name>.<canvas>`; a style with both `story` and `square` is one picker entry. Transparent stickers are `free`
 canvases.
@@ -446,6 +446,7 @@ canvases.
 | `load` (3) | `bars` (story + square), `stats.sticker` |
 | `plan` (3) | `ring` (story + square), `stats.sticker` |
 | `badge` (5) | `medal.sticker`, `streak.sticker`, `pr.sticker`, `bold` (story + square) |
+| `threads` (17) | the Threads carousel, one template per slide on a 1080 x 1350 `portrait` canvas (`threads.<slide>.portrait`): `summary`, `lift`, `splits(2,3)`, `charts`, `sensors`, `zones`, `power`, `powerzones`, `climbs`, `lifts(2,3)`, `muscle`, `context`, `contextlift`. Never offered by the sticker sheet; `ThreadsSheet` offers them. See docs/share-threads.md |
 
 Styles: bold (volt on black, volt card by day), poster (paper, oversized type), minimal (ink, hairlines), photo and glass (the
 person's own photo, needs one), receipt (thermal paper, IBM Plex Mono, transparent), map (route focus, `map` background with
@@ -466,6 +467,7 @@ a drawn fallback until a map image is supplied), ring (progress rings), badge (m
   path hangs under Bun); fonts come from an isolated fontconfig that sees only the app's TTFs, so renders do not depend on the
   system fonts. Deviation from section 11: JoyoFit uses sharp/librsvg instead of headless Chromium, and has no `emit-canvas`
   agreement check (no web target).
+- Threads goldens are per fixture slide (`testing/threadsGolden.test.ts`, `__goldens__/threads/`), not per template; the generic golden test skips kind `threads`.
 - Contact sheets: `TMPDIR=... bun scripts/stickers-sheet.ts [--mode dark|light|both] [--locale id|en] [--only <id-prefix>] [--out DIR]`
   writes every render plus `contact-sheet-{dark,light}.png` and a sheet per kind (photo templates on a dusk and a bright day
   photo). Default out dir `/run/media/dzul/ioswork/stickers/fit`.

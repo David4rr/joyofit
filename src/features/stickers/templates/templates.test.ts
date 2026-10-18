@@ -14,7 +14,7 @@ import { renderTemplate } from '../testing/render';
 import { STICKER_KINDS } from '../subject';
 import { TEMPLATE_INPUTS } from './index';
 
-const CANVAS_SUFFIX: Record<string, string> = { story: 'story', square: 'square', free: 'sticker' };
+const CANVAS_SUFFIX: Record<string, string> = { story: 'story', square: 'square', portrait: 'portrait', free: 'sticker' };
 
 function textNodes(nodes: readonly SceneNode[]): TextNode[] {
   return nodes.flatMap((node) => (node.k === 'text' ? [node] : node.k === 'group' ? textNodes(node.children) : []));
@@ -79,7 +79,7 @@ describe('built-in templates', () => {
       expect(suffix).toBeDefined();
       expect(template.id.startsWith(`${template.kind}.`)).toBe(true);
       expect(template.id.endsWith(`.${suffix}`)).toBe(true);
-      expect(template.titleKey).toMatch(/^stickers:tpl\./);
+      expect(template.titleKey).toMatch(/^stickers:(tpl\.|threads\.slide\.)/);
     }
   });
 
@@ -114,7 +114,9 @@ describe('built-in templates', () => {
     for (const input of TEMPLATE_INPUTS) {
       const json = JSON.stringify(input);
       expect(json.includes('"trim":0')).toBe(false);
-      expect(/weightKg|bodyWeight|user\.name/.test(json)).toBe(false);
+      expect(/weightKg|bodyWeight/.test(json)).toBe(false);
+      // The name is bound only by the Threads carousel header, and only where the person opted in (`user.name` exists then).
+      if (input.kind !== 'threads') expect(json.includes('user.name')).toBe(false);
     }
   });
 

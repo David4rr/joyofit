@@ -225,6 +225,8 @@ export interface TemplateSpec {
   layers: LayerJson[];
   requires?: string[];
   safe?: { top: number; right: number; bottom: number; left: number };
+  /** Raise `maxLayers` for a table (the schema allows up to 400); the defaults are 22 px text, 140 characters, 60 layers. */
+  constraints?: { minFontSize?: number; maxTextChars?: number; maxLayers?: number };
   meta?: { tags?: string[]; transparent?: boolean; needsPhoto?: boolean; needsRoute?: boolean };
 }
 
@@ -246,6 +248,7 @@ export function template(spec: TemplateSpec): TemplateInput {
     themes: { dark: { colors: spec.dark }, light: { colors: spec.light } },
     layers: spec.layers,
     requires: spec.requires,
+    constraints: spec.constraints,
     meta: spec.meta,
   } as TemplateInput;
 }

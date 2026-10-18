@@ -57,7 +57,8 @@ for (const template of TEMPLATES.filter((t) => t.id.startsWith(only))) {
           transparent: rendered.scene.transparent ? mode : false,
         });
       }
-      const sheetKey = `${template.kind}-${mode}${photo ? `-${photo}` : ''}`;
+      // The Threads carousel reads as a set: one sheet per workout, its slides in carousel order.
+      const sheetKey = template.kind === 'threads' ? `${fixture.key}-${mode}` : `${template.kind}-${mode}${photo ? `-${photo}` : ''}`;
       (sheets[sheetKey] ??= { out: join(out, `sheet-${sheetKey}.png`), cols: 6, tileWidth: 300, tiles: [] }).tiles.push({
         png,
         label: `${template.id} / ${fixture.key.split('.')[1]}${photo ? ` / ${photo}` : ''}`,

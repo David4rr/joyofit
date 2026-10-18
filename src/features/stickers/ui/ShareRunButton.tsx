@@ -4,10 +4,13 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/Button';
 import type { WorkoutRow } from '@/db/queries';
+import type { RideAnalysis } from '@/features/cycling/types';
 import { gearShareLine } from '@/features/gear/format';
 import { allGearTotals, gearOfWorkout } from '@/features/gear/store';
 import { buildRunSubject } from '@/features/stickers/data/run';
 import { StickerSheet } from '@/features/stickers/ui/StickerSheet';
+import { ThreadsSheet } from '@/features/stickers/ui/ThreadsSheet';
+import { useThreadsRunSubject } from '@/features/stickers/ui/useThreadsSubject';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import type { RoutePoint, WorkoutSummary } from '@/features/workouts/summary';
 import { useLocale } from '@/i18n';
@@ -17,19 +20,22 @@ interface Props {
   summary: WorkoutSummary;
   route: readonly RoutePoint[];
   analysis: WorkoutAnalysis | null;
+  /** The cycling metrics when the workout is a ride (`useRideData`); they feed the power, climbs and splits slides of Threads. */
+  ride?: RideAnalysis | null;
 }
 
-/** The "Share" button of a workout and the sticker sheet it opens. */
-export function ShareRunButton({ workout, summary, route, analysis }: Props) {
+/** The "Share" button of a workout, the sticker sheet it opens and, from there, the Threads carousel sheet. */
+export function ShareRunButton({ workout, summary, route, analysis, ride = null }: Props) {
   const { t } = useTranslation('common');
   const locale = useLocale();
   const db = useSQLiteContext();
   const [open, setOpen] = useState(false);
+  const [threadsOpen, setThreadsOpen] = useState(false);
   const [gearLine, setGearLine] = useState<string | null>(null);
 
   // The gear the workout was done with, and its lifetime distance, as "Sepatu: Nike Pegasus 41 · 312 km".
   useEffect(() => {
-    if (!open) return;
+    if (!open && !threadsOpen) return;
     let live = true;
     (async () => {
       const gear = await gearOfWorkout(db, workout.start);
@@ -39,17 +45,19 @@ export function ShareRunButton({ workout, summary, route, analysis }: Props) {
     return () => {
       live = false;
     };
-  }, [db, open, workout.start, locale]);
+  }, [db, open, threadsOpen, workout.start, locale]);
 
   const subject = useMemo(
     () => buildRunSubject({ workout, summary, analysis, route, gearLine }, locale),
     [workout, summary, analysis, route, gearLine, locale],
   );
+  const threadsSubject = useThreadsRunSubject({ workout, summary, route, analysis, ride, gearLine }, threadsOpen);
 
   return (
     <>
       <Button label={t('actions.share')} icon="share-outline" onPress={() => setOpen(true)} />
-      <StickerSheet subject={subject} visible={open} onClose={() => setOpen(false)} />
+      <StickerSheet subject={subject} visible={open} onClose={() => setOpen(false)} onThreads={() => setThreadsOpen(true)} />
+      {threadsSubject ? <ThreadsSheet subject={threadsSubject} visible={threadsOpen} onClose={() => setThreadsOpen(false)} /> : null}
     </>
   );
 }

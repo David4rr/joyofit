@@ -326,6 +326,7 @@ export default function WorkoutDetailScreen() {
               summary={shareSummary}
               route={route}
               analysis={analysisState.status === 'ready' ? analysisState.analysis : null}
+              ride={rideData.ride}
             />
             <ReplayButton workout={workout} analysis={sharedAnalysis} climbs={rideData.ride?.climbs ?? null} />
             <ShareToRogoButton

@@ -8,11 +8,11 @@ import { TEMPLATES } from './catalog';
 import type { StickerKind, StickerSubject } from './subject';
 
 /** The canvas a template id ends with. */
-export type Canvas = 'story' | 'square' | 'sticker';
+export type Canvas = 'story' | 'square' | 'portrait' | 'sticker';
 
 export function canvasOf(template: Pick<Template, 'canvas'>): Canvas {
   const { aspect } = template.canvas;
-  return aspect === 'story' ? 'story' : aspect === 'square' ? 'square' : 'sticker';
+  return aspect === 'story' ? 'story' : aspect === 'square' ? 'square' : aspect === 'portrait' ? 'portrait' : 'sticker';
 }
 
 /** One picker entry: the versions of a style. */
@@ -64,8 +64,8 @@ export function offerGroups(subject: StickerSubject, templates: readonly Templat
 }
 
 /** The template of a group for the wanted canvas; a style that only has the other canvas keeps its own. */
-export function pickVariant(group: TemplateGroup, wanted: Exclude<Canvas, 'sticker'>): Template {
-  const variant = group.variants[wanted] ?? group.variants.story ?? group.variants.square ?? group.variants.sticker;
+export function pickVariant(group: TemplateGroup, wanted: Exclude<Canvas, 'sticker' | 'portrait'>): Template {
+  const variant = group.variants[wanted] ?? group.variants.story ?? group.variants.square ?? group.variants.portrait ?? group.variants.sticker;
   if (!variant) throw new Error(`template group ${group.key} has no variant`);
   return variant;
 }

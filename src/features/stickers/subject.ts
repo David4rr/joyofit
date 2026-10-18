@@ -4,8 +4,11 @@
  * moment) but they do resolve text that comes from i18n or from the user (sport names, exercise names, PR labels).
  */
 
-/** Template families (`Template.kind`). A subject may offer several, e.g. a run that set a record also offers `badge`. */
-export const STICKER_KINDS = ['run', 'strength', 'sleep', 'ready', 'load', 'week', 'plan', 'watch', 'badge'] as const;
+/**
+ * Template families (`Template.kind`). A subject may offer several, e.g. a run that set a record also offers `badge`. `threads` is the
+ * Threads carousel: its slides are never offered by the sticker sheet (no regular subject lists the kind), only by `ThreadsSheet`.
+ */
+export const STICKER_KINDS = ['run', 'strength', 'sleep', 'ready', 'load', 'week', 'plan', 'watch', 'badge', 'threads'] as const;
 export type StickerKind = (typeof STICKER_KINDS)[number];
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };

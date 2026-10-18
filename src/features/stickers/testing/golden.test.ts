@@ -38,6 +38,8 @@ describe('golden renders', () => {
     const jobs: RasterJob[] = [];
     const hashes: Record<string, string> = {};
     for (const template of TEMPLATES) {
+      // The Threads slides have their own goldens (`threadsGolden.test.ts`): one per fixture, not one per template.
+      if (template.kind === 'threads') continue;
       const fixture = primaryFixture(template.kind, template.requires ?? []);
       if (!fixture) continue;
       for (const mode of MODES) {

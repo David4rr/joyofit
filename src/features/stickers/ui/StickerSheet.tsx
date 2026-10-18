@@ -170,7 +170,21 @@ function Thumb({ group, canvas, subject, mode, options, selected, label, onPress
  * for photo templates, and the Instagram, Copy, Save and More targets. One painter draws the preview, the thumbnails and the
  * exported PNG (1080 px wide on every phone).
  */
-export function StickerSheet({ subject, visible, onClose }: { subject: StickerSubject; visible: boolean; onClose: () => void }) {
+export function StickerSheet({
+  subject,
+  visible,
+  onClose,
+  onThreads,
+}: {
+  subject: StickerSubject;
+  visible: boolean;
+  onClose: () => void;
+  /**
+   * Shows the Threads button. The button closes this sheet and calls `onThreads` once it is gone (iOS presents one modal at a
+   * time), so the caller only opens the Threads carousel sheet there.
+   */
+  onThreads?: () => void;
+}) {
   const { colors, radius, scheme } = useTheme();
   const { t } = useTranslation(['stickers', 'sharing', 'common']);
   const locale = useLocale();
@@ -198,6 +212,7 @@ export function StickerSheet({ subject, visible, onClose }: { subject: StickerSu
   const [photosRequest, setPhotosRequest] = useState<PhotosRequest | null>(null);
   const [copied, flashCopied] = useFlash(1400);
   const [saved, flashSaved] = useFlash(1400);
+  const threadsPending = useRef(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -298,11 +313,31 @@ export function StickerSheet({ subject, visible, onClose }: { subject: StickerSu
     }
   };
 
+  /** iOS reports the end of the dismissal through the Modal's `onDismiss`; Android stacks dialogs, so it hands over at once. */
+  const openThreads = () => {
+    if (Platform.OS === 'ios') {
+      threadsPending.current = true;
+      onClose();
+    } else {
+      onClose();
+      onThreads?.();
+    }
+  };
+
   const hint = scene?.transparent ? t('stickers:ui.hint.sticker') : needsPhoto ? t('stickers:ui.hint.photo') : t('stickers:ui.hint.card');
   const idle = ready && busy === null;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      onRequestClose={onClose}
+      onDismiss={() => {
+        if (!threadsPending.current) return;
+        threadsPending.current = false;
+        onThreads?.();
+      }}
+      statusBarTranslucent>
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <View style={styles.header}>
           <AppText variant="heading" accessibilityRole="header" style={styles.headerTitle}>
@@ -434,6 +469,9 @@ export function StickerSheet({ subject, visible, onClose }: { subject: StickerSu
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md), borderTopColor: colors.hairline }]}>
           {installed ? (
             <TargetButton label={t('sharing:share.targets.instagram')} icon={<InstagramGlyph size={24} color={colors.foreground} />} loading={busy === 'instagram'} disabled={!idle} onPress={() => void run('instagram')} />
+          ) : null}
+          {onThreads ? (
+            <TargetButton label={t('sharing:share.targets.threads')} icon={<Ionicons name="at-outline" size={24} color={colors.foreground} />} loading={false} disabled={busy !== null} onPress={openThreads} />
           ) : null}
           <TargetButton label={t('sharing:share.targets.copy')} icon={<Ionicons name="copy-outline" size={24} color={colors.foreground} />} loading={busy === 'copy'} done={copied} disabled={!idle} onPress={() => void run('copy')} />
           {SAVE_AVAILABLE ? (

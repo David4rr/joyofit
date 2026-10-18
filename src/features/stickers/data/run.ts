@@ -58,7 +58,7 @@ function cleanText(v: string | null | undefined): string | null {
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 /** Fills gaps by linear interpolation (edges take the nearest value); null unless enough of the array is real. */
-function filledSeries(values: readonly (number | null | undefined)[] | null | undefined): number[] | null {
+export function filledSeries(values: readonly (number | null | undefined)[] | null | undefined): number[] | null {
   if (!values || values.length === 0) return null;
   const real = values.filter(num).length;
   if (real < MIN_SERIES_REAL || real < values.length / 2) return null;
@@ -79,7 +79,7 @@ function filledSeries(values: readonly (number | null | undefined)[] | null | un
   return out;
 }
 
-function speedFromPace(pace: number | null | undefined): number | null {
+export function speedFromPace(pace: number | null | undefined): number | null {
   return pos(pace) && pace <= MAX_PACE_SEC ? 3600 / pace : null;
 }
 

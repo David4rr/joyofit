@@ -7,6 +7,7 @@ import { RUN_TEMPLATES } from './run';
 import { RUN_EXTRA_TEMPLATES } from './run-extra';
 import { SLEEP_TEMPLATES } from './sleep';
 import { STRENGTH_TEMPLATES } from './strength';
+import { THREADS_TEMPLATES } from './threads';
 import { WATCH_TEMPLATES } from './watch';
 import { WEEK_TEMPLATES } from './week';
 
@@ -22,4 +23,5 @@ export const TEMPLATE_INPUTS: TemplateInput[] = [
   ...LOAD_TEMPLATES,
   ...PLAN_TEMPLATES,
   ...BADGE_TEMPLATES,
+  ...THREADS_TEMPLATES,
 ];
