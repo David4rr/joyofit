@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """App Store provisioning profile for a CI runner, from the App Store Connect API. Standard library and openssl only.
 
-    asc-ci-profile.py <bundle id> <Apple Distribution certificate serial, hex> <out .mobileprovision>
+    asc-ci-profile.py <bundle id> <Apple Distribution certificate serial, hex> <out .mobileprovision> [required entitlement ...]
 
 Finds the certificate on App Store Connect by serial, reuses the ACTIVE IOS_APP_STORE profile "joyo-ci <bundle id>
-<cert id>" or creates it (an INVALID one is deleted first: enabling a capability invalidates profiles), writes the
-profile and prints "<uuid>", a tab, "<profile name>". Needs ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH (.p8 key with
-access to Certificates, Identifiers & Profiles). The profile is separate from the ones scripts/build-ios-mac.sh
+<cert id>" or creates it, writes the profile and prints "<uuid>", a tab, "<profile name>". A profile that is not
+ACTIVE (enabling a capability makes it INVALID) or lacks a required entitlement is deleted and recreated. Needs
+ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH (.p8 key with access to Certificates, Identifiers & Profiles). The profile is separate from the ones scripts/build-ios-mac.sh
 ("joyo-mac ...") and the Linux pipeline make, so the flows never invalidate each other's profile.
 """
 
 import base64
 import json
 import os
+import plistlib
 import subprocess
 import sys
 import time
@@ -65,9 +66,27 @@ def call(method, path, body=None):
     return json.loads(raw) if raw else {}
 
 
-if len(sys.argv) != 4:
+if len(sys.argv) < 4:
     sys.exit(__doc__)
 bundle, serial, out = sys.argv[1], sys.argv[2].upper().lstrip("0"), Path(sys.argv[3])
+required = sys.argv[4:]
+
+
+def granted_entitlements(profile):
+    """The Entitlements dict of a profile: the plist sits inside the CMS signature as plain XML."""
+    data = base64.b64decode(profile["attributes"]["profileContent"])
+    start, end = data.index(b"<?xml"), data.rindex(b"</plist>") + len(b"</plist>")
+    return plistlib.loads(data[start:end]).get("Entitlements", {})
+
+
+def usable(profile):
+    if profile["attributes"]["profileState"] != "ACTIVE":
+        return False
+    have = granted_entitlements(profile)
+    missing = [k for k in required if k not in have]
+    if missing:
+        print(f"profile '{profile['attributes']['name']}' lacks {', '.join(missing)}; recreating", file=sys.stderr)
+    return not missing
 
 certs = call("GET", "/v1/certificates?filter[certificateType]=DISTRIBUTION&limit=200")["data"]
 found = [c for c in certs if c["attributes"].get("serialNumber", "").upper().lstrip("0") == serial]
@@ -82,10 +101,11 @@ if not bundle_ids:
 
 name = f"joyo-ci {bundle} {cert_id}"
 listed = call("GET", f"/v1/profiles?filter[name]={urllib.parse.quote(name)}&filter[profileType]=IOS_APP_STORE&limit=200")["data"]
-active = [p for p in listed if p["attributes"]["profileState"] == "ACTIVE"]
+active = [p for p in listed if usable(p)]
 for stale in listed:
-    if stale["attributes"]["profileState"] != "ACTIVE":
+    if stale not in active:
         call("DELETE", f"/v1/profiles/{stale['id']}")
+        print(f"deleted {stale['attributes']['profileState']} profile '{name}'", file=sys.stderr)
 if active:
     profile = active[0]
 else:
@@ -98,5 +118,8 @@ else:
         },
     }})["data"]
     print(f"created App Store profile '{name}'", file=sys.stderr)
+    still_missing = [k for k in required if k not in granted_entitlements(profile)]
+    if still_missing:
+        sys.exit(f"the new profile does not grant {', '.join(still_missing)}; enable the capability on the bundle id")
 out.write_bytes(base64.b64decode(profile["attributes"]["profileContent"]))
 print(profile["attributes"]["uuid"], name, sep="\t")

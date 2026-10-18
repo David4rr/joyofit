@@ -102,7 +102,8 @@ jobs:
           security find-identity -v -p codesigning "$kc" | sed 's/^ *[0-9]*) [0-9A-F]* //'
           serial="$(security find-certificate -a -c 'Apple Distribution' -p "$kc" | openssl x509 -noout -serial | cut -d= -f2 | head -1)"
           mkdir -p "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
-          out="$(python3 scripts/ios/asc-ci-profile.py com.joyodigitama.joyofit "$serial" "$RUNNER_TEMP/store.mobileprovision")"
+          out="$(python3 scripts/ios/asc-ci-profile.py com.joyodigitama.joyofit "$serial" "$RUNNER_TEMP/store.mobileprovision" \
+            aps-environment com.apple.developer.healthkit com.apple.developer.applesignin)"
           uuid="$(cut -f1 <<<"$out")"
           cp "$RUNNER_TEMP/store.mobileprovision" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/$uuid.mobileprovision"
           echo "EXPORT_PROFILE=$(cut -f2 <<<"$out")" >> "$GITHUB_ENV"
