@@ -17,6 +17,7 @@ import { purgeDeletedWorkouts } from '@/features/workouts/purgeDeleted';
 import { useWatchList, type WatchListActions } from '@/features/device/useWatchList';
 import type { WatchRow } from '@/features/device/watches';
 import { describeConnectFailure } from '@/features/device/connectFailure';
+import { reportDatabaseError } from '@/db/recovery';
 import { errorMessage } from '@/format';
 import { pushLog } from '@/state/logStore';
 import {
@@ -262,6 +263,8 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       try {
         applySummary(await pull());
       } catch (e) {
+        // The native writer (Kotlin, its own SQLite) can be the one that meets a damaged file; the repair starts for it too.
+        reportDatabaseError(e);
         setError(errorMessage(e));
       } finally {
         syncing.current = false;

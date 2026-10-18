@@ -24,14 +24,10 @@ import {
   tabBarHeight,
 } from '@/components/tabBarMetrics';
 import { initLocale, refreshAutoLocale } from '@/i18n/native';
-import { migrate } from '@/db/migrations';
+import { DATABASE_NAME } from '@/db/appSchema';
 import { serializeQueries } from '@/db/serialize';
-import { ensureGearSchema } from '@/features/gear/store';
-import { ensureStrengthSchema } from '@/features/strength/store';
-import { ensureRecordingSchema } from '@/features/record/journal';
-import { ensureCyclingSchema } from '@/features/cycling/store';
-import { ensureSensorSchema } from '@/features/sensors/store';
-import { ensureCoachSchema } from '@/features/coach/store';
+import { DatabaseGate } from '@/features/dbhealth/DatabaseGate';
+import { DbHealthNotice } from '@/features/dbhealth/DbHealthNotice';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
@@ -52,17 +48,8 @@ import { ThemeProvider, useTheme } from '@/theme';
 // Stored language choice (or the phone's) applies before the first screen is drawn.
 initLocale();
 
-const DATABASE_NAME = 'joyofit.db';
-
-/** Schema first, then one query at a time on the shared handle (see `serialize.ts`). */
+/** The schema is built before this handle opens (`DatabaseGate`, which repairs a damaged file first); from here on one query at a time (see `serialize.ts`). */
 async function initDatabase(db: SQLiteDatabase): Promise<void> {
-  await migrate(db);
-  await ensureGearSchema(db);
-  await ensureStrengthSchema(db);
-  await ensureCoachSchema(db);
-  await ensureSensorSchema(db);
-  await ensureCyclingSchema(db);
-  await ensureRecordingSchema(db);
   serializeQueries(db);
 }
 
@@ -141,6 +128,7 @@ function RootNavigator() {
   if (!ready) return null;
 
   return (
+    <DatabaseGate>
     <Suspense fallback={null}>
       <SQLiteProvider databaseName={DATABASE_NAME} onInit={initDatabase} useSuspense>
         <WatchProvider>
@@ -247,6 +235,7 @@ function RootNavigator() {
                   {/* Android installs from Google Play only: flexible in-app update. */}
                   <UpdateBanner />
                   <DeleteSnackbar />
+                  <DbHealthNotice />
                   </View>
                   </FamilyProvider>
                   </OnboardingProvider>
@@ -261,5 +250,6 @@ function RootNavigator() {
         </WatchProvider>
       </SQLiteProvider>
     </Suspense>
+    </DatabaseGate>
   );
 }

@@ -446,6 +446,20 @@ Every URL that opens the app goes through `src/app/+native-intent.ts` before Exp
 
 Tests: `src/features/deeplink/` run the real Expo Router URL parsing and matcher over the route files, with Bun's `URL` and the phone's (`whatwg-url-minimum`).
 
+## A damaged database ("database disk image is malformed")
+
+**Why it happens.** `joyofit.db` is opened by two SQLite engines in one process: expo-sqlite's own build (3.50, JS side) and Android's `android.database.sqlite` (the framework's SQLite, 3.3x on Android 12, the native sync writer). SQLite's own list of ways to corrupt a database names this case ([howtocorrupt, 2.3](https://www.sqlite.org/howtocorrupt.html)): each copy keeps its own table of open files, so a `close()` in one cancels the POSIX locks the other holds on the same file, and both can then write the WAL or checkpoint at once. Nothing else in the code touches the file (no `deleteDatabase`, no file copy, no VACUUM, `allowBackup` is off, there is no restore flow). It cannot be proven from a damaged file we do not have; it is the one cause the architecture permits. A second hazard sat next to it: the framework's default `DatabaseErrorHandler` deletes the file (and its WAL) when the native connection meets corruption, under the JS connection that still holds it (`DefaultDatabaseErrorHandler` in AOSP); `SyncStore.kt` now passes a handler that only records it.
+
+**What the app does** (`src/db/recovery/`, JS only, no native call needed):
+
+- *Detect.* Any rejection that says the file is corrupt (`isCorruptionError`: "database disk image is malformed", "file is not a database", `SQLITE_CORRUPT`, also inside native "Caused by" text) from a query on the app's handle (`serialize.ts`), from the native sync (`WatchProvider` `runSync`), or while the database opens starts the repair. `errorMessage()` never shows SQLite's words for it.
+- *Open.* `DatabaseGate` builds the schema on a connection of its own before `SQLiteProvider` opens the app's handle (the provider keeps a failed open for good, so it cannot retry), repairs once when that says corrupt, builds again, and otherwise shows a retry screen.
+- *Repair* (`recover.ts`, tested on real damaged files): `PRAGMA integrity_check`; a copy of the file and its WAL to `joyofit.db.corrupt-<ms>` (the repair stops if that copy fails); `REINDEX` when only rows and indexes disagree; `VACUUM INTO`; row salvage into a new database built by `buildAppSchema` (damaged leaves are skipped by an exponential then binary search over rowids, indexes and triggers are rebuilt, trigger-kept `rev` counters are copied as they were); an empty schema when nothing reads. The result goes over the damaged file *in place* with SQLite's online backup, which works under the open connections of both engines (a rename would leave them writing into the old file). Only when that fails and nothing has the file open is it swapped by files, otherwise at the next start (`applyPendingSwap`). The app's own queries wait while it runs (`gate.ts`, 60 s at most).
+- *After a loss* the pull cursors of the workouts, health records, step/sleep restore and strength sync are cleared, so the next sync starts from the beginning and the cloud gives back what was not readable; the watch refills `step_samples` and the rest from `device.last_sync` on its next sync. Phone-only data that never reached the cloud (and a lost pairing) is only in the kept `.corrupt-<ms>` file.
+- *Tell.* `DbHealthNotice` (id/en, `common:dbRecovery`) says what was saved, what comes back and that the old file is kept; a failed repair offers another try. FIT import repairs and retries the same file once.
+
+Tests: `src/db/recovery/*.test.ts`.
+
 ## Where data lives
 
 `joyofit.db` in `<app files>/SQLite` is shared by the screens (expo-sqlite, read) and the native
