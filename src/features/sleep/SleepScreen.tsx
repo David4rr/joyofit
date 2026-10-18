@@ -15,7 +15,7 @@ import { listAllSleep, listSleepScores, listStepSamplesSince } from '@/db/querie
 import { HourlyStages } from '@/features/sleep/HourlyStages';
 import { Hypnogram } from '@/features/sleep/Hypnogram';
 import { NoStagesNotice } from '@/features/sleep/NoStagesNotice';
-import { buildNights, hourlyStages, NIGHT_STAGES, nightHasStages, type Night } from '@/features/sleep/nights';
+import { buildNights, hourlyStages, NIGHT_STAGES, nightHasStages, sleepByDay, type Night } from '@/features/sleep/nights';
 import { SleepScoreRing } from '@/features/sleep/SleepScoreRing';
 import { STAGE_LABELS, stageColor } from '@/features/sleep/stageStyle';
 import { sleepNeedSec } from '@/features/today/readiness';
@@ -73,6 +73,10 @@ export function SleepScreen() {
   const night = nights?.[index] ?? null;
   const hours = useMemo(() => (night ? hourlyStages(night) : []), [night]);
   const need = useNightNeed(night && !night.nap ? night.start : null);
+  // The need is met by the whole wake day, naps included.
+  const daySleep = useMemo(() => (night && nights ? (sleepByDay(nights).get(startOfLocalDay(night.end)) ?? null) : null), [nights, night]);
+  const dayAsleepSec = night && !night.nap && daySleep ? daySleep.asleepSeconds : (night?.asleepSeconds ?? 0);
+  const dayNapSec = night && !night.nap && daySleep ? daySleep.napSeconds : 0;
   // Asleep seconds of the (up to) 14 nights before the selected one, for the sticker's "vs your average".
   const recentAsleepSec = useMemo(
     () =>
@@ -162,7 +166,8 @@ export function SleepScreen() {
         <AppText variant="caption" muted>
           {[
             hasStages ? t('sleep.stageSummary', { awakenings: night.awakenings, count: changes.length }) : t('sleep.noStages'),
-            need ? t('sleep.needSummary', { need: formatDuration(need.seconds), percent: Math.round((night.asleepSeconds / need.seconds) * 100) }) : null,
+            dayNapSec > 0 ? t('sleep.napsIncluded', { duration: formatDuration(dayNapSec) }) : null,
+            need ? t('sleep.needSummary', { need: formatDuration(need.seconds), percent: Math.round((dayAsleepSec / need.seconds) * 100) }) : null,
           ]
             .filter(Boolean)
             .join(' · ')}
@@ -192,6 +197,7 @@ export function SleepScreen() {
                 ? [night.score.efficiency !== null ? t('sleep.detailsScoreEfficiency', { efficiency: night.score.efficiency }) : t('sleep.detailsScore')]
                 : []),
               ...(need ? [need.strain !== null ? t('sleep.detailsNeedStrain', { strain: fmtDecimal(need.strain, 1) }) : t('sleep.detailsNeed')] : []),
+              ...(need && dayNapSec > 0 ? [t('sleep.detailsNaps')] : []),
             ]}
           />
         </Details>

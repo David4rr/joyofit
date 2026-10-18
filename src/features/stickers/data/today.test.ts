@@ -28,6 +28,8 @@ const stagedSleep: SleepSummary = {
   start: 0,
   end: 8 * H,
   totalSeconds: 8 * H,
+  dayAsleepSeconds: 7 * H,
+  naps: [],
   byType: [],
   byStage: [
     { stage: 'light', count: 1, seconds: 4 * H },
@@ -94,12 +96,12 @@ describe('buildTodaySubject', () => {
   });
 
   test('unstaged sleep counts all of it', () => {
-    const r = ready({ sleep: { ...stagedSleep, byStage: [], totalSeconds: 6 * H } });
+    const r = ready({ sleep: { ...stagedSleep, byStage: [], totalSeconds: 6 * H, dayAsleepSeconds: 6 * H } });
     expect(r.sleepSec).toBe(6 * H);
   });
 
   test('sleep above the 8 h target clamps at 1.2', () => {
-    const r = ready({ sleep: { ...stagedSleep, byStage: [], totalSeconds: 11 * H } });
+    const r = ready({ sleep: { ...stagedSleep, byStage: [], totalSeconds: 11 * H, dayAsleepSeconds: 11 * H } });
     expect(r.sleepPct).toBe(1.2);
   });
 
@@ -161,7 +163,7 @@ describe('buildTodaySubject', () => {
       strain: { ...strain, strain: Infinity },
       restingHr: Infinity,
       stepGoal: Infinity,
-      sleep: { ...stagedSleep, byStage: [], totalSeconds: NaN },
+      sleep: { ...stagedSleep, byStage: [], totalSeconds: NaN, dayAsleepSeconds: NaN },
       readiness: readiness({ recovery: { percent: NaN, band: 'green', rmssd: NaN, source: 'night', baselineRmssd: 1, z: 0, baselineCount: 1 } }),
     });
     for (const ns of ['ready', 'watch'] as const) {

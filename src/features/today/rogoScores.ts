@@ -2,7 +2,7 @@ import type { RogoScoreDay, RogoScoreMetrics } from '@/cloud/rogo';
 import { computeDailyFitness, computeFitnessOverview } from '@/features/fitness/compute';
 import type { FitnessData } from '@/features/fitness/useFitnessData';
 import { localDate } from '@/features/meals/mealMap';
-import { buildNights } from '@/features/sleep/nights';
+import { buildNights, sleepByDay } from '@/features/sleep/nights';
 import { cleanActiveKcal } from '@/features/today/rogoActive';
 import type { Scores } from '@/features/today/scores';
 import { dayStarts } from '@/features/trends/series';
@@ -71,12 +71,13 @@ export function rogoDailyMetrics(data: FitnessData, dayStart: number): RogoScore
   const daily = computeDailyFitness(data);
   const overview = computeFitnessOverview(data, []);
 
-  // The night that ended today (newest first; a nap is not the night) and its overnight HRV, the newest night reading that ended today.
-  const night = buildNights(data.sleep, []).find((n) => !n.nap && n.end >= dayStart && n.end <= data.nowSec) ?? null;
+  // Today's sleep (the night that ended today plus today's naps; no night on record, no value) and its overnight HRV, the newest night reading that ended today.
+  const sleepToday = sleepByDay(buildNights(data.sleep, []).filter((n) => n.end >= dayStart && n.end <= data.nowSec)).get(dayStart);
+  const sleep = sleepToday?.hasNight ? sleepToday : null;
   const nightHrv = data.hrv.filter((r) => r.source === 'night' && r.rmssd > 0 && r.end >= dayStart && r.end <= data.nowSec).at(-1);
 
   return cleanMetrics({
-    sleepHours: night ? night.asleepSeconds / 3600 : undefined,
+    sleepHours: sleep ? sleep.asleepSeconds / 3600 : undefined,
     restingHr: data.resting.get(dayStart),
     hrvMs: nightHrv?.rmssd,
     hrvStatus: 'status' in overview.hrv ? overview.hrv.status.state : undefined,

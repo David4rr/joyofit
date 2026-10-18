@@ -30,12 +30,6 @@ function localDayKey(ms: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** Same rule as `buildDayShareStats`: awake time is excluded when the watch staged the night. */
-function asleepSeconds(sleep: NonNullable<DayShareInput['sleep']>): number {
-  const awake = sleep.byStage.find((entry) => entry.stage === 'awake')?.seconds ?? 0;
-  return sleep.byStage.length > 0 ? sleep.totalSeconds - awake : sleep.totalSeconds;
-}
-
 const HEADLINE_KEY: Record<ReadinessHeadline, string> = {
   Primed: 'readiness.headline.primed',
   Balanced: 'readiness.headline.balanced',
@@ -64,7 +58,7 @@ export function buildTodaySubject(input: TodaySubjectInput, locale: Locale): Sti
   const recovery = readiness.recovery;
   if (recovery && finite(recovery.percent)) shared.recovery = clamp(Math.round(recovery.percent), 0, 100);
   if (sleep) {
-    const sec = asleepSeconds(sleep);
+    const sec = sleep.dayAsleepSeconds; // the day's sleep, naps included
     if (finite(sec) && sec > 0) {
       shared.sleepSec = Math.round(sec);
       shared.sleepPct = clamp(sec / SLEEP_TARGET_SEC, 0, 1.2);
