@@ -30,6 +30,12 @@ It uses zip4j (https://github.com/srikanth-lingala/zip4j, Apache-2.0) to read th
 Huawei and HUAWEI WATCH FIT are trademarks of Huawei Technologies Co., Ltd. This project is not
 affiliated with or endorsed by Huawei.
 
+Strava, the Strava symbol and the "Connect with Strava" and "Compatible with Strava" artwork (assets/strava/) are trademarks
+of Strava, Inc. Google Health Connect and its icon (assets/brand-marks/health-connect.png) belong to Google LLC. Apple Health
+and its icon (assets/brand-marks/apple-health.png, Apple Design Resources) belong to Apple Inc.; that icon is not covered by
+this project's licence and may only appear in the UI of an iOS app. Claude and ChatGPT are trademarks of Anthropic PBC and
+OpenAI; JoyoFit shows their names as text only. None of them endorses this project. Rules per mark: docs/brand-marks.md.
+
 Exercise library of the Coach (src/features/coach/exercises/, site/public/exercises/), retrieved 2026-10-18.
 Built by scripts/build-exercises.ts. The steps, common mistakes, Indonesian names and English names are written for
 this project; no instruction text of any dataset is copied.

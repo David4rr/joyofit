@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { isIos } from '@/components/IosUnavailable';
 import { useStackOptions } from '@/components/navigation';
 
 export const unstable_settings = { initialRouteName: 'index' };
@@ -11,15 +12,17 @@ export default function SettingsLayout() {
   return (
     <Stack screenOptions={useStackOptions()}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="akun" options={{ title: t('screens.akun') }} />
+      <Stack.Screen name="import" options={{ title: t('screens.importAll') }} />
       <Stack.Screen name="sync" options={{ title: t('screens.sync') }} />
       <Stack.Screen name="notifications" options={{ title: t('screens.notifications') }} />
       <Stack.Screen name="notification-apps" options={{ title: t('screens.notificationApps') }} />
       <Stack.Screen name="weather" options={{ title: t('screens.weather') }} />
       <Stack.Screen name="safety" options={{ title: t('screens.safety') }} />
-      <Stack.Screen name="health" options={{ title: t('screens.health') }} />
+      <Stack.Screen name="health" options={{ title: isIos ? t('screens.healthIos') : t('screens.health') }} />
       <Stack.Screen name="strava" options={{ title: t('screens.strava') }} />
       <Stack.Screen name="koneksi" options={{ title: t('screens.koneksi') }} />
-      <Stack.Screen name="gear" options={{ title: tg('title') }} />
+      <Stack.Screen name="gear" options={{ title: t('screens.gear') }} />
       <Stack.Screen name="gear-edit" options={{ title: tg('edit.newTitle') }} />
       <Stack.Screen name="import-huawei" options={{ title: t('screens.importHuawei') }} />
       <Stack.Screen name="import-apple-health" options={{ title: t('screens.importAppleHealth') }} />

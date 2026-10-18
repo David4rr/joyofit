@@ -40,7 +40,7 @@ export function CoachSignIn() {
       <AppText variant="caption" muted>
         {t('access.signIn.body')}
       </AppText>
-      <Button label={t('access.signIn.cta')} variant="primary" icon="log-in" onPress={() => router.push('/settings/sync')} />
+      <Button label={t('access.signIn.cta')} variant="primary" icon="log-in" onPress={() => router.push('/settings/akun')} />
     </Card>
   );
 }

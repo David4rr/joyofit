@@ -1,77 +1,37 @@
 {
   "screens": {
-    "sync": "Watch & sync",
+    "sync": "Sync & background",
     "notifications": "Notifications & calls",
     "notificationApps": "Notification apps",
     "weather": "Weather",
     "safety": "Safety",
-    "health": "Health & cloud",
+    "health": "Health Connect",
     "strava": "Strava",
     "koneksi": "AI connections",
     "importHuawei": "Import from Huawei Health",
     "importAppleHealth": "Import from Apple Health",
     "importFit": "Import a FIT file",
-    "profile": "Profile and goal",
+    "profile": "Body profile",
     "meals": "Meals on watch",
     "goals": "Goals & reminders",
     "cycle": "Cycle",
     "courses": "Running courses",
-    "advanced": "Advanced",
+    "advanced": "About & advanced",
     "log": "Log",
     "about": "About",
-    "appearance": "Appearance"
+    "appearance": "Appearance & language",
+    "healthIos": "Apple Health",
+    "gear": "Shoes & gear",
+    "importAll": "Import data",
+    "akun": "Account"
   },
   "index": {
-    "groups": {
-      "watch": "On the watch",
-      "you": "You and your data",
-      "app": "App",
-      "advanced": "Advanced"
-    },
     "title": "Settings",
     "rows": {
-      "sync": {
-        "title": "Background and sync",
-        "subtitle": "Stay connected, sync interval"
-      },
-      "notifications": {
-        "title": "Notifications and calls",
-        "subtitleIos": "iPhone notifications on the watch, find my phone, calls",
-        "subtitle": "Forwarding, find my phone, call control"
-      },
       "notificationApps": {
         "title": "Notification apps",
         "subtitleIos": "Chosen in iPhone Settings",
         "subtitle": "Choose which apps notify the watch"
-      },
-      "weather": {
-        "title": "Weather",
-        "subtitle": "Location, unit, update interval"
-      },
-      "safety": {
-        "title": "Safety",
-        "subtitle": "Fall detection, SOS texts, sleep report"
-      },
-      "meals": {
-        "title": "Meals on watch",
-        "subtitle": "JoyoRogo diary and calorie target on the watch"
-      },
-      "goals": {
-        "title": "Goals and reminders",
-        "subtitle": "Steps, calories, exercise, stand, ring reminders"
-      },
-      "health": {
-        "titleIos": "Apple Health and cloud",
-        "title": "Health Connect and cloud",
-        "subtitle": "Share data with other apps, back up"
-      },
-      "strava": {
-        "title": "Strava",
-        "subtitle": "Send watch workouts to Strava, free"
-      },
-      "koneksi": {
-        "title": "AI connections",
-        "subtitle": "Claude, ChatGPT and other AI apps allowed to read your data"
       },
       "importHuawei": {
         "title": "Import from Huawei Health",
@@ -85,32 +45,12 @@
         "title": "Import a FIT file",
         "subtitle": "A ride or run from iGPSPORT, Garmin, Wahoo and others"
       },
-      "profile": {
-        "title": "Profile and goal",
-        "subtitle": "Height, weight, daily step goal"
-      },
-      "cycle": {
-        "title": "Cycle",
-        "subtitle": "Period log, estimates, calendar on the watch"
-      },
-      "family": {
-        "title": "Family"
-      },
       "guide": {
-        "title": "Setup guide",
-        "subtitle": "Pair the watch, permissions, JoyoRogo"
-      },
-      "appearance": {
-        "title": "Appearance",
-        "subtitle": "Theme: Classic, Sport, Ocean"
+        "title": "Setup guide"
       },
       "log": {
         "title": "Log",
         "subtitle": "Watch traffic and events"
-      },
-      "advanced": {
-        "title": "Experimental",
-        "subtitle": "Bluetooth LE link, running courses"
       },
       "about": {
         "title": "About"
@@ -228,7 +168,6 @@
     "deleteWarning": "Deletes your JoyoRogo account (the one JoyoRogo uses) and everything it holds in the cloud: your JoyoRogo diary, groups and photos, and the data JoyoFit backed up. Cannot be undone; you are signed out of both apps. Data on this phone stays.",
     "deleteApple": "Apple will ask you to confirm first.",
     "deletePermanently": "Delete permanently",
-    "keepAccount": "Keep account",
     "deleteAccount": "Delete JoyoRogo account",
     "mobileTitle": "Sync on mobile data?",
     "mobileMessage": "Wi-Fi only is on and this phone is not on Wi-Fi. Syncing now can use a lot of mobile data when workouts are waiting.",
@@ -700,5 +639,31 @@
     "details": "Sends current weather and a forecast, on every connect and at the chosen interval. Data comes from Open-Meteo; only coordinates rounded to about 1 km go out.",
     "detailsIos": "This phone: uses your approximate location while the app is open. When the watch asks in the background, iOS gives the app no fresh position, so the last one is reused.",
     "detailsAndroid": "This phone: uses the last known coarse location. In the background Android may not give a fresh one, so the last position is reused."
+  },
+  "hub": {
+    "groups": {
+      "watch": "Watch",
+      "body": "Goals & body",
+      "connections": "Connections",
+      "app": "App"
+    },
+    "account": {
+      "signedOut": "Not signed in",
+      "signedOutHint": "Sign in for cloud sync and Strava.",
+      "signedIn": "JoyoRogo account",
+      "pro": "Pro active, cloud sync on",
+      "free": "Free, cloud sync needs Pro",
+      "valuePro": "Pro"
+    },
+    "connectWatch": {
+      "title": "Connect a watch",
+      "subtitle": "Optional. Pair a Huawei or Honor watch for steps, sleep and heart rate."
+    },
+    "connected": "Connected"
+  },
+  "account": {
+    "signOutTitle": "Sign out of JoyoRogo?",
+    "signOutMessage": "Data on this phone stays. Cloud sync stops until you sign in again.",
+    "deleteTitle": "Delete your JoyoRogo account?"
   }
 }

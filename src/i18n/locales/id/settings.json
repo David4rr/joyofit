@@ -1,77 +1,37 @@
 {
   "screens": {
-    "sync": "Jam & sinkron",
+    "sync": "Sinkron & latar belakang",
     "notifications": "Notifikasi & panggilan",
     "notificationApps": "Aplikasi notifikasi",
     "weather": "Cuaca",
     "safety": "Keselamatan",
-    "health": "Kesehatan & cloud",
+    "health": "Health Connect",
     "strava": "Strava",
     "koneksi": "Koneksi AI",
     "importHuawei": "Impor dari Huawei Health",
     "importAppleHealth": "Impor dari Apple Health",
     "importFit": "Impor file FIT",
-    "profile": "Profil dan target",
+    "profile": "Profil tubuh",
     "meals": "Makanan di jam",
     "goals": "Target & pengingat",
-    "cycle": "Siklus",
+    "cycle": "Siklus haid",
     "courses": "Rute lari",
-    "advanced": "Lanjutan",
+    "advanced": "Tentang & lanjutan",
     "log": "Log",
     "about": "Tentang",
-    "appearance": "Tampilan"
+    "appearance": "Tampilan & bahasa",
+    "healthIos": "Apple Health",
+    "gear": "Sepatu & perlengkapan",
+    "importAll": "Impor data",
+    "akun": "Akun"
   },
   "index": {
-    "groups": {
-      "watch": "Di jam",
-      "you": "Kamu dan datamu",
-      "app": "Aplikasi",
-      "advanced": "Lanjutan"
-    },
     "title": "Pengaturan",
     "rows": {
-      "sync": {
-        "title": "Latar belakang dan sinkron",
-        "subtitle": "Tetap terhubung, interval sinkron"
-      },
-      "notifications": {
-        "title": "Notifikasi dan panggilan",
-        "subtitleIos": "Notifikasi iPhone di jam, cari ponsel, panggilan",
-        "subtitle": "Teruskan notifikasi, cari ponsel, kontrol panggilan"
-      },
       "notificationApps": {
         "title": "Aplikasi notifikasi",
         "subtitleIos": "Dipilih di Pengaturan iPhone",
         "subtitle": "Pilih aplikasi yang boleh mengirim notifikasi ke jam"
-      },
-      "weather": {
-        "title": "Cuaca",
-        "subtitle": "Lokasi, satuan, interval pembaruan"
-      },
-      "safety": {
-        "title": "Keselamatan",
-        "subtitle": "Deteksi jatuh, SMS SOS, laporan tidur"
-      },
-      "meals": {
-        "title": "Makanan di jam",
-        "subtitle": "Catatan makan JoyoRogo dan target kalori di jam"
-      },
-      "goals": {
-        "title": "Target dan pengingat",
-        "subtitle": "Langkah, kalori, olahraga, berdiri, pengingat ring"
-      },
-      "health": {
-        "titleIos": "Apple Health dan cloud",
-        "title": "Health Connect dan cloud",
-        "subtitle": "Bagikan data ke aplikasi lain, cadangkan"
-      },
-      "strava": {
-        "title": "Strava",
-        "subtitle": "Kirim latihan dari jam ke Strava, gratis"
-      },
-      "koneksi": {
-        "title": "Koneksi AI",
-        "subtitle": "Claude, ChatGPT, dan aplikasi AI lain yang boleh membaca datamu"
       },
       "importHuawei": {
         "title": "Impor dari Huawei Health",
@@ -85,32 +45,12 @@
         "title": "Impor file FIT",
         "subtitle": "Gowes atau lari dari iGPSPORT, Garmin, Wahoo, dan lainnya"
       },
-      "profile": {
-        "title": "Profil dan target",
-        "subtitle": "Tinggi, berat, target langkah harian"
-      },
-      "cycle": {
-        "title": "Siklus",
-        "subtitle": "Catatan haid, perkiraan, kalender di jam"
-      },
-      "family": {
-        "title": "Keluarga"
-      },
       "guide": {
-        "title": "Panduan awal",
-        "subtitle": "Pasangkan jam, izin, JoyoRogo"
-      },
-      "appearance": {
-        "title": "Tampilan",
-        "subtitle": "Tema: Classic, Sport, Ocean"
+        "title": "Panduan penyiapan"
       },
       "log": {
         "title": "Log",
         "subtitle": "Lalu lintas dan kejadian jam"
-      },
-      "advanced": {
-        "title": "Eksperimental",
-        "subtitle": "Tautan Bluetooth LE, rute lari"
       },
       "about": {
         "title": "Tentang"
@@ -225,7 +165,6 @@
     "deleteWarning": "Menghapus akun JoyoRogo kamu (yang dipakai JoyoRogo) beserta semua isinya di cloud: catatan makan JoyoRogo, grup, foto, dan data yang dicadangkan JoyoFit. Tidak bisa dibatalkan; kamu keluar dari kedua aplikasi. Data di ponsel ini tetap ada.",
     "deleteApple": "Apple akan meminta konfirmasi dulu.",
     "deletePermanently": "Hapus permanen",
-    "keepAccount": "Pertahankan akun",
     "deleteAccount": "Hapus akun JoyoRogo",
     "mobileTitle": "Sinkron lewat data seluler?",
     "mobileMessage": "Hanya Wi-Fi sedang nyala dan ponsel ini tidak tersambung Wi-Fi. Sinkron sekarang bisa memakai banyak data seluler kalau ada latihan yang menunggu.",
@@ -691,5 +630,31 @@
     "details": "Mengirim cuaca saat ini dan prakiraan, setiap tersambung dan pada interval yang dipilih. Data berasal dari Open-Meteo; hanya koordinat yang dibulatkan sekitar 1 km yang dikirim.",
     "detailsIos": "Ponsel ini: memakai perkiraan lokasimu saat aplikasi terbuka. Saat jam meminta di latar belakang, iOS tidak memberi aplikasi posisi baru, jadi posisi terakhir dipakai ulang.",
     "detailsAndroid": "Ponsel ini: memakai lokasi kasar yang terakhir diketahui. Di latar belakang Android mungkin tidak memberi yang baru, jadi posisi terakhir dipakai ulang."
+  },
+  "hub": {
+    "groups": {
+      "watch": "Jam",
+      "body": "Target & tubuh",
+      "connections": "Koneksi",
+      "app": "Aplikasi"
+    },
+    "account": {
+      "signedOut": "Belum masuk",
+      "signedOutHint": "Masuk untuk sinkron cloud dan Strava.",
+      "signedIn": "Akun JoyoRogo",
+      "pro": "Pro aktif, sinkron cloud nyala",
+      "free": "Gratis, sinkron cloud butuh Pro",
+      "valuePro": "Pro"
+    },
+    "connectWatch": {
+      "title": "Sambungkan jam",
+      "subtitle": "Opsional. Pasang jam Huawei atau Honor untuk langkah, tidur, dan detak jantung."
+    },
+    "connected": "Terhubung"
+  },
+  "account": {
+    "signOutTitle": "Keluar dari JoyoRogo?",
+    "signOutMessage": "Data di ponsel ini tetap ada. Sinkron cloud berhenti sampai kamu masuk lagi.",
+    "deleteTitle": "Hapus akun JoyoRogo?"
   }
 }

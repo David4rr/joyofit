@@ -3,12 +3,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/Button';
-import { ButtonRow } from '@/components/ButtonRow';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Details } from '@/components/Details';
+import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
-import { isIos } from '@/components/IosUnavailable';
 import { SwitchRow } from '@/components/SwitchRow';
 import { formatSize } from '@/cloud/estimate';
 import { onUnmeteredNetwork } from '@/cloud/syncSettings';
@@ -16,6 +15,7 @@ import { formatCount, formatDateTime } from '@/format';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { SignInButtons } from '@/features/settings/SignInButtons';
 import { useCloud } from '@/state/CloudProvider';
+import { useTheme } from '@/theme';
 import type { TFunction } from '@/i18n';
 import { HuaweiWear } from '@/wear';
 
@@ -45,14 +45,15 @@ function waitingText(t: T, workouts: number, bytes: number, rows: number): strin
  * cadence, power and the analysis) goes up as a compressed file, steps and sleep go to the JoyoFit cloud, and a new
  * phone restores its workouts after sign-in. Syncs run on their own after each watch sync; "Sync now" forces one, and
  * "Wi-Fi only" keeps the automatic ones off mobile data. Without Pro nothing is uploaded and the workouts stay on the phone.
+ * Signing out and deleting the account live in the Settings hub (`useAccountDialogs`); "Delete cloud data", which keeps the
+ * account, closes this screen as a destructive row.
  */
 export function CloudSection() {
   const { t } = useTranslation('settings');
   const cloud = useCloud();
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const theme = useTheme();
   const [confirmingWipe, setConfirmingWipe] = useState(false);
   const [confirmingMobile, setConfirmingMobile] = useState(false);
-  const withApple = isIos && cloud.appleAvailable;
   const busy = cloud.uploading || cloud.deleting || cloud.wiping;
 
   const syncNow = async () => {
@@ -61,69 +62,69 @@ export function CloudSection() {
   };
 
   return (
-    <Section title={t('cloud.title')} icon="cloud-upload">
-      {!cloud.configured ? (
-        <Notice tone="danger">
-          {t('cloud.notConfigured')}
-        </Notice>
-      ) : null}
-      {cloud.signedIn && cloud.locked ? (
-        <Notice
-          icon="lock-closed"
-          action={
-            CAN_LINK_TO_FOUNDER
-              ? { label: t('cloud.getPro'), onPress: () => void Linking.openURL(FOUNDER_URL) }
-              : undefined
-          }>
-          {CAN_LINK_TO_FOUNDER
-            ? t('cloud.lockedLink')
-            : t('cloud.locked')}
-        </Notice>
-      ) : null}
-      {cloud.error ? <Notice tone="danger">{cloud.error}</Notice> : null}
-      {cloud.progress ? (
-        <Notice icon="cloud-upload">{t('cloud.uploading', { done: formatCount(cloud.progress.done), total: formatCount(cloud.progress.total) })}</Notice>
-      ) : null}
-      {cloud.refusedWorkouts > 0 ? (
-        <Notice tone="danger">
-          {t('cloud.refused', { count: cloud.refusedWorkouts, n: formatCount(cloud.refusedWorkouts) })}
-          {cloud.refusedError ? ` ${t('cloud.refusedError', { error: cloud.refusedError })}` : ''}
-        </Notice>
-      ) : null}
-      <PairGrid>
-        <Pair label={t('cloud.labels.account')} value={cloud.signedIn ? cloud.email : null} wide />
+    <>
+      <Section title={t('cloud.title')} icon="cloud-upload">
+        {!cloud.configured ? (
+          <Notice tone="danger">
+            {t('cloud.notConfigured')}
+          </Notice>
+        ) : null}
+        {cloud.signedIn && cloud.locked ? (
+          <Notice
+            icon="lock-closed"
+            action={
+              CAN_LINK_TO_FOUNDER
+                ? { label: t('cloud.getPro'), onPress: () => void Linking.openURL(FOUNDER_URL) }
+                : undefined
+            }>
+            {CAN_LINK_TO_FOUNDER
+              ? t('cloud.lockedLink')
+              : t('cloud.locked')}
+          </Notice>
+        ) : null}
+        {cloud.error ? <Notice tone="danger">{cloud.error}</Notice> : null}
+        {cloud.progress ? (
+          <Notice icon="cloud-upload">{t('cloud.uploading', { done: formatCount(cloud.progress.done), total: formatCount(cloud.progress.total) })}</Notice>
+        ) : null}
+        {cloud.refusedWorkouts > 0 ? (
+          <Notice tone="danger">
+            {t('cloud.refused', { count: cloud.refusedWorkouts, n: formatCount(cloud.refusedWorkouts) })}
+            {cloud.refusedError ? ` ${t('cloud.refusedError', { error: cloud.refusedError })}` : ''}
+          </Notice>
+        ) : null}
+        <PairGrid>
+          <Pair label={t('cloud.labels.account')} value={cloud.signedIn ? cloud.email : null} wide />
+          {cloud.signedIn ? (
+            <>
+              <Pair label={t('cloud.labels.lastSync')} value={cloud.lastSyncAt ? formatDateTime(cloud.lastSyncAt) : null} />
+              <Pair
+                label={t('cloud.labels.inCloud')}
+                value={
+                  cloud.cloudWorkouts
+                    ? t('cloud.inCloudValue', {
+                        workouts: workoutsText(t, cloud.cloudWorkouts.count),
+                        used: formatSize(cloud.cloudWorkouts.bytes),
+                        quota: formatSize(cloud.cloudWorkouts.quotaBytes),
+                      })
+                    : null
+                }
+              />
+              {cloud.locked ? null : (
+                <Pair
+                  label={t('cloud.labels.waiting')}
+                  value={
+                    cloud.pendingWorkouts == null || cloud.pendingRows == null || cloud.pendingBytes == null
+                      ? null
+                      : waitingText(t, cloud.pendingWorkouts, cloud.pendingBytes, cloud.pendingRows)
+                  }
+                  wide
+                />
+              )}
+            </>
+          ) : null}
+        </PairGrid>
         {cloud.signedIn ? (
           <>
-            <Pair label={t('cloud.labels.lastSync')} value={cloud.lastSyncAt ? formatDateTime(cloud.lastSyncAt) : null} />
-            <Pair
-              label={t('cloud.labels.inCloud')}
-              value={
-                cloud.cloudWorkouts
-                  ? t('cloud.inCloudValue', {
-                      workouts: workoutsText(t, cloud.cloudWorkouts.count),
-                      used: formatSize(cloud.cloudWorkouts.bytes),
-                      quota: formatSize(cloud.cloudWorkouts.quotaBytes),
-                    })
-                  : null
-              }
-            />
-            {cloud.locked ? null : (
-              <Pair
-                label={t('cloud.labels.waiting')}
-                value={
-                  cloud.pendingWorkouts == null || cloud.pendingRows == null || cloud.pendingBytes == null
-                    ? null
-                    : waitingText(t, cloud.pendingWorkouts, cloud.pendingBytes, cloud.pendingRows)
-                }
-                wide
-              />
-            )}
-          </>
-        ) : null}
-      </PairGrid>
-      {cloud.signedIn ? (
-        <>
-          <ButtonRow>
             <Button
               label={t('cloud.syncNow')}
               variant="primary"
@@ -132,95 +133,58 @@ export function CloudSection() {
               disabled={!cloud.configured || cloud.deleting || cloud.wiping}
               loading={cloud.uploading}
             />
-            <Button
-              label={t('cloud.signOut')}
-              variant="secondary"
-              icon="log-out-outline"
-              onPress={() => void cloud.signOut()}
-              disabled={busy}
+            <SwitchRow
+              label={t('cloud.wifiOnly')}
+              hint={t('cloud.wifiOnlyHint')}
+              icon="wifi"
+              value={cloud.wifiOnly}
+              onValueChange={cloud.setWifiOnly}
             />
-          </ButtonRow>
-          <SwitchRow
-            label={t('cloud.wifiOnly')}
-            hint={t('cloud.wifiOnlyHint')}
-            icon="wifi"
-            value={cloud.wifiOnly}
-            onValueChange={cloud.setWifiOnly}
-          />
-          <SwitchRow
-            label={t('cloud.autoSync')}
-            hint={t('cloud.autoSyncHint')}
-            icon="sync"
-            value={cloud.autoSync}
-            onValueChange={cloud.setAutoSync}
-            disabled={cloud.wiping}
-          />
-          <Button
-            label={t('cloud.wipe')}
-            variant="destructive"
-            icon="cloud-offline-outline"
-            loading={cloud.wiping}
-            disabled={busy}
-            onPress={() => setConfirmingWipe(true)}
-          />
-          {confirmingDelete ? (
-            <Notice tone="danger" icon="trash">
-              {t('cloud.deleteWarning')}
-              {withApple ? ` ${t('cloud.deleteApple')}` : ''}
-            </Notice>
-          ) : null}
-          {confirmingDelete ? (
-            <ButtonRow>
-              <Button
-                label={t('cloud.deletePermanently')}
-                variant="destructive"
-                icon="trash"
-                loading={cloud.deleting}
-                onPress={() => void cloud.deleteAccount().then((deleted) => deleted && setConfirmingDelete(false))}
-              />
-              <Button
-                label={t('cloud.keepAccount')}
-                variant="secondary"
-                disabled={cloud.deleting}
-                onPress={() => setConfirmingDelete(false)}
-              />
-            </ButtonRow>
-          ) : (
-            <Button
-              label={t('cloud.deleteAccount')}
-              variant="destructive"
-              icon="trash-outline"
-              disabled={busy}
-              onPress={() => setConfirmingDelete(true)}
+            <SwitchRow
+              label={t('cloud.autoSync')}
+              hint={t('cloud.autoSyncHint')}
+              icon="sync"
+              value={cloud.autoSync}
+              onValueChange={cloud.setAutoSync}
+              disabled={cloud.wiping}
             />
-          )}
-        </>
-      ) : (
-        <SignInButtons />
-      )}
-      <ConfirmDialog
-        visible={confirmingMobile}
-        title={t('cloud.mobileTitle')}
-        message={t('cloud.mobileMessage')}
-        confirmLabel={t('cloud.syncNow')}
-        onConfirm={() => {
-          setConfirmingMobile(false);
-          void cloud.syncNow();
-        }}
-        onCancel={() => setConfirmingMobile(false)}
-      />
-      <ConfirmDialog
-        visible={confirmingWipe}
-        title={t('cloud.wipeTitle')}
-        message={t('cloud.wipeMessage')}
-        confirmLabel={t('cloud.wipe')}
-        onConfirm={() => {
-          setConfirmingWipe(false);
-          void cloud.wipeCloud();
-        }}
-        onCancel={() => setConfirmingWipe(false)}
-      />
-      <Details>{t('cloud.details')}</Details>
-    </Section>
+          </>
+        ) : (
+          <SignInButtons />
+        )}
+        <ConfirmDialog
+          visible={confirmingMobile}
+          title={t('cloud.mobileTitle')}
+          message={t('cloud.mobileMessage')}
+          confirmLabel={t('cloud.syncNow')}
+          onConfirm={() => {
+            setConfirmingMobile(false);
+            void cloud.syncNow();
+          }}
+          onCancel={() => setConfirmingMobile(false)}
+        />
+        <ConfirmDialog
+          visible={confirmingWipe}
+          title={t('cloud.wipeTitle')}
+          message={t('cloud.wipeMessage')}
+          confirmLabel={t('cloud.wipe')}
+          destructive
+          busy={cloud.wiping}
+          onConfirm={() => void cloud.wipeCloud().finally(() => setConfirmingWipe(false))}
+          onCancel={() => setConfirmingWipe(false)}
+        />
+        <Details>{t('cloud.details')}</Details>
+      </Section>
+      {cloud.signedIn ? (
+        <NavRow
+          destructive
+          icon="cloud-offline-outline"
+          title={t('cloud.wipe')}
+          disabled={busy}
+          onPress={() => setConfirmingWipe(true)}
+          style={groupedRowStyle(theme, 0, 1)}
+        />
+      ) : null}
+    </>
   );
 }
