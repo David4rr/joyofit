@@ -14,7 +14,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Service 0x32 and the cycle model, against the structure read from Huawei Health 17.0.8.300 (`neh`, `nec`, `nej`, `neb`). */
+/** Service 0x32 and the cycle model, against the structure Huawei Health 17.0.8.300 uses. */
 class MenstrualTest {
   private val plain = HuaweiPacket.ParamsProvider().also { it.setTransactionsCrypted(false) }
   private val utc: ZoneId = ZoneOffset.UTC
@@ -197,7 +197,7 @@ class MenstrualTest {
     assertEquals(0.toByte(), items[2].getByte(0x12))
     assertEquals(0, items[0].getInteger(0x06))
     assertEquals(1791936000, tlv.getInteger(0x09))
-    // The watch asked 0b, so 0a carries the cycle length; it asked 0a, so 0b carries the period length (neh.b crosses them).
+    // The watch asked 0b, so 0a carries the cycle length; it asked 0a, so 0b carries the period length (Huawei Health crosses them).
     assertArrayEquals(byteArrayOf(28), tlv.getBytes(0x0A))
     assertArrayEquals(byteArrayOf(5), tlv.getBytes(0x0B))
   }

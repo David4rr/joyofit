@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -37,15 +38,16 @@ export function BlockEditor({
   onStepMove,
   onStepRemove,
 }: BlockEditorProps) {
+  const { t } = useTranslation('watch');
   const colors = useColors();
   const plain = block.repeat === 1 && block.steps.length === 1;
   const inGroup = block.steps.length > 1;
 
   const blockActions = (
     <>
-      <IconAction icon="arrow-up" label={`Move ${label} up`} disabled={isFirst} onPress={() => onMove(-1)} />
-      <IconAction icon="arrow-down" label={`Move ${label} down`} disabled={isLast} onPress={() => onMove(1)} />
-      <IconAction icon="trash" label={`Remove ${label}`} danger onPress={onRemove} />
+      <IconAction icon="arrow-up" label={t('courses.moveUp', { label })} disabled={isFirst} onPress={() => onMove(-1)} />
+      <IconAction icon="arrow-down" label={t('courses.moveDown', { label })} disabled={isLast} onPress={() => onMove(1)} />
+      <IconAction icon="trash" label={t('courses.remove', { label })} danger onPress={onRemove} />
     </>
   );
 
@@ -53,24 +55,24 @@ export function BlockEditor({
     <View style={styles.repeat}>
       <View style={styles.repeatText}>
         <AppText variant="label" muted>
-          Repeat
+          {t('courses.repeat')}
         </AppText>
         <AppText variant="caption" muted>
-          1 is a plain step.
+          {t('courses.repeatHint')}
         </AppText>
       </View>
       <IconAction
         icon="remove"
-        label={`Repeat ${label} fewer times`}
+        label={t('courses.repeatFewer', { label })}
         disabled={block.repeat <= REPEAT_MIN}
         onPress={() => onRepeat(block.repeat - 1)}
       />
-      <AppText variant="bodyStrong" style={styles.count} accessibilityLabel={`Repeats ${block.repeat} times`}>
+      <AppText variant="bodyStrong" style={styles.count} accessibilityLabel={t('courses.repeatsA11y', { count: block.repeat })}>
         {`\u00d7${block.repeat}`}
       </AppText>
       <IconAction
         icon="add"
-        label={`Repeat ${label} more times`}
+        label={t('courses.repeatMore', { label })}
         disabled={block.repeat >= REPEAT_MAX}
         onPress={() => onRepeat(block.repeat + 1)}
       />
@@ -91,7 +93,7 @@ export function BlockEditor({
         <View key={step.id} style={[styles.stepWrap, !plain && { borderLeftColor: colors.primary }, !plain && styles.indent]}>
           {index > 0 ? <Divider /> : null}
           <StepEditor
-            title={plain ? label : `Step ${index + 1}`}
+            title={plain ? label : t('courses.step', { n: index + 1 })}
             step={step}
             onChange={(patch) => onStepChange(step.id, patch)}
             actions={
@@ -101,17 +103,17 @@ export function BlockEditor({
                 <>
                   <IconAction
                     icon="arrow-up"
-                    label={`Move step ${index + 1} up`}
+                    label={t('courses.moveUp', { label: t('courses.step', { n: index + 1 }) })}
                     disabled={index === 0}
                     onPress={() => onStepMove(step.id, -1)}
                   />
                   <IconAction
                     icon="arrow-down"
-                    label={`Move step ${index + 1} down`}
+                    label={t('courses.moveDown', { label: t('courses.step', { n: index + 1 }) })}
                     disabled={index === block.steps.length - 1}
                     onPress={() => onStepMove(step.id, 1)}
                   />
-                  <IconAction icon="close" label={`Remove step ${index + 1}`} danger onPress={() => onStepRemove(step.id)} />
+                  <IconAction icon="close" label={t('courses.remove', { label: t('courses.step', { n: index + 1 }) })} danger onPress={() => onStepRemove(step.id)} />
                 </>
               ) : undefined
             }
@@ -119,7 +121,7 @@ export function BlockEditor({
         </View>
       ))}
       {repeatRow}
-      <Button label={plain ? 'Add a step to repeat with this one' : 'Add a step to this group'} icon="add" onPress={onAddStep} />
+      <Button label={plain ? t('courses.addToPlain') : t('courses.addToGroup')} icon="add" onPress={onAddStep} />
     </View>
   );
 }

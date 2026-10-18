@@ -1,10 +1,8 @@
 // Derived from Gadgetbridge (AGPL-3.0-or-later; see NOTICE): service/devices/huawei/HuaweiEphemerisManager and
-// requests/SendEphemeris*; packets/{Ephemeris,EphemerisFileUpload}. The download side follows Huawei Health's HwEphemerisManager.
+// requests/SendEphemeris*; packets/{Ephemeris,EphemerisFileUpload}.
 package com.joyodigitama.huaweiwear
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,9 +57,8 @@ private fun HuaweiTLV.agpsString(tag: Int): String? = getBytes(tag, null)?.let {
  *                                           phone 1C/01..04 answers, 1C/05 data frames, 1C/06 answer
  * ```
  *
- * Served: version 0 (Broadcom LTO, saved as `gpslocation.dat`), version 1 and 2 (config server lookup, no credential) and
- * version 3 `HW_AGNSS` (what the Fit 4 Pro asks for first). The other version 3 tags need Huawei's proprietary decoder or an
- * account credential; they are answered with state 4 like Huawei Health does when its own download fails.
+ * Served: version 0 only (the public Broadcom LTO file, saved as `gpslocation.dat`). Every other download version names a
+ * source run by the watch maker; this app does not contact those, so it answers state 4 (failed) and the watch carries on without.
  *
  * Network work runs on the IO dispatcher; the watch's messages are handled in order on one coroutine per connection and never
  * on the session's reader thread.
@@ -92,10 +89,10 @@ internal class EphemerisLink(
     val subscriptions = ArrayList<AutoCloseable>()
     var actor: Job? = null
 
-    /** Huawei Health's `downloadState`: 0 idle, 1 consulted, 2 downloading, 3 ready, 4 failed, 5 unsupported. */
+    /** Download state: 0 idle, 1 consulted, 2 downloading, 3 ready, 4 failed, 5 unsupported. */
     @Volatile var state = 0
 
-    /** An op 1 was accepted and not yet failed (Huawei Health keeps its per-device record until state 4 or 5). */
+    /** An op 1 was accepted and not yet failed (kept until state 4 or 5). */
     @Volatile var task = false
 
     @Volatile var download: Job? = null
@@ -218,11 +215,11 @@ internal class EphemerisLink(
     log("watch asks for ephemeris data: op $op, time ${agpsUnsigned(timeBytes)}")
     when (op) {
       1 -> {
-        // Huawei Health clears its record for the watch on every op 1 and starts over; so does this.
+        // Every op 1 clears the record for the watch and starts over.
         run.download?.cancel()
         run.task = true
         run.state = 0
-        if (!online()) {
+        if (!isOnline(appContext)) {
           run.task = false
           log("no network; answering 100007")
           tx(run, AGPS_SERVICE, 0x01, HuaweiTLV().put(0x7F, CODE_NO_NETWORK), "operator answer (no network)")
@@ -237,24 +234,13 @@ internal class EphemerisLink(
           log("progress request but no request is running; ignored")
           return
         }
-        // Huawei Health `mtp.a(String, mtv)`: 81{02: 02, 03: the watch's own time bytes, 04: downloadState}.
+        // The progress answer: 81{02: 02, 03: the watch's own time bytes, 04: current state}.
         val answer = HuaweiTLV().put(0x02, 2.toByte()).put(0x03, timeBytes ?: ByteArray(0)).put(0x04, run.state.toByte())
         log("progress request; answering state ${run.state}")
         tx(run, AGPS_SERVICE, 0x01, HuaweiTLV().put(0x81, answer), "progress answer")
       }
       else -> log("unknown operation $op; ignored")
     }
-  }
-
-  private fun online(): Boolean = try {
-    val manager = appContext.getSystemService(ConnectivityManager::class.java)
-    val network = manager?.activeNetwork
-    if (manager == null) true
-    else if (network == null) false
-    else manager.getNetworkCapabilities(network)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-  } catch (e: SecurityException) {
-    // Without the permission there is no way to tell; the download itself will fail and say so.
-    true
   }
 
   private class Consult(val version: Int, val tag: String, val urls: List<String>)
@@ -336,106 +322,35 @@ internal class EphemerisLink(
   private fun fetch(consult: Consult): Fetched {
     val out = Fetched()
     when (consult.version) {
-      0 -> fetchBroadcom(consult, out)
-      1, 2 -> fetchConfigured(consult, out)
-      3 -> fetchHuawei(consult, out)
+      0 -> fetchBroadcom(out)
+      // Versions 1-3 name sources run by the watch maker; this app does not contact them, so the watch is told "failed" (state 4).
+      1, 2, 3 -> out.notes += "download version ${consult.version} declined: only the public Broadcom LTO file is served"
       else -> out.notes += "download version ${consult.version} is not known"
     }
     return out
   }
 
   /** `cache` first, then the network (and then the cache for next time). Throws [AgpsFetchException]. */
-  private fun cachedGet(url: String, maxAgeMs: Long, headers: Map<String, String>, label: String, transform: (ByteArray) -> ByteArray = { it }): ByteArray {
+  private fun cachedGet(url: String, maxAgeMs: Long, label: String): ByteArray {
     cache.read(url, maxAgeMs)?.let {
       log("$label: from the cache, ${it.size} bytes")
       return it
     }
     val started = System.currentTimeMillis()
-    val body = transform(EphemerisNet.get(url, headers))
+    val body = EphemerisNet.get(url)
     if (body.isEmpty()) throw AgpsFetchException("empty response")
     log("$label: downloaded ${body.size} bytes in ${System.currentTimeMillis() - started} ms")
     cache.write(url, body)
     return body
   }
 
-  /** Version 0: Broadcom LTO. The watch names the URL(s); the file is `gpslocation.dat`. */
-  private fun fetchBroadcom(consult: Consult, out: Fetched) {
-    val urls = consult.urls.ifEmpty { listOf(EphemerisNet.LTO_HOST + EphemerisNet.LTO_PATH) }
-    for (original in urls) {
-      // Huawei Health rewrites the old Broadcom host to the new one; the same path on the new host is what is served.
-      val url = if (original.endsWith(EphemerisNet.LTO_PATH)) EphemerisNet.LTO_HOST + EphemerisNet.LTO_PATH else original
-      try {
-        out.files[LTO_FILE] = cachedGet(url, LTO_MAX_AGE_MS, mapOf("Charset" to "UTF-8"), "LTO")
-        return
-      } catch (e: AgpsFetchException) {
-        logError("LTO download failed: ${e.message}")
-        out.notes += "LTO: ${e.message}"
-      }
-    }
-  }
-
-  /** Version 1 and 2 ("Sony" path): config id -> JSON with a download URL -> the file under its own name. */
-  private fun fetchConfigured(consult: Consult, out: Fetched) {
-    val ids = consult.tag.split(';').map { it.trim() }.filter { it.isNotEmpty() }.flatMap {
-      if (consult.version == 2 && it.equals("RXN_EE", ignoreCase = true)) listOf("rxn_ee_gps", "rxn_ee_gal", "rxn_ee_bds") else listOf(it)
-    }
-    if (ids.isEmpty()) {
-      out.notes += "no config ids in the tag"
-      return
-    }
-    for (id in ids) {
-      try {
-        val downloadUrl = EphemerisNet.parseConfigDownloadUrl(EphemerisNet.get(EphemerisNet.CONFIG_BASE + id, EphemerisNet.configHeaders()))
-          ?: throw AgpsFetchException("config answer for $id has no usable download entry")
-        val name = EphemerisNet.lastPathSegment(downloadUrl)
-        if (name.isEmpty()) throw AgpsFetchException("download url of $id has no file name")
-        out.files[name] = cachedGet(downloadUrl, CONFIG_MAX_AGE_MS, emptyMap(), "config $id")
-      } catch (e: AgpsFetchException) {
-        logError("config $id failed: ${e.message}")
-        out.notes += "$id: ${e.message}"
-      }
-    }
-  }
-
-  /** Version 3: one entry per `;`, `<path>/<TAG>`; only `HW_AGNSS` can be served here. */
-  private fun fetchHuawei(consult: Consult, out: Fetched) {
-    val entries = consult.tag.split(';').map { it.trim() }.filter { it.isNotEmpty() }
-    if (entries.isEmpty()) {
-      out.notes += "empty tag list"
-      return
-    }
-    for (entry in entries) {
-      when {
-        entry.contains("HW_AGNSS") -> fetchAgnss(entry, out)
-        entry.contains("HW_PGNSS_PRED") -> decline(out, "HW_PGNSS_PRED", "needs Huawei's native P-GNSS decoder")
-        entry.contains("HW_PGNSS_TRANS") -> decline(out, "HW_PGNSS_TRANS", "nothing to download for it")
-        entry.contains("HW_RSMC_") -> decline(out, "HW_RSMC", "needs a Huawei account credential")
-        entry.contains("HW_PRECSION_ION") -> decline(out, "HW_PRECSION_ION", "needs a Huawei account credential and decoder")
-        else -> decline(out, "unknown tag", "not one of the tags Huawei Health handles")
-      }
-    }
-  }
-
-  private fun decline(out: Fetched, tag: String, why: String) {
-    log("$tag declined: $why")
-    out.notes += "$tag declined"
-  }
-
-  private fun fetchAgnss(entry: String, out: Fetched) {
-    // gtt.b: everything before the last "/" is the path under the GRS base; the last segment is the tag.
-    val path = if (entry.contains('/')) entry.substringBeforeLast('/').trimStart('/') else ""
-    if (path.isEmpty()) {
-      logError("HW_AGNSS entry has no path")
-      out.notes += "HW_AGNSS: entry has no path"
-      return
-    }
-    val url = EphemerisNet.AGNSS_BASE + path
-    logRaw("HW_AGNSS url=$url")
+  /** Version 0: the public Broadcom LTO file, always from the fixed Broadcom URL whatever address the watch names. The file is `gpslocation.dat`. */
+  private fun fetchBroadcom(out: Fetched) {
     try {
-      out.files[AGNSS_FILE] = cachedGet(url, AGNSS_MAX_AGE_MS, EphemerisNet.agnssHeaders(), "HW_AGNSS", EphemerisNet::gunzipIfNeeded)
+      out.files[LTO_FILE] = cachedGet(EphemerisNet.LTO_HOST + EphemerisNet.LTO_PATH, LTO_MAX_AGE_MS, "LTO")
     } catch (e: AgpsFetchException) {
-      logError("HW_AGNSS download failed: ${e.message}")
-      out.notes += "HW_AGNSS: ${e.message}"
+      logError("LTO download failed: ${e.message}")
+      out.notes += "LTO: ${e.message}"
     }
   }
 
@@ -549,15 +464,12 @@ internal class EphemerisLink(
     const val STATE_FAILED = 4
     const val STATE_UNSUPPORTED = 5
 
-    const val AGNSS_FILE = "HW_AGNSS_RTCM_33"
     const val LTO_FILE = "gpslocation.dat"
 
-    // Short-lived orbit data is only good for a while; GB refuses anything older than 30 minutes. The LTO file predicts 7 days.
-    const val AGNSS_MAX_AGE_MS = 30L * 60 * 1000
+    // The LTO file predicts 7 days, so a few hours old is still good.
     const val LTO_MAX_AGE_MS = 6L * 60 * 60 * 1000
-    const val CONFIG_MAX_AGE_MS = 6L * 60 * 60 * 1000
 
-    // Huawei Health drops a request that has not finished after 2 minutes.
+    // A request that has not finished after 2 minutes is given up.
     const val DOWNLOAD_TIMEOUT_MS = 120_000L
   }
 }

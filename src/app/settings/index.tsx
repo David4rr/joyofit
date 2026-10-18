@@ -1,18 +1,26 @@
 import { useRouter, type Href } from 'expo-router';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SectionList, StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import type { IconName } from '@/components/IconChip';
+import { isIos } from '@/components/IosUnavailable';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { PageHeader, useContentPadding } from '@/components/Screen';
-import { spacing, useColors, type Tint } from '@/theme';
+import { useFamily } from '@/features/family/FamilyProvider';
+import { familySettingsSubtitle } from '@/features/family/format';
+import { t as tGear, type TFunction } from '@/i18n';
+import { useOnboarding } from '@/state/OnboardingProvider';
+import { spacing, useTheme, type Tint } from '@/theme';
 
 interface SettingsRow {
   title: string;
   subtitle?: string;
   icon: IconName;
   tint?: Tint;
-  href: Href;
+  /** Where the row goes; a row with no `href` opens the setup guide. */
+  href?: Href;
 }
 
 interface SettingsGroup {
@@ -20,103 +28,183 @@ interface SettingsGroup {
   data: readonly SettingsRow[];
 }
 
-const GROUPS: readonly SettingsGroup[] = [
-  {
-    title: 'On the watch',
-    data: [
-      {
-        title: 'Background and sync',
-        subtitle: 'Stay connected, sync interval',
-        icon: 'sync',
-        href: '/settings/sync',
-      },
-      {
-        title: 'Notifications and calls',
-        subtitle: 'Forwarding, find my phone, call control',
-        icon: 'notifications',
-        href: '/settings/notifications',
-      },
-      {
-        title: 'Notification apps',
-        subtitle: 'Choose which apps notify the watch',
-        icon: 'apps',
-        href: '/settings/notification-apps',
-      },
-      {
-        title: 'Weather',
-        subtitle: 'Location, unit, update interval',
-        icon: 'partly-sunny',
-        href: '/settings/weather',
-      },
-      {
-        title: 'Safety',
-        subtitle: 'Fall detection, SOS texts, sleep report',
-        icon: 'shield-checkmark',
-        tint: 'heart',
-        href: '/settings/safety',
-      },
-      {
-        title: 'Meals on watch',
-        subtitle: 'JoyoRogo diary and calorie target on the watch',
-        icon: 'restaurant',
-        href: '/settings/meals',
-      },
-      {
-        title: 'Goals and reminders',
-        subtitle: 'Steps, calories, exercise, stand, ring reminders',
-        icon: 'flag',
-        href: '/settings/goals',
-      },
-    ],
-  },
-  {
-    title: 'You and your data',
-    data: [
-      {
-        title: 'Health Connect and privacy',
-        subtitle: 'Sync with Android Health Connect, offline storage',
-        icon: 'heart',
-        tint: 'heart',
-        href: '/settings/health',
-      },
-      {
-        title: 'Profile and goal',
-        subtitle: 'Height, weight, daily step goal',
-        icon: 'person',
-        href: '/settings/profile',
-      },
-      {
-        title: 'Cycle',
-        subtitle: 'Period log, estimates, calendar on the watch',
-        icon: 'calendar',
-        tint: 'heart',
-        href: '/settings/cycle',
-      },
-    ],
-  },
-  {
-    title: 'Advanced',
-    data: [
-      { title: 'Log', subtitle: 'Watch traffic and events', icon: 'terminal', href: '/settings/log' },
-      { title: 'About', icon: 'information-circle', href: '/settings/about' },
-    ],
-  },
-];
+/** The family row's destination; its subtitle follows the family state, so the screen finds the row by it. */
+const FAMILY_HREF = '/family';
+
+function buildGroups(t: TFunction<'settings'>): readonly SettingsGroup[] {
+  return [
+    {
+      title: t('index.groups.watch'),
+      data: [
+        {
+          title: t('index.rows.sync.title'),
+          subtitle: t('index.rows.sync.subtitle'),
+          icon: 'sync',
+          href: '/settings/sync',
+        },
+        {
+          title: t('index.rows.notifications.title'),
+          subtitle: isIos ? t('index.rows.notifications.subtitleIos') : t('index.rows.notifications.subtitle'),
+          icon: 'notifications',
+          href: '/settings/notifications',
+        },
+        {
+          title: t('index.rows.notificationApps.title'),
+          subtitle: isIos ? t('index.rows.notificationApps.subtitleIos') : t('index.rows.notificationApps.subtitle'),
+          icon: 'apps',
+          href: '/settings/notification-apps',
+        },
+        {
+          title: t('index.rows.weather.title'),
+          subtitle: t('index.rows.weather.subtitle'),
+          icon: 'partly-sunny',
+          href: '/settings/weather',
+        },
+        {
+          title: t('index.rows.safety.title'),
+          subtitle: t('index.rows.safety.subtitle'),
+          icon: 'shield-checkmark',
+          tint: 'heart',
+          href: '/settings/safety',
+        },
+        {
+          title: t('index.rows.meals.title'),
+          subtitle: t('index.rows.meals.subtitle'),
+          icon: 'restaurant',
+          href: '/settings/meals',
+        },
+        {
+          title: t('index.rows.goals.title'),
+          subtitle: t('index.rows.goals.subtitle'),
+          icon: 'flag',
+          href: '/settings/goals',
+        },
+      ],
+    },
+    {
+      title: t('index.groups.you'),
+      data: [
+        {
+          title: isIos ? t('index.rows.health.titleIos') : t('index.rows.health.title'),
+          subtitle: t('index.rows.health.subtitle'),
+          icon: 'heart',
+          tint: 'heart',
+          href: '/settings/health',
+        },
+        {
+          title: t('index.rows.strava.title'),
+          subtitle: t('index.rows.strava.subtitle'),
+          icon: 'fitness',
+          tint: 'workouts',
+          href: '/settings/strava',
+        },
+        {
+          title: tGear('gear:title'),
+          subtitle: tGear('gear:rowSubtitle'),
+          icon: 'footsteps',
+          tint: 'workouts',
+          href: '/settings/gear',
+        },
+        {
+          title: t('index.rows.importHuawei.title'),
+          subtitle: t('index.rows.importHuawei.subtitle'),
+          icon: 'cloud-download',
+          tint: 'heart',
+          href: '/settings/import-huawei',
+        },
+        ...(isIos
+          ? [
+              {
+                title: t('index.rows.importAppleHealth.title'),
+                subtitle: t('index.rows.importAppleHealth.subtitle'),
+                icon: 'heart' as const,
+                tint: 'heart' as const,
+                href: '/settings/import-apple-health' as const,
+              },
+            ]
+          : []),
+        {
+          title: t('index.rows.importFit.title'),
+          subtitle: t('index.rows.importFit.subtitle'),
+          icon: 'bicycle',
+          tint: 'workouts',
+          href: '/settings/import-fit',
+        },
+        {
+          title: t('index.rows.profile.title'),
+          subtitle: t('index.rows.profile.subtitle'),
+          icon: 'person',
+          href: '/settings/profile',
+        },
+        {
+          title: t('index.rows.cycle.title'),
+          subtitle: t('index.rows.cycle.subtitle'),
+          icon: 'calendar',
+          tint: 'heart',
+          href: '/settings/cycle',
+        },
+        {
+          title: t('index.rows.family.title'),
+          subtitle: familySettingsSubtitle(0, 0),
+          icon: 'people',
+          tint: 'link',
+          href: FAMILY_HREF,
+        },
+      ],
+    },
+    {
+      title: t('index.groups.app'),
+      data: [
+        {
+          title: t('index.rows.guide.title'),
+          subtitle: t('index.rows.guide.subtitle'),
+          icon: 'compass',
+        },
+        {
+          title: t('index.rows.appearance.title'),
+          subtitle: t('index.rows.appearance.subtitle'),
+          icon: 'color-palette',
+          href: '/settings/appearance',
+        },
+      ],
+    },
+    {
+      title: t('index.groups.advanced'),
+      data: [
+        { title: t('index.rows.log.title'), subtitle: t('index.rows.log.subtitle'), icon: 'terminal', href: '/settings/log' },
+        {
+          title: t('index.rows.advanced.title'),
+          subtitle: t('index.rows.advanced.subtitle'),
+          icon: 'flask',
+          tint: 'workouts',
+          href: '/settings/advanced',
+        },
+        { title: t('index.rows.about.title'), icon: 'information-circle', href: '/settings/about' },
+      ],
+    },
+  ];
+}
 
 export default function SettingsScreen() {
-  const colors = useColors();
+  const { t, i18n } = useTranslation('settings');
+  const theme = useTheme();
+  const { colors } = theme;
   const router = useRouter();
   const padding = useContentPadding(true);
+  const guide = useOnboarding();
+  const family = useFamily();
+  const groups = useMemo(() => buildGroups(t), [t, i18n.language]);
+  const familySubtitle = familySettingsSubtitle(family.watching.length, family.watchedBy.length);
 
   return (
     <SectionList
-      sections={GROUPS}
-      keyExtractor={(row) => row.href as string}
+      sections={groups}
+      keyExtractor={(row) => row.title}
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={padding}
       stickySectionHeadersEnabled
       showsVerticalScrollIndicator={false}
-      ListHeaderComponent={<PageHeader title="Settings" />}
+      ListHeaderComponent={<PageHeader title={t('index.title')} />}
       renderSectionHeader={({ section }) => (
         <AppText
           variant="heading"
@@ -130,9 +218,9 @@ export default function SettingsScreen() {
           icon={item.icon}
           tint={item.tint}
           title={item.title}
-          subtitle={item.subtitle}
-          onPress={() => router.push(item.href)}
-          style={groupedRowStyle(colors, index, section.data.length)}
+          subtitle={item.href === FAMILY_HREF ? familySubtitle : item.subtitle}
+          onPress={() => (item.href ? router.push(item.href) : guide.open())}
+          style={groupedRowStyle(theme, index, section.data.length)}
         />
       )}
     />

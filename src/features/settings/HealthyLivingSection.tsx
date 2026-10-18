@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { KeyValue } from '@/components/KeyValue';
+import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatAgo } from '@/format';
 import { useNow } from '@/hooks/useNow';
@@ -15,14 +17,13 @@ import { HuaweiWear } from '@/wear';
 /** Keeps "asked 5 min ago" right while the screen stays open. */
 const AGO_TICK_MS = 30_000;
 
-const NOT_ASKED = 'The watch has not asked for tasks yet. Open Healthy Living on the watch once.';
-
 /**
  * The Healthy Living tasks (Huawei Health's daily goals ring) on the watch. The watch asks for its
  * tasks over the P2P service; the switch decides whether the phone answers, the button pushes
  * today's tasks without waiting for a request.
  */
 export function HealthyLivingSection() {
+  const { t } = useTranslation('settings');
   const { linkState } = useWatch();
   const nowSec = Math.floor(useNow(AGO_TICK_MS) / 1000);
   // Re-read when the screen gains focus, an action ends, or the link changes (the gate and the registration follow the link).
@@ -51,43 +52,42 @@ export function HealthyLivingSection() {
   };
 
   return (
-    <Section title="Healthy Living" icon="leaf" tint="link">
+    <Section title={t('healthyLiving.title')} icon="leaf" tint="link">
       <SwitchRow
         icon="checkmark-done"
-        label="Answer the watch's Healthy Living requests"
-        hint="On by default. Switching on takes effect on the next connect, switching off at once."
+        label={t('healthyLiving.answer')}
         value={status.enabled}
         disabled={busy}
         onValueChange={(enabled) => run(() => HuaweiWear.setHealthyLivingEnabled(enabled))}
       />
-      <KeyValue icon="watch" label="Watch support" value={status.supported ? 'Supported' : 'Not supported'} />
+      <PairGrid>
+        <Pair label={t('healthyLiving.support')}
+          value={status.supported ? t('healthyLiving.supported') : t('healthyLiving.notSupported')} />
+        <Pair
+          label={t('healthyLiving.lastRequest')}
+          value={status.lastRequestAt === null ? t('healthyLiving.notYet') : formatAgo(status.lastRequestAt / 1000, nowSec)}
+        />
+        <Pair label={t('healthyLiving.msgVersion')} value={status.msgVer === null ? null : String(status.msgVer)} />
+        <Pair label={t('healthyLiving.lastReport')} value={status.lastReport} />
+      </PairGrid>
       <AppText variant="caption" muted>
         {status.gate}
       </AppText>
-      <KeyValue
-        icon="time"
-        label="Last request"
-        value={status.lastRequestAt === null ? 'The watch has not asked yet' : `The watch has asked ${formatAgo(status.lastRequestAt / 1000, nowSec)}`}
-      />
-      <KeyValue icon="git-branch" label="Message version" value={status.msgVer === null ? null : String(status.msgVer)} />
-      <KeyValue icon="document-text" label="Last report" value={status.lastReport} />
       <Button
-        label="Send today to the watch"
+        label={t('healthyLiving.send')}
         variant="secondary"
         icon="send"
         disabled={busy || !status.supported}
         onPress={() =>
           run(async () => {
             const sent = await HuaweiWear.pushHealthyLiving();
-            setNote(sent ? 'Sent. Open Healthy Living on the watch to check.' : NOT_ASKED);
+            setNote(sent ? t('healthyLiving.sent') : t('healthyLiving.notAsked'));
           })
         }
       />
       {note ? <Notice>{note}</Notice> : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      <AppText variant="caption" muted>
-        Unverified on the watch: based on Huawei Health&apos;s protocol.
-      </AppText>
+      <Details>{t('healthyLiving.details')}</Details>
     </Section>
   );
 }

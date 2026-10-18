@@ -11,9 +11,10 @@ import {
   type Sim,
 } from "@/model/types";
 import { context2d, createSurface, drawSprite, newSprite, type Ctx2D, type Sprite } from "./canvas";
+import { renderIconSet } from "./iconsets";
 import { layoutDate, layoutTime, layoutWidget, type Layout, type Part } from "./layout";
 import { drawRingProgress, renderHand, renderRing, type HandSprite } from "./shapes";
-import { clockFields, digitList, numericValue, ringFraction, type DataRole } from "./values";
+import { clockFields, digitList, fieldFraction, fieldValue, iconSetIndex, type DataRole } from "./values";
 
 export interface Rect {
   x: number;
@@ -99,6 +100,10 @@ export function elementBounds(el: Element, sim: Sim): Rect {
       return { x: el.x, y: el.y, w: el.w, h: el.h };
     case "ring":
       return { x: el.x, y: el.y, w: Math.round(el.size), h: Math.round(el.size) };
+    case "iconset": {
+      const px = Math.max(8, Math.round(el.size));
+      return { x: el.x, y: el.y, w: px, h: px };
+    }
     case "hand": {
       const hs = handSprite(el);
       const a = handAngle(el.hand, sim.timeMs) * RAD;
@@ -123,16 +128,19 @@ export function elementBounds(el: Element, sim: Sim): Rect {
   }
 }
 
-function drawDigits(ctx: Ctx2D, part: Extract<Part, { kind: "digits" }>, ox: number, oy: number, values: number[]): void {
+/** Draws a digit run: the digits (left edge or centre as the part says), a minus before them when the value is below zero, and the sign glyph after. */
+function drawDigits(ctx: Ctx2D, part: Extract<Part, { kind: "digits" }>, ox: number, oy: number, values: number[], negative: boolean): void {
   const n = values.length;
   const width = n * part.set.cellW;
   const left = part.align === "center" ? ox + part.x - width / 2 : ox + part.x;
+  if (negative && part.minus) drawSprite(ctx, part.set.minus, Math.round(left - part.set.minus.width), oy + part.y);
   for (let i = 0; i < n; i++) {
     drawSprite(ctx, part.set.digits[values[i] ?? 0]!, Math.round(left + i * part.set.cellW), oy + part.y);
   }
+  if (part.sign) drawSprite(ctx, part.set[part.sign], Math.round(left + width), oy + part.y);
 }
 
-function valueOf(role: DataRole, sim: Sim, ampm: boolean): number {
+function clockValue(role: DataRole, sim: Sim, ampm: boolean): number {
   const f = clockFields(sim.timeMs, ampm);
   switch (role) {
     case "hour":
@@ -149,8 +157,8 @@ function valueOf(role: DataRole, sim: Sim, ampm: boolean): number {
       return f.month;
     case "ampm":
       return f.pm ? 1 : 0;
-    default:
-      return numericValue(role, sim);
+    case "field":
+      throw new Error("a data field has no clock value");
   }
 }
 
@@ -159,12 +167,15 @@ function drawLayout(ctx: Ctx2D, layout: Layout, ox: number, oy: number, sim: Sim
     if (part.kind === "icon") drawSprite(ctx, part.sprite, ox + part.x, oy + part.y);
     else if (part.kind === "colon") drawSprite(ctx, part.set.colon, ox + part.x, oy + part.y);
     else if (part.kind === "words") {
-      const index = valueOf(part.role, sim, ampm);
+      const index = clockValue(part.role, sim, ampm);
       const word = part.words[index] ?? part.words[0]!;
       drawSprite(ctx, part.set.words.get(word)!, ox + part.x, oy + part.y);
+    } else if (part.role === "field") {
+      const v = fieldValue(part.field!, sim);
+      drawDigits(ctx, part, ox, oy, digitList(Math.abs(v), 1).slice(-part.count), v < 0);
     } else {
-      const v = valueOf(part.role, sim, ampm);
-      drawDigits(ctx, part, ox, oy, digitList(v, part.zeroPad ? part.count : 1).slice(-part.count));
+      const v = clockValue(part.role, sim, ampm);
+      drawDigits(ctx, part, ox, oy, digitList(v, part.zeroPad ? part.count : 1).slice(-part.count), false);
     }
   }
 }
@@ -198,7 +209,12 @@ export function drawElement(ctx: Ctx2D, el: Element, sim: Sim): void {
     case "ring": {
       const ring = ringSprite(el);
       drawSprite(ctx, ring.track, el.x, el.y);
-      drawRingProgress(ctx, ring, el, el.x, el.y, ringFraction(el.source, sim));
+      drawRingProgress(ctx, ring, el, el.x, el.y, fieldFraction(el.valueType, sim));
+      return;
+    }
+    case "iconset": {
+      const images = renderIconSet(el.valueType, el.size, el.color);
+      drawSprite(ctx, images[iconSetIndex(el.valueType, sim)] ?? images[0]!, el.x, el.y);
       return;
     }
     case "hand": {

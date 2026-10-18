@@ -94,13 +94,7 @@ internal object MorningSummary {
     val nowSec = System.currentTimeMillis() / 1000
     val (segments, hrv) = withContext(Dispatchers.IO) {
       store.read { db ->
-        val segs = ArrayList<SleepSegment>()
-        db.rawQuery(
-          "SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start",
-          arrayOf((nowSec - SLEEP_LOOKBACK_SEC).toString()),
-        ).use { c ->
-          while (c.moveToNext()) segs.add(SleepSegment(c.getLong(0), c.getLong(1), c.getInt(2), if (c.isNull(3)) null else c.getString(3)))
-        }
+        val segs = SleepStore.load(db, nowSec - SLEEP_LOOKBACK_SEC)
         val rows = ArrayList<NightHrvRow>()
         db.rawQuery(
           "SELECT start, end, rmssd FROM hrv_readings WHERE source = 'night' AND rmssd IS NOT NULL AND end >= ? ORDER BY end",

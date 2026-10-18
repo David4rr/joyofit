@@ -13,8 +13,8 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Menstrual
 
 /**
- * The menstrual calendar on the watch plus the log behind it. Two transports, both after Huawei Health 17.0.8.300
- * (`neh` HwMenstrualManager, `neb` HwMenstrualDictionaryManager, see [MenstrualCodec]):
+ * The menstrual calendar on the watch plus the log behind it. Two transports, both modelled on Huawei Health 17.0.8.300
+ * (see [MenstrualCodec]):
  *  - classic service 0x32: switches, capability, update notice, the watch's requests for the modify time, the cycle list
  *    and the daily status frames, all answered from [CycleModel];
  *  - DataSync dictionary 400018 (`hw.unitedevice.physiological` / `hw.watch.health.physiological`, ExpandCapability 173
@@ -106,7 +106,7 @@ internal class MenstrualFeature(
 
   /**
    * Capability, switches, then the update notice that makes the watch ask again; flow and cramps go as dictionary rows when the
-   * watch has ExpandCapability 173 and 174 (`neh.c`: the last 60 days in 10-day windows, at most 10 rows each).
+   * watch has ExpandCapability 173 and 174 (the last 60 days in 10-day windows, at most 10 rows each).
    */
   suspend fun syncToWatch(reason: String) {
     if (!settings.cycleEnabled) return log("Menstrual: sync ($reason) skipped, off in settings")
@@ -233,7 +233,7 @@ internal class MenstrualFeature(
     service.sendDictionary(query.phonePkg, query.watchPkg, MenstrualCodec.DICT_ID.toInt(), rows, what = "menstrual flow")
   }
 
-  /** Proactive push like `neh.c()`: 10-day windows from [fromMs] to [toMs]. */
+  /** Proactive push as Huawei Health does: 10-day windows from [fromMs] to [toMs]. */
   private suspend fun pushDictionary(fromMs: Long, toMs: Long, modifyMs: Long) {
     val zone = ZoneId.systemDefault()
     val days = withContext(Dispatchers.IO) { store.days(Instant.ofEpochMilli(fromMs).atZone(zone).toLocalDate()) }

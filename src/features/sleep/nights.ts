@@ -1,6 +1,6 @@
 import type { SleepScoreRow } from '@/db/queries';
-import { SESSION_GAP_SEC, withoutStrayUnstaged } from '@/features/today/stats';
-import type { SleepSegment, SleepStage } from '@/wear';
+import { SESSION_GAP_SEC, withoutBlips, withoutStrayUnstaged, type SleepSpan } from '@/features/today/stats';
+import type { SleepStage } from '@/wear';
 
 /** A decoded stage, or `asleep` for a segment the watch stored without one. */
 export type NightStage = SleepStage | 'asleep';
@@ -11,6 +11,11 @@ export interface StagePeriod {
   start: number;
   end: number;
   stage: NightStage;
+}
+
+/** Whether the watch gave any stage for this night; false when everything is `asleep` (the watch only said when you slept). */
+export function nightHasStages(night: Pick<Night, 'seconds' | 'asleepSeconds'>): boolean {
+  return night.asleepSeconds + night.seconds.awake > night.seconds.asleep;
 }
 
 export interface Night {
@@ -56,27 +61,31 @@ function localDay(sec: number): string {
 /**
  * Turns stored segments into sleep sessions, newest first. Overlaps are cut so every second belongs to
  * one stage (an earlier-starting segment keeps its time); sessions split where the gap exceeds
- * {@link SESSION_GAP_SEC}, the same rule the Today card and the watch's morning report use.
+ * {@link SESSION_GAP_SEC}, the same rule the Today card and the watch's morning report use, and where a segment
+ * is marked `breakBefore` (a workout or a long awake stretch in between, see `cleanUnstagedSleep`).
  */
-export function buildNights(segments: readonly SleepSegment[], scores: readonly SleepScoreRow[]): Night[] {
-  const sorted = withoutStrayUnstaged(segments).sort((a, b) => a.start - b.start || a.end - b.end);
-  const periods: StagePeriod[] = [];
+export function buildNights(segments: readonly SleepSpan[], scores: readonly SleepScoreRow[]): Night[] {
+  const sorted = withoutBlips(withoutStrayUnstaged(segments));
+  const periods: (StagePeriod & { breakBefore?: boolean })[] = [];
   let cursor = -Infinity;
   for (const seg of sorted) {
     const start = Math.max(seg.start, cursor);
     if (start >= seg.end) continue;
     const stage: NightStage = seg.stage ?? 'asleep';
     const last = periods[periods.length - 1];
-    if (last && last.stage === stage && last.end >= start) last.end = seg.end;
-    else periods.push({ start, end: seg.end, stage });
+    if (last && last.stage === stage && last.end >= start && !seg.breakBefore) last.end = seg.end;
+    else periods.push(seg.breakBefore ? { start, end: seg.end, stage, breakBefore: true } : { start, end: seg.end, stage });
     cursor = seg.end;
   }
 
   const sessions: StagePeriod[][] = [];
   for (const period of periods) {
     const current = sessions[sessions.length - 1];
-    if (current && period.start - current[current.length - 1].end <= SESSION_GAP_SEC) current.push(period);
-    else sessions.push([period]);
+    if (current && !period.breakBefore && period.start - current[current.length - 1].end <= SESSION_GAP_SEC) {
+      current.push(period);
+    } else {
+      sessions.push([period]);
+    }
   }
 
   return sessions

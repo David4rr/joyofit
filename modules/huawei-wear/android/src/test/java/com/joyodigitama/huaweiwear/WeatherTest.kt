@@ -154,8 +154,10 @@ class WeatherTest {
     assertEquals(78, report.humidity)
     assertEquals(90, report.windDirection)
     assertEquals(5.2, report.uvIndex!!, 0.001)
-    // The hour with a null temperature is dropped; a null probability stays null.
+    // The hour with a null temperature is dropped and counted; a null probability stays null.
     assertEquals(2, report.hourly.size)
+    assertEquals(1, report.skippedHours)
+    assertEquals(0, report.skippedDays)
     assertNull(report.hourly[1].precipProbability)
     assertEquals(2, report.daily.size)
     assertEquals(0, report.daily[1].sunrise)
@@ -337,5 +339,57 @@ class WeatherTest {
     assertEquals(Weather.ErrorCode.NETWORK_ERROR, WeatherErrorCodes.watchError(WeatherErrorCodes.NETWORK))
     assertEquals(Weather.ErrorCode.WEATHER_DISABLED, WeatherErrorCodes.watchError(WeatherErrorCodes.DISABLED))
     assertNull(WeatherErrorCodes.watchError(ErrorCodes.TIMEOUT))
+  }
+
+  @Test
+  fun forecastShapeReadsBackWhatTheSupportFlagsKept() {
+    val full = WeatherPackets.forecastEntries(report(), now, zone)
+    val everything = WeatherPackets.forecast(params(), allSupported(), full)
+    assertEquals("24 hours (tags 03 04 05 06 07), 8 days (tags 12 13 14 15 16 17 1e)", WeatherPackets.forecastShape(everything, full))
+
+    // What a watch without the extended and sun/moon commands is left with: no icon, no sun times, no moon phase.
+    val plain = Weather.Settings().apply {
+      weatherSupported = true
+      temperatureSupported = true
+      currentTemperatureSupported = true
+    }
+    assertEquals("24 hours (tags 03 05), 8 days (tags 12 14 15)", WeatherPackets.forecastShape(WeatherPackets.forecast(params(), plain, full), full))
+
+    val nothing = WeatherPackets.forecast(params(), Weather.Settings(), full)
+    assertEquals("24 hours (tags 03), 8 days (tags 12)", WeatherPackets.forecastShape(nothing, full))
+
+    val empty = ForecastEntries(emptyList(), emptyList())
+    assertEquals("0 hours (tags none), 0 days (tags none)", WeatherPackets.forecastShape(WeatherPackets.forecast(params(), allSupported(), empty), empty))
+  }
+
+  @Test
+  fun theWatchGetsExactly24HoursAnd8DaysWhenTheDataHasThem() {
+    assertTrue(WeatherPackets.countsAreComplete(WeatherPackets.forecastEntries(report(), now, zone)))
+    // More data than the watch takes is cut to it.
+    val long = report().let { it.copy(hourly = it.hourly + it.hourly.map { h -> h.copy(timestamp = h.timestamp + 48 * 3600) }) }
+    assertEquals(24, WeatherPackets.forecastEntries(long, now, zone).hours.size)
+    // Fewer days, or hours running out, are visible instead of passing for a full forecast.
+    assertFalse(WeatherPackets.countsAreComplete(WeatherPackets.forecastEntries(report().copy(daily = report().daily.take(7)), now, zone)))
+    val lateInTheData = WeatherPackets.forecastEntries(report(), day(1) + 20 * 3600, zone)
+    // Index 44 is "now" (20:00 on day 1); only 45, 46 and 47 are still ahead.
+    assertEquals(3, lateInTheData.hours.size)
+    assertFalse(WeatherPackets.countsAreComplete(lateInTheData))
+  }
+
+  @Test
+  fun gatesLineNamesEveryCommandAndCapabilityBit() {
+    val line = WeatherGates.describe({ service, command -> service == 0x0f && command in setOf(0x01, 0x08) }, { it == 0xc0 })
+    assertEquals(
+      "current(0f/01)=yes unit(0f/05)=no extended(0f/06)=no forecast(0f/08)=yes sunMoon(0f/0a)=no errorSimple(0f/07)=no " +
+        "errorExtended(0f/0c)=no gps(18/06)=no uvIndex(cap 0x2f)=no extendedHourly(cap 0xc0)=yes",
+      line,
+    )
+  }
+
+  @Test
+  fun forecastOutcomeIsTheJsShape() {
+    val outcome = ForecastOutcome(ForecastState.REJECTED, 24, 8, 0x000186A4, now)
+    assertEquals(mapOf("state" to "rejected", "hours" to 24, "days" to 8, "replyCode" to 100004, "at" to now), outcome.toJs())
+    assertEquals(setOf("sent", "unsupported", "unacknowledged", "rejected"), ForecastState.values().map { it.wire }.toSet())
   }
 }

@@ -1,208 +1,85 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { KeyValue } from '@/components/KeyValue';
+import { Details } from '@/components/Details';
 import { NavRow } from '@/components/NavRow';
 import { Divider, Screen, Section } from '@/components/Screen';
-import { EmptyState, LoadingState, Notice } from '@/components/States';
-import { BondedRow } from '@/features/device/BondedRow';
+import { isIos } from '@/components/IosUnavailable';
+import { AvailableWatchesSection } from '@/features/device/AvailableWatchesSection';
+import { BindConfirmDialog } from '@/features/device/BindConfirmDialog';
 import { FindWatchSection } from '@/features/device/FindWatchSection';
-import { SUPPORT_LABEL, supportRank } from '@/features/device/modelSupport';
+import { GuideLink } from '@/features/device/GuideLink';
+import { supportLabel } from '@/features/device/modelSupport';
 import { SupportReportSection } from '@/features/device/SupportReportSection';
 import { WatchStatusCard } from '@/features/device/WatchStatusCard';
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
 import { useBondedDevices } from '@/features/device/useBondedDevices';
 import { useWatch } from '@/state/WatchProvider';
-import { fonts, spacing, useColors } from '@/theme';
-
-const CONNECT_STEPS = [
-  'Unbind the watch from Huawei Health first, or the watch will refuse this app.',
-  'Pair it in Android Bluetooth settings, or tap "Scan nearby devices" below to find it.',
-  'On the first connect, keep the watch awake and accept the prompt on its screen.',
-];
+import { fmtPercent } from '@/i18n';
+import { spacing, useTheme } from '@/theme';
 
 /** The three things that have to be true before the first connect, in the order they happen. */
 function ConnectSteps() {
-  const colors = useColors();
+  const { colors, fonts } = useTheme();
+  const { t } = useTranslation('watch');
+  const steps = isIos
+    ? [t('connectSteps.ios.s1'), t('connectSteps.ios.s2'), t('connectSteps.ios.s3')]
+    : [t('connectSteps.android.s1'), t('connectSteps.android.s2'), t('connectSteps.android.s3')];
   return (
-    <Section title="Before you connect" icon="list">
-      {CONNECT_STEPS.map((step, index) => (
-        <View key={step} style={styles.step}>
-          <View style={[styles.stepNumber, { backgroundColor: colors.muted }]}>
-            <AppText variant="label" style={styles.stepDigit}>
-              {index + 1}
+    <Section title={t('connectSteps.title')} icon="list">
+      <Details title={t('connectSteps.details')}>
+        {steps.map((step, index) => (
+          <View key={step} style={styles.step}>
+            <View style={[styles.stepNumber, { backgroundColor: colors.muted }]}>
+              <AppText variant="label" style={[styles.stepDigit, { fontFamily: fonts.bold }]}>
+                {index + 1}
+              </AppText>
+            </View>
+            <AppText variant="caption" style={styles.stepText}>
+              {step}
             </AppText>
           </View>
-          <AppText variant="caption" style={styles.stepText}>
-            {step}
-          </AppText>
-        </View>
-      ))}
+        ))}
+      </Details>
+      <GuideLink />
     </Section>
   );
 }
 
-/** Paired watches shown before the list scrolls inside its card. */
-const VISIBLE_BONDED = 3;
-
 export default function WatchScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['watch', 'routes']);
   const watch = useWatch();
   const permission = useBluetoothPermission();
   const granted = permission.status === 'granted';
   const bonded = useBondedDevices(granted);
   const { device } = watch;
-  // Measured row heights, so the list shows exactly VISIBLE_BONDED rows before it scrolls.
-  const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
-
   const linked = watch.linkState === 'connected' || watch.linkState === 'syncing';
-
-  // The watch in use first (including active BLE device even before scan), then the ones this app can talk to best.
-  const devices = useMemo(() => {
-    const list = [...bonded.devices];
-    if (watch.activeAddress && !list.some((d) => d.address === watch.activeAddress)) {
-      list.unshift({
-        address: watch.activeAddress,
-        name: watch.device?.name || watch.activeAddress,
-        model: watch.device?.model ?? null,
-        support: watch.device?.support ?? 'tested',
-        reason: null,
-      });
-    }
-    return list.sort(
-      (a, b) =>
-        Number(b.address === watch.activeAddress) - Number(a.address === watch.activeAddress) ||
-        supportRank(a.support) - supportRank(b.support),
-    );
-  }, [bonded.devices, watch.activeAddress, watch.device]);
-
-  const showEmpty = devices.length === 0 && !bonded.loading && !bonded.error;
-  const listMaxHeight = useMemo(() => {
-    if (devices.length <= VISIBLE_BONDED) return undefined;
-    const heights = devices.slice(0, VISIBLE_BONDED).map((d) => rowHeights[d.address]);
-    return heights.every((h) => h !== undefined) ? heights.reduce((sum, h) => sum + h, 0) : undefined;
-  }, [devices, rowHeights]);
-
-  const pairedWatches = (
-    <Section
-      title={bonded.scanning ? 'Searching for devices...' : 'Available watches'}
-      icon="bluetooth"
-      trailing={
-        bonded.scanning ? (
-          <AppText variant="caption" muted>
-            Scanning...
-          </AppText>
-        ) : devices.length > 0 ? (
-          <AppText variant="caption" muted>
-            {devices.length}
-          </AppText>
-        ) : null
-      }>
-      {permission.status === 'checking' ? (
-        <LoadingState label="Checking Bluetooth permission" />
-      ) : !granted ? (
-        <>
-          <Notice tone="danger">Bluetooth permission is needed to list paired watches and open the connection.</Notice>
-          {permission.status === 'blocked' ? (
-            <Button label="Open app settings" icon="settings" onPress={() => void Linking.openSettings()} />
-          ) : (
-            <Button label="Allow Bluetooth" variant="primary" icon="bluetooth" onPress={() => void permission.request()} />
-          )}
-        </>
-      ) : (
-        <>
-          {bonded.error ? <Notice tone="danger">Could not read paired devices: {bonded.error}</Notice> : null}
-          {showEmpty ? (
-            <EmptyState
-              icon="bluetooth"
-              title={bonded.scanning ? 'Scanning for devices...' : 'No devices found'}
-              description={
-                bonded.scanning
-                  ? 'Looking for nearby Huawei and Honor watches or bands. Make sure your device is ready to connect.'
-                  : 'Pair the watch in Android Bluetooth settings, or tap Scan nearby devices.'
-              }
-              action={{
-                label: bonded.scanning ? 'Scanning...' : 'Scan nearby devices',
-                icon: 'refresh',
-                onPress: () => {
-                  void bonded.reload();
-                  void bonded.startScan();
-                },
-              }}
-            />
-          ) : (
-            <>
-              <ScrollView
-                style={listMaxHeight === undefined ? undefined : { maxHeight: listMaxHeight }}
-                scrollEnabled={listMaxHeight !== undefined}
-                nestedScrollEnabled
-                showsVerticalScrollIndicator>
-                {devices.map((d, index) => (
-                  <View
-                    key={d.address}
-                    style={[styles.bonded, index > 0 && styles.bondedNext]}
-                    onLayout={(e) => {
-                      const height = e.nativeEvent.layout.height;
-                      setRowHeights((prev) => (prev[d.address] === height ? prev : { ...prev, [d.address]: height }));
-                    }}>
-                    {index > 0 ? <Divider /> : null}
-                    <BondedRow
-                      device={d}
-                      linkState={watch.linkState}
-                      activeAddress={watch.activeAddress}
-                      onConnect={(address) => {
-                        void bonded.stopScan();
-                        void watch.connect(address);
-                      }}
-                      onDisconnect={() => void watch.disconnect()}
-                      onForget={(address) => {
-                        void watch.forget(address).then(() => void bonded.reload());
-                      }}
-                    />
-                  </View>
-                ))}
-              </ScrollView>
-              <Button
-                label={bonded.scanning ? 'Stop scanning' : linked ? 'Scan for other devices' : 'Scan nearby devices'}
-                icon={bonded.scanning ? 'close' : 'refresh'}
-                loading={bonded.loading}
-                onPress={() => {
-                  if (bonded.scanning) {
-                    void bonded.stopScan();
-                  } else {
-                    void bonded.reload();
-                    void bonded.startScan();
-                  }
-                }}
-              />
-            </>
-          )}
-        </>
-      )}
-    </Section>
-  );
+  const pairedWatches = <AvailableWatchesSection permission={permission} bonded={bonded} />;
 
   const watchDetails = device ? (
-    <Section title="Watch details" icon="watch">
-      <KeyValue icon="pricetag" label="Name" value={device.name} />
-      <KeyValue icon="watch" label="Model" value={device.model ?? device.productModel} />
-      <KeyValue icon="flask" label="JoyoFit support" value={SUPPORT_LABEL[device.support]} />
-      {device.model ? <KeyValue icon="hardware-chip" label="Product code" value={device.productModel} /> : null}
-      <KeyValue icon="code-slash" label="Software" value={device.softwareVersion} />
-      <KeyValue icon="hardware-chip" label="Hardware" value={device.hardwareVersion} />
-      <KeyValue icon="barcode" label="Serial" value={device.serialNumber} />
-      <KeyValue icon="key" label="Auth mode" value={device.authMode} />
-      <KeyValue icon="battery-half" label="Battery" value={watch.battery === null ? null : `${watch.battery}%`} />
+    <Section title={t('watch:details.title')} icon="watch">
+      <View style={styles.grid}>
+        <Pair label={t('watch:details.name')} value={device.name} />
+        <Pair label={t('watch:details.model')} value={device.model ?? device.productModel} />
+        <Pair label={t('watch:details.support')} value={supportLabel(device.support)} />
+        {device.model ? <Pair label={t('watch:details.productCode')} value={device.productModel} /> : null}
+        <Pair label={t('watch:details.software')} value={device.softwareVersion} />
+        <Pair label={t('watch:details.hardware')} value={device.hardwareVersion} />
+        <Pair label={t('watch:details.serial')} value={device.serialNumber} />
+        <Pair label={t('watch:details.authMode')} value={device.authMode} />
+        <Pair label={t('watch:details.battery')} value={watch.battery === null ? null : fmtPercent(watch.battery)} />
+      </View>
       {watch.linkState !== 'connected' ? (
         <AppText variant="caption" muted>
-          {watch.linkState === 'syncing' ? 'Available when the sync finishes.' : 'Connect your watch first.'}
+          {watch.linkState === 'syncing' ? t('watch:details.afterSync') : t('watch:device.connectFirst')}
         </AppText>
       ) : null}
       <Button
-        label="Refresh battery"
+        label={t('watch:details.refreshBattery')}
         icon="refresh"
         disabled={watch.linkState !== 'connected'}
         onPress={() => void watch.refreshBattery()}
@@ -211,37 +88,45 @@ export default function WatchScreen() {
   ) : null;
 
   const onTheWatch = (
-    <Section title="On the watch" icon="watch">
+    <Section title={t('watch:hub.title')} icon="watch">
       <NavRow
         icon="color-palette"
-        title="Watch faces"
-        subtitle="List, switch, delete and install faces"
+        title={t('watch:hub.faces')}
+        subtitle={t('watch:hub.facesSub')}
         style={styles.navRow}
         onPress={() => router.push('/watch/faces')}
       />
       <Divider />
       <NavRow
         icon="images"
-        title="Photo face"
-        subtitle="Put your own photos on the photo face"
+        title={t('watch:hub.photo')}
+        subtitle={t('watch:hub.photoSub')}
         style={styles.navRow}
         onPress={() => router.push('/watch/photos')}
       />
       <Divider />
       <NavRow
         icon="alarm"
-        title="Alarms"
-        subtitle="Read and change the watch alarms"
+        title={t('watch:hub.alarms')}
+        subtitle={t('watch:hub.alarmsSub')}
         style={styles.navRow}
         onPress={() => router.push('/watch/alarms')}
+      />
+      <Divider />
+      <NavRow
+        icon="trail-sign"
+        title={t('routes:hub.title')}
+        subtitle={t('routes:hub.subtitle')}
+        style={styles.navRow}
+        onPress={() => router.push('/routes')}
       />
     </Section>
   );
 
   return (
     <Screen
-      title="Watch"
-      refresh={{ refreshing: bonded.loading, onRefresh: () => void bonded.reload(), enabled: granted }}>
+      title={t('watch:title')}
+      refresh={{ refreshing: bonded.loading, onRefresh: () => void bonded.refresh(), enabled: granted }}>
       <WatchStatusCard />
       {/* Connected, the list is only needed to disconnect or switch, so the watch's own pages come first. */}
       {linked ? (
@@ -263,16 +148,30 @@ export default function WatchScreen() {
         </>
       )}
       {device ? <ConnectSteps /> : null}
+      <BindConfirmDialog />
     </Screen>
   );
 }
 
+function Pair({ label, value }: { label: string; value: string | null }) {
+  return (
+    <View style={styles.pair}>
+      <AppText variant="caption" muted>
+        {label}
+      </AppText>
+      <AppText variant="label" selectable numberOfLines={1}>
+        {value ?? '\u2014'}
+      </AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  bonded: { gap: spacing.md },
-  bondedNext: { paddingTop: spacing.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.sm, columnGap: spacing.md },
+  pair: { width: '47%' },
   navRow: { paddingHorizontal: 0 },
   step: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   stepNumber: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  stepDigit: { fontFamily: fonts.bold, fontVariant: ['tabular-nums'] },
+  stepDigit: { fontVariant: ['tabular-nums'] },
   stepText: { flex: 1, paddingTop: 6 },
 });

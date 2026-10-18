@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -19,7 +20,7 @@ import {
   newBlock,
   newIntervalGroup,
   newStep,
-  PRESETS,
+  presets,
   summarize,
   type BlockDraft,
   type CourseDraft,
@@ -29,6 +30,7 @@ import {
 import { useCourseDraft } from '@/features/courses/useCourseDraft';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage } from '@/format';
+import { fmtInt } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing } from '@/theme';
 import { HuaweiWear, type RunningCoursePushResult } from '@/wear';
@@ -50,6 +52,7 @@ function moved<T>(list: T[], index: number, direction: -1 | 1): T[] {
  */
 export function CourseEditorScreen() {
   const router = useRouter();
+  const { t, i18n } = useTranslation(['watch', 'common']);
   const { linkState } = useWatch();
   const connected = linkState === 'connected' || linkState === 'syncing';
   const { draft, setDraft, loaded, saveError } = useCourseDraft();
@@ -59,7 +62,7 @@ export function CourseEditorScreen() {
 
   useNativeRefresh(useCallback(() => setCourses(HuaweiWear.getCourses()), []));
 
-  const built = useMemo(() => buildCourse(draft), [draft]);
+  const built = useMemo(() => buildCourse(draft), [draft, i18n.language]);
   const summary = useMemo(() => summarize(draft), [draft]);
 
   /** Every edit goes through here so a result for an older version of the course is never left on screen. */
@@ -73,14 +76,14 @@ export function CourseEditorScreen() {
 
   const confirmReplace = (title: string, apply: () => void) => {
     if (draft.blocks.length === 0) return apply();
-    Alert.alert(title, 'This replaces the steps you have now.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Replace', style: 'destructive', onPress: apply },
+    Alert.alert(title, t('watch:courses.replaceMessage'), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('watch:courses.replace'), style: 'destructive', onPress: apply },
     ]);
   };
 
   const applyPreset = (preset: Preset) =>
-    confirmReplace(`Use "${preset.name}"?`, () =>
+    confirmReplace(t('watch:courses.usePreset', { name: preset.name }), () =>
       edit((d) => ({ ...preset.build(), name: d.name.trim() || preset.name })),
     );
 
@@ -103,60 +106,60 @@ export function CourseEditorScreen() {
     }
   };
 
-  if (!loaded) return <LoadingState label="Opening your course" />;
+  if (!loaded) return <LoadingState label={t('watch:courses.opening')} />;
 
   const touched = draft.name.trim() !== '' || draft.blocks.length > 0;
   const total = summary.total;
-  const gate = (set: boolean) => `Huawei's gate: ${set ? 'set' : 'not set'}`;
+  const gate = (set: boolean) => t(set ? 'watch:courses.gateSet' : 'watch:courses.gateNotSet');
 
   return (
     <>
-      <Notice>Unverified: the course format comes from static analysis of Huawei Health. The watch may refuse it.</Notice>
-      {!courses.enabled ? <Notice tone="danger">Running courses are switched off. Turn them on in Settings, Advanced.</Notice> : null}
-      {saveError ? <Notice tone="danger">{`The draft could not be saved on this phone: ${saveError}`}</Notice> : null}
+      <Notice>{t('watch:courses.unverified')}</Notice>
+      {!courses.enabled ? <Notice tone="danger">{t('watch:courses.disabled')}</Notice> : null}
+      {saveError ? <Notice tone="danger">{t('watch:courses.saveError', { error: saveError })}</Notice> : null}
 
-      <Section title="Course" icon="flag" tint="workouts">
+      <Section title={t('watch:courses.title')} icon="flag" tint="workouts">
         <Field
-          label="Name"
+          label={t('watch:courses.name')}
           value={draft.name}
           onChangeText={(name) => edit((d) => ({ ...d, name }))}
           maxLength={MAX_NAME_BYTES}
           icon="pricetag"
-          hint="Shown on the watch."
+          hint={t('watch:courses.nameHint')}
         />
         <AppText variant="label" muted>
-          Start from a preset
+          {t('watch:courses.startPreset')}
         </AppText>
         <View style={styles.chips}>
-          {PRESETS.map((preset) => (
-            <Chip key={preset.name} label={preset.name} selected={false} onPress={() => applyPreset(preset)} />
+          {presets().map((preset) => (
+            <Chip key={preset.id} label={preset.name} selected={false} onPress={() => applyPreset(preset)} />
           ))}
         </View>
         {summary.total ? (
           <>
             <Divider />
-            <KeyValue icon="layers" label="Steps, repeats counted" value={String(summary.steps)} />
+            <KeyValue icon="layers" label={t('watch:courses.stepsTotal')} value={String(summary.steps)} />
             <KeyValue
               icon="time"
-              label="Total"
+              label={t('watch:courses.total')}
               value={
                 total?.kind === 'time'
                   ? formatSeconds(total.value)
                   : total?.kind === 'distance'
                     ? formatMetres(total.value)
                     : total?.kind === 'mixed'
-                      ? 'Mixed targets'
-                      : 'No targets'
+                      ? t('watch:courses.mixed')
+                      : t('watch:courses.noTargets')
               }
             />
           </>
         ) : null}
       </Section>
 
-      <Section title="Steps" icon="list" tint="workouts">
+      <Section title={t('watch:courses.steps')} icon="list" tint="workouts">
         {draft.blocks.length === 0 ? (
           <AppText variant="caption" muted>
-            No steps yet. Add one, add an interval group, or start from a preset.
+            {t('watch:courses.noSteps')}
           </AppText>
         ) : null}
         {draft.blocks.map((block, index) => (
@@ -195,38 +198,38 @@ export function CourseEditorScreen() {
         ))}
         <Divider />
         <Button
-          label="Add step"
+          label={t('watch:courses.addStep')}
           icon="add"
           variant="primary"
           onPress={() => edit((d) => ({ ...d, blocks: [...d.blocks, newBlock([newStep()])] }))}
         />
         <Button
-          label="Add interval group"
+          label={t('watch:courses.addGroup')}
           icon="repeat"
           onPress={() => edit((d) => ({ ...d, blocks: [...d.blocks, newIntervalGroup()] }))}
         />
         <AppText variant="caption" muted>
-          An interval group is run 400 m at 5:00 to 5:30 per km, then rest 60 s, six times. Change anything.
+          {t('watch:courses.groupHint')}
         </AppText>
         {draft.blocks.length > 0 ? (
           <Button
-            label="Clear all steps"
+            label={t('watch:courses.clear')}
             icon="trash"
             variant="destructive"
-            onPress={() => confirmReplace('Clear all steps?', () => edit((d) => ({ ...d, blocks: [] })))}
+            onPress={() => confirmReplace(t('watch:courses.clearTitle'), () => edit((d) => ({ ...d, blocks: [] })))}
           />
         ) : null}
       </Section>
 
-      <Section title="Send to watch" icon="send" tint="link">
-        <KeyValue label="ExpandCapability 41" value={gate(courses.gate41)} />
-        <KeyValue label="ExpandCapability 169" value={gate(courses.gate169)} />
+      <Section title={t('watch:courses.sendTitle')} icon="send" tint="link">
+        <KeyValue label="ExpandCapability 41" value={gate(courses.gate41)} /> {/* i18n-ok: protocol identifier */}
+        <KeyValue label="ExpandCapability 169" value={gate(courses.gate169)} /> {/* i18n-ok: protocol identifier */}
         <AppText variant="caption" muted>
-          Huawei Health needs 41 or 169 before it pushes a course. The watch decides whether it accepts one.
+          {t('watch:courses.gateHint')}
         </AppText>
         {!connected ? (
-          <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
-            Connect your watch to send a course.
+          <Notice icon="bluetooth" action={{ label: t('watch:openWatch'), onPress: () => router.navigate('/watch') }}>
+            {t('watch:courses.connect')}
           </Notice>
         ) : null}
         {built.error !== null ? (
@@ -234,12 +237,12 @@ export function CourseEditorScreen() {
             <Notice tone="danger">{built.error}</Notice>
           ) : (
             <AppText variant="caption" muted>
-              Add steps or pick a preset first.
+              {t('watch:courses.addFirst')}
             </AppText>
           )
         ) : null}
         <Button
-          label="Send to watch"
+          label={t('watch:courses.send')}
           icon="send"
           variant="primary"
           loading={sending}
@@ -250,15 +253,15 @@ export function CourseEditorScreen() {
           <View style={styles.result}>
             <Notice icon="checkmark-circle">
               {outcome.result.uploadStatus === null
-                ? 'Sent. The watch gave no upload status.'
-                : `Sent. The watch said ${outcome.result.uploadStatus}.`}
+                ? t('watch:courses.sentNoStatus')
+                : t('watch:courses.sentStatus', { status: outcome.result.uploadStatus })}
             </Notice>
-            <KeyValue label="Upload status" value={outcome.result.uploadStatus === null ? null : String(outcome.result.uploadStatus)} />
-            <KeyValue label="Answered" value={outcome.result.answered ? 'Yes' : 'No'} />
-            <KeyValue label="Answer" value={outcome.result.answerHex} />
-            <KeyValue label="File" value={`${outcome.result.fileName}, ${outcome.result.bytes} bytes`} />
+            <KeyValue label={t('watch:courses.uploadStatus')} value={outcome.result.uploadStatus === null ? null : String(outcome.result.uploadStatus)} />
+            <KeyValue label={t('watch:courses.answered')} value={outcome.result.answered ? t('watch:courses.yes') : t('watch:courses.no')} />
+            <KeyValue label={t('watch:courses.answer')} value={outcome.result.answerHex} />
+            <KeyValue label={t('watch:courses.file')} value={t('watch:courses.fileValue', { name: outcome.result.fileName, bytes: fmtInt(outcome.result.bytes) })} />
             <AppText variant="caption" muted>
-              Huawei Health reads an upload status of 1 as accepted. Check the course on the watch.
+              {t('watch:courses.statusHint')}
             </AppText>
           </View>
         ) : null}

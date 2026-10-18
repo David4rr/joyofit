@@ -28,9 +28,9 @@ internal class FaceApplyResult(
 
 /**
  * Editable watch-face configuration (`hw.app.watchface.custom` <-> `hw.watch.watchface.custom`, DataSync events 800100008 and
- * 800100009). Huawei Health (`CustomConfigWatchFaceService`) sends the query `{01 marketId}`; the watch answers, and also pushes,
+ * 800100009). Huawei Health sends the query `{01 marketId}`; the watch answers, and also pushes,
  * an 800100009 report with the face's current selections. Applying is the same 800100009 sent by the phone. The marketId is the face's id
- * from the watch's face list (`WatchFaceWearService.handleWatchFaceTransferSuccess` compares it with the 27/05 report's face id).
+ * from the watch's face list (Huawei Health compares it with the 27/05 report's face id).
  *
  * The watch reports only the selected index of each option, not how many options exist: Huawei Health's own editor is an H5 page
  * of the face that knows its option lists (`WatchFaceCallback.queryCustomConfig` just relays the watch's report to that page).

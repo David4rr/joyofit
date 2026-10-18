@@ -10,7 +10,7 @@ internal data class LoggedPeriod(val start: LocalDate, val end: LocalDate?)
 internal data class LoggedDay(val day: LocalDate, val flow: Int, val cramps: Int, val modifiedSec: Long)
 
 /**
- * One cycle as the watch's calendar wants it (Huawei Health `nej`): period start and end, the estimated
+ * One cycle as the watch's calendar wants it: period start and end, the estimated
  * fertile window and ovulation day, the length to the next period start and whether the period was logged.
  */
 internal data class CycleEntry(
@@ -23,7 +23,7 @@ internal data class CycleEntry(
   val logged: Boolean,
 )
 
-/** Day statuses Huawei Health stores per day (`menstrual_status`, read in `nec`/`neh`/`nej`). */
+/** Day statuses Huawei Health stores per day (`menstrual_status`). */
 internal object CycleStatus {
   const val PERIOD_START = 101
   const val PERIOD_END = 102
@@ -120,7 +120,7 @@ internal class CycleModel(periods: List<LoggedPeriod>, val today: LocalDate) {
       lengthDays = currentLength,
       logged = true,
     )
-    // The list holds the current cycle plus `future` predicted ones (Huawei Health nec.b stops at future + 1 cycles).
+    // The list holds the current cycle plus `future` predicted ones (Huawei Health stops at future + 1 cycles).
     for (index in 0 until futureCount) {
       val start = predicted[index]
       val ovulation = ovulationFor(predicted[index + 1])

@@ -48,9 +48,24 @@ class RunningCourseRecord : Record {
   }
 }
 
+/** `WatchRoute` in `HuaweiWearRoutes.types.ts`: `points` is flat, `lat, lon, altitude` per point. */
+class WatchRouteRecord : Record {
+  @Field var name: String = ""
+  @Field var points: List<Double> = emptyList()
+  @Field var hasAltitude: Boolean = false
+  @Field var durationSec: Int = 0
+
+  internal fun toTrack(): RouteTrack {
+    if (points.size % 3 != 0) throw WearException(ErrorCodes.INVALID_ARGUMENT, "A route is a list of latitude, longitude, altitude triples")
+    val fixes = List(points.size / 3) { RouteFix(points[it * 3], points[it * 3 + 1], if (hasAltitude) points[it * 3 + 2] else 0.0) }
+    // Huawei Health's track id is 36 characters (a UUID); the watch lists the route by its name.
+    return RouteTrack(java.util.UUID.randomUUID().toString(), name.trim(), fixes, hasAltitude, durationSec.coerceAtLeast(0).toLong())
+  }
+}
+
 /**
  * The P2P (service 0x34) part of the `HuaweiWear` module: Healthy Living (`getHealthyLiving` ... `pushHealthyLiving`) and
- * the experimental running courses (`getCourses`, `setCoursesEnabled`, `pushRunningCourse`). The health metrics need no
+ * the experimental running courses (`getCourses`, `setCoursesEnabled`, `pushRunningCourse`) and the routes (`getRoutes`, `pushRoute`). The health metrics need no
  * function: the sync stores them in `health_metrics` / `health_metric_status`, which JS reads. Call once from the module definition.
  */
 internal fun ModuleDefinitionBuilder.p2pApi(runtime: () -> WearRuntime) {
@@ -76,5 +91,13 @@ internal fun ModuleDefinitionBuilder.p2pApi(runtime: () -> WearRuntime) {
 
   AsyncFunction("pushRunningCourse") Coroutine { course: RunningCourseRecord ->
     runtime().p2p.pushCourse(course.toCourse())
+  }
+
+  Function("getRoutes") {
+    runtime().p2p.routesStatus()
+  }
+
+  AsyncFunction("pushRoute") Coroutine { route: WatchRouteRecord ->
+    runtime().p2p.pushRoute(route.toTrack())
   }
 }

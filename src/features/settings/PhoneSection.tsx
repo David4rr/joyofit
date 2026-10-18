@@ -1,11 +1,15 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, PermissionsAndroid, type Permission } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { KeyValue } from '@/components/KeyValue';
-import { Divider, Section } from '@/components/Screen';
+import { ButtonRow } from '@/components/ButtonRow';
+import { Details } from '@/components/Details';
+import { isIos } from '@/components/IosUnavailable';
+import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage } from '@/format';
 import { HuaweiWear } from '@/wear';
@@ -25,11 +29,38 @@ async function ask(required: Permission[], optional: Permission[]) {
 
 /** Find my phone, incoming calls on the watch and call control from the watch. */
 export function PhoneSection() {
+  return isIos ? <PhoneSectionIos /> : <PhoneSectionAndroid />;
+}
+
+/** What iOS does not allow, said once per feature instead of three switches that cannot work. */
+function PhoneSectionIos() {
+  const { t } = useTranslation('settings');
+  return (
+    <Section title={t('phone.title')} icon="call">
+      <Notice icon="locate">{t('phone.iosFind')}</Notice>
+      <Notice icon="call">{t('phone.iosCalls')}</Notice>
+      <Details>{t('phone.iosDetails')}</Details>
+    </Section>
+  );
+}
+
+function PhoneSectionAndroid() {
+  const { t } = useTranslation('settings');
   const [features, setFeatures] = useState(() => HuaweiWear.getPhoneFeatures());
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
 
-  const refresh = useCallback(() => setFeatures(HuaweiWear.getPhoneFeatures()), []);
+  const [gps, setGps] = useState<boolean | null>(null);
+  const checkGps = useCallback(
+    () => void PermissionsAndroid.check(PERMISSIONS.ACCESS_FINE_LOCATION).then(setGps),
+    [],
+  );
+  useEffect(checkGps, [checkGps]);
+
+  const refresh = useCallback(() => {
+    setFeatures(HuaweiWear.getPhoneFeatures());
+    checkGps();
+  }, [checkGps]);
   useNativeRefresh(refresh);
 
   const run = async (action: () => Promise<void>) => {
@@ -49,11 +80,11 @@ export function PhoneSection() {
       if (enabled) {
         const result = await ask(
           [PERMISSIONS.READ_PHONE_STATE],
-          [PERMISSIONS.READ_CALL_LOG, PERMISSIONS.READ_CONTACTS],
+          features.callerIdSupported ? [PERMISSIONS.READ_CALL_LOG, PERMISSIONS.READ_CONTACTS] : [],
         );
         if (!result.granted) {
           setBlocked(result.blocked);
-          setError('Phone state permission is required to see incoming calls.');
+          setError(t('phone.errPhoneState'));
           return;
         }
       }
@@ -67,7 +98,7 @@ export function PhoneSection() {
         const result = await ask([PERMISSIONS.ANSWER_PHONE_CALLS], []);
         if (!result.granted) {
           setBlocked(result.blocked);
-          setError('Permission to answer phone calls is required.');
+          setError(t('phone.errAnswer'));
           return;
         }
       }
@@ -75,42 +106,66 @@ export function PhoneSection() {
     });
 
   return (
-    <Section title="Phone and calls" icon="call">
+    <Section title={t('phone.title')} icon="call">
       <SwitchRow
         icon="locate"
-        label="Find my phone from the watch"
-        hint="The watch button rings this phone loudly, even with the app closed. Stop it on the watch or from the notification."
+        label={t('phone.findPhone')}
         value={features.findPhoneEnabled}
         onValueChange={(enabled) => run(() => HuaweiWear.setFindPhoneEnabled(enabled))}
       />
-      <Divider />
       <SwitchRow
         icon="call"
-        label="Show incoming calls on the watch"
-        hint="Without call log access Android hides the caller number. Without contacts access you see the number instead of the name."
+        label={t('phone.showCalls')}
         value={features.callsEnabled}
         onValueChange={toggleCalls}
       />
-      <KeyValue icon="phone-portrait" label="Phone state" value={features.readPhoneState ? 'Granted' : 'Not granted'} />
-      <KeyValue icon="list" label="Caller number (call log)" value={features.readCallLog ? 'Granted' : 'Not granted'} />
-      <KeyValue icon="people" label="Contact names" value={features.readContacts ? 'Granted' : 'Not granted'} />
-      <Divider />
       <SwitchRow
         icon="call-outline"
-        label="Answer and reject calls from the watch"
+        label={t('phone.callControl')}
         value={features.callControlEnabled}
         onValueChange={toggleCallControl}
       />
-      <KeyValue icon="checkmark-circle" label="Answer phone calls" value={features.answerPhoneCalls ? 'Granted' : 'Not granted'} />
+      <PairGrid>
+        <Pair label={t('phone.phoneState')} value={features.readPhoneState ? t('phone.granted') : t('phone.notGranted')} />
+        <Pair label={t('phone.answerCalls')} value={features.answerPhoneCalls ? t('phone.granted') : t('phone.notGranted')} />
+        {features.callerIdSupported ? (
+          <>
+            <Pair label={t('phone.callLog')} value={features.readCallLog ? t('phone.granted') : t('phone.notGranted')} />
+            <Pair label={t('phone.contacts')} value={features.readContacts ? t('phone.granted') : t('phone.notGranted')} />
+          </>
+        ) : null}
+        <Pair label={t('phone.gps')} value={gps === null ? null : gps ? t('phone.granted') : t('phone.notGranted')} />
+      </PairGrid>
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      {blocked ? (
-        <Button
-          label="Open app settings"
-          variant="secondary"
-          icon="settings-outline"
-          onPress={() => void Linking.openSettings()}
-        />
+      {gps === false || blocked ? (
+        <ButtonRow>
+          {gps === false ? (
+            <Button
+              label={t('phone.allowLocation')}
+              variant="secondary"
+              icon="location"
+              onPress={() =>
+                run(async () => {
+                  setBlocked(false);
+                  const result = await PermissionsAndroid.request(PERMISSIONS.ACCESS_FINE_LOCATION);
+                  setBlocked(result === RESULTS.NEVER_ASK_AGAIN);
+                })
+              }
+            />
+          ) : null}
+          {blocked ? (
+            <Button
+              label={t('phone.appSettings')}
+              variant="secondary"
+              icon="settings-outline"
+              onPress={() => void Linking.openSettings()}
+            />
+          ) : null}
+        </ButtonRow>
       ) : null}
+      <Details>
+        {`${features.callerIdSupported ? t('phone.callerIdDetails') : t('phone.noCallerIdDetails')}\n\n${t('phone.findDetails')}`}
+      </Details>
     </Section>
   );
 }

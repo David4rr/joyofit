@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { Metric } from '@/components/Metric';
 import { Divider, Screen, Section } from '@/components/Screen';
@@ -13,30 +14,31 @@ import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { listAllSleep, listSleepScores, listStepSamplesSince } from '@/db/queries';
 import { HourlyStages } from '@/features/sleep/HourlyStages';
 import { Hypnogram } from '@/features/sleep/Hypnogram';
-import { buildNights, hourlyStages, NIGHT_STAGES, type Night } from '@/features/sleep/nights';
+import { NoStagesNotice } from '@/features/sleep/NoStagesNotice';
+import { buildNights, hourlyStages, NIGHT_STAGES, nightHasStages, type Night } from '@/features/sleep/nights';
 import { SleepScoreRing } from '@/features/sleep/SleepScoreRing';
 import { STAGE_LABELS, stageColor } from '@/features/sleep/stageStyle';
 import { sleepNeedSec } from '@/features/today/readiness';
 import { startOfLocalDay } from '@/features/today/stats';
 import { dailyStrain } from '@/features/today/strain';
-import { DEFAULT_AGE, maxHeartRate } from '@/features/workouts/substrate';
+import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatClock, formatDuration } from '@/format';
+import { fmtDate, fmtDecimal, fmtInt, useTranslation } from '@/i18n';
+import { Paragraphs } from '@/features/fitness/Paragraphs';
 import { useWatch } from '@/state/WatchProvider';
-import { HuaweiWear } from '@/wear';
-import { HIT, radius, spacing, useColors } from '@/theme';
+import { HIT, radius, spacing, useColors, useTheme } from '@/theme';
 
 /** Stage changes listed before "Show all"; a night has 30 to 60. */
 const CHANGES_PREVIEW = 8;
 /** Nights in the "Earlier nights" list. */
 const HISTORY_ROWS = 14;
 
-const DATE_FORMAT: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
-const SHORT_DATE_FORMAT: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
-
 /** One night at a time: stages over the night, minutes per stage per hour, every stage change, and earlier nights. */
 export function SleepScreen() {
+  const { t } = useTranslation('health');
   const db = useSQLiteContext();
-  const colors = useColors();
+  const theme = useTheme();
+  const colors = theme.colors;
   const { linkState, device, dataVersion, sync } = useWatch();
   const [nights, setNights] = useState<Night[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,16 +84,16 @@ export function SleepScreen() {
   if (error !== null || nights === null || night === null) {
     return (
       <Screen refresh={refresh}>
-        <HiddenTabHeader title="Sleep" />
+        <HiddenTabHeader title={t('sleep.title')} />
         {error !== null ? (
-          <Notice tone="danger">Could not read stored sleep: {error}</Notice>
+          <Notice tone="danger">{t('sleep.error', { error })}</Notice>
         ) : nights === null ? (
           <>
-            <Skeleton width="100%" height={88} radius={radius.card} />
-            <Skeleton width="100%" height={220} radius={radius.card} />
+            <Skeleton width="100%" height={88} radius="card" />
+            <Skeleton width="100%" height={220} radius="card" />
           </>
         ) : (
-          <EmptyState icon="moon" title="No sleep stored" description="Wear the watch to bed, then sync after waking up." />
+          <EmptyState icon="moon" title={t('sleep.emptyTitle')} description={t('sleep.emptyDescription')} />
         )}
       </Screen>
     );
@@ -100,18 +102,27 @@ export function SleepScreen() {
   const changes = night.periods.slice(1).map((p, i) => ({ at: p.start, from: night.periods[i].stage, to: p.stage, gap: p.start - night.periods[i].end }));
   const shownPeriods = showAllChanges ? night.periods : night.periods.slice(0, CHANGES_PREVIEW);
   const stages = NIGHT_STAGES.filter((stage) => night.seconds[stage] > 0);
+  const hasStages = nightHasStages(night);
   const recorded = night.asleepSeconds + night.seconds.awake;
   const minutes = Math.round(night.asleepSeconds / 60);
-  const dateLabel = new Date(night.end * 1000).toLocaleDateString(undefined, DATE_FORMAT);
+  const changeLine = (i: number, stage: Night['periods'][number]['stage'], prev: Night['periods'][number]['stage'] | null, gap: number) => {
+    const line = prev === null ? t('sleep.changeStart', { stage: STAGE_LABELS[stage] }) : t('sleep.changeTo', { from: STAGE_LABELS[prev], to: STAGE_LABELS[stage] });
+    return i > 0 && gap > 0 ? t('sleep.changeWithGap', { line, duration: formatDuration(gap) }) : line;
+  };
+  const historyA11y = (n: Night) => {
+    const base = t(n.nap ? 'sleep.historyA11yNap' : 'sleep.historyA11yNight', { date: fmtDate(n.end, 'long'), duration: formatDuration(n.asleepSeconds) });
+    return n.score ? t('sleep.historyA11yScore', { base, score: fmtInt(n.score.score) }) : base;
+  };
+  const dateLabel = fmtDate(night.end, 'weekday');
 
   return (
     <Screen refresh={refresh}>
-      <HiddenTabHeader title="Sleep" />
+      <HiddenTabHeader title={t('sleep.title')} />
 
       <View style={styles.picker}>
         <StepButton
           icon="chevron-back"
-          label="Earlier night"
+          label={t('sleep.earlierNight')}
           disabled={index >= nights.length - 1}
           onPress={() => select(nights[index + 1])}
         />
@@ -120,60 +131,68 @@ export function SleepScreen() {
             {dateLabel}
           </AppText>
           <AppText variant="caption" muted>
-            {night.nap ? 'Nap' : 'Night'}, {formatClock(night.start)} to {formatClock(night.end)}
+            {t(night.nap ? 'sleep.periodNap' : 'sleep.periodNight', { from: formatClock(night.start), to: formatClock(night.end) })}
           </AppText>
         </View>
-        <StepButton icon="chevron-forward" label="Later night" disabled={index === 0} onPress={() => select(nights[index - 1])} />
+        <StepButton icon="chevron-forward" label={t('sleep.laterNight')} disabled={index === 0} onPress={() => select(nights[index - 1])} />
       </View>
 
-      <Section title={night.nap ? 'Nap' : 'Sleep'} icon="moon" tint="sleep">
+      <Section title={night.nap ? t('sleep.sectionNap') : t('sleep.sectionNight')} icon="moon" tint="sleep">
         <View style={styles.headlineRow}>
-          <View accessible accessibilityLabel={`Asleep ${formatDuration(night.asleepSeconds)}`} style={styles.headline}>
-            {minutes >= 60 ? <Metric value={String(Math.floor(minutes / 60))} unit="h" size="lg" color={colors.sleepText} unitColor={colors.mutedForeground} /> : null}
-            <Metric value={String(minutes % 60).padStart(minutes >= 60 ? 2 : 1, '0')} unit="min" size="lg" color={colors.sleepText} unitColor={colors.mutedForeground} />
+          <View accessible accessibilityLabel={t('sleep.asleepA11y', { duration: formatDuration(night.asleepSeconds) })} style={styles.headline}>
+            {minutes >= 60 ? <Metric value={String(Math.floor(minutes / 60))} unit={t('sleep.hoursUnit')} size="lg" color={colors.sleepText} unitColor={colors.mutedForeground} /> : null}
+            <Metric value={String(minutes % 60).padStart(minutes >= 60 ? 2 : 1, '0')} unit={t('sleep.minutesUnit')} size="lg" color={colors.sleepText} unitColor={colors.mutedForeground} />
           </View>
           {night.score ? <SleepScoreRing score={night.score} /> : null}
         </View>
         <AppText variant="caption" muted>
-          Asleep, time awake excluded. {night.awakenings} {night.awakenings === 1 ? 'time' : 'times'} awake during the night, {changes.length} stage{' '}
-          {changes.length === 1 ? 'change' : 'changes'}.
-          {night.score ? ` Score from the watch${night.score.efficiency !== null ? `, ${night.score.efficiency}% of the time in bed asleep` : ''}.` : ''}
+          {[
+            hasStages ? t('sleep.stageSummary', { awakenings: night.awakenings, count: changes.length }) : t('sleep.noStages'),
+            need ? t('sleep.needSummary', { need: formatDuration(need.seconds), percent: Math.round((night.asleepSeconds / need.seconds) * 100) }) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </AppText>
-        {need ? (
-          <AppText variant="caption">
-            Needed {formatDuration(need.seconds)}
-            {need.strain !== null ? ` after a strain of ${need.strain.toFixed(1)} that day` : ''}, got{' '}
-            {Math.round((night.asleepSeconds / need.seconds) * 100)}%.
-          </AppText>
-        ) : null}
-        {stages.map((stage) => (
-          <View key={stage} style={styles.legendRow}>
-            <View style={[styles.swatch, { backgroundColor: stageColor(stage, colors) }]} />
-            <AppText variant="caption" style={styles.legendLabel}>
-              {STAGE_LABELS[stage]}
-            </AppText>
-            <AppText variant="caption" muted style={styles.tabular}>
-              {Math.round((night.seconds[stage] / recorded) * 100)}%
-            </AppText>
-            <AppText variant="label" style={[styles.legendValue, styles.tabular]}>
-              {formatDuration(night.seconds[stage])}
-            </AppText>
-          </View>
-        ))}
+        <View style={styles.legend}>
+          {stages.map((stage) => (
+            <View key={stage} style={styles.legendRow}>
+              <View style={[styles.swatch, { backgroundColor: stageColor(stage, colors) }]} />
+              <AppText variant="caption" numberOfLines={1} style={styles.legendLabel}>
+                {STAGE_LABELS[stage]}
+              </AppText>
+              <AppText variant="label" style={styles.tabular}>
+                {formatDuration(night.seconds[stage])}{' '}
+                <AppText variant="caption" muted>
+                  {Math.round((night.seconds[stage] / recorded) * 100)}%
+                </AppText>
+              </AppText>
+            </View>
+          ))}
+        </View>
+        {!hasStages && !night.nap ? <NoStagesNotice /> : null}
+        <Details title={t('sleep.detailsTitle')}>
+          <Paragraphs
+            lines={[
+              t('sleep.detailsAsleep'),
+              ...(night.score
+                ? [night.score.efficiency !== null ? t('sleep.detailsScoreEfficiency', { efficiency: night.score.efficiency }) : t('sleep.detailsScore')]
+                : []),
+              ...(need ? [need.strain !== null ? t('sleep.detailsNeedStrain', { strain: fmtDecimal(need.strain, 1) }) : t('sleep.detailsNeed')] : []),
+            ]}
+          />
+        </Details>
       </Section>
 
-      <Section title="Stages through the night" icon="analytics" tint="sleep">
+      <Section title={t('sleep.stages')} icon="analytics" tint="sleep">
         <Hypnogram night={night} />
       </Section>
 
-      <Section title="Each hour" icon="bar-chart" tint="sleep">
+      <Section title={t('sleep.eachHour')} icon="bar-chart" tint="sleep">
         <HourlyStages hours={hours} />
-        <AppText variant="caption" muted>
-          A full bar is 60 minutes; grey is time with nothing recorded.
-        </AppText>
+        <Details title={t('sleep.detailsTitle')}>{t('sleep.eachHourNote')}</Details>
       </Section>
 
-      <Section title="Stage changes" icon="swap-vertical" tint="sleep" trailing={<AppText variant="caption" muted>{changes.length}</AppText>}>
+      <Section title={t('sleep.stageChanges')} icon="swap-vertical" tint="sleep" trailing={<AppText variant="caption" muted>{changes.length}</AppText>}>
         {shownPeriods.map((p, i) => (
           <View key={p.start}>
             {i > 0 ? <Divider /> : null}
@@ -183,8 +202,7 @@ export function SleepScreen() {
               </AppText>
               <View style={[styles.swatch, { backgroundColor: stageColor(p.stage, colors) }]} />
               <AppText variant="body" style={styles.changeStage}>
-                {i === 0 ? `Start, ${STAGE_LABELS[p.stage]}` : `${STAGE_LABELS[night.periods[i - 1].stage]} to ${STAGE_LABELS[p.stage]}`}
-                {i > 0 && changes[i - 1].gap > 0 ? ` (${formatDuration(changes[i - 1].gap)} not recorded)` : ''}
+                {changeLine(i, p.stage, i > 0 ? night.periods[i - 1].stage : null, i > 0 ? changes[i - 1].gap : 0)}
               </AppText>
               <AppText variant="caption" muted style={styles.tabular}>
                 {formatDuration(p.end - p.start)}
@@ -194,14 +212,14 @@ export function SleepScreen() {
         ))}
         {night.periods.length > CHANGES_PREVIEW ? (
           <Button
-            label={showAllChanges ? 'Show fewer' : `Show all ${night.periods.length}`}
+            label={showAllChanges ? t('sleep.showFewer') : t('sleep.showAll', { total: night.periods.length })}
             variant="ghost"
             onPress={() => setShowAllChanges((v) => !v)}
           />
         ) : null}
       </Section>
 
-      <Section title="Earlier nights" icon="calendar" tint="sleep">
+      <Section title={t('sleep.earlierNights')} icon="calendar" tint="sleep">
         {nights.slice(0, HISTORY_ROWS).map((n, i) => {
           const current = n.start === night.start;
           return (
@@ -210,13 +228,12 @@ export function SleepScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ selected: current }}
-                accessibilityLabel={`${new Date(n.end * 1000).toLocaleDateString(undefined, DATE_FORMAT)}, ${n.nap ? 'nap' : 'night'}, asleep ${formatDuration(n.asleepSeconds)}${n.score ? `, score ${n.score.score}` : ''}`}
+                accessibilityLabel={historyA11y(n)}
                 onPress={() => select(n)}
-                style={[styles.historyRow, current && { backgroundColor: colors.sleepSoft }]}>
+                style={[styles.historyRow, { borderRadius: theme.radius.input }, current && { backgroundColor: colors.sleepSoft }]}>
                 <View style={styles.historyText}>
                   <AppText variant={current ? 'bodyStrong' : 'body'} numberOfLines={1}>
-                    {new Date(n.end * 1000).toLocaleDateString(undefined, SHORT_DATE_FORMAT)}
-                    {n.nap ? ', nap' : ''}
+                    {n.nap ? t('sleep.historyNap', { date: fmtDate(n.end, 'weekday') }) : fmtDate(n.end, 'weekday')}
                   </AppText>
                   <View style={styles.miniBar}>
                     {NIGHT_STAGES.filter((s) => n.seconds[s] > 0).map((s) => (
@@ -226,7 +243,7 @@ export function SleepScreen() {
                 </View>
                 {n.score ? (
                   <AppText variant="caption" color={colors.sleepText} style={styles.tabular}>
-                    {n.score.score}
+                    {fmtInt(n.score.score)}
                   </AppText>
                 ) : null}
                 <AppText variant="label" style={[styles.tabular, styles.historyDuration]}>
@@ -255,8 +272,7 @@ function useNightNeed(nightStart: number | null): { seconds: number; strain: num
     const day = startOfLocalDay(nightStart - 6 * 3600);
     void listStepSamplesSince(db, day).then((samples) => {
       if (cancelled) return;
-      const birthYear = HuaweiWear.getUserProfile()?.birthYear;
-      const maxHr = maxHeartRate(birthYear ? new Date().getFullYear() - birthYear : DEFAULT_AGE);
+      const maxHr = userMaxHr();
       const strain = dailyStrain(samples.filter((s) => s.timestamp < nightStart), maxHr).find((d) => d.day === day)?.strain ?? null;
       setNeed({ start: nightStart, seconds: sleepNeedSec(strain), strain });
     });
@@ -288,16 +304,16 @@ const styles = StyleSheet.create({
   step: { width: HIT, height: HIT, borderRadius: HIT / 2, alignItems: 'center', justifyContent: 'center' },
   headlineRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   headline: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 28 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 24, width: '47%' },
   swatch: { width: 12, height: 12, borderRadius: 6 },
   legendLabel: { flex: 1 },
-  legendValue: { minWidth: 72, textAlign: 'right' },
   tabular: { fontVariant: ['tabular-nums'] },
-  changeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 },
+  changeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 34 },
   changeTime: { width: 48 },
   changeStage: { flex: 1 },
-  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, borderRadius: radius.input, paddingHorizontal: spacing.sm, marginHorizontal: -spacing.sm },
-  historyText: { flex: 1, gap: 6 },
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44, paddingHorizontal: spacing.sm, marginHorizontal: -spacing.sm },
+  historyText: { flex: 1, gap: 4 },
   historyDuration: { minWidth: 76, textAlign: 'right' },
   miniBar: { flexDirection: 'row', height: 6, gap: 1, borderRadius: radius.pill, overflow: 'hidden' },
 });

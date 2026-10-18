@@ -1,0 +1,49 @@
+{
+  "family": {
+    "alert": {
+      "noSync": {
+        "title": "No word from {{label}} yet",
+        "phoneSilent_one": "{{label}}'s phone hasn't checked in for {{count}} hour. It may be off, offline, or JoyoFit hasn't been opened.",
+        "phoneSilent_other": "{{label}}'s phone hasn't checked in for {{count}} hours. It may be off, offline, or JoyoFit hasn't been opened.",
+        "phoneSilentLowBattery_one": "{{label}}'s phone hasn't checked in for {{count}} hour. It may be off, offline, or JoyoFit hasn't been opened. The watch battery was last read at {{battery}}%.",
+        "phoneSilentLowBattery_other": "{{label}}'s phone hasn't checked in for {{count}} hours. It may be off, offline, or JoyoFit hasn't been opened. The watch battery was last read at {{battery}}%.",
+        "watchSilent_one": "{{label}}'s watch hasn't synced for {{count}} hour. The phone is still connected, so the watch may be away from the phone or not being worn.",
+        "watchSilent_other": "{{label}}'s watch hasn't synced for {{count}} hours. The phone is still connected, so the watch may be away from the phone or not being worn.",
+        "watchSilentLowBattery_one": "{{label}}'s watch hasn't synced for {{count}} hour. The phone is still connected, so the watch may be away from the phone or not being worn. The watch battery was last read at {{battery}}%.",
+        "watchSilentLowBattery_other": "{{label}}'s watch hasn't synced for {{count}} hours. The phone is still connected, so the watch may be away from the phone or not being worn. The watch battery was last read at {{battery}}%."
+      },
+      "noSteps": {
+        "title": "No steps yet from {{label}}",
+        "body_one": "As of {{time}}, only {{count}} step has been recorded from {{label}}. The watch may not be on yet. Try checking in.",
+        "body_other": "As of {{time}}, only {{count}} steps have been recorded from {{label}}. The watch may not be on yet. Try checking in."
+      },
+      "heartRateHigh": {
+        "title": "{{label}}'s resting heart rate is higher than usual",
+        "body": "{{label}}'s resting heart rate is {{value}} bpm. This is not a diagnosis. Try checking in.",
+        "bodyWithBaseline": "{{label}}'s resting heart rate is {{value}} bpm, usually around {{baseline}} bpm. This is not a diagnosis. Try checking in."
+      },
+      "heartRateLow": {
+        "title": "{{label}}'s resting heart rate is lower than usual",
+        "body": "{{label}}'s resting heart rate is {{value}} bpm, usually around {{baseline}} bpm. This is not a diagnosis. Try checking in."
+      },
+      "sleep": {
+        "title": "{{label}} slept less than usual",
+        "streak": "{{label}} slept under 5.5 hours three nights in a row.",
+        "lastNight_one": "{{label}} slept about {{hours}} hour last night.",
+        "lastNight_other": "{{label}} slept about {{hours}} hours last night."
+      },
+      "spo2": {
+        "title": "{{label}}'s watch recorded low oxygen",
+        "body": "According to the watch, {{label}}'s oxygen level dipped to {{value}}%. Watch readings can be off and this is not a diagnosis. Try checking in."
+      }
+    },
+    "digest": {
+      "title": "Family check-in summary"
+    },
+    "poke": {
+      "title": "{{name}} is checking in on you",
+      "body": "Let them know you're okay when you get a chance.",
+      "someone": "Someone"
+    }
+  }
+}

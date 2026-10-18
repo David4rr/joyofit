@@ -1,3 +1,4 @@
+import { VALUE_TYPE } from "@joyofit/hwt";
 import { describe, expect, it } from "vitest";
 import { newDate, newTime, newWidget } from "@/model/defaults";
 import { layoutDate, layoutTime, layoutWidget } from "./layout";
@@ -43,15 +44,15 @@ describe("layout", () => {
   });
 
   it("puts a widget icon beside or above its number", () => {
-    const side = layoutWidget(newWidget("steps", { layout: "side" }));
+    const side = layoutWidget(newWidget(VALUE_TYPE.steps, { layout: "side" }));
     const icon = side.parts.find((p) => p.kind === "icon")!;
     const number = side.parts.find((p) => p.kind === "digits")!;
     expect(number.x).toBeGreaterThan(icon.x);
-    const stack = layoutWidget(newWidget("heartRate", { layout: "stack" }));
+    const stack = layoutWidget(newWidget(VALUE_TYPE.heartRate, { layout: "stack" }));
     const sn = stack.parts.find((p) => p.kind === "digits")!;
     expect(sn.kind === "digits" && sn.align).toBe("center");
     expect(sn.y).toBeGreaterThan(stack.parts.find((p) => p.kind === "icon")!.y);
-    expect(layoutWidget(newWidget("battery", { showIcon: false })).parts).toHaveLength(1);
+    expect(layoutWidget(newWidget(VALUE_TYPE.power, { showIcon: false })).parts).toHaveLength(1);
   });
 });
 
@@ -80,7 +81,7 @@ describe("shapes", () => {
   });
 
   it("clips a ring's progress to the fraction of its sweep", () => {
-    const el = newRing("steps", { size: 100, thickness: 20, startAngle: 0, sweep: 360, color: "#FFFFFF", trackColor: "#000000" });
+    const el = newRing(VALUE_TYPE.stepsRatio, { size: 100, thickness: 20, startAngle: 0, sweep: 360, color: "#FFFFFF", trackColor: "#000000" });
     const ring = renderRing(el);
     const { sprite, ctx } = newSprite(100, 100);
     drawRingProgress(ctx, ring, el, 0, 0, 0.5);

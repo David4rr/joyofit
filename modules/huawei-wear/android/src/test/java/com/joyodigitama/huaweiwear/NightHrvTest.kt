@@ -158,12 +158,57 @@ class NightHrvTest {
   @Test
   fun windowStartReachesBackFromTheLastNight() {
     val now = 1_000_000_000L
-    assertEquals(now - 7 * 24 * 3600, NightHrv.windowStart(null, now))
+    // No stored night, or a full pull: everything the watch holds.
+    assertEquals(946684800L, NightHrv.windowStart(null, now))
+    assertEquals(946684800L, NightHrv.windowStart(now - 8 * 3600, now, fullHistory = true))
     // Last night ended 8 h ago: still ask for 48 h so the whole night is inside the window.
     assertEquals(now - 48 * 3600, NightHrv.windowStart(now - 8 * 3600, now))
     // Last stored night is 4 days old: 12 h before its end.
     assertEquals(now - 4 * 24 * 3600 - 12 * 3600, NightHrv.windowStart(now - 4 * 24 * 3600, now))
-    // Older than a week: never more than 7 days.
-    assertEquals(now - 7 * 24 * 3600, NightHrv.windowStart(now - 30 * 24 * 3600, now))
+    // Older than a week: no cap, 12 h before its end.
+    assertEquals(now - 30 * 24 * 3600 - 12 * 3600, NightHrv.windowStart(now - 30 * 24 * 3600, now))
+  }
+
+  @Test
+  fun supportReportNamesTheGatesAndWhetherAnyRecordCameInOvernight() {
+    DeviceCaps.reset()
+    NightHrvDiagnostics.last = null
+    try {
+      val none = NightHrvDiagnostics.summary(listed = null, enabled = false, calibratedAtSec = null, nowSec = 1_000)
+      assertEquals(
+        "Night HRV gates: automatic stress 20/09 listed=unknown (last connect), switch=off, calibrated=never, dictionary sleep (cap 143)=no, " +
+          "HRV dictionary (cap 235)=no, stress file over the new sync service=no",
+        none[0],
+      )
+      assertEquals("Night HRV last sync: none in this process", none[1])
+
+      val diag = NightHrvDiagnostics.Builder(atSec = 1_000)
+      diag.gate = true
+      diag.result = "records read, no night stored"
+      diag.fileBytes = 1_200
+      diag.records = 12
+      diag.recordSpan = "100..900"
+      diag.examined = 2
+      diag.withoutRecords = 2
+      diag.nights.add("night 1..2 asleep=420 min records=0 inSleep=0 usable=0: no reading (no stress records during sleep)")
+      NightHrvDiagnostics.last = diag.snapshot()
+      val lines = NightHrvDiagnostics.summary(listed = true, enabled = true, calibratedAtSec = 86_400, nowSec = 1_000 + 600)
+      assertTrue(lines[0].contains("listed=yes (last connect), switch=on, calibrated=1970-01-02T00:00:00Z"))
+      assertEquals("Night HRV last sync: 10 min ago, records read, no night stored", lines[1])
+      assertEquals("  file 1200 bytes, 12 stress records (100..900); nights looked at 2, stored 0, with no record during sleep 2", lines[2])
+      assertTrue(lines[3].startsWith("  night 1..2 asleep=420 min records=0"))
+    } finally {
+      NightHrvDiagnostics.last = null
+    }
+  }
+
+  @Test
+  fun aClosedGateIsReportedAsTheWatchNotListingAutomaticStress() {
+    val diag = NightHrvDiagnostics.Builder(atSec = 5)
+    diag.result = "gate closed: the watch does not list 20/09, so it cannot record night HRV for us (stress file skipped, as GB)"
+    val snapshot = diag.snapshot()
+    assertFalse(snapshot.gate)
+    assertNull(snapshot.fileBytes)
+    assertTrue(snapshot.result.startsWith("gate closed"))
   }
 }

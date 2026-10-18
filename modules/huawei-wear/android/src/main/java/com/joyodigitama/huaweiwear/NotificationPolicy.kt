@@ -21,6 +21,7 @@ internal object NotificationPolicy {
     flags and ONGOING_MASK != 0 -> "ongoing"
     flags and Notification.FLAG_GROUP_SUMMARY != 0 -> "group summary"
     flags and Notification.FLAG_LOCAL_ONLY != 0 -> "local only"
+    // VoIP call notifications are taken before this filter by VoipCallNotifications; whatever call is left (dialer, ongoing) stays off the watch.
     category == Notification.CATEGORY_CALL -> "call (not forwarded)"
     category == Notification.CATEGORY_TRANSPORT -> "media controls"
     category == Notification.CATEGORY_PROGRESS -> "progress"

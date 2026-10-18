@@ -79,6 +79,12 @@ export function hourlySteps(samples: readonly StepSample[]): number[] {
 export const SESSION_GAP_SEC = 3 * 3600;
 
 /**
+ * A stored segment, plus the one thing only the cleaning step knows (`cleanUnstagedSleep`): a workout or a long awake
+ * stretch lies between this segment and the one before it, so it starts a new session however close the two are.
+ */
+export type SleepSpan = SleepSegment & { breakBefore?: boolean };
+
+/**
  * Drops unstaged segments within {@link SESSION_GAP_SEC} of a staged one: the watch stores short unstaged spans
  * around a staged night, and next to real stages they only stretch it. An unstaged nap far from staged sleep
  * stays. Same rule as `withoutStrayUnstaged` in SleepReport.kt.
@@ -88,6 +94,37 @@ export function withoutStrayUnstaged<T extends SleepSegment>(segments: readonly 
   return segments.filter(
     (s) => s.stage || !staged.some((t) => t.start - s.end <= SESSION_GAP_SEC && s.start - t.end <= SESSION_GAP_SEC),
   );
+}
+
+/** Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap. */
+export const BLIP_GAP_SEC = 3600;
+
+/** A stretch with less sleep than this (awake excluded) is not sleep: a 1-2 minute HRV or stress check, not a short nap. */
+export const MIN_SLEEP_SEC = 5 * 60;
+
+/**
+ * Drops stretches of sleep (segments chained with gaps up to {@link BLIP_GAP_SEC}) holding less than
+ * {@link MIN_SLEEP_SEC} asleep. A watch records a few minutes of sitting still, such as a 1-minute HRV or stress
+ * check, as sleep; on its own that became the latest "night" or a nap, and within {@link SESSION_GAP_SEC} of waking it
+ * stretched the night. Same rule as `withoutBlips` in SleepReport.kt. Returns the kept segments sorted by start.
+ */
+export function withoutBlips<T extends SleepSegment>(segments: readonly T[]): T[] {
+  const sorted = [...segments].sort((a, b) => a.start - b.start || a.end - b.end);
+  const kept: T[] = [];
+  let stretch: T[] = [];
+  let reach = -Infinity;
+  const close = () => {
+    const asleep = stretch.reduce((sum, s) => sum + (s.stage === 'awake' ? 0 : Math.max(0, s.end - s.start)), 0);
+    if (asleep >= MIN_SLEEP_SEC) kept.push(...stretch);
+    stretch = [];
+  };
+  for (const s of sorted) {
+    if (stretch.length > 0 && s.start - reach > BLIP_GAP_SEC) close();
+    stretch.push(s);
+    reach = stretch.length === 1 ? s.end : Math.max(reach, s.end);
+  }
+  close();
+  return kept;
 }
 
 export interface SleepTypeSummary {
@@ -119,12 +156,12 @@ export interface SleepSummary {
  * Summarises the most recent sleep session: the latest segment plus earlier segments chained to it
  * with gaps up to {@link SESSION_GAP_SEC}. Expects `segments` oldest-first.
  */
-export function lastSleepSession(segments: readonly SleepSegment[]): SleepSummary | null {
-  if (segments.length === 0) return null;
-  const sorted = withoutStrayUnstaged(segments).sort((a, b) => a.start - b.start);
+export function lastSleepSession(segments: readonly SleepSpan[]): SleepSummary | null {
+  const sorted = withoutBlips(withoutStrayUnstaged(segments));
+  if (sorted.length === 0) return null;
   let first = sorted.length - 1;
   let earliestStart = sorted[first].start;
-  while (first > 0 && earliestStart - sorted[first - 1].end <= SESSION_GAP_SEC) {
+  while (first > 0 && !sorted[first].breakBefore && earliestStart - sorted[first - 1].end <= SESSION_GAP_SEC) {
     first--;
     earliestStart = Math.min(earliestStart, sorted[first].start);
   }

@@ -1,0 +1,271 @@
+import type { WorkoutRow } from '@/db/queries';
+import { workoutStrain } from '@/features/today/strain';
+import { splitWorkout } from '@/features/workouts/substrate';
+import type { WorkoutSummary } from '@/features/workouts/summary';
+import { averagePaceSec, averageSpeedMs } from '@/features/workouts/times';
+import type { StepSample } from '@/wear';
+
+import { buildEffort, buildLoad, type TrimpEntry } from './effort';
+import { bestEfforts, type EffortSeconds } from './efforts';
+import { elevationProfile, elevationSummary } from './elevation';
+import { buildLaps } from './laps';
+import { round, roundOrNull } from './round';
+import { buildGrid, type AnalysisPoint, type Grid } from './series';
+import { selectSimilar, type SimilarCandidate } from './similar';
+import { hasPace, isFootKind, sportKind } from './sport';
+import { kmSplits, paceBlockSplits, type SplitGrid } from './splits';
+import {
+  ANALYSIS_LIMITS,
+  WORKOUT_ANALYSIS_VERSION,
+  type AnalysisSeries,
+  type AnalysisSplit,
+  type AnalysisStats,
+  type LatLon,
+  type SportKind,
+  type WorkoutAnalysis,
+} from './types';
+import { hrZones, paceZones, thresholdCandidates, thresholdPace } from './zones';
+
+const MIN_BPM = 20;
+const MAX_BPM = 250;
+const MAX_SPORT_NAME = 60;
+const NORMALIZED_POWER_WINDOW_SEC = 30;
+
+export interface AnalysisHistory {
+  /** Best-effort seconds of similar past workouts (see `bestEffortsForHistory`). */
+  efforts: readonly EffortSeconds[];
+  /** TRIMP of the other workouts of the last 28 days. */
+  trimps: readonly TrimpEntry[];
+  /** Past workouts of the same sport, summary level. */
+  similar: readonly SimilarCandidate[];
+}
+
+export interface AnalyzeInput {
+  workout: WorkoutRow;
+  summary: WorkoutSummary;
+  points: readonly AnalysisPoint[];
+  maxHr: number;
+  /** Where `maxHr` comes from; 'age' unless the user entered a value. */
+  maxHrSource?: 'age' | 'setting';
+  /** Per-minute samples of the workout's day, oldest first, for `effort.addedToDay`. */
+  daySamples: readonly StepSample[];
+  history: AnalysisHistory;
+}
+
+/** What a shared post may contain. */
+export interface AnalyzeOptions {
+  includeHr: boolean;
+  includeRoute: boolean;
+  includeComparison: boolean;
+}
+
+function meanOf(values: readonly (number | null)[] | null): number | null {
+  if (!values) return null;
+  let sum = 0;
+  let count = 0;
+  for (const v of values) {
+    if (v !== null) {
+      sum += v;
+      count += 1;
+    }
+  }
+  return count > 0 ? sum / count : null;
+}
+
+function maxOf(values: readonly (number | null)[] | null): number | null {
+  if (!values) return null;
+  let max: number | null = null;
+  for (const v of values) if (v !== null && (max === null || v > max)) max = v;
+  return max;
+}
+
+function minOf(values: readonly (number | null)[] | null): number | null {
+  if (!values) return null;
+  let min: number | null = null;
+  for (const v of values) if (v !== null && (min === null || v < min)) min = v;
+  return min;
+}
+
+/** Normalized power: the fourth-power mean of 30 s rolling averages, back to the fourth root. Null under 30 s of data. */
+function normalizedPowerOf(power: readonly (number | null)[] | null, stepSec: number): number | null {
+  if (!power) return null;
+  const w = Math.max(1, Math.round(NORMALIZED_POWER_WINDOW_SEC / stepSec));
+  if (power.length < w) return null;
+  let sum4 = 0;
+  let count = 0;
+  for (let i = 0; i + w <= power.length; i++) {
+    let sum = 0;
+    let ok = 0;
+    for (let j = i; j < i + w; j++) {
+      const v = power[j];
+      if (v !== null) {
+        sum += v;
+        ok += 1;
+      }
+    }
+    if (ok === 0) continue;
+    sum4 += (sum / ok) ** 4;
+    count += 1;
+  }
+  return count > 0 ? (sum4 / count) ** 0.25 : null;
+}
+
+function finitePositive(value: number | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/** FIT files count strides (one foot) per minute on foot; the grid's own cadence is steps per minute already. */
+function summaryCadence(value: number | undefined, summary: WorkoutSummary, kind: SportKind): number | null {
+  const v = finitePositive(value);
+  return v !== null && summary.importedFrom && isFootKind(kind) ? v * 2 : v;
+}
+
+function buildStats(
+  input: AnalyzeInput,
+  grid: Grid,
+  kind: SportKind,
+  options: AnalyzeOptions,
+  distanceM: number | null,
+  hrValues: readonly number[],
+): AnalysisStats {
+  const { workout, summary, points } = input;
+  const hrOk = options.includeHr;
+  const hrMean = hrValues.length > 0 ? hrValues.reduce((a, b) => a + b, 0) / hrValues.length : null;
+  const validBpm = (v: number | null) => (v !== null && v >= MIN_BPM && v <= MAX_BPM ? v : null);
+
+  const bestPace = minOf(grid.pace) ?? finitePositive(summary.paceFastestSecPerKm) ?? finitePositive(summary.minPaceSecPerKm);
+  // Average pace and speed are the watch's distance over the moving time, as Strava computes them; the summary's own
+  // figures (distance over the watch's active time) only stand in when there is no distance.
+  const avgSpeed = (distanceM === null ? null : averageSpeedMs(distanceM, grid.movingSec)) ?? finitePositive(summary.avgSpeed);
+  const avgPace = hasPace(kind) ? (distanceM === null ? null : averagePaceSec(distanceM, grid.movingSec)) ?? finitePositive(summary.avgPaceSecPerKm) : null;
+  const maxSpeed = finitePositive(summary.maxSpeed) ?? (bestPace !== null ? 1000 / bestPace : null);
+
+  let strideSum = 0;
+  let strideCount = 0;
+  for (const p of points) {
+    if (typeof p.stride === 'number' && p.stride > 0) {
+      strideSum += p.stride;
+      strideCount += 1;
+    }
+  }
+
+  const avgPower = meanOf(grid.power) ?? finitePositive(summary.avgPower);
+  return {
+    avgHr: hrOk ? roundOrNull(validBpm(workout.avgHr) ?? hrMean, 0) : null,
+    maxHr: hrOk ? roundOrNull(validBpm(workout.maxHr) ?? maxOf(hrValues), 0) : null,
+    minHr: hrOk ? roundOrNull(validBpm(summary.minHr ?? null) ?? (hrValues.length > 0 ? Math.min(...hrValues) : null), 0) : null,
+    avgPaceSecKm: roundOrNull(avgPace, 0),
+    bestPaceSecKm: roundOrNull(bestPace, 0),
+    avgSpeedMs: roundOrNull(avgSpeed, 2),
+    maxSpeedMs: roundOrNull(maxSpeed, 2),
+    avgCad: roundOrNull(meanOf(grid.cad) ?? summaryCadence(summary.avgCadence, summary, kind), 0),
+    maxCad: roundOrNull(maxOf(grid.cad) ?? summaryCadence(summary.maxCadence, summary, kind), 0),
+    avgPower: roundOrNull(avgPower, 0),
+    maxPower: roundOrNull(maxOf(grid.power) ?? finitePositive(summary.maxPower), 0),
+    normalizedPower: roundOrNull(finitePositive(summary.normalizedPower) ?? normalizedPowerOf(grid.power, grid.stepSec), 0),
+    avgStrideM: roundOrNull(strideCount > 0 ? strideSum / strideCount : null, 2),
+  };
+}
+
+function buildSeries(grid: Grid, options: AnalyzeOptions): AnalysisSeries | null {
+  if (grid.n < 2) return null;
+  const rounded = (values: readonly (number | null)[] | null, decimals: number) => (values ? values.map((v) => roundOrNull(v, decimals)) : null);
+  const series: AnalysisSeries = {
+    stepSec: grid.stepSec,
+    n: grid.n,
+    dist: grid.dist ? grid.dist.map((d) => Math.round(d)) : null,
+    hr: options.includeHr ? rounded(grid.hr, 0) : null,
+    pace: rounded(grid.pace, 0),
+    alt: rounded(grid.alt, 1),
+    cad: rounded(grid.cad, 0),
+    power: rounded(grid.power, 0),
+    track:
+      options.includeRoute && grid.track
+        ? grid.track.map((p): LatLon | null => (p ? [round(p[0], 5), round(p[1], 5)] : null))
+        : null,
+  };
+  const carries = [series.dist, series.hr, series.pace, series.alt, series.cad, series.power, series.track].some((a) => a !== null);
+  return carries ? series : null;
+}
+
+/**
+ * The full analysis of one workout, ready to store or post: the shared time grid with every series, splits, laps, zones,
+ * best efforts, relative effort, training load, comparison with similar past workouts and summary stats. Pure: everything it
+ * needs is passed in (history from `loadAnalysisHistory`). `options` says what a shared post may reveal: without
+ * `includeRoute` there is no track, without `includeHr` no heart-rate series, zones, effort or load, without
+ * `includeComparison` no comparison.
+ */
+export function analyzeWorkout(input: AnalyzeInput, options: AnalyzeOptions): WorkoutAnalysis {
+  const { workout, summary, points, history } = input;
+  const kind = sportKind(workout.sportName, summary.kind);
+  const foot = isFootKind(kind);
+  const grid = buildGrid({
+    start: workout.start,
+    end: workout.end,
+    duration: workout.duration,
+    distance: workout.distance,
+    kind,
+    points,
+  });
+
+  const hrPoints = points.filter((p) => p.hr !== null && p.hr >= MIN_BPM && p.hr <= MAX_BPM);
+  const strain = workoutStrain(hrPoints, input.maxHr);
+
+  const profile = grid.altRaw ? elevationProfile(grid.altRaw, grid.stepSec) : null;
+  const splitGrid: SplitGrid = {
+    stepSec: grid.stepSec,
+    n: grid.n,
+    dist: grid.dist,
+    hr: options.includeHr ? grid.hr : null,
+    cad: grid.cad,
+    cumGain: profile?.cumGain ?? null,
+    cumLoss: profile?.cumLoss ?? null,
+  };
+  const hasBlocks = (summary.paceBlocks ?? []).some((b) => b.type === 0);
+  let splits: AnalysisSplit[];
+  if (grid.distSource === 'gps') splits = kmSplits(splitGrid, kind);
+  else if (hasBlocks) splits = paceBlockSplits(summary.paceBlocks, splitGrid);
+  else if (grid.distSource === 'speed') splits = kmSplits(splitGrid, kind);
+  else splits = [];
+  splits = splits.slice(0, ANALYSIS_LIMITS.splits);
+
+  const efforts = foot ? bestEfforts(grid.fixes, history.efforts) : [];
+  const candidates = thresholdCandidates(efforts, history.efforts);
+  const threshold = foot && grid.pace ? thresholdPace(candidates) : null;
+
+  const distanceM = workout.distance > 0 ? Math.round(workout.distance) : grid.dist && grid.dist[grid.n - 1] > 0 ? Math.round(grid.dist[grid.n - 1]) : null;
+  const split = options.includeHr && workout.calories > 0 ? splitWorkout(workout.calories, hrPoints, input.maxHr) : null;
+  const e = elevationSummary(grid.alt, profile, summary);
+  const similar = options.includeComparison
+    ? selectSimilar(
+        { start: workout.start, duration: workout.duration, distance: workout.distance, sportName: workout.sportName },
+        history.similar,
+      )
+    : null;
+  const comparison =
+    similar && !options.includeHr ? { ...similar, items: similar.items.map((item) => ({ ...item, avgHr: null })) } : similar;
+
+  return {
+    v: WORKOUT_ANALYSIS_VERSION,
+    sport: { name: workout.sportName.slice(0, MAX_SPORT_NAME), kind },
+    startedAt: workout.start * 1000,
+    elapsedSec: Math.round(grid.elapsedSec),
+    movingSec: Math.round(grid.movingSec),
+    distanceM,
+    elevation: e ? { gainM: round(e.gainM, 1), lossM: round(e.lossM, 1), minM: round(e.minM, 1), maxM: round(e.maxM, 1) } : null,
+    series: buildSeries(grid, options),
+    splits,
+    laps: buildLaps(summary.laps, workout.start, splitGrid, hasPace(kind), options.includeHr),
+    hrZones: options.includeHr && strain ? hrZones(strain, input.maxHr, input.maxHrSource ?? 'age') : null,
+    paceZones: threshold !== null && grid.pace ? paceZones(grid.pace, grid.stepSec, grid.elapsedSec, threshold) : null,
+    bestEfforts: efforts,
+    effort: options.includeHr && strain ? buildEffort(strain, workout, input.daySamples, input.maxHr) : null,
+    load: options.includeHr && strain ? buildLoad(strain.trimp, workout.start, history.trimps, summary) : null,
+    calories:
+      workout.calories > 0
+        ? { kcal: Math.round(workout.calories), fatG: split ? round(split.fatGrams, 1) : null, carbG: split ? round(split.carbGrams, 1) : null }
+        : null,
+    comparison,
+    stats: buildStats(input, grid, kind, options, distanceM, hrPoints.map((p) => p.hr as number)),
+  };
+}

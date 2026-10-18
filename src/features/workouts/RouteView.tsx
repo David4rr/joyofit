@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 
 import { AppText } from '@/components/AppText';
 import { downsample, projectRoute, type RoutePoint } from '@/features/workouts/summary';
-import { radius, useColors } from '@/theme';
+import { useTheme } from '@/theme';
 
 const WIDTH = 320;
 const HEIGHT = 240;
@@ -13,7 +14,8 @@ const MAX_POINTS = 800;
 
 /** The GPS track as an SVG polyline, north up, scaled to fit. Start is a filled dot, end a ring. */
 export function RouteView({ route }: { route: readonly RoutePoint[] }) {
-  const colors = useColors();
+  const { colors, radius } = useTheme();
+  const { t } = useTranslation('workouts');
   const projected = useMemo(
     () => projectRoute(downsample(route, MAX_POINTS), WIDTH, HEIGHT, PADDING),
     [route],
@@ -22,15 +24,15 @@ export function RouteView({ route }: { route: readonly RoutePoint[] }) {
   if (!projected) {
     return (
       <AppText variant="caption" muted>
-        No GPS track stored for this workout.
+        {t('detail.route.none')}
       </AppText>
     );
   }
   return (
     <View
       accessible
-      accessibilityLabel={`Route with ${route.length} GPS points`}
-      style={[styles.box, { backgroundColor: colors.muted }]}>
+      accessibilityLabel={t('detail.route.a11y', { count: route.length })}
+      style={[styles.box, { backgroundColor: colors.muted, borderRadius: radius.tile }]}>
       <Svg width="100%" height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
         <Polyline
           points={projected.polyline}
@@ -55,5 +57,5 @@ export function RouteView({ route }: { route: readonly RoutePoint[] }) {
 }
 
 const styles = StyleSheet.create({
-  box: { borderRadius: radius.tile, overflow: 'hidden' },
+  box: { overflow: 'hidden' },
 });

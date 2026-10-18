@@ -18,6 +18,30 @@ internal fun withoutStrayUnstaged(segments: List<SleepSegment>): List<SleepSegme
   }
 }
 
+/**
+ * Drops stretches of sleep (segments chained with gaps up to [SleepReport.BLIP_GAP_SEC]) holding less than
+ * [SleepReport.MIN_SLEEP_SEC] asleep. A watch records a few minutes of sitting still, such as a 1-minute HRV or stress
+ * check, as sleep; on its own that became the latest night or a nap, and near a night it stretched the night. Same rule
+ * as `withoutBlips` in src/features/today/stats.ts. Returns the kept segments sorted by start.
+ */
+internal fun withoutBlips(segments: List<SleepSegment>): List<SleepSegment> {
+  val kept = ArrayList<SleepSegment>(segments.size)
+  val stretch = ArrayList<SleepSegment>()
+  var reach = Long.MIN_VALUE
+  fun close() {
+    val asleep = stretch.sumOf { if (it.stage == "awake") 0L else maxOf(0L, it.end - it.start) }
+    if (asleep >= SleepReport.MIN_SLEEP_SEC) kept.addAll(stretch)
+    stretch.clear()
+  }
+  for (s in segments.sortedWith(compareBy({ it.start }, { it.end }))) {
+    if (stretch.isNotEmpty() && s.start - reach > SleepReport.BLIP_GAP_SEC) close()
+    reach = if (stretch.isEmpty()) s.end else maxOf(reach, s.end)
+    stretch.add(s)
+  }
+  close()
+  return kept
+}
+
 /** One night as the report describes it, seconds per stage from the stored segments. */
 internal class SleepNight(
   val start: Long,
@@ -33,14 +57,13 @@ internal class SleepNight(
 }
 
 /**
- * The morning sleep report (a notification card on the watch), after Huawei Health 17.0.8.300 `but`
- * (SleepNotificationManager) and `vgm` (CoreSleepEventHandler). DataSync event `80030001`, phone package
+ * The morning sleep report (a notification card on the watch), as Huawei Health 17.0.8.300 behaves on the wire. DataSync event `80030001`, phone package
  * `hw.unitedevice.sleepnotification`, watch package `hw.watch.health.sleep`, level 0, gated on ExpandCapability 84.
  *
- * The event data is a TLV of UTF-8 strings (`but.a(DeviceInfo, buu)` with `buu`'s getters mapped by `vgm.c`):
+ * The event data is a TLV of UTF-8 strings:
  * `06` title, `07` description, `08` label of the "open" button, `09` label of the "ignore" button, `0a` locale
  * (`xx-YY`), `0b` URI of the "open" action, `0c` URI of the "ignore" action. The watch answers the same event id
- * with data `01` when it showed the card (`but.onDataReceived`); anything else counts as not shown.
+ * with data `01` when it showed the card; anything else counts as not shown.
  */
 internal object SleepReport {
   const val EVENT_ID = 80030001
@@ -61,16 +84,26 @@ internal object SleepReport {
   /** Shorter sessions are naps, not "last night". */
   const val MIN_NIGHT_SEC = 3 * 3600L
 
+  /** Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap (`BLIP_GAP_SEC` in `stats.ts`). */
+  const val BLIP_GAP_SEC = 3600L
+
+  /** A stretch with less sleep than this (awake excluded) is not sleep, e.g. a 1-minute HRV check (`MIN_SLEEP_SEC` in `stats.ts`). */
+  const val MIN_SLEEP_SEC = 5 * 60L
+
   /** A report is only pushed this long after waking up at most; later it is not a morning report any more. */
   const val MAX_AGE_SEC = 8 * 3600L
 
-  /** The latest session of [segments], chained with gaps up to [SESSION_GAP_SEC] (`lastSleepSession` in `stats.ts`). */
+  /**
+   * The latest session of [segments], chained with gaps up to [SESSION_GAP_SEC] and cut at a segment marked
+   * [SleepSegment.breakBefore] (`lastSleepSession` in `stats.ts`).
+   */
   fun lastNight(segments: List<SleepSegment>): SleepNight? {
     if (segments.isEmpty()) return null
-    val sorted = withoutStrayUnstaged(segments).sortedBy { it.start }
+    val sorted = withoutBlips(withoutStrayUnstaged(segments))
+    if (sorted.isEmpty()) return null
     var first = sorted.size - 1
     var earliest = sorted[first].start
-    while (first > 0 && earliest - sorted[first - 1].end <= SESSION_GAP_SEC) {
+    while (first > 0 && !sorted[first].breakBefore && earliest - sorted[first - 1].end <= SESSION_GAP_SEC) {
       first--
       earliest = minOf(earliest, sorted[first].start)
     }
@@ -157,6 +190,6 @@ internal object SleepReport {
     .put(TAG_IGNORE_URI, message.ignoreUri)
     .serialize()
 
-  /** The watch's answer: shown when the data reads as the number 1 (`but.onDataReceived`: hex string, `CommonUtil.y(...) == 1`). */
+  /** The watch's answer: shown when the data reads as the number 1 (hex string that parses to 1). */
   fun acknowledged(data: ByteArray?): Boolean = DataSyncBytes.readInt32(data) == 1
 }

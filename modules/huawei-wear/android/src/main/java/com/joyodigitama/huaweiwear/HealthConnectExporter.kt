@@ -43,6 +43,9 @@ internal class HealthConnectCounts {
   var spo2 = 0
   var restingHeartRate = 0
   var sleep = 0
+
+  /** Sleep sessions of an earlier build asked to be deleted (not part of [total] or of `HealthConnectExportResult`). */
+  var sleepRemoved = 0
   var workouts = 0
 
   val total get() = steps + distance + calories + heartRate + spo2 + restingHeartRate + sleep + workouts
@@ -59,7 +62,7 @@ internal class HealthConnectCounts {
   )
 
   override fun toString() =
-    "steps=$steps distance=$distance calories=$calories hr=$heartRate spo2=$spo2 restingHr=$restingHeartRate sleep=$sleep workouts=$workouts"
+    "steps=$steps distance=$distance calories=$calories hr=$heartRate spo2=$spo2 restingHr=$restingHeartRate sleep=$sleep sleepRemoved=$sleepRemoved workouts=$workouts"
 }
 
 /** Health Connect switch and the last export's outcome; private preferences, readable without JS. */
@@ -89,12 +92,18 @@ internal class HealthConnectSettings(context: Context) {
     get() = prefs.getString(KEY_COUNTS, null)
     set(value) = prefs.edit().apply { if (value == null) remove(KEY_COUNTS) else putString(KEY_COUNTS, value) }.apply()
 
+  /** The [SleepCleaning.SLEEP_RULES_VERSION] the whole stored sleep was last exported under; 0 before any such export. */
+  var sleepRulesVersion: Int
+    get() = prefs.getInt(KEY_SLEEP_RULES, 0)
+    set(value) = prefs.edit().putInt(KEY_SLEEP_RULES, value).apply()
+
   private companion object {
     const val KEY_ENABLED = "enabled"
     const val KEY_LAST_EXPORT = "last_export_sec"
     const val KEY_LAST_ERROR = "last_error"
     const val KEY_WORKOUTS = "exported_workouts"
     const val KEY_COUNTS = "last_counts"
+    const val KEY_SLEEP_RULES = "sleep_rules_version"
   }
 }
 
@@ -190,7 +199,10 @@ internal class HealthConnectExporter(
     if (!settings.enabled) return
     scope.launch(Dispatchers.IO) {
       try {
-        mutex.withLock { run("sync window") { c, g, v, d -> exportWindow(c, g, v, d, summary.from) } }
+        mutex.withLock {
+          run("sync window") { c, g, v, d -> exportWindow(c, g, v, d, summary.from) }
+          if (sleepRepairDue()) run("sleep repair") { c, g, v, d -> repairSleep(c, g, v, d) }
+        }
       } catch (e: CancellationException) {
         throw e
       } catch (e: Exception) {
@@ -198,6 +210,28 @@ internal class HealthConnectExporter(
       }
     }
   }
+
+  /**
+   * On app or service start: when the sleep rules changed since the last export ([SleepCleaning.SLEEP_RULES_VERSION]),
+   * rewrites the stored sleep now instead of waiting for the next sync. Does nothing while the export is off or
+   * Health Connect is not there.
+   */
+  fun repairSleepIfDue() {
+    if (!sleepRepairDue() || availability() != "available") return
+    scope.launch(Dispatchers.IO) {
+      try {
+        mutex.withLock {
+          if (sleepRepairDue()) run("sleep repair") { c, g, v, d -> repairSleep(c, g, v, d) }
+        }
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        fail(e)
+      }
+    }
+  }
+
+  private fun sleepRepairDue() = settings.enabled && SleepRulesRepair.due(settings.sleepRulesVersion)
 
   /** Writes everything stored so far; resolves with the counts and keeps running if the caller goes away. */
   suspend fun backfill(): Map<String, Any?> {
@@ -287,7 +321,7 @@ internal class HealthConnectExporter(
     val counts = HealthConnectCounts()
     val bounds = withContext(Dispatchers.IO) {
       syncStore.read { db ->
-        db.rawQuery("SELECT MIN(timestamp), MAX(timestamp) FROM step_samples", null).use {
+        db.rawQuery("SELECT MIN(timestamp), MAX(timestamp) FROM step_samples WHERE imported = 0", null).use {
           if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) to it.getLong(1) else null
         }
       }
@@ -301,7 +335,7 @@ internal class HealthConnectExporter(
         start = next
       }
     }
-    exportSleep(client, granted, version, device, 0L, counts)
+    if (exportSleep(client, granted, version, device, 0L, counts)) settings.sleepRulesVersion = SleepCleaning.SLEEP_RULES_VERSION
     exportWorkouts(client, granted, version, device, counts)
     return counts
   }
@@ -309,7 +343,7 @@ internal class HealthConnectExporter(
   private fun loadSamples(db: SQLiteDatabase, fromSec: Long, toSec: Long): List<StepSample> =
     db.rawQuery(
       """SELECT timestamp, steps, calories, distance, heart_rate, spo2, resting_heart_rate
-         FROM step_samples WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp""",
+         FROM step_samples WHERE imported = 0 AND timestamp >= ? AND timestamp < ? ORDER BY timestamp""",
       arrayOf(fromSec.toString(), toSec.toString()),
     ).use { c ->
       val out = ArrayList<StepSample>(c.count)
@@ -409,6 +443,12 @@ internal class HealthConnectExporter(
     }
   }
 
+  /**
+   * Sessions ending at or after [fromSec], planned from the stored sleep with its stage-less rows cleaned
+   * ([SleepStore]). Records an earlier build wrote for sessions the cleaned plan no longer has (see
+   * [HealthConnectPlan.staleSleepIds]) are deleted; only records this app wrote can be deleted. Returns false when the
+   * sleep permission is missing and nothing was done.
+   */
   private suspend fun exportSleep(
     client: HealthConnectClient,
     granted: Set<String>,
@@ -416,26 +456,19 @@ internal class HealthConnectExporter(
     device: Device,
     fromSec: Long,
     counts: HealthConnectCounts,
-  ) {
-    if (HealthPermission.getWritePermission(SleepSessionRecord::class) !in granted) return
+  ): Boolean {
+    if (HealthPermission.getWritePermission(SleepSessionRecord::class) !in granted) return false
     // Read a day before the window so a night that began before it is seen whole.
-    val segments = withContext(Dispatchers.IO) {
+    val (raw, segments) = withContext(Dispatchers.IO) {
       syncStore.read { db ->
-        db.rawQuery(
-          "SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start",
-          arrayOf((fromSec - 24 * 3600L).toString()),
-        ).use { c ->
-          val out = ArrayList<SleepSegment>(c.count)
-          while (c.moveToNext()) {
-            out.add(SleepSegment(c.getLong(0), c.getLong(1), c.getInt(2), if (c.isNull(3)) null else c.getString(3)))
-          }
-          out
-        }
+        val rows = SleepStore.loadRaw(db, fromSec - 24 * 3600L - SleepStore.CLEAN_MARGIN_SEC, importedOnly = true)
+        rows to SleepStore.clean(db, rows)
       }
     }
     val zone = ZoneId.systemDefault()
     fun offset(sec: Long): ZoneOffset = zone.rules.getOffset(Instant.ofEpochSecond(sec))
-    val records = HealthConnectPlan.sleepSessions(segments, fromSec).map { s ->
+    val plan = HealthConnectPlan.sleepSessions(segments, fromSec)
+    val records = plan.map { s ->
       SleepSessionRecord(
         Instant.ofEpochSecond(s.startSec), offset(s.startSec), Instant.ofEpochSecond(s.endSec), offset(s.endSec),
         Metadata.autoRecorded(device, s.id, version),
@@ -447,6 +480,28 @@ internal class HealthConnectExporter(
       )
     }
     counts.sleep += insert(client, records)
+    val stale = HealthConnectPlan.staleSleepIds(raw, plan, fromSec)
+    for (chunk in stale.chunked(INSERT_CHUNK)) {
+      client.deleteRecords(SleepSessionRecord::class, emptyList(), chunk)
+    }
+    counts.sleepRemoved += stale.size
+    return true
+  }
+
+  /**
+   * After an update that changed the sleep rules ([SleepCleaning.SLEEP_RULES_VERSION]): writes every stored night again
+   * and deletes the sessions the old rules wrote. Ran at most once per version; the marker is only set when the whole
+   * history went through, so a failed or permission-less run is tried again at the next sync or app start.
+   */
+  private suspend fun repairSleep(
+    client: HealthConnectClient,
+    granted: Set<String>,
+    version: Long,
+    device: Device,
+  ): HealthConnectCounts {
+    val counts = HealthConnectCounts()
+    if (exportSleep(client, granted, version, device, 0L, counts)) settings.sleepRulesVersion = SleepCleaning.SLEEP_RULES_VERSION
+    return counts
   }
 
   /**
@@ -507,7 +562,7 @@ internal class HealthConnectExporter(
     if (!exists) return emptyList()
     return db.rawQuery(
       """SELECT start, end, duration, sport_type, sport_name, distance, calories, avg_hr, max_hr
-         FROM workouts WHERE complete = 1 ORDER BY start""",
+         FROM workouts WHERE imported = 0 AND complete = 1 ORDER BY start""",
       null,
     ).use { c ->
       fun int(i: Int): Int? = if (c.isNull(i)) null else c.getInt(i)

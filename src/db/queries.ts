@@ -1,5 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { ACTIVE_STEPS_PER_MIN, cleanUnstagedSleep, workoutSpan, type SleepEvidence } from '@/features/sleep/cleanSleep';
+import type { SleepSpan } from '@/features/today/stats';
 import type { DayHeartLoad } from '@/features/today/strain';
 import type { SleepSegment, StepSample } from '@/wear';
 
@@ -9,6 +11,11 @@ export async function getLastSync(db: SQLiteDatabase, address: string): Promise<
     address,
   );
   return row?.last_sync ?? null;
+}
+
+/** A watch has been connected on this phone before (a `device` row exists). */
+export async function hasStoredWatch(db: SQLiteDatabase): Promise<boolean> {
+  return (await db.getFirstAsync<{ address: string }>('SELECT address FROM device LIMIT 1')) !== null;
 }
 
 export function listStepSamplesSince(db: SQLiteDatabase, sinceSec: number): Promise<StepSample[]> {
@@ -27,17 +34,70 @@ export function getLatestHeartRate(db: SQLiteDatabase): Promise<{ bpm: number; t
   );
 }
 
+/**
+ * What the stored workouts, spot HRV measurements and per-minute steps say about `[from, to]`, for
+ * `cleanUnstagedSleep`. Only minutes with real walking are read, never the whole step history.
+ */
+async function sleepEvidence(db: SQLiteDatabase, from: number, to: number): Promise<SleepEvidence> {
+  const [workouts, spots, active] = await Promise.all([
+    db.getAllAsync<{ start: number; end: number; duration: number }>(
+      'SELECT start, end, duration FROM workouts WHERE end >= ? AND start <= ?',
+      from,
+      to,
+    ),
+    db.getAllAsync<{ start: number; end: number }>(
+      "SELECT start, end FROM hrv_readings WHERE source = 'spot' AND end >= ? AND start <= ?",
+      from,
+      to,
+    ),
+    db.getAllAsync<{ timestamp: number }>(
+      'SELECT timestamp FROM step_samples WHERE timestamp >= ? AND timestamp <= ? AND steps >= ?',
+      from - 60,
+      to,
+      ACTIVE_STEPS_PER_MIN,
+    ),
+  ]);
+  return {
+    workouts: workouts.map((w) => workoutSpan(w.start, w.end, w.duration)),
+    spots,
+    activeMinutes: active.map((a) => a.timestamp),
+  };
+}
+
+/**
+ * Stored segments, with the stage-less ones cleaned of what was not sleep (`cleanUnstagedSleep`): workouts, spot HRV
+ * measurements, minutes of walking, fragments too short to be sleep. The raw rows stay as the watch sent them, so a
+ * rule change re-derives every stored night the next time it is read. Staged segments come back as stored.
+ */
+async function cleanedSleep(db: SQLiteDatabase, rows: SleepSegment[]): Promise<SleepSpan[]> {
+  let from = Infinity;
+  let to = -Infinity;
+  for (const r of rows) {
+    if (r.stage) continue;
+    from = Math.min(from, r.start);
+    to = Math.max(to, r.end);
+  }
+  if (from > to) return rows;
+  return cleanUnstagedSleep(rows, await sleepEvidence(db, from, to));
+}
+
 /** Segments that end at or after `sinceSec`, oldest first. */
-export function listSleepSince(db: SQLiteDatabase, sinceSec: number): Promise<SleepSegment[]> {
-  return db.getAllAsync<SleepSegment>(
-    'SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start',
-    sinceSec,
+export async function listSleepSince(db: SQLiteDatabase, sinceSec: number): Promise<SleepSpan[]> {
+  return cleanedSleep(
+    db,
+    await db.getAllAsync<SleepSegment>(
+      'SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start',
+      sinceSec,
+    ),
   );
 }
 
 /** Every stored segment, oldest first. A night is tens of rows, so the whole history stays small. */
-export function listAllSleep(db: SQLiteDatabase): Promise<SleepSegment[]> {
-  return db.getAllAsync<SleepSegment>('SELECT start, end, type, stage FROM sleep_segments ORDER BY start, end');
+export async function listAllSleep(db: SQLiteDatabase): Promise<SleepSpan[]> {
+  return cleanedSleep(
+    db,
+    await db.getAllAsync<SleepSegment>('SELECT start, end, type, stage FROM sleep_segments ORDER BY start, end'),
+  );
 }
 
 /** The watch's own score for one night (`sleep_scores`); `start` / `end` span the night it scored. */
@@ -70,7 +130,16 @@ export function listHrvReadingsSince(db: SQLiteDatabase, sinceSec: number): Prom
   );
 }
 
-/** A `workouts` row. `complete` is false while a part of its download failed; the next sync retries. */
+/** Night HRV rows (`source = 'night'`) that ended at or after `sinceSec`. */
+export async function countNightHrvSince(db: SQLiteDatabase, sinceSec: number): Promise<number> {
+  const row = await db.getFirstAsync<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM hrv_readings WHERE source = 'night' AND end >= ?",
+    sinceSec,
+  );
+  return row?.n ?? 0;
+}
+
+/** A `workouts` row. `complete` is false while a part of its download failed; the next sync retries. `imported` marks a row that came from a Huawei export or a FIT file instead of the watch. */
 export interface WorkoutRow {
   id: number;
   workoutNumber: number;
@@ -89,25 +158,35 @@ export interface WorkoutRow {
   maxHr: number | null;
   steps: number;
   complete: boolean;
+  imported: boolean;
 }
 
-/** One `workout_points` row: GPS points have lat/lon, data samples have hr and altitude. */
+/**
+ * One `workout_points` row. Every source stores only the fields it had: GPS points have lat/lon, data samples have
+ * hr and altitude, and the per-sample motion fields come from the watch (all four), a FIT file (cadence, power,
+ * speed, stride) or a Huawei export (cadence only). `speed` is metres per second, `cadence` steps per minute
+ * (revolutions per minute when cycling), `stride` metres per step, `power` watts.
+ */
 export interface WorkoutPointRow {
   ts: number;
   lat: number | null;
   lon: number | null;
   alt: number | null;
   hr: number | null;
+  speed: number | null;
+  cadence: number | null;
+  stride: number | null;
+  power: number | null;
 }
 
 const WORKOUT_COLUMNS = `id, workout_number AS workoutNumber, start, end, sport_type AS sportType,
   sport_name AS sportName, duration, distance, calories, avg_hr AS avgHr, max_hr AS maxHr, steps,
-  complete != 0 AS complete`;
+  complete != 0 AS complete, imported != 0 AS imported`;
 
-type RawWorkout = Omit<WorkoutRow, 'complete'> & { complete: number };
+type RawWorkout = Omit<WorkoutRow, 'complete' | 'imported'> & { complete: number; imported: number };
 
 function toWorkout(row: RawWorkout): WorkoutRow {
-  return { ...row, complete: row.complete !== 0 };
+  return { ...row, complete: row.complete !== 0, imported: row.imported !== 0 };
 }
 
 /** Newest first. */
@@ -133,9 +212,26 @@ export async function getWorkout(
 
 export function listWorkoutPoints(db: SQLiteDatabase, workoutId: number): Promise<WorkoutPointRow[]> {
   return db.getAllAsync<WorkoutPointRow>(
-    'SELECT ts, lat, lon, alt, hr FROM workout_points WHERE workout_id = ? ORDER BY ts',
+    'SELECT ts, lat, lon, alt, hr, speed, cadence, stride, power FROM workout_points WHERE workout_id = ? ORDER BY ts',
     workoutId,
   );
+}
+
+/** Complete workouts other than `excludeId` that started in `[sinceSec, beforeSec)`, newest first, with their summary JSON. */
+export async function listWorkoutsSince(
+  db: SQLiteDatabase,
+  sinceSec: number,
+  beforeSec: number,
+  excludeId: number,
+): Promise<{ workout: WorkoutRow; summaryJson: string }[]> {
+  const rows = await db.getAllAsync<RawWorkout & { summaryJson: string }>(
+    `SELECT ${WORKOUT_COLUMNS}, summary_json AS summaryJson FROM workouts
+     WHERE start >= ? AND start < ? AND id != ? AND complete != 0 ORDER BY start DESC`,
+    sinceSec,
+    beforeSec,
+    excludeId,
+  );
+  return rows.map(({ summaryJson, ...rest }) => ({ workout: toWorkout(rest), summaryJson }));
 }
 
 /**
@@ -197,4 +293,13 @@ export async function listRestingHeartRateByDay(db: SQLiteDatabase, bounds: read
     days,
   );
   return new Map(rows.map((r) => [r.day, r.bpm]));
+}
+
+/** One `health_metrics` value of `type` (`ts` unix seconds); rows without a number are left out. */
+export function listMetricSince(db: SQLiteDatabase, type: string, sinceSec: number): Promise<{ ts: number; value: number }[]> {
+  return db.getAllAsync<{ ts: number; value: number }>(
+    'SELECT ts, value FROM health_metrics WHERE type = ? AND ts >= ? AND value IS NOT NULL ORDER BY ts',
+    type,
+    sinceSec,
+  );
 }

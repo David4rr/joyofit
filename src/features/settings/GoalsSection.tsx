@@ -1,15 +1,20 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 
-import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ButtonRow } from '@/components/ButtonRow';
+import { Details } from '@/components/Details';
 import { Field } from '@/components/Input';
-import { KeyValue } from '@/components/KeyValue';
-import { Section } from '@/components/Screen';
+import { Divider, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatDateTime } from '@/format';
+import { t } from '@/i18n';
 import { HuaweiWear, type ActivityGoals } from '@/wear';
+import { spacing } from '@/theme';
 
 /** Huawei Health's defaults: 10 000 steps, 300 active kcal, 30 exercise minutes, 12 stand hours, all reminders on. */
 const HUAWEI_DEFAULTS: ActivityGoals = {
@@ -38,22 +43,23 @@ const toFields = (goals: ActivityGoals): Fields => ({
 
 function whole(text: string, min: number, max: number, what: string): number | string {
   const n = Number(text.trim());
-  if (!Number.isInteger(n) || n < min || n > max) return `${what} must be a whole number from ${min} to ${max}.`;
+  if (!Number.isInteger(n) || n < min || n > max) return t('settings:goals.errors.whole', { what, min, max });
   return n;
 }
 
 /** The four goals from the form, or the first message that explains what is out of range. */
 function parseFields(fields: Fields, reminders: Pick<ActivityGoals, 'remindStand' | 'remindProgress' | 'remindGoalReached'>): ActivityGoals | string {
-  const steps = whole(fields.steps, 1000, 100_000, 'Steps goal');
-  const calories = whole(fields.calories, 50, 10_000, 'Calories goal');
-  const exerciseMinutes = whole(fields.exercise, 1, 600, 'Exercise goal');
-  const standHours = whole(fields.stand, 1, 24, 'Stand goal');
+  const steps = whole(fields.steps, 1000, 100_000, t('settings:goals.errors.steps'));
+  const calories = whole(fields.calories, 50, 10_000, t('settings:goals.errors.calories'));
+  const exerciseMinutes = whole(fields.exercise, 1, 600, t('settings:goals.errors.exercise'));
+  const standHours = whole(fields.stand, 1, 24, t('settings:goals.errors.stand'));
   for (const value of [steps, calories, exerciseMinutes, standHours]) if (typeof value === 'string') return value;
   return { steps: steps as number, calories: calories as number, exerciseMinutes: exerciseMinutes as number, standHours: standHours as number, ...reminders };
 }
 
 /** Activity-ring goals and reminders, sent to the watch on save and on every connect. */
 export function GoalsSection() {
+  const { t } = useTranslation('settings');
   const [status, setStatus] = useState(() => HuaweiWear.getActivityGoals());
   const [fields, setFields] = useState<Fields>(() => toFields(HuaweiWear.getActivityGoals()));
   const [message, setMessage] = useState<{ text: string; danger: boolean } | null>(null);
@@ -72,7 +78,7 @@ export function GoalsSection() {
     setMessage(null);
     try {
       const sent = await HuaweiWear.setActivityGoals(goals);
-      setMessage({ text: sent ? 'Sent to the watch.' : 'Saved. It is sent the next time the watch connects.', danger: false });
+      setMessage({ text: sent ? t('goals.sent') : t('goals.saved'), danger: false });
     } catch (e) {
       setMessage({ text: errorMessage(e), danger: true });
     } finally {
@@ -106,53 +112,67 @@ export function GoalsSection() {
   };
 
   return (
-    <>
-      <Section title="Activity goals" icon="flag">
-        <AppText variant="caption" muted>
-          The three rings and the calorie goal on the watch. The steps goal is also your daily step goal in Profile and goal. Sent on
-          save and whenever the watch connects.
-        </AppText>
-        <Field label="Steps per day" icon="footsteps" keyboardType="number-pad" value={fields.steps} onChangeText={edit('steps')} />
-        <Field label="Active calories (kcal)" icon="flame" keyboardType="number-pad" value={fields.calories} onChangeText={edit('calories')} />
-        <Field label="Exercise (minutes)" icon="timer" keyboardType="number-pad" value={fields.exercise} onChangeText={edit('exercise')} />
-        <Field label="Stand (hours)" icon="body" keyboardType="number-pad" value={fields.stand} onChangeText={edit('stand')} />
-        {message ? <Notice tone={message.danger ? 'danger' : 'info'}>{message.text}</Notice> : null}
-        <Button label="Save and send" variant="primary" icon="send" loading={busy} onPress={save} />
-        <Button label="Use Huawei defaults" variant="secondary" disabled={busy} onPress={reset} />
-      </Section>
-
-      <Section title="Reminders" icon="notifications">
-        <SwitchRow
-          icon="walk"
-          label="Stand reminder"
-          hint="The watch nudges you when you have been sitting."
-          value={status.remindStand}
-          disabled={busy}
-          onValueChange={toggle('remindStand')}
+    <Section title={t('goals.title')} icon="flag">
+      <View style={styles.row}>
+        <View style={styles.cell}>
+          <Field label={t('goals.fields.steps')} icon="footsteps" keyboardType="number-pad" value={fields.steps} onChangeText={edit('steps')} />
+        </View>
+        <View style={styles.cell}>
+          <Field label={t('goals.fields.calories')} icon="flame" keyboardType="number-pad" value={fields.calories} onChangeText={edit('calories')} />
+        </View>
+      </View>
+      <View style={styles.row}>
+        <View style={styles.cell}>
+          <Field label={t('goals.fields.exercise')} icon="timer" keyboardType="number-pad" value={fields.exercise} onChangeText={edit('exercise')} />
+        </View>
+        <View style={styles.cell}>
+          <Field label={t('goals.fields.stand')} icon="body" keyboardType="number-pad" value={fields.stand} onChangeText={edit('stand')} />
+        </View>
+      </View>
+      {message ? <Notice tone={message.danger ? 'danger' : 'info'}>{message.text}</Notice> : null}
+      <ButtonRow>
+        <Button label={t('goals.saveAndSend')} variant="primary" icon="send" loading={busy} onPress={save} />
+        <Button label={t('goals.defaults')} variant="secondary" disabled={busy} onPress={reset} />
+      </ButtonRow>
+      <Divider />
+      <SwitchRow
+        icon="walk"
+        label={t('goals.reminders.stand')}
+        value={status.remindStand}
+        disabled={busy}
+        onValueChange={toggle('remindStand')}
+      />
+      <SwitchRow
+        icon="speedometer"
+        label={t('goals.reminders.progress')}
+        value={status.remindProgress}
+        disabled={busy}
+        onValueChange={toggle('remindProgress')}
+      />
+      <SwitchRow
+        icon="trophy"
+        label={t('goals.reminders.reached')}
+        value={status.remindGoalReached}
+        disabled={busy}
+        onValueChange={toggle('remindGoalReached')}
+      />
+      <PairGrid>
+        <Pair
+          label={t('goals.accepts')}
+          value={status.configSupported === null
+              ? t('goals.acceptsNotConnected')
+              : status.configSupported
+                ? t('goals.acceptsYes')
+                : t('goals.acceptsNo')}
         />
-        <SwitchRow
-          icon="speedometer"
-          label="Progress reminder"
-          hint="Tells you how far along the day's goals are."
-          value={status.remindProgress}
-          disabled={busy}
-          onValueChange={toggle('remindProgress')}
-        />
-        <SwitchRow
-          icon="trophy"
-          label="Goal reached"
-          hint="Celebrates when a ring closes."
-          value={status.remindGoalReached}
-          disabled={busy}
-          onValueChange={toggle('remindGoalReached')}
-        />
-        <KeyValue
-          icon="watch"
-          label="Watch accepts goals"
-          value={status.configSupported === null ? 'Not connected' : status.configSupported ? 'Yes' : 'Not in its capabilities'}
-        />
-        <KeyValue icon="send" label="Last send" value={status.lastSentAt ? formatDateTime(status.lastSentAt / 1000) : null} />
-      </Section>
-    </>
+        <Pair label={t('goals.lastSend')} value={status.lastSentAt ? formatDateTime(status.lastSentAt / 1000) : null} />
+      </PairGrid>
+      <Details>{t('goals.details')}</Details>
+    </Section>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: spacing.md },
+  cell: { flex: 1 },
+});

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -42,6 +43,7 @@ export const InstalledFaceCard = memo(function InstalledFaceCard({
   onCustomize,
   onDelete,
 }: InstalledFaceCardProps) {
+  const { t } = useTranslation(['watch', 'common']);
   const working = typeof busy === 'object' && busy !== null && busy.id === face.id;
   const action = typeof busy === 'object' && busy !== null ? busy.action : null;
 
@@ -108,7 +110,7 @@ export const InstalledFaceCard = memo(function InstalledFaceCard({
       ) : null}
       <View style={styles.actions}>
         <Button
-          label={face.active ? 'Active' : 'Set active'}
+          label={face.active ? t('watch:faces.active') : t('watch:faces.setActive')}
           icon={face.active ? 'checkmark-circle' : 'checkmark-circle-outline'}
           variant={face.active ? 'secondary' : 'primary'}
           disabled={!connected || !idle || face.active}
@@ -117,7 +119,7 @@ export const InstalledFaceCard = memo(function InstalledFaceCard({
         />
         {face.editable ? (
           <Button
-            label="Customize"
+            label={t('watch:faces.customize')}
             icon="color-palette"
             disabled={!connected || !idle}
             onPress={() => onCustomize(face.id, face.name)}
@@ -125,7 +127,7 @@ export const InstalledFaceCard = memo(function InstalledFaceCard({
         ) : null}
         {!face.factory ? (
           <Button
-            label="Delete"
+            label={t('common:actions.delete')}
             icon="trash-outline"
             variant="destructive"
             disabled={!connected || !idle}

@@ -1,31 +1,39 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { fonts, HIT, spacing, useColors } from '@/theme';
+import { HIT, spacing, useTheme } from '@/theme';
+
+/** Back arrow (or Today when there is no history) for a header that has none of its own. */
+export function HeaderBackButton() {
+  const router = useRouter();
+  const { t } = useTranslation('common');
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('actions.back')}
+      hitSlop={8}
+      onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+      style={styles.back}>
+      <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+    </Pressable>
+  );
+}
 
 /**
  * Header for a screen pushed from Today. These routes are hidden tabs, and a tab header has no back
  * button of its own, so this draws one (back, or Today when there is no history).
  */
 export function HiddenTabHeader({ title }: { title: string }) {
-  const router = useRouter();
-  const colors = useColors();
+  const { colors, fonts } = useTheme();
   return (
     <Tabs.Screen
       options={{
         headerShown: true,
         title,
-        headerLeft: () => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            hitSlop={8}
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-            style={styles.back}>
-            <Ionicons name="arrow-back" size={24} color={colors.foreground} />
-          </Pressable>
-        ),
+        headerLeft: () => <HeaderBackButton />,
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.foreground,
         headerShadowVisible: false,

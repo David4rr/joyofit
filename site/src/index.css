@@ -181,9 +181,98 @@
   }
 }
 
+/*
+ * Motion. Only opacity and the individual `translate` / `scale` properties, so nothing moves layout (CLS stays 0)
+ * and they stack with transform-based animation. The hero runs from CSS on first paint, so it does not wait for
+ * hydration. LCP elements are never faded (Chrome skips content painted at opacity 0 as an LCP candidate): the
+ * headline, the lead paragraph (mobile LCP) and the phone screenshot (desktop LCP) stay as prerendered, and the
+ * CTAs, notes and floating card rise in around them. Reduced motion keeps short fades and drops all movement.
+ */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
 @media (prefers-reduced-motion: no-preference) {
-  .animate-drift {
-    animation: drift-y 7s ease-in-out infinite;
+  .hero-rise {
+    animation: rise 300ms var(--ease-out) calc(var(--i, 0) * 45ms) both;
+  }
+  .hero-backdrop {
+    transform-origin: bottom;
+    animation: settle 300ms var(--ease-out) both;
+  }
+  .hero-card {
+    animation: rise 300ms var(--ease-out) 200ms both;
+  }
+  @media (min-width: 768px) {
+    .hero-card {
+      animation:
+        rise 300ms var(--ease-out) 200ms both,
+        drift-y 7s ease-in-out 500ms infinite;
+    }
+  }
+  .rise {
+    animation: rise 240ms var(--ease-out) both;
+  }
+  .pop {
+    animation: pop 240ms var(--ease-out) both;
+  }
+  /* Lucide's Check is a single path of length ~22.6. */
+  .check-draw path {
+    stroke-dasharray: 24 40;
+    stroke-dashoffset: 26;
+    animation: draw 260ms var(--ease-out) 120ms forwards;
+  }
+  /* Below-the-fold sections: scripts mark them pending after hydration, then reveal once (see reveal.ts). */
+  [data-reveal] {
+    transition:
+      opacity 300ms var(--ease-out),
+      translate 300ms var(--ease-out);
+  }
+  [data-reveal="pending"] {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+.fade {
+  animation: fade-in 150ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .pop {
+    animation: fade-in 150ms ease-out both;
+  }
+}
+@media print {
+  [data-reveal] {
+    opacity: 1 !important;
+    translate: none !important;
   }
 }
 @keyframes drift-y {
@@ -201,5 +290,70 @@ html {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+}
+
+/* Social-proof marquee: two identical groups, track slides by half its width. */
+@keyframes marquee-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll var(--marquee-duration, 60s) linear infinite;
+}
+.marquee-group {
+  display: flex;
+  flex-shrink: 0;
+  gap: 1rem;
+  padding-right: 1rem;
+}
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+/* Static view: few quotes, or reduced motion. Wrapped list, no duplicate group. */
+.marquee[data-static] {
+  mask-image: none;
+}
+.marquee[data-static] .marquee-track {
+  width: 100%;
+  animation: none;
+  padding-inline: 1rem;
+}
+.marquee[data-static] .marquee-group {
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-right: 0;
+}
+.marquee[data-static] .marquee-group[aria-hidden="true"] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    mask-image: none;
+  }
+  .marquee-track {
+    width: 100%;
+    animation: none;
+    padding-inline: 1rem;
+  }
+  .marquee-group {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-right: 0;
+  }
+  .marquee-group[aria-hidden="true"] {
+    display: none;
   }
 }

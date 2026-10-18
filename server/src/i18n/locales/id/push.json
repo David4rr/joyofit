@@ -1,0 +1,43 @@
+{
+  "family": {
+    "alert": {
+      "noSync": {
+        "title": "Belum ada kabar dari {{label}}",
+        "phoneSilent_other": "Ponsel {{label}} belum mengirim kabar sejak {{count}} jam lalu. Mungkin ponselnya mati, tanpa internet, atau JoyoFit belum dibuka.",
+        "phoneSilentLowBattery_other": "Ponsel {{label}} belum mengirim kabar sejak {{count}} jam lalu. Mungkin ponselnya mati, tanpa internet, atau JoyoFit belum dibuka. Baterai jam terakhir terbaca {{battery}}%.",
+        "watchSilent_other": "Jam {{label}} belum tersinkron sejak {{count}} jam lalu. Ponselnya masih terhubung, jadi jamnya mungkin jauh dari ponsel atau tidak terpasang.",
+        "watchSilentLowBattery_other": "Jam {{label}} belum tersinkron sejak {{count}} jam lalu. Ponselnya masih terhubung, jadi jamnya mungkin jauh dari ponsel atau tidak terpasang. Baterai jam terakhir terbaca {{battery}}%."
+      },
+      "noSteps": {
+        "title": "Belum ada langkah dari {{label}}",
+        "body_other": "Sampai jam {{time}} baru {{count}} langkah tercatat dari {{label}}. Mungkin jamnya belum dipakai. Coba tanya kabarnya."
+      },
+      "heartRateHigh": {
+        "title": "Detak jantung istirahat {{label}} lebih tinggi dari biasanya",
+        "body": "Detak jantung istirahat {{label}} {{value}} bpm. Ini bukan diagnosis. Coba tanya kabarnya.",
+        "bodyWithBaseline": "Detak jantung istirahat {{label}} {{value}} bpm, biasanya sekitar {{baseline}} bpm. Ini bukan diagnosis. Coba tanya kabarnya."
+      },
+      "heartRateLow": {
+        "title": "Detak jantung istirahat {{label}} lebih rendah dari biasanya",
+        "body": "Detak jantung istirahat {{label}} {{value}} bpm, biasanya sekitar {{baseline}} bpm. Ini bukan diagnosis. Coba tanya kabarnya."
+      },
+      "sleep": {
+        "title": "Tidur {{label}} kurang dari biasanya",
+        "streak": "{{label}} tidur kurang dari 5,5 jam tiga malam berturut-turut.",
+        "lastNight_other": "Semalam {{label}} tidur sekitar {{hours}} jam."
+      },
+      "spo2": {
+        "title": "Jam {{label}} mencatat oksigen rendah",
+        "body": "Kata jam, kadar oksigen {{label}} sempat di {{value}}%. Angka jam bisa meleset dan ini bukan diagnosis. Coba tanya kabarnya."
+      }
+    },
+    "digest": {
+      "title": "Ringkasan kabar keluarga"
+    },
+    "poke": {
+      "title": "{{name}} menanyakan kabarmu",
+      "body": "Kalau sempat, kabari ya.",
+      "someone": "Seseorang"
+    }
+  }
+}

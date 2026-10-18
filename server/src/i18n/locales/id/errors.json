@@ -1,0 +1,11 @@
+{
+  "family": {
+    "inviterFallback": "Seseorang"
+  },
+  "strava": {
+    "redirect": {
+      "finish": "Kembali ke JoyoFit untuk menyelesaikan.",
+      "open": "Buka JoyoFit"
+    }
+  }
+}

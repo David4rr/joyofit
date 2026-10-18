@@ -1,4 +1,5 @@
 import { assetsToDataUrls, importAssetDataUrls } from "./assets";
+import { LEGACY_RING_SOURCES, LEGACY_WIDGET_SOURCES, fieldDef } from "./fields";
 import { PROJECT_VERSION, type Element, type Project } from "./types";
 
 /** `.json` project file: the project plus every uploaded image it uses, embedded as data URLs. */
@@ -29,15 +30,51 @@ export async function serializeProject(project: Project): Promise<string> {
   return JSON.stringify(file);
 }
 
-const ELEMENT_TYPES = new Set(["background", "time", "date", "hand", "image", "widget", "ring"]);
+const ELEMENT_TYPES = new Set(["background", "time", "date", "hand", "image", "widget", "ring", "iconset"]);
 
 function isElement(value: unknown): value is Element {
   if (typeof value !== "object" || value === null) return false;
+  // Parsed JSON: the fields are checked one by one below.
   const e = value as Record<string, unknown>;
-  return typeof e.id === "string" && typeof e.type === "string" && ELEMENT_TYPES.has(e.type) && typeof e.x === "number" && typeof e.y === "number";
+  if (typeof e.id !== "string" || typeof e.type !== "string" || !ELEMENT_TYPES.has(e.type) || typeof e.x !== "number" || typeof e.y !== "number") return false;
+  // The data elements name a registry field by codec id; one the registry cannot draw would crash the renderer.
+  if (e.type === "widget") return typeof e.valueType === "number" && fieldDef(e.valueType)?.number !== undefined;
+  if (e.type === "ring") return typeof e.valueType === "number" && fieldDef(e.valueType)?.ratio !== undefined;
+  if (e.type === "iconset") return typeof e.valueType === "number" && fieldDef(e.valueType)?.iconSet !== undefined;
+  return true;
 }
 
 export class ProjectFileError extends Error {}
+
+/** Projects written before the field registry stored `source: "steps"` and the like; the codec id replaces it. */
+function migrateElement(value: unknown): unknown {
+  if (typeof value !== "object" || value === null) return value;
+  const { source, ...rest } = value as Record<string, unknown>;
+  if (typeof source !== "string" || "valueType" in rest) return value;
+  const table = rest.type === "widget" ? LEGACY_WIDGET_SOURCES : rest.type === "ring" ? LEGACY_RING_SOURCES : null;
+  const valueType = table?.[source];
+  return valueType === undefined ? value : { ...rest, valueType };
+}
+
+/**
+ * Validates a project (from a file or from the autosave) and migrates old data elements. Throws `ProjectFileError` when the
+ * project is not usable; every element is checked, so a damaged save cannot reach the renderer.
+ */
+export function restoreProject(raw: unknown): Project {
+  if (typeof raw !== "object" || raw === null) throw new ProjectFileError("This is not a JoyoFit Studio project file.");
+  const project = raw as Partial<Project>;
+  if (project.version !== PROJECT_VERSION) {
+    throw new ProjectFileError(`Project version ${String(project.version)} is not supported (expected ${PROJECT_VERSION}).`);
+  }
+  const elements = Array.isArray(project.elements) ? project.elements.map(migrateElement) : null;
+  if (!elements || !elements.every(isElement)) throw new ProjectFileError("The project's layers are damaged.");
+  return {
+    version: PROJECT_VERSION,
+    name: typeof project.name === "string" ? project.name : "My face",
+    author: typeof project.author === "string" ? project.author : "",
+    elements,
+  };
+}
 
 /** Parses and validates a project file, restores its images and returns the project. */
 export async function parseProjectFile(text: string): Promise<Project> {
@@ -51,13 +88,7 @@ export async function parseProjectFile(text: string): Promise<Project> {
   if (file?.format !== "joyofit-studio-project" || typeof file.project !== "object" || file.project === null) {
     throw new ProjectFileError("This is not a JoyoFit Studio project file.");
   }
-  const project = file.project;
-  if (project.version !== PROJECT_VERSION) {
-    throw new ProjectFileError(`Project version ${String(project.version)} is not supported (expected ${PROJECT_VERSION}).`);
-  }
-  if (!Array.isArray(project.elements) || !project.elements.every(isElement)) {
-    throw new ProjectFileError("The project's layers are damaged.");
-  }
+  const project = restoreProject(file.project);
   if (file.assets) await importAssetDataUrls(file.assets);
   return project;
 }

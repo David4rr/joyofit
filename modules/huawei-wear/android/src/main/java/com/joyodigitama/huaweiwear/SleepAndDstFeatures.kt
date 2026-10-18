@@ -70,11 +70,7 @@ internal class SleepReportFeature(
 
   /** The newest night with stages, from the stored segments of the last 36 hours. */
   private suspend fun latestNight(nowSec: Long): SleepNight? = withContext(Dispatchers.IO) {
-    val segments = syncStore.read { db ->
-      db.rawQuery("SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start", arrayOf((nowSec - LOOKBACK_SEC).toString())).use { c ->
-        buildList { while (c.moveToNext()) add(SleepSegment(c.getLong(0), c.getLong(1), c.getInt(2), if (c.isNull(3)) null else c.getString(3))) }
-      }
-    }
+    val segments = syncStore.read { db -> SleepStore.load(db, nowSec - LOOKBACK_SEC) }
     SleepReport.lastNight(segments)
   }
 

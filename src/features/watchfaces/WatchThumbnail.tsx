@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -11,12 +12,13 @@ import type { WatchfaceInfo } from '@/wear';
 
 /** "Active" badge on the face that is currently active on the watch screen. */
 export function ActivePill() {
+  const { t } = useTranslation('watch');
   const colors = useColors();
   const link = tintColors(colors, 'link');
   return (
     <View style={[styles.pill, { backgroundColor: link.soft }]}>
       <AppText variant="label" color={link.text}>
-        Active on Wrist
+        {t('faces.activeOnWrist')}
       </AppText>
     </View>
   );

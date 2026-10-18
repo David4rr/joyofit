@@ -200,7 +200,8 @@ internal class BackgroundController(private val runtime: WearRuntime) {
       return Attempt.BLOCKED
     }
     try {
-      link.connect(address)
+      // The background link never starts a first bind (allowFirstBind stays false): only a connect the user confirms in the app does.
+      link.connect(address, allowFirstBind = false)
       return Attempt.CONNECTED
     } catch (e: CancellationException) {
       throw e
@@ -208,6 +209,10 @@ internal class BackgroundController(private val runtime: WearRuntime) {
       when (e.errorCode) {
         ErrorCodes.BLUETOOTH_OFF -> {
           runtime.setNote("Waiting for Bluetooth.")
+          return Attempt.BLOCKED
+        }
+        ErrorCodes.BIND_CONFIRMATION -> {
+          runtime.setNote("Not bound yet. Connect once from the Device tab.")
           return Attempt.BLOCKED
         }
         ErrorCodes.BLUETOOTH_PERMISSION -> {
@@ -220,7 +225,7 @@ internal class BackgroundController(private val runtime: WearRuntime) {
     }
   }
 
-  /** One periodic round: sync, then battery. Failures are logged; the next interval retries. */
+  /** One periodic round: sync, then battery, then the family summary upload. Failures are logged; the next interval retries. */
   private suspend fun cycle() {
     nextSyncAtMs = SystemClock.elapsedRealtime() + intervalMs()
     scheduleTick()
@@ -241,6 +246,8 @@ internal class BackgroundController(private val runtime: WearRuntime) {
     } catch (e: WearException) {
       log.log(LogDirection.ERROR, null, null, null, "Background battery refresh failed [${e.errorCode}]: ${e.message}")
     }
+    // Family monitoring posts the fresh summary and battery; it runs on its own and never fails the cycle.
+    runtime.family.uploadAfterSync()
   }
 
   companion object {

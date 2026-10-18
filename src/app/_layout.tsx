@@ -11,21 +11,33 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { Suspense, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { AppState, View } from 'react-native';
 
+import { TabIcon } from '@/components/TabIcon';
+import { initLocale, refreshAutoLocale } from '@/i18n/native';
 import { migrate } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
+import { ensureGearSchema } from '@/features/gear/store';
+import { FamilyProvider } from '@/features/family/FamilyProvider';
+import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { CloudProvider } from '@/state/CloudProvider';
 import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
+import { OnboardingProvider } from '@/state/OnboardingProvider';
 import { MealsProvider } from '@/state/MealsProvider';
+import { StravaProvider } from '@/state/StravaProvider';
 import { WatchProvider } from '@/state/WatchProvider';
-import { fonts, useColors } from '@/theme';
+import { ThemeProvider, useTheme } from '@/theme';
+
+// Stored language choice (or the phone's) applies before the first screen is drawn.
+initLocale();
 
 const DATABASE_NAME = 'joyofit.db';
 
 /** Schema first, then one query at a time on the shared handle (see `serialize.ts`). */
 async function initDatabase(db: SQLiteDatabase): Promise<void> {
   await migrate(db);
+  await ensureGearSchema(db);
   serializeQueries(db);
 }
 
@@ -33,8 +45,16 @@ async function initDatabase(db: SQLiteDatabase): Promise<void> {
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const colors = useColors();
-  const scheme = useColorScheme();
+  return (
+    <ThemeProvider>
+      <RootNavigator />
+    </ThemeProvider>
+  );
+}
+
+function RootNavigator() {
+  const { colors, fonts, scheme } = useTheme();
+  const { t } = useTranslation('common');
   const [fontsReady, fontError] = useFonts({
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
@@ -43,6 +63,14 @@ export default function RootLayout() {
     ...Ionicons.font,
   });
   const ready = fontsReady || fontError !== null;
+
+  // The phone language may change while the app sleeps; "Otomatis" follows it.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshAutoLocale();
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync().catch(() => {});
@@ -55,72 +83,96 @@ export default function RootLayout() {
       <SQLiteProvider databaseName={DATABASE_NAME} onInit={initDatabase} useSuspense>
         <WatchProvider>
           <CloudProvider>
-            <MealsProvider>
-              <LiveWorkoutProvider>
-                <StatusBar style="auto" />
-                {/* Keyed by scheme: the tab bar kept its first colors when the theme flipped while the app was open. */}
-                <Tabs
-                  key={scheme}
-                  screenOptions={{
-                    headerShown: false,
-                    sceneStyle: { backgroundColor: colors.background },
-                    tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.hairline },
-                    tabBarActiveTintColor: colors.primary,
-                    tabBarInactiveTintColor: colors.mutedForeground,
-                    tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 12 },
-                  }}>
-                  <Tabs.Screen
-                    name="index"
-                    options={{
-                      title: 'Today',
-                      tabBarIcon: ({ focused, color, size }) => (
-                        <Ionicons name={focused ? 'today' : 'today-outline'} size={size} color={color} />
-                      ),
-                    }}
-                  />
-                  <Tabs.Screen
-                    name="workouts"
-                    options={{
-                      title: 'Workouts',
-                      tabBarIcon: ({ focused, color, size }) => (
-                        <Ionicons name={focused ? 'fitness' : 'fitness-outline'} size={size} color={color} />
-                      ),
-                    }}
-                  />
-                  <Tabs.Screen
-                    name="watch"
-                    options={{
-                      title: 'Watch',
-                      tabBarIcon: ({ focused, color, size }) => (
-                        <Ionicons name={focused ? 'watch' : 'watch-outline'} size={size} color={color} />
-                      ),
-                    }}
-                  />
-                  <Tabs.Screen
-                    name="settings"
-                    options={{
-                      title: 'Settings',
-                      tabBarIcon: ({ focused, color, size }) => (
-                        <Ionicons name={focused ? 'settings' : 'settings-outline'} size={size} color={color} />
-                      ),
-                    }}
-                  />
-                  {/* Old deep links; each redirects to where the screen lives now. */}
-                  <Tabs.Screen name="today" options={{ href: null }} />
-                  <Tabs.Screen name="log" options={{ href: null }} />
-                  <Tabs.Screen name="alarms" options={{ href: null }} />
-                  <Tabs.Screen name="watchfaces" options={{ href: null }} />
-                  {/* Pushed from Today (or Settings, for hrv); each draws its own header (HiddenTabHeader). */}
-                  <Tabs.Screen name="health" options={{ href: null }} />
-                  <Tabs.Screen name="hrv" options={{ href: null }} />
-                  <Tabs.Screen name="sleep" options={{ href: null }} />
-                  <Tabs.Screen name="readiness" options={{ href: null }} />
-                  <Tabs.Screen name="trends" options={{ href: null }} />
-                  {/* Opens by itself when a workout starts on the watch (LiveWorkoutProvider). */}
-                  <Tabs.Screen name="workout-live" options={{ href: null }} />
-                </Tabs>
-              </LiveWorkoutProvider>
-            </MealsProvider>
+            <StravaProvider>
+              <MealsProvider>
+                <LiveWorkoutProvider>
+                  <OnboardingProvider>
+                  <FamilyProvider>
+                  <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+                  <View style={{ flex: 1 }}>
+                  <Tabs
+                    screenOptions={{
+                      headerShown: false,
+                      sceneStyle: { backgroundColor: colors.background },
+                      tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.hairline },
+                      tabBarActiveTintColor: colors.primary,
+                      tabBarInactiveTintColor: colors.mutedForeground,
+                      tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 12 },
+                    }}>
+                    <Tabs.Screen
+                      name="index"
+                      options={{
+                        title: t('nav.today'),
+                        tabBarIcon: ({ focused, color, size }) => (
+                          <TabIcon on="today" off="today-outline" focused={focused} size={size} color={color} />
+                        ),
+                      }}
+                    />
+                    <Tabs.Screen
+                      name="workouts"
+                      options={{
+                        title: t('nav.workouts'),
+                        tabBarIcon: ({ focused, color, size }) => (
+                          <TabIcon on="fitness" off="fitness-outline" focused={focused} size={size} color={color} />
+                        ),
+                      }}
+                    />
+                    <Tabs.Screen
+                      name="social"
+                      options={{
+                        title: t('nav.social'),
+                        tabBarIcon: ({ focused, color, size }) => (
+                          <TabIcon on="people" off="people-outline" focused={focused} size={size} color={color} />
+                        ),
+                      }}
+                    />
+                    <Tabs.Screen
+                      name="watch"
+                      options={{
+                        title: t('nav.watch'),
+                        tabBarIcon: ({ focused, color, size }) => (
+                          <TabIcon on="watch" off="watch-outline" focused={focused} size={size} color={color} />
+                        ),
+                      }}
+                    />
+                    <Tabs.Screen
+                      name="settings"
+                      options={{
+                        title: t('nav.settings'),
+                        tabBarIcon: ({ focused, color, size }) => (
+                          <TabIcon on="settings" off="settings-outline" focused={focused} size={size} color={color} />
+                        ),
+                      }}
+                    />
+                    {/* Old deep links; each redirects to where the screen lives now. */}
+                    <Tabs.Screen name="today" options={{ href: null }} />
+                    <Tabs.Screen name="log" options={{ href: null }} />
+                    <Tabs.Screen name="alarms" options={{ href: null }} />
+                    <Tabs.Screen name="watchfaces" options={{ href: null }} />
+                    {/* Pushed from Today (or Settings, for hrv); each draws its own header (HiddenTabHeader). */}
+                    <Tabs.Screen name="health" options={{ href: null }} />
+                    <Tabs.Screen name="hrv" options={{ href: null }} />
+                    <Tabs.Screen name="sleep" options={{ href: null }} />
+                    <Tabs.Screen name="readiness" options={{ href: null }} />
+                    <Tabs.Screen name="trends" options={{ href: null }} />
+                    <Tabs.Screen name="fitness" options={{ href: null }} />
+                    {/* Opens by itself when a workout starts on the watch (LiveWorkoutProvider). */}
+                    <Tabs.Screen name="workout-live" options={{ href: null }} />
+                    {/* Family monitoring: opened from Today, Settings and notifications; its stack draws its own headers. */}
+                    <Tabs.Screen name="family" options={{ href: null }} />
+                    {/* Watch routes: opened from the Watch tab and by shared GPX/TCX files; its stack draws its own headers. */}
+                    <Tabs.Screen name="routes" options={{ href: null }} />
+                    {/* The setup guide: opened by OnboardingProvider on a first run and from Settings; full screen, no tab bar. */}
+                    <Tabs.Screen name="onboarding" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+                  </Tabs>
+                  {/* Android installs from Google Play only: flexible in-app update. */}
+                  <UpdateBanner />
+                  </View>
+                  </FamilyProvider>
+                  </OnboardingProvider>
+                </LiveWorkoutProvider>
+              </MealsProvider>
+            </StravaProvider>
           </CloudProvider>
         </WatchProvider>
       </SQLiteProvider>

@@ -1,12 +1,10 @@
 // Editable watch-face configuration over DataSync (service 0x37, package hw.app.watchface.custom <-> hw.watch.watchface.custom).
-// Wire layouts follow Huawei Health 17.0.8.300: CustomConfigWatchFaceService.{queryCustomConfig, setCustomConfig,
-// buildCustomConfigEventDataBytes, buildEventDataStyleList, buildEventDataWidgetList, loadCustomConfigFromSampleEvent,
-// loadCustomStyle, loadWidgetList} with the TLV writer `cqe` and reader `cqj` (value encodings from `cph`).
+// Wire layouts follow Huawei Health 17.0.8.300's observed behaviour (query / set custom config, style and widget lists).
 package com.joyodigitama.huaweiwear
 
 import java.nio.charset.StandardCharsets
 
-/** The `DIAL_EDIT_MODE_*` constants of `CustomConfigWatchFaceService`. */
+/** The `DIAL_EDIT_MODE_*` constants. */
 internal object FaceEditMode {
   const val STYLE = 0
   const val BACKGROUND = 1
@@ -78,7 +76,7 @@ internal object FaceCustomWire {
   /** `EVENT_REPORT_CUSTOM_WATCHFACE`: phone to watch applies a configuration, watch to phone reports one. */
   const val EVENT_REPORT = 800100009
 
-  /** `ynw` gates every sample event on ExpandCapability 84 (same bit as the rest of DataSync). */
+  /** Huawei Health gates every sample event on ExpandCapability 84 (same bit as the rest of DataSync). */
   const val CAP_EVENT = DataSyncWire.CAP_EVENT
 
   // Tags of the event data.
@@ -102,8 +100,8 @@ internal object FaceCustomWire {
 
   /**
    * `buildCustomConfigEventDataBytes`: `01 marketId`, then `82{83{04 mode, 05 index}...}` (when there are styles), `06 colour`
-   * (minimal big-endian, `cqe.c(tag, int)`), `07 custom colour` (UTF-8, left out when empty), `88{89{0A slot, 0B option}...}`.
-   * Mode, index, slot and option are one byte each (`cqe.a(tag, int)` writes `(byte) i`).
+   * (minimal big-endian), `07 custom colour` (UTF-8, left out when empty), `88{89{0A slot, 0B option}...}`.
+   * Mode, index, slot and option are one byte each (written as `(byte) i`).
    */
   fun encodeConfig(config: FaceCustomization): ByteArray {
     require(config.marketId.isNotEmpty()) { "A face id is required" }
@@ -169,7 +167,7 @@ internal object FaceCustomWire {
     )
   }
 
-  /** `cph.f(int)`: one to four big-endian bytes, leading zero bytes dropped (0 is `00`). */
+  /** One to four big-endian bytes, leading zero bytes dropped (0 is `00`). */
   fun minimalBigEndian(value: Int): ByteArray {
     val full = byteArrayOf((value ushr 24).toByte(), (value ushr 16).toByte(), (value ushr 8).toByte(), value.toByte())
     val skip = full.indexOfFirst { it.toInt() != 0 }.let { if (it < 0) 3 else it }
@@ -181,7 +179,7 @@ internal object FaceCustomWire {
   }
 }
 
-/** Huawei's own TLV (`cqe` writer, `cqj` reader): tag byte, 7-bit varint length (1 to 3 bytes), value. A tag with the top bit holds more TLVs. */
+/** Huawei's own TLV: tag byte, 7-bit varint length (1 to 3 bytes), value. A tag with the top bit holds more TLVs. */
 internal object Tlv {
   fun leaf(tag: Int, value: ByteArray): ByteArray = byteArrayOf(tag.toByte()) + varint(value.size) + value
 
@@ -196,7 +194,7 @@ internal object Tlv {
     else -> throw IllegalArgumentException("length overflow: $length")
   }
 
-  /** Values by tag with the top bit masked, like `cqj.d(bytes, 0)`; the last of a repeated tag wins. Null when the bytes are not valid TLV. */
+  /** Values by tag with the top bit masked; the last of a repeated tag wins. Null when the bytes are not valid TLV. */
   fun parseFlat(data: ByteArray): Fields? {
     val map = LinkedHashMap<Int, ByteArray>()
     var pos = 0
@@ -211,7 +209,7 @@ internal object Tlv {
     return Fields(map)
   }
 
-  /** The values of every TLV in [data], in order: the items of a list (`cqj.a.a(tag)` splits a list this way). */
+  /** The values of every TLV in [data], in order: the items of a list. */
   fun parseEntries(data: ByteArray): List<ByteArray>? {
     val out = ArrayList<ByteArray>()
     var pos = 0
@@ -241,7 +239,7 @@ internal object Tlv {
 
     fun string(tag: Int): String? = map[tag]?.takeIf { it.isNotEmpty() }?.toString(StandardCharsets.UTF_8)
 
-    /** `cph.e(bytes, default)`: one to four big-endian bytes; empty, absent or longer is null. */
+    /** One to four big-endian bytes; empty, absent or longer is null. */
     fun int(tag: Int): Int? {
       val value = map[tag] ?: return null
       if (value.isEmpty() || value.size > 4) return null

@@ -92,15 +92,16 @@ class HuaweiWearModule : Module() {
     override fun hrvProgress(secondsLeft: Int, beats: Int) {
       emit("onHrvProgress", mapOf("secondsLeft" to secondsLeft, "beats" to beats))
     }
-    override fun deviceDiscovered(device: Map<String, Any?>) {
-      emit("onDeviceDiscovered", device)
+
+    override fun deviceDiscovered(device: DiscoveredDevice) {
+      emit("onDeviceDiscovered", device.toJs())
     }
 
     override fun scanState(scanning: Boolean, error: String?) {
       emit("onScanStateChange", mapOf("scanning" to scanning, "error" to error))
     }
 
-    private fun emit(name: String, payload: Map<String, Any?>) {
+    fun emit(name: String, payload: Map<String, Any?>) {
       if (destroyed) return
       try {
         sendEvent(name, payload)
@@ -129,7 +130,10 @@ class HuaweiWearModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("HuaweiWear")
 
-    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onDeviceDiscovered", "onScanStateChange")
+    // "play" for the Google Play build, "sideload" otherwise (see Distribution.kt).
+    Constant("distribution") { Distribution.name }
+
+    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange")
 
     OnCreate {
       val runtime = runtime()
@@ -158,18 +162,28 @@ class HuaweiWearModule : Module() {
     AsyncFunction("getBondedDevices") {
       runtime().link.bondedDevices()
     }
+
+    // Same list: Android reads the system's bonded devices without a scan.
+    AsyncFunction("refreshBondedDevices") {
+      runtime().link.bondedDevices()
+    }
+
+    // Lets the next connect(address) start a first bind, which replaces the watch's current phone pairing. Single use.
+    Function("confirmBind") { address: String ->
+      runtime().confirmBind(address)
+    }
+
     AsyncFunction("startScan") {
-      runtime().startScan()
+      runtime().link.startScan()
     }
 
     AsyncFunction("stopScan") {
-      runtime().stopScan()
+      runtime().link.stopScan()
     }
 
     Function("getDiscoveredDevices") {
-      runtime().getDiscoveredDevices()
+      runtime().link.getDiscoveredDevices()
     }
-
 
     AsyncFunction("connect") Coroutine { address: String ->
       runtime().connectFromApp(address)
@@ -203,6 +217,10 @@ class HuaweiWearModule : Module() {
       runtime().link.syncActivity().toJs()
     }
 
+    AsyncFunction("syncFullHistory") Coroutine { ->
+      runtime().link.syncActivity(fullHistory = true).toJs()
+    }
+
     AsyncFunction("forgetDevice") { address: String ->
       runtime().forget(address)
     }
@@ -229,6 +247,15 @@ class HuaweiWearModule : Module() {
 
     AsyncFunction("setNotificationsEnabled") Coroutine { enabled: Boolean ->
       runtime().setNotificationsEnabled(enabled)
+    }
+
+    // Developer switch: connect over Bluetooth LE GATT (BleTransport) whatever the model's own link is.
+    Function("getForceBle") {
+      runtime().forceBle()
+    }
+
+    AsyncFunction("setForceBle") { enabled: Boolean ->
+      runtime().setForceBle(enabled)
     }
 
     Function("getMorningSummaryEnabled") {
@@ -285,6 +312,9 @@ class HuaweiWearModule : Module() {
     // Health Connect export: status, permission request, enable + backfill (HealthConnectModuleApi.kt).
     healthConnectApi { runtime() }
 
+    // One-time import of the Huawei Privacy Centre health export (HuaweiImportModuleApi.kt).
+    huaweiImportApi({ runtime() }) { name, payload -> listener.emit(name, payload) }
+
     // Weather: settings, status, refresh (WeatherModuleApi.kt).
     weatherApi { runtime() }
 
@@ -303,10 +333,12 @@ class HuaweiWearModule : Module() {
     // P2P (service 0x34): Healthy Living replies and the experimental running courses (P2pModuleApi.kt).
     p2pApi { runtime() }
 
+    // Family monitoring, monitored side: config, upload now, last result (FamilyModuleApi.kt, FamilyUploader.kt).
+    familyApi { runtime() }
+
     OnDestroy {
       destroyed = true
       runtimeRef?.let {
-        try { it.stopScan() } catch (_: Exception) {}
         it.removeListener(listener)
         it.onModuleDestroyed()
       }

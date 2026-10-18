@@ -1,4 +1,6 @@
 import type { HrvReadingRow } from '@/db/queries';
+import type { NightHrvAvailability } from '@/features/today/nightHrv';
+import { t } from '@/i18n';
 
 /**
  * Recovery from HRV against your own baseline, after Plews and Buchheit: work on ln(RMSSD), compare today's value with
@@ -36,27 +38,45 @@ export function bandOf(percent: number): RecoveryBand {
   return percent >= 67 ? 'green' : percent >= 34 ? 'yellow' : 'red';
 }
 
+/** Why there is no reading for today, from what is known about night HRV on this watch. */
+function missingText(readings: readonly HrvReadingRow[], availability: NightHrvAvailability | null | undefined): string {
+  if (availability && availability.state !== 'available') {
+    return availability.state === 'off' || availability.state === 'waiting'
+      ? t('today:recovery.offWaiting', { message: availability.message, detail: availability.detail })
+      : t('today:recovery.unavailable', { message: availability.message });
+  }
+  return readings.length === 0 ? t('today:recovery.noReadings') : t('today:recovery.noRecent');
+}
+
+/** Mean and sample standard deviation (n - 1) of `values`; the SD is 0 for a single value. The one baseline arithmetic of `recovery` and `hrvStatus`. */
+export function meanSd(values: readonly number[]): { mean: number; sd: number } {
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const sd = values.length > 1 ? Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / (values.length - 1)) : 0;
+  return { mean, sd };
+}
+
 /** Today's recovery from `readings` (oldest first). Prefers last night over a spot reading. */
-export function recovery(readings: readonly HrvReadingRow[], nowSec: number): RecoveryState {
+export function recovery(
+  readings: readonly HrvReadingRow[],
+  nowSec: number,
+  availability?: NightHrvAvailability | null,
+): RecoveryState {
   const latest = (source: HrvReadingRow['source'], freshSec: number) =>
     [...readings].reverse().find((r) => r.source === source && r.end >= nowSec - freshSec) ?? null;
   const today = latest('night', NIGHT_FRESH_SEC) ?? latest('spot', SPOT_FRESH_SEC);
-  if (!today) {
-    return readings.length === 0
-      ? { missing: 'HRV: no readings yet. Measure HRV for a minute, or sync after a night with the watch on.' }
-      : { missing: 'HRV: no reading from last night or today yet.' };
-  }
+  if (!today) return { missing: missingText(readings, availability) };
   const history = readings.filter(
     (r) => r.source === today.source && r.end < today.start && r.end >= today.end - BASELINE_DAYS * 86400 && r.rmssd > 0,
   );
   if (history.length < MIN_BASELINE_READINGS) {
     return {
-      missing: `HRV: ${history.length} of ${MIN_BASELINE_READINGS} earlier ${today.source === 'night' ? 'nights' : 'readings'} needed for your baseline.`,
+      missing: t(today.source === 'night' ? 'today:recovery.baselineNights' : 'today:recovery.baselineReadings', {
+        have: history.length,
+        count: MIN_BASELINE_READINGS,
+      }),
     };
   }
-  const logs = history.map((r) => Math.log(r.rmssd));
-  const mean = logs.reduce((a, b) => a + b, 0) / logs.length;
-  const sd = Math.sqrt(logs.reduce((a, b) => a + (b - mean) ** 2, 0) / (logs.length - 1));
+  const { mean, sd } = meanSd(history.map((r) => Math.log(r.rmssd)));
   // A few near-identical readings give a tiny spread that would make every change look extreme; 0.1 in ln units is
   // about a 10 % change in RMSSD, a typical day-to-day spread.
   const z = (Math.log(today.rmssd) - mean) / Math.max(sd, 0.1);

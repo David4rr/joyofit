@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ButtonRow } from '@/components/ButtonRow';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { errorMessage } from '@/format';
@@ -10,6 +11,7 @@ import { HuaweiWear } from '@/wear';
 
 /** Makes the connected watch ring and vibrate so it can be found. */
 export function FindWatchSection() {
+  const { t } = useTranslation('watch');
   const { linkState } = useWatch();
   const [busy, setBusy] = useState<'start' | 'stop' | null>(null);
   const [message, setMessage] = useState<{ text: string; danger: boolean } | null>(null);
@@ -21,7 +23,7 @@ export function FindWatchSection() {
     setMessage(null);
     try {
       await HuaweiWear.findWatch(start);
-      setMessage({ text: start ? 'Sent. The watch should ring now.' : 'Stop sent.', danger: false });
+      setMessage({ text: start ? t('device.find.sent') : t('device.find.stopSent'), danger: false });
     } catch (e) {
       setMessage({ text: errorMessage(e), danger: true });
     } finally {
@@ -30,27 +32,26 @@ export function FindWatchSection() {
   };
 
   return (
-    <Section title="Find my watch" icon="locate">
-      <AppText variant="caption" muted>
-        Makes the watch ring and vibrate.
-      </AppText>
-      {!connected ? <Notice>Connect your watch first.</Notice> : null}
-      {connected && !supported ? <Notice>This watch did not report find-device support.</Notice> : null}
-      <Button
-        label="Ring the watch"
-        variant="primary"
-        icon="volume-high"
-        disabled={!supported}
-        loading={busy === 'start'}
-        onPress={() => void send(true)}
-      />
-      <Button
-        label="Stop ringing"
-        icon="volume-mute"
-        disabled={!supported}
-        loading={busy === 'stop'}
-        onPress={() => void send(false)}
-      />
+    <Section title={t('device.find.title')} icon="locate">
+      {!connected ? <Notice>{t('device.connectFirst')}</Notice> : null}
+      {connected && !supported ? <Notice>{t('device.find.unsupported')}</Notice> : null}
+      <ButtonRow>
+        <Button
+          label={t('device.find.ring')}
+          variant="primary"
+          icon="volume-high"
+          disabled={!supported}
+          loading={busy === 'start'}
+          onPress={() => void send(true)}
+        />
+        <Button
+          label={t('device.find.stop')}
+          icon="volume-mute"
+          disabled={!supported}
+          loading={busy === 'stop'}
+          onPress={() => void send(false)}
+        />
+      </ButtonRow>
       {message ? (
         <Notice tone={message.danger ? 'danger' : 'info'} icon={message.danger ? undefined : 'checkmark-circle'}>
           {message.text}

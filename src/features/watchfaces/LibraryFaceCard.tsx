@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -43,6 +44,7 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
   onInstall,
   onDelete,
 }: LibraryFaceCardProps) {
+  const { t } = useTranslation(['watch', 'common']);
   const colors = useColors();
   const onWatch = Boolean(matchedWatchFace);
   const isActive = matchedWatchFace?.active ?? false;
@@ -60,7 +62,7 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
       if (isActive) {
         return (
           <Button
-            label="Active"
+            label={t('watch:faces.active')}
             icon="checkmark-circle"
             variant="secondary"
             disabled
@@ -72,7 +74,7 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
       if (matchedWatchFace) {
         return (
           <Button
-            label="Set active"
+            label={t('watch:faces.setActive')}
             icon="checkmark-circle-outline"
             variant="primary"
             disabled={!connected || !idle}
@@ -84,7 +86,7 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
       }
       return (
         <Button
-          label="Installed"
+          label={t('watch:faces.installed')}
           icon="checkmark-circle"
           variant="secondary"
           disabled
@@ -97,7 +99,7 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
     if (isWrongResolution) {
       return (
         <Button
-          label="Wrong size"
+          label={t('watch:faces.wrongSize')}
           icon="alert-circle-outline"
           variant="secondary"
           disabled
@@ -111,10 +113,10 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
       <Button
         label={
           isCurrentInstalling
-            ? 'Installing...'
+            ? t('watch:faces.installingToWatch')
             : !face.downloadUrl
-              ? 'Missing file'
-              : 'Install'
+              ? t('watch:faces.missingFile')
+              : t('watch:faces.installAction')
         }
         icon="cloud-upload-outline"
         variant="primary"
@@ -144,19 +146,19 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
             ) : onWatch ? (
               <View style={[styles.pill, { backgroundColor: colors.muted }]}>
                 <AppText variant="label" color={colors.primary}>
-                  Installed on Watch
+                  {t('watch:faces.installedOnWatch')}
                 </AppText>
               </View>
             ) : isWrongResolution ? (
               <View style={[styles.pill, { backgroundColor: colors.muted }]}>
                 <AppText variant="label" color={colors.destructive}>
-                  Incompatible
+                  {t('watch:faces.incompatible')}
                 </AppText>
               </View>
             ) : (
               <View style={[styles.pill, { backgroundColor: colors.muted }]}>
                 <AppText variant="label" color={colors.mutedForeground}>
-                  Matches screen
+                  {t('watch:faces.matchesScreen')}
                 </AppText>
               </View>
             )}
@@ -173,7 +175,7 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
       <View style={styles.actions}>
         {renderActionButton()}
         <Button
-          label="Delete"
+          label={t('common:actions.delete')}
           icon="trash-outline"
           variant="destructive"
           style={styles.deleteBtn}

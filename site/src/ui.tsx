@@ -1,11 +1,12 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import type { AnchorHTMLAttributes } from "react";
 
+import { ANDROID_ROBOT_PATH, ANDROID_ROBOT_VIEWBOX } from "./android-robot";
 import { cn } from "./lib";
 
 // Same variants as JoyoRogo's Button (packages/ui), rendered as links.
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-transparent text-[0.9375rem] font-semibold whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform] duration-150 ease-out outline-none select-none focus-visible:ring-[3px] focus-visible:ring-ring/40 active:scale-[0.97] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[1.125rem]",
+  "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-transparent text-[0.9375rem] font-semibold whitespace-nowrap transition-[color,background-color,border-color,box-shadow,scale,translate] duration-150 ease-(--ease-out) outline-none select-none hover:-translate-y-px focus-visible:ring-[3px] focus-visible:ring-ring/40 active:translate-y-0 active:scale-[0.97] active:duration-100 motion-reduce:transition-colors motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[1.125rem]",
   {
     variants: {
       variant: {
@@ -41,6 +42,33 @@ export function GithubMark({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/**
+ * The official Android robot head as a monochrome glyph (currentColor), not the Google Play badge. Artwork, source and
+ * licence terms are documented in android-robot.ts; the footer carries the required attribution (ANDROID_ROBOT_CREDIT).
+ */
+export function AndroidMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox={ANDROID_ROBOT_VIEWBOX} aria-hidden="true" focusable="false" className={className}>
+      <path fill="currentColor" fillRule="evenodd" d={ANDROID_ROBOT_PATH} />
+    </svg>
+  );
+}
+
+/** The Apple logo as a monochrome glyph (currentColor) for iPhone links, path from Simple Icons (CC0). Apple's trademark: do not reshape. */
+export function AppleMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className={className}>
+      <path
+        fill="currentColor"
+        d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
+      />
+    </svg>
+  );
+}
+
+export const ANDROID_ROBOT_CREDIT =
+  "The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.";
 
 /** Circular progress in the style of JoyoRogo's Ring (static, no animation needed here). */
 export function Ring({
@@ -92,8 +120,23 @@ export function Ring({
   );
 }
 
-/** Phone frame from JoyoRogo's HeroPhone, around a real app screenshot. */
-export function Phone({ src, alt, className }: { src: string; alt: string; className?: string }) {
+/**
+ * Phone frame from JoyoRogo's HeroPhone, around a real app screenshot. [src]
+ * is a 640 px WebP with a 480 px twin named `<name>-480.webp`; the frame is
+ * 250 to 266 px wide, so most screens take the smaller file. Images load lazily
+ * unless [priority] marks the one the first screen is waiting on.
+ */
+export function Phone({
+  src,
+  alt,
+  className,
+  priority,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  priority?: boolean;
+}) {
   return (
     <div
       className={cn(
@@ -103,10 +146,13 @@ export function Phone({ src, alt, className }: { src: string; alt: string; class
     >
       <img
         src={src}
+        srcSet={`${src.replace(/\.webp$/, "-480.webp")} 480w, ${src} 640w`}
+        sizes="(min-width: 768px) 266px, 250px"
         alt={alt}
         width={640}
         height={1280}
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
         decoding="async"
         className="block w-full rounded-[2.2rem] bg-background"
       />

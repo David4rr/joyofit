@@ -1,9 +1,8 @@
 // Photo face wire formats, from Huawei Health 17.0.8.300:
-//  - 27/08 and 27/09: DiyWatchFaceDeviceService.getPhotoWatchInfo / handlePhotoInfo / handleNewBackground / handleCustomData /
-//    handleOptionSelectedList / makeNewPhotoInfoCommand / combineWatchFaceBgListCommand (the layout the Fit 4 Pro answers in; the older
-//    HwWatchFaceBtManager layout lists photos under 82{83} and the watch does not use it)
-//  - 28/01 (the watch asks for a file): HwCommonFileMgr (`defpackage.myu`) `b` "5.40.5"-style handler `handleDeviceRequest` and `b(String,int,int,int,DeviceInfo)` reportDeviceRequest
-//  - the .bin image: com.huawei.watchface.utils.WatchFaceBitmapUtil (`a(String,String,int)` and its run-length helpers)
+//  - 27/08 and 27/09: photo info, background list, custom data and option selection (the layout the Fit 4 Pro answers in; an older
+//    layout lists photos under 82{83} and the watch does not use it)
+//  - 28/01 (the watch asks for a file): the device request and its report
+//  - the .bin image: run-length coded pixels
 // No signature or account data is part of any of these.
 package com.joyodigitama.huaweiwear
 
@@ -191,13 +190,13 @@ internal object PhotoFaceCodec {
 
   /**
    * The bytes Huawei Health sends for a requested photo: for a resource type other than 1 the `.bin` file that goes with the
-   * `.png` name (`HwCommonFileMgr.d(String,int,int)`), for 1 the PNG itself.
+   * `.png` name, for 1 the PNG itself.
    */
   fun contentFor(request: PhotoFileRequest, png: ByteArray, bin: ByteArray): ByteArray = if (request.resourceType == 1) png else bin
 }
 
 /**
- * The `.bin` image the watch takes for a photo (`WatchFaceBitmapUtil.a(String,String,int)`): the four bytes `45 23` + format code,
+ * The `.bin` image the watch takes for a photo: the four bytes `45 23` + format code,
  * width and height as little-endian 16-bit numbers, then the pixels in row order, run-length coded. Three flavours; the watch names
  * the one it wants in tag 0x0b of 27/08.
  */

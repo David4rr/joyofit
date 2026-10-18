@@ -2,8 +2,9 @@ import type { ComponentProps } from 'react';
 import { ActivityIndicator, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { PopIn } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
-import { fontSize, fonts, HIT, radius, spacing, useColors } from '@/theme';
+import { fontSize, HIT, spacing, useTheme } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -14,6 +15,8 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'ghost' | 'destructive' | 'inverse';
   disabled?: boolean;
   loading?: boolean;
+  /** A check in place of the icon or spinner: the action just succeeded. The caller clears it after a moment. */
+  done?: boolean;
   icon?: IconName;
   style?: StyleProp<ViewStyle>;
 }
@@ -24,10 +27,11 @@ export function Button({
   variant = 'secondary',
   disabled,
   loading,
+  done,
   icon,
   style,
 }: ButtonProps) {
-  const colors = useColors();
+  const { colors, fonts, radius } = useTheme();
   const inactive = disabled || loading;
   const scheme = {
     primary: { bg: colors.primary, fg: colors.primaryForeground },
@@ -43,10 +47,15 @@ export function Button({
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
       disabled={inactive}
       onPress={onPress}
-      style={[styles.base, { backgroundColor: scheme.bg }, style]}>
+      style={[styles.base, { backgroundColor: scheme.bg, borderRadius: radius.control }, style]}>
       {loading ? <ActivityIndicator size="small" color={scheme.fg} /> : null}
-      {!loading && icon ? <Ionicons name={icon} size={18} color={scheme.fg} /> : null}
-      <Text style={[styles.label, { color: scheme.fg }]} numberOfLines={1}>
+      {!loading && done ? (
+        <PopIn>
+          <Ionicons name="checkmark" size={18} color={scheme.fg} />
+        </PopIn>
+      ) : null}
+      {!loading && !done && icon ? <Ionicons name={icon} size={18} color={scheme.fg} /> : null}
+      <Text style={[styles.label, { color: scheme.fg, fontFamily: fonts.medium }]} numberOfLines={1}>
         {label}
       </Text>
     </PressableScale>
@@ -57,11 +66,10 @@ const styles = StyleSheet.create({
   base: {
     minHeight: HIT,
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  label: { fontFamily: fonts.medium, fontSize: fontSize.base },
+  label: { fontSize: fontSize.base },
 });

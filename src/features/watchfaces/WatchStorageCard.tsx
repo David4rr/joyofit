@@ -1,6 +1,6 @@
-import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
+import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Screen';
 import type { DownloadedFace } from '@/features/watchfaces/useWatchfaceLibrary';
@@ -26,7 +26,7 @@ function resolveStorageProfile(width: number | null): StorageProfile {
       totalMb: 32.0,
       maxSlots: 16,
       avgCustomFaceMb: 1.6,
-      label: 'Huawei Band (~32 MB flash)',
+      label: 'Huawei Band (~32 MB flash)', // i18n-ok hardware profile name
     };
   }
   if (w <= 420) {
@@ -35,7 +35,7 @@ function resolveStorageProfile(width: number | null): StorageProfile {
       totalMb: 128.0,
       maxSlots: 32,
       avgCustomFaceMb: 3.5,
-      label: 'Huawei Watch Fit (~128 MB)',
+      label: 'Huawei Watch Fit (~128 MB)', // i18n-ok hardware profile name
     };
   }
   // Round profile: Huawei Watch GT 2/3/4/5 (454x454, 466x466)
@@ -43,7 +43,7 @@ function resolveStorageProfile(width: number | null): StorageProfile {
     totalMb: 256.0,
     maxSlots: 50,
     avgCustomFaceMb: 4.8,
-    label: 'Huawei Watch GT (~256 MB)',
+      label: 'Huawei Watch GT (~256 MB)', // i18n-ok hardware profile name
   };
 }
 
@@ -53,6 +53,7 @@ function resolveStorageProfile(width: number | null): StorageProfile {
  * an accurate prediction based on flash partition capacity and installed faces.
  */
 export function WatchStorageCard({ list, library = [] }: WatchStorageCardProps) {
+  const { t } = useTranslation('watch');
   const colors = useColors();
 
   // Check if watch hardware provided real storage telemetry
@@ -110,12 +111,12 @@ export function WatchStorageCard({ list, library = [] }: WatchStorageCardProps) 
       <View style={styles.headerRow}>
         <View style={styles.titleGroup}>
           <Ionicons name="hardware-chip-outline" size={18} color={colors.primary} />
-          <AppText variant="bodyStrong">Watch Storage</AppText>
+          <AppText variant="bodyStrong">{t('faces.storageTitle')}</AppText>
           <View style={[styles.pill, { backgroundColor: colors.muted }]}>
             <AppText
               variant="label"
               color={hasHardwareTelemetry ? colors.primary : colors.mutedForeground}>
-              {hasHardwareTelemetry ? 'Hardware Telemetry' : 'Predicted'}
+              {hasHardwareTelemetry ? t('faces.storageTelemetry') : t('faces.storagePredicted')}
             </AppText>
           </View>
         </View>

@@ -1,7 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { formatCount } from '@/format';
+import { fmtClock, fmtInt } from '@/i18n';
 import { useColors } from '@/theme';
 
 const BAR_AREA_HEIGHT = 96;
@@ -10,12 +11,14 @@ const LABEL_EVERY_HOURS = 6;
 /** 24 bars, one per local hour, scaled to the busiest hour. Plain Views, no chart library. */
 export function HourlyBars({ steps }: { steps: readonly number[] }) {
   const colors = useColors();
+  const { t } = useTranslation('today');
   const peak = Math.max(...steps);
   const peakHour = steps.indexOf(peak);
+  const hour = fmtClock(new Date(2000, 0, 1, peakHour));
   const summary =
     peak > 0
-      ? `Steps per hour. Busiest hour ${peakHour}:00 with ${formatCount(peak)} steps.`
-      : 'Steps per hour. No steps recorded today.';
+      ? t('hourly.a11yPeak', { hour, steps: fmtInt(peak), count: peak })
+      : t('hourly.a11yEmpty');
 
   return (
     <View accessible accessibilityLabel={summary} style={styles.wrap}>
@@ -45,7 +48,7 @@ export function HourlyBars({ steps }: { steps: readonly number[] }) {
         ))}
       </View>
       <AppText variant="caption" muted>
-        {peak > 0 ? `Busiest hour ${peakHour}:00, ${formatCount(peak)} steps` : 'No steps recorded yet today.'}
+        {peak > 0 ? t('hourly.peak', { hour, steps: fmtInt(peak), count: peak }) : t('hourly.empty')}
       </AppText>
     </View>
   );

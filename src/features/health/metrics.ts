@@ -1,3 +1,4 @@
+import { fmtDecimal, fmtInt, fmtNumber, t } from '@/i18n';
 import type { IconName } from '@/components/IconChip';
 import type { Tint } from '@/theme';
 
@@ -13,20 +14,27 @@ export interface MetricMeta {
   format: (value: number) => string;
 }
 
-const oneDecimal = (v: number) => v.toFixed(1);
-const whole = (v: number) => String(Math.round(v));
+const oneDecimal = (v: number) => fmtDecimal(v, 1);
+const whole = (v: number) => fmtInt(v);
 
-/** Known metrics; key order is the display order. The raw ones (value = null) only need a title. */
-const META: Record<string, MetricMeta | undefined> = {
-  skin_temperature: { label: 'Skin temperature', icon: 'thermometer', tint: 'workouts', unit: '\u00B0C', format: oneDecimal },
-  hrv: { label: 'HRV', icon: 'pulse', tint: 'heart', unit: 'ms', hint: 'RMSSD', format: whole },
-  emotion: { label: 'Stress / emotion', icon: 'happy', tint: 'sleep', unit: '', hint: 'Status 0 to 100', format: whole },
-  sleep_apnea: { label: 'Sleep apnea', icon: 'moon', tint: 'sleep', unit: '', hint: 'Level 1 to 4', format: (v) => `Level ${Math.round(v)}` },
-  arterial_stiffness: { label: 'Arterial stiffness', icon: 'fitness', tint: 'heart', unit: '', format: whole },
-  blood_pressure: { label: 'Blood pressure', icon: 'water', tint: 'heart', unit: '', format: whole },
-  altitude: { label: 'Altitude', icon: 'trending-up', tint: 'steps', unit: '', format: whole },
-  ams: { label: 'Altitude sickness', icon: 'warning', tint: 'workouts', unit: '', format: whole },
-  arrhythmia: { label: 'Arrhythmia', icon: 'heart-half', tint: 'heart', unit: '', format: whole },
+/** Known metrics, built on demand so the text follows the language; key order is the display order. The raw ones (value = null) only need a title. */
+const META: Record<string, (() => MetricMeta) | undefined> = {
+  skin_temperature: () => ({ label: t('health:metrics.skin_temperature.label'), icon: 'thermometer', tint: 'workouts', unit: '\u00B0C', format: oneDecimal }), // i18n-ok: unit symbol
+  hrv: () => ({ label: t('health:metrics.hrv.label'), icon: 'pulse', tint: 'heart', unit: 'ms', hint: t('health:metrics.hrv.hint'), format: whole }), // i18n-ok: unit symbol
+  emotion: () => ({ label: t('health:metrics.emotion.label'), icon: 'happy', tint: 'sleep', unit: '', hint: t('health:metrics.emotion.hint'), format: whole }),
+  sleep_apnea: () => ({
+    label: t('health:metrics.sleep_apnea.label'),
+    icon: 'moon',
+    tint: 'sleep',
+    unit: '',
+    hint: t('health:metrics.sleep_apnea.hint'),
+    format: (v) => t('health:metrics.level', { value: fmtInt(v) }),
+  }),
+  arterial_stiffness: () => ({ label: t('health:metrics.arterial_stiffness.label'), icon: 'fitness', tint: 'heart', unit: '', format: whole }),
+  blood_pressure: () => ({ label: t('health:metrics.blood_pressure.label'), icon: 'water', tint: 'heart', unit: '', format: whole }),
+  altitude: () => ({ label: t('health:metrics.altitude.label'), icon: 'trending-up', tint: 'steps', unit: '', format: whole }),
+  ams: () => ({ label: t('health:metrics.ams.label'), icon: 'warning', tint: 'workouts', unit: '', format: whole }),
+  arrhythmia: () => ({ label: t('health:metrics.arrhythmia.label'), icon: 'heart-half', tint: 'heart', unit: '', format: whole }),
 };
 
 /** Known types in display order; unknown types sort after them. */
@@ -38,11 +46,11 @@ const FALLBACK: MetricMeta = {
   icon: 'analytics',
   tint: 'steps',
   unit: '',
-  format: (v) => String(Math.round(v * 100) / 100),
+  format: (v) => fmtNumber(v, 2),
 };
 
 export function metaOrFallback(type: string): MetricMeta {
-  return META[type] ?? FALLBACK;
+  return META[type]?.() ?? FALLBACK;
 }
 
 export const WEEK_DAYS = 7;

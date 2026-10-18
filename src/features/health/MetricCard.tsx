@@ -8,10 +8,12 @@ import { metaOrFallback, rawPairs } from '@/features/health/metrics';
 import { Sparkline } from '@/features/health/Sparkline';
 import type { HealthMetricData } from '@/features/health/useHealthMetrics';
 import { formatAgo } from '@/format';
+import { useTranslation } from '@/i18n';
 import { spacing, tintColors, useColors } from '@/theme';
 
 /** One metric: latest value with its age, the 7-day line, or the raw key/value pairs when the layout is unknown. */
 export function MetricCard({ metric, nowSec }: { metric: HealthMetricData; nowSec: number }) {
+  const { t } = useTranslation('health');
   const colors = useColors();
   const { type, status, latest, week } = metric;
   const meta = metaOrFallback(type);
@@ -35,7 +37,7 @@ export function MetricCard({ metric, nowSec }: { metric: HealthMetricData; nowSe
       {latest === null ? (
         <View style={styles.stack}>
           <AppText variant="caption" muted>
-            {status?.note ?? 'Nothing stored yet. Sync to pull it from the watch.'}
+            {status?.note ?? t('card.nothingStored')}
           </AppText>
         </View>
       ) : value !== null ? (
@@ -51,13 +53,13 @@ export function MetricCard({ metric, nowSec }: { metric: HealthMetricData; nowSe
           <Sparkline
             points={week}
             color={tint.base}
-            label={`${title}, daily means of the last 7 days`}
+            label={t('card.weekLabel', { title })}
           />
         </View>
       ) : (
         <View style={styles.stack}>
           <AppText variant="caption" muted>
-            Raw values: the layout of this class is not known yet
+            {t('card.rawValues')}
           </AppText>
           {rawPairs(latest.values_json).map(([key, text]) => (
             <KeyValue key={key} label={key} value={text} />

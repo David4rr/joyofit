@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { call, fakeGetSession, postJson, signUp, upstream } from "./helpers";
+import { call, fakeJoyorogo, postJson, signUp, upstream } from "./helpers";
 
 describe("auth", () => {
   it("rejects every endpoint without a session cookie", async () => {
@@ -44,8 +44,10 @@ describe("auth", () => {
     expect(json.user.id).toBe(user.id);
     expect(json.user.email).toBe(user.email);
     expect(json.rev).toBe(0);
+    const forwarded = `${cookie}; better-auth.session_data=abc`;
     expect(upstream.calls).toEqual([
-      { url: "https://api.joyorogo.com/api/auth/get-session", cookie: `${cookie}; better-auth.session_data=abc` },
+      { url: "https://api.joyorogo.com/api/auth/get-session", cookie: forwarded },
+      { url: "https://api.joyorogo.com/rpc/fitness/cloudAccess", cookie: forwarded },
     ]);
   });
 
@@ -53,7 +55,8 @@ describe("auth", () => {
     const { cookie } = signUp("bob");
     expect((await call("/v1/me", { cookie })).status).toBe(200);
     expect((await call("/v1/me", { cookie })).status).toBe(200);
-    expect(upstream.calls).toHaveLength(1);
+    // One session check and one access check; the second request is served from both caches.
+    expect(upstream.calls).toHaveLength(2);
   });
 
   it("answers 503, not 401, when JoyoRogo is down", async () => {
@@ -72,13 +75,16 @@ describe("auth", () => {
     const AUTH_SERVICE = {
       fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
         seen.push(String(input));
-        return fakeGetSession(new Headers(init?.headers).get("cookie"));
+        return fakeJoyorogo(String(input), new Headers(init?.headers).get("cookie"));
       },
     } as Fetcher;
     const response = await call("/v1/me", { cookie, env: { AUTH_SERVICE } });
     expect(response.status).toBe(200);
     expect(((await response.json()) as { user: { id: string } }).user.id).toBe(user.id);
-    expect(seen).toEqual(["https://api.joyorogo.com/api/auth/get-session"]);
+    expect(seen).toEqual([
+      "https://api.joyorogo.com/api/auth/get-session",
+      "https://api.joyorogo.com/rpc/fitness/cloudAccess",
+    ]);
     expect(upstream.calls).toHaveLength(0);
   });
 });

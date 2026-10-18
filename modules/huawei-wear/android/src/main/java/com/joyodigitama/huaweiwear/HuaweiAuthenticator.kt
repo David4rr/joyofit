@@ -11,6 +11,7 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiConstants
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiCoordinator.HuaweiDeviceType
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiCrypto
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiPacket
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.DeviceConfig
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.DeviceConfig.HiChain
 import nodomain.freeyourgadget.gadgetbridge.util.CryptoUtils
@@ -41,6 +42,31 @@ internal object Timeouts {
   const val SYNC_DATA_MS = 15_000L
 }
 
+/** Where the developer bind lab ([BindLab]) ends an authentication on purpose; the steps after it are never sent. */
+internal enum class BindStop {
+  /** After LinkParams and SecurityNegotiation: only queries that change nothing on the watch. */
+  SECURITY_NEGOTIATION,
+
+  /** After the PinCode query, before the first HiChain message. */
+  PIN_CODE,
+
+  /** After HiChain operationCode 1 step 2 (the watch's returnCodeMac verified), before step 3 delivers the auth token. */
+  ISO_MAC_VERIFIED,
+}
+
+/**
+ * Bind lab options: [stopAfter] ends the authentication with an ERR_PROTOCOL; a lab also traces this session's secrets to the log.
+ * [linkSlice] and [linkMtu] put those numbers into the LinkParams request (GB sends it empty) to see whether the watch then sends
+ * its replies in smaller pieces.
+ */
+internal class AuthLab(val stopAfter: BindStop?, val linkSlice: Int? = null, val linkMtu: Int? = null) {
+  fun reached(stage: BindStop) {
+    if (stage == stopAfter) throw WearException(ErrorCodes.PROTOCOL, "Bind lab stopped after $stage on purpose")
+  }
+
+  fun trace(events: WearEvents, message: String) = events.log(LogDirection.INFO, null, null, null, "Lab: $message")
+}
+
 /**
  * Port of the HuaweiSupportProvider.initializeDevice* chain:
  * LinkParams -> DeviceStatus -> SecurityNegotiation -> HiChain / HiChain Lite / normal auth.
@@ -54,6 +80,7 @@ internal class HuaweiAuthenticator(
   private val identity: DeviceIdentity,
   private val events: WearEvents,
   private val deviceType: HuaweiDeviceType = HuaweiDeviceType.BR,
+  private val lab: AuthLab? = null,
 ) {
   private val params get() = session.params
   private val random = SecureRandom()
@@ -64,11 +91,13 @@ internal class HuaweiAuthenticator(
 
   /**
    * Runs the whole authentication. Throws [WearException]: ERR_AUTH_FAILED (GB-style reason in the
-   * message), ERR_TIMEOUT, ERR_DEVICE_STATUS or ERR_DISCONNECTED.
+   * message), ERR_TIMEOUT, ERR_DEVICE_STATUS, ERR_DISCONNECTED or, when a HiChain first bind is needed while [firstBindAllowed]
+   * is false, ERR_BIND_CONFIRMATION. That stop comes before the PinCode request, so nothing on the watch has changed. Normal
+   * mode, HiChain Lite and a HiChain reconnect with a key the watch knows never ask for it.
    */
-  suspend fun authenticate(): AuthMode {
+  suspend fun authenticate(firstBindAllowed: Boolean): AuthMode {
     try {
-      return negotiate()
+      return negotiate(firstBindAllowed)
     } catch (e: WearException) {
       throw when (e.errorCode) {
         ErrorCodes.PROTOCOL -> WearException(ErrorCodes.AUTH_FAILED, "Authentication failed: ${e.message}", e)
@@ -82,9 +111,9 @@ internal class HuaweiAuthenticator(
     }
   }
 
-  private suspend fun negotiate(): AuthMode {
-    val firstConnection = identity.isFirstConnection
-    val authTimeout = if (firstConnection) Timeouts.FIRST_AUTH_MS else Timeouts.AUTH_MS
+  private suspend fun negotiate(firstBindAllowed: Boolean): AuthMode {
+    var firstConnection = identity.isFirstConnection
+    var authTimeout = if (firstConnection) Timeouts.FIRST_AUTH_MS else Timeouts.AUTH_MS
 
     // GB initializeDevice(): fake MAC / android id are created before the first request.
     identity.ensureCreated()
@@ -113,11 +142,21 @@ internal class HuaweiAuthenticator(
 
     params.setAuthMode(if (params.deviceSupportType.toInt() == 4) 4.toByte() else 2.toByte())
     val authType = securityNegotiation(authTimeout)
+    lab?.reached(BindStop.SECURITY_NEGOTIATION)
 
     val mode: AuthMode
     if (authType == 0x0186A0 || isHiChain3(authType)) {
       mode = if (params.deviceSupportType.toInt() == 4 || isHiChain3(authType)) AuthMode.HICHAIN3 else AuthMode.HICHAIN
+      val decision = FirstBind.decide(params.authMode.toInt(), authType, firstConnection)
+      if (decision.firstConnection != firstConnection) authTimeout = if (decision.firstConnection) Timeouts.FIRST_AUTH_MS else Timeouts.AUTH_MS
+      firstConnection = decision.firstConnection
+      events.log(LogDirection.INFO, null, null, null, "Auth: ${decision.note}")
       events.log(LogDirection.INFO, null, null, null, "Auth: ${mode.wire} mode (authType=$authType, firstConnection=$firstConnection)")
+      if (FirstBind.needsConfirmation(firstConnection, firstBindAllowed)) {
+        // Decided before the PinCode request: the watch has not been touched.
+        events.log(LogDirection.INFO, null, null, null, "Auth: a first bind is needed; this connection may not start one")
+        throw WearException(ErrorCodes.BIND_CONFIRMATION, FirstBind.MESSAGE)
+      }
       hiChainMode(firstConnection, authTimeout)
     } else if (authType == 0x01 || authType == 0x02) {
       mode = AuthMode.HICHAIN_LITE
@@ -134,7 +173,7 @@ internal class HuaweiAuthenticator(
 
   private suspend fun linkParams(): ByteArray {
     val response = session
-      .request(DeviceConfig.LinkParams.Request(params, deviceType), Timeouts.AUTH_MS, "LinkParams")
+      .request(linkParamsRequest(), Timeouts.AUTH_MS, "LinkParams")
       .expect<DeviceConfig.LinkParams.Response>("LinkParams")
 
     params.setDeviceSupportType(response.deviceSupportType)
@@ -154,6 +193,19 @@ internal class HuaweiAuthenticator(
         "bondState=${response.bondState.hex2()} mtu=${response.mtu} sliceSize=${response.sliceSize}",
     )
     return response.serverNonce
+  }
+
+  private fun linkParamsRequest(): DeviceConfig.LinkParams.Request {
+    val request = DeviceConfig.LinkParams.Request(params, deviceType)
+    val slice = lab?.linkSlice
+    val mtu = lab?.linkMtu
+    if (slice != null || mtu != null) {
+      val tlv = HuaweiTLV().put(0x01)
+      if (slice != null) tlv.put(0x02, slice.toShort()) else tlv.put(0x02)
+      if (mtu != null) tlv.put(0x03, mtu.toShort()) else tlv.put(0x03)
+      request.setTlv(tlv.put(0x04))
+    }
+    return request
   }
 
   // GetDeviceStatusRequest
@@ -188,6 +240,7 @@ internal class HuaweiAuthenticator(
     val response = session
       .request(request, timeoutMs, "SecurityNegotiation")
       .expect<DeviceConfig.SecurityNegotiation.Response>("SecurityNegotiation")
+    lab?.trace(events, "SecurityNegotiation: authType=${response.authType} honorPairType=${response.honorPairType} tlv=${response.tlv}")
     return response.authType
   }
 
@@ -198,6 +251,7 @@ internal class HuaweiAuthenticator(
       .request(DeviceConfig.PinCode.Request(params), timeoutMs, "PinCode")
       .expect<DeviceConfig.PinCode.Response>("PinCode")
     params.setPinCode(response.pinCode)
+    lab?.trace(events, "PinCode: ${response.pinCode.size} bytes ${response.pinCode.toHex()}")
   }
 
   // initializeDeviceHiChainMode
@@ -205,6 +259,7 @@ internal class HuaweiAuthenticator(
   private suspend fun hiChainMode(firstConnection: Boolean, authTimeout: Long) {
     if (firstConnection) {
       pinCode(authTimeout)
+      lab?.reached(BindStop.PIN_CODE)
       // operationCode 1 (GB logs it as the "auth operation": PIN-derived key, the user confirms on the
       // watch, stores the auth token), then operationCode 2 (GB's "bind operation").
       hiChain(operationCode = 0x01)
@@ -356,6 +411,11 @@ internal class HuaweiAuthenticator(
               "tokenCheck: ${tokenCheck.toHex()} is different than ${peerToken.toHex()}",
             )
           }
+          lab?.trace(
+            events,
+            "op$operationCode step 1 verified: peerAuthId=${authIdPeer.toHex()} (${String(authIdPeer, StandardCharsets.UTF_8)}) " +
+              "isoSalt=${randPeer.toHex()} token=${peerToken.toHex()} psk=${psk.toHex()}",
+          )
         } else if (step == 0x02) {
           val returnCodeMac = response.step2Data.returnCodeMac
           val returnCodeMacCheck = CryptoUtils.calcHmacSha256(psk, byteArrayOf(0x00, 0x00, 0x00, 0x00))
@@ -365,6 +425,7 @@ internal class HuaweiAuthenticator(
               "returnCodeMacCheck: ${returnCodeMacCheck.toHex()} is different than ${returnCodeMac.toHex()}",
             )
           }
+          if (pairing) lab?.reached(BindStop.ISO_MAC_VERIFIED)
         } else if (step == 0x03) {
           if (operationCode == 0x01) {
             val nonce = response.step3Data.nonce

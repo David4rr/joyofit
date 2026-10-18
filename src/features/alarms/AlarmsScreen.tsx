@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Switch, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { Divider, Screen, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -16,6 +18,7 @@ import {
 } from '@/features/alarms/alarmUtils';
 import { useAlarms } from '@/features/alarms/useAlarms';
 import { formatDateTime } from '@/format';
+import { fmtInt } from '@/i18n';
 import { spacing, useColors } from '@/theme';
 import { ALARM_SLOTS, type WatchAlarm, type WatchSmartAlarm } from '@/wear';
 
@@ -27,6 +30,7 @@ type Editing = { kind: 'event'; slot: number; isNew: boolean } | { kind: 'smart'
  */
 export function AlarmsScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['watch', 'common']);
   const colors = useColors();
   const { alarms, connected, busy, error, refresh, save } = useAlarms();
   const [editing, setEditing] = useState<Editing>(null);
@@ -88,7 +92,7 @@ export function AlarmsScreen() {
           hour: existing?.hour ?? 7,
           minute: existing?.minute ?? 0,
           repeat: existing?.repeat ?? 0,
-          name: existing?.name ?? 'Alarm',
+          name: existing?.name ?? t('watch:alarms.defaultName'),
           aheadMinutes: 5,
         }}
         saving={busy}
@@ -109,24 +113,24 @@ export function AlarmsScreen() {
   return (
     <Screen refresh={{ refreshing: busy && editing === null, onRefresh: () => void refresh(), enabled: connected }}>
       {!connected ? (
-        <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
-          Connect your watch to read and change its alarms.
+        <Notice icon="bluetooth" action={{ label: t('watch:openWatch'), onPress: () => router.navigate('/watch') }}>
+          {t('watch:alarms.connect')}
         </Notice>
       ) : null}
-      {connected && !alarms.supported ? <Notice>This watch did not report alarm support.</Notice> : null}
+      {connected && !alarms.supported ? <Notice>{t('watch:alarms.unsupported')}</Notice> : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
 
       <Section
-        title="Alarms"
+        title={t('watch:alarms.title')}
         icon="alarm"
         trailing={
           <AppText variant="caption" muted>
-            {alarms.event.length} of {ALARM_SLOTS}
+            {t('watch:alarms.count', { used: alarms.event.length, total: ALARM_SLOTS })}
           </AppText>
         }>
         {alarms.event.length === 0 && editing === null ? (
           <AppText variant="caption" muted>
-            No alarms on the watch.
+            {t('watch:alarms.empty')}
           </AppText>
         ) : null}
         {alarms.event.map((alarm, index) => (
@@ -144,7 +148,7 @@ export function AlarmsScreen() {
                     </AppText>
                   </View>
                   <Switch
-                    accessibilityLabel={`Alarm ${formatAlarmTime(alarm.hour, alarm.minute)} on`}
+                    accessibilityLabel={t('watch:alarms.switchA11y', { time: formatAlarmTime(alarm.hour, alarm.minute) })}
                     value={alarm.enabled}
                     disabled={!writable}
                     onValueChange={(enabled) =>
@@ -155,7 +159,7 @@ export function AlarmsScreen() {
                   />
                 </View>
                 <Button
-                  label="Edit"
+                  label={t('common:actions.edit')}
                   icon="create"
                   disabled={!writable}
                   style={styles.edit}
@@ -172,7 +176,7 @@ export function AlarmsScreen() {
           </View>
         ) : null}
         <Button
-          label="Add alarm"
+          label={t('watch:alarms.add')}
           variant="primary"
           icon="add"
           disabled={!writable || free === null || editing !== null}
@@ -180,16 +184,16 @@ export function AlarmsScreen() {
         />
         {free === null ? (
           <AppText variant="caption" muted>
-            All {ALARM_SLOTS} slots are used. Delete one to add another.
+            {t('watch:alarms.full', { total: ALARM_SLOTS })}
           </AppText>
         ) : null}
         <AppText variant="caption" muted>
           {alarms.updatedAt === null
-            ? 'Not read from the watch yet.'
-            : `Last read from the watch ${formatDateTime(alarms.updatedAt / 1000)}.`}
+            ? t('watch:alarms.neverRead')
+            : t('watch:alarms.lastRead', { time: formatDateTime(alarms.updatedAt / 1000) })}
         </AppText>
         <Button
-          label="Read from the watch"
+          label={t('watch:alarms.read')}
           icon="refresh"
           disabled={!connected || busy}
           loading={busy && !editing}
@@ -198,33 +202,32 @@ export function AlarmsScreen() {
       </Section>
 
       {alarms.smartSupported ? (
-        <Section title="Smart alarm" icon="moon" tint="sleep">
-          <AppText variant="caption" muted>
-            Wakes you at a light moment of sleep within the chosen window before the time. The watch
-            keeps one smart alarm and cannot delete it, only switch it off.
-          </AppText>
+        <Section title={t('watch:alarms.smart.title')} icon="moon" tint="sleep">
+          <Details>
+            {t('watch:alarms.smart.about')}
+          </Details>
           {editing?.kind === 'smart' ? (
             editor
           ) : (
             <>
               <View style={styles.stack}>
-                <AppText variant="figure">{smart ? formatAlarmTime(smart.hour, smart.minute) : 'Not set'}</AppText>
+                <AppText variant="figure">{smart ? formatAlarmTime(smart.hour, smart.minute) : t('watch:alarms.smart.notSet')}</AppText>
                 {smart ? (
                   <AppText variant="caption" muted>
-                    Up to {smart.aheadMinutes} min early · {describeRepeat(smart.repeat)}
+                    {t('watch:alarms.smart.summary', { minutes: fmtInt(smart.aheadMinutes), repeat: describeRepeat(smart.repeat) })}
                   </AppText>
                 ) : null}
               </View>
               {smart ? (
                 <SwitchRow
-                  label="Smart alarm on"
+                  label={t('watch:alarms.smart.on')}
                   value={smart.enabled}
                   disabled={!writable}
                   onValueChange={(enabled) => void pushSmart({ ...smart, enabled })}
                 />
               ) : null}
               <Button
-                label={smart ? 'Edit smart alarm' : 'Set smart alarm'}
+                label={smart ? t('watch:alarms.smart.edit') : t('watch:alarms.smart.set')}
                 icon="create"
                 disabled={!writable || editing !== null}
                 onPress={() => setEditing({ kind: 'smart' })}

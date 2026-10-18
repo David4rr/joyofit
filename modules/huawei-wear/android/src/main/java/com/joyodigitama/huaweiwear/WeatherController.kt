@@ -70,6 +70,7 @@ internal class WeatherController(
   @Volatile private var lastTempC: Int? = null
   @Volatile private var lastCondition: String? = null
   @Volatile private var lastPlaceName: String? = null
+  @Volatile private var lastForecast: ForecastOutcome? = null
 
   private val lock = Any()
   private var subscribedSession: HuaweiSession? = null
@@ -239,12 +240,13 @@ internal class WeatherController(
         lastError = e.message
         throw e
       }
-      try {
-        sender.send(report, settings.unit, System.currentTimeMillis() / 1000, ZoneId.systemDefault())
+      val outcome = try {
+        sender.send(report, settings.unit, System.currentTimeMillis() / 1000, ZoneId.systemDefault(), reason)
       } catch (e: WearException) {
         lastError = e.message
         throw e
       }
+      lastForecast = outcome
       lastPushAtSec = System.currentTimeMillis() / 1000
       lastError = null
       lastTempC = WeatherPackets.temperatureByte(report.tempC).toInt()
@@ -282,6 +284,10 @@ internal class WeatherController(
     } catch (e: IOException) {
       throw WearException(WeatherErrorCodes.NETWORK, "Could not get the weather: ${e.message ?: e.javaClass.simpleName}", e)
     }
+    info(
+      "Weather: Open-Meteo gave ${report.hourly.size} hours (${report.hourly.count { it.timestamp > now }} still ahead) and ${report.daily.size} days" +
+        if (report.skippedHours + report.skippedDays > 0) ", left out for missing values: ${report.skippedHours} hours, ${report.skippedDays} days" else "",
+    )
     cache = report
     cacheKey = key
     return report
@@ -354,6 +360,7 @@ internal class WeatherController(
       "lastTemperatureC" to lastTempC,
       "lastCondition" to lastCondition,
       "lastLocationName" to lastPlaceName,
+      "lastForecast" to lastForecast?.toJs(),
     )
   }
 

@@ -1,0 +1,4875 @@
+{
+ "capability": [
+  {
+   "service": 23,
+   "aw": false,
+   "name": "new steps",
+   "ok": true,
+   "fields": {"supportNewStep": true},
+   "command": 21,
+   "tlv": "010102"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "flags 3",
+   "ok": true,
+   "fields": {"supportNewStep": true},
+   "command": 21,
+   "tlv": "010103"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "flags 1",
+   "ok": true,
+   "fields": {"supportNewStep": false},
+   "command": 21,
+   "tlv": "010101"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "flags short",
+   "ok": true,
+   "fields": {"supportNewStep": true},
+   "command": 21,
+   "tlv": "01020102"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "flags int",
+   "ok": true,
+   "fields": {"supportNewStep": true},
+   "command": 21,
+   "tlv": "010400000002"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 23,
+   "aw": false,
+   "name": "flags three bytes",
+   "ok": false,
+   "parseException": false,
+   "command": 21,
+   "tlv": "0103000002"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "no flags",
+   "ok": true,
+   "fields": {"supportNewStep": false},
+   "command": 21,
+   "tlv": "020102"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 23,
+   "aw": false,
+   "name": "empty flags",
+   "ok": false,
+   "parseException": false,
+   "command": 21,
+   "tlv": "0100"
+  }
+ ],
+ "data": [
+  {
+   "service": 23,
+   "aw": false,
+   "name": "hr only",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000000,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": 120,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     },
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000005,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": 0,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     },
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000010,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": -106,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     }
+    ],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 0,
+     "dataLength": 1,
+     "bitmap": 1,
+     "workoutNumber": 5,
+     "interval": 5,
+     "timestamp": 1700000000,
+     "dataCount": 3
+    },
+    "rawData": "780096",
+    "innerBitmap": 0,
+    "innerDataLength": 0,
+    "error": null,
+    "rawHeader": "000500006553f100050003010001"
+   },
+   "command": 10,
+   "tlv": "811d0202000503020000040e000500006553f1000500030100010503780096"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "hr speed altitude",
+   "ok": true,
+   "fields": {
+    "dataNumber": 1,
+    "dataList": [
+     {
+      "altitude": 77,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": 33,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000100,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": 100,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     },
+     {
+      "altitude": 256,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": 40,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000110,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": 101,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     }
+    ],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 1,
+     "dataLength": 7,
+     "bitmap": 35,
+     "workoutNumber": 5,
+     "interval": 10,
+     "timestamp": 1700000100,
+     "dataCount": 2
+    },
+    "rawData": "6400210000004d65002800000100",
+    "innerBitmap": 0,
+    "innerDataLength": 0,
+    "error": null,
+    "rawHeader": "000500016553f1640a0002070023"
+   },
+   "command": 10,
+   "tlv": "81280202000503020001040e000500016553f1640a0002070023050e6400210000004d65002800000100"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "swolf stroke rate calories power freq",
+   "ok": true,
+   "fields": {
+    "dataNumber": 2,
+    "dataList": [
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": 40,
+      "speed": -1,
+      "frequency": 55,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": 3,
+      "groundContactTime": -1,
+      "strokeRate": 9,
+      "timestamp": 1700000200,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": 100,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": -1,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     },
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": 41,
+      "speed": -1,
+      "frequency": 56,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": 7,
+      "groundContactTime": -1,
+      "strokeRate": 10,
+      "timestamp": 1700000201,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": 101,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": -1,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     }
+    ],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 2,
+     "dataLength": 10,
+     "bitmap": 920,
+     "workoutNumber": 5,
+     "interval": 1,
+     "timestamp": 1700000200,
+     "dataCount": 2
+    },
+    "rawData": "002800090064003700030029000a006500380007",
+    "innerBitmap": 0,
+    "innerDataLength": 0,
+    "error": null,
+    "rawHeader": "000500026553f1c80100020a0398"
+   },
+   "command": 10,
+   "tlv": "812e0202000503020002040e000500026553f1c80100020a03980514002800090064003700030029000a006500380007"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "inner explicit",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 1092616192,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000300,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": 7,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": 90,
+      "heartRate": 120,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     },
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 1092721050,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000305,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": 8,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": 91,
+      "heartRate": -126,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     }
+    ],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 0,
+     "dataLength": 6,
+     "bitmap": 65,
+     "workoutNumber": 5,
+     "interval": 5,
+     "timestamp": 1700000300,
+     "dataCount": 2
+    },
+    "rawData": "78005a07006482005b080065",
+    "innerBitmap": 4105,
+    "innerDataLength": 5,
+    "error": null,
+    "rawHeader": "000500006553f22c050002060041"
+   },
+   "command": 10,
+   "tlv": "81320202000503020000040e000500006553f22c050002060041050c78005a07006482005b080065080400000005090400001009"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "inner unknown bits",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [{
+     "altitude": null,
+     "backFootLanding": -1,
+     "voBits": 0,
+     "swolf": -1,
+     "speed": -1,
+     "frequency": -1,
+     "stepLength": -1,
+     "swingAngle": -1,
+     "foreFootLanding": -1,
+     "unknownData": "812d0202000503020000040e000500006553f290050001070041050778010203040506080400000006090400100001",
+     "apBits": 0,
+     "cyclingPower": -1,
+     "groundContactTime": -1,
+     "strokeRate": -1,
+     "timestamp": 1700000400,
+     "hangTime": -1,
+     "ceiling": -1,
+     "midFootLanding": -1,
+     "temp": -1,
+     "gtbBits": 0,
+     "vrBits": 0,
+     "impact": -1,
+     "stepRate": -1,
+     "cns": -1,
+     "calories": -1,
+     "eversionAngle": -1,
+     "cadence": 258,
+     "heartRate": 120,
+     "spo2": -1,
+     "rideCadence": -1,
+     "impactHangRate": -1
+    }],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 0,
+     "dataLength": 7,
+     "bitmap": 65,
+     "workoutNumber": 5,
+     "interval": 5,
+     "timestamp": 1700000400,
+     "dataCount": 1
+    },
+    "rawData": "78010203040506",
+    "innerBitmap": 1048577,
+    "innerDataLength": 6,
+    "error": null,
+    "rawHeader": "000500006553f290050001070041"
+   },
+   "command": 10,
+   "tlv": "812d0202000503020000040e000500006553f290050001070041050778010203040506080400000006090400100001"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "inner all known bits",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [{
+     "altitude": null,
+     "backFootLanding": 78,
+     "voBits": -986246349,
+     "swolf": -1,
+     "speed": -1,
+     "frequency": -1,
+     "stepLength": 3862,
+     "swingAngle": 12857,
+     "foreFootLanding": 64,
+     "unknownData": "81480202000503020000040e000500006553f2f405000122004105226301080f161d242b323940474e555c636a71787f868d949ba2a9b0b7bec5ccd3dae10804000000210904000fffff",
+     "apBits": 1162611098,
+     "cyclingPower": -1,
+     "groundContactTime": 7460,
+     "strokeRate": -1,
+     "timestamp": 1700000500,
+     "hangTime": 23651,
+     "ceiling": -73,
+     "midFootLanding": 71,
+     "temp": -66,
+     "gtbBits": -1014990766,
+     "vrBits": -989193830,
+     "impact": 43,
+     "stepRate": -1,
+     "cns": -13101,
+     "calories": -1,
+     "eversionAngle": 85,
+     "cadence": 264,
+     "heartRate": 99,
+     "spo2": -59,
+     "rideCadence": 120,
+     "impactHangRate": 27249
+    }],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 0,
+     "dataLength": 34,
+     "bitmap": 65,
+     "workoutNumber": 5,
+     "interval": 5,
+     "timestamp": 1700000500,
+     "dataCount": 1
+    },
+    "rawData": "6301080f161d242b323940474e555c636a71787f868d949ba2a9b0b7bec5ccd3dae1",
+    "innerBitmap": 1048575,
+    "innerDataLength": 33,
+    "error": null,
+    "rawHeader": "000500006553f2f4050001220041"
+   },
+   "command": 10,
+   "tlv": "81480202000503020000040e000500006553f2f405000122004105226301080f161d242b323940474e555c636a71787f868d949ba2a9b0b7bec5ccd3dae10804000000210904000fffff"
+  },
+  {
+   "service": 23,
+   "aw": true,
+   "name": "aw defaults",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [{
+     "altitude": null,
+     "backFootLanding": 78,
+     "voBits": 0,
+     "swolf": -1,
+     "speed": -1,
+     "frequency": -1,
+     "stepLength": 3862,
+     "swingAngle": 12857,
+     "foreFootLanding": 64,
+     "unknownData": null,
+     "apBits": 0,
+     "cyclingPower": -1,
+     "groundContactTime": 7460,
+     "strokeRate": -1,
+     "timestamp": 1700000600,
+     "hangTime": -1,
+     "ceiling": -1,
+     "midFootLanding": 71,
+     "temp": -1,
+     "gtbBits": 0,
+     "vrBits": 0,
+     "impact": 43,
+     "stepRate": -1,
+     "cns": -1,
+     "calories": -1,
+     "eversionAngle": 85,
+     "cadence": 264,
+     "heartRate": 88,
+     "spo2": -1,
+     "rideCadence": -1,
+     "impactHangRate": -1
+    }],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 0,
+     "dataLength": 14,
+     "bitmap": 65,
+     "workoutNumber": 5,
+     "interval": 5,
+     "timestamp": 1700000600,
+     "dataCount": 1
+    },
+    "rawData": "5801080f161d242b323940474e55",
+    "innerBitmap": 511,
+    "innerDataLength": 13,
+    "error": null,
+    "rawHeader": "000500006553f3580500010e0041"
+   },
+   "command": 10,
+   "tlv": "81280202000503020000040e000500006553f3580500010e0041050e5801080f161d242b323940474e55"
+  },
+  {
+   "exception": "LengthMismatchException",
+   "service": 23,
+   "aw": false,
+   "name": "no aw defaults",
+   "ok": false,
+   "parseException": true,
+   "command": 10,
+   "tlv": "81280202000503020000040e000500006553f3580500010e0041050e5801080f161d242b323940474e55"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "inner bit 6 without inner length",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000700,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": 120,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     },
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000705,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": 121,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     }
+    ],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 0,
+     "dataLength": 1,
+     "bitmap": 65,
+     "workoutNumber": 5,
+     "interval": 5,
+     "timestamp": 1700000700,
+     "dataCount": 2
+    },
+    "rawData": "7879",
+    "innerBitmap": 0,
+    "innerDataLength": 0,
+    "error": null,
+    "rawHeader": "000500006553f3bc050002010041"
+   },
+   "command": 10,
+   "tlv": "811c0202000503020000040e000500006553f3bc05000201004105027879"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "zero samples",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 0,
+     "dataLength": 0,
+     "bitmap": 1,
+     "workoutNumber": 5,
+     "interval": 5,
+     "timestamp": 1700000800,
+     "dataCount": 0
+    },
+    "rawData": "",
+    "innerBitmap": 0,
+    "innerDataLength": 0,
+    "error": null,
+    "rawHeader": "000500006553f420050000000001"
+   },
+   "command": 10,
+   "tlv": "811a0202000503020000040e000500006553f4200500000000010500"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "negative interval",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000900,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": 1,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     },
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000898,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": 2,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     },
+     {
+      "altitude": null,
+      "backFootLanding": -1,
+      "voBits": 0,
+      "swolf": -1,
+      "speed": -1,
+      "frequency": -1,
+      "stepLength": -1,
+      "swingAngle": -1,
+      "foreFootLanding": -1,
+      "unknownData": null,
+      "apBits": 0,
+      "cyclingPower": -1,
+      "groundContactTime": -1,
+      "strokeRate": -1,
+      "timestamp": 1700000896,
+      "hangTime": -1,
+      "ceiling": -1,
+      "midFootLanding": -1,
+      "temp": -1,
+      "gtbBits": 0,
+      "vrBits": 0,
+      "impact": -1,
+      "stepRate": -1,
+      "cns": -1,
+      "calories": -1,
+      "eversionAngle": -1,
+      "cadence": -1,
+      "heartRate": 3,
+      "spo2": -1,
+      "rideCadence": -1,
+      "impactHangRate": -1
+     }
+    ],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 0,
+     "dataLength": 1,
+     "bitmap": 1,
+     "workoutNumber": 5,
+     "interval": -2,
+     "timestamp": 1700000900,
+     "dataCount": 3
+    },
+    "rawData": "010203",
+    "innerBitmap": 0,
+    "innerDataLength": 0,
+    "error": null,
+    "rawHeader": "000500006553f484fe0003010001"
+   },
+   "command": 10,
+   "tlv": "811d0202000503020000040e000500006553f484fe00030100010503010203"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [],
+    "workoutNumber": 0,
+    "header": null,
+    "innerBitmap": 0,
+    "innerDataLength": 0,
+    "error": 123001
+   },
+   "command": 10,
+   "tlv": "7f040001e079"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "no container",
+   "ok": false,
+   "parseException": true,
+   "command": 10,
+   "tlv": "010101"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "missing raw data",
+   "ok": false,
+   "parseException": true,
+   "command": 10,
+   "tlv": "81180202000503020000040e0005000000000001010001010001"
+  },
+  {
+   "exception": "LengthMismatchException",
+   "service": 23,
+   "aw": false,
+   "name": "header too short",
+   "ok": false,
+   "parseException": true,
+   "command": 10,
+   "tlv": "811002020005030200000403010203050101"
+  },
+  {
+   "exception": "LengthMismatchException",
+   "service": 23,
+   "aw": false,
+   "name": "header count mismatch",
+   "ok": false,
+   "parseException": true,
+   "command": 10,
+   "tlv": "811c0202000503020000040e000500006553f10005000301000105027800"
+  },
+  {
+   "exception": "LengthMismatchException",
+   "service": 23,
+   "aw": false,
+   "name": "bitmap length mismatch",
+   "ok": false,
+   "parseException": true,
+   "command": 10,
+   "tlv": "811d0202000503020000040e000500006553f1000500030100030503780096"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "inner length too small",
+   "ok": true,
+   "fields": {
+    "dataNumber": 0,
+    "dataList": [{
+     "altitude": null,
+     "backFootLanding": -1,
+     "voBits": 0,
+     "swolf": -1,
+     "speed": -1,
+     "frequency": -1,
+     "stepLength": -1,
+     "swingAngle": -1,
+     "foreFootLanding": -1,
+     "unknownData": null,
+     "apBits": 0,
+     "cyclingPower": -1,
+     "groundContactTime": -1,
+     "strokeRate": -1,
+     "timestamp": 1700000000,
+     "hangTime": -1,
+     "ceiling": -1,
+     "midFootLanding": -1,
+     "temp": -1,
+     "gtbBits": 0,
+     "vrBits": 0,
+     "impact": -1,
+     "stepRate": -1,
+     "cns": -1,
+     "calories": -1,
+     "eversionAngle": -1,
+     "cadence": 515,
+     "heartRate": 1,
+     "spo2": -1,
+     "rideCadence": -1,
+     "impactHangRate": -1
+    }],
+    "workoutNumber": 5,
+    "header": {
+     "dataNumber": 0,
+     "dataLength": 3,
+     "bitmap": 65,
+     "workoutNumber": 5,
+     "interval": 5,
+     "timestamp": 1700000000,
+     "dataCount": 1
+    },
+    "rawData": "010203",
+    "innerBitmap": 1,
+    "innerDataLength": 2,
+    "error": null,
+    "rawHeader": "000500006553f100050001030041"
+   },
+   "command": 10,
+   "tlv": "81290202000503020000040e000500006553f1000500010300410503010203080400000002090400000001"
+  },
+  {
+   "exception": "LengthMismatchException",
+   "service": 23,
+   "aw": false,
+   "name": "negative count and length",
+   "ok": false,
+   "parseException": true,
+   "command": 10,
+   "tlv": "81200202000503020000040e000500006553f10005fffefd00000506000000000000"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 23,
+   "aw": false,
+   "name": "short header int",
+   "ok": false,
+   "parseException": false,
+   "command": 10,
+   "tlv": "811902010503020000040e00050000000000010100000000000500"
+  }
+ ],
+ "spo2": [
+  {
+   "service": 23,
+   "aw": false,
+   "name": "blocks",
+   "ok": true,
+   "fields": {
+    "blocks": [
+     {
+      "interval": 60,
+      "value": 97
+     },
+     {
+      "interval": -1,
+      "value": 95
+     }
+    ],
+    "spO2Number2": 0,
+    "spO2Number1": 5,
+    "error": null
+   },
+   "command": 20,
+   "tlv": "0102000502020000830e840605013c06016184040602005f"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "no blocks",
+   "ok": true,
+   "fields": {
+    "blocks": [],
+    "spO2Number2": 0,
+    "spO2Number1": 5,
+    "error": null
+   },
+   "command": 20,
+   "tlv": "01020005020200008300"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error",
+   "ok": true,
+   "fields": {
+    "blocks": [],
+    "spO2Number2": 0,
+    "spO2Number1": 0,
+    "error": 1
+   },
+   "command": 20,
+   "tlv": "7f0400000001"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "no 83",
+   "ok": false,
+   "parseException": true,
+   "command": 20,
+   "tlv": "0102000502020000"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "no numbers",
+   "ok": false,
+   "parseException": true,
+   "command": 20,
+   "tlv": "8300"
+  }
+ ],
+ "pace": [
+  {
+   "service": 23,
+   "aw": false,
+   "name": "two blocks",
+   "ok": true,
+   "fields": {
+    "blocks": [
+     {
+      "pointIndex": 0,
+      "hasCorrection": false,
+      "distance": 1,
+      "pace": 330,
+      "type": 0,
+      "correction": 0
+     },
+     {
+      "pointIndex": 12,
+      "hasCorrection": true,
+      "distance": 1,
+      "pace": 500,
+      "type": 1,
+      "correction": 5000
+     }
+    ],
+    "workoutNumber": 5,
+    "paceNumber": 0,
+    "error": null
+   },
+   "command": 12,
+   "tlv": "812e0202000508020000830d0402000105010006040000014a8315040200010501010604000001f40702000c09021388"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "no blocks",
+   "ok": true,
+   "fields": {
+    "blocks": [],
+    "workoutNumber": 5,
+    "paceNumber": 1,
+    "error": null
+   },
+   "command": 12,
+   "tlv": "81080202000508020001"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error",
+   "ok": true,
+   "fields": {
+    "blocks": [],
+    "workoutNumber": 0,
+    "paceNumber": 0,
+    "error": 12
+   },
+   "command": 12,
+   "tlv": "7f040000000c"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "no container",
+   "ok": false,
+   "parseException": true,
+   "command": 12,
+   "tlv": "010101"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "block without pace",
+   "ok": false,
+   "parseException": true,
+   "command": 12,
+   "tlv": "81110202000508020000830704020001050100"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "negative correction",
+   "ok": true,
+   "fields": {
+    "blocks": [{
+     "pointIndex": -3,
+     "hasCorrection": true,
+     "distance": -1,
+     "pace": -7,
+     "type": -1,
+     "correction": -2
+    }],
+    "workoutNumber": 5,
+    "paceNumber": 0,
+    "error": null
+   },
+   "command": 12,
+   "tlv": "811f020200050802000083150402ffff0501ff0604fffffff90702fffd0902fffe"
+  }
+ ],
+ "count": [
+  {
+   "service": 23,
+   "aw": false,
+   "name": "two workouts",
+   "ok": true,
+   "fields": {
+    "workoutNumbers": [
+     {
+      "divingData": 0,
+      "paceCount": 1,
+      "workoutNumber": 5,
+      "trajectoriesData": 0,
+      "rawData": "060200050702000208020001",
+      "spO2Count": 0,
+      "sectionsCount": 0,
+      "dataCount": 2,
+      "segmentsCount": 0
+     },
+     {
+      "divingData": 1,
+      "paceCount": 0,
+      "workoutNumber": 3,
+      "trajectoriesData": 1,
+      "rawData": "060200030702000108020000090200040c0200020d0200060e01010f0101",
+      "spO2Count": 2,
+      "sectionsCount": 6,
+      "dataCount": 1,
+      "segmentsCount": 4
+     }
+    ],
+    "count": 2,
+    "error": null
+   },
+   "command": 7,
+   "tlv": "813202020002850c060200050702000208020001851e060200030702000108020000090200040c0200020d0200060e01010f0101"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "zero",
+   "ok": true,
+   "fields": {
+    "workoutNumbers": [],
+    "count": 0,
+    "error": null
+   },
+   "command": 7,
+   "tlv": "810402020000"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "zero with stray list",
+   "ok": true,
+   "fields": {
+    "workoutNumbers": [],
+    "count": 0,
+    "error": null
+   },
+   "command": 7,
+   "tlv": "811202020000850c060200050702000208020001"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error",
+   "ok": true,
+   "fields": {
+    "workoutNumbers": null,
+    "count": 0,
+    "error": 123001
+   },
+   "command": 7,
+   "tlv": "7f040001e079"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error short",
+   "ok": true,
+   "fields": {
+    "workoutNumbers": null,
+    "count": 0,
+    "error": 5
+   },
+   "command": 7,
+   "tlv": "7f0105"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error with container",
+   "ok": true,
+   "fields": {
+    "workoutNumbers": null,
+    "count": 0,
+    "error": 9
+   },
+   "command": 7,
+   "tlv": "7f0400000009810402020001"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "no container",
+   "ok": false,
+   "parseException": true,
+   "command": 7,
+   "tlv": "010101"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "count mismatch",
+   "ok": true,
+   "fields": {
+    "workoutNumbers": [{
+     "divingData": 0,
+     "paceCount": 1,
+     "workoutNumber": 5,
+     "trajectoriesData": 0,
+     "rawData": "060200050702000208020001",
+     "spO2Count": 0,
+     "sectionsCount": 0,
+     "dataCount": 2,
+     "segmentsCount": 0
+    }],
+    "count": 3,
+    "error": null
+   },
+   "command": 7,
+   "tlv": "811202020003850c060200050702000208020001"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "count but no list",
+   "ok": true,
+   "fields": {
+    "workoutNumbers": [],
+    "count": 2,
+    "error": null
+   },
+   "command": 7,
+   "tlv": "810402020002"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "trajectories 0 only",
+   "ok": true,
+   "fields": {
+    "workoutNumbers": [{
+     "divingData": 0,
+     "paceCount": 0,
+     "workoutNumber": 9,
+     "trajectoriesData": 0,
+     "rawData": "0602000907020000080200000e0100",
+     "spO2Count": 0,
+     "sectionsCount": 0,
+     "dataCount": 0,
+     "segmentsCount": 0
+    }],
+    "count": 1,
+    "error": null
+   },
+   "command": 7,
+   "tlv": "811502020001850f0602000907020000080200000e0100"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "entry without data count",
+   "ok": false,
+   "parseException": true,
+   "command": 7,
+   "tlv": "810a02020001850406020009"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 23,
+   "aw": false,
+   "name": "short workout number",
+   "ok": false,
+   "parseException": false,
+   "command": 7,
+   "tlv": "811102020001850b0601090702000108020001"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 23,
+   "aw": false,
+   "name": "empty trajectories byte",
+   "ok": false,
+   "parseException": false,
+   "command": 7,
+   "tlv": "811402020001850e0602000907020001080200010e00"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 23,
+   "aw": false,
+   "name": "malformed 85",
+   "ok": false,
+   "parseException": false,
+   "command": 7,
+   "tlv": "81080202000185020609"
+  }
+ ],
+ "requests": [
+  {
+   "a": 1654819200,
+   "sliced": true,
+   "b": 1700000000,
+   "encrypted": true,
+   "frames": ["5a0011001707810c030462a2898004046553f1004e86"],
+   "service": 23,
+   "kind": "count",
+   "name": "count 1654819200..1700000000",
+   "command": 7,
+   "tlv": "810c030462a2898004046553f100"
+  },
+  {
+   "a": 0,
+   "sliced": true,
+   "b": 2147483647,
+   "encrypted": true,
+   "frames": ["5a0011001707810c03040000000004047fffffff8c4d"],
+   "service": 23,
+   "kind": "count",
+   "name": "count 0..2147483647",
+   "command": 7,
+   "tlv": "810c03040000000004047fffffff"
+  },
+  {
+   "a": -1,
+   "sliced": true,
+   "b": 5,
+   "encrypted": true,
+   "frames": ["5a0011001707810c0304ffffffff0404000000054818"],
+   "service": 23,
+   "kind": "count",
+   "name": "count -1..5",
+   "command": 7,
+   "tlv": "810c0304ffffffff040400000005"
+  },
+  {
+   "a": 1700000000,
+   "sliced": true,
+   "b": 1700000000,
+   "encrypted": true,
+   "frames": ["5a0011001707810c03046553f10004046553f100a819"],
+   "service": 23,
+   "kind": "count",
+   "name": "count 1700000000..1700000000",
+   "command": 7,
+   "tlv": "810c03046553f10004046553f100"
+  },
+  {
+   "a": 0,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000900170881040202000020d3"],
+   "service": 23,
+   "kind": "totals",
+   "name": "totals 0",
+   "command": 8,
+   "tlv": "810402020000"
+  },
+  {
+   "a": 0,
+   "sliced": true,
+   "b": 1,
+   "encrypted": true,
+   "frames": ["5a000d00171401020000020200010300ac82"],
+   "service": 23,
+   "kind": "spo2",
+   "name": "capability-free spo2 0",
+   "command": 20,
+   "tlv": "01020000020200010300"
+  },
+  {
+   "a": 0,
+   "sliced": true,
+   "b": 2,
+   "encrypted": true,
+   "frames": ["5a000d001716010200000202000203005561"],
+   "service": 23,
+   "kind": "sections",
+   "name": "sections 0",
+   "command": 22,
+   "tlv": "01020000020200020300"
+  },
+  {
+   "a": 0,
+   "sliced": true,
+   "b": 3,
+   "encrypted": true,
+   "frames": ["5a000d00170c81080202000008020003c9b8"],
+   "service": 23,
+   "kind": "pace",
+   "name": "pace 0",
+   "command": 12,
+   "tlv": "81080202000008020003"
+  },
+  {
+   "a": 0,
+   "sliced": true,
+   "b": 4,
+   "encrypted": true,
+   "frames": ["5a000d00170e8108020200000802000419ec"],
+   "service": 23,
+   "kind": "swim",
+   "name": "swim 0",
+   "command": 14,
+   "tlv": "81080202000008020004"
+  },
+  {
+   "a": 0,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a000f00170a810a02020000030200070700635b"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 0 newSteps=false",
+   "newSteps": false,
+   "command": 10,
+   "tlv": "810a02020000030200070700"
+  },
+  {
+   "a": 0,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a001200170a810d020200000302000706010107002459"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 0 newSteps=true",
+   "newSteps": true,
+   "command": 10,
+   "tlv": "810d02020000030200070601010700"
+  },
+  {
+   "a": 1,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000900170881040202000130f2"],
+   "service": 23,
+   "kind": "totals",
+   "name": "totals 1",
+   "command": 8,
+   "tlv": "810402020001"
+  },
+  {
+   "a": 1,
+   "sliced": true,
+   "b": 2,
+   "encrypted": true,
+   "frames": ["5a000d001714010200010202000203004db3"],
+   "service": 23,
+   "kind": "spo2",
+   "name": "capability-free spo2 1",
+   "command": 20,
+   "tlv": "01020001020200020300"
+  },
+  {
+   "a": 1,
+   "sliced": true,
+   "b": 2,
+   "encrypted": true,
+   "frames": ["5a000d00171601020001020200020300ed00"],
+   "service": 23,
+   "kind": "sections",
+   "name": "sections 1",
+   "command": 22,
+   "tlv": "01020001020200020300"
+  },
+  {
+   "a": 1,
+   "sliced": true,
+   "b": 3,
+   "encrypted": true,
+   "frames": ["5a000d00170c8108020200010802000363e9"],
+   "service": 23,
+   "kind": "pace",
+   "name": "pace 1",
+   "command": 12,
+   "tlv": "81080202000108020003"
+  },
+  {
+   "a": 1,
+   "sliced": true,
+   "b": 4,
+   "encrypted": true,
+   "frames": ["5a000d00170e81080202000108020004b3bd"],
+   "service": 23,
+   "kind": "swim",
+   "name": "swim 1",
+   "command": 14,
+   "tlv": "81080202000108020004"
+  },
+  {
+   "a": 1,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a000f00170a810a02020001030200070700db3a"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 1 newSteps=false",
+   "newSteps": false,
+   "command": 10,
+   "tlv": "810a02020001030200070700"
+  },
+  {
+   "a": 1,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a001200170a810d020200010302000706010107004b1c"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 1 newSteps=true",
+   "newSteps": true,
+   "command": 10,
+   "tlv": "810d02020001030200070601010700"
+  },
+  {
+   "a": 5,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00090017088104020200057076"],
+   "service": 23,
+   "kind": "totals",
+   "name": "totals 5",
+   "command": 8,
+   "tlv": "810402020005"
+  },
+  {
+   "a": 5,
+   "sliced": true,
+   "b": 6,
+   "encrypted": true,
+   "frames": ["5a000d0017140102000502020006030050b5"],
+   "service": 23,
+   "kind": "spo2",
+   "name": "capability-free spo2 5",
+   "command": 20,
+   "tlv": "01020005020200060300"
+  },
+  {
+   "a": 5,
+   "sliced": true,
+   "b": 2,
+   "encrypted": true,
+   "frames": ["5a000d001716010200050202000203002cc6"],
+   "service": 23,
+   "kind": "sections",
+   "name": "sections 5",
+   "command": 22,
+   "tlv": "01020005020200020300"
+  },
+  {
+   "a": 5,
+   "sliced": true,
+   "b": 3,
+   "encrypted": true,
+   "frames": ["5a000d00170c81080202000508020003eaef"],
+   "service": 23,
+   "kind": "pace",
+   "name": "pace 5",
+   "command": 12,
+   "tlv": "81080202000508020003"
+  },
+  {
+   "a": 5,
+   "sliced": true,
+   "b": 4,
+   "encrypted": true,
+   "frames": ["5a000d00170e810802020005080200043abb"],
+   "service": 23,
+   "kind": "swim",
+   "name": "swim 5",
+   "command": 14,
+   "tlv": "81080202000508020004"
+  },
+  {
+   "a": 5,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a000f00170a810a020200050302000707001afc"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 5 newSteps=false",
+   "newSteps": false,
+   "command": 10,
+   "tlv": "810a02020005030200070700"
+  },
+  {
+   "a": 5,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a001200170a810d02020005030200070601010700e629"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 5 newSteps=true",
+   "newSteps": true,
+   "command": 10,
+   "tlv": "810d02020005030200070601010700"
+  },
+  {
+   "a": 255,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00090017088104020200ff3e23"],
+   "service": 23,
+   "kind": "totals",
+   "name": "totals 255",
+   "command": 8,
+   "tlv": "8104020200ff"
+  },
+  {
+   "a": 255,
+   "sliced": true,
+   "b": 256,
+   "encrypted": true,
+   "frames": ["5a000d001714010200ff0202010003004877"],
+   "service": 23,
+   "kind": "spo2",
+   "name": "capability-free spo2 255",
+   "command": 20,
+   "tlv": "010200ff020201000300"
+  },
+  {
+   "a": 255,
+   "sliced": true,
+   "b": 2,
+   "encrypted": true,
+   "frames": ["5a000d001716010200ff020200020300f010"],
+   "service": 23,
+   "kind": "sections",
+   "name": "sections 255",
+   "command": 22,
+   "tlv": "010200ff020200020300"
+  },
+  {
+   "a": 255,
+   "sliced": true,
+   "b": 3,
+   "encrypted": true,
+   "frames": ["5a000d00170c8108020200ff080200039317"],
+   "service": 23,
+   "kind": "pace",
+   "name": "pace 255",
+   "command": 12,
+   "tlv": "8108020200ff08020003"
+  },
+  {
+   "a": 255,
+   "sliced": true,
+   "b": 4,
+   "encrypted": true,
+   "frames": ["5a000d00170e8108020200ff080200044343"],
+   "service": 23,
+   "kind": "swim",
+   "name": "swim 255",
+   "command": 14,
+   "tlv": "8108020200ff08020004"
+  },
+  {
+   "a": 255,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a000f00170a810a020200ff030200070700c62a"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 255 newSteps=false",
+   "newSteps": false,
+   "command": 10,
+   "tlv": "810a020200ff030200070700"
+  },
+  {
+   "a": 255,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a001200170a810d020200ff030200070601010700495d"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 255 newSteps=true",
+   "newSteps": true,
+   "command": 10,
+   "tlv": "810d020200ff030200070601010700"
+  },
+  {
+   "a": 300,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000900170881040202012cf60c"],
+   "service": 23,
+   "kind": "totals",
+   "name": "totals 300",
+   "command": 8,
+   "tlv": "81040202012c"
+  },
+  {
+   "a": 300,
+   "sliced": true,
+   "b": 301,
+   "encrypted": true,
+   "frames": ["5a000d0017140102012c0202012d030052df"],
+   "service": 23,
+   "kind": "spo2",
+   "name": "capability-free spo2 300",
+   "command": 20,
+   "tlv": "0102012c0202012d0300"
+  },
+  {
+   "a": 300,
+   "sliced": true,
+   "b": 2,
+   "encrypted": true,
+   "frames": ["5a000d0017160102012c0202000203002e2f"],
+   "service": 23,
+   "kind": "sections",
+   "name": "sections 300",
+   "command": 22,
+   "tlv": "0102012c020200020300"
+  },
+  {
+   "a": 300,
+   "sliced": true,
+   "b": 3,
+   "encrypted": true,
+   "frames": ["5a000d00170c81080202012c080200030f87"],
+   "service": 23,
+   "kind": "pace",
+   "name": "pace 300",
+   "command": 12,
+   "tlv": "81080202012c08020003"
+  },
+  {
+   "a": 300,
+   "sliced": true,
+   "b": 4,
+   "encrypted": true,
+   "frames": ["5a000d00170e81080202012c08020004dfd3"],
+   "service": 23,
+   "kind": "swim",
+   "name": "swim 300",
+   "command": 14,
+   "tlv": "81080202012c08020004"
+  },
+  {
+   "a": 300,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a000f00170a810a0202012c0302000707001815"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 300 newSteps=false",
+   "newSteps": false,
+   "command": 10,
+   "tlv": "810a0202012c030200070700"
+  },
+  {
+   "a": 300,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a001200170a810d0202012c0302000706010107002263"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 300 newSteps=true",
+   "newSteps": true,
+   "command": 10,
+   "tlv": "810d0202012c030200070601010700"
+  },
+  {
+   "a": -1,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000900170881040202ffff3ddc"],
+   "service": 23,
+   "kind": "totals",
+   "name": "totals -1",
+   "command": 8,
+   "tlv": "81040202ffff"
+  },
+  {
+   "a": -1,
+   "sliced": true,
+   "b": 0,
+   "encrypted": true,
+   "frames": ["5a000d0017140102ffff020200000300aa8c"],
+   "service": 23,
+   "kind": "spo2",
+   "name": "capability-free spo2 -1",
+   "command": 20,
+   "tlv": "0102ffff020200000300"
+  },
+  {
+   "a": -1,
+   "sliced": true,
+   "b": 2,
+   "encrypted": true,
+   "frames": ["5a000d0017160102ffff020200020300645f"],
+   "service": 23,
+   "kind": "sections",
+   "name": "sections -1",
+   "command": 22,
+   "tlv": "0102ffff020200020300"
+  },
+  {
+   "a": -1,
+   "sliced": true,
+   "b": 3,
+   "encrypted": true,
+   "frames": ["5a000d00170c81080202ffff08020003c7a8"],
+   "service": 23,
+   "kind": "pace",
+   "name": "pace -1",
+   "command": 12,
+   "tlv": "81080202ffff08020003"
+  },
+  {
+   "a": -1,
+   "sliced": true,
+   "b": 4,
+   "encrypted": true,
+   "frames": ["5a000d00170e81080202ffff0802000417fc"],
+   "service": 23,
+   "kind": "swim",
+   "name": "swim -1",
+   "command": 14,
+   "tlv": "81080202ffff08020004"
+  },
+  {
+   "a": -1,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a000f00170a810a0202ffff0302000707005265"],
+   "service": 23,
+   "kind": "data",
+   "name": "data -1 newSteps=false",
+   "newSteps": false,
+   "command": 10,
+   "tlv": "810a0202ffff030200070700"
+  },
+  {
+   "a": -1,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a001200170a810d0202ffff030200070601010700f056"],
+   "service": 23,
+   "kind": "data",
+   "name": "data -1 newSteps=true",
+   "newSteps": true,
+   "command": 10,
+   "tlv": "810d0202ffff030200070601010700"
+  },
+  {
+   "a": 32767,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0009001708810402027fff2644"],
+   "service": 23,
+   "kind": "totals",
+   "name": "totals 32767",
+   "command": 8,
+   "tlv": "810402027fff"
+  },
+  {
+   "a": 32767,
+   "sliced": true,
+   "b": 32768,
+   "encrypted": true,
+   "frames": ["5a000d00171401027fff0202800003008a35"],
+   "service": 23,
+   "kind": "spo2",
+   "name": "capability-free spo2 32767",
+   "command": 20,
+   "tlv": "01027fff020280000300"
+  },
+  {
+   "a": 32767,
+   "sliced": true,
+   "b": 2,
+   "encrypted": true,
+   "frames": ["5a000d00171601027fff02020002030099de"],
+   "service": 23,
+   "kind": "sections",
+   "name": "sections 32767",
+   "command": 22,
+   "tlv": "01027fff020200020300"
+  },
+  {
+   "a": 32767,
+   "sliced": true,
+   "b": 3,
+   "encrypted": true,
+   "frames": ["5a000d00170c810802027fff080200031388"],
+   "service": 23,
+   "kind": "pace",
+   "name": "pace 32767",
+   "command": 12,
+   "tlv": "810802027fff08020003"
+  },
+  {
+   "a": 32767,
+   "sliced": true,
+   "b": 4,
+   "encrypted": true,
+   "frames": ["5a000d00170e810802027fff08020004c3dc"],
+   "service": 23,
+   "kind": "swim",
+   "name": "swim 32767",
+   "command": 14,
+   "tlv": "810802027fff08020004"
+  },
+  {
+   "a": 32767,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a000f00170a810a02027fff030200070700afe4"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 32767 newSteps=false",
+   "newSteps": false,
+   "command": 10,
+   "tlv": "810a02027fff030200070700"
+  },
+  {
+   "a": 32767,
+   "sliced": true,
+   "b": 7,
+   "encrypted": true,
+   "frames": ["5a001200170a810d02027fff03020007060101070079fc"],
+   "service": 23,
+   "kind": "data",
+   "name": "data 32767 newSteps=true",
+   "newSteps": true,
+   "command": 10,
+   "tlv": "810d02027fff030200070601010700"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00050017150100c831"],
+   "service": 23,
+   "kind": "capability",
+   "name": "capability",
+   "command": 21,
+   "tlv": "0100"
+  }
+ ],
+ "totals": [
+  {
+   "service": 23,
+   "aw": false,
+   "name": "minimal",
+   "ok": true,
+   "fields": {
+    "runPaceZone2Min": -1,
+    "runPaceZone4Min": -1,
+    "runPaceZone2Time": -1,
+    "distance": -1,
+    "maxHeartRatePeak": 0,
+    "hrZoneType": -1,
+    "laps": -1,
+    "elevationGain": null,
+    "rawData": "0202000504046553f10005046553f358",
+    "workoutAerobicEffect": 0,
+    "error": null,
+    "type": -1,
+    "additionalValues": {},
+    "duration": -1,
+    "number": 5,
+    "workoutAnaerobicEffect": -1,
+    "trainingPoints": -1,
+    "maxMET": 0,
+    "elevationLoss": null,
+    "runPaceZone5Time": -1,
+    "startTime": 1700000000,
+    "workoutLoad": 0,
+    "runPaceZone1Time": -1,
+    "tripped": -1,
+    "recoveryTime": 0,
+    "runPaceZone1Min": -1,
+    "strokes": -1,
+    "runPaceZone3Min": -1,
+    "maxAltitude": null,
+    "swimType": -1,
+    "runPaceZone4Time": -1,
+    "totalTime": -1,
+    "poolLength": -1,
+    "avgStrokeRate": -1,
+    "recoveryHeartRates": null,
+    "minHeartRatePeak": 0,
+    "calories": -1,
+    "runPaceZone5Min": -1,
+    "algType": 0,
+    "avgSwolf": -1,
+    "minAltitude": null,
+    "runPaceZone3Time": -1,
+    "runPaceZone5Max": -1,
+    "longestStreak": -1,
+    "endTime": 1700000600,
+    "stepCount": -1,
+    "status": -1
+   },
+   "command": 8,
+   "tlv": "81100202000504046553f10005046553f358"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "full",
+   "ok": true,
+   "fields": {
+    "runPaceZone2Min": 2,
+    "runPaceZone4Min": 4,
+    "runPaceZone2Time": 8,
+    "distance": 5000,
+    "maxHeartRatePeak": -76,
+    "hrZoneType": 2,
+    "laps": 12,
+    "elevationGain": 123,
+    "rawData": "0202000503010104046553f10005046553f3580604000001410704000013880804000017d40904000002800b040000007b0c023cb40d040000004d0e0400000023100400009c4011020384120400000258140101150104160203201702001f180209c41902000c1a02002d1b04000000631c04000005dc1d04ffffffe220010e2401025002000151020002520200035302000454020005550200065602000757020008580200095902000a5a02000b5b040000004d5c0200035d0101630200fa66035a5046e709680411e1ca2b690132e70c680411e1ca28690431322e35e70f680400000001690769676e6f726564e706680411e1ca35",
+    "workoutAerobicEffect": 35,
+    "error": null,
+    "type": 1,
+    "additionalValues": {
+     "avgDepth": "12.5",
+     "waterType": "2"
+    },
+    "duration": 600,
+    "number": 5,
+    "workoutAnaerobicEffect": 14,
+    "trainingPoints": 250,
+    "maxMET": 40000,
+    "elevationLoss": 99,
+    "runPaceZone5Time": 11,
+    "startTime": 1700000000,
+    "workoutLoad": 77,
+    "runPaceZone1Time": 7,
+    "tripped": 3,
+    "recoveryTime": 900,
+    "runPaceZone1Min": 1,
+    "strokes": 800,
+    "runPaceZone3Min": 3,
+    "maxAltitude": 1500,
+    "swimType": 4,
+    "runPaceZone4Time": 10,
+    "totalTime": 640,
+    "poolLength": 2500,
+    "avgStrokeRate": 31,
+    "recoveryHeartRates": "5a5046",
+    "minHeartRatePeak": 60,
+    "calories": 321,
+    "runPaceZone5Min": 5,
+    "algType": 1,
+    "avgSwolf": 45,
+    "minAltitude": -30,
+    "runPaceZone3Time": 9,
+    "runPaceZone5Max": 6,
+    "longestStreak": 77,
+    "endTime": 1700000600,
+    "stepCount": 6100,
+    "status": 1
+   },
+   "command": 8,
+   "tlv": "8181770202000503010104046553f10005046553f3580604000001410704000013880804000017d40904000002800b040000007b0c023cb40d040000004d0e0400000023100400009c4011020384120400000258140101150104160203201702001f180209c41902000c1a02002d1b04000000631c04000005dc1d04ffffffe220010e2401025002000151020002520200035302000454020005550200065602000757020008580200095902000a5a02000b5b040000004d5c0200035d0101630200fa66035a5046e709680411e1ca2b690132e70c680411e1ca28690431322e35e70f680400000001690769676e6f726564e706680411e1ca35"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "diving type 25",
+   "ok": true,
+   "fields": {
+    "runPaceZone2Min": -1,
+    "runPaceZone4Min": -1,
+    "runPaceZone2Time": -1,
+    "distance": -1,
+    "maxHeartRatePeak": 0,
+    "hrZoneType": -1,
+    "laps": -1,
+    "elevationGain": null,
+    "rawData": "020200010404000000010504000000021401191b0400000258",
+    "workoutAerobicEffect": 0,
+    "error": null,
+    "type": 25,
+    "additionalValues": {},
+    "duration": -1,
+    "number": 1,
+    "workoutAnaerobicEffect": -1,
+    "trainingPoints": -1,
+    "maxMET": 0,
+    "elevationLoss": 600,
+    "runPaceZone5Time": -1,
+    "startTime": 1,
+    "workoutLoad": 0,
+    "runPaceZone1Time": -1,
+    "tripped": -1,
+    "recoveryTime": 0,
+    "runPaceZone1Min": -1,
+    "strokes": -1,
+    "runPaceZone3Min": -1,
+    "maxAltitude": null,
+    "swimType": -1,
+    "runPaceZone4Time": -1,
+    "totalTime": -1,
+    "poolLength": -1,
+    "avgStrokeRate": -1,
+    "recoveryHeartRates": null,
+    "minHeartRatePeak": 0,
+    "calories": -1,
+    "runPaceZone5Min": -1,
+    "algType": 0,
+    "avgSwolf": -1,
+    "minAltitude": null,
+    "runPaceZone3Time": -1,
+    "runPaceZone5Max": -1,
+    "longestStreak": -1,
+    "endTime": 2,
+    "stepCount": -1,
+    "status": -1
+   },
+   "command": 8,
+   "tlv": "8119020200010404000000010504000000021401191b0400000258"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "type 0xff",
+   "ok": true,
+   "fields": {
+    "runPaceZone2Min": -1,
+    "runPaceZone4Min": -1,
+    "runPaceZone2Time": -1,
+    "distance": -1,
+    "maxHeartRatePeak": 0,
+    "hrZoneType": -1,
+    "laps": -1,
+    "elevationGain": null,
+    "rawData": "020200010404fffffffb0504fffffffc1401ff",
+    "workoutAerobicEffect": 0,
+    "error": null,
+    "type": -1,
+    "additionalValues": {},
+    "duration": -1,
+    "number": 1,
+    "workoutAnaerobicEffect": -1,
+    "trainingPoints": -1,
+    "maxMET": 0,
+    "elevationLoss": null,
+    "runPaceZone5Time": -1,
+    "startTime": -5,
+    "workoutLoad": 0,
+    "runPaceZone1Time": -1,
+    "tripped": -1,
+    "recoveryTime": 0,
+    "runPaceZone1Min": -1,
+    "strokes": -1,
+    "runPaceZone3Min": -1,
+    "maxAltitude": null,
+    "swimType": -1,
+    "runPaceZone4Time": -1,
+    "totalTime": -1,
+    "poolLength": -1,
+    "avgStrokeRate": -1,
+    "recoveryHeartRates": null,
+    "minHeartRatePeak": 0,
+    "calories": -1,
+    "runPaceZone5Min": -1,
+    "algType": 0,
+    "avgSwolf": -1,
+    "minAltitude": null,
+    "runPaceZone3Time": -1,
+    "runPaceZone5Max": -1,
+    "longestStreak": -1,
+    "endTime": -4,
+    "stepCount": -1,
+    "status": -1
+   },
+   "command": 8,
+   "tlv": "8113020200010404fffffffb0504fffffffc1401ff"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error",
+   "ok": true,
+   "fields": {
+    "runPaceZone2Min": -1,
+    "runPaceZone4Min": -1,
+    "runPaceZone2Time": -1,
+    "distance": -1,
+    "maxHeartRatePeak": 0,
+    "hrZoneType": -1,
+    "laps": -1,
+    "elevationGain": null,
+    "rawData": null,
+    "workoutAerobicEffect": 0,
+    "error": 100001,
+    "type": -1,
+    "additionalValues": {},
+    "duration": -1,
+    "number": 0,
+    "workoutAnaerobicEffect": -1,
+    "trainingPoints": -1,
+    "maxMET": 0,
+    "elevationLoss": null,
+    "runPaceZone5Time": -1,
+    "startTime": 0,
+    "workoutLoad": 0,
+    "runPaceZone1Time": -1,
+    "tripped": -1,
+    "recoveryTime": 0,
+    "runPaceZone1Min": -1,
+    "strokes": -1,
+    "runPaceZone3Min": -1,
+    "maxAltitude": null,
+    "swimType": -1,
+    "runPaceZone4Time": -1,
+    "totalTime": -1,
+    "poolLength": -1,
+    "avgStrokeRate": -1,
+    "recoveryHeartRates": null,
+    "minHeartRatePeak": 0,
+    "calories": -1,
+    "runPaceZone5Min": -1,
+    "algType": 0,
+    "avgSwolf": -1,
+    "minAltitude": null,
+    "runPaceZone3Time": -1,
+    "runPaceZone5Max": -1,
+    "longestStreak": -1,
+    "endTime": 0,
+    "stepCount": -1,
+    "status": -1
+   },
+   "command": 8,
+   "tlv": "7f04000186a1"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "no container",
+   "ok": false,
+   "parseException": true,
+   "command": 8,
+   "tlv": "010101"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "no start",
+   "ok": false,
+   "parseException": true,
+   "command": 8,
+   "tlv": "810a02020005050400000007"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 23,
+   "aw": false,
+   "name": "short start",
+   "ok": false,
+   "parseException": false,
+   "command": 8,
+   "tlv": "810e0202000504020001050400000007"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 23,
+   "aw": false,
+   "name": "one byte hr peaks",
+   "ok": false,
+   "parseException": false,
+   "command": 8,
+   "tlv": "8113020200050404000000010504000000020c013c"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 23,
+   "aw": false,
+   "name": "empty status",
+   "ok": false,
+   "parseException": false,
+   "command": 8,
+   "tlv": "8112020200050300040400000001050400000002"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "streak as byte",
+   "ok": true,
+   "fields": {
+    "runPaceZone2Min": -1,
+    "runPaceZone4Min": -1,
+    "runPaceZone2Time": -1,
+    "distance": -1,
+    "maxHeartRatePeak": 0,
+    "hrZoneType": -1,
+    "laps": -1,
+    "elevationGain": null,
+    "rawData": "020200050404000000010504000000025b01c85c0400011170",
+    "workoutAerobicEffect": 0,
+    "error": null,
+    "type": -1,
+    "additionalValues": {},
+    "duration": -1,
+    "number": 5,
+    "workoutAnaerobicEffect": -1,
+    "trainingPoints": -1,
+    "maxMET": 0,
+    "elevationLoss": null,
+    "runPaceZone5Time": -1,
+    "startTime": 1,
+    "workoutLoad": 0,
+    "runPaceZone1Time": -1,
+    "tripped": 70000,
+    "recoveryTime": 0,
+    "runPaceZone1Min": -1,
+    "strokes": -1,
+    "runPaceZone3Min": -1,
+    "maxAltitude": null,
+    "swimType": -1,
+    "runPaceZone4Time": -1,
+    "totalTime": -1,
+    "poolLength": -1,
+    "avgStrokeRate": -1,
+    "recoveryHeartRates": null,
+    "minHeartRatePeak": 0,
+    "calories": -1,
+    "runPaceZone5Min": -1,
+    "algType": 0,
+    "avgSwolf": -1,
+    "minAltitude": null,
+    "runPaceZone3Time": -1,
+    "runPaceZone5Max": -1,
+    "longestStreak": 200,
+    "endTime": 2,
+    "stepCount": -1,
+    "status": -1
+   },
+   "command": 8,
+   "tlv": "8119020200050404000000010504000000025b01c85c0400011170"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 23,
+   "aw": false,
+   "name": "malformed 81",
+   "ok": false,
+   "parseException": false,
+   "command": 8,
+   "tlv": "81020209"
+  }
+ ],
+ "gps": [
+  {
+   "data": "00000000000000000000000000000000000000000000000000000000000000000300f15365bdce84e8f9e15a40d47e6493e02817c000000000000024400000000000000000000300d8494b1f56c099594b40b23001170011000200ba15cc6c8a3f341a0f413e60007e002000ffff1b89b3cd83c041ad27c0623501340005000300c012ec7612c198aedbc09b590019002200ffffb4508458c3407b721ec14d5c00ee000000",
+   "name": "alt 5 records",
+   "ok": true,
+   "points": [
+    {
+     "altitudeSupported": true,
+     "altBits": "4037000000000000",
+     "lonBits": "405ae1f9b0e41253",
+     "latBits": "c01728d954e280cc",
+     "pause": true,
+     "timestamp": 1700000003
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "405f800000000000",
+     "lonBits": "405ae1f9d9d88e3f",
+     "latBits": "c01728c44527a9ae",
+     "pause": false,
+     "timestamp": 1700000005
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "404a000000000000",
+     "lonBits": "405ae1f93ddcb1ef",
+     "latBits": "c01728ca709009de",
+     "pause": true,
+     "timestamp": 1700000004
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4039000000000000",
+     "lonBits": "405ae1f7e3316a8d",
+     "latBits": "c01728da9b170b59",
+     "pause": false,
+     "timestamp": 1700000007
+    }
+   ]
+  },
+  {
+   "data": "00000000000000000000000000000000000000000000000000000000000000000300f15365dfe4b74ffee15a406ebccbb6b73115c00000000000002440000000000000000000030006630a7b1b41445915c12f4400ec0022000300f25708cdd940f49e9b40c71e00e4002f0003009a7b0915e14088c61cc0a2230070004f000000cf6493c95e407c949e3f7c61003d01580001009b7da6cbe04050edee3f8e2800850024000100cf5ce4d66e40224d15408363006c000200ffff713c00ea7140bcde4d3f5e0d010600260000004e3dfe88de40b8730a418823001b01470002004b21f090e4c021e31a41835d0056012e00ffff80506ed90ac0001524bf665600fd0031000200c74e510646c09a700641604200e500160001009e0aac768e406afadbc09d390006000b00ffffcc422acdd8c09a1395c0392000410000000100e33853991a40a263f93f43090001010d000000e76a08d849bf82c6c7402346009b000100ffff3835f014f0bf21d1944061350023004700ffff2023d6e20f41ec69e03f2d1a00f3ff5600030030864a2e25c0682f0341183f00e9ff1d000300d6341bc33c409231dc4026200007000400ffff255ad9f70e41e7d8d0c04c01000f00290000007a6b4e30ea40e02ffbc050160080000f000100c70870a1b63f693621c0482401cfff4f0000007e28e742014125744fc0410f002b014b0001003a5dda30cac034ed09c1753b001c00110001000c28d81013416cd31ac16e0001180056000100a543b80c1b415a3e9e3fc31800c9001d00fffff452ffadd9c058cade40002700eb00000002001f4e715414c1612d0f40b10d0042005b0003008a3495c5564094410841a30400e9ff4f0000001501201186c006871d417c3b005a0155000300861c181e1bc1879ceac0305a00f6ff0e00ffff904c7485b240b8b2a0c02356004601250003003e33ecd91ac16e15dbbf341100e2ff3a000000236cb44408c16ef3a2bf2e6200e2ff1d000200842f6914e6c0c43dad40053b004f013d00ffff1c28a4aa94409f9149c092210048001f000100a85ab0ce55bebe9c1fc0034801d0ff44000000eb7215671cc19c7531bf54490055011a00ffffa944fa0705c0cc63f7c0065600d8ff130001000a6864361ac1b8bb1bc173310176000400000000",
+   "name": "alt 40 records tail",
+   "ok": true,
+   "points": [
+    {
+     "altitudeSupported": true,
+     "altBits": "406d800000000000",
+     "lonBits": "405ae200066fd818",
+     "latBits": "c01531cde99edb6a",
+     "pause": false,
+     "timestamp": 1700000003
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "406c800000000000",
+     "lonBits": "405ae20107fb00a1",
+     "latBits": "c01531c275ec0e3b",
+     "pause": false,
+     "timestamp": 1700000006
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "405c000000000000",
+     "lonBits": "405ae20212224b54",
+     "latBits": "c01531c83aa59ce1",
+     "pause": false,
+     "timestamp": 1700000009
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4073d00000000000",
+     "lonBits": "405ae20295da9ca8",
+     "latBits": "c01531c54fc92edc",
+     "pause": false,
+     "timestamp": 1700000009
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4060a00000000000",
+     "lonBits": "405ae2039fab203d",
+     "latBits": "c01531c0ea842a54",
+     "pause": false,
+     "timestamp": 1700000010
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "405b000000000000",
+     "lonBits": "405ae2042ce10541",
+     "latBits": "c01531bb6c31984a",
+     "pause": false,
+     "timestamp": 1700000011
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4018000000000000",
+     "lonBits": "405ae204bbe84860",
+     "latBits": "c01531b9876719f1",
+     "pause": true,
+     "timestamp": 1700000010
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4071b00000000000",
+     "lonBits": "405ae205c30c8d36",
+     "latBits": "c01531a526e2a8e8",
+     "pause": false,
+     "timestamp": 1700000010
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4075600000000000",
+     "lonBits": "405ae204b4c69c1b",
+     "latBits": "c015318e5b21caae",
+     "pause": false,
+     "timestamp": 1700000012
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "406fa00000000000",
+     "lonBits": "405ae20462aedcce",
+     "latBits": "c015318fdd84d5cf",
+     "pause": false,
+     "timestamp": 1700000011
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "406ca00000000000",
+     "lonBits": "405ae203ed9a8b43",
+     "latBits": "c015317c142b891f",
+     "pause": false,
+     "timestamp": 1700000013
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4018000000000000",
+     "lonBits": "405ae20496101cac",
+     "latBits": "c015318c4446e61e",
+     "pause": false,
+     "timestamp": 1700000014
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4050400000000000",
+     "lonBits": "405ae20395b38273",
+     "latBits": "c01531973cb03990",
+     "pause": false,
+     "timestamp": 1700000013
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4070100000000000",
+     "lonBits": "405ae203f11b0f22",
+     "latBits": "c0153192a6252d4b",
+     "pause": false,
+     "timestamp": 1700000014
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4063600000000000",
+     "lonBits": "405ae203d34576e0",
+     "latBits": "c0153183f2a1e593",
+     "pause": false,
+     "timestamp": 1700000014
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4041800000000000",
+     "lonBits": "405ae2038c4c7f23",
+     "latBits": "c0153178ff1cd499",
+     "pause": false,
+     "timestamp": 1700000013
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "c02a000000000000",
+     "lonBits": "405ae204e094dc53",
+     "latBits": "c0153174de321c9d",
+     "pause": false,
+     "timestamp": 1700000012
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "c037000000000000",
+     "lonBits": "405ae2047eebac3f",
+     "latBits": "c01531618f7979a7",
+     "pause": false,
+     "timestamp": 1700000015
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "401c000000000000",
+     "lonBits": "405ae204ee860ba3",
+     "latBits": "c01531515b4f09f5",
+     "pause": false,
+     "timestamp": 1700000018
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "402e000000000000",
+     "lonBits": "405ae20640a2acd2",
+     "latBits": "c0153160b9b9412e",
+     "pause": false,
+     "timestamp": 1700000017
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4060000000000000",
+     "lonBits": "405ae207558ea10b",
+     "latBits": "c015317335c3d1af",
+     "pause": false,
+     "timestamp": 1700000017
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "c048800000000000",
+     "lonBits": "405ae2078b8bcb07",
+     "latBits": "c01531792448a0a2",
+     "pause": true,
+     "timestamp": 1700000018
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4072b00000000000",
+     "lonBits": "405ae208bd3df5b3",
+     "latBits": "c0153180c65d4e30",
+     "pause": false,
+     "timestamp": 1700000018
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "403c000000000000",
+     "lonBits": "405ae207ce282c94",
+     "latBits": "c015319513158b0b",
+     "pause": false,
+     "timestamp": 1700000019
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4038000000000000",
+     "lonBits": "405ae20929f59f36",
+     "latBits": "c01531abdc869c4b",
+     "pause": true,
+     "timestamp": 1700000020
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4069200000000000",
+     "lonBits": "405ae20a98a4b8ca",
+     "latBits": "c01531a8f33fd6b5",
+     "pause": false,
+     "timestamp": 1700000021
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "406d600000000000",
+     "lonBits": "405ae209973e42ff",
+     "latBits": "c01531988e29ec50",
+     "pause": false,
+     "timestamp": 1700000020
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4050800000000000",
+     "lonBits": "405ae208387385f2",
+     "latBits": "c0153193498696e7",
+     "pause": false,
+     "timestamp": 1700000022
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "c037000000000000",
+     "lonBits": "405ae208b76ea0f3",
+     "latBits": "c015317f3bbe2a4f",
+     "pause": false,
+     "timestamp": 1700000025
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4075a00000000000",
+     "lonBits": "405ae20818e6d742",
+     "latBits": "c01531680c835307",
+     "pause": false,
+     "timestamp": 1700000025
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "c024000000000000",
+     "lonBits": "405ae206aa0ea668",
+     "latBits": "c0153179504aa8be",
+     "pause": false,
+     "timestamp": 1700000028
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4074600000000000",
+     "lonBits": "405ae2077d275d06",
+     "latBits": "c015318523a360f0",
+     "pause": false,
+     "timestamp": 1700000027
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "c03e000000000000",
+     "lonBits": "405ae2060ef06532",
+     "latBits": "c01531892b73c6c7",
+     "pause": false,
+     "timestamp": 1700000030
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "c03e000000000000",
+     "lonBits": "405ae204ccabfd00",
+     "latBits": "c015318c2ae6147c",
+     "pause": false,
+     "timestamp": 1700000030
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4074f00000000000",
+     "lonBits": "405ae203bc9bdee6",
+     "latBits": "c015317f6b415aa5",
+     "pause": false,
+     "timestamp": 1700000032
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4052000000000000",
+     "lonBits": "405ae2046c672b0a",
+     "latBits": "c0153186d5e78c05",
+     "pause": false,
+     "timestamp": 1700000031
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "c048000000000000",
+     "lonBits": "405ae204648098eb",
+     "latBits": "c015318cb5598bb3",
+     "pause": true,
+     "timestamp": 1700000032
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "4075500000000000",
+     "lonBits": "405ae202f29e5e08",
+     "latBits": "c015318e573cfed3",
+     "pause": false,
+     "timestamp": 1700000032
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "c044000000000000",
+     "lonBits": "405ae202a3f73d1f",
+     "latBits": "c01531a08bbedab2",
+     "pause": false,
+     "timestamp": 1700000031
+    },
+    {
+     "altitudeSupported": true,
+     "altBits": "405d800000000000",
+     "lonBits": "405ae2013743035a",
+     "latBits": "c01531b7776045b4",
+     "pause": true,
+     "timestamp": 1700000032
+    }
+   ]
+  },
+  {
+   "data": "00000000000000000000000000000000000000000000000000000000000000000100f15365d3320cd8fce15a40e5a7fea91a8418c00000000000000000000200a25ad69eab40a85fc03f3b3d000100e585dbb80ac1577516c1064c00000073272240dec02e9f8740b95f000200ad723d7be7c0d1cd1841c126000100e883b91002c17e7cc640a12200010099227266084112b0d3c04a46010200ef427bfdf940b5a065c08b15000300054f99ca34c0973274402e1e01",
+   "name": "no alt 8 records",
+   "ok": true,
+   "points": [
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fdea65a6e7",
+     "latBits": "c0188417607686a7",
+     "pause": false,
+     "timestamp": 1700000002
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fca1d9cf38",
+     "latBits": "c018842d8559211a",
+     "pause": false,
+     "timestamp": 1700000003
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fb9aaa0da8",
+     "latBits": "c01884238a684baa",
+     "pause": false,
+     "timestamp": 1700000003
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fa888bef3c",
+     "latBits": "c018840d0d25466a",
+     "pause": false,
+     "timestamp": 1700000005
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f95480bb13",
+     "latBits": "c01883fe71eb10f2",
+     "pause": false,
+     "timestamp": 1700000006
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fa978cc924",
+     "latBits": "c018840e05d831b4",
+     "pause": true,
+     "timestamp": 1700000007
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fbbf95e096",
+     "latBits": "c018841678ca73b9",
+     "pause": false,
+     "timestamp": 1700000009
+    }
+   ]
+  },
+  {
+   "data": "00000000000000000000000000000000000000000000000000000000000000000100f153659bb86181f5e15a403941fd6e092015c00000000000000000000100295e49d56540dcf389c03e1b01",
+   "name": "no alt 1 record",
+   "ok": true,
+   "points": []
+  },
+  {
+   "data": "00000000000000000000000000000000000000000000000000000000000000000300f1536590069609f4e15a40b02c30636c7218c0000000000000244000000000000000000000004583c86443bf96d6d0407a150035002f00",
+   "name": "alt 1 record",
+   "ok": true,
+   "points": []
+  },
+  {
+   "data": "00000000000000000000000000000000000000000000000000000000000000000300f15365b21cd970f8e15a404b6a9787437b16c00000000000002440000000000000000000",
+   "name": "alt 0 records",
+   "ok": true,
+   "points": []
+  },
+  {
+   "data": "00000000000000000000000000000000000000000000000000000000000000000100f15365a66a1df9f6e15a40c255ca7ba6cd15c0000000000000000000ffff8e66e241fe40b2419b403222000100341ac24b9ec0c2f1df403e3d00010067476a443540d6bff5c05333000300d704d2f9e73f8c2b9dc00b17000300f36cbe3bb3c00e7588401206000300158654bd1741a27b96bf2f21000100b1665a3df93fff6203c10c2d00ffff2c32ecf3e740c4483bbfa51a0003007d19bffaf9c005084f40480500ffff91400c7f04413fa40f4034250103008c0160b7f63dfb3661c01f62000300cb8bc02cdbbd8cea8dbf380800ffff1e356ecf9bc0f854d53ebb25000000fc7b53e31c41ce4dc3c037300000000c55b47ef9c00bb951c00f1e0002000007284ce740948367c09a4e000100ea670a63eac04cfe0bc183270001005930b30e034143ca8dc04543000000d962512f0d4124434abf012c000200456b500582bf23c40bc0405c00ffffc77881a88fc0a65a81c0340c0101009a7b1805b03e0cb31741a45701ffff313e2c9cebbfd8f2debe3625000000ed3e0884f03eaea0ddbfc0550003001729cc43114197580c41510301ffff682c9a0a0141b29eca40121c000200e03f489ab8be709bfb4052620001008715d042d8c03c5ebcc07d070003008a25543af640189f11411e1600020047301c1eb14034e907c0211f0001000319fe0da8404024d2beac49000300494bc25cb8bf56bfcbc0510f00ffff684a9fe5b140aa54bf3f6347000200e04cf8c570c03883da3f764f010000e337230d04c00466b6c082180001002e38225274c0f2f83440960101ffffc407e0cd0ac169fac34031360002006456eac87b40826be93f115500ffffd5044e1efa404ca443c00f41000000268bb2b68ec0170d2ec02f06000200a420baa5bd3f59e80f4123340000003084bea7fd3f587a5cbf885c00000057068c86d8c06493053f144e000100b03c66670ec1e82411413262000100538a3b979640be41a7c03c260000005a04acb50e41fa43b5c0ad100002008c11ee1bd4c0116fc5c019520003000e1f13b1d140b8ddd740680601ffff3136cc9cf7408a83d3c0574001ffffcf62527bf340a8f1fe402627000100a167978f3fc0d4dbf93f3662000100bd34f45c1f3f8e340c415d2b000100995e20d698c02a20124038170000007f76faf08f40546cb5c00b1a0101002039c64a4b4038ee88be4a51000100e87bbc3a3840469d1bc161410002003973258a61c09b8bfbc005120002005f304026bf40bce09940421c0003003a2cea8eb0405a16ce404e4f0001003f7859172d4086f10e41702b000000d98366659f403be4ee407109000200913e5d7bc7c0d0451e419e500000007a70e194a240ae6c19407714010000f16d1e979c404fb40241be2f0003006a18060892bfd9dd08c15e240001004a76b6e205c1b14632c07f09000200ac4ccb8d9740fe2fe03f7f4e0000009b0dac4c27c062b7f7c0142700010037798052fc40a820c0c0c652000100f985464bc5c054228b405302000200960906530fc1e457e1bf5705000100c3501ddc0cc1eaf67f40165c000300b11c465f854086088540c51e000100496b2f79184030a4f83f521f0002003509952204c1b6b8ccbf2b3b0003002e3efa861ec194ad84c03e3b000300fb3330f75cc0fd0dbdc0744b0101006a2e37ea53c096f1b340811100ffffc0122228a3c070743bc0593400ffff32291020d7c0f93460400b4e0003009d1eb8e88340399510c09d5800fffff83c89b188c0522cfc40842a00ffffa247e4db8f3f554702410757000000d15d5e5c42407fb153c052500003002d208643ae3f50bce8bfb72b00ffff60654f9f18c1463bce407715000000b926a56a79c050b8d6409050000100cb47859e16c15efde740a640000300007194eb0b414427bec09e46010300246dc6fbfec085631341961d00ffff142b9d4f81c0c4d10bc14301010000d61403b161c012af9bc0730c0000001886e0fd1fc16c2741c05a3500ffff225800f606bc724a00c1102b00ffffb22f3a0fffc011174340c04900fffff46c8053383ff8e1e3bf5e42000300ef3b0b14b3c0dab7dbc0210c000100de5eeffa2b40380fef3fbb27000000dd0064ab12c1f87bfebfb73c000100c978ed8f7ac073868340504d000300ea88f480554049ac1bc04a29000200210d98652cbff4b8184040300002006e4d6d98ae402cb60b3f97120001006f226aebc9c079eded4048100002002064624912c17d6100c02017000200a576a4bff3404b418cc030010003008249f43352bf4e51923f60470001003081deeddd3f60928c4080230001003018b429d3c0debbadc0c02d0002005812e1f600c168d618c11f4a00ffff6236e2878b40adef46c00526000300f8358ef0fa4014e31941574a000300ea0c608cf9c049de48c0785d0002002140f28904c14e03ab40a55e000100ba376eb293bfd8afec4019560001006c6c23197ac0db8672c0ac3a0003009d6fc43a083fa248c93f054500ffff4b384dc3df40365b1341ac2300ffff3761b8ab0e41d40fc9c06551000100e35fa09bff4086025bc02453000300c81691c4d1400e92ebc06803000000e3753673adc00f00024193030000002c2254d805412061c640b33e0002001779406d27bf1c3e82405a4d000200a389b009483ececa7cc024620001000812f097ea3f80e4653f490d000100662c32749f40a6a5e7c0b2030000009f44a7446b4040deaebf5d58000300546d5060903f8f341bc05f1d00ffff6876cb1601c19e0ef5405f4500ffff537ae2c1e23f66f65e4067540003000477c6870341669998c09757000000170a237aa840a1ea7a40b434000300a9676a5df9c0cd5147c03531000000991c6cdda8c0e7a1c6c0b332000300f6431a4f2fc00049c5c0801c01ffffee2cdc36dfc09c7ed3c01a0b00fffff3493ae015c12091b2c05c230000003b87081909409efc16c00f3700020043110bf8bfc053c6eac0323200030050595391d440479ed8408c33000000f036581cf6c056c9a8bf133f00ffff307f4a08d8c07d9a49c048230003000b54080a1dc0449c8d3f7f1f000200556a203ed83f0281c4c06430000000f607b06cfb3fc6ba0941532d00ffffe47887584a4010114540880c0000005b0ef6719fc0ec5e1b3f9f630002008750e73dbcc01a066ec0551c00ffffea21f83e4dc01069fec04e38000200588584e0a740831c3fc094550002009c1c125197c0a2b955c00d0d0000006b4f6afb69c0fee301c06d5e010000aa88007fe93d301760409562000300fc744e02bec0b8fca9c01b50000300ee1c40ec8740623a9fc0b03c000000362fe017733efa02c64084470100004e7de8f76cc0abf019c1783a000300d31f99edf04020aea1c08a07000000de49f80707c1733d4740be2700ffff155a50068b3f0511e940454a0002001340afd2b4c030df1441ae140001006800225ac640d240c9c0410c00ffff39748bf90e40842710400c31000200bc0908bbe8c0ceca0e402e0b0002003c2b829ad840e2a314413c2f000200f50af075144096cc12c1181c000300848b38d795beff0412c04203000200577bcc1cc13f10b96f3f5e2e00ffffdd48bcb68a40522002c1bb2301ffffbb14180c33bfbcc507400302000300322d58310fbfc3273ac07b2b000000164e305fb3403893a54023560002003f6b2d570fc1b6320f40922a0002004378c9ca03c1a41f43406f38000000d94d809a88409fbf1f41994900ffff3a474d3e1c41353f7ec0ae1200ffffa236a10f06415c52db406b5601ffff3c6469fb06405a45babf7831000100498b5d5b18c10ba56ac0be110101000555004fb5408462573f3459000200ab2ba028afbf50b461c03a3a00000076082b704dc0463f6dc0490a000100225a749c0fbfde621a4147270000000803ae2a1f410ff01a414229000200436bb2d6bcc09d2400411837000000031676cb8bc06ca7bcc0201400ffff888c9866a940cc41ad40ba0c0001008d1ec8f322bf1da4b1c0a65d000100006383b7d34068b2853e8e550003009500d09c3a40c61182c043570002001d21b8e6833fbb9966409f520000008c50959a1d4009a00840752b00ffffab3d600ea53d38cff2bf960a0001009a29d13415c080800bc14a1c00fffff34d35d717414ab6b3c0642f000300d32d144193c0cc66bac0c535000300261e3b8e14c1c40ab3403b0300ffff5c4a5093f33f8e8ffa404161000100258972b4dbc060cb9940b23e00",
+   "name": "no alt 200 records",
+   "ok": true,
+   "points": [
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f86ce01533",
+     "latBits": "c015cd9b484e4269",
+     "pause": false,
+     "timestamp": 1699999999
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f7b1a5de61",
+     "latBits": "c015cd8acd7b1f22",
+     "pause": false,
+     "timestamp": 1700000000
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f81cd8b3d7",
+     "latBits": "c015cd9ce315746f",
+     "pause": false,
+     "timestamp": 1700000001
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f861709e43",
+     "latBits": "c015cda873f792f9",
+     "pause": false,
+     "timestamp": 1700000004
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f78d72c8e3",
+     "latBits": "c015cd9e69499c0e",
+     "pause": false,
+     "timestamp": 1700000007
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f8f464d389",
+     "latBits": "c015cda12e0392a7",
+     "pause": false,
+     "timestamp": 1700000010
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f93e178ff5",
+     "latBits": "c015cdb48453fb84",
+     "pause": false,
+     "timestamp": 1700000011
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fa50703fa8",
+     "latBits": "c015cdb63d5a38db",
+     "pause": false,
+     "timestamp": 1700000010
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f928c54b76",
+     "latBits": "c015cdae9f400329",
+     "pause": false,
+     "timestamp": 1700000013
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fa623209cb",
+     "latBits": "c015cda9563d06a7",
+     "pause": true,
+     "timestamp": 1700000012
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fa66c14568",
+     "latBits": "c015cdb19f9dfbdd",
+     "pause": false,
+     "timestamp": 1700000015
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fa62b456d0",
+     "latBits": "c015cdb43bff371b",
+     "pause": false,
+     "timestamp": 1700000018
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f9aa6ac0f0",
+     "latBits": "c015cdb340d0d211",
+     "pause": false,
+     "timestamp": 1700000017
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fb1d8a902a",
+     "latBits": "c015cdc1a0175c86",
+     "pause": false,
+     "timestamp": 1700000017
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f9f67252c5",
+     "latBits": "c015cdc9578bbaf3",
+     "pause": false,
+     "timestamp": 1700000017
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fb080494f1",
+     "latBits": "c015cdd1dc425307",
+     "pause": false,
+     "timestamp": 1700000019
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f9f2cae46b",
+     "latBits": "c015cde676d97539",
+     "pause": false,
+     "timestamp": 1700000020
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fb28d04bc1",
+     "latBits": "c015cdf0e5fe2c33",
+     "pause": false,
+     "timestamp": 1700000021
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fc76caa153",
+     "latBits": "c015cdf2c249c03c",
+     "pause": false,
+     "timestamp": 1700000021
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fc50586d6d",
+     "latBits": "c015cdf7e6cbb3f2",
+     "pause": false,
+     "timestamp": 1700000023
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fba66e58a4",
+     "latBits": "c015ce016ba93999",
+     "pause": true,
+     "timestamp": 1700000022
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fbb37165f0",
+     "latBits": "c015cdeb18043c40",
+     "pause": true,
+     "timestamp": 1700000023
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fb6dc6628a",
+     "latBits": "c015cdec1e854a64",
+     "pause": false,
+     "timestamp": 1700000022
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fb7f8df9a3",
+     "latBits": "c015cdf03250ddfe",
+     "pause": false,
+     "timestamp": 1700000022
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fcd72f10eb",
+     "latBits": "c015cddb8a6fb9de",
+     "pause": true,
+     "timestamp": 1700000025
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fe086f9f35",
+     "latBits": "c015cdcca15653b4",
+     "pause": false,
+     "timestamp": 1700000024
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fdfaca25b1",
+     "latBits": "c015cdba1d616c42",
+     "pause": false,
+     "timestamp": 1700000026
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fcfb00c534",
+     "latBits": "c015cdc7f9fe7ed2",
+     "pause": false,
+     "timestamp": 1700000027
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fe1e3bc5b8",
+     "latBits": "c015cdb28b59d474",
+     "pause": false,
+     "timestamp": 1700000030
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1feefb8fad1",
+     "latBits": "c015cdb78b8b8007",
+     "pause": false,
+     "timestamp": 1700000032
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ffb67e06b5",
+     "latBits": "c015cdb882f8461e",
+     "pause": false,
+     "timestamp": 1700000033
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ff7ffa51cc",
+     "latBits": "c015cdc7814f4ad4",
+     "pause": false,
+     "timestamp": 1700000036
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae200526380c8",
+     "latBits": "c015cdc3fc34103d",
+     "pause": false,
+     "timestamp": 1700000035
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ffc3ffc96c",
+     "latBits": "c015cdbff71445b4",
+     "pause": true,
+     "timestamp": 1700000037
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ff75e7f731",
+     "latBits": "c015cdcd633ba9ad",
+     "pause": false,
+     "timestamp": 1700000037
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fee56b2cf0",
+     "latBits": "c015cdc6ba96b224",
+     "pause": true,
+     "timestamp": 1700000038
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fd9d127f47",
+     "latBits": "c015cdb84e9c7d42",
+     "pause": false,
+     "timestamp": 1700000037
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fe31f94afd",
+     "latBits": "c015cdb403473327",
+     "pause": false,
+     "timestamp": 1700000039
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ff59ce4dee",
+     "latBits": "c015cdbb36192bd3",
+     "pause": false,
+     "timestamp": 1700000038
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1feb1023a0c",
+     "latBits": "c015cdc19d8c6539",
+     "pause": false,
+     "timestamp": 1700000038
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fee915fedb",
+     "latBits": "c015cdac6f7a8ec9",
+     "pause": false,
+     "timestamp": 1700000040
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ff3416faa5",
+     "latBits": "c015cdae76ab3b69",
+     "pause": false,
+     "timestamp": 1700000040
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fe33fd7cf4",
+     "latBits": "c015cdad3c1e9131",
+     "pause": false,
+     "timestamp": 1700000040
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fce320e994",
+     "latBits": "c015cd97df759d06",
+     "pause": false,
+     "timestamp": 1700000041
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fd953e1577",
+     "latBits": "c015cda42e5cfb5c",
+     "pause": false,
+     "timestamp": 1700000042
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fee6d3d176",
+     "latBits": "c015cdb1852c6885",
+     "pause": false,
+     "timestamp": 1700000042
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fdebf395d9",
+     "latBits": "c015cdc00c92fb18",
+     "pause": false,
+     "timestamp": 1700000044
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fee3f7db09",
+     "latBits": "c015cdb029ef0c33",
+     "pause": true,
+     "timestamp": 1700000047
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae20008d61cad",
+     "latBits": "c015cdbfba954393",
+     "pause": true,
+     "timestamp": 1700000046
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae20128d19e64",
+     "latBits": "c015cdacf7c3f949",
+     "pause": false,
+     "timestamp": 1700000045
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae200b788623f",
+     "latBits": "c015cda85f02d82e",
+     "pause": false,
+     "timestamp": 1700000046
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae200cf180d27",
+     "latBits": "c015cd93bc6f6a66",
+     "pause": false,
+     "timestamp": 1700000047
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae2001a52e9b7",
+     "latBits": "c015cd8e5c067d5a",
+     "pause": false,
+     "timestamp": 1700000048
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae200c492b667",
+     "latBits": "c015cd9bb5ce1678",
+     "pause": true,
+     "timestamp": 1700000048
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae2013ccbfb89",
+     "latBits": "c015cd9c57079f1c",
+     "pause": false,
+     "timestamp": 1700000049
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae201a9bf4665",
+     "latBits": "c015cdb33e2df030",
+     "pause": false,
+     "timestamp": 1700000050
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae201245dda56",
+     "latBits": "c015cdc5c0f8964e",
+     "pause": false,
+     "timestamp": 1700000052
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae2020673baeb",
+     "latBits": "c015cdba6e1bf98d",
+     "pause": false,
+     "timestamp": 1700000054
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae202d7479218",
+     "latBits": "c015cdab43b0451f",
+     "pause": false,
+     "timestamp": 1700000057
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae2033da49928",
+     "latBits": "c015cd9639f222d2",
+     "pause": false,
+     "timestamp": 1700000058
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae203fa2bed92",
+     "latBits": "c015cd84a58928b9",
+     "pause": false,
+     "timestamp": 1700000058
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae2030e3b1272",
+     "latBits": "c015cd6d5a39e01f",
+     "pause": false,
+     "timestamp": 1700000060
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae203ce86ed1c",
+     "latBits": "c015cd67b510bae5",
+     "pause": true,
+     "timestamp": 1700000060
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae20487bcb218",
+     "latBits": "c015cd54787618f9",
+     "pause": false,
+     "timestamp": 1700000060
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae2045c8e8964",
+     "latBits": "c015cd689d3e5b64",
+     "pause": false,
+     "timestamp": 1700000063
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae2031fd874f5",
+     "latBits": "c015cd6f2c7d9318",
+     "pause": false,
+     "timestamp": 1700000064
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae203d319412e",
+     "latBits": "c015cd6b0ca3afa9",
+     "pause": false,
+     "timestamp": 1700000066
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae20370290ed4",
+     "latBits": "c015cd7d474c326a",
+     "pause": false,
+     "timestamp": 1700000066
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae2049a9961b8",
+     "latBits": "c015cd8b6abc104e",
+     "pause": false,
+     "timestamp": 1700000067
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae203b13efb75",
+     "latBits": "c015cd812da06d18",
+     "pause": false,
+     "timestamp": 1700000068
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae2025e3506eb",
+     "latBits": "c015cd8552ebe6c0",
+     "pause": false,
+     "timestamp": 1700000070
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae20110ff8347",
+     "latBits": "c015cd7be7e6600a",
+     "pause": false,
+     "timestamp": 1700000071
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae201aebf17b5",
+     "latBits": "c015cd721db922b7",
+     "pause": false,
+     "timestamp": 1700000074
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae20208eab29f",
+     "latBits": "c015cd6d8ab3bbd7",
+     "pause": false,
+     "timestamp": 1700000075
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae200d058aee8",
+     "latBits": "c015cd714edff6f4",
+     "pause": false,
+     "timestamp": 1700000077
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ff59582bba",
+     "latBits": "c015cd7b125be93e",
+     "pause": false,
+     "timestamp": 1700000080
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fed6ab3bee",
+     "latBits": "c015cd88fbe7f63e",
+     "pause": true,
+     "timestamp": 1700000083
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fe595884ab",
+     "latBits": "c015cd7bbdff618b",
+     "pause": false,
+     "timestamp": 1700000084
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fd985e7f31",
+     "latBits": "c015cd82a3b3b359",
+     "pause": false,
+     "timestamp": 1700000083
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fc99ed0282",
+     "latBits": "c015cd7a63d102cd",
+     "pause": false,
+     "timestamp": 1700000082
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fd35f19406",
+     "latBits": "c015cd7fb5b1d78f",
+     "pause": false,
+     "timestamp": 1700000085
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fc944455fa",
+     "latBits": "c015cd6d27138811",
+     "pause": false,
+     "timestamp": 1700000084
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fcbece0d01",
+     "latBits": "c015cd59fa82db40",
+     "pause": false,
+     "timestamp": 1700000083
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fd31bf2d2e",
+     "latBits": "c015cd61c486d9b2",
+     "pause": false,
+     "timestamp": 1700000083
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fd6546732b",
+     "latBits": "c015cd660ca306ad",
+     "pause": false,
+     "timestamp": 1700000086
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fbfc3dd7dd",
+     "latBits": "c015cd56df7fc2af",
+     "pause": false,
+     "timestamp": 1700000085
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fb68bd95ed",
+     "latBits": "c015cd4712733991",
+     "pause": false,
+     "timestamp": 1700000085
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fa04720010",
+     "latBits": "c015cd36000fafdc",
+     "pause": false,
+     "timestamp": 1700000086
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fb4f6e8510",
+     "latBits": "c015cd43fe4ea46c",
+     "pause": true,
+     "timestamp": 1700000089
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1fa21d8684b",
+     "latBits": "c015cd2e4d13bbc1",
+     "pause": false,
+     "timestamp": 1700000092
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f988e6812f",
+     "latBits": "c015cd42e11d0b2e",
+     "pause": true,
+     "timestamp": 1700000091
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f9036e18da",
+     "latBits": "c015cd4e55ff78eb",
+     "pause": false,
+     "timestamp": 1700000091
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f788f6bfad",
+     "latBits": "c015cd5571627d4d",
+     "pause": false,
+     "timestamp": 1700000091
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f788a6ef5a",
+     "latBits": "c015cd68530d9e28",
+     "pause": false,
+     "timestamp": 1700000090
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f65af9d066",
+     "latBits": "c015cd61256df268",
+     "pause": false,
+     "timestamp": 1700000089
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f6763a4c75",
+     "latBits": "c015cd6556af14eb",
+     "pause": false,
+     "timestamp": 1700000088
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f5a26b6b8f",
+     "latBits": "c015cd7581e47e2a",
+     "pause": false,
+     "timestamp": 1700000091
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f608203ff0",
+     "latBits": "c015cd711bffc99e",
+     "pause": false,
+     "timestamp": 1700000092
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f4ad2c86d5",
+     "latBits": "c015cd75ca89d6f7",
+     "pause": false,
+     "timestamp": 1700000092
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f418fed3c6",
+     "latBits": "c015cd6c1cc5be56",
+     "pause": false,
+     "timestamp": 1700000093
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f4974214e8",
+     "latBits": "c015cd71d71cb933",
+     "pause": false,
+     "timestamp": 1700000096
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f47dc51ae0",
+     "latBits": "c015cd6c38907cae",
+     "pause": false,
+     "timestamp": 1700000098
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f54c469e4b",
+     "latBits": "c015cd6aef90e24f",
+     "pause": false,
+     "timestamp": 1700000100
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f45d73a7a9",
+     "latBits": "c015cd596d508206",
+     "pause": false,
+     "timestamp": 1700000101
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f30367c5dd",
+     "latBits": "c015cd5e26945709",
+     "pause": false,
+     "timestamp": 1700000103
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f423b41633",
+     "latBits": "c015cd6878ce06fc",
+     "pause": false,
+     "timestamp": 1700000105
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f404a033f8",
+     "latBits": "c015cd65c7b220b1",
+     "pause": false,
+     "timestamp": 1700000108
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f4463f9cd2",
+     "latBits": "c015cd5b6f80f579",
+     "pause": false,
+     "timestamp": 1700000109
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f34c7de0ab",
+     "latBits": "c015cd68386d46ce",
+     "pause": false,
+     "timestamp": 1700000110
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f21b6bf9f9",
+     "latBits": "c015cd7eb6f3f0be",
+     "pause": false,
+     "timestamp": 1700000112
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2c07451dc",
+     "latBits": "c015cd8608ce001e",
+     "pause": false,
+     "timestamp": 1700000111
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f3e942021e",
+     "latBits": "c015cd6f62bc7824",
+     "pause": false,
+     "timestamp": 1700000114
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2c2199909",
+     "latBits": "c015cd76c6c96ebf",
+     "pause": false,
+     "timestamp": 1700000117
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1889312da",
+     "latBits": "c015cd6a311f7599",
+     "pause": false,
+     "timestamp": 1700000119
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f15ce6d468",
+     "latBits": "c015cd58c63ecdfc",
+     "pause": false,
+     "timestamp": 1700000120
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f0c8ff6156",
+     "latBits": "c015cd61b2b12f1e",
+     "pause": false,
+     "timestamp": 1700000121
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f0dd2379d5",
+     "latBits": "c015cd5dfeb5d6ca",
+     "pause": false,
+     "timestamp": 1700000124
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1e5cc586b",
+     "latBits": "c015cd484eb3fa07",
+     "pause": false,
+     "timestamp": 1700000123
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f3374a8907",
+     "latBits": "c015cd571a733ab4",
+     "pause": false,
+     "timestamp": 1700000122
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f4659db70a",
+     "latBits": "c015cd5f2961f0ae",
+     "pause": false,
+     "timestamp": 1700000123
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f55db90a3d",
+     "latBits": "c015cd707f3ab202",
+     "pause": false,
+     "timestamp": 1700000126
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f4909254f5",
+     "latBits": "c015cd5d5d276bb0",
+     "pause": false,
+     "timestamp": 1700000126
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f5cd2fd9cb",
+     "latBits": "c015cd4ec3f0c647",
+     "pause": false,
+     "timestamp": 1700000126
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f5b46efc2c",
+     "latBits": "c015cd452e562e15",
+     "pause": false,
+     "timestamp": 1700000128
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f5bbd3c5b6",
+     "latBits": "c015cd4e7b7a280f",
+     "pause": false,
+     "timestamp": 1700000130
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f60131d61a",
+     "latBits": "c015cd4c5e1df34f",
+     "pause": false,
+     "timestamp": 1700000131
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f6bdcaaad7",
+     "latBits": "c015cd5d6a0cfac4",
+     "pause": false,
+     "timestamp": 1700000132
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f748ecefae",
+     "latBits": "c015cd60a19fab42",
+     "pause": false,
+     "timestamp": 1700000132
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f7739dceaa",
+     "latBits": "c015cd66578ee6c5",
+     "pause": false,
+     "timestamp": 1700000135
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f64240698a",
+     "latBits": "c015cd544eff246d",
+     "pause": false,
+     "timestamp": 1700000134
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f6854d4d46",
+     "latBits": "c015cd4c1ad537b2",
+     "pause": false,
+     "timestamp": 1700000133
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f7bc711c6a",
+     "latBits": "c015cd57559b3d91",
+     "pause": false,
+     "timestamp": 1700000136
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f883b6113f",
+     "latBits": "c015cd4e1a22364a",
+     "pause": false,
+     "timestamp": 1700000136
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f75cc53367",
+     "latBits": "c015cd556f988bf6",
+     "pause": false,
+     "timestamp": 1700000139
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f6950ad026",
+     "latBits": "c015cd640d9383d4",
+     "pause": false,
+     "timestamp": 1700000139
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f62d5e065d",
+     "latBits": "c015cd72922cf71a",
+     "pause": true,
+     "timestamp": 1700000142
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f5255b43d9",
+     "latBits": "c015cd8222765004",
+     "pause": false,
+     "timestamp": 1700000141
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f3c2d1d318",
+     "latBits": "c015cd8f466efb32",
+     "pause": false,
+     "timestamp": 1700000140
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f413e5a6d7",
+     "latBits": "c015cd94d4a1dba1",
+     "pause": false,
+     "timestamp": 1700000140
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f330d7a352",
+     "latBits": "c015cda61b7c979f",
+     "pause": false,
+     "timestamp": 1700000142
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f42c42b8ab",
+     "latBits": "c015cd962aad1a20",
+     "pause": false,
+     "timestamp": 1700000145
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f3092b2f14",
+     "latBits": "c015cd99459b39a8",
+     "pause": false,
+     "timestamp": 1700000145
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f209a706d3",
+     "latBits": "c015cda0b094f0fb",
+     "pause": false,
+     "timestamp": 1700000144
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1acc82efe",
+     "latBits": "c015cd9e15a463b6",
+     "pause": false,
+     "timestamp": 1700000147
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1ecb92448",
+     "latBits": "c015cdac8b863e4d",
+     "pause": false,
+     "timestamp": 1700000149
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2371144d9",
+     "latBits": "c015cd98463a1124",
+     "pause": false,
+     "timestamp": 1700000149
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2aebb474c",
+     "latBits": "c015cd9105fc3cbb",
+     "pause": false,
+     "timestamp": 1700000148
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1f225171a",
+     "latBits": "c015cd8f981cab9d",
+     "pause": false,
+     "timestamp": 1700000148
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1137f9a8f",
+     "latBits": "c015cd985a24d8d0",
+     "pause": false,
+     "timestamp": 1700000150
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f09a1e86b0",
+     "latBits": "c015cdab12e8e2d0",
+     "pause": false,
+     "timestamp": 1700000149
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f160adc8ca",
+     "latBits": "c015cdb21b0e6cb5",
+     "pause": false,
+     "timestamp": 1700000151
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f0adb4ceb4",
+     "latBits": "c015cdb9f835c5e5",
+     "pause": false,
+     "timestamp": 1700000153
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f023553ead",
+     "latBits": "c015cdbebfb23962",
+     "pause": true,
+     "timestamp": 1700000153
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f027a5ee91",
+     "latBits": "c015cdb680e81772",
+     "pause": false,
+     "timestamp": 1700000153
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ef46e95bb7",
+     "latBits": "c015cdc3033f484c",
+     "pause": false,
+     "timestamp": 1700000156
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1efe7ad420d",
+     "latBits": "c015cdcebae650ba",
+     "pause": false,
+     "timestamp": 1700000159
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1eff0a97123",
+     "latBits": "c015cdc0289d4e19",
+     "pause": true,
+     "timestamp": 1700000159
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ef6485c553",
+     "latBits": "c015cdd6d0aedddf",
+     "pause": false,
+     "timestamp": 1700000159
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f0817c133a",
+     "latBits": "c015cde2b687c1f5",
+     "pause": false,
+     "timestamp": 1700000162
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ef42104882",
+     "latBits": "c015cddb61d11f26",
+     "pause": false,
+     "timestamp": 1700000162
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ef6b2c0e60",
+     "latBits": "c015cdca3b24a5a2",
+     "pause": false,
+     "timestamp": 1700000161
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ee954ce7c0",
+     "latBits": "c015cdb45208d294",
+     "pause": false,
+     "timestamp": 1700000163
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ef7fe7ab2a",
+     "latBits": "c015cdc321630675",
+     "pause": false,
+     "timestamp": 1700000164
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1efd4753d77",
+     "latBits": "c015cdbdd38b9064",
+     "pause": false,
+     "timestamp": 1700000163
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1eec1310db3",
+     "latBits": "c015cdb89288bc80",
+     "pause": false,
+     "timestamp": 1700000165
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1efc1622755",
+     "latBits": "c015cda2b2275c49",
+     "pause": false,
+     "timestamp": 1700000167
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f0192e4302",
+     "latBits": "c015cdb84d2b7a81",
+     "pause": false,
+     "timestamp": 1700000169
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f00e1aa1f4",
+     "latBits": "c015cdbdac947fea",
+     "pause": false,
+     "timestamp": 1700000172
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f04734b379",
+     "latBits": "c015cdbb78123135",
+     "pause": false,
+     "timestamp": 1700000174
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f0eb45ab96",
+     "latBits": "c015cdce9ee50179",
+     "pause": true,
+     "timestamp": 1700000173
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f0d0ccfc57",
+     "latBits": "c015cdc9a0016daf",
+     "pause": false,
+     "timestamp": 1700000172
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f0bba157c9",
+     "latBits": "c015cdd0797827c8",
+     "pause": false,
+     "timestamp": 1700000175
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f18fc91999",
+     "latBits": "c015cdc44a3f4be8",
+     "pause": false,
+     "timestamp": 1700000175
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f03cb5527e",
+     "latBits": "c015cdbf0569bd12",
+     "pause": false,
+     "timestamp": 1700000177
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1ef04f2fe93",
+     "latBits": "c015cdb7d7794dd3",
+     "pause": false,
+     "timestamp": 1700000179
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1efa684fdd6",
+     "latBits": "c015cda0548f294c",
+     "pause": false,
+     "timestamp": 1700000179
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1181e6e9b",
+     "latBits": "c015cda9af66eddd",
+     "pause": false,
+     "timestamp": 1700000178
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2553ec457",
+     "latBits": "c015cd998ba98030",
+     "pause": true,
+     "timestamp": 1700000177
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2a51249b8",
+     "latBits": "c015cd9cf8f03910",
+     "pause": false,
+     "timestamp": 1700000176
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f13caa6890",
+     "latBits": "c015cda59b241a1f",
+     "pause": true,
+     "timestamp": 1700000177
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2131c98c8",
+     "latBits": "c015cda39ff1bbe7",
+     "pause": false,
+     "timestamp": 1700000178
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1df519474",
+     "latBits": "c015cdabedef3d3f",
+     "pause": false,
+     "timestamp": 1700000180
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f165d36819",
+     "latBits": "c015cdb4a8a69513",
+     "pause": false,
+     "timestamp": 1700000180
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f15097ed9b",
+     "latBits": "c015cd9defc64976",
+     "pause": false,
+     "timestamp": 1700000181
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2c91bafb0",
+     "latBits": "c015cd87221e42ec",
+     "pause": false,
+     "timestamp": 1700000181
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1e9c17b2a",
+     "latBits": "c015cd7446048c0a",
+     "pause": false,
+     "timestamp": 1700000183
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f144693561",
+     "latBits": "c015cd82280460d2",
+     "pause": false,
+     "timestamp": 1700000183
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f20cc5d6b9",
+     "latBits": "c015cd756813b56c",
+     "pause": false,
+     "timestamp": 1700000182
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f1f4ae5379",
+     "latBits": "c015cd827a9b6164",
+     "pause": false,
+     "timestamp": 1700000183
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2ef17c9a9",
+     "latBits": "c015cd81dd308792",
+     "pause": false,
+     "timestamp": 1700000184
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f35d73dee5",
+     "latBits": "c015cd8b6f87e451",
+     "pause": false,
+     "timestamp": 1700000187
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f384746be1",
+     "latBits": "c015cd82f36bfe29",
+     "pause": false,
+     "timestamp": 1700000189
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f3e1a8bfe1",
+     "latBits": "c015cd7dec80297e",
+     "pause": false,
+     "timestamp": 1700000189
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f3e4b5a469",
+     "latBits": "c015cd82640e28df",
+     "pause": false,
+     "timestamp": 1700000188
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f38c78a6c0",
+     "latBits": "c015cd96ec2196eb",
+     "pause": false,
+     "timestamp": 1700000189
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f4f3a7e914",
+     "latBits": "c015cda425ad17e2",
+     "pause": false,
+     "timestamp": 1700000188
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f4457d00d9",
+     "latBits": "c015cdb1dd3e0c7a",
+     "pause": false,
+     "timestamp": 1700000191
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f2e6131adf",
+     "latBits": "c015cda4b051d39e",
+     "pause": false,
+     "timestamp": 1700000194
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "405ae1f32e191370",
+     "latBits": "c015cd9240137dc5",
+     "pause": false,
+     "timestamp": 1700000193
+    }
+   ]
+  },
+  {
+   "exception": "IllegalArgumentException",
+   "data": "",
+   "name": "empty",
+   "ok": false
+  },
+  {
+   "exception": "IllegalArgumentException",
+   "data": "00000000000000000000000000000000",
+   "name": "shorter than trim",
+   "ok": false
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "data": "000000000000000000000000000000000000000000000000000000000000000000",
+   "name": "only the type byte",
+   "ok": false
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "data": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+   "name": "start values cut",
+   "ok": false
+  },
+  {
+   "exception": "IllegalArgumentException",
+   "data": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+   "name": "header cut before padding",
+   "ok": false
+  },
+  {
+   "data": "00000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000000000000000000000",
+   "name": "alt header cut",
+   "ok": true,
+   "points": []
+  },
+  {
+   "data": "00000000000000000000000000000000000000000000000000000000000000000100f15365ffffffffffffffffffffffffffffffff0000000000000000000100166ab18dc540a45076bf350000ffff2e1fd8511b419b0a20406c020002001f4ae0429ec09876f2c0a83c00010063884aeb014183a4ffc03b43000000096866e3f1401e8a02c12760000100792edcd3b540ba0416c17b1800ffffeb66594aacc0d61b813f12480000005433ba711d41d567654080510000004c2c96d6c9bfb18b6fc0a205000000531698b91941344385c0105a00",
+   "name": "garbled start values",
+   "ok": true,
+   "points": [
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "7ff8000000000000",
+     "latBits": "7ff8000000000000",
+     "pause": false,
+     "timestamp": 1700000001
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "7ff8000000000000",
+     "latBits": "7ff8000000000000",
+     "pause": false,
+     "timestamp": 1700000000
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "7ff8000000000000",
+     "latBits": "7ff8000000000000",
+     "pause": false,
+     "timestamp": 1700000002
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "7ff8000000000000",
+     "latBits": "7ff8000000000000",
+     "pause": false,
+     "timestamp": 1700000003
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "7ff8000000000000",
+     "latBits": "7ff8000000000000",
+     "pause": false,
+     "timestamp": 1700000003
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "7ff8000000000000",
+     "latBits": "7ff8000000000000",
+     "pause": false,
+     "timestamp": 1700000004
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "7ff8000000000000",
+     "latBits": "7ff8000000000000",
+     "pause": false,
+     "timestamp": 1700000003
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "7ff8000000000000",
+     "latBits": "7ff8000000000000",
+     "pause": false,
+     "timestamp": 1700000003
+    },
+    {
+     "altitudeSupported": false,
+     "altBits": "0",
+     "lonBits": "7ff8000000000000",
+     "latBits": "7ff8000000000000",
+     "pause": false,
+     "timestamp": 1700000003
+    }
+   ]
+  }
+ ],
+ "swim": [
+  {
+   "service": 23,
+   "aw": false,
+   "name": "full block",
+   "ok": true,
+   "fields": {
+    "segmentNumber": 0,
+    "blocks": [{
+     "pointIndex": 3,
+     "strokes": 20,
+     "swimType": 3,
+     "distance": 50,
+     "pace": 90,
+     "segment": 2,
+     "time": 61,
+     "type": 0,
+     "avgSwolf": 44
+    }],
+    "workoutNumber": 6,
+    "error": null
+   },
+   "command": 14,
+   "tlv": "8130020200060802000083260402003205010006040000005a07020003090200020a01030b0200140c02002c0d040000003d"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "minimal block",
+   "ok": true,
+   "fields": {
+    "segmentNumber": 1,
+    "blocks": [{
+     "pointIndex": 0,
+     "strokes": -1,
+     "swimType": -1,
+     "distance": 25,
+     "pace": 100,
+     "segment": -1,
+     "time": -1,
+     "type": 1,
+     "avgSwolf": -1
+    }],
+    "workoutNumber": 6,
+    "error": null
+   },
+   "command": 14,
+   "tlv": "81170202000608020001830d04020019050101060400000064"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error",
+   "ok": true,
+   "fields": {
+    "segmentNumber": 0,
+    "blocks": [],
+    "workoutNumber": 0,
+    "error": 3
+   },
+   "command": 14,
+   "tlv": "7f0400000003"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "no container",
+   "ok": false,
+   "parseException": true,
+   "command": 14,
+   "tlv": ""
+  }
+ ],
+ "sections": [
+  {
+   "service": 23,
+   "aw": false,
+   "name": "blocks",
+   "ok": true,
+   "fields": {
+    "number": 0,
+    "blocks": [
+     {
+      "divingMaxDepth": 55,
+      "distance": 1000,
+      "intervalTrainingType": 1,
+      "divingUnderwaterTime": 40,
+      "totalDescend": 15,
+      "num": 1,
+      "pace": 330,
+      "divingBreakTime": 20,
+      "groundImpact": 8,
+      "cadence": 170,
+      "avgCadence": 168,
+      "stepLength": 95,
+      "heartRate": 140,
+      "swingAngle": 3,
+      "eversion": 2,
+      "time": 300,
+      "totalRise": 12,
+      "groundContactTime": 250
+     },
+     {
+      "divingMaxDepth": -1,
+      "distance": -1,
+      "intervalTrainingType": -1,
+      "divingUnderwaterTime": -1,
+      "totalDescend": -1,
+      "num": 2,
+      "pace": -1,
+      "divingBreakTime": -1,
+      "groundImpact": -1,
+      "cadence": -1,
+      "avgCadence": -1,
+      "stepLength": -1,
+      "heartRate": -1,
+      "swingAngle": -1,
+      "eversion": -1,
+      "time": 1099511627776,
+      "totalRise": -1,
+      "groundContactTime": -1
+     }
+    ],
+    "workoutId": 5,
+    "error": null
+   },
+   "command": 22,
+   "tlv": "01020005020200008366845505010106040000012c0704000003e808040000014a09018c0a0200aa0b015f0c08000000000000000c0d040000000f0e0200fa0f0108100103110102220200a82301012804000000372904000000282a0400000014840d05010206080000010000000000"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "no blocks",
+   "ok": true,
+   "fields": {
+    "number": 0,
+    "blocks": [],
+    "workoutId": 5,
+    "error": null
+   },
+   "command": 22,
+   "tlv": "01020005020200008300"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error normal",
+   "ok": true,
+   "fields": {
+    "number": 0,
+    "blocks": [],
+    "workoutId": 0,
+    "error": 123001
+   },
+   "command": 22,
+   "tlv": "7f040001e079"
+  },
+  {
+   "service": 23,
+   "aw": false,
+   "name": "error other",
+   "ok": true,
+   "fields": {
+    "number": 0,
+    "blocks": [],
+    "workoutId": 0,
+    "error": 7
+   },
+   "command": 22,
+   "tlv": "7f0400000007"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 23,
+   "aw": false,
+   "name": "no 83",
+   "ok": false,
+   "parseException": true,
+   "command": 22,
+   "tlv": "0102000502020000"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 23,
+   "aw": false,
+   "name": "three byte time",
+   "ok": false,
+   "parseException": false,
+   "command": 22,
+   "tlv": "0102000502020000830784050603010203"
+  }
+ ]
+}

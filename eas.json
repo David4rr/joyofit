@@ -1,0 +1,8 @@
+{
+  "cli": {
+    "appVersionSource": "local"
+  },
+  "build": {
+    "production": {}
+  }
+}

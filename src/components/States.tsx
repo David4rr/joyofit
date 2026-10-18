@@ -6,7 +6,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { radius, spacing, useColors } from '@/theme';
+import { spacing, useColors, useTheme, type Theme } from '@/theme';
 
 interface NoticeProps {
   tone?: 'info' | 'danger';
@@ -19,13 +19,13 @@ interface NoticeProps {
 
 /** Inline message that names what happened and, when there is one, the next step. */
 export function Notice({ tone = 'info', icon, children, action }: NoticeProps) {
-  const colors = useColors();
+  const { colors, radius } = useTheme();
   const danger = tone === 'danger';
   const fg = danger ? colors.destructive : colors.mutedForeground;
   return (
     <View
       accessibilityRole={danger ? 'alert' : undefined}
-      style={[styles.notice, { backgroundColor: danger ? colors.destructiveSoft : colors.muted }]}>
+      style={[styles.notice, { backgroundColor: danger ? colors.destructiveSoft : colors.muted, borderRadius: radius.input }]}>
       <View style={styles.noticeRow}>
         <Ionicons
           name={icon ?? (danger ? 'alert-circle' : 'information-circle')}
@@ -81,12 +81,13 @@ export function LoadingState({ label }: { label: string }) {
 interface SkeletonProps {
   width: DimensionValue;
   height: number;
-  radius?: number;
+  /** A corner size in dp, or one of the theme's radii. */
+  radius?: number | keyof Theme['radius'];
 }
 
 /** Placeholder block shaped like the content it stands in for; fades slowly, still under reduced motion. */
 export function Skeleton({ width, height, radius: corner = 8 }: SkeletonProps) {
-  const colors = useColors();
+  const { colors, radius } = useTheme();
   const reduced = useReducedMotion();
   const [opacity] = useState(() => new Animated.Value(1));
   useEffect(() => {
@@ -106,13 +107,13 @@ export function Skeleton({ width, height, radius: corner = 8 }: SkeletonProps) {
   return (
     <Animated.View
       importantForAccessibility="no-hide-descendants"
-      style={{ width, height, borderRadius: corner, backgroundColor: colors.muted, opacity }}
+      style={{ width, height, borderRadius: typeof corner === 'number' ? corner : radius[corner], backgroundColor: colors.muted, opacity }}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  notice: { borderRadius: radius.input, padding: spacing.md, gap: spacing.sm },
+  notice: { padding: spacing.md, gap: spacing.sm },
   noticeRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   noticeIcon: { marginTop: 1 },
   noticeText: { flex: 1 },

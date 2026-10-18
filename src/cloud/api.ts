@@ -1,16 +1,17 @@
+import { getLocale, t } from '@/i18n';
 import { authClient } from '@/cloud/auth';
 import { CLOUD_CONFIGURED, CLOUD_URL } from '@/cloud/config';
 
 /** The phone holds no JoyoRogo session (never signed in, or signed out). */
 export class NotSignedInError extends Error {
   constructor() {
-    super('Not signed in to JoyoRogo.');
+    super(t('common:errors.notSignedIn'));
   }
 }
 
 export class CloudNotConfiguredError extends Error {
   constructor() {
-    super('The cloud server URL is not set. Set EXPO_PUBLIC_JOYOFIT_CLOUD_URL (or expo.extra.cloudUrl in app.json) and rebuild.');
+    super(t('common:errors.cloudNotConfigured'));
   }
 }
 
@@ -23,9 +24,22 @@ export class CloudHttpError extends Error {
   ) {
     super(
       status === 401
-        ? 'The JoyoRogo session was rejected. Sign out and sign in again.'
-        : `Cloud server answered ${status}${code ? ` (${code})` : ''}.`,
+        ? t('common:errors.sessionRejected')
+        : code
+          ? t('common:errors.serverAnsweredCode', { status, code })
+          : t('common:errors.serverAnswered', { status }),
     );
+  }
+}
+
+/**
+ * The server refused an upload because the JoyoRogo account is not Founder (402 with `paywall: true`). Not a failure:
+ * the app shows the benefit and stops uploading until the account changes.
+ */
+export class CloudLockedError extends CloudHttpError {
+  constructor() {
+    super(402, 'founder_required', null);
+    this.message = t('common:errors.cloudLocked');
   }
 }
 
@@ -58,6 +72,8 @@ async function requestOnce<T>(method: string, path: string, body: unknown): Prom
       headers: {
         Cookie: cookie,
         Accept: 'application/json',
+        // The language the app shows: the Worker words text it returns to the app (invite pages) in it.
+        'x-locale': getLocale(),
         ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -65,7 +81,8 @@ async function requestOnce<T>(method: string, path: string, body: unknown): Prom
       signal: controller.signal,
     });
     if (!response.ok) {
-      const json = (await response.json().catch(() => null)) as { error?: unknown } | null;
+      const json = (await response.json().catch(() => null)) as { error?: unknown; paywall?: unknown } | null;
+      if (response.status === 402 && json?.paywall === true) throw new CloudLockedError();
       const retryAfter = Number(response.headers.get('retry-after'));
       throw new CloudHttpError(
         response.status,
@@ -80,17 +97,31 @@ async function requestOnce<T>(method: string, path: string, body: unknown): Prom
 }
 
 /**
- * Calls the JoyoFit cloud Worker with the JoyoRogo session. Network errors, timeouts, 408/425/429 and 5xx
- * are retried with exponential backoff (1 s, 2 s, 4 s, honouring Retry-After); other errors surface at once.
+ * Runs `request` again after a transient failure (network error, timeout, 408/425/429, 5xx) with exponential backoff
+ * (1 s, 2 s, 4 s, honouring Retry-After); other errors surface at once. `retry: false` makes the first answer final.
  */
-export async function cloudRequest<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+export async function withRetry<T>(request: () => Promise<T>, retry = true): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await requestOnce<T>(method, path, body);
+      return await request();
     } catch (error) {
-      if (attempt >= MAX_ATTEMPTS || !isTransient(error)) throw error;
+      if (!retry || attempt >= MAX_ATTEMPTS || !isTransient(error)) throw error;
       const hinted = error instanceof CloudHttpError ? error.retryAfterMs : null;
       await sleep(Math.min(MAX_DELAY_MS, hinted ?? BASE_DELAY_MS * 2 ** (attempt - 1)) + Math.random() * 250);
     }
   }
+}
+
+/**
+ * Calls the JoyoFit cloud Worker with the JoyoRogo session. Network errors, timeouts, 408/425/429 and 5xx
+ * are retried with exponential backoff (see {@link withRetry}).
+ * `retry: false` makes the first answer final, for a 429 the person has to see now (a throttled "Tanya kabar").
+ */
+export function cloudRequest<T>(
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  path: string,
+  body?: unknown,
+  { retry = true }: { retry?: boolean } = {},
+): Promise<T> {
+  return withRetry(() => requestOnce<T>(method, path, body), retry);
 }

@@ -1,6 +1,6 @@
 /**
  * P2P (service 0x34) features: health metrics from the watch's data dictionary, Healthy Living and the experimental running
- * courses. UNVERIFIED on the watch: the layouts come from Gadgetbridge and Huawei Health 17.0.8.300 static analysis. Native code:
+ * courses. UNVERIFIED on the watch: the layouts come from Gadgetbridge and Huawei Health 17.0.8.300 behaviour. Native code:
  * `P2pController.kt`, `HealthMetricsSync.kt`, `HealthModelService.kt`, `CourseProtobuf.kt`.
  */
 

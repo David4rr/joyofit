@@ -1,0 +1,690 @@
+{
+  "screens": {
+    "sync": "Jam & sinkron",
+    "notifications": "Notifikasi & panggilan",
+    "notificationApps": "Aplikasi notifikasi",
+    "weather": "Cuaca",
+    "safety": "Keselamatan",
+    "health": "Kesehatan & cloud",
+    "strava": "Strava",
+    "importHuawei": "Impor dari Huawei Health",
+    "importAppleHealth": "Impor dari Apple Health",
+    "importFit": "Impor file FIT",
+    "profile": "Profil dan target",
+    "meals": "Makanan di jam",
+    "goals": "Target & pengingat",
+    "cycle": "Siklus",
+    "courses": "Rute lari",
+    "advanced": "Lanjutan",
+    "log": "Log",
+    "about": "Tentang",
+    "appearance": "Tampilan"
+  },
+  "index": {
+    "groups": {
+      "watch": "Di jam",
+      "you": "Kamu dan datamu",
+      "app": "Aplikasi",
+      "advanced": "Lanjutan"
+    },
+    "title": "Pengaturan",
+    "rows": {
+      "sync": {
+        "title": "Latar belakang dan sinkron",
+        "subtitle": "Tetap terhubung, interval sinkron"
+      },
+      "notifications": {
+        "title": "Notifikasi dan panggilan",
+        "subtitleIos": "Notifikasi iPhone di jam, cari ponsel, panggilan",
+        "subtitle": "Teruskan notifikasi, cari ponsel, kontrol panggilan"
+      },
+      "notificationApps": {
+        "title": "Aplikasi notifikasi",
+        "subtitleIos": "Dipilih di Pengaturan iPhone",
+        "subtitle": "Pilih aplikasi yang boleh mengirim notifikasi ke jam"
+      },
+      "weather": {
+        "title": "Cuaca",
+        "subtitle": "Lokasi, satuan, interval pembaruan"
+      },
+      "safety": {
+        "title": "Keselamatan",
+        "subtitle": "Deteksi jatuh, SMS SOS, laporan tidur"
+      },
+      "meals": {
+        "title": "Makanan di jam",
+        "subtitle": "Catatan makan JoyoRogo dan target kalori di jam"
+      },
+      "goals": {
+        "title": "Target dan pengingat",
+        "subtitle": "Langkah, kalori, olahraga, berdiri, pengingat ring"
+      },
+      "health": {
+        "titleIos": "Apple Health dan cloud",
+        "title": "Health Connect dan cloud",
+        "subtitle": "Bagikan data ke aplikasi lain, cadangkan"
+      },
+      "strava": {
+        "title": "Strava",
+        "subtitle": "Kirim latihan dari jam ke Strava, gratis"
+      },
+      "importHuawei": {
+        "title": "Impor dari Huawei Health",
+        "subtitle": "Bawa riwayat Huawei kamu ke JoyoFit, gratis"
+      },
+      "importAppleHealth": {
+        "title": "Impor dari Apple Health",
+        "subtitle": "Bawa riwayat yang disimpan Huawei Health di Apple Health, sekali saja"
+      },
+      "importFit": {
+        "title": "Impor file FIT",
+        "subtitle": "Gowes atau lari dari iGPSPORT, Garmin, Wahoo, dan lainnya"
+      },
+      "profile": {
+        "title": "Profil dan target",
+        "subtitle": "Tinggi, berat, target langkah harian"
+      },
+      "cycle": {
+        "title": "Siklus",
+        "subtitle": "Catatan haid, perkiraan, kalender di jam"
+      },
+      "family": {
+        "title": "Keluarga"
+      },
+      "guide": {
+        "title": "Panduan awal",
+        "subtitle": "Pasangkan jam, izin, JoyoRogo"
+      },
+      "appearance": {
+        "title": "Tampilan",
+        "subtitle": "Tema: Classic, Sport, Ocean"
+      },
+      "log": {
+        "title": "Log",
+        "subtitle": "Lalu lintas dan kejadian jam"
+      },
+      "advanced": {
+        "title": "Eksperimental",
+        "subtitle": "Tautan Bluetooth LE, rute lari"
+      },
+      "about": {
+        "title": "Tentang"
+      }
+    }
+  },
+  "about": {
+    "app": "Aplikasi",
+    "version": "Versi",
+    "license": "Lisensi",
+    "privacyTitle": "Privasi",
+    "privacy": "Data jam tetap di ponsel ini, di joyofit.db, sampai kamu masuk ke cloud. Cuaca, kalau dinyalakan, mengirim koordinat yang sudah dibulatkan ke Open-Meteo. Kebijakan privasi: fit.joyorogo.com/privasi"
+  },
+  "advanced": {
+    "bleDenied": "Izin perangkat sekitar ditolak: jam dicoba di alamat yang sudah dipasangkan tanpa pemindaian.",
+    "experimental": "Eksperimental",
+    "courses": "Rute lari",
+    "coursesSubtitle": "Buat rute lalu kirim ke jam",
+    "bleLink": "Tautan Bluetooth LE (developer)",
+    "details": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya.",
+    "detailsDev": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya. Tautan Bluetooth LE: terhubung lewat Bluetooth LE GATT (layanan FE86), bukan tautan bawaan jam. Putuskan lalu hubungkan lagi agar berlaku. Langkahnya masuk ke logcat dengan tag JoyoFitBle."
+  },
+  "log": {
+    "filters": {
+      "all": "semua",
+      "tx": "tx",
+      "rx": "rx",
+      "info": "info",
+      "error": "error"
+    },
+    "searchPlaceholder": "Cari, mis. TruSleep",
+    "searchLabel": "Cari log",
+    "copied": "Tersalin",
+    "copy": "Salin",
+    "summary": "{{shown}} tampil, {{buffered}} dari {{capacity}} di buffer. Tekan lama sebuah baris untuk menyalin.",
+    "lineCopied": "Baris tersalin.",
+    "lineHint": "Tekan lama untuk menyalin baris ini",
+    "emptyTitle": "Belum ada kejadian",
+    "emptyDesc": "Hubungkan jam kamu dan lalu lintasnya akan muncul di sini.",
+    "noneTitle": "Tidak ada yang ditampilkan",
+    "noMatch": "Tidak ada kejadian yang cocok dengan \"{{query}}\".",
+    "noFilter": "Tidak ada kejadian {{filter}} di buffer.",
+    "clear": "Hapus filter"
+  },
+  "updates": {
+    "title": "Update cepat",
+    "labels": {
+      "status": "Status",
+      "channel": "Kanal",
+      "running": "Berjalan",
+      "runtime": "Runtime"
+    },
+    "status": {
+      "disabled": "Mati",
+      "idle": "Sudah terbaru",
+      "checking": "Memeriksa…",
+      "downloading": "Mengunduh…",
+      "ready": "Siap, mulai ulang untuk menerapkan",
+      "error": "Gagal memeriksa",
+      "downloadingPercent": "Mengunduh {{percent}}%"
+    },
+    "running": {
+      "update": "Update {{id}} ({{date}})",
+      "emergency": "Bawaan aplikasi (update terakhir gagal dimuat)",
+      "embedded": "Bawaan aplikasi"
+    },
+    "hint": "Perbaikan tampilan dan logika datang di latar belakang dan berlaku saat JoyoFit dibuka berikutnya. Update dari App Store dan Play tetap membawa semua yang bersifat native.",
+    "restart": "Mulai ulang untuk update",
+    "checking": "Memeriksa…",
+    "check": "Periksa update",
+    "banner": {
+      "availableTitle": "Versi baru tersedia",
+      "failed": "Update gagal dimulai. Coba lagi.",
+      "availableBody": "Update JoyoFit siap diunduh.",
+      "downloading": "Mengunduh update…",
+      "readyTitle": "Update siap dipasang",
+      "readyBody": "Mulai ulang JoyoFit untuk memakai versi baru.",
+      "later": "Nanti",
+      "update": "Update"
+    }
+  },
+  "cloud": {
+    "workouts_other": "{{n}} latihan",
+    "waiting": {
+      "workouts": "{{workouts}}, sekitar {{size}}",
+      "rows_other": "{{n}} baris langkah dan tidur",
+      "both": "{{first}} dan {{second}}",
+      "nothing": "Tidak ada"
+    },
+    "title": "Sinkron cloud",
+    "notConfigured": "Build ini tidak punya URL server cloud. Deploy server/, atur EXPO_PUBLIC_JOYOFIT_CLOUD_URL, lalu build ulang.",
+    "getPro": "Dapatkan Pro",
+    "lockedLink": "Latihanmu tetap di ponsel ini. Sinkron cloud adalah keuntungan JoyoRogo Pro. Yang sudah ada di cloud tetap bisa dibaca dan dipulihkan ke ponsel baru.",
+    "locked": "Latihanmu tetap di ponsel ini. Sinkron cloud adalah keuntungan JoyoRogo Pro (dapatkan Pro di JoyoRogo). Yang sudah ada di cloud tetap bisa dibaca dan dipulihkan ke ponsel baru.",
+    "uploading": "Mengunggah {{done}} dari {{total}}",
+    "refused_other": "{{n}} latihan tidak bisa diunggah. Akan dicoba lagi setelah update aplikasi berikutnya.",
+    "refusedError": "Kesalahan terakhir: {{error}}",
+    "labels": {
+      "account": "Akun",
+      "lastSync": "Sinkron terakhir",
+      "inCloud": "Di cloud",
+      "waiting": "Menunggu diunggah"
+    },
+    "inCloudValue": "{{workouts}}, {{used}} dari {{quota}}",
+    "syncNow": "Sinkron sekarang",
+    "signOut": "Keluar",
+    "wifiOnly": "Hanya Wi-Fi",
+    "wifiOnlyHint": "Sinkron otomatis menunggu Wi-Fi atau Ethernet, jadi latihan tidak memakai data seluler.",
+    "autoSync": "Sinkron otomatis",
+    "autoSyncHint": "Sinkron setiap kali jam selesai sinkron dan saat kamu membuka aplikasi.",
+    "wipe": "Hapus data cloud",
+    "deleteWarning": "Menghapus akun JoyoRogo kamu (yang dipakai JoyoRogo) beserta semua isinya di cloud: catatan makan JoyoRogo, grup, foto, dan data yang dicadangkan JoyoFit. Tidak bisa dibatalkan; kamu keluar dari kedua aplikasi. Data di ponsel ini tetap ada.",
+    "deleteApple": "Apple akan meminta konfirmasi dulu.",
+    "deletePermanently": "Hapus permanen",
+    "keepAccount": "Pertahankan akun",
+    "deleteAccount": "Hapus akun JoyoRogo",
+    "mobileTitle": "Sinkron lewat data seluler?",
+    "mobileMessage": "Hanya Wi-Fi sedang nyala dan ponsel ini tidak tersambung Wi-Fi. Sinkron sekarang bisa memakai banyak data seluler kalau ada latihan yang menunggu.",
+    "wipeTitle": "Hapus data cloud?",
+    "wipeMessage": "Menghapus latihan, langkah, dan tidurmu dari cloud. Data di ponsel ini dan akunmu tetap ada, dan sinkron otomatis dimatikan supaya tidak ada yang diunggah lagi sampai kamu menyalakannya kembali.",
+    "details": "Sinkron cloud adalah bagian dari JoyoRogo Pro. Dengan akun Pro, setiap latihan diunggah ke akun JoyoRogo kamu sebagai satu file terkompresi: jalur GPS, detak jantung, kecepatan, kadensi, daya, dan analisis yang ditampilkan aplikasi, sehingga aman kalau ponsel hilang, tampil di web JoyoRogo, dan dipulihkan ke ponsel baru setelah kamu masuk. Langkah, detak jantung, SpO2, tidur, dan alamat Bluetooth jam masuk ke cloud JoyoFit dengan akun yang sama. Tanpa Pro tidak ada yang diunggah dan latihanmu tetap di ponsel ini. Selama kamu masuk, aplikasi juga membaca dari cloud: mengunduh latihan yang belum ada di ponsel ini, dan menghapus yang sudah kamu hapus dari cloud di tempat lain. JoyoFit juga bertukar makanan, berat badan, dan skor harian dengan JoyoRogo. Hapus data cloud menghapus latihan, langkah, dan tidurmu dari cloud dan menyimpan data di ponsel ini serta akunmu; Hapus akun JoyoRogo menghapus akun dan semua yang lain (detail di fit.joyorogo.com/privasi)."
+  },
+  "goals": {
+    "errors": {
+      "whole": "{{what}} harus berupa bilangan bulat dari {{min}} sampai {{max}}.",
+      "steps": "Target langkah",
+      "calories": "Target kalori",
+      "exercise": "Target olahraga",
+      "stand": "Target berdiri"
+    },
+    "sent": "Terkirim ke jam.",
+    "saved": "Tersimpan. Dikirim saat jam tersambung berikutnya.",
+    "title": "Target aktivitas",
+    "fields": {
+      "steps": "Langkah / hari",
+      "calories": "Kkal aktif",
+      "exercise": "Olahraga (mnt)",
+      "stand": "Berdiri (jam)"
+    },
+    "saveAndSend": "Simpan dan kirim",
+    "defaults": "Bawaan Huawei",
+    "reminders": {
+      "stand": "Pengingat berdiri",
+      "progress": "Pengingat progres",
+      "reached": "Target tercapai"
+    },
+    "accepts": "Jam menerima target",
+    "acceptsNotConnected": "Belum tersambung",
+    "acceptsYes": "Ya",
+    "acceptsNo": "Tidak ada di kemampuannya",
+    "lastSend": "Terakhir dikirim",
+    "details": "Tiga ring dan target kalori di jam. Target langkah juga menjadi target langkah harianmu di Profil dan target. Dikirim saat disimpan dan setiap kali jam tersambung. Pengingat berdiri: jam menegurmu saat kamu terlalu lama duduk. Pengingat progres: memberi tahu sejauh mana target hari ini. Target tercapai: merayakan saat sebuah ring tertutup."
+  },
+  "forecast": {
+    "sent": "Prakiraan terkirim: {{hours}}, {{days}}.",
+    "hours_other": "{{count}} jam",
+    "days_other": "{{count}} hari",
+    "unsupported": "Jam ini hanya menerima cuaca saat ini: perintah prakiraan tidak ada di daftarnya.",
+    "unacknowledged": "Jam tidak mengonfirmasi prakiraan. Cuaca saat ini sudah dikirim.",
+    "rejected": "Jam menolak prakiraan{{code}}."
+  },
+  "background": {
+    "intervals": {
+      "m": "{{count}} mnt",
+      "h": "{{count}} j"
+    },
+    "btRequired": "Izin Bluetooth diperlukan agar tetap tersambung di latar belakang.",
+    "title": "Latar belakang",
+    "stay": "Tetap tersambung di latar belakang",
+    "connectFirst": "Hubungkan jam kamu dulu.",
+    "notifDenied": "Izin notifikasi ditolak: notifikasi layanan disembunyikan.",
+    "watch": "Jam",
+    "service": "Layanan",
+    "running": "Berjalan",
+    "stopped": "Berhenti",
+    "autoReconnect": "Sambung ulang otomatis",
+    "paused": "Dijeda",
+    "active": "Aktif",
+    "pausedNotice": "Sambung ulang otomatis dijeda. Hubungkan lagi untuk melanjutkan.",
+    "interval": "Interval sinkron",
+    "details": "Menjaga koneksi ke jam tetap hidup saat aplikasi ditutup."
+  },
+  "appleImport": {
+    "title": "Impor riwayat dari Apple Health",
+    "intro": "Huawei Health di iPhone menyimpan langkah, detak jantung, tidur, oksigen darah, dan latihanmu di Apple Health. Bawa riwayat itu ke JoyoFit sekali saja. JoyoFit meminta izin membaca Apple Health saat kamu menekan tombol di bawah, membacanya di ponsel ini, dan tidak mengirim apa pun ke mana pun.",
+    "reading": "Membaca Apple Health: {{percent}}%",
+    "waiting": "Menunggu izin",
+    "footer": "Data yang sudah disimpan jam kamu di JoyoFit tidak pernah diganti, dan mengimpor lagi tidak menambah apa pun. Data yang disimpan JoyoFit sendiri ke Apple Health dilewati. Hari yang diimpor tetap di ponsel ini: tidak diunggah ke cloud, tidak ditulis balik ke Apple Health, dan tidak dikirim ke Strava.",
+    "workoutsAdded": "Latihan ditambahkan",
+    "heartRate": "Pembacaan detak jantung",
+    "sleepFound": "Tahap tidur ditemukan",
+    "stopped": "Impor dihentikan",
+    "finished": "Impor selesai",
+    "stoppedNotice": "Kamu menghentikan impor. Yang sudah terbaca tersimpan; impor lagi untuk melanjutkan.",
+    "nothing": "Tidak ada yang ditemukan. Pastikan JoyoFit boleh membaca Apple Health (Kesehatan, foto profil kamu, Aplikasi, JoyoFit) dan Huawei Health menyimpan ke Apple Health.",
+    "range": "{{from}} sampai {{to}}",
+    "historyRead": "Riwayat terbaca",
+    "sleepAdded": "Tahap tidur ditambahkan",
+    "restingHr": "Pembacaan detak jantung istirahat",
+    "spo2": "Pembacaan oksigen darah",
+    "minutes": "Menit dengan data tertulis",
+    "alreadyOnPhone": "Latihan yang sudah ada di ponsel",
+    "sleepSkipped": "Tahap tidur dilewati (data jam dipertahankan)",
+    "implausible": "Pembacaan tak masuk akal dilewati"
+  },
+  "stress": {
+    "unavailable": "Tidak tersedia di jam ini: jam tidak mencantumkan stres otomatis, jadi tidak merekam HRV malam.",
+    "calibrated": "Dikalibrasi {{when}}",
+    "calibrate": "Butuh 1 mnt untuk kalibrasi.",
+    "label": "Stres otomatis",
+    "calibrating": "Kalibrasi: duduk diam, sisa {{seconds}} dtk, {{beats}} detak sejauh ini.",
+    "calibratingStart": "Kalibrasi: duduk diam dengan jam terpasang pas. Ini butuh satu menit.",
+    "hrvTitle": "Ukur HRV",
+    "hrvSubtitle": "1 mnt, dari interval antar detak"
+  },
+  "fitImport": {
+    "title": "Impor file FIT",
+    "intro": "Gowes atau lari dari komputer sepeda atau jam olahraga, lengkap dengan rute, detak jantung, kecepatan, daya, dan kadensi. Gratis, berjalan di ponsel ini.",
+    "importing": "Mengimpor",
+    "choose": "Pilih file .fit",
+    "openWorkout": "Buka latihan",
+    "howTitle": "Bagaimana caranya?",
+    "shareIos": "Di Files atau aplikasi yang menyimpan file-nya, pilih Bagikan, lalu JoyoFit.",
+    "shareAndroid": "Di pengelola file atau aplikasi komputer sepeda, buka file .fit dengan JoyoFit, atau bagikan ke JoyoFit.",
+    "details": "Bisa dipakai untuk file .fit dari iGPSPORT, Garmin, Wahoo, Bryton, Magene, dan XOSS. {{share}} Mengimpor file yang sama dua kali tidak menambah apa pun, dan file yang tumpang tindih dengan latihan yang sudah direkam jam kamu dilewati: latihan dari jam yang dipertahankan. Latihan hasil impor dihitung untuk strain, kesiapan, dan tren, tetap di ponsel ini, dan tidak diunggah ke cloud, ditulis ke {{app}}, atau dikirim ke Strava dengan sendirinya."
+  },
+  "healthConnect": {
+    "available": "Tersedia",
+    "updateRequired": "Perbarui aplikasi {{store}} dulu",
+    "unavailable": "Tidak tersedia di ponsel ini",
+    "busy": {
+      "asking": "Meminta izin",
+      "switchingOff": "Mematikan",
+      "writing": "Menulis data tersimpan",
+      "opening": "Membuka"
+    },
+    "noWrite": "Izin tulis tidak diberikan. Izinkan JoyoFit di {{store}} untuk menyalakan ini.",
+    "write": "Tulis ke {{store}}",
+    "lastFailed": "Ekspor terakhir gagal: {{error}}",
+    "permission": "Izin tulis",
+    "permissionValue": "{{granted}} dari {{total}} jenis",
+    "lastExport": "Ekspor terakhir",
+    "missing": "Tidak diizinkan, jadi dilewati: {{list}}.",
+    "continue": "Lanjutkan",
+    "writeAgain": "Tulis ulang semua",
+    "details": "Mengirim langkah, jarak, kalori, detak jantung, oksigen darah, tidur, dan latihan setiap selesai sinkron, supaya aplikasi lain seperti JoyoRogo bisa membacanya. Saat dinyalakan, data yang sudah tersimpan juga ikut ditulis."
+  },
+  "healthyLiving": {
+    "notAsked": "Jam belum meminta tugas. Buka Healthy Living di jam sekali.",
+    "title": "Healthy Living",
+    "answer": "Jawab permintaan jam",
+    "support": "Dukungan jam",
+    "supported": "Didukung",
+    "notSupported": "Tidak didukung",
+    "lastRequest": "Permintaan terakhir",
+    "notYet": "Belum",
+    "msgVersion": "Versi pesan",
+    "lastReport": "Laporan terakhir",
+    "send": "Kirim hari ini ke jam",
+    "sent": "Terkirim. Buka Healthy Living di jam untuk memeriksa.",
+    "details": "Nyala secara bawaan. Menyalakan berlaku saat tersambung berikutnya, mematikan langsung berlaku. Jam meminta tugasnya sendiri; tombol ini mengirim tugas hari ini tanpa menunggu permintaan. Belum terverifikasi di jam: berdasarkan protokol Huawei Health."
+  },
+  "heartRate": {
+    "unsupported": "Jam ini tidak mendukungnya.",
+    "title": "Detak jantung dan sensor",
+    "continuous": "Detak jantung terus-menerus",
+    "spo2": "SpO2 otomatis",
+    "sleep": "Pelacakan tidur (TruSleep)",
+    "highAlert": "Peringatan detak jantung tinggi (bpm)",
+    "lowAlert": "Peringatan detak jantung rendah (bpm)",
+    "notConnected": "Belum tersambung: perubahan disimpan dan dikirim saat tersambung berikutnya.",
+    "notConfirmed": "Jam tidak mengonfirmasi semua perubahan. Lihat Log.",
+    "details": {
+      "continuous": "Detak jantung terus-menerus: jam merekam detak jantungmu kira-kira setiap menit. Tanpa ini Hari ini tidak menampilkan detak jantung.",
+      "spo2": "SpO2 otomatis: mengukur oksigen darah di latar belakang.",
+      "sleep": "Pelacakan tidur (TruSleep): jam yang lebih baru merekam tahap tidur saat ini menyala. Sebagian jam lama hanya melaporkan kapan kamu tidur, ditampilkan sebagai \"Tidur (tanpa tahap)\", dan bisa memberi tidur ringan dan dalam saat ini mati.",
+      "stress": "Stres otomatis: menyalakannya butuh 1 menit duduk diam dengan jam terpasang pas. Ponsel mengukur interval detakmu dan mengirim acuan dasar ke jam.",
+      "high": "Peringatan tinggi: jam memberi peringatan saat detak jantungmu tetap di atas angka ini. Perlu detak jantung terus-menerus.",
+      "low": "Peringatan rendah: jam memberi peringatan saat detak jantungmu tetap di bawah angka ini."
+    }
+  },
+  "history": {
+    "title": "Riwayat jam",
+    "fetching": "Mengambil",
+    "fetch": "Ambil semua riwayat dari jam",
+    "connectFirst": "Hubungkan jam kamu dulu.",
+    "detailsIos": "Mengambil setiap hari langkah, detak jantung, tidur, dan latihan yang masih tersimpan di jam, bukan hanya yang baru sejak sinkron terakhir. Bisa makan waktu beberapa menit. Data yang sudah ada di ponsel tetap dipertahankan.",
+    "details": "Mengambil setiap hari langkah, detak jantung, tidur, HRV, dan latihan yang masih tersimpan di jam, bukan hanya yang baru sejak sinkron terakhir. Bisa makan waktu beberapa menit. Data yang sudah ada di ponsel tetap dipertahankan."
+  },
+  "huaweiImport": {
+    "requestTitle": "Minta datamu dari Huawei",
+    "requestIntro": "Detak jantung, tidur, langkah, dan latihan dari akun Huawei Health kamu. Gratis, berjalan di ponsel ini, tidak mengirim apa pun.",
+    "howTitle": "Cara memintanya (6 langkah)",
+    "steps": {
+      "1": "Ketuk tombol di bawah dan masuk dengan Huawei ID kamu.",
+      "2": "Pilih Request your data dan centang Health data.",
+      "3": "Atur kata sandi untuk ZIP dan ingat baik-baik: Huawei tidak bisa menampilkannya lagi dan file tidak bisa dibuka tanpanya.",
+      "4": "Tunggu email dari Huawei. Bisa sampai 7 hari, dan tautannya berlaku 21 hari. Ekspor besar datang sebagai beberapa bagian ZIP masing-masing sampai 5 GB.",
+      "5": "Sebelum melepas pasangan jam dari Huawei Health, buka Huawei Health dan tarik ke bawah untuk sinkron sekali lagi. Data yang hanya ada di jam dan belum masuk ke akunmu akan hilang saat dilepas.",
+      "6Ios": "Unduh ZIP-nya (di iPhone tersimpan di aplikasi Files), lalu pilih di bawah dan masukkan kata sandinya.",
+      "6Android": "Unduh ZIP-nya, lalu ketuk di email atau aplikasi file kamu dan pilih JoyoFit, atau pilih di bawah. Masukkan kata sandinya."
+    },
+    "otherRegion": "Akun di luar Asia Tenggara: pakai {{host}}. Kalau halaman gagal dibuka untuk akun Indonesia, tombol di atas yang berfungsi; Privacy Center di dalam aplikasi tidak.",
+    "importTitle": "Impor file",
+    "chooseAnother": "Pilih file lain",
+    "choose": "Pilih file ZIP",
+    "file": "File",
+    "password": "Kata sandi ZIP",
+    "fileProgress": "File {{index}} dari {{count}}",
+    "fileProgressNamed": "File {{index}} dari {{count}}: {{name}}",
+    "opening": "Membuka ZIP",
+    "import": "Impor",
+    "details": "Kata sandinya adalah yang kamu atur saat meminta data; hanya disimpan selama layar ini terbuka. Data yang sudah disimpan jam di ponsel ini tidak pernah diganti. Mengimpor file yang sama dua kali tidak menambah apa pun. Hari yang diimpor tetap di ponsel ini: tidak diunggah ke cloud, ditulis ke {{app}}, atau dikirim ke Strava.",
+    "workoutsAdded": "Latihan ditambahkan",
+    "heartRate": "Pembacaan detak jantung",
+    "sleepFound": "Tahap tidur ditemukan",
+    "stopped": "Impor dihentikan",
+    "finished": "Impor selesai",
+    "stoppedNotice": "Kamu menghentikan impor. Yang sudah terbaca tersimpan; impor file yang sama lagi untuk melanjutkan.",
+    "historyRead": "Riwayat terbaca",
+    "range": "{{from}} sampai {{to}}",
+    "sleepAdded": "Tahap tidur ditambahkan",
+    "restingHr": "Pembacaan detak istirahat",
+    "spo2": "Pembacaan oksigen darah",
+    "stressAdded": "Pembacaan stres ditambahkan",
+    "minutes": "Menit dengan data",
+    "alreadyHere": "Latihan yang sudah ada",
+    "sleepSkipped": "Tidur dilewati (data jam dipertahankan)",
+    "unreadable": "Tak terbaca, dilewati",
+    "filesFailed_other": "{{count}} file di dalam ZIP tidak bisa dibaca. Sisanya sudah diimpor; unduh ulang ekspornya untuk menutup celahnya.",
+    "summaryDetails": "Kalori per menit dan berat badan tidak diimpor. Kalori latihan ikut diimpor.",
+    "errors": {
+      "password": "Kata sandi itu tidak bisa membuka ZIP. Pakai yang kamu atur saat meminta data dari Huawei.",
+      "format": "File ini bukan ekspor Huawei Health. Pilih ZIP dari email Huawei, yang berisi data Health kamu.",
+      "busy": "Impor sedang berjalan."
+    }
+  },
+  "notifApps": {
+    "iosTitle": "iOS yang memilih aplikasinya",
+    "iosDesc": "JoyoFit tidak meneruskan notifikasi di iOS. Jam membacanya dari iPhone, dan aplikasi mana yang muncul diatur di Pengaturan iPhone, Notifikasi.",
+    "filter": "Saring aplikasi",
+    "enabledFirst": "Yang aktif dulu",
+    "onCount": "{{enabled}} dari {{total}} aktif",
+    "hint": "Aplikasi yang belum kamu pilih aktif, kecuali aplikasi sistem.",
+    "loading": "Memuat aplikasi",
+    "noMatchTitle": "Tidak ada aplikasi yang cocok",
+    "noMatch": "Tidak ada yang cocok dengan \"{{query}}\".",
+    "noApps": "Tidak ada aplikasi untuk ditampilkan.",
+    "clear": "Hapus saringan"
+  },
+  "notifications": {
+    "disclosure": "JoyoFit membaca notifikasi di ponsel ini (nama aplikasi, judul, dan teks) agar bisa menampilkannya di jam kamu. Notifikasi dikirim ke jam lewat Bluetooth saja. JoyoFit tidak menyimpannya dan tidak mengirimnya lewat internet. Kamu bisa memilih aplikasi mana yang diteruskan, dan mematikannya kapan saja.",
+    "title": "Notifikasi",
+    "access": "Akses notifikasi",
+    "granted": "Diberikan",
+    "notGranted": "Belum diberikan",
+    "openAccess": "Buka pengaturan akses",
+    "readTitle": "Baca notifikasi kamu?",
+    "restricted": "Android 13+: izinkan dulu pengaturan terbatas (Info aplikasi, menu, Izinkan pengaturan terbatas).",
+    "forward": "Teruskan ke jam",
+    "grantFirst": "Berikan akses dulu.",
+    "morning": "Ringkasan pagi",
+    "morningDenied": "Izin notifikasi ditolak: ringkasan tidak bisa ditampilkan.",
+    "details": "Meneruskan berarti mengirim nama aplikasi, judul, dan teks setiap notifikasi ke jam lewat Bluetooth saja. Tidak ada yang disimpan atau dikirim lewat internet. Pilih aplikasi yang diteruskan di Aplikasi notifikasi.\n\nRingkasan pagi: sekali sehari setelah sinkron yang membawa tidur semalam, berisi waktu tidur dan HRV dibanding biasanya.",
+    "ios": {
+      "shared": "iPhone membagikannya ke jam",
+      "connectToCheck": "Hubungkan jam untuk memeriksa",
+      "yes": "Ya",
+      "notYet": "Belum",
+      "howTo": "Pengaturan iPhone, Bluetooth, ketuk i di samping jam, nyalakan Tampilkan Notifikasi. Izinkan kalau iOS bertanya.",
+      "show": "Tampilkan notifikasi di jam",
+      "details": "iOS tidak mengizinkan JoyoFit membaca atau meneruskan notifikasi kamu. Jam membacanya sendiri dari iPhone lewat Bluetooth, kalau iOS mengizinkan; JoyoFit tidak pernah melihat isinya. Aplikasi mana yang muncul dipilih di Pengaturan iPhone, Notifikasi.\n\nSakelar ini mengubah pengaturan notifikasi bawaan jam, yang diatur Huawei Health. Pengaturan itu dibiarkan sampai kamu mengubahnya di sini.\n\nNotifikasi ringkasan pagi belum tersedia di iOS."
+    }
+  },
+  "phone": {
+    "title": "Ponsel dan panggilan",
+    "iosFind": "Cari ponsel dari jam: tidak bisa di iOS.",
+    "iosCalls": "Menjawab atau menolak panggilan dari jam: tidak bisa di iOS.",
+    "iosDetails": "Cari ponsel: iOS menangguhkan JoyoFit saat tidak di layar dan tidak mengizinkannya membunyikan ponsel atas permintaan, jadi tombol di jam tidak bisa mencari iPhone ini. Pakai Find My di perangkat Apple lain atau iCloud.com.\n\nPanggilan: iOS tidak mengizinkan aplikasi melihat, menjawab, atau menolak panggilan telepon. Kalau jam menampilkan panggilan masuk, itu dilakukan jam sendiri lewat notifikasi yang dibagikan iOS (pengaturan Notifikasi).",
+    "errPhoneState": "Izin status telepon diperlukan untuk melihat panggilan masuk.",
+    "errAnswer": "Izin menjawab panggilan telepon diperlukan.",
+    "findPhone": "Cari ponsel dari jam",
+    "showCalls": "Tampilkan panggilan masuk di jam",
+    "callControl": "Jawab dan tolak panggilan dari jam",
+    "phoneState": "Status telepon",
+    "answerCalls": "Jawab panggilan telepon",
+    "callLog": "Nomor penelepon (log panggilan)",
+    "contacts": "Nama kontak",
+    "gps": "GPS ponsel (latihan luar ruang)",
+    "granted": "Diberikan",
+    "notGranted": "Belum diberikan",
+    "allowLocation": "Izinkan lokasi",
+    "appSettings": "Pengaturan aplikasi",
+    "callerIdDetails": "Tanpa akses log panggilan, Android menyembunyikan nomor penelepon. Tanpa akses kontak, kamu melihat nomor, bukan nama.",
+    "noCallerIdDetails": "Jam menunjukkan bahwa ponsel sedang berdering. Versi JoyoFit ini tidak membaca log panggilan atau kontak, jadi tidak bisa menampilkan siapa yang menelepon.",
+    "findDetails": "Cari ponsel: tombol di jam membunyikan ponsel ini dengan keras, bahkan saat aplikasi ditutup. Hentikan dari jam atau dari notifikasi."
+  },
+  "profile": {
+    "sex": {
+      "male": "Laki-laki",
+      "female": "Perempuan",
+      "unknown": "Tidak disebutkan"
+    },
+    "errors": {
+      "height": "Tinggi harus bilangan bulat dari 100 sampai 250 cm.",
+      "weight": "Berat harus dari 20 sampai 300 kg.",
+      "birthYear": "Tahun lahir harus bilangan bulat dari 1900 sampai {{year}}.",
+      "steps": "Target langkah harian harus bilangan bulat dari 1000 sampai 100000."
+    },
+    "sent": "Terkirim ke jam.",
+    "saved": "Tersimpan. Dikirim saat jam tersambung berikutnya.",
+    "title": "Profil dan target",
+    "height": "Tinggi (cm)",
+    "weight": "Berat (kg)",
+    "birthYear": "Tahun lahir",
+    "steps": "Target langkah harian",
+    "details": "Jam memakai ini untuk kalori dan target langkahnya. Tidak ada yang dikirim sampai kamu menyimpan.",
+    "sexLabel": "Jenis kelamin"
+  },
+  "appearance": {
+    "title": "Tema",
+    "aboutTitle": "Tentang tema",
+    "details": "Tema mengubah warna, bentuk sudut, dan ukuran angka besar. Classic dan Ocean mengikuti pengaturan terang atau gelap di ponselmu; Sport selalu gelap."
+  },
+  "meals": {
+    "support": {
+      "goals": "target",
+      "meals": "makanan",
+      "weight": "berat",
+      "requests": "permintaan",
+      "extraSlots": "slot ekstra"
+    },
+    "title": "Makanan di jam",
+    "signedIn": "Sudah masuk",
+    "notSignedIn": "Belum masuk",
+    "notSignedInCloudOff": "Belum masuk (cloud mati)",
+    "day": "Hari di jam",
+    "mealsLabel": "Makanan",
+    "mealsValue_other": "{{count}} makanan, {{kcal}} kkal",
+    "mealsValueGoal_other": "{{count}} makanan, {{kcal}} dari {{goal}} kkal",
+    "lastRead": "Terakhir dibaca dari JoyoRogo",
+    "lastPush": "Terakhir dikirim ke jam",
+    "lastResult": "Hasil terakhir",
+    "accepts": "Jam menerima",
+    "notConnected": "Belum tersambung",
+    "nothing": "tidak ada",
+    "unsynced_other": "{{count}} makanan yang dicatat di jam akan ditulis ke JoyoRogo saat aplikasi membacanya berikutnya.",
+    "pushNow": "Kirim sekarang",
+    "details": "Catatan makan JoyoRogo dan target kalori kamu mengisi kartu kalori di jam. JoyoFit membacanya saat dibuka, setelah tiap sinkron, dan saat jam tersambung, lalu mengirimnya lagi saat jam meminta atau mencatat makanan sendiri. Saat aplikasi ditutup, layanan latar belakang menjawab dari hari terakhir yang tersimpan; ia tidak bisa membaca JoyoRogo saat itu karena sesi masuk hanya disimpan untuk aplikasi. Sejauh ini belum diuji di Fit 4 Pro. Selama kamu masuk, aplikasi juga mengirim Recovery, Strain, dan Tidur harianmu ke catatan JoyoRogo supaya berdampingan dengan makananmu."
+  },
+  "signIn": {
+    "label": "Masuk dengan JoyoRogo",
+    "prompt": "Masuk dengan",
+    "apple": "Apple",
+    "google": "Google"
+  },
+  "safety": {
+    "fall": {
+      "unknown": "Belum dilaporkan",
+      "off": "Mati",
+      "on": "Nyala"
+    },
+    "sms": {
+      "title": "Kirim SMS untuk SOS",
+      "message": "Saat jam kamu mengirim SOS, JoyoFit mengirim pesan teks yang diminta, dari ponsel ini dan SIM kamu. Tidak pernah mengirim yang lain.",
+      "allow": "Izinkan",
+      "notNow": "Nanti",
+      "denied": "Tanpa izin SMS, JoyoFit tidak bisa mengirim teks SOS. Relay tetap mati."
+    },
+    "check": "Periksa tanpa mengirim",
+    "testReady": "Siap: SOS dari jam akan dikirim sebagai pesan teks. Tidak ada yang dikirim sekarang.",
+    "testBlocked": "SOS dari jam tidak akan terkirim: {{blockers}}. Tidak ada yang dikirim sekarang.",
+    "fallTitle": "Deteksi jatuh",
+    "detect": "Deteksi jatuh di jam",
+    "fallUnavailable": "Tidak tersedia: {{note}}.",
+    "reports": "Jam melaporkan",
+    "lastChanged": "Terakhir diubah",
+    "askWatch": "Tanya jam",
+    "fallDetailsSms": "Setelah jatuh keras, jam menanyakan apakah kamu baik-baik saja dan bisa memulai SOS.",
+    "fallDetails": "Setelah jatuh keras, jam menanyakan apakah kamu baik-baik saja. Versi JoyoFit ini tidak bisa mengirim teks SOS.",
+    "sosTitle": "Pesan teks SOS",
+    "sosSwitch": "Kirim teks SOS untuk jam",
+    "smsPermission": "Izin mengirim SMS",
+    "granted": "Diberikan",
+    "notGranted": "Belum diberikan",
+    "sim": "Kartu SIM",
+    "simNone": "Tanpa telepon",
+    "simReady": "Siap",
+    "simNotReady": "Belum siap",
+    "watchLists": "Jam mencantumkan teks SOS",
+    "yes": "Ya",
+    "notListed": "Tidak ada di daftar kemampuannya",
+    "appSettings": "Pengaturan aplikasi",
+    "sosDetails": "Saat kamu memulai SOS di jam, jam memberi ponsel ini sebuah nomor dan pesan. Dengan sakelar menyala, JoyoFit mengirim teks itu dari SIM kamu dan memberi tahu jam apakah terkirim. Jam (atau kontak daruratnya di pengaturan Huawei di jam) yang menentukan siapa yang dikirimi teks; JoyoFit tidak pernah memilih penerima dan tidak pernah mengirim apa pun yang tidak diminta jam. Mati secara bawaan. Perlu izin mengirim SMS dan SIM yang siap; biayanya sesuai tarif paketmu per teks. Kalau SOS tidak akan terkirim, jam diberi tahu bahwa gagal.",
+    "iosNotice": "Tidak bisa di iOS. Jangan mengandalkan jam untuk mengirim teks ke kontakmu.",
+    "iosDetails": "iOS tidak mengizinkan aplikasi mengirim pesan teks sendiri, jadi JoyoFit tidak bisa mengirim teks ke kontakmu saat jam memulai SOS. JoyoFit memberi tahu jam bahwa tidak ada yang terkirim.",
+    "playNotice": "Tidak ada di versi Google Play. Jangan mengandalkan jam untuk mengirim teks ke kontakmu.",
+    "playDetails": "Google Play membatasi aplikasi yang mengirim pesan teks, jadi versi ini tidak menyertakan fiturnya. SOS yang dimulai di jam tidak dikirim sebagai SMS dari ponsel ini: JoyoFit memberi tahu jam bahwa tidak ada yang terkirim.",
+    "sleepTitle": "Laporan tidur pagi",
+    "sleepShow": "Tampilkan tidur semalam",
+    "sleepUnavailable": "Tidak tersedia: jam tidak melaporkan kanal event yang dibutuhkan.",
+    "sleepSend": "Kirim laporan sekarang",
+    "sleepSent": "Terkirim. Cek jam.",
+    "sleepNotSent": "Tidak terkirim: {{outcome}}.",
+    "sleepDetails": "Sekali tiap pagi, setelah sinkron pertama yang memuat semalam, jam menampilkan berapa lama kamu tidur dan tahapnya."
+  },
+  "strava": {
+    "intro": "Kirim latihan dari jam ke Strava. Gratis, tidak perlu JoyoRogo Pro.",
+    "howTitle": "Bagaimana caranya?",
+    "how": "Latihan dikirim ke Strava beserta jarak, kalori, detak jantung, dan rute yang direkam jam. Setelah kamu terhubung, latihan yang selesai sejak saat itu dikirim setelah tiap sinkron; yang lebih lama tetap di ponsel kecuali kamu mengirimnya dari layar latihan. JoyoFit hanya mengirim latihan ke akun Strava kamu sendiri dan tidak pernah membaca aktivitas Strava kamu.",
+    "noCloud": "Build ini tidak punya URL server cloud, yang dibutuhkan Strava. Deploy server/, atur EXPO_PUBLIC_JOYOFIT_CLOUD_URL, lalu build ulang.",
+    "serverNotReady": "Strava belum diatur di server JoyoFit.",
+    "signInFirst": "Masuk dengan JoyoRogo dulu; ini hanya menyimpan koneksi Strava kamu di server.",
+    "signIn": "Masuk dengan JoyoRogo",
+    "connect": "Hubungkan dengan Strava",
+    "connectedSince": "Terhubung, mengirim sejak",
+    "addLink": "Tambahkan fit.joyorogo.com ke deskripsi",
+    "addLinkHint": "Teks biasa, tidak pernah di judul.",
+    "disconnect": "Putuskan Strava",
+    "signInToDisconnect": "Masuk dengan JoyoRogo untuk memutuskan atau mengirim.",
+    "compatible": "Kompatibel dengan Strava",
+    "legal": "Kompatibel dengan Strava. JoyoFit tidak dibuat, disponsori, atau didukung oleh Strava. Yang kamu kirim mengikuti pengaturan privasi Strava kamu; kamu bisa menghapus JoyoFit kapan saja di Strava lewat Settings, My Apps."
+  },
+  "weather": {
+    "conditions": {
+      "SUNNY": "Cerah",
+      "CLOUDY": "Berawan",
+      "OVERCAST": "Mendung",
+      "FOG": "Berkabut",
+      "HAZY": "Berkabut tipis",
+      "DUST": "Berdebu",
+      "SAND": "Berpasir",
+      "LIGHT_RAIN": "Hujan ringan",
+      "RAIN": "Hujan",
+      "HEAVY_RAIN": "Hujan lebat",
+      "FREEZING_RAIN": "Hujan beku",
+      "RAIN_STORM": "Hujan badai",
+      "SEVERE_RAIN_STORMS": "Hujan badai parah",
+      "THUNDERSTORMS": "Badai petir",
+      "SLEET": "Hujan es",
+      "LIGHT_SNOW": "Salju ringan",
+      "SNOW": "Salju",
+      "HEAVY_SNOW": "Salju lebat",
+      "UNKNOWN": "Tidak diketahui"
+    },
+    "intervals": {
+      "m": "{{count}} mnt",
+      "h": "{{count}} j"
+    },
+    "modes": {
+      "current": "Ponsel ini",
+      "city": "Sebuah kota"
+    },
+    "deniedAndroid": "Lokasi ditolak: cuaca untuk ponsel ini tidak bisa diambil. Izinkan, atau pilih kota.",
+    "deniedIos": "Lokasi mati untuk JoyoFit. Nyalakan di Pengaturan > JoyoFit > Lokasi (Saat Aplikasi Digunakan), atau pilih kota.",
+    "citySet": "Kota diatur ke {{name}}.",
+    "citySetDetail": "Kota diatur ke {{name}} ({{detail}}).",
+    "title": "Cuaca",
+    "send": "Kirim cuaca ke jam",
+    "unit": "Satuan",
+    "weatherFor": "Cuaca untuk",
+    "permission": "Izin lokasi",
+    "granted": "Diberikan",
+    "notGranted": "Belum diberikan",
+    "openSettings": "Buka Pengaturan",
+    "allowLocation": "Izinkan lokasi",
+    "city": "Kota",
+    "cityName": "Nama kota",
+    "cityPlaceholder": "Kota, atau Kota, Negara",
+    "searchCity": "Cari kota",
+    "interval": "Interval pembaruan",
+    "connect": "Hubungkan jam untuk mengirim cuaca.",
+    "noService": "Jam ini tidak mencantumkan layanan cuaca.",
+    "updateNow": "Perbarui sekarang",
+    "sentToWatch": "Terkirim ke jam.",
+    "lastSent": "Terakhir dikirim",
+    "lastWeather": "Cuaca terakhir",
+    "details": "Mengirim cuaca saat ini dan prakiraan, setiap tersambung dan pada interval yang dipilih. Data berasal dari Open-Meteo; hanya koordinat yang dibulatkan sekitar 1 km yang dikirim.",
+    "detailsIos": "Ponsel ini: memakai perkiraan lokasimu saat aplikasi terbuka. Saat jam meminta di latar belakang, iOS tidak memberi aplikasi posisi baru, jadi posisi terakhir dipakai ulang.",
+    "detailsAndroid": "Ponsel ini: memakai lokasi kasar yang terakhir diketahui. Di latar belakang Android mungkin tidak memberi yang baru, jadi posisi terakhir dipakai ulang."
+  }
+}

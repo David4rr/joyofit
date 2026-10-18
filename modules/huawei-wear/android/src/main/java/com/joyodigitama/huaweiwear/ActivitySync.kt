@@ -33,8 +33,10 @@ internal class StepSample(
  * One sleep span. `type` is GB's raw sample kind (frame sleep: the watch's state byte; TruSleep and
  * dictionary sleep: 0x06 light, 0x07 deep, 0x5656 REM, 0x5658 awake, 0x5659 nap, 1 unknown).
  * `stage` is GB's `normalizeType` of it as 'light' | 'deep' | 'rem' | 'awake', null when GB has none.
+ * [breakBefore] is only ever set by [SleepCleaning.cleanUnstagedSleep] (never stored): a workout or a long awake stretch
+ * lies between this span and the one before it, so it starts a new sleep session however close the two are.
  */
-internal class SleepSegment(val start: Long, val end: Long, val type: Int, val stage: String?) {
+internal class SleepSegment(val start: Long, val end: Long, val type: Int, val stage: String?, val breakBefore: Boolean = false) {
   fun toJs(): Map<String, Any?> = mapOf("start" to start, "end" to end, "type" to type, "stage" to stage)
 }
 
@@ -74,10 +76,12 @@ internal class ActivitySync(
 ) {
   private val params get() = session.params
 
-  suspend fun sync(fromSec: Long): SyncResult {
+  /** Pulls `[fromSec, toSec]`; `toSec` defaults to now. A 0 `fromSec` means everything the watch still holds. */
+  suspend fun sync(fromSec: Long, toSec: Long? = null): SyncResult {
     // "Some bands don't work with zero timestamp, so starting later" (GB: 01/01/2000).
     val start = if (fromSec <= 0L) MIN_START_SEC else minOf(fromSec, Int.MAX_VALUE.toLong())
-    val end = (System.currentTimeMillis() / 1000).toInt()
+    val now = (System.currentTimeMillis() / 1000).toInt()
+    val end = if (toSec == null) now else minOf(toSec, now.toLong()).toInt()
     events.log(LogDirection.INFO, null, null, null, "Sync: from=$start to=$end")
 
     val frameSleep = fetchSleep(start.toInt(), end)
@@ -85,12 +89,13 @@ internal class ActivitySync(
 
     // GetFitnessTotalsRequest. The Fit 4 can answer without the 0x81 container; then today's
     // totals are summed from the synced per-minute samples since local midnight.
-    val totals = skippable("FitnessTotals") {
+    // Only the window that reaches today needs the watch's totals; older slices of a history pull skip the request.
+    val midnight = java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toEpochSecond()
+    val totals = if (end < midnight) null else skippable("FitnessTotals") {
       session
         .request(FitnessData.FitnessTotals.Request(params), Timeouts.SYNC_COUNT_MS, "FitnessTotals")
         .expect<FitnessData.FitnessTotals.Response>("FitnessTotals")
     }
-    val midnight = java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toEpochSecond()
     val today = samples.filter { it.timestamp >= midnight }
     val totalSteps = totals?.totalSteps ?: today.sumOf { it.steps }
     val totalCalories = totals?.totalCalories ?: (today.sumOf { it.calories } / 1000)
@@ -123,7 +128,7 @@ internal class ActivitySync(
     var count = 0
     while (true) {
       val label = "SleepData ${count + 1}/$maxCount"
-      val response = skippable(label) {
+      val response = dataFrame(label) {
         session
           .request(
             FitnessData.MessageData.Request(params, FitnessData.MessageData.sleepId, count.toShort()),
@@ -156,6 +161,11 @@ internal class ActivitySync(
 
       if (count + 1 < maxCount) count += 1 else break
     }
+    if (segments.isNotEmpty()) {
+      val byType = segments.groupBy { it.type }.entries.sortedBy { it.key }
+        .joinToString(", ") { (type, list) -> "0x%02x x%d (%d min, stage %s)".format(type, list.size, list.sumOf { it.end - it.start } / 60, list[0].stage ?: "none") }
+      events.log(LogDirection.INFO, null, null, null, "Sleep frames: ${segments.size} segments by raw type: $byType")
+    }
     return segments
   }
 
@@ -174,7 +184,7 @@ internal class ActivitySync(
     var requests = 0
     while (true) {
       val label = "StepData ${count + 1}/$maxCount"
-      val response = skippable(label) {
+      val response = dataFrame(label) {
         session
           .request(
             FitnessData.MessageData.Request(params, FitnessData.MessageData.stepId, count.toShort()),
@@ -261,6 +271,24 @@ internal class ActivitySync(
       null
     }
 
+  /** Consecutive data frames the watch left unanswered; reset by any answer. */
+  private var frameTimeouts = 0
+
+  /**
+   * [skippable] for one sleep or step data frame, which also skips a frame that got no answer. Over LE on Android 14+ the
+   * stack discards a 514-byte notification, so a reply longer than that loses its head and only its tail arrives (logged as
+   * "Magic mismatch"); without this one such frame aborts a whole history pull. A second unanswered frame in a row means the
+   * link is gone, and that still aborts.
+   */
+  private suspend fun <T> dataFrame(label: String, block: suspend () -> T): T? =
+    try {
+      skippable(label, block).also { frameTimeouts = 0 }
+    } catch (e: WearException) {
+      if (e.errorCode != ErrorCodes.TIMEOUT || ++frameTimeouts > MAX_SKIPPED_FRAMES) throw e
+      events.log(LogDirection.ERROR, null, null, null, "$label: ${e.message}; skipping this frame")
+      null
+    }
+
   /** GB casts to short and maps -1 (field absent / 0xFFFF) to 0. */
   private fun nonNegative(value: Int): Int {
     val asShort = value.toShort().toInt()
@@ -275,5 +303,6 @@ internal class ActivitySync(
 
   private companion object {
     const val MIN_START_SEC = 946684800L
+    const val MAX_SKIPPED_FRAMES = 1
   }
 }

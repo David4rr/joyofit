@@ -1,0 +1,277 @@
+{
+  "units": {
+    "h": "j",
+    "min": "mnt"
+  },
+  "hero": {
+    "linkA11y": "Status koneksi: {{state}}",
+    "stepsA11y": "Langkah hari ini: {{steps}} dari {{goal}}",
+    "of": "dari {{goal}}",
+    "heartRate": "Detak jantung",
+    "heartA11y": "Detak jantung {{bpm}} bpm, {{when}}",
+    "live": "Langsung",
+    "turnOn": "Nyalakan",
+    "turnOnA11y": "Nyalakan detak jantung berkelanjutan",
+    "battery": "Baterai",
+    "batteryUnknown": "Baterai: tidak diketahui",
+    "batteryA11y": "Baterai {{level}} persen",
+    "lastSync": "Sinkron terakhir",
+    "notSynced": "Belum pernah sinkron"
+  },
+  "home": {
+    "connectWatch": "Hubungkan jam",
+    "workoutInProgress": "{{sport}} sedang berjalan",
+    "workoutPaused": "{{sport}} dijeda",
+    "workoutDefault": "Latihan",
+    "workoutSubtitle": "{{elapsed}} · lemak {{fat}} g, karbo {{carbs}} g",
+    "workoutSubtitleHr": "{{elapsed}} · {{bpm}} bpm · lemak {{fat}} g, karbo {{carbs}} g",
+    "loadError": "Gagal membaca data tersimpan: {{error}}",
+    "calories": "Kalori",
+    "distance": "Jarak",
+    "kcal": "kcal",
+    "heartTitle": "Detak jantung",
+    "latest": "Terbaru {{time}}",
+    "low": "Terendah",
+    "high": "Tertinggi",
+    "noHeart": "Belum ada detak jantung tersimpan hari ini.",
+    "stepsTitle": "Langkah per jam",
+    "sleepTitle": "Tidur semalam",
+    "healthTitle": "Metrik kesehatan",
+    "healthSubtitle": "Suhu kulit, HRV, stres, dan lainnya",
+    "aboutTitle": "Tentang angka-angka ini",
+    "aboutWatch": "Kalori dan jarak sesuai laporan jam saat sinkron terakhir. Tarik ke bawah untuk sinkron.",
+    "aboutSamples": "Kalori dan jarak dijumlahkan dari sampel per menit yang tersimpan. Tarik ke bawah untuk sinkron.",
+    "aboutNone": "Belum ada data tersimpan untuk hari ini. Sinkron untuk mengambil data hari ini dari jam. Tarik ke bawah untuk sinkron."
+  },
+  "hourly": {
+    "a11yPeak_other": "Langkah per jam. Jam tersibuk {{hour}} dengan {{steps}} langkah.",
+    "a11yEmpty": "Langkah per jam. Belum ada langkah tercatat hari ini.",
+    "peak_other": "Jam tersibuk {{hour}}, {{steps}} langkah",
+    "empty": "Belum ada langkah tercatat hari ini."
+  },
+  "sleep": {
+    "emptyTitle": "Tidak ada tidur tersimpan",
+    "emptyDescription": "Tidak ada data dalam 36 jam terakhir. Sinkron setelah bangun.",
+    "sleptA11y": "Tidur {{duration}}",
+    "rangeStages": "{{start}} sampai {{end}}, tanpa waktu terjaga",
+    "rangeNoStages": "{{start}} sampai {{end}}, tanpa tahap tidur",
+    "stagesNote": "Tahap tidur berasal dari data tidur jam. Rentang tanpa tahap hanya dihitung di total.",
+    "type": "Tipe {{type}}",
+    "typeValue_other": "{{count}} segmen, {{duration}}",
+    "typesNote": "Tipe adalah byte status mentah dari jam. Artinya belum diterjemahkan."
+  },
+  "rogoCard": {
+    "title": "Makan sesuai strain hari ini",
+    "signedIn": "Pemulihan, strain, dan tidur hari ini ada di buku harian makan JoyoRogo, lengkap dengan tips makan singkat untuk hari seperti ini.",
+    "openDiary": "Buka buku harian JoyoRogo",
+    "signedOut": "JoyoRogo adalah buku harian makan kami: foto makananmu dan kalorinya dihitung otomatis. Masuk, lalu skor ini muncul di samping apa yang kamu makan, plus tips makan setelah hari berat atau ringan. Asupanmu juga tampil di kartu kalori jam.",
+    "signIn": "Masuk dengan JoyoRogo",
+    "whatIs": "Apa itu JoyoRogo?"
+  },
+  "scores": {
+    "a11y": "Buka detail kesiapan, strain, dan tidur",
+    "recovery": "Pemulihan",
+    "readiness": "Kesiapan",
+    "strain": "Strain",
+    "sleep": "Tidur"
+  },
+  "readiness": {
+    "title": "Kesiapan",
+    "screenTitle": "Kesiapan",
+    "headline": {
+      "primed": "Prima",
+      "balanced": "Seimbang",
+      "strained": "Terbebani",
+      "runDown": "Kelelahan"
+    },
+    "hint": {
+      "primed": "Semua sinyal bagus. Hari yang pas untuk tancap gas.",
+      "balanced": "Tidak ada yang menonjol. Latihan sesuai rencana.",
+      "strained": "Satu sinyal kurang baik. Latihan ringan atau lebih singkat.",
+      "runDown": "Beberapa sinyal kurang baik. Istirahat atau bergerak santai."
+    },
+    "headlineRecovery": "{{headline}}, pemulihan {{percent}}%",
+    "notEnough": "Belum cukup data. Pakai jam siang dan malam, lalu sinkron tiap hari.",
+    "howTitle": "Bagaimana ini dihitung?",
+    "howRecovery": "Pemulihan: HRV biasamu bernilai 50 %, satu simpangan baku di atasnya 75 %. Perkiraan dari riwayatmu sendiri, bukan saran medis.",
+    "how": "Perkiraan dari riwayatmu sendiri, bukan saran medis.",
+    "loadError": "Gagal membaca data tersimpan: {{error}}",
+    "trendsTitle": "Tren",
+    "trendsSubtitle": "Pemulihan, strain, tidur, HRV, dan detak jantung istirahat selama 30 atau 90 hari",
+    "signal": {
+      "hrvNightTitle": "HRV semalam",
+      "hrvSpotTitle": "HRV (pengukuran 1 menit)",
+      "hrvNightDetail_other": "{{z}} SD dari biasanya {{baseline}} ms ({{count}} malam)",
+      "hrvSpotDetail_other": "{{z}} SD dari biasanya {{baseline}} ms ({{count}} pengukuran)",
+      "rhrTitle": "Detak jantung istirahat",
+      "rhrDetail_other": "{{delta}} dari rata-rata {{count}} harimu, {{baseline}}",
+      "sleepTitle": "Tidur",
+      "sleepDetail": "{{slept}} dari {{need}} yang kamu butuhkan",
+      "sleepDetailStrain": "{{slept}} dari {{need}} yang kamu butuhkan setelah strain {{strain}}",
+      "loadTitle": "Beban latihan",
+      "loadDetail": "rata-rata 7 hari terakhir {{acute}} TRIMP per hari, dibanding 28 hari {{chronic}}",
+      "loadDetailRise": "rata-rata 7 hari terakhir {{acute}} TRIMP per hari, dibanding 28 hari {{chronic}}, naik tajam",
+      "loadDetailLight": "rata-rata 7 hari terakhir {{acute}} TRIMP per hari, dibanding 28 hari {{chronic}}, lebih ringan dari biasanya"
+    },
+    "missing": {
+      "rhrNone": "Detak jantung istirahat: jam belum melaporkannya hari ini.",
+      "rhrShort": "Detak jantung istirahat: baru {{have}} dari {{need}} hari riwayat.",
+      "sleepNone": "Tidur: tidak ada data tersimpan untuk semalam.",
+      "loadShort": "Beban latihan: baru {{have}} dari {{need}} hari dengan data detak jantung.",
+      "loadNone": "Beban latihan: tidak ada strain dalam 28 hari terakhir."
+    },
+    "note": {
+      "spot": "HRV di sini adalah pengukuran 1 menit sebagai pengganti HRV malam.",
+      "spotWhy": "HRV di sini adalah pengukuran 1 menit sebagai pengganti HRV malam: {{why}}.",
+      "noNight": "Kesiapan di sini memakai tidur, detak jantung istirahat, dan beban latihan, tanpa HRV malam: {{why}}."
+    }
+  },
+  "recovery": {
+    "offWaiting": "{{message}}. {{detail}}",
+    "unavailable": "{{message}}. Ukur HRV selama semenit untuk mendapat skor pemulihan.",
+    "noReadings": "HRV: belum ada pengukuran. Ukur HRV selama semenit, atau sinkron setelah semalam memakai jam.",
+    "noRecent": "HRV: belum ada pengukuran dari semalam atau hari ini.",
+    "baselineNights_other": "HRV: {{have}} dari {{count}} malam sebelumnya yang dibutuhkan untuk baselinemu.",
+    "baselineReadings_other": "HRV: {{have}} dari {{count}} pengukuran sebelumnya yang dibutuhkan untuk baselinemu."
+  },
+  "nightHrv": {
+    "ios": {
+      "message": "HRV malam belum dibaca di iPhone",
+      "detail": "JoyoFit di iPhone belum membaca HRV jam saat tidur, tetapi pengukuran 1 menit tetap bisa."
+    },
+    "unsupported": {
+      "message": "HRV malam tidak tersedia di jam ini",
+      "detail": "Jam ini tidak punya stres otomatis, sumber HRV saat tidur, tetapi pengukuran 1 menit tetap bisa."
+    },
+    "off": {
+      "message": "HRV malam mati",
+      "detail": "Nyalakan Stres otomatis di Pengaturan > Detak jantung dan sensor supaya jam mencatat HRV saat kamu tidur."
+    },
+    "noneRecorded": {
+      "message": "HRV malam tidak tersedia di jam ini",
+      "detail_other": "Stres otomatis sudah menyala selama {{count}} malam dan jam tidak mencatat HRV saat tidur, jadi mungkin jam ini tidak mengukurnya semalaman; pengukuran 1 menit tetap bisa."
+    },
+    "waiting": {
+      "message": "HRV malam: menunggu beberapa malam pertama",
+      "detail": "Pakai jam saat tidur lalu sinkron. {{done}} dari {{total}} malam sudah dicek."
+    },
+    "trendEmpty": "Belum ada HRV malam tersimpan. Pakai jam saat tidur lalu sinkron.",
+    "recoveryEmptyNoNight": "Belum ada pemulihan. {{message}}, jadi butuh pengukuran 1 menit: ukur HRV selama semenit di 5 hari berbeda.",
+    "recoveryEmpty": "Belum ada pemulihan. Butuh data HRV (semalam memakai jam, atau pengukuran 1 menit) dan 4 data sebelumnya dari jenis yang sama dalam 30 hari terakhir."
+  },
+  "strain": {
+    "title": "Strain",
+    "light": "Ringan",
+    "moderate": "Sedang",
+    "high": "Tinggi",
+    "allOut": "Habis-habisan",
+    "ofMax": "dari {{max}}",
+    "ringA11y": "Strain {{value}} dari {{max}}",
+    "ringNoneA11y": "Belum ada strain hari ini",
+    "none": "Belum ada detak jantung hari ini",
+    "zones": "{{hard}} mnt di atas 70 % detak jantung maksimal, {{easy}} mnt di 50 sampai 70 %.",
+    "weekA11y": "Strain tujuh hari terakhir",
+    "details": "Dari detak jantung yang tersimpan di jam (maks {{maxHr}} bpm). Sinkron untuk memperbarui."
+  },
+  "checkin": {
+    "title": "Check-in pagi",
+    "body": "1 menit untuk menambah HRV hari ini.",
+    "measure": "Ukur HRV",
+    "notToday": "Lain kali"
+  },
+  "family": {
+    "start": "Pantau kabar keluarga",
+    "title": "Keluarga"
+  },
+  "trends": {
+    "title": "Tren",
+    "range_other": "{{count}} hari",
+    "loadError": "Gagal membaca data tersimpan: {{error}}",
+    "today": "hari ini",
+    "yesterday": "kemarin",
+    "daysAgo_other": "{{count}} hari lalu",
+    "summary": "Rata-rata {{average}}, {{count}} dari {{total}} hari",
+    "chartA11y": "{{title}}, {{count}} hari terakhir. Terbaru {{latest}} {{when}}, rata-rata {{average}}.",
+    "recovery": "Pemulihan",
+    "strain": "Strain",
+    "sleep": "Tidur",
+    "hrvNights": "HRV, malam",
+    "hrvSpot": "HRV, pengukuran 1 menit",
+    "resting": "Detak jantung istirahat",
+    "emptyStrain": "Tidak ada detak jantung tersimpan di rentang ini. Pakai jam lalu sinkron.",
+    "emptySleep": "Tidak ada malam tersimpan di rentang ini. Pakai jam saat tidur lalu sinkron.",
+    "emptySpot": "Belum ada pengukuran 1 menit. Ukur HRV selama semenit untuk menambahnya.",
+    "emptyResting": "Tidak ada detak jantung istirahat tersimpan di rentang ini. Pakai jam siang dan malam, lalu sinkron.",
+    "howTitle": "Bagaimana ini dihitung?",
+    "howRecovery": "Pemulihan: HRV-mu dibanding baseline 30 harimu sendiri, 50% berarti biasa. Perkiraan, bukan saran medis.",
+    "howStrain": "Strain: dihitung dari detak jantung yang tersimpan di jam (maks {{maxHr}} bpm). Hari dengan sedikit data detak jantung terbaca rendah.",
+    "howSleep": "Tidur: waktu tidur, tidur siang di bawah 3 j tidak dihitung. Garis putus-putus: tidur yang kamu butuhkan, 7 j 30 mnt ditambah sampai 1 j setelah hari berat.",
+    "howHrv": "HRV: RMSSD. Data malam dirata-rata selama tidur dari catatan jam; pengukuran 1 menit kamu ambil sendiri dan levelnya berbeda, jadi dipisahkan.",
+    "howResting": "Detak jantung istirahat: nilai istirahat terendah yang dilaporkan jam tiap hari. Di grafik garis, garis putus-putus adalah rata-ratamu. Hari tanpa data dibiarkan kosong, tidak diisi."
+  },
+  "cycle": {
+    "loading": "Memuat catatan siklusmu",
+    "disclaimer": "Hanya perkiraan, bukan saran medis. Jangan dipakai untuk menghindari atau merencanakan kehamilan.",
+    "next": {
+      "title": "Haid berikutnya",
+      "estimatedStart": "Perkiraan mulai",
+      "late_other": "{{date}} (terlambat {{count}} hari)",
+      "dueToday": "{{date}} (hari ini)",
+      "dueIn_other": "{{date}} ({{count}} hari lagi)",
+      "estimatedLength": "Perkiraan lama",
+      "days_other": "{{count}} hari",
+      "fertile": "Masa subur",
+      "fertileRange": "{{start}} sampai {{end}}",
+      "averageCycle": "Siklus rata-rata",
+      "details": "Haid berikutnya dan masa subur sebelumnya diperkirakan dari rata-rata siklus yang kamu catat. Perkiraan ini tidak bisa mendeteksi siklus tidak teratur, sakit, stres, hormon, atau kehamilan.",
+      "emptyHint": "Catat haid untuk mendapat perkiraan.",
+      "emptyDetails": "Catat hari pertama haid dan JoyoFit memperkirakan haid berikutnya. Dengan satu siklus dipakai 28 hari, dengan lebih banyak siklus dirata-rata. Perkiraan tidak bisa mendeteksi siklus tidak teratur, sakit, stres, hormon, atau kehamilan."
+    },
+    "log": {
+      "title": "Catat",
+      "endedToday": "Haid selesai hari ini",
+      "endedOn": "Haid selesai {{date}}",
+      "startedToday": "Haid mulai hari ini",
+      "startedOn": "Haid mulai {{date}}",
+      "flowToday": "Aliran hari ini",
+      "flowOn": "Aliran pada {{date}}",
+      "cramps": "Kram"
+    },
+    "level": {
+      "none": "Tidak ada",
+      "light": "Ringan",
+      "medium": "Sedang",
+      "heavy": "Berat"
+    },
+    "cramp": {
+      "none": "Tidak ada",
+      "mild": "Ringan",
+      "medium": "Sedang",
+      "strong": "Kuat"
+    },
+    "periods": {
+      "title": "Haid yang kamu catat",
+      "none": "Belum ada catatan.",
+      "range": "{{start}} sampai {{end}}",
+      "ongoing": "{{start}} (masih berlangsung)",
+      "length_other": "{{count}} hari",
+      "addEarlier": "Tambah haid sebelumnya",
+      "firstDay": "Hari pertama",
+      "lastDay": "Hari terakhir",
+      "add": "Tambah haid"
+    },
+    "watch": {
+      "title": "Di jam",
+      "calendar": "Kalender siklus di jam",
+      "unavailable": "Belum tersedia saat ini: {{note}}.",
+      "reminders": "Pengingat di jam",
+      "periodStart": "Haid akan segera mulai",
+      "periodEnd": "Haid akan segera selesai",
+      "fertileStart": "Masa subur akan segera mulai",
+      "fertileEnd": "Masa subur akan segera selesai",
+      "easyPregnancy": "Pengingat mudah hamil",
+      "detailsSupported": "Mengirim perkiraan dan gejalamu ke jam saat jam memintanya. Mati secara bawaan. Sakelar pengingat adalah sakelar utama untuk pengingat di bawahnya.",
+      "detailsPending": "Dikirim saat berikutnya terhubung dengan jam yang mendukungnya. Sakelar pengingat adalah sakelar utama untuk pengingat di bawahnya."
+    }
+  }
+}

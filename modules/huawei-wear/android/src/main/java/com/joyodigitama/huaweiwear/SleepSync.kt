@@ -25,9 +25,11 @@ internal class SleepDownload(val segments: List<SleepSegment>, val scores: List<
  *     class [HuaweiDictTypes.SLEEP_DETAILS_CLASS] over service 0x2C, parsed into per-minute stages.
  *     GB does not fall back to the state/data files when this download fails.
  *  3. Otherwise `sleep_state.bin` then `sleep_data.bin` (service 0x2C when SettingRelated said
- *     `truSleepNewSync`, else 0x0A). GB stores one marker per [HuaweiTruSleepParser.TruSleepStatus]
- *     range and does not use the sleep_data content (its analysis call is commented out), so the
- *     data file is only parsed for the log.
+ *     `truSleepNewSync`, else 0x0A). The state file only says when the watch judged you asleep: GB
+ *     stores one marker per [HuaweiTruSleepParser.TruSleepStatus] range and does not use the
+ *     sleep_data content (its analysis call is commented out; Huawei Health works the stages out
+ *     from it on the phone). The ranges are stored here without a stage ([segmentsFromState]), so
+ *     they show as "asleep" and never as light sleep. The data file is only parsed for the log.
  *
  * GB's P2P data-dictionary sync (HuaweiP2PDataDictionarySyncService) is a different mechanism: it
  * carries skin temperature, HRV, emotion, sleep apnea and similar, never sleep stages, steps, heart
@@ -104,6 +106,8 @@ internal class SleepSync(
       log("TruSleep: sleep state file empty")
       return SleepDownload(emptyList(), emptyList())
     }
+    // The 8 bytes after each range are not understood (GB drops them); kept in the log for the Support report.
+    log("TruSleep: sleep_state.bin ${state.size} bytes: ${state.copyOf(minOf(state.size, STATE_LOG_BYTES)).toHex()}${if (state.size > STATE_LOG_BYTES) "..." else ""}")
     val segments = segmentsFromState(HuaweiTruSleepParser.parseState(state))
     if (segments.isEmpty()) log("TruSleep: no sleep results")
     for (s in segments) log("TruSleep: sleep range ${s.start}..${s.end} type=${s.type} stage=${s.stage}")
@@ -135,11 +139,17 @@ internal class SleepSync(
     private const val RAW_TRUSLEEP_AWAKE = 0x5658
     private const val RAW_TRUSLEEP_NAP = 0x5659
 
+    /** Bytes of the sleep state file written to the log. */
+    private const val STATE_LOG_BYTES = 160
+
     /**
-     * GB addSleepActivities(data, 0x0a) stores every TruSleep state range with raw kind 0x06.
+     * GB addSleepActivities(data, 0x0a) stores every TruSleep state range with raw kind 0x06 and then
+     * reads it back as light sleep, which is why GB shows all TruSleep sleep as light. A state range
+     * only says the watch judged you asleep, so here it keeps GB's key (start, 0x06) but no stage:
+     * an earlier build's row for the same night is rewritten in place and stops reading as light.
      */
     fun segmentsFromState(statuses: Array<HuaweiTruSleepParser.TruSleepStatus>): List<SleepSegment> =
-      statuses.map { SleepSegment(it.startTime.toLong(), it.endTime.toLong(), RAW_LIGHT_SLEEP, stageForRawKind(RAW_LIGHT_SLEEP)) }
+      statuses.map { SleepSegment(it.startTime.toLong(), it.endTime.toLong(), RAW_LIGHT_SLEEP, null) }
 
     /**
      * HuaweiSampleProvider.toActivityKind(HuaweiSleepStageSample): the raw sample kind for a watch

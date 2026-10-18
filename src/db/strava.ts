@@ -1,0 +1,132 @@
+import type { SQLiteDatabase } from 'expo-sqlite';
+
+import { setCloudState } from '@/db/cloud';
+
+/**
+ * Local Strava bookkeeping. The connection itself (tokens) lives on the Worker; the phone keeps only what it needs to
+ * decide and to show: when the account connected (`cloud_state.strava_connected_at`, unix seconds), the athlete it
+ * belongs to, the "add link" choice, and one `strava_upload` row per workout it tried to send (migration 11).
+ */
+export type StravaUploadStatus =
+  /** Strava accepted the file and is still processing it (`upload_id` set); polling resumes next time. */
+  | 'processing'
+  /** The activity exists on Strava (`activity_id` set), uploaded now or found as a duplicate. */
+  | 'done'
+  /** A transient failure (network, 429, 5xx); automatic uploads retry a few times, the button retries any time. */
+  | 'failed'
+  /** Strava refused the file. Automatic uploads give up; only the button tries again. */
+  | 'rejected';
+
+export interface StravaUploadRow {
+  workoutStart: number;
+  status: StravaUploadStatus;
+  uploadId: number | null;
+  activityId: number | null;
+  error: string | null;
+  attempts: number;
+  updatedAt: number;
+}
+
+/** Automatic uploads stop retrying a workout after this many failed attempts. */
+export const MAX_AUTO_ATTEMPTS = 3;
+
+export interface StravaSettings {
+  /** Unix seconds the account connected; null = not connected. */
+  connectedAt: number | null;
+  athleteId: number | null;
+  /** Put `fit.joyorogo.com` in the description of uploaded activities. Off by default. */
+  addLink: boolean;
+  /** The grant has `profile:read_all` (the athlete agreed to let JoyoFit list their Strava shoes and bikes). */
+  gearScope: boolean;
+}
+
+export async function getStravaSettings(db: SQLiteDatabase): Promise<StravaSettings> {
+  const rows = await db.getAllAsync<{ key: string; value: string }>("SELECT key, value FROM cloud_state WHERE key LIKE 'strava_%'");
+  const map = new Map(rows.map((r) => [r.key, r.value]));
+  const connectedAt = Number(map.get('strava_connected_at'));
+  const athleteId = Number(map.get('strava_athlete_id'));
+  return {
+    connectedAt: Number.isFinite(connectedAt) && connectedAt > 0 ? connectedAt : null,
+    athleteId: Number.isFinite(athleteId) && athleteId > 0 ? athleteId : null,
+    addLink: map.get('strava_add_link') === '1',
+    gearScope: map.get('strava_gear_scope') === '1',
+  };
+}
+
+export function setStravaAddLink(db: SQLiteDatabase, on: boolean): Promise<void> {
+  return setCloudState(db, { strava_add_link: on ? '1' : '0' });
+}
+
+/**
+ * Records what the server says about the connection. A different athlete (or a reconnect, which moves
+ * `connected_at`) starts over: upload rows of the previous connection say nothing about the new account.
+ */
+export async function applyStravaConnection(
+  db: SQLiteDatabase,
+  status: { connected: boolean; athleteId?: number; connectedAt?: number; gearScope?: boolean },
+): Promise<void> {
+  const before = await getStravaSettings(db);
+  if (!status.connected || status.connectedAt === undefined || status.athleteId === undefined) {
+    if (before.connectedAt !== null) {
+      await setCloudState(db, { strava_connected_at: null, strava_athlete_id: null, strava_gear_scope: null });
+      await db.runAsync('DELETE FROM strava_upload');
+      await db.runAsync('DELETE FROM strava_gear_sent');
+    }
+    return;
+  }
+  if (before.athleteId !== null && before.athleteId !== status.athleteId) {
+    await db.runAsync('DELETE FROM strava_upload');
+    await db.runAsync('DELETE FROM strava_gear_sent');
+  }
+  await setCloudState(db, {
+    strava_connected_at: String(status.connectedAt),
+    strava_athlete_id: String(status.athleteId),
+    strava_gear_scope: status.gearScope ? '1' : null,
+  });
+}
+
+const UPLOAD_COLUMNS = `workout_start AS workoutStart, status, upload_id AS uploadId, activity_id AS activityId, error,
+  attempts, updated_at AS updatedAt`;
+
+export function getStravaUpload(db: SQLiteDatabase, workoutStart: number): Promise<StravaUploadRow | null> {
+  return db.getFirstAsync<StravaUploadRow>(`SELECT ${UPLOAD_COLUMNS} FROM strava_upload WHERE workout_start = ?`, workoutStart);
+}
+
+export async function saveStravaUpload(
+  db: SQLiteDatabase,
+  row: Omit<StravaUploadRow, 'updatedAt'>,
+): Promise<StravaUploadRow> {
+  const updatedAt = Math.floor(Date.now() / 1000);
+  await db.runAsync(
+    `INSERT INTO strava_upload (workout_start, status, upload_id, activity_id, error, attempts, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(workout_start) DO UPDATE SET status = excluded.status, upload_id = excluded.upload_id,
+       activity_id = excluded.activity_id, error = excluded.error, attempts = excluded.attempts,
+       updated_at = excluded.updated_at`,
+    row.workoutStart,
+    row.status,
+    row.uploadId,
+    row.activityId,
+    row.error,
+    row.attempts,
+    updatedAt,
+  );
+  return { ...row, updatedAt };
+}
+
+/**
+ * Workouts the app sends on its own: complete ones that ended after the account connected, were recorded by the watch
+ * (never imported from the Huawei export) and are not settled yet. Oldest first. Historical workouts are never in this
+ * list, only the button sends those.
+ */
+export function listAutoUploadCandidates(db: SQLiteDatabase, connectedAt: number): Promise<{ id: number; start: number }[]> {
+  return db.getAllAsync<{ id: number; start: number }>(
+    `SELECT w.id AS id, w.start AS start
+     FROM workouts w LEFT JOIN strava_upload u ON u.workout_start = w.start
+     WHERE w.complete != 0 AND w.imported = 0 AND w."end" > ?
+       AND (u.workout_start IS NULL OR u.status = 'processing' OR (u.status = 'failed' AND u.attempts < ?))
+     ORDER BY w.start`,
+    connectedAt,
+    MAX_AUTO_ATTEMPTS,
+  );
+}

@@ -1,0 +1,105 @@
+{
+  "title": "Perlengkapan",
+  "intro": "Catat sepatu dan sepeda kamu, lihat sudah berapa jauh dipakai, dan dapat pengingat kalau sudah waktunya diganti.",
+  "kinds": {
+    "shoes": "Sepatu",
+    "bike": "Sepeda",
+    "other": "Lainnya"
+  },
+  "sports": {
+    "run": "Lari",
+    "walk": "Jalan dan hiking",
+    "ride": "Bersepeda"
+  },
+  "list": {
+    "empty": {
+      "title": "Belum ada perlengkapan",
+      "body": "Tambah sepatu atau sepeda, lalu jadikan bawaan untuk lari, jalan, atau bersepeda."
+    },
+    "add": "Tambah perlengkapan",
+    "retiredHeading": "Sudah pensiun",
+    "usage_other": "{{distance}} · {{time}} · {{count}} latihan",
+    "progress": "{{distance}} dari {{limit}}",
+    "noLimit": "Tanpa batas pensiun",
+    "default": "Bawaan"
+  },
+  "defaults": {
+    "title": "Bawaan per olahraga",
+    "hint": "Latihan baru dengan olahraga ini otomatis memakai pilihanmu. Latihan yang sudah ada tidak berubah.",
+    "none": "Tanpa"
+  },
+  "edit": {
+    "newTitle": "Perlengkapan baru",
+    "editTitle": "Ubah perlengkapan",
+    "kind": "Jenis",
+    "name": "Nama",
+    "namePlaceholder": "Mis. Nike Pegasus 41",
+    "brand": "Merek",
+    "model": "Model",
+    "startDistance": "Jarak awal (km)",
+    "startDistanceHint": "Jarak yang sudah ditempuh sebelum dicatat di JoyoFit.",
+    "retireAt": "Pensiun di (km)",
+    "retireAtHint": "Kosongkan kalau tanpa batas. Sepatu lari biasanya 500 sampai 800 km.",
+    "photo": {
+      "add": "Pilih foto",
+      "change": "Ganti foto",
+      "remove": "Hapus foto",
+      "error": "Foto tidak bisa dimuat: {{error}}"
+    },
+    "save": "Simpan",
+    "nameRequired": "Isi nama dulu.",
+    "numberInvalid": "Isi angka kilometer yang benar.",
+    "lifetime": "Dipakai sejauh ini",
+    "lifetimeDistance": "Jarak",
+    "lifetimeTime": "Waktu bergerak",
+    "lifetimeWorkouts": "Latihan",
+    "distancesTitle": "Jarak",
+    "photoTitle": "Foto",
+    "retire": "Pensiunkan",
+    "unretire": "Pakai lagi",
+    "delete": "Hapus",
+    "deleteTitle": "Hapus {{name}}?",
+    "deleteBody": "Latihan yang memakainya tetap ada, tapi tidak lagi tertaut ke perlengkapan ini.",
+    "deleteConfirm": "Hapus"
+  },
+  "reminder": {
+    "near": "{{what}} kamu sudah {{km}} km, sebentar lagi mencapai batas {{limit}} km.",
+    "reached": "{{what}} kamu sudah {{km}} km, melewati batas {{limit}} km. Waktunya diganti?",
+    "dismiss": "Nanti saja"
+  },
+  "workout": {
+    "title": "Perlengkapan",
+    "none": "Tanpa perlengkapan",
+    "current": "Dipakai",
+    "choose": "Pilih perlengkapan",
+    "noMatch": "Belum ada perlengkapan yang cocok untuk olahraga ini.",
+    "manage": "Kelola perlengkapan",
+    "fromDefault": "Bawaan",
+    "total": "{{distance}} total"
+  },
+  "share": {
+    "line": "{{kind}}: {{name}} · {{distance}}"
+  },
+  "strava": {
+    "title": "Strava",
+    "unlinked": "Belum ditautkan ke gear Strava",
+    "linked": "Tertaut ke {{name}}",
+    "link": "Tautkan ke gear Strava",
+    "unlink": "Lepas tautan",
+    "pickShoes": "Pilih sepatu Strava",
+    "pickBike": "Pilih sepeda Strava",
+    "loading": "Memuat gear Strava...",
+    "empty": "Tidak ada {{kind}} di akun Strava kamu. Tambahkan dulu di strava.com, Pengaturan, Gear: Strava tidak mengizinkan aplikasi membuatnya.",
+    "error": "Gear Strava tidak bisa dimuat: {{error}}",
+    "notConnected": "Hubungkan Strava dulu di Pengaturan, Strava.",
+    "otherNoLink": "Gear jenis Lainnya tidak punya padanan di Strava.",
+    "note": "Setelah latihan terkirim, JoyoFit memasang gear ini di aktivitas Strava-nya.",
+    "gearAccess": {
+      "title": "Gear Strava",
+      "off": "Untuk menautkan gear, JoyoFit perlu izin membaca profil Strava kamu. Daftar sepatu dan sepeda hanya dibaca untuk ditampilkan di sini dan tidak dibagikan.",
+      "on": "Izin baca gear sudah diberikan.",
+      "grant": "Izinkan baca gear"
+    }
+  },
+  "rowSubtitle": "Sepatu, sepeda, jarak, dan pengingat pensiun"
+}

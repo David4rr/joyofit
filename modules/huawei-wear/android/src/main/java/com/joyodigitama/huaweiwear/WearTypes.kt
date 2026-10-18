@@ -45,8 +45,17 @@ internal object ErrorCodes {
   const val INVALID_ARGUMENT = "ERR_INVALID_ARGUMENT"
   const val UNSUPPORTED = "ERR_UNSUPPORTED"
 
+  /** The watch needs a first bind with this phone, which replaces its current phone pairing, and `confirmBind` was not called first. */
+  const val BIND_CONFIRMATION = "ERR_BIND_CONFIRMATION"
+
   /** The watch refused a file upload or a watch face operation; the message carries the exact code it returned. */
   const val UPLOAD_REJECTED = "ERR_UPLOAD_REJECTED"
+
+  /** The watch's route list is full (handshake answer 2): the user has to delete a route on the watch. */
+  const val ROUTE_FULL = "ERR_ROUTE_FULL"
+
+  /** The watch does not take a route name this long (handshake answer 5). */
+  const val ROUTE_NAME = "ERR_ROUTE_NAME"
 
   /** The 1-minute HRV measurement ended without enough clean beats to compute anything. */
   const val HRV_TOO_FEW_BEATS = "ERR_HRV_TOO_FEW_BEATS"
@@ -57,6 +66,12 @@ internal object ErrorCodes {
 
   /** The watch answered the automatic-stress switch with an error code. */
   const val STRESS_REJECTED = "ERR_STRESS_REJECTED"
+
+  /** The Huawei export ZIP asked for a password and the one given did not open it. */
+  const val IMPORT_PASSWORD = "ERR_IMPORT_PASSWORD"
+
+  /** The file is not a readable ZIP, or has none of the Health data folders of a Huawei export. */
+  const val IMPORT_FORMAT = "ERR_IMPORT_FORMAT"
 }
 
 /** Every failure surfaced to JS is a [CodedException] with one of [ErrorCodes]. */
@@ -67,6 +82,25 @@ internal class WearException(
   /** The status code the watch returned, for [ErrorCodes.UPLOAD_REJECTED]. */
   val statusCode: Int? = null,
 ) : CodedException(errorCode, message, cause)
+
+/** A nearby or bonded device discovered during Bluetooth operations (`BondedDevice` in JS). */
+internal data class DiscoveredDevice(
+  val address: String,
+  val name: String,
+  val model: String? = null,
+  val support: String = "unknown",
+  val reason: String? = null,
+  val rssi: Int? = null,
+) {
+  fun toJs(): Map<String, Any?> = buildMap {
+    put("address", address)
+    put("name", name)
+    put("model", model)
+    put("support", support)
+    put("reason", reason)
+    if (rssi != null) put("rssi", rssi)
+  }
+}
 
 /** Sink for everything the native layer reports; fans out to JS (when running) and the service notification. */
 internal interface WearEvents {
@@ -97,6 +131,9 @@ internal interface WearEvents {
 
   /** Once a second during a 1-minute HRV measurement (`onHrvProgress`): seconds left and intervals received with a usable signal. */
   fun hrvProgress(secondsLeft: Int, beats: Int) = Unit
-  fun deviceDiscovered(device: Map<String, Any?>) = Unit
-  fun scanState(scanning: Boolean, error: String? = null) = Unit
+
+  /** A nearby Bluetooth LE device was discovered during active scanning (`onDeviceDiscovered`). */
+  fun deviceDiscovered(device: DiscoveredDevice) = Unit
+  /** The state of the active Bluetooth LE scanner changed (`onScanStateChange`). */
+  fun scanState(scanning: Boolean, error: String?) = Unit
 }

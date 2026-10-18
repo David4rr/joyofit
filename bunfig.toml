@@ -1,0 +1,3 @@
+[test]
+# Unit tests render Indonesian unless they pick a language with applyLocale().
+preload = ["./src/i18n/testSetup.ts"]

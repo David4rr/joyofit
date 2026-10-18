@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -7,10 +8,10 @@ import { Metric } from '@/components/Metric';
 import { PressableScale } from '@/components/PressableScale';
 import { Ring } from '@/components/Ring';
 import { StatusDot } from '@/components/StatusDot';
-import { isLinkLive, isLinkUp, LINK_LABEL } from '@/features/device/linkState';
+import { isLinkLive, isLinkUp, linkLabel } from '@/features/device/linkState';
 import type { HeartReading } from '@/features/today/stats';
 import { formatAgo, formatCount, formatSyncTime } from '@/format';
-import { radius, spacing, useColors } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 import type { LinkState } from '@/wear';
 
 const LOW_BATTERY = 20;
@@ -43,21 +44,22 @@ function batteryIcon(level: number) {
  * the live link state. Dark in both themes on purpose, so the live numbers read like a watch face.
  */
 export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, battery, lastSync, onEnableHeartRate, action }: WatchHeroProps) {
-  const colors = useColors();
+  const { colors, radius } = useTheme();
+  const { t } = useTranslation('today');
   const up = isLinkUp(linkState);
   const dot = up ? colors.heroLink : linkState === 'disconnected' ? colors.heroMuted : colors.heroWarn;
   const lowBattery = battery !== null && battery <= LOW_BATTERY;
   const batteryColor = lowBattery ? colors.heroWarn : colors.heroLink;
 
   return (
-    <View style={[styles.hero, { backgroundColor: colors.hero }]}>
+    <View style={[styles.hero, { backgroundColor: colors.hero, borderRadius: radius.card }]}>
       <View
         style={styles.top}
         accessible
-        accessibilityLabel={`Link state: ${LINK_LABEL[linkState]}`}>
+        accessibilityLabel={t('hero.linkA11y', { state: linkLabel(linkState) })}>
         <StatusDot color={dot} live={isLinkLive(linkState)} />
         <AppText variant="bodyStrong" color={colors.heroForeground} style={styles.link}>
-          {LINK_LABEL[linkState]}
+          {linkLabel(linkState)}
         </AppText>
         {deviceName ? (
           <AppText variant="caption" color={colors.heroMuted} numberOfLines={1} style={styles.device}>
@@ -68,17 +70,16 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
 
       <View style={styles.body}>
         <Ring
-          size={156}
-          stroke={14}
+          size={120}
+          stroke={11}
           value={steps}
           max={goal}
           color={colors.heroSteps}
           track={colors.heroTrack}
-          accessibilityLabel={`Steps today: ${formatCount(steps)} of ${formatCount(goal)}`}>
-          <Ionicons name="footsteps" size={18} color={colors.heroSteps} />
-          <Metric value={formatCount(steps)} size="lg" color={colors.heroForeground} />
+          accessibilityLabel={t('hero.stepsA11y', { steps: formatCount(steps), goal: formatCount(goal) })}>
+          <Metric value={formatCount(steps)} size="md" color={colors.heroForeground} />
           <AppText variant="caption" color={colors.heroMuted}>
-            of {formatCount(goal)}
+            {t('hero.of', { goal: formatCount(goal) })}
           </AppText>
         </Ring>
 
@@ -87,27 +88,29 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
             style={styles.stat}
             accessible={heart !== null}
             accessibilityLabel={
-              heart ? `Heart rate ${heart.bpm} bpm, ${heart.live ? 'live' : formatAgo(heart.timestamp, nowSec)}` : undefined
+              heart
+                ? t('hero.heartA11y', { bpm: heart.bpm, when: heart.live ? t('hero.live') : formatAgo(heart.timestamp, nowSec) })
+                : undefined
             }>
             <View style={styles.statLabel}>
               <Ionicons name="heart" size={15} color={colors.heroHeart} />
               <AppText variant="label" color={colors.heroMuted}>
-                Heart rate
+                {t('hero.heartRate')}
               </AppText>
             </View>
             <Metric value={heart ? String(heart.bpm) : '--'} unit="bpm" size="md" color={colors.heroForeground} unitColor={colors.heroMuted} />
             {heart ? (
               <AppText variant="caption" color={heart.live ? colors.heroLink : colors.heroMuted}>
-                {heart.live ? 'Live' : formatAgo(heart.timestamp, nowSec)}
+                {heart.live ? t('hero.live') : formatAgo(heart.timestamp, nowSec)}
               </AppText>
             ) : (
               <PressableScale
                 accessibilityRole="link"
-                accessibilityLabel="Turn on continuous heart rate"
+                accessibilityLabel={t('hero.turnOnA11y')}
                 hitSlop={8}
                 onPress={onEnableHeartRate}>
                 <AppText variant="caption" color={colors.heroLink}>
-                  Turn on continuous heart rate
+                  {t('hero.turnOn')}
                 </AppText>
               </PressableScale>
             )}
@@ -115,11 +118,11 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
           <View
             style={styles.stat}
             accessible
-            accessibilityLabel={battery === null ? 'Battery: unknown' : `Battery ${battery} percent`}>
+            accessibilityLabel={battery === null ? t('hero.batteryUnknown') : t('hero.batteryA11y', { level: battery })}>
             <View style={styles.statLabel}>
               <Ionicons name={battery === null ? 'battery-half' : batteryIcon(battery)} size={15} color={batteryColor} />
               <AppText variant="label" color={colors.heroMuted}>
-                Battery
+                {t('hero.battery')}
               </AppText>
             </View>
             <Metric value={battery === null ? '--' : String(battery)} unit="%" size="md" color={colors.heroForeground} unitColor={colors.heroMuted} />
@@ -130,10 +133,10 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
       <View style={[styles.footer, { borderTopColor: colors.heroDivider }]}>
         <View style={styles.sync}>
           <AppText variant="label" color={colors.heroMuted}>
-            Last sync
+            {t('hero.lastSync')}
           </AppText>
           <AppText variant="bodyStrong" color={colors.heroForeground}>
-            {lastSync !== null ? formatSyncTime(lastSync) : 'Not synced yet'}
+            {lastSync !== null ? formatSyncTime(lastSync) : t('hero.notSynced')}
           </AppText>
         </View>
         {action}
@@ -143,12 +146,12 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
 }
 
 const styles = StyleSheet.create({
-  hero: { borderRadius: radius.card, padding: spacing.lg, gap: spacing.lg },
+  hero: { padding: spacing.md + 4, gap: spacing.md },
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: -8, minHeight: 28 },
   link: { flexShrink: 0 },
   device: { flex: 1, textAlign: 'right' },
-  body: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  stats: { flex: 1, gap: spacing.lg },
+  body: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  stats: { flex: 1, gap: spacing.md },
   stat: { gap: 2 },
   statLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   footer: {

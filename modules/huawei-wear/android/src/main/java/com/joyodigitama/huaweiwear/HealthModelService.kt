@@ -7,9 +7,9 @@ import nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.HuaweiP2PMana
 import nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.p2p.HuaweiBaseP2PService
 
 /**
- * P2P module `healthmodel` (Healthy Living / Health Clover tasks). Module, watch package and fingerprint are
- * `bxe` (`HL_DeviceManager`) of Huawei Health 17.0.8.300: `getManagerModule()` = `HEALTH_MODEL_MODULE`,
- * `getWearPkgName()` = `com.huawei.health.healthyliving`, `getWearFingerprint()` below. Flow (`bxr`, `HL_PolicyControl`):
+ * P2P module `healthmodel` (Healthy Living / Health Clover tasks). Module, watch package and fingerprint follow
+ * the behaviour of Huawei Health 17.0.8.300: module `HEALTH_MODEL_MODULE`,
+ * package `com.huawei.health.healthyliving`, fingerprint below. Flow:
  *
  * 1. The watch sends a P2P data packet whose payload is a `HealthModelRequestMessage.Request` with `msgType` 2001;
  *    its body holds the day (`recordDay`), the task ids wanted, `pageSize` and, from `msgVer` 3.0 on, `packageSize`.
@@ -64,7 +64,7 @@ internal class HealthModelService(
     }
     log("Healthy Living: request msgType=${request.msgType} msgVer=${request.msgVer} body=${request.body.size} bytes")
     if (request.msgType != HealthModelMessages.MSG_TASKS) {
-      // bxr.c: "request is null or not 2001 type" is only logged.
+      // A request that is null or not of type 2001 is only logged.
       log("Healthy Living: msgType ${request.msgType} is not 2001 (tasks); ignored like Huawei Health")
       return
     }
@@ -74,7 +74,7 @@ internal class HealthModelService(
       log("Healthy Living: request body is not protobuf: ${e.message}", error = true)
       return
     }
-    // bxr.c: packageSize is only honoured from msgVer 3.0 on.
+    // packageSize is only honoured from msgVer 3.0 on.
     val packageSize = if (request.msgVer >= HealthModelMessages.VERSION_PAGING) body.packageSize else 0
     log("Healthy Living: recordDay=${body.recordDay} requestTaskIds='${body.requestTaskIds}' pageSize=${body.pageSize} packageSize=${body.packageSize} (used $packageSize)")
     settings.healthLivingMsgVer = request.msgVer
@@ -85,7 +85,7 @@ internal class HealthModelService(
   }
 
   /**
-   * Sends today's report unasked, as `bxr.d` does: ping, and on 0xca send after a second. Does nothing until the watch has
+   * Sends today's report unasked, as Huawei Health does: ping, and on 0xca send after a second. Does nothing until the watch has
    * made a request (msgVer unknown), like Huawei Health.
    */
   fun push(reason: String) {
@@ -130,10 +130,10 @@ internal class HealthModelService(
     const val MODULE = "hw.unitedevice.healthmodel"
     const val PACKAGE = "com.huawei.health.healthyliving"
 
-    /** `bxe.getWearFingerprint()`. */
+    /** Fingerprint of the watch-side app. */
     const val FINGERPRINT = "com.huawei.health.healthyliving_BBLV5gbaG5WYtIAUCOwrnqycG0TTHvDSFCf1skDcwpWT+tu2wJ2tOwPYFzjV+ZsiVJrV1nO/KsbJ687t7b9a6Jg="
 
-    /** `bxr.d`: Huawei Health waits one second after the ping before sending. */
+    /** Huawei Health waits one second after the ping before sending. */
     const val PUSH_DELAY_MS = 1000L
   }
 }

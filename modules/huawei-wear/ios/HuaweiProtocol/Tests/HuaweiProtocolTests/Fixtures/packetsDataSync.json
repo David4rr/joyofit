@@ -1,0 +1,260 @@
+{
+ "responses": [
+  {
+   "service": 55,
+   "name": "ok no items",
+   "ok": true,
+   "fields": {
+    "configs": [],
+    "code": 100000,
+    "dstPackage": "hw.unitedevice.finddevice",
+    "srcPackage": "findDevice"
+   },
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e64646576696365"
+  },
+  {
+   "service": 55,
+   "name": "ok one item",
+   "ok": true,
+   "fields": {
+    "configs": [{
+     "configData": null,
+     "configId": 900100002,
+     "configAction": 2,
+     "configUnknown": -1
+    }],
+    "code": 100000,
+    "dstPackage": "hw.unitedevice.finddevice",
+    "srcPackage": "findDevice"
+   },
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e64646576696365830b8409050435a66fa2060102"
+  },
+  {
+   "service": 55,
+   "name": "ok full item",
+   "ok": true,
+   "fields": {
+    "configs": [
+     {
+      "configData": "090807",
+      "configId": 5,
+      "configAction": 1,
+      "configUnknown": 123456789012
+     },
+     {
+      "configData": null,
+      "configId": 6,
+      "configAction": -1,
+      "configUnknown": -1
+     }
+    ],
+    "code": 100000,
+    "dstPackage": "hw.unitedevice.finddevice",
+    "srcPackage": "findDevice"
+   },
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e6464657669636583228418050400000005060101070309080708080000001cbe991a148406050400000006"
+  },
+  {
+   "service": 55,
+   "name": "error code 7f",
+   "ok": true,
+   "fields": {
+    "configs": [],
+    "code": 100001,
+    "dstPackage": "hw.unitedevice.finddevice",
+    "srcPackage": "findDevice"
+   },
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e646465766963657f04000186a1"
+  },
+  {
+   "service": 55,
+   "name": "explicit ok code",
+   "ok": true,
+   "fields": {
+    "configs": [],
+    "code": 100000,
+    "dstPackage": "hw.unitedevice.finddevice",
+    "srcPackage": "findDevice"
+   },
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e646465766963657f04000186a0"
+  },
+  {
+   "service": 55,
+   "name": "error code with items is not parsed",
+   "ok": true,
+   "fields": {
+    "configs": [],
+    "code": 5,
+    "dstPackage": "hw.unitedevice.finddevice",
+    "srcPackage": "findDevice"
+   },
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e646465766963657f040000000583088406050400000001"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 55,
+   "name": "no src",
+   "ok": false,
+   "parseException": true,
+   "command": 1,
+   "tlv": "021968772e756e6974656465766963652e66696e64646576696365"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 55,
+   "name": "no dst",
+   "ok": false,
+   "parseException": true,
+   "command": 1,
+   "tlv": "010a66696e64446576696365"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 55,
+   "name": "short code",
+   "ok": false,
+   "parseException": false,
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e646465766963657f020102"
+  },
+  {
+   "service": 55,
+   "name": "empty 83",
+   "ok": true,
+   "fields": {
+    "configs": [],
+    "code": 100000,
+    "dstPackage": "hw.unitedevice.finddevice",
+    "srcPackage": "findDevice"
+   },
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e646465766963658300"
+  },
+  {
+   "exception": "BufferUnderflowException",
+   "service": 55,
+   "name": "short id",
+   "ok": false,
+   "parseException": false,
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e646465766963658306840405020102"
+  },
+  {
+   "exception": "ArrayIndexOutOfBoundsException",
+   "service": 55,
+   "name": "malformed 83",
+   "ok": false,
+   "parseException": false,
+   "command": 1,
+   "tlv": "010a66696e64446576696365021968772e756e6974656465766963652e66696e6464657669636583028409"
+  }
+ ],
+ "requests": [
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0037003701011968772e756e6974656465766963652e66696e64646576696365020a66696e64446576696365830b8409050435a66fa2060102509f"],
+   "dst": "findDevice",
+   "src": "hw.unitedevice.finddevice",
+   "service": 55,
+   "name": "find start",
+   "items": [{
+    "configData": null,
+    "configId": 900100002,
+    "configAction": 2,
+    "configUnknown": -1
+   }],
+   "command": 1,
+   "tlv": "011968772e756e6974656465766963652e66696e64646576696365020a66696e64446576696365830b8409050435a66fa2060102"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0037003701011968772e756e6974656465766963652e66696e64646576696365020a66696e64446576696365830b8409050435a66fa206010160fc"],
+   "dst": "findDevice",
+   "src": "hw.unitedevice.finddevice",
+   "service": 55,
+   "name": "find stop",
+   "items": [{
+    "configData": null,
+    "configId": 900100002,
+    "configAction": 1,
+    "configUnknown": -1
+   }],
+   "command": 1,
+   "tlv": "011968772e756e6974656465766963652e66696e64646576696365020a66696e64446576696365830b8409050435a66fa2060101"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a002a003701011968772e756e6974656465766963652e66696e64646576696365020a66696e644465766963650677"],
+   "dst": "findDevice",
+   "src": "hw.unitedevice.finddevice",
+   "service": 55,
+   "name": "no items",
+   "items": [],
+   "command": 1,
+   "tlv": "011968772e756e6974656465766963652e66696e64646576696365020a66696e64446576696365"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00270037010103612e62020163831a84180504000000070601030703010203080800000000000000638adb"],
+   "dst": "c",
+   "src": "a.b",
+   "service": 55,
+   "name": "data and unknown",
+   "items": [{
+    "configData": "010203",
+    "configId": 7,
+    "configAction": 3,
+    "configUnknown": 99
+   }],
+   "command": 1,
+   "tlv": "0103612e62020163831a8418050400000007060103070301020308080000000000000063"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a002c0037010103612e62020163831f84060601050701ff841505047fffffff06017f0700080800000100000000003275"],
+   "dst": "c",
+   "src": "a.b",
+   "service": 55,
+   "name": "two items, one without id",
+   "items": [
+    {
+     "configData": "ff",
+     "configId": -1,
+     "configAction": 5,
+     "configUnknown": -1
+    },
+    {
+     "configData": "",
+     "configId": 2147483647,
+     "configAction": 127,
+     "configUnknown": 1099511627776
+    }
+   ],
+   "command": 1,
+   "tlv": "0103612e62020163831f84060601050701ff841505047fffffff06017f070008080000010000000000"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000700370101000200e81f"],
+   "dst": "",
+   "src": "",
+   "service": 55,
+   "name": "empty package names",
+   "items": [],
+   "command": 1,
+   "tlv": "01000200"
+  }
+ ]
+}

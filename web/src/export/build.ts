@@ -3,7 +3,6 @@ import {
   FIT4_SCREEN,
   FaceBuilder,
   VALUE_TYPE,
-  WIDGET_DATA_TYPE,
   checkFit4Limits,
   createHwt,
   describeLayout,
@@ -22,16 +21,18 @@ import {
 } from "@joyofit/hwt";
 import { getAsset } from "@/model/assets";
 import { hwtFileName } from "@/model/defaults";
-import { SCREEN_H, SCREEN_W, type Element, type HandElement, type Project, type Sim, type WidgetSource } from "@/model/types";
+import { SCREEN_H, SCREEN_W, type Element, type HandElement, type Project, type Sim } from "@/model/types";
+import { fieldDef } from "@/model/fields";
 import { fontsOf } from "@/editor/useFonts";
+import { renderIconSet } from "@/render/iconsets";
 import { context2d, createSurface, newSprite, scaleSprite, spriteRgba, surfaceToJpeg, type Sprite } from "@/render/canvas";
-import { ensureFont } from "@/render/fonts";
+import { ensureFont, fontFailed } from "@/render/fonts";
 import type { DigitSet } from "@/render/glyphs";
 import { layoutOf, renderBackgroundSprite, drawProject } from "@/render/scene";
 import type { Part } from "@/render/layout";
-import type { DataRole } from "@/render/values";
+import { shownSim, type DataRole } from "@/render/values";
 import { renderHand, renderRing } from "@/render/shapes";
-import { HAND_VALUE, NUMBER_VALUE, RING_VALUE, elementSupport, isExportable, type SupportLevel } from "./support";
+import { HAND_VALUE, MINUS_DROPPED, elementSupport, isExportable, type SupportLevel } from "./support";
 
 export type NoteLevel = "info" | "warning" | "error";
 
@@ -41,7 +42,7 @@ export interface ExportNote {
 }
 
 export interface ExportOptions {
-  /** Write elements whose ids are inferred rather than confirmed (hands, rings, seconds, months). */
+  /** Write elements whose ids are inferred rather than confirmed (hour and minute hands, seconds digits, inferred data fields). */
   includeExperimental: boolean;
 }
 
@@ -80,7 +81,7 @@ export interface ExportResult {
 }
 
 /** An element that cannot be placed on the watch's coordinate system (negative origin for a sprite). */
-class OffScreen extends Error {}
+class LeftOut extends Error {}
 
 const BLACK_AOD = "#000000";
 
@@ -122,7 +123,7 @@ function digitImages(set: DigitSet): RgbaImage[] {
 }
 
 function ensureOnScreen(name: string, x: number, y: number): void {
-  if (x < 0 || y < 0) throw new OffScreen(`${name} starts left of or above the screen, which the layout cannot express. Move it inside.`);
+  if (x < 0 || y < 0) throw new LeftOut(`${name} starts left of or above the screen, which the layout cannot express. Move it inside.`);
 }
 
 /** Copy of the part of `sprite` that lies on the screen, with its new origin, or null when none does. */
@@ -173,12 +174,6 @@ function staticImage(e: ElementBuilder, sprite: Sprite, x: number, y: number, am
   return count;
 }
 
-const WIDGET_SLOT: Partial<Record<WidgetSource, number>> = {
-  steps: WIDGET_DATA_TYPE.steps,
-  heartRate: WIDGET_DATA_TYPE.heartRate,
-  battery: WIDGET_DATA_TYPE.power,
-};
-
 type Mode = "normal" | "aod";
 
 /** Emits the parts of a text-like element (time, date, widget). Returns what was left out. */
@@ -208,16 +203,17 @@ function emitParts(e: ElementBuilder, el: Element, parts: Part[], mode: Mode, no
       e.selected({ images: imgs.slice(0, 6), x, y, valueType: VALUE_TYPE.secondHigh, ambient: mode });
       e.selected({ images: imgs, x: lowX, y, valueType: VALUE_TYPE.secondLow, ambient: mode });
     } else {
-      const valueType = valueTypeOf(part.role);
-      if (valueType === undefined) throw new Error(`no value id for ${part.role}`);
+      // A data number: its id is the element's own. The sign glyph goes out as `res_sign`; a minus sign has no codec field.
+      const valueType = part.role === "field" ? part.field! : clockDigitsId(part.role);
+      if (part.minus && !notes.includes(MINUS_DROPPED)) notes.push(MINUS_DROPPED);
       const cx = part.align === "center" ? Math.round(x) : x;
       ensureOnScreen(el.name, part.align === "center" ? cx - Math.round((part.count * part.set.cellW) / 2) : cx, y);
-      e.digits({ digits: digitImages(part.set), x: cx, y, align: part.align, valueType, ambient: mode });
+      e.digits({ digits: digitImages(part.set), x: cx, y, align: part.align, valueType, sign: part.sign ? rgba(part.set[part.sign]) : undefined, ambient: mode });
     }
   }
 }
 
-function valueTypeOf(role: DataRole): number | undefined {
+function clockDigitsId(role: DataRole): number {
   switch (role) {
     case "hour":
       return VALUE_TYPE.hour;
@@ -225,17 +221,15 @@ function valueTypeOf(role: DataRole): number | undefined {
       return VALUE_TYPE.minute;
     case "day":
       return VALUE_TYPE.date;
-    case "steps":
-    case "heartRate":
-    case "battery":
-      return NUMBER_VALUE[role];
     default:
-      return undefined;
+      throw new Error(`no value id for ${role}`);
   }
 }
 
 function emitHand(e: ElementBuilder, el: HandElement, mode: Mode): void {
-  const hs = renderHand(el, getAsset(el.assetId));
+  const asset = getAsset(el.assetId);
+  if (el.shape === "custom" && !asset) throw new LeftOut(`${el.name}: its hand image did not load, so it is not in the face.`);
+  const hs = renderHand(el, asset);
   // The rotation box is a square centred on the pivot, as far across as the tip is from it (as in the samples).
   const reach = Math.max(1, Math.round(Math.max(hs.pivotY, hs.sprite.height - hs.pivotY, hs.pivotX, hs.sprite.width - hs.pivotX)));
   e.hand({
@@ -255,7 +249,8 @@ function emitElement(fb: FaceBuilder, el: Element): string[] {
     case "background":
       break;
     case "image": {
-      const img = getAsset(el.assetId)!;
+      const img = getAsset(el.assetId);
+      if (!img) throw new LeftOut(`${el.name}: its image did not load, so it is not in the face.`);
       const sprite = newSprite(Math.round(el.w), Math.round(el.h));
       sprite.ctx.imageSmoothingQuality = "high";
       sprite.ctx.drawImage(img.source, 0, 0, sprite.sprite.width, sprite.sprite.height);
@@ -284,15 +279,15 @@ function emitElement(fb: FaceBuilder, el: Element): string[] {
       fb.element("widget", (e) =>
         e.container(
           (c) => emitParts(c, el, layout.parts, "normal", left),
-          { dataType: WIDGET_SLOT[el.source], rect: { x: Math.round(el.x), y: Math.round(el.y), width: Math.round(layout.w), height: Math.round(layout.h) } },
+          { dataType: fieldDef(el.valueType)!.slot, rect: { x: Math.round(el.x), y: Math.round(el.y), width: Math.round(layout.w), height: Math.round(layout.h) } },
         ),
       );
       break;
     }
     case "ring": {
+      const def = fieldDef(el.valueType)!;
       const ring = renderRing(el);
       const size = ring.size;
-      const slot = el.source === "steps" ? WIDGET_DATA_TYPE.steps : WIDGET_DATA_TYPE.power;
       fb.element("widget", (e) =>
         e.container(
           (c) => {
@@ -305,11 +300,24 @@ function emitElement(fb: FaceBuilder, el: Element): string[] {
               lineWidth: Math.round(el.thickness),
               startAngle: Math.round(el.startAngle),
               endAngle: Math.round(el.startAngle + el.sweep),
-              valueType: RING_VALUE[el.source],
+              valueType: def.id,
               ambient: "normal",
             });
           },
-          { dataType: slot, rect: { x: Math.round(el.x), y: Math.round(el.y), width: size, height: size } },
+          { dataType: def.slot, rect: { x: Math.round(el.x), y: Math.round(el.y), width: size, height: size } },
+        ),
+      );
+      break;
+    }
+    case "iconset": {
+      const def = fieldDef(el.valueType)!;
+      ensureOnScreen(el.name, el.x, el.y);
+      const images = renderIconSet(el.valueType, el.size, el.color).map(rgba);
+      const side = Math.max(8, Math.round(el.size));
+      fb.element("widget", (e) =>
+        e.container(
+          (c) => c.selected({ images, x: Math.round(el.x), y: Math.round(el.y), valueType: def.id, ambient: "normal" }),
+          { dataType: def.slot, rect: { x: Math.round(el.x), y: Math.round(el.y), width: side, height: side } },
         ),
       );
       break;
@@ -352,7 +360,9 @@ function binaryOf(pkg: HwtPackage): WatchfaceBinary {
 
 const SKIP_REASON_HIDDEN = "Hidden layer";
 
-export async function buildHwt(project: Project, sim: Sim, options: ExportOptions): Promise<ExportResult> {
+export async function buildHwt(project: Project, stageSim: Sim, options: ExportOptions): Promise<ExportResult> {
+  // The cover and the always-on preview show the time the stage shows: a running clock is read now.
+  const sim = shownSim(stageSim);
   await Promise.all(fontsOf(project.elements).map(ensureFont));
 
   const notes: ExportNote[] = [];
@@ -410,12 +420,18 @@ export async function buildHwt(project: Project, sim: Sim, options: ExportOption
       const dropped = [...new Set(left)];
       report.push({ ...base, exported: true, detail: support.level === "experimental" ? support.note : "", level: support.level, dropped });
     } catch (err) {
-      if (err instanceof OffScreen) {
+      if (err instanceof LeftOut) {
         report.push({ ...base, exported: false, detail: err.message, level: elementSupport(el).level, dropped: [] });
         notes.push({ level: "warning", text: err.message });
       } else {
         throw err;
       }
+    }
+  }
+  const exportedIds = new Set(report.filter((r) => r.exported).map((r) => r.id));
+  for (const font of fontsOf(toExport.filter((el) => exportedIds.has(el.id)))) {
+    if (fontFailed(font)) {
+      notes.push({ level: "warning", text: `The font ${font.family} ${font.weight} did not load, so the digits that use it are drawn in a fallback font, not the one you picked.` });
     }
   }
   fb.commit();

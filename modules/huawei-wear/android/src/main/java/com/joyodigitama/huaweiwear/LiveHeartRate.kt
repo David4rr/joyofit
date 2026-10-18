@@ -118,7 +118,7 @@ internal class LiveHeartRate(
       if (!wanted) return
       val handle = link.handle() ?: return
       if (synchronized(lock) { running === handle.session }) return
-      // Huawei Health's own report (HwHeartRateManager.switchHeartRateDetection): 19/01 {01: 1 open, 02: 2}; readings
+      // Huawei Health's own report (as observed): 19/01 {01: 1 open, 02: 2}; readings
       // arrive as 19/03. The Fit 4 Pro acknowledges 07/1C but never pushes on it, so both are asked for.
       if (DeviceCaps.supports(HR_SERVICE, HR_SWITCH)) {
         try {
@@ -193,7 +193,7 @@ internal class LiveHeartRate(
     events.heartRate(bpm, System.currentTimeMillis())
   }
 
-  /** `19/03` (`HwHeartRateManager.handleHeartRateNotice`): `81{82{03 bpm, 04 time s, 05 credibility}}`, possibly several. */
+  /** `19/03`: `81{82{03 bpm, 04 time s, 05 credibility}}`, possibly several. */
   private fun onNotice(packet: HuaweiPacket) {
     val tlv = packet.getTlv() ?: return
     val bpm = decodeNotice(tlv)

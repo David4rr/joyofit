@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -19,6 +20,7 @@ type Filter = 'all' | LogDirection;
 const FILTERS: readonly Filter[] = ['all', 'tx', 'rx', 'info', 'error'];
 
 export default function LogScreen() {
+  const { t } = useTranslation('settings');
   const colors = useColors();
   const padding = useContentPadding(false);
   const buffer = useLogBuffer();
@@ -50,29 +52,33 @@ export default function LogScreen() {
     <View style={[styles.toolbar, { backgroundColor: colors.background }]}>
       <View style={styles.filters} accessibilityRole="tablist">
         {FILTERS.map((f) => (
-          <Chip key={f} label={f} role="tab" selected={f === filter} onPress={() => setFilter(f)} />
+          <Chip key={f} label={t(`log.filters.${f}`)} role="tab" selected={f === filter} onPress={() => setFilter(f)} />
         ))}
       </View>
-      <Input
-        icon="search"
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search, e.g. TruSleep"
-        autoCapitalize="none"
-        autoCorrect={false}
-        clearButtonMode="while-editing"
-        accessibilityLabel="Search log"
-      />
-      <Button
-        label={copied === 'shown' ? 'Copied' : `Copy ${rows.length} shown`}
-        variant="secondary"
-        icon="copy-outline"
-        disabled={rows.length === 0}
-        onPress={copyShown}
-      />
+      <View style={styles.searchRow}>
+        <View style={styles.search}>
+          <Input
+            icon="search"
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('log.searchPlaceholder')}
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+            accessibilityLabel={t('log.searchLabel')}
+          />
+        </View>
+        <Button
+          label={copied === 'shown' ? t('log.copied') : t('log.copy')}
+          variant="secondary"
+          icon="copy-outline"
+          disabled={rows.length === 0}
+          onPress={copyShown}
+        />
+      </View>
       <AppText variant="caption" muted>
-        {rows.length} shown, {buffer.length} of {LOG_CAPACITY} buffered. Long-press a line to copy it.
-        {copied === 'line' ? ' Line copied.' : ''}
+        {t('log.summary', { shown: rows.length, buffered: buffer.length, capacity: LOG_CAPACITY })}
+        {copied === 'line' ? ` ${t('log.lineCopied')}` : ''}
       </AppText>
     </View>
   );
@@ -92,7 +98,7 @@ export default function LogScreen() {
       renderItem={({ item }) => (
         <Pressable
           onLongPress={() => void copy(formatLogLine(item.event), 'line')}
-          accessibilityHint="Long-press to copy this line">
+          accessibilityHint={t('log.lineHint')}>
           <LogRow event={item.event} />
         </Pressable>
       )}
@@ -100,20 +106,20 @@ export default function LogScreen() {
         buffer.length === 0 ? (
           <EmptyState
             icon="terminal"
-            title="No events yet"
-            description="Connect your watch and its traffic will appear here."
+            title={t('log.emptyTitle')}
+            description={t('log.emptyDesc')}
           />
         ) : (
           <EmptyState
             icon="terminal"
-            title="Nothing to show"
+            title={t('log.noneTitle')}
             description={
               query.trim() !== ''
-                ? `No events match "${query.trim()}".`
-                : `No ${filter} events in the buffer.`
+                ? t('log.noMatch', { query: query.trim() })
+                : t('log.noFilter', { filter })
             }
             action={{
-              label: 'Clear filters',
+              label: t('log.clear'),
               onPress: () => {
                 setFilter('all');
                 setQuery('');
@@ -127,6 +133,8 @@ export default function LogScreen() {
 }
 
 const styles = StyleSheet.create({
-  toolbar: { gap: spacing.md, paddingBottom: spacing.md },
+  toolbar: { gap: spacing.sm, paddingBottom: spacing.sm },
   filters: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  search: { flex: 1 },
 });

@@ -1,12 +1,16 @@
 import { useCallback, useState } from 'react';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { KeyValue } from '@/components/KeyValue';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { isIos } from '@/components/IosUnavailable';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
+import { NotificationsSectionIos } from '@/features/settings/NotificationsSectionIos';
 import { errorMessage } from '@/format';
 import { HuaweiWear } from '@/wear';
 
@@ -14,6 +18,11 @@ import { HuaweiWear } from '@/wear';
 const RUNTIME_NOTIFICATION_API = 33;
 
 export function NotificationsSection() {
+  return isIos ? <NotificationsSectionIos /> : <NotificationsSectionAndroid />;
+}
+
+function NotificationsSectionAndroid() {
+  const { t } = useTranslation(['settings', 'common']);
   const [access, setAccess] = useState(() => HuaweiWear.getNotificationAccess());
   const [morning, setMorning] = useState(() => HuaweiWear.getMorningSummaryEnabled());
   const [morningDenied, setMorningDenied] = useState(false);
@@ -45,46 +54,41 @@ export function NotificationsSection() {
     });
 
   return (
-    <Section title="Notifications" icon="notifications">
-      <KeyValue
-        icon="key"
-        label="Notification access"
-        value={access.granted ? 'Granted' : 'Not granted'}
-      />
+    <Section title={t('notifications.title')} icon="notifications">
+      <KeyValue icon="key" label={t('notifications.access')} value={access.granted ? t('notifications.granted') : t('notifications.notGranted')} />
       <Button
-        label="Open notification access"
+        label={t('notifications.openAccess')}
         variant="secondary"
         icon="open-outline"
-        onPress={() => run(() => HuaweiWear.openNotificationAccess())}
+        onPress={() =>
+          Alert.alert(t('notifications.readTitle'), t('notifications.disclosure'), [
+            { text: t('common:actions.cancel'), style: 'cancel' },
+            { text: t('common:actions.next'), onPress: () => void run(() => HuaweiWear.openNotificationAccess()) },
+          ])
+        }
       />
-      <Notice>
-        On Android 13 and newer, an app installed outside the Play Store must first be allowed to
-        use restricted settings: App info, then the menu (three dots), then Allow restricted
-        settings.
-      </Notice>
+      {HuaweiWear.distribution === 'sideload' ? (
+        <Notice>{t('notifications.restricted')}</Notice>
+      ) : null}
       <SwitchRow
         icon="notifications"
-        label="Forward notifications to the watch"
-        hint={
-          access.granted
-            ? 'Sends the app name, title and text of each notification.'
-            : 'Grant notification access first.'
-        }
+        label={t('notifications.forward')}
+        hint={access.granted ? undefined : t('notifications.grantFirst')}
         value={access.enabled}
         onValueChange={(enabled) => run(() => HuaweiWear.setNotificationsEnabled(enabled))}
         disabled={!access.granted}
       />
       <SwitchRow
         icon="sunny"
-        label="Morning summary"
-        hint="Once a day after the sync that brings in last night's sleep: time asleep and HRV against your usual."
+        label={t('notifications.morning')}
         value={morning}
         onValueChange={toggleMorning}
       />
       {morning && morningDenied ? (
-        <Notice>Notification permission was denied, so the summary cannot be shown.</Notice>
+        <Notice>{t('notifications.morningDenied')}</Notice>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
+      <Details>{t('notifications.details')}</Details>
     </Section>
   );
 }

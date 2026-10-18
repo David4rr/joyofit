@@ -1,0 +1,22 @@
+{"requests": [
+ {
+  "sliced": true,
+  "encrypted": true,
+  "frames": ["5a000b00020481060201010301019a21"],
+  "service": 2,
+  "name": "NotificationState true",
+  "command": 4,
+  "enabled": true,
+  "tlv": "8106020101030101"
+ },
+ {
+  "sliced": true,
+  "encrypted": true,
+  "frames": ["5a000b0002048106020100030100fcb4"],
+  "service": 2,
+  "name": "NotificationState false",
+  "command": 4,
+  "enabled": false,
+  "tlv": "8106020100030100"
+ }
+]}

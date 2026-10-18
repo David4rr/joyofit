@@ -1,0 +1,127 @@
+{
+  "nav": {
+    "post": "Post",
+    "groups": "Groups",
+    "group": "Group",
+    "myProfile": "My profile",
+    "profile": "Profile"
+  },
+  "feed": {
+    "title": "Social",
+    "caption": "Workouts, meals and groups from JoyoRogo",
+    "groups": "Groups",
+    "myProfile": "My profile",
+    "tabFollowing": "Following",
+    "tabExplore": "Explore",
+    "emptyFollowingTitle": "Nothing here yet",
+    "emptyFollowingDescription": "Posts from you, the people you follow and your groups show up here. Share a workout from its screen to start.",
+    "emptyExploreTitle": "No public posts yet",
+    "emptyExploreDescription": "Public posts from JoyoRogo show up here."
+  },
+  "list": {
+    "loadMore": "Load more"
+  },
+  "gate": {
+    "title": "Sign in with JoyoRogo",
+    "description": "The feed, your groups and sharing a workout use your JoyoRogo account, the same one as the food diary."
+  },
+  "post": {
+    "visibilityPublic": "Public",
+    "visibilityGroup": "Group only",
+    "openProfile": "Open the profile of {{name}}",
+    "open": "Open post: {{title}}",
+    "kudosGive": "Give kudos",
+    "kudosRemove": "Remove kudos",
+    "kudosCount": "{{count}} kudos",
+    "comments_one": "{{count}} comment",
+    "comments_other": "{{count}} comments",
+    "commentsOpen_one": "{{count}} comment, open post",
+    "commentsOpen_other": "{{count}} comments, open post",
+    "figure": {
+      "time": "Time",
+      "distance": "Distance",
+      "energy": "Energy",
+      "avgHr": "Avg HR",
+      "maxHr": "Max HR"
+    }
+  },
+  "comments": {
+    "title": "Comments",
+    "empty": "No comments yet.",
+    "loadMore": "Load more comments",
+    "add": "Add a comment",
+    "send": "Post comment"
+  },
+  "profile": {
+    "myPosts": "My posts",
+    "myPostsEmptyTitle": "No posts yet",
+    "myPostsEmptyDescription": "Share a workout from its screen and it shows up here.",
+    "publicPosts": "Public posts",
+    "publicEmptyTitle": "No public posts",
+    "publicEmptyDescription": "Nothing shared publicly yet.",
+    "private": "This profile is private.",
+    "posts": "Posts",
+    "followers": "Followers",
+    "following": "Following"
+  },
+  "groups": {
+    "memberCount_one": "{{count}} member",
+    "memberCount_other": "{{count}} members",
+    "emptyTitle": "No groups yet",
+    "emptyDescription": "Join one with an invite code from a friend, or create one in JoyoRogo.",
+    "joinTitle": "Join a group",
+    "inviteCode": "Invite code",
+    "join": "Join"
+  },
+  "group": {
+    "fallbackTitle": "Group",
+    "members": "Members",
+    "inviteCode": "Invite code {{code}}",
+    "sharingTitle": "Sharing with this group",
+    "shareFitness": "Share JoyoFit scores",
+    "shareFitnessHint": "Today's recovery, strain, sleep and readiness, visible to the members.",
+    "shareFood": "Share food names",
+    "shareFoodHint": "Members see what you ate, not only the calories."
+  },
+  "member": {
+    "you": "{{name}} (you)",
+    "noScores": "No JoyoFit scores today",
+    "notSharing": "Not sharing JoyoFit scores",
+    "recovery": "Recovery",
+    "strain": "Strain",
+    "sleep": "Sleep",
+    "readiness": "Readiness",
+    "readinessValue": {
+      "Primed": "Primed",
+      "Balanced": "Balanced",
+      "Strained": "Strained",
+      "Run down": "Run down"
+    }
+  },
+  "upsell": {
+    "title": "Heart rate and route are for Pro",
+    "description": "Seeing the heart-rate chart and the route of someone else's workout is part of JoyoRogo Pro. Your own are always free to see, and sharing them is free too.",
+    "see": "See JoyoRogo Pro",
+    "open": "Open JoyoRogo",
+    "mention": "JoyoRogo Pro is available in JoyoRogo."
+  },
+  "share": {
+    "button": "Share to JoyoRogo",
+    "title": "Share to JoyoRogo",
+    "posted": "Posted to JoyoRogo.",
+    "viewPost": "View post",
+    "caption": "Caption",
+    "captionHint": "Optional.",
+    "whoCanSee": "Who can see it",
+    "visibilityGroup": "Group",
+    "visibilityPublic": "Public",
+    "hintGroup": "Only people who share a JoyoRogo group with you.",
+    "hintPublic": "Anyone on JoyoRogo. Your JoyoRogo profile has to be public.",
+    "includeHr": "Heart-rate data",
+    "includeRoute": "Route",
+    "includeRouteHint": "Shows where you started and finished.",
+    "includeComparison": "Comparison with earlier workouts",
+    "note": "Everyone you share with sees the summary. The full analysis (map, charts, splits, zones, best efforts and more) is visible to JoyoRogo Pro members and to you.",
+    "post": "Post"
+  }
+}

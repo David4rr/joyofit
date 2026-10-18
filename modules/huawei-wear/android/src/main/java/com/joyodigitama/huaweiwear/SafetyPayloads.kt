@@ -5,8 +5,7 @@ import org.json.JSONException
 import org.json.JSONObject
 
 /**
- * JSON of fall detection and the SOS SMS relay, after Huawei Health 17.0.8.300 `mtt` (FallDetectionManager),
- * `FallDetectionConstant` and `nev` (HwSafetyGuardMgr). Static analysis only; every send and receive is logged.
+ * JSON of fall detection and the SOS SMS relay, as Huawei Health 17.0.8.300 behaves on the wire. Every send and receive is logged.
  *
  *  - Config `900500038`, phone package `hw.unitedevice.sos`, watch package `hw.watch.sos.help`: JSON
  *    `{"fallDetectionSwitch": 0|1, "timeStamp": ms}`. Action 1 sets it; action 2 without data asks the watch.
@@ -26,7 +25,7 @@ internal object SafetyPayloads {
   const val STATUS_SENT = "0"
   const val STATUS_FAILED = "1"
 
-  /** `{"fallDetectionSwitch": 0|1, "timeStamp": ms}` (`mtt.e`), key order as Huawei writes it. */
+  /** `{"fallDetectionSwitch": 0|1, "timeStamp": ms}` key order as Huawei writes it. */
   fun fallConfig(enabled: Boolean, timeStampMs: Long): ByteArray =
     DataSyncJson.bytes(linkedMapOf("fallDetectionSwitch" to if (enabled) 1 else 0, "timeStamp" to timeStampMs))
 
@@ -52,7 +51,7 @@ internal object SafetyPayloads {
     class Bad(val reason: String, val raw: String?) : SosParse
   }
 
-  /** `nev.onDataReceived`: the data is UTF-8 JSON with `phoneNumber` and `content`, both non-empty. */
+  /** The watch's request: the data is UTF-8 JSON with `phoneNumber` and `content`, both non-empty. */
   fun parseSos(data: ByteArray?): SosParse {
     if (data == null || data.isEmpty()) return SosParse.Bad("the event has no data", null)
     val text = String(data, StandardCharsets.UTF_8)
@@ -67,7 +66,7 @@ internal object SafetyPayloads {
     return SosParse.Ok(SosRequest(text, number, content))
   }
 
-  /** `nev.e`: the watch's JSON with `status` added; `{"status":"1"}` alone when the watch's JSON was unreadable. */
+  /** The reply: the watch's JSON with `status` added; `{"status":"1"}` alone when the watch's JSON was unreadable. */
   fun sosAnswer(raw: String?, sent: Boolean): ByteArray {
     val status = if (sent) STATUS_SENT else STATUS_FAILED
     val json = try {

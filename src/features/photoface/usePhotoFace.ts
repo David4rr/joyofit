@@ -5,8 +5,9 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 import type { CropSource } from '@/features/photoface/CropEditor';
-import type { CropRect } from '@/features/photoface/cropMath';
+import { isExactScreenSize, type CropRect } from '@/features/photoface/cropMath';
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type PhotoFace, type UploadProgressEvent } from '@/wear';
 
@@ -19,7 +20,7 @@ const WORKING_SIDE = 2400;
 /**
  * The watch's photo face: read whenever the screen gains focus with a connected watch and replaced by what each operation
  * returns. `pick` opens the gallery; the picked picture goes to the crop screen (`cropSource`), and `sendCrop` cuts the chosen
- * part to the watch's screen size and uploads it.
+ * part to the watch's screen size and uploads it. A picture that already has the screen's size is uploaded as it is.
  */
 export function usePhotoFace() {
   const { linkState } = useWatch();
@@ -73,10 +74,22 @@ export function usePhotoFace() {
         context.resize(asset.width >= asset.height ? { width: WORKING_SIDE } : { height: WORKING_SIDE });
       }
       const rendered = await context.renderAsync();
+      if (face && isExactScreenSize(rendered, face)) {
+        // Already the watch's screen size (a picture from JoyoFit Studio's photo-face export, for one): no crop, no resampling.
+        setProgress({ bytes: 0, total: 0 });
+        try {
+          const png = await rendered.saveAsync({ format: SaveFormat.PNG });
+          setFace(await HuaweiWear.addPhoto(png.uri));
+          setNotice(t('watch:photo.added'));
+        } finally {
+          setProgress(null);
+        }
+        return;
+      }
       const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.95 });
       setCropSource({ uri: saved.uri, width: saved.width, height: saved.height });
     });
-  }, [run]);
+  }, [face, run]);
 
   const sendCrop = useCallback(
     async (rect: CropRect) => {
@@ -91,7 +104,7 @@ export function usePhotoFace() {
           const png = await cut.saveAsync({ format: SaveFormat.PNG });
           setFace(await HuaweiWear.addPhoto(png.uri));
           setCropSource(null);
-          setNotice('Photo added to the watch face.');
+          setNotice(t('watch:photo.added'));
         } finally {
           setProgress(null);
         }

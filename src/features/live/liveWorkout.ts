@@ -1,3 +1,4 @@
+import { fmtDecimal, fmtInt, t } from '@/i18n';
 import type { LiveWorkout } from '@/wear';
 
 /** Workout time now: the watch's last figure plus the time since it, while running (the watch pushes about every second). */
@@ -17,12 +18,12 @@ export function prefersSpeed(live: LiveWorkout): boolean {
 
 /** `5.2 g` under 10 g, whole grams above. */
 export function formatGrams(grams: number): string {
-  return grams < 10 ? grams.toFixed(1) : String(Math.round(grams));
+  return grams < 10 ? fmtDecimal(grams, 1) : fmtInt(grams);
 }
 
 /** Distance as a tile shows it: `850` m, then `1.24` km. */
 export function distanceParts(meters: number): { value: string; unit: string } {
-  return meters >= 1000 ? { value: (meters / 1000).toFixed(2), unit: 'km' } : { value: String(Math.round(meters)), unit: 'm' };
+  return meters >= 1000 ? { value: fmtDecimal(meters / 1000, 2), unit: 'km' } : { value: fmtInt(meters), unit: 'm' };
 }
 
 /** `5:32` (minutes per km) */
@@ -31,12 +32,10 @@ export function paceValue(secPerKm: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
-export const STATUS_LABELS: Record<LiveWorkout['status'], string> = {
-  preparing: 'Starting',
-  running: 'Live',
-  paused: 'Paused',
-  ended: 'Finished',
-};
+/** The status as the screen words it, in the app language. */
+export function statusLabel(status: LiveWorkout['status']): string {
+  return t(`sharing:live.status.${status}`);
+}
 
 /** True while the watch is still recording (the live screen and the Today banner show it). */
 export function isActive(live: LiveWorkout | null): live is LiveWorkout {
@@ -50,9 +49,9 @@ export function isActive(live: LiveWorkout | null): live is LiveWorkout {
 export function heartZone(heartRate: number, maxHeartRate: number): { zone: number; label: string } | null {
   const pct = heartRate / maxHeartRate;
   if (pct < 0.5) return null;
-  if (pct < 0.6) return { zone: 1, label: 'Warm-up' };
-  if (pct < 0.7) return { zone: 2, label: 'Fat burning' };
-  if (pct < 0.8) return { zone: 3, label: 'Aerobic' };
-  if (pct < 0.9) return { zone: 4, label: 'Anaerobic' };
-  return { zone: 5, label: 'Extreme' };
+  if (pct < 0.6) return { zone: 1, label: t('sharing:live.zones.warmup') };
+  if (pct < 0.7) return { zone: 2, label: t('sharing:live.zones.fatBurning') };
+  if (pct < 0.8) return { zone: 3, label: t('sharing:live.zones.aerobic') };
+  if (pct < 0.9) return { zone: 4, label: t('sharing:live.zones.anaerobic') };
+  return { zone: 5, label: t('sharing:live.zones.extreme') };
 }

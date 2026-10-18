@@ -2,60 +2,54 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { ZodError } from "zod";
 
-import { requireUser } from "./auth";
-import type { AppContext } from "./env";
+import { account, syncedData } from "./account";
+import { readJson } from "./body";
+import { cloudUnlocked, requireFounder } from "./access";
+import { AuthUnavailableError, requireUser } from "./auth";
+import type { AppContext, AppEnv } from "./env";
+import { family, familyDevice } from "./family/routes";
+import { runScheduled } from "./family/cron";
+import { gear } from "./gear";
 import { imports } from "./imports";
 import { MAX_SYNC_BODY_BYTES, PULL_DEFAULT_LIMIT, PULL_MAX_LIMIT } from "./limits";
 import { syncBodySchema } from "./schemas";
+import { strava, stravaPublic } from "./strava";
 import { applySync, pullSync } from "./sync";
+import { waitlist } from "./waitlist";
 
 const app = new Hono<AppContext>();
 
 app.get("/", (c) => c.json({ service: "joyofit-api", ok: true }));
 
+// Public (no session): registered before `v1` so its session check never runs for these routes.
+app.route("/v1/waitlist", waitlist);
+// Device-token auth, not a session: the monitored phone uploads from native background code.
+app.route("/v1/family", familyDevice);
+
 const v1 = new Hono<AppContext>();
 v1.use("*", requireUser);
-
-/** Reads and parses a JSON body, refusing more than `max` bytes even when `Content-Length` is missing or wrong. */
-async function readJson(request: Request, max: number): Promise<unknown> {
-  const declared = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > max) throw new HTTPException(413, { message: "too_large" });
-  const reader = request.body?.getReader();
-  if (!reader) throw new HTTPException(400, { message: "empty_body" });
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > max) {
-      await reader.cancel();
-      throw new HTTPException(413, { message: "too_large" });
-    }
-    chunks.push(value);
-  }
-  const bytes = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  try {
-    return JSON.parse(new TextDecoder().decode(bytes));
-  } catch {
-    throw new HTTPException(400, { message: "invalid_json" });
-  }
-}
 
 v1.get("/me", async (c) => {
   const user = c.get("user");
   const state = await c.env.DB.prepare("SELECT rev, last_sync_at FROM user_state WHERE user_id = ?1")
     .bind(user.id)
     .first<{ rev: number; last_sync_at: number | null }>();
-  return c.json({ user, rev: state?.rev ?? 0, lastSyncAt: state?.last_sync_at ?? null });
+  let unlocked: boolean | null;
+  try {
+    unlocked = await cloudUnlocked(c.env, c.req.header("cookie") ?? null);
+  } catch (error) {
+    if (error instanceof AuthUnavailableError) {
+      console.error(JSON.stringify({ event: "access_unavailable", message: error.message }));
+      return c.json({ error: "auth_unavailable" }, 503);
+    }
+    throw error;
+  }
+  if (unlocked === null) return c.json({ error: "unauthorized" }, 401);
+  // `unlocked` is JoyoRogo Founder (or a server without a paywall): only then are uploads accepted. Reads stay open.
+  return c.json({ user, rev: state?.rev ?? 0, lastSyncAt: state?.last_sync_at ?? null, cloud: { unlocked } });
 });
 
-v1.post("/sync", async (c) => {
+v1.post("/sync", requireFounder, async (c) => {
   const body = syncBodySchema.parse(await readJson(c.req.raw, MAX_SYNC_BODY_BYTES));
   const result = await applySync(c.env.DB, c.get("user").id, body, Date.now());
   return c.json(result);
@@ -71,8 +65,14 @@ v1.get("/sync", async (c) => {
   return c.json(await pullSync(c.env.DB, c.get("user").id, since, limit));
 });
 
+v1.route("/account", account);
+v1.route("/data", syncedData);
 v1.route("/imports", imports);
+v1.route("/strava", strava);
+v1.route("/gear", gear);
+v1.route("/family", family);
 app.route("/v1", v1);
+app.route("/strava", stravaPublic);
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 
@@ -87,4 +87,10 @@ app.onError((error, c) => {
   return c.json({ error: "internal_error" }, 500);
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  /** Cron triggers (wrangler.jsonc): family alert checks every 15 minutes, the 19:00 WIB digest, the nightly purge. */
+  async scheduled(controller: ScheduledController, env: AppEnv, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(runScheduled(env, controller.cron));
+  },
+} satisfies ExportedHandler<AppEnv>;

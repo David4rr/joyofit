@@ -1,12 +1,14 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Rect } from 'react-native-svg';
 
 import { AppText } from '@/components/AppText';
 import type { DaySeries } from '@/features/trends/series';
+import { fmtDate } from '@/i18n';
 import { useColors } from '@/theme';
 
-const HEIGHT = 72;
+const HEIGHT = 56;
 const PAD = 6;
 const DOT = 3;
 
@@ -29,14 +31,17 @@ interface TrendChartProps {
   /** Dashed horizontal line at the range's average. */
   average?: number | null;
   label: string;
+  /** The right end of the axis; "Today" unless the last day is another day. */
+  endLabel?: string;
 }
 
 /**
  * Days as a line or bars on a shared x axis. Days without a value are gaps: a line is cut there, never drawn across,
  * and a lone day is a dot. Dots mark only lone days and the newest day, so 90 days stay readable.
  */
-export function TrendChart({ values, kind, color, firstDay, domain, reference, average, label }: TrendChartProps) {
+export function TrendChart({ values, kind, color, firstDay, domain, reference, average, label, endLabel }: TrendChartProps) {
   const colors = useColors();
+  const { t } = useTranslation('common');
   const [width, setWidth] = useState(0);
 
   const present = values.flatMap((v) => (v === null ? [] : [v]));
@@ -71,7 +76,6 @@ export function TrendChart({ values, kind, color, firstDay, domain, reference, a
   }
   const lastIndex = values.findLastIndex((v) => v !== null);
   const barWidth = Math.max(1.5, Math.min(14, slot * 0.68));
-  const first = new Date(firstDay * 1000);
 
   return (
     <View accessible accessibilityLabel={label} style={styles.wrap}>
@@ -152,10 +156,10 @@ export function TrendChart({ values, kind, color, firstDay, domain, reference, a
       </View>
       <View style={styles.axis}>
         <AppText variant="caption" muted>
-          {first.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+          {fmtDate(firstDay, 'short')}
         </AppText>
         <AppText variant="caption" muted>
-          Today
+          {endLabel ?? t('time.today')}
         </AppText>
       </View>
     </View>

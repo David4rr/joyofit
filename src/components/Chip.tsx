@@ -1,7 +1,8 @@
-import { StyleSheet, Text, type AccessibilityRole } from 'react-native';
+import { Animated, StyleSheet, type AccessibilityRole } from 'react-native';
 
+import { useToggleMix } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
-import { fontSize, fonts, radius, useColors } from '@/theme';
+import { fontSize, useTheme } from '@/theme';
 
 interface ChipProps {
   label: string;
@@ -10,9 +11,10 @@ interface ChipProps {
   role?: AccessibilityRole;
 }
 
-/** Pill filter. 40 dp tall plus 4 dp of slop above and below makes the 48 dp target. */
+/** Pill filter. 40 dp tall plus 4 dp of slop above and below makes the 48 dp target. Fill and label change color over 160 ms. */
 export function Chip({ label, selected, onPress, role = 'button' }: ChipProps) {
-  const colors = useColors();
+  const { colors, fonts, radius } = useTheme();
+  const mix = useToggleMix(selected);
   return (
     <PressableScale
       accessibilityRole={role}
@@ -21,10 +23,15 @@ export function Chip({ label, selected, onPress, role = 'button' }: ChipProps) {
       hitSlop={{ top: 4, bottom: 4 }}
       onPress={onPress}
       scaleTo={0.96}
-      style={[styles.chip, { backgroundColor: selected ? colors.foreground : colors.muted }]}>
-      <Text style={[styles.label, { color: selected ? colors.background : colors.foreground }]}>
+      style={[styles.chip, { borderRadius: radius.control }]}>
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backgroundColor: mix.interpolate({ inputRange: [0, 1], outputRange: [colors.muted, colors.foreground] }) }]}
+      />
+      <Animated.Text
+        style={[styles.label, { color: mix.interpolate({ inputRange: [0, 1], outputRange: [colors.foreground, colors.background] }), fontFamily: fonts.medium }]}>
         {label}
-      </Text>
+      </Animated.Text>
     </PressableScale>
   );
 }
@@ -33,9 +40,9 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: 40,
     paddingHorizontal: 16,
-    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  label: { fontFamily: fonts.medium, fontSize: fontSize.sm },
+  label: { fontSize: fontSize.sm },
 });

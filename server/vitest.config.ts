@@ -8,7 +8,7 @@ export default defineConfig(async () => {
       cloudflareTest({
         wrangler: { configPath: "./wrangler.jsonc" },
         miniflare: {
-          bindings: { TEST_MIGRATIONS: migrations },
+          bindings: { TEST_MIGRATIONS: migrations, STRAVA_CLIENT_SECRET: "test-client-secret", STRAVA_WEBHOOK_VERIFY_TOKEN: "test-verify-token" },
         },
       }),
     ],

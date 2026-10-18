@@ -1,3 +1,4 @@
+import { VALUE_TYPE } from "@joyofit/hwt";
 import { addGeneratedAsset } from "@/model/assets";
 import { newBackground, newDate, newHand, newRing, newTime, newWidget, CENTER_X, CENTER_Y } from "@/model/defaults";
 import { PROJECT_VERSION, SCREEN_H, SCREEN_W, type Element, type Project } from "@/model/types";
@@ -65,7 +66,7 @@ const stackRing: Template = {
   blurb: "Big stacked digits inside a steps ring.",
   build: async () => {
     const bg = { ...newBackground(), fill: { kind: "gradient" as const, from: "#0F2F3A", to: "#02080A", angle: 180 } };
-    const ring = newRing("steps", { x: 20, y: 48, size: 368, thickness: 16, color: TEAL, trackColor: TRACK });
+    const ring = newRing(VALUE_TYPE.stepsRatio, { x: 20, y: 48, size: 368, thickness: 16, color: TEAL, trackColor: TRACK });
     let time = newTime({
       name: "Time",
       layout: "stack",
@@ -74,7 +75,7 @@ const stackRing: Template = {
       color: INK,
       tracking: -4,
     });
-    let steps = newWidget("steps", { font: { family: "Big Shoulders Display", weight: 700 }, size: 30, color: TEAL, iconColor: TEAL, layout: "side" });
+    let steps = newWidget(VALUE_TYPE.steps, { font: { family: "Big Shoulders Display", weight: 700 }, size: 30, color: TEAL, iconColor: TEAL, layout: "side" });
     await ready([time, steps]);
     time = centreX({ ...time, y: Math.round(CENTER_Y - bounds(time).h / 2 - 30) });
     steps = centreX({ ...steps, y: time.y + bounds(time).h + 12 });
@@ -190,10 +191,10 @@ const sport: Template = {
     let time = newTime({ font: { family: "Oswald", weight: 600 }, size: 92, color: INK, tracking: 2 });
     let date = newDate({ font: { family: "Oswald", weight: 400 }, size: 24, color: MUTED, parts: ["weekday", "day"], tracking: -1 });
     const font = { family: "Oswald", weight: 600 };
-    let steps = newWidget("steps", { font, size: 28, color: INK, iconColor: TEAL, layout: "stack" });
-    let heart = newWidget("heartRate", { font, size: 44, color: INK, iconColor: ROSE });
-    let battery = newWidget("battery", { font, size: 44, color: INK, iconColor: GREEN });
-    const ring = newRing("steps", { size: 168, thickness: 14, color: TEAL, trackColor: TRACK, x: 0, y: 0 });
+    let steps = newWidget(VALUE_TYPE.steps, { font, size: 28, color: INK, iconColor: TEAL, layout: "stack" });
+    let heart = newWidget(VALUE_TYPE.heartRate, { font, size: 44, color: INK, iconColor: ROSE });
+    let battery = newWidget(VALUE_TYPE.power, { font, size: 44, color: INK, iconColor: GREEN });
+    const ring = newRing(VALUE_TYPE.stepsRatio, { size: 168, thickness: 14, color: TEAL, trackColor: TRACK, x: 0, y: 0 });
     await ready([time, date, steps, heart, battery]);
     time = centreX({ ...time, y: 76 });
     date = centreX({ ...date, y: 40 });
@@ -212,8 +213,8 @@ const orbit: Template = {
   blurb: "Analog hands inside steps and battery rings.",
   build: async () => {
     const bg = { ...newBackground(), fill: { kind: "gradient" as const, from: "#10242C", to: "#03090B", angle: 160 } };
-    const outer = newRing("steps", { x: 16, y: 52, size: 376, thickness: 14, startAngle: 225, sweep: 270, color: TEAL, trackColor: TRACK });
-    const inner = newRing("battery", { x: 44, y: 80, size: 320, thickness: 10, startAngle: 225, sweep: 270, color: GREEN, trackColor: TRACK });
+    const outer = newRing(VALUE_TYPE.stepsRatio, { x: 16, y: 52, size: 376, thickness: 14, startAngle: 225, sweep: 270, color: TEAL, trackColor: TRACK });
+    const inner = newRing(VALUE_TYPE.powerRatio, { x: 44, y: 80, size: 320, thickness: 10, startAngle: 225, sweep: 270, color: GREEN, trackColor: TRACK });
     let date = newDate({ font: { family: "Plus Jakarta Sans Variable", weight: 700 }, size: 22, color: INK, parts: ["weekday", "day"], tracking: -2 });
     let time = newTime({ font: { family: "Plus Jakarta Sans Variable", weight: 700 }, size: 34, color: MUTED, tracking: 0 });
     await ready([date, time]);

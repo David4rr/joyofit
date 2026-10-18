@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { Metric } from '@/components/Metric';
 import { NavRow } from '@/components/NavRow';
 import { Card, Screen, Section } from '@/components/Screen';
@@ -14,6 +16,7 @@ import { HourlyBars } from '@/features/today/HourlyBars';
 import { scoreFor } from '@/features/sleep/nights';
 import { SleepSummaryView } from '@/features/today/SleepSummaryView';
 import { isLinkUp } from '@/features/device/linkState';
+import { SyncButton } from '@/features/device/SyncButton';
 import {
   heartRateStats,
   hourlySteps,
@@ -23,18 +26,24 @@ import {
 } from '@/features/today/stats';
 import { useLiveHeartRate } from '@/features/today/useLiveHeartRate';
 import { useStepGoal } from '@/features/today/useStepGoal';
+import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
 import { useTodayData } from '@/features/today/useTodayData';
 import { WatchHero } from '@/features/today/WatchHero';
 import { computeScores } from '@/features/today/scores';
 import { MorningCheckin } from '@/features/today/MorningCheckin';
+import { FitnessTodayCards } from '@/features/fitness/FitnessTodayCards';
+import { FamilyCard } from '@/features/today/FamilyCard';
 import { ScoresCard } from '@/features/today/ScoresCard';
 import { useRogoScoresPush } from '@/features/today/useRogoScoresPush';
+import { ShareTodayButton } from '@/features/share/ShareTodayButton';
 import { formatElapsed } from '@/features/workouts/summary';
 import { formatClock, formatCount, formatDistance } from '@/format';
 import { useNow } from '@/hooks/useNow';
+import { getLocale, INTL_TAG, useLocale } from '@/i18n';
 import { useLiveWorkout } from '@/state/LiveWorkoutProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 /** Splits `1.23 km` into its number and unit. */
 function splitDistance(meters: number): { value: string; unit: string } {
@@ -50,8 +59,11 @@ const HERO_TICK_MS = 5_000;
 export default function TodayScreen() {
   const router = useRouter();
   const colors = useColors();
+  const { t } = useTranslation(['today', 'common']);
+  const locale = useLocale();
   const { linkState, device, battery, lastSync, totals, error, dataVersion, sync } = useWatch();
   const { data, error: loadError } = useTodayData(dataVersion);
+  const nightHrv = useNightHrvAvailability(dataVersion);
   const goal = useStepGoal();
   const live = useLiveHeartRate(isLinkUp(linkState));
   const liveWorkout = useLiveWorkout();
@@ -60,17 +72,20 @@ export default function TodayScreen() {
     if (!data) return null;
     const watchTotals = totals && totals.at >= data.dayStart ? totals : null;
     const sleep = lastSleepSession(data.sleep);
+    const dayTotals = watchTotals ?? sumTotals(data.samples);
+    const scores = computeScores(data, nightHrv);
     return {
-      totals: watchTotals ?? sumTotals(data.samples),
+      totals: dayTotals,
+      share: { steps: dayTotals.steps, sleep, readiness: scores.readiness, strain: scores.today },
       totalsFromWatch: watchTotals !== null,
       heart: heartRateStats(data.samples),
       hourly: hourlySteps(data.samples),
       sleep,
       sleepScore: sleep ? scoreFor(sleep.start, sleep.end, data.sleepScores) : null,
       hasSamples: data.samples.length > 0,
-      scores: computeScores(data),
+      scores,
     };
-  }, [data, totals]);
+  }, [data, totals, nightHrv, locale]);
 
   useRogoScoresPush(view?.scores ?? null, data?.dayStart ?? null);
 
@@ -83,8 +98,13 @@ export default function TodayScreen() {
 
   return (
     <Screen
-      title="Today"
-      caption={new Date().toLocaleDateString(undefined, WEEKDAY_FORMAT)}
+      title={t('common:nav.today')}
+      caption={new Date().toLocaleDateString(INTL_TAG[getLocale()], WEEKDAY_FORMAT)}
+      right={
+        data && view ? (
+          <ShareTodayButton day={view.share} nowMs={data.nowSec * 1000} />
+        ) : null
+      }
       refresh={{ refreshing: syncing, onRefresh: () => void sync(), enabled: canSync }}>
       <View style={styles.stack}>
         <WatchHero
@@ -99,16 +119,9 @@ export default function TodayScreen() {
           lastSync={lastSync}
           action={
             canSync || syncing ? (
-              <Button
-                label={syncing ? 'Syncing' : 'Sync now'}
-                variant="inverse"
-                icon="sync"
-                disabled={!canSync}
-                loading={syncing}
-                onPress={() => void sync()}
-              />
+              <SyncButton variant="inverse" />
             ) : linkState === 'disconnected' ? (
-              <Button label="Connect watch" variant="inverse" icon="bluetooth" onPress={() => router.push('/watch')} />
+              <Button label={t('home.connectWatch')} variant="inverse" icon="bluetooth" onPress={() => router.push('/watch')} />
             ) : null
           }
         />
@@ -117,17 +130,28 @@ export default function TodayScreen() {
             <NavRow
               icon="pulse"
               tint="workouts"
-              title={`${liveWorkout.sportName ?? 'Workout'} ${liveWorkout.status === 'paused' ? 'paused' : 'in progress'}`}
-              subtitle={`${formatElapsed(elapsedSec(liveWorkout, nowMs))}${liveWorkout.heartRate !== null ? ` · ${liveWorkout.heartRate} bpm` : ''} · fat ${formatGrams(liveWorkout.fatGrams)} g, carbs ${formatGrams(liveWorkout.carbGrams)} g`}
+              title={t(liveWorkout.status === 'paused' ? 'home.workoutPaused' : 'home.workoutInProgress', {
+                sport: liveWorkout.sportName ? sportLabel(liveWorkout.sportName) : t('home.workoutDefault'),
+              })}
+              subtitle={t(liveWorkout.heartRate !== null ? 'home.workoutSubtitleHr' : 'home.workoutSubtitle', {
+                elapsed: formatElapsed(elapsedSec(liveWorkout, nowMs)),
+                bpm: liveWorkout.heartRate,
+                fat: formatGrams(liveWorkout.fatGrams),
+                carbs: formatGrams(liveWorkout.carbGrams),
+              })}
               onPress={() => router.push('/workout-live')}
             />
           </Card>
         ) : null}
         {error ? <Notice tone="danger">{error}</Notice> : null}
-        {loadError ? <Notice tone="danger">Could not read stored data: {loadError}</Notice> : null}
+        {loadError ? <Notice tone="danger">{t('home.loadError', { error: loadError })}</Notice> : null}
       </View>
 
       {view ? <ScoresCard readiness={view.scores.readiness} today={view.scores.today} onPress={() => router.push('/readiness')} /> : null}
+
+      <FitnessTodayCards dataVersion={dataVersion} availability={nightHrv} />
+
+      <FamilyCard />
 
       {data ? (
         <MorningCheckin hrv={data.hrv} dayStart={data.dayStart} nowMs={nowMs} connected={isLinkUp(linkState)} onMeasure={() => router.push('/hrv')} />
@@ -135,63 +159,52 @@ export default function TodayScreen() {
 
       {loading ? (
         <View style={styles.tiles}>
-          <Skeleton width="48%" height={112} radius={18} />
-          <Skeleton width="48%" height={112} radius={18} />
+          <Skeleton width="48%" height={84} radius={18} />
+          <Skeleton width="48%" height={84} radius={18} />
         </View>
       ) : (
-        <View style={styles.stack}>
-          <View style={styles.tiles}>
-            <StatTile icon="flame" tint="workouts" label="Calories" value={formatCount(view?.totals.calories ?? 0)} unit="kcal" />
-            <StatTile icon="trail-sign" tint="steps" label="Distance" value={distance.value} unit={distance.unit} />
-          </View>
-          <AppText variant="caption" muted style={styles.note}>
-            {view?.totalsFromWatch
-              ? 'Totals as reported by the watch at the last sync.'
-              : view?.hasSamples
-                ? 'Totals added up from stored one-minute samples.'
-                : 'Nothing stored for today yet. Sync to pull today from the watch.'}
-          </AppText>
+        <View style={styles.tiles}>
+          <StatTile icon="flame" tint="workouts" label={t('home.calories')} value={formatCount(view?.totals.calories ?? 0)} unit={t('home.kcal')} />
+          <StatTile icon="trail-sign" tint="steps" label={t('home.distance')} value={distance.value} unit={distance.unit} />
         </View>
       )}
 
-      <Section title="Heart rate today" icon="heart" tint="heart">
+      <Section title={t('home.heartTitle')} icon="heart" tint="heart">
         {view?.heart ? (
           <View style={styles.heartRow}>
-            <View style={styles.heartMain}>
-              <Metric value={String(view.heart.latest.bpm)} unit="bpm" size="lg" color={colors.heartText} unitColor={colors.mutedForeground} />
+            <View style={styles.heartCol}>
+              <Metric value={String(view.heart.latest.bpm)} unit="bpm" size="md" color={colors.heartText} unitColor={colors.mutedForeground} />
               <AppText variant="caption" muted>
-                Latest, {formatClock(view.heart.latest.timestamp)}
+                {t('home.latest', { time: formatClock(view.heart.latest.timestamp) })}
               </AppText>
             </View>
-            <View style={styles.heartRange}>
-              <View>
-                <Metric value={String(view.heart.min)} unit="bpm" size="sm" />
-                <AppText variant="caption" muted>
-                  Lowest
-                </AppText>
-              </View>
-              <View>
-                <Metric value={String(view.heart.max)} unit="bpm" size="sm" />
-                <AppText variant="caption" muted>
-                  Highest
-                </AppText>
-              </View>
+            <View style={styles.heartCol}>
+              <Metric value={String(view.heart.min)} unit="bpm" size="md" />
+              <AppText variant="caption" muted>
+                {t('home.low')}
+              </AppText>
+            </View>
+            <View style={styles.heartCol}>
+              <Metric value={String(view.heart.max)} unit="bpm" size="md" />
+              <AppText variant="caption" muted>
+                {t('home.high')}
+              </AppText>
             </View>
           </View>
         ) : loading ? (
           <Skeleton width="60%" height={38} />
         ) : (
           <AppText variant="caption" muted>
-            No heart-rate readings stored for today.
+            {t('home.noHeart')}
           </AppText>
         )}
       </Section>
 
-      <Section title="Steps per hour today" icon="footsteps" tint="steps">
+      <Section title={t('home.stepsTitle')} icon="footsteps" tint="steps">
         <HourlyBars steps={view?.hourly ?? new Array<number>(24).fill(0)} />
       </Section>
 
-      <Section title="Last night's sleep" icon="moon" tint="sleep" onPress={() => router.push('/sleep')}>
+      <Section title={t('home.sleepTitle')} icon="moon" tint="sleep" onPress={() => router.push('/sleep')}>
         {loading ? <Skeleton width="50%" height={38} /> : <SleepSummaryView summary={view?.sleep ?? null} score={view?.sleepScore ?? null} />}
       </Section>
 
@@ -199,11 +212,14 @@ export default function TodayScreen() {
         <NavRow
           icon="pulse"
           tint="heart"
-          title="Health metrics"
-          subtitle="Skin temperature, HRV, stress and more"
+          title={t('home.healthTitle')}
+          subtitle={t('home.healthSubtitle')}
           onPress={() => router.push('/health')}
         />
       </Card>
+      <Details title={t('home.aboutTitle')}>
+        {t(view?.totalsFromWatch ? 'home.aboutWatch' : view?.hasSamples ? 'home.aboutSamples' : 'home.aboutNone')}
+      </Details>
     </Screen>
   );
 }
@@ -211,8 +227,6 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   stack: { gap: spacing.md },
   tiles: { flexDirection: 'row', gap: spacing.md },
-  note: { paddingHorizontal: spacing.xs },
-  heartRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.lg },
-  heartMain: { gap: 2 },
-  heartRange: { flexDirection: 'row', gap: spacing.lg },
+  heartRow: { flexDirection: 'row', gap: spacing.md },
+  heartCol: { flex: 1, gap: 0 },
 });

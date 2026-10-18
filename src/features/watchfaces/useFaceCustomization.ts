@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 
 import { sameConfig } from '@/features/watchfaces/faceCustomModel';
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type FaceCustomization } from '@/wear';
 
@@ -65,7 +66,7 @@ export function useFaceCustomization(faceId: string) {
       const untouched = previous.current === null || previous.draft === null || sameConfig(previous.current, previous.draft);
       return { original: previous.original ?? event, current: event, draft: untouched ? event : previous.draft };
     });
-    setNotice('The watch reported new options for this face.');
+    setNotice(t('watch:faceEdit.reported'));
   });
 
   const setDraft = useCallback((draftConfig: FaceCustomization) => setConfigs((previous) => ({ ...previous, draft: draftConfig })), []);
@@ -85,7 +86,7 @@ export function useFaceCustomization(faceId: string) {
   );
 
   const apply = useCallback(
-    () => (draft ? run('apply', () => send(draft, 'Applied. The watch reports the new options.')) : Promise.resolve()),
+    () => (draft ? run('apply', () => send(draft, t('watch:faceEdit.applied'))) : Promise.resolve()),
     [draft, run, send],
   );
 
@@ -95,10 +96,10 @@ export function useFaceCustomization(faceId: string) {
       original
         ? run('revert', async () => {
             if (current && !sameConfig(current, original)) {
-              await send(original, 'Reverted to the options from when you opened this screen.');
+              await send(original, t('watch:faceEdit.reverted'));
             } else {
               setConfigs((previous) => ({ ...previous, draft: original }));
-              setNotice('Changes discarded.');
+              setNotice(t('watch:faceEdit.discarded'));
             }
           })
         : Promise.resolve(),

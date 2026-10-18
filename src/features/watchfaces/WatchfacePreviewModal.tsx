@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -36,8 +37,8 @@ export function WatchfacePreviewModal({
   onInstall,
   onSetActive,
 }: WatchfacePreviewModalProps) {
+  const { t } = useTranslation(['watch', 'common']);
   const colors = useColors();
-
   if (!previewFace) return null;
 
   const isRound =
@@ -53,13 +54,13 @@ export function WatchfacePreviewModal({
 
   const renderActionButton = () => {
     if (matchedFace?.active) {
-      return <Button label="Active on Wrist" icon="checkmark-circle" variant="secondary" disabled onPress={() => {}} />;
+      return <Button label={t('watch:faces.activeOnWrist')} icon="checkmark-circle" variant="secondary" disabled onPress={() => {}} />;
     }
 
     if (matchedFace) {
       return (
         <Button
-          label="Set active"
+          label={t('watch:faces.setActive')}
           icon="checkmark-circle-outline"
           variant="primary"
           disabled={!connected || !idle}
@@ -74,7 +75,7 @@ export function WatchfacePreviewModal({
     if (isWrongResolution) {
       return (
         <Button
-          label={`Incompatible (${previewFace.width}×${previewFace.height})`}
+          label={t('watch:faces.incompatibleResolution', { width: previewFace.width, height: previewFace.height })}
           icon="alert-circle-outline"
           variant="secondary"
           disabled
@@ -85,7 +86,7 @@ export function WatchfacePreviewModal({
 
     return (
       <Button
-        label={isModalInstalling ? 'Installing to Watch...' : 'Install to Watch'}
+        label={isModalInstalling ? t('watch:faces.installingToWatch') : t('watch:faces.installToWatch')}
         icon="cloud-download-outline"
         variant="primary"
         disabled={!connected || !idle || isModalInstalling}
@@ -112,7 +113,7 @@ export function WatchfacePreviewModal({
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close"
+              accessibilityLabel={t('common:actions.close')}
               onPress={onClose}
               hitSlop={12}
               style={styles.modalCloseBtn}>
@@ -132,7 +133,7 @@ export function WatchfacePreviewModal({
                 <View style={styles.emptyPreviewFrame}>
                   <Ionicons name="watch-outline" size={48} color={colors.mutedForeground} />
                   <AppText variant="caption" muted style={{ marginTop: spacing.xs }}>
-                    No preview
+                    {t('watch:faces.noPreview')}
                   </AppText>
                 </View>
               )}

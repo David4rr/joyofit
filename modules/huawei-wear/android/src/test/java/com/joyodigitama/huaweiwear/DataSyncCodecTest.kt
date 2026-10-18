@@ -9,8 +9,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * The service 0x37 builders against the byte examples of `/home/dzul/re/huawei-health/DIET_PROTOCOL.md`
- * (`tools/example.py`, a port of Huawei Health's `cqe` / `yoq`). Static analysis only; nothing here was seen on a watch.
+ * The service 0x37 builders against reference byte examples. Nothing here was seen on a watch.
  */
 class DataSyncCodecTest {
   // The Fit 4's slice size (observed LinkParams: 1022), so the 451-byte example is one frame.
@@ -49,7 +48,7 @@ class DataSyncCodecTest {
       plain, DietPlanner.PHONE_PKG, DietPlanner.WATCH_PKG, DietPlanner.DICT_DIET,
       listOf(PointValue(DietPlanner.DICT_DIET, mealsExample)), startMs = 0, endMs = 0, metadata = null,
     )
-    // DIET_PROTOCOL.md: 451 bytes of `37 03 ...` from tools/example.py; the first two bytes are service and command.
+    // Reference example: 451 bytes of `37 03 ...`; the first two bytes are service and command.
     val expected = hex(
       "3703011868772e756e6974656465766963652e7765696768744d6772021068772e73706f72742e6469657463616c0304000927c204040000000005040000000086830087827d0804000927c2098274",
     ) + mealsExample
@@ -78,7 +77,7 @@ class DataSyncCodecTest {
       "3702011868772e756e6974656465766963652e7765696768744d6772021068772e73706f72742e6469657463616c030404c52933040100051b7b2270756e6368526573756c74223a302c226576656e74223a367d",
     )
     assertEquals(84, expected.size)
-    // The level is one byte, as Huawei's `cqe.g(4, level)` writes it.
+    // The level is one byte, as Huawei Health writes it.
     assertArrayEquals(frame(DataSyncWire.CMD_EVENT, expected.copyOfRange(2, expected.size)), serialize(packet))
   }
 
@@ -95,7 +94,7 @@ class DataSyncCodecTest {
   fun dictionaryRowIsBuiltLikeYoqB() {
     val row = BodyMetricsCodec.restingRow(1650, 1760400000000L, 1760403600000L, 1760403600000L)
     val packet = DataSyncWire.dictionary(plain, BodyMetricsCodec.PHONE_PKG, BodyMetricsCodec.WATCH_PKG, BodyMetricsCodec.DICT_RESTING, listOf(row))
-    // Computed from cqe: 84{85{06 start i64, 07 end i64, 08 modify i64, 89{8A{0B key i32, 0C value}}, 0D empty}} after 01 / 02 / 03.
+    // Layout: 84{85{06 start i64, 07 end i64, 08 modify i64, 89{8A{0B key i32, 0C value}}, 0D empty}} after 01 / 02 / 03.
     val expected = hex(
       "011868772e756e6974656465766963652e7765696768744d6772021068772e73706f72742e6469657463616c03040007a13284328530060800000199e0044400070800000199e03b3280080800000199e03b3280890e8a0c0b041dcdab870c04000006720d00",
     )
@@ -118,7 +117,7 @@ class DataSyncCodecTest {
     assertEquals(1650, DataSyncBytes.readInt32(query.rows[0].values[0].value))
     assertNull(query.rows[1].modifyMs)
 
-    // Flat 06 / 07 / 08 at the top (FEATURE_CANDIDATES row 29).
+    // Flat 06 / 07 / 08 at the top.
     val flat = HuaweiTLV().put(0x01, "src").put(0x02, "wear").put(0x03, 500018)
       .put(0x06, 10L).put(0x07, 20L).put(0x08, 30L)
     val flatQuery = DataSyncWire.parseDictionary(flat)

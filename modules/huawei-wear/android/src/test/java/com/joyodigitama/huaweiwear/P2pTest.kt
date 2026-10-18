@@ -595,7 +595,7 @@ class P2pTest {
     val transport = FakeTransport(setOf(37))
     val state = MemoryState()
     val (manager, _) = healthService(transport, state)
-    // msgVer 2.0 with a packageSize: Huawei ignores the size below 3.0 (bxr.c).
+    // msgVer 2.0 with a packageSize: Huawei ignores the size below 3.0.
     val body = HealthModelMessages.encodeRequestBody(HealthModelMessages.RequestBody(20261014, "", 0, 100))
     manager.handlePacket(watchPacket(2, 53, "com.huawei.health.healthyliving", "hw.unitedevice.healthmodel", HealthModelMessages.encodeRequest(2001, 2.0f, body)))
     assertEquals(2, transport.sent.size)

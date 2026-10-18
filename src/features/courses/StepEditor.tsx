@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -6,11 +7,11 @@ import { Chip } from '@/components/Chip';
 import { Field } from '@/components/Input';
 import { Segmented } from '@/components/Segmented';
 import {
-  DISTANCE_UNITS,
-  INTENSITY_KINDS,
+  distanceUnits,
+  intensityKinds,
   sanitizeNumber,
-  STEP_KINDS,
-  TARGET_KINDS,
+  stepKinds,
+  targetKinds,
   type StepDraft,
 } from '@/features/courses/courseModel';
 import { spacing } from '@/theme';
@@ -43,6 +44,7 @@ function convertDistance(text: string, from: 'm' | 'km', to: 'm' | 'km'): string
 
 /** All fields of one step. Inputs keep what was typed; `courseModel.buildCourse` validates it. */
 export function StepEditor({ title, step, onChange, actions }: StepEditorProps) {
+  const { t } = useTranslation('watch');
   const number = (key: TextKey, decimal = false) => (text: string) =>
     onChange({ [key]: sanitizeNumber(text, decimal) } as Partial<StepDraft>);
 
@@ -56,7 +58,7 @@ export function StepEditor({ title, step, onChange, actions }: StepEditorProps) 
       </View>
 
       <View style={styles.chips} accessibilityRole="radiogroup">
-        {STEP_KINDS.map((kind) => (
+        {stepKinds().map((kind) => (
           <Chip
             key={kind.value}
             label={kind.label}
@@ -68,31 +70,31 @@ export function StepEditor({ title, step, onChange, actions }: StepEditorProps) 
       </View>
 
       <AppText variant="label" muted>
-        Ends after
+        {t('courses.endsAfter')}
       </AppText>
-      <Segmented options={TARGET_KINDS} value={step.target} onChange={(target) => onChange({ target })} />
+      <Segmented options={targetKinds()} value={step.target} onChange={(target) => onChange({ target })} />
 
       {step.target === 'time' ? (
         <View style={styles.pair}>
           <View style={styles.half}>
-            <Field label="Minutes" value={step.minutes} onChangeText={number('minutes')} keyboardType="number-pad" maxLength={4} />
+            <Field label={t('courses.minutes')} value={step.minutes} onChangeText={number('minutes')} keyboardType="number-pad" maxLength={4} />
           </View>
           <View style={styles.half}>
-            <Field label="Seconds" value={step.seconds} onChangeText={number('seconds')} keyboardType="number-pad" maxLength={2} />
+            <Field label={t('courses.seconds')} value={step.seconds} onChangeText={number('seconds')} keyboardType="number-pad" maxLength={2} />
           </View>
         </View>
       ) : null}
       {step.target === 'distance' ? (
         <>
           <Field
-            label={step.distanceUnit === 'm' ? 'Distance (m)' : 'Distance (km)'}
+            label={step.distanceUnit === 'm' ? t('courses.distanceM') : t('courses.distanceKm')}
             value={step.distance}
             onChangeText={number('distance', step.distanceUnit === 'km')}
             keyboardType={step.distanceUnit === 'km' ? 'decimal-pad' : 'number-pad'}
             maxLength={8}
           />
           <Segmented
-            options={DISTANCE_UNITS}
+            options={distanceUnits()}
             value={step.distanceUnit}
             onChange={(unit) =>
               onChange({ distanceUnit: unit, distance: convertDistance(step.distance, step.distanceUnit, unit) })
@@ -102,10 +104,10 @@ export function StepEditor({ title, step, onChange, actions }: StepEditorProps) 
       ) : null}
 
       <AppText variant="label" muted>
-        Effort target
+        {t('courses.effort')}
       </AppText>
       <View style={styles.chips} accessibilityRole="radiogroup">
-        {INTENSITY_KINDS.map((kind) => (
+        {intensityKinds().map((kind) => (
           <Chip
             key={kind.value}
             label={kind.label}
@@ -120,22 +122,22 @@ export function StepEditor({ title, step, onChange, actions }: StepEditorProps) 
         <>
           <View style={styles.pair}>
             <View style={styles.half}>
-              <Field label="Faster, min/km" value={step.paceFastMin} onChangeText={number('paceFastMin')} keyboardType="number-pad" maxLength={2} />
+              <Field label={t('courses.fasterMin')} value={step.paceFastMin} onChangeText={number('paceFastMin')} keyboardType="number-pad" maxLength={2} />
             </View>
             <View style={styles.half}>
-              <Field label="Faster, sec" value={step.paceFastSec} onChangeText={number('paceFastSec')} keyboardType="number-pad" maxLength={2} />
+              <Field label={t('courses.fasterSec')} value={step.paceFastSec} onChangeText={number('paceFastSec')} keyboardType="number-pad" maxLength={2} />
             </View>
           </View>
           <View style={styles.pair}>
             <View style={styles.half}>
-              <Field label="Slower, min/km" value={step.paceSlowMin} onChangeText={number('paceSlowMin')} keyboardType="number-pad" maxLength={2} />
+              <Field label={t('courses.slowerMin')} value={step.paceSlowMin} onChangeText={number('paceSlowMin')} keyboardType="number-pad" maxLength={2} />
             </View>
             <View style={styles.half}>
-              <Field label="Slower, sec" value={step.paceSlowSec} onChangeText={number('paceSlowSec')} keyboardType="number-pad" maxLength={2} />
+              <Field label={t('courses.slowerSec')} value={step.paceSlowSec} onChangeText={number('paceSlowSec')} keyboardType="number-pad" maxLength={2} />
             </View>
           </View>
           <AppText variant="caption" muted>
-            Pace per km, 1:00 to 15:00. The faster bound is the smaller time.
+            {t('courses.paceHint')}
           </AppText>
         </>
       ) : null}
@@ -144,7 +146,7 @@ export function StepEditor({ title, step, onChange, actions }: StepEditorProps) 
           <View style={styles.pair}>
             <View style={styles.half}>
               <Field
-                label={step.intensity === 'hrPercent' ? 'Low, % max' : 'Low, spm'}
+                label={step.intensity === 'hrPercent' ? t('courses.lowHr') : t('courses.lowCadence')}
                 value={step.rangeLow}
                 onChangeText={number('rangeLow')}
                 keyboardType="number-pad"
@@ -153,7 +155,7 @@ export function StepEditor({ title, step, onChange, actions }: StepEditorProps) 
             </View>
             <View style={styles.half}>
               <Field
-                label={step.intensity === 'hrPercent' ? 'High, % max' : 'High, spm'}
+                label={step.intensity === 'hrPercent' ? t('courses.highHr') : t('courses.highCadence')}
                 value={step.rangeHigh}
                 onChangeText={number('rangeHigh')}
                 keyboardType="number-pad"
@@ -162,9 +164,7 @@ export function StepEditor({ title, step, onChange, actions }: StepEditorProps) 
             </View>
           </View>
           <AppText variant="caption" muted>
-            {step.intensity === 'hrPercent'
-              ? 'Percent of your maximum heart rate, 20 to 100.'
-              : 'Steps per minute, 100 to 300.'}
+            {step.intensity === 'hrPercent' ? t('courses.hrHint') : t('courses.cadenceHint')}
           </AppText>
         </>
       ) : null}

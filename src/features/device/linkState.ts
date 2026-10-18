@@ -1,14 +1,11 @@
+import { t } from '@/i18n';
 import type { Colors } from '@/theme';
 import type { LinkState } from '@/wear';
 
-export const LINK_LABEL: Record<LinkState, string> = {
-  disconnected: 'Disconnected',
-  connecting: 'Connecting',
-  authenticating: 'Authenticating',
-  initializing: 'Initializing',
-  connected: 'Connected',
-  syncing: 'Syncing',
-};
+/** The link state in words, in the active language. */
+export function linkLabel(state: LinkState): string {
+  return t(`watch:link.${state}`);
+}
 
 /** The link is up: the watch answers and can be synced. */
 export function isLinkUp(state: LinkState): boolean {

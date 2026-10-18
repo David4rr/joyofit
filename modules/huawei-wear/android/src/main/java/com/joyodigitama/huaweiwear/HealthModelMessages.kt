@@ -25,12 +25,12 @@ package com.joyodigitama.huaweiwear
  * reads it into a double, which is why static notes called it a double).
  */
 internal object HealthModelMessages {
-  /** `HealthModelRequestMessage.Request.msgType` the watch sends to ask for the tasks of a day (`bxr.c`: `msgType == 2001`). */
+  /** `HealthModelRequestMessage.Request.msgType` the watch sends to ask for the tasks of a day (`msgType == 2001`). */
   const val MSG_TASKS = 2001
   const val MSG_NOTICE_PUSH = 2002
   const val MSG_NOTICE_REPLY = 2003
 
-  /** `Request.msgVer` below which Huawei Health answers with "device version low" (`bxr.a`: `d >= 3.0` skips it). */
+  /** `Request.msgVer` below which Huawei Health answers with "device version low" (from 3.0 on it is not sent). */
   const val VERSION_PAGING = 3.0f
 
   class RequestBody(

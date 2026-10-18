@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { IconChip } from '@/components/IconChip';
-import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { Card, Screen, Section } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
@@ -17,33 +18,35 @@ import {
   heartZone,
   paceValue,
   prefersSpeed,
-  STATUS_LABELS,
+  statusLabel,
 } from '@/features/live/liveWorkout';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import { formatElapsed } from '@/features/workouts/summary';
-import { formatCount } from '@/format';
+import { fmtDecimal, fmtInt } from '@/i18n';
 import { useNow } from '@/hooks/useNow';
 import { useLiveWorkout } from '@/state/LiveWorkoutProvider';
 import { radius, spacing, useColors } from '@/theme';
 import { HuaweiWear, type LiveWorkout } from '@/wear';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 const TICK_MS = 1_000;
 const DASH = '--';
 
 /** A workout started on the watch, as it happens: time, heart rate, distance, pace, calories, and fat and carbs burned. */
 export function LiveWorkoutScreen() {
+  const { t } = useTranslation(['sharing', 'common']);
   const live = useLiveWorkout();
   const router = useRouter();
 
   if (!live) {
     return (
       <Screen>
-        <HiddenTabHeader title="Live workout" />
+        <HiddenTabHeader title={t('live.title')} />
         <EmptyState
           icon="walk"
-          title="No workout running"
-          description="An outdoor walk, run or ride started on the watch opens this screen by itself. For an indoor workout, start it on the watch and tap Start here."
-          action={{ label: 'Start', icon: 'play', onPress: () => HuaweiWear.startLiveWorkout() }}
+          title={t('live.emptyTitle')}
+          description={t('live.emptyDescription')}
+          action={{ label: t('live.start'), icon: 'play', onPress: () => HuaweiWear.startLiveWorkout() }}
         />
       </Screen>
     );
@@ -51,11 +54,11 @@ export function LiveWorkoutScreen() {
 
   return (
     <Screen>
-      <HiddenTabHeader title={live.sportName ?? 'Live workout'} />
+      <HiddenTabHeader title={live.sportName ? sportLabel(live.sportName) : t('live.title')} />
       <LiveBody live={live} />
       {live.status === 'ended' ? (
         <Button
-          label="Done"
+          label={t('common:actions.done')}
           variant="primary"
           icon="checkmark"
           onPress={() => {
@@ -64,13 +67,27 @@ export function LiveWorkoutScreen() {
           }}
         />
       ) : live.source !== 'watch' ? (
-        <Button label="Finish" icon="stop" onPress={() => HuaweiWear.finishLiveWorkout()} />
+        <Button label={t('live.finish')} icon="stop" onPress={() => HuaweiWear.finishLiveWorkout()} />
       ) : null}
     </Screen>
   );
 }
 
+function Pair({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.pair}>
+      <AppText variant="caption" muted>
+        {label}
+      </AppText>
+      <AppText variant="bodyStrong" style={styles.pairValue}>
+        {value}
+      </AppText>
+    </View>
+  );
+}
+
 function LiveBody({ live }: { live: LiveWorkout }) {
+  const { t } = useTranslation('sharing');
   const colors = useColors();
   const nowMs = useNow(TICK_MS);
   const seconds = elapsedSec(live, nowMs);
@@ -86,22 +103,22 @@ function LiveBody({ live }: { live: LiveWorkout }) {
           <IconChip icon={sportIcon(live.sportName ?? '')} tint="workouts" size="lg" />
           <View style={styles.headText}>
             <AppText variant="heading" numberOfLines={1}>
-              {live.sportName ?? 'Workout'}
+              {live.sportName ? sportLabel(live.sportName) : t('live.workout')}
             </AppText>
             <View style={styles.statusRow}>
               <View style={[styles.dot, { backgroundColor: statusColor }]} />
               <AppText variant="label" color={statusColor}>
-                {STATUS_LABELS[live.status]}
+                {statusLabel(live.status)}
               </AppText>
             </View>
           </View>
         </View>
-        <View accessible accessibilityLabel={`Time ${formatElapsed(seconds)}`} style={styles.clock}>
+        <View accessible accessibilityLabel={t('live.timeA11y', { value: formatElapsed(seconds) })} style={styles.clock}>
           <Metric value={live.durationSec === null ? DASH : formatElapsed(seconds)} size="hero" />
         </View>
         <View style={styles.heartRow}>
           <Metric
-            value={live.heartRate !== null ? String(live.heartRate) : DASH}
+            value={live.heartRate !== null ? fmtInt(live.heartRate) : DASH}
             unit="bpm"
             size="lg"
             color={colors.heartText}
@@ -110,62 +127,58 @@ function LiveBody({ live }: { live: LiveWorkout }) {
           {zone ? (
             <View style={[styles.zone, { backgroundColor: colors.heartSoft }]}>
               <AppText variant="label" color={colors.heartText}>
-                Zone {zone.zone} · {zone.label}
+                {t('live.zone', { zone: zone.zone, label: zone.label })}
               </AppText>
             </View>
           ) : null}
         </View>
       </Card>
 
-      <Section title="Burned so far" icon="flame" tint="workouts">
-        <View style={styles.burnRow}>
-          <BurnFigure label="Fat" grams={live.fatGrams} color={colors.workoutsText} />
-          <BurnFigure label="Carbs" grams={live.carbGrams} color={colors.stepsText} />
-          <View style={styles.burnFigure}>
-            <AppText variant="label" muted>
-              Calories
-            </AppText>
-            <Metric value={live.calories !== null ? formatCount(Math.round(live.calories)) : DASH} unit="kcal" size="md" />
-          </View>
-        </View>
-        <FuelBar fatShare={live.fatShare} lead="Right now" />
-        <AppText variant="caption" muted>
-          An estimate by JoyoFit, the watch does not measure it: each calorie is split by your heart rate at that moment, with a
-          maximum of {live.maxHeartRate} bpm (220 minus your age from the profile). Easier effort burns a larger share of fat.
-          {live.source !== 'watch'
-            ? ' The watch sends no live calories to JoyoFit, so they too come from its live heart rate, your weight, age and sex (Keytel 2005); the watch screen may differ.'
-            : ''}
-        </AppText>
-      </Section>
-
       <View style={styles.tiles}>
-        <StatTile icon="trail-sign" tint="steps" label="Distance" value={distance?.value ?? DASH} unit={distance?.unit} />
+        <StatTile icon="trail-sign" tint="steps" label={t('live.tiles.distance')} value={distance?.value ?? DASH} unit={distance?.unit} />
         {speed ? (
-          <StatTile icon="speedometer" tint="steps" label="Speed" value={live.speedKmh !== null ? live.speedKmh.toFixed(1) : DASH} unit="km/h" />
+          <StatTile icon="speedometer" tint="steps" label={t('live.tiles.speed')} value={live.speedKmh !== null ? fmtDecimal(live.speedKmh, 1) : DASH} unit="km/h" />
         ) : (
-          <StatTile icon="speedometer" tint="steps" label="Pace" value={live.paceSecPerKm ? paceValue(live.paceSecPerKm) : DASH} unit="/km" />
+          <StatTile icon="speedometer" tint="steps" label={t('live.tiles.pace')} value={live.paceSecPerKm ? paceValue(live.paceSecPerKm) : DASH} unit="/km" />
         )}
       </View>
 
-      <Section title="Details" icon="list">
-        {live.steps !== null ? <KeyValue icon="footsteps" label="Steps" value={formatCount(live.steps)} /> : null}
-        {live.stepRate !== null ? <KeyValue icon="pulse" label="Cadence" value={`${live.stepRate} steps/min`} /> : null}
-        {live.cadence !== null && live.cadence > 0 ? <KeyValue icon="bicycle" label="Cadence" value={`${live.cadence} rpm`} /> : null}
-        {speed ? null : live.speedKmh !== null ? <KeyValue icon="speedometer" label="Speed" value={`${live.speedKmh.toFixed(1)} km/h`} /> : null}
-        {live.altitudeM !== null ? <KeyValue icon="triangle" label="Altitude" value={`${live.altitudeM} m`} /> : null}
-        {live.riseM !== null ? <KeyValue icon="trending-up" label="Climb" value={`${live.riseM} m`} /> : null}
-        {live.descentM !== null ? <KeyValue icon="trending-down" label="Descent" value={`${live.descentM} m`} /> : null}
-        {live.aerobicTe !== null ? <KeyValue icon="heart" label="Aerobic training effect" value={live.aerobicTe.toFixed(1)} /> : null}
-        {live.anaerobicTe !== null ? <KeyValue icon="flash" label="Anaerobic training effect" value={live.anaerobicTe.toFixed(1)} /> : null}
+      <Section title={t('live.burned.title')} icon="flame" tint="workouts">
+        <View style={styles.burnRow}>
+          <BurnFigure label={t('live.burned.fat')} grams={live.fatGrams} color={colors.workoutsText} />
+          <BurnFigure label={t('live.burned.carbs')} grams={live.carbGrams} color={colors.stepsText} />
+          <View style={styles.burnFigure}>
+            <AppText variant="label" muted>
+              {t('live.burned.calories')}
+            </AppText>
+            <Metric value={live.calories !== null ? fmtInt(live.calories) : DASH} unit="kcal" size="md" />
+          </View>
+        </View>
+        <FuelBar fatShare={live.fatShare} />
+        <Details title={t('live.calc.title')}>
+          {t(live.source !== 'watch' ? 'live.calc.phone' : 'live.calc.watch', { max: live.maxHeartRate })}
+        </Details>
+      </Section>
+
+      <Section title={t('live.more.title')} icon="list">
+        <View style={styles.grid}>
+          {live.steps !== null ? <Pair label={t('live.more.steps')} value={fmtInt(live.steps)} /> : null}
+          {live.stepRate !== null ? <Pair label={t('live.more.cadence')} value={t('live.more.stepRate', { value: fmtInt(live.stepRate) })} /> : null}
+          {live.cadence !== null && live.cadence > 0 ? <Pair label={t('live.more.cadence')} value={`${fmtInt(live.cadence)} rpm`} /> : null}
+          {speed ? null : live.speedKmh !== null ? <Pair label={t('live.more.speed')} value={`${fmtDecimal(live.speedKmh, 1)} km/h`} /> : null}
+          {live.altitudeM !== null ? <Pair label={t('live.more.altitude')} value={`${fmtInt(live.altitudeM)} m`} /> : null}
+          {live.riseM !== null ? <Pair label={t('live.more.climb')} value={`${fmtInt(live.riseM)} m`} /> : null}
+          {live.descentM !== null ? <Pair label={t('live.more.descent')} value={`${fmtInt(live.descentM)} m`} /> : null}
+          {live.aerobicTe !== null ? <Pair label={t('live.more.aerobicEffect')} value={fmtDecimal(live.aerobicTe, 1)} /> : null}
+          {live.anaerobicTe !== null ? <Pair label={t('live.more.anaerobicEffect')} value={fmtDecimal(live.anaerobicTe, 1)} /> : null}
+        </View>
         {live.durationSec === null ? (
           <AppText variant="caption" muted>
-            Waiting for the first numbers from the watch.
+            {t('live.more.waiting')}
           </AppText>
         ) : null}
         {live.status === 'ended' ? (
-          <AppText variant="caption" muted>
-            The full record (route, splits, heart-rate chart) arrives with the next sync and appears under Workouts.
-          </AppText>
+          <Details>{t('live.more.ended')}</Details>
         ) : null}
       </Section>
     </>
@@ -177,10 +190,13 @@ const styles = StyleSheet.create({
   headText: { flex: 1, gap: 2 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  clock: { alignItems: 'center', paddingVertical: spacing.sm },
+  clock: { alignItems: 'center' },
   heartRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   zone: { borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   burnRow: { flexDirection: 'row', gap: spacing.md },
   burnFigure: { flex: 1, gap: 2 },
   tiles: { flexDirection: 'row', gap: spacing.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.sm, columnGap: spacing.md },
+  pair: { width: '47%' },
+  pairValue: { fontVariant: ['tabular-nums'] },
 });

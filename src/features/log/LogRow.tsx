@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { formatPacketId } from '@/features/log/formatLog';
 import { formatClockMs } from '@/format';
-import { fonts, useColors, type Colors } from '@/theme';
+import { useTheme, type Colors } from '@/theme';
 import type { LogEvent } from '@/wear';
 
 function directionColor(direction: LogEvent['direction'], colors: Colors): string {
@@ -21,7 +21,7 @@ function directionColor(direction: LogEvent['direction'], colors: Colors): strin
 }
 
 export const LogRow = memo(function LogRow({ event }: { event: LogEvent }) {
-  const colors = useColors();
+  const { colors, fonts } = useTheme();
   const id = formatPacketId(event);
   return (
     <View style={[styles.row, { borderBottomColor: colors.hairline }]}>

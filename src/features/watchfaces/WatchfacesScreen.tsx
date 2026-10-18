@@ -24,10 +24,6 @@ import type { WatchfaceInfo } from '@/wear';
 
 type TabMode = 'installed' | 'library';
 
-const TAB_OPTIONS = [
-  { value: 'installed', label: 'On watch' },
-  { value: 'library', label: 'My watch' },
-] as const;
 
 const SKELETON_ROWS = [0, 1, 2];
 
@@ -74,6 +70,10 @@ export function WatchfacesScreen() {
     useWatchfaces();
   const { library, saveToLibrary, removeFromLibrary } = useWatchfaceLibrary();
   const [tab, setTab] = useState<TabMode>('installed');
+  const tabOptions = [
+    { value: 'installed' as const, label: t('watch:faces.onWatchTab') },
+    { value: 'library' as const, label: t('watch:faces.library') },
+  ];
   const [installingUrl, setInstallingUrl] = useState<string | null>(null);
   const [previewFace, setPreviewFace] = useState<WatchfaceItem | null>(null);
   const [dialog, setDialog] = useState<CustomDialogState | null>(null);
@@ -116,9 +116,9 @@ export function WatchfacesScreen() {
       setDialog({
         visible: true,
         icon: 'close-circle-outline',
-        title: 'Install Rejected',
-        message: `The watch rejected "${face.title}". The watch memory may be full, or the file is incompatible with your screen size.`,
-        confirmLabel: 'OK',
+        title: t('watch:faces.installRejected'),
+        message: t('watch:faces.installRejectedHint', { name: face.title }),
+        confirmLabel: t('common:actions.ok'),
         confirmVariant: 'primary',
         onConfirm: () => setDialog(null),
       });
@@ -144,11 +144,11 @@ export function WatchfacesScreen() {
     setDialog({
       visible: true,
       icon: 'trash-outline',
-      title: 'Delete from Storage',
+      title: t('watch:faces.deleteFromStorage'),
       message: isOnWatch
-        ? `Delete "${face.title}" from your phone storage?\n\nIt is currently installed on your watch and will stay on the watch until uninstalled.`
-        : `Permanently delete "${face.title}" from your phone storage? To reinstall it in the future, you will need to re-import it.`,
-      confirmLabel: 'Delete from Phone',
+        ? t('watch:faces.deleteFromStorageOnWatch', { title: face.title })
+        : t('watch:faces.deleteFromStorageOnly', { title: face.title }),
+      confirmLabel: t('watch:faces.deleteFromPhone'),
       confirmVariant: 'destructive',
       cancelLabel: t('common:actions.cancel'),
       onConfirm: () => removeFromLibrary(face.id),
@@ -166,7 +166,7 @@ export function WatchfacesScreen() {
 
   const header = (
     <View style={styles.header}>
-      <Segmented options={TAB_OPTIONS} value={tab} onChange={setTab} />
+      <Segmented options={tabOptions} value={tab} onChange={setTab} />
 
       {tab === 'installed' ? (
         !connected ? (
@@ -175,13 +175,13 @@ export function WatchfacesScreen() {
           </Notice>
         ) : null
       ) : (
-        <Section title="Personal library" icon="folder-open-outline">
+        <Section title={t('watch:faces.personalLibrary')} icon="folder-open-outline">
           <AppText variant="caption">
-            Watch faces stored on your phone. Keep your favorites here and swap them onto your watch anytime.
+            {t('watch:faces.personalLibraryHint')}
           </AppText>
           <View style={styles.actionRow}>
             <Button
-              label="Import .hwt file"
+              label={t('watch:faces.importHwt')}
               variant="primary"
               icon="document-attach-outline"
               style={{ flex: 1 }}
@@ -213,7 +213,7 @@ export function WatchfacesScreen() {
         <View style={styles.listTitleRow} accessibilityRole="header">
           <IconChip icon={tab === 'installed' ? 'watch' : 'folder'} size="sm" />
           <AppText variant="heading">
-            {tab === 'installed' ? t('watch:faces.onWatch') : 'My watch collection'}
+            {tab === 'installed' ? t('watch:faces.onWatch') : t('watch:faces.library')}
           </AppText>
         </View>
         {tab === 'installed' && listMeta ? (
@@ -273,10 +273,10 @@ export function WatchfacesScreen() {
     <Card>
       <EmptyState
         icon="folder"
-        title="No watch faces saved"
-        description="Import a .hwt file from your phone storage to build your personal offline collection."
+        title={t('watch:faces.noSaved')}
+        description={t('watch:faces.noSavedHint')}
         action={{
-          label: 'Import .hwt file',
+          label: t('watch:faces.importHwt'),
           icon: 'document-attach-outline',
           onPress: () => void handleImportToMyWatch(),
         }}

@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { PressableScale } from '@/components/PressableScale';
-import { radius, spacing, useColors, type Tint } from '@/theme';
+import { spacing, useColors, useTheme, type Tint } from '@/theme';
 
 export interface RefreshProps {
   refreshing: boolean;
@@ -22,9 +22,9 @@ export interface RefreshProps {
 export function useContentPadding(withTitle: boolean): ViewStyle {
   const insets = useSafeAreaInsets();
   return {
-    paddingTop: (withTitle ? insets.top : 0) + spacing.md,
+    paddingTop: (withTitle ? insets.top : 0) + spacing.sm,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xl,
   };
 }
 
@@ -75,10 +75,12 @@ interface ScreenProps {
   caption?: string;
   right?: ReactNode;
   refresh?: RefreshProps;
+  /** False freezes the scroll, e.g. while a chart is being scrubbed. */
+  scrollEnabled?: boolean;
   children: ReactNode;
 }
 
-export function Screen({ title, caption, right, refresh, children }: ScreenProps) {
+export function Screen({ title, caption, right, refresh, scrollEnabled = true, children }: ScreenProps) {
   const colors = useColors();
   const padding = useContentPadding(title !== undefined);
   const refreshControl = useRefreshControl(refresh);
@@ -88,6 +90,7 @@ export function Screen({ title, caption, right, refresh, children }: ScreenProps
       contentContainerStyle={[styles.content, padding]}
       keyboardShouldPersistTaps="handled"
       refreshControl={refreshControl}
+      scrollEnabled={scrollEnabled}
       showsVerticalScrollIndicator={false}>
       {title ? <PageHeader title={title} caption={caption} right={right} /> : null}
       {children}
@@ -95,10 +98,10 @@ export function Screen({ title, caption, right, refresh, children }: ScreenProps
   );
 }
 
-/** Borderless white card, radius 24, padding 20. Sits flat: no border, no shadow. */
+/** Borderless white card, themed radius, padding 16. Sits flat: no border, no shadow. */
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  const colors = useColors();
-  return <View style={[styles.card, { backgroundColor: colors.card }, style]}>{children}</View>;
+  const { colors, radius } = useTheme();
+  return <View style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.card }, style]}>{children}</View>;
 }
 
 interface SectionProps {
@@ -142,12 +145,12 @@ export function Divider() {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.xl },
-  pageHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 48 },
+  content: { gap: spacing.lg },
+  pageHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 40 },
   pageHeaderText: { flex: 1, gap: 2 },
-  section: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 32 },
+  section: { gap: spacing.sm },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 28 },
   sectionTitle: { flex: 1 },
-  card: { borderRadius: radius.card, padding: spacing.lg, gap: spacing.md },
+  card: { padding: spacing.md + 4, gap: spacing.sm + 2 },
   divider: { height: StyleSheet.hairlineWidth, alignSelf: 'stretch' },
 });

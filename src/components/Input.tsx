@@ -4,7 +4,7 @@ import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import type { IconName } from '@/components/IconChip';
-import { fontSize, fonts, HIT, radius, spacing, useColors } from '@/theme';
+import { fontSize, HIT, spacing, useTheme } from '@/theme';
 
 interface InputProps extends TextInputProps {
   /** Leading glyph, e.g. a magnifier for search boxes. */
@@ -13,13 +13,13 @@ interface InputProps extends TextInputProps {
 
 /** 48 dp borderless input on the muted fill; a primary ring marks focus. */
 export function Input({ icon, style, onFocus, onBlur, ...rest }: InputProps) {
-  const colors = useColors();
+  const { colors, fonts, radius } = useTheme();
   const [focused, setFocused] = useState(false);
   return (
     <View
       style={[
         styles.box,
-        { backgroundColor: colors.muted, borderColor: focused ? colors.primary : 'transparent' },
+        { backgroundColor: colors.muted, borderColor: focused ? colors.primary : 'transparent', borderRadius: radius.input },
       ]}>
       {icon ? <Ionicons name={icon} size={18} color={colors.mutedForeground} /> : null}
       <TextInput
@@ -34,7 +34,7 @@ export function Input({ icon, style, onFocus, onBlur, ...rest }: InputProps) {
           setFocused(false);
           onBlur?.(e);
         }}
-        style={[styles.input, { color: colors.foreground }, style]}
+        style={[styles.input, { color: colors.foreground, fontFamily: fonts.regular }, style]}
       />
     </View>
   );
@@ -47,7 +47,7 @@ interface FieldProps extends InputProps {
 }
 
 /** Label above an Input. The label doubles as the accessibility label. */
-export function Field({ label, hint, accessibilityLabel, children, ...input }: FieldProps) {
+export function Field({ label, hint, accessibilityLabel, ...input }: FieldProps) {
   return (
     <View style={styles.field}>
       <AppText variant="label" muted>
@@ -59,7 +59,6 @@ export function Field({ label, hint, accessibilityLabel, children, ...input }: F
           {hint}
         </AppText>
       ) : null}
-      {children}
     </View>
   );
 }
@@ -72,8 +71,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.input,
     borderWidth: 2,
   },
-  input: { flex: 1, minHeight: HIT, fontFamily: fonts.regular, fontSize: fontSize.base, padding: 0 },
+  input: { flex: 1, minHeight: HIT, fontSize: fontSize.base, padding: 0 },
 });

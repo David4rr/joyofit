@@ -43,6 +43,16 @@ internal class WearSettings(context: Context) {
     get() = prefs.getBoolean(KEY_BACKGROUND, false)
     set(value) = prefs.edit().putBoolean(KEY_BACKGROUND, value).apply()
 
+  /**
+   * Developer switch: open every watch over Bluetooth LE GATT (service 0xFE86) instead of the link its model uses, to find out whether
+   * a Classic watch also answers the Huawei protocol over LE (what an iOS port would need). Off by default, and ignored outside debug
+   * builds: the switch is hidden there, and a value saved by an earlier debug install must not move a Classic watch onto LE, where
+   * Android 14+ discards the watch's 514-byte notifications and any longer reply is lost.
+   */
+  var forceBle: Boolean
+    get() = BuildConfig.DEBUG && prefs.getBoolean(KEY_FORCE_BLE, false)
+    set(value) = prefs.edit().putBoolean(KEY_FORCE_BLE, value).apply()
+
   var syncIntervalMinutes: Int
     get() = prefs.getInt(KEY_INTERVAL, DEFAULT_SYNC_INTERVAL_MIN)
     set(value) = prefs.edit().putInt(KEY_INTERVAL, value).apply()
@@ -109,6 +119,23 @@ internal class WearSettings(context: Context) {
     get() = prefs.getString(KEY_STRESS_CALIBRATION, null)
     set(value) = prefs.edit().apply { if (value == null) remove(KEY_STRESS_CALIBRATION) else putString(KEY_STRESS_CALIBRATION, value) }.apply()
 
+  /**
+   * Whether the watch listed the automatic stress command (20/09) the last time it connected; null before any connect. The live
+   * answer only exists while connected, and the app has to tell a watch that cannot record night HRV from one that is just
+   * away (`StressStatus.knownSupported`).
+   */
+  var autoStressListed: Boolean?
+    get() = if (prefs.contains(KEY_AUTO_STRESS_LISTED)) prefs.getBoolean(KEY_AUTO_STRESS_LISTED, false) else null
+    set(value) = prefs.edit().apply { if (value == null) remove(KEY_AUTO_STRESS_LISTED) else putBoolean(KEY_AUTO_STRESS_LISTED, value) }.apply()
+
+  /**
+   * The [SleepCleaning.SLEEP_RULES_VERSION] the stored night HRV rows were last re-derived under, 0 before. Set by the night
+   * HRV sync once it has gone through the whole file (see [SleepRulesRepair]).
+   */
+  var nightHrvRulesVersion: Int
+    get() = prefs.getInt(KEY_NIGHT_HRV_RULES, 0)
+    set(value) = prefs.edit().putInt(KEY_NIGHT_HRV_RULES, value).apply()
+
   var profile: UserProfileData?
     get() {
       if (!prefs.contains(KEY_PROFILE_HEIGHT)) return null
@@ -144,6 +171,7 @@ internal class WearSettings(context: Context) {
     private const val KEY_ADDRESS = "watch_address"
     private const val KEY_NAME = "watch_name"
     private const val KEY_BACKGROUND = "background_enabled"
+    private const val KEY_FORCE_BLE = "force_ble"
     private const val KEY_INTERVAL = "sync_interval_min"
     private const val KEY_NOTIFICATIONS = "notifications_enabled"
     private const val KEY_MORNING_SUMMARY = "morning_summary_enabled"
@@ -162,5 +190,7 @@ internal class WearSettings(context: Context) {
     private const val KEY_LOW_HR_ALERT = "sensor_low_hr_alert"
     private const val KEY_STRESS_ENABLED = "stress_automatic"
     private const val KEY_STRESS_CALIBRATION = "stress_calibration"
+    private const val KEY_AUTO_STRESS_LISTED = "stress_auto_listed"
+    private const val KEY_NIGHT_HRV_RULES = "night_hrv_sleep_rules_version"
   }
 }

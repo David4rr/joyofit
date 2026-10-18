@@ -36,21 +36,45 @@ import type { ParsedWatchfacePackage, WatchfaceInstallResult, WatchfaceList } fr
 import type { FaceApplyResult, FaceCustomization } from './HuaweiWearFaceCustom.types';
 import type { PhotoFace } from './HuaweiWearPhotoFace.types';
 import type { CoursesStatus, HealthyLivingStatus, RunningCourse, RunningCoursePushResult } from './HuaweiWearP2p.types';
+import type { RoutePushResult, RoutesStatus, WatchRoute } from './HuaweiWearRoutes.types';
+import type { HuaweiImportSummary } from './HuaweiWearImport.types';
+import type { FamilyConfig, FamilyUploadResult, FamilyUploadStatus } from './HuaweiWearFamily.types';
 
 declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
+  /**
+   * Which build this is. `play` (Google Play) has no SEND_SMS, READ_CALL_LOG or READ_CONTACTS, so SOS texts and caller
+   * names are not available; `sideload` is the APK from the website or a self-build. Set by `JOYOFIT_DISTRIBUTION` at build time.
+   */
+  readonly distribution: 'play' | 'sideload';
   /** Bonded Bluetooth devices, each with the support level of its model. Requires BLUETOOTH_CONNECT on Android 12+. */
   getBondedDevices(): Promise<BondedDevice[]>;
-  /** Active BLE scanner for detecting unbonded Huawei & Honor bands. */
+  /**
+   * Android only (iOS rejects ERR_UNSUPPORTED: its list scans by itself, see `refreshBondedDevices`): scans for nearby Huawei and Honor
+   * BLE devices, for up to 12 s, emitting `onDeviceDiscovered` and `onScanStateChange`. Needs BLUETOOTH_SCAN (Android 12+, declared
+   * neverForLocation, no location permission) and rejects ERR_BLUETOOTH_PERMISSION without it. A scan only lists devices; nothing connects
+   * or binds. A watch that is linked to another phone or app does not advertise and is not found.
+   */
   startScan(): Promise<void>;
+  /** Stops any ongoing Bluetooth LE scan (a no-op on iOS). */
   stopScan(): Promise<void>;
+  /** Android: the devices the latest scan saw; empty on iOS. */
   getDiscoveredDevices(): BondedDevice[];
+  /**
+   * `getBondedDevices` again, for the Refresh button: on iOS (which has no bonded list: the remembered watch, the watches iOS already
+   * holds a connection to, and the ones advertising) it ignores the last scan and scans longer; on Android it is the same list.
+   */
+  refreshBondedDevices(): Promise<BondedDevice[]>;
   /**
    * RFCOMM or BLE GATT connect (by model) + LinkParams + auth + init. Resolves when `connected`. There is one link per
    * process: if the background service is already connecting to or connected with this watch, this
    * joins that link. A successful connect remembers the watch for background mode and resumes a
-   * paused auto-reconnect.
+   * paused auto-reconnect. A first bind (the watch does not know this phone) replaces the watch's current phone pairing, so it never
+   * starts by itself: connect rejects `ERR_BIND_CONFIRMATION` before anything changes on the watch, and only a connect that follows
+   * `confirmBind(address)` binds. Other failures: `ERR_CONNECT_FAILED`, `ERR_TIMEOUT`, `ERR_DISCONNECTED`, `ERR_AUTH_FAILED`.
    */
   connect(address: string): Promise<DeviceInfo>;
+  /** The user agreed to bind this phone to the watch: the next `connect(address)` may start a first bind. Single use. */
+  confirmBind(address: string): void;
   /** Closes the link. With background mode on, this also pauses auto-reconnect. */
   disconnect(): Promise<void>;
   getState(): LinkState;
@@ -64,12 +88,40 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   getSupportReport(): Promise<SupportReport>;
   refreshBattery(): Promise<number>;
   /**
-   * Pulls sleep, steps and today's totals since the last stored sync (7 days on the first sync,
-   * otherwise 1 h before `device.last_sync`), writes them to the database and resolves with a summary.
+   * Pulls sleep, steps and today's totals since the last stored sync (everything the watch still holds on the first
+   * sync, otherwise 1 h before `device.last_sync`), writes them to the database and resolves with a summary.
    */
   syncActivity(): Promise<SyncSummary>;
+  /**
+   * Pulls everything the watch still holds (activity, sleep, workouts, and on Android night HRV) again, regardless of
+   * `device.last_sync`. Rows already stored are upserted, so only what is missing is added.
+   */
+  syncFullHistory(): Promise<SyncSummary>;
   /** Drops the stored auth key / fake identity so the next connect performs a first-time bind. */
   forgetDevice(address: string): Promise<void>;
+
+  /**
+   * One-time import of the history in a Huawei Privacy Centre "Request Your Data - Health" ZIP, read on the
+   * phone and written to the database; nothing is sent anywhere. `uri` is a `content://` (Android) or `file://` URI of
+   * the ZIP, opened in place (on iOS: a security-scoped URL from the document picker), `password` the one set when the
+   * data was requested (it is held in memory for the run only). Progress arrives as
+   * `onHuaweiImportProgress`. Watch data already on the phone is never overwritten and importing the same file again adds
+   * nothing; imported rows carry `imported = 1` and stay out of the cloud upload, Health Connect / Apple Health and Strava. Rejects with
+   * ERR_IMPORT_PASSWORD (wrong or missing password), ERR_IMPORT_FORMAT (not a ZIP, or no Health data folders), ERR_BUSY
+   * (an import is running) or ERR_STORAGE.
+   */
+  importHuaweiExport(uri: string, password: string): Promise<HuaweiImportSummary>;
+  /**
+   * iOS only (not defined on Android): the one-time import of the history Huawei Health wrote into Apple Health. Asks for READ
+   * permission for steps, heart rate, resting heart rate, blood oxygen, sleep, workouts and active energy when called (the system sheet
+   * shows the first time only), then reads window by window, oldest first, skipping samples JoyoFit wrote itself. Rows carry
+   * `imported = 1` like the ZIP import; the same rules apply (watch data wins, a second run adds nothing). Progress arrives as
+   * `onHuaweiImportProgress` (`fileName` null, `fileCount` 0). Nothing read leaves the phone. Rejects with ERR_UNSUPPORTED (no Health
+   * data on this device), ERR_BUSY or ERR_STORAGE, or with the HealthKit error when the permission sheet fails.
+   */
+  importAppleHealthHistory(): Promise<HuaweiImportSummary>;
+  /** Stops a running import (ZIP or Apple Health) between two records; the promise resolves with `cancelled: true`. Rows written so far stay. */
+  cancelHuaweiImport(): void;
 
   /**
    * Starts the foreground service for `address` (auto-connect, auto-reconnect, periodic sync), or
@@ -85,6 +137,12 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   openNotificationAccess(): Promise<void>;
   getNotificationAccess(): NotificationAccessStatus;
   setNotificationsEnabled(enabled: boolean): Promise<void>;
+  /**
+   * Developer switch: the next connect opens Bluetooth LE GATT (service 0xFE86) instead of the model's own link (RFCOMM for the
+   * Fit 4 Pro). Off by default; needs BLUETOOTH_SCAN to find the watch's LE address, else it tries the bonded address.
+   */
+  getForceBle(): boolean;
+  setForceBle(enabled: boolean): Promise<void>;
   /** The once-a-day "Morning summary" notification, posted after the first sync that stored last night's sleep. Off by default. */
   getMorningSummaryEnabled(): boolean;
   setMorningSummaryEnabled(enabled: boolean): Promise<void>;
@@ -228,7 +286,7 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * goes silent. A resolved result with `listed: false` means the watch took the upload but dropped the face.
    *
    * Signature-replay experiment: watches with the signature capability (27/01 tag 0x11 bit 8) expect a
-   * Huawei `getresourcesign` response in the announcement (27/03 tag 0x08) and delete unsigned faces
+   * Huawei signature response in the announcement (27/03 tag 0x08) and delete unsigned faces
    * seconds after activation (100014). `signature` sends a captured signature string; `fileName`
    * (`<id>_<version>`) installs under the id and version that signature was issued for instead of a
    * random name.
@@ -238,10 +296,10 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   setActiveWatchface(id: string): Promise<WatchfaceList>;
   /** Deletes the face with this id; resolves with the list read afterwards, rejects if the face is still there. */
   deleteWatchface(id: string): Promise<WatchfaceList>;
-  /** Parses a .hwt package locally, extracting title, author, screen resolution and preview image cover. */
+  /** Parses metadata, description, and preview image from a local .hwt file. */
   parseWatchfacePackage(uri: string): Promise<ParsedWatchfacePackage>;
-  /** Deletes an internal watchface or preview file from phone storage. */
-  deleteLocalWatchfaceFile(uri: string): Promise<boolean>;
+  /** Deletes an imported watchface binary from the phone's local storage. */
+  deleteLocalWatchfaceFile(filePath: string): Promise<boolean>;
   /**
    * A face's current options (DataSync 800100008). Resolves with what the watch reports; a face with no editable options does not answer
    * (ERR_TIMEOUT). ERR_NOT_CONNECTED, ERR_UNSUPPORTED (watch lacks ExpandCapability 84), ERR_INVALID_ARGUMENT (face not on the watch).
@@ -317,6 +375,15 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   /** JS wrote these watch-logged meals (`onWatchMealLogged`) to JoyoRogo; native stops keeping them apart. */
   markWatchMealsSynced(ids: string[]): Promise<void>;
 
+  /**
+   * Family monitoring (monitored side). Stores the config natively, or clears it (and everything native kept for it) with null.
+   * Nothing is read from the watch database or sent before a config with `enabled: true` is set.
+   */
+  familyConfigure(config: FamilyConfig | null): Promise<void>;
+  /** Builds the summary of the granted categories and posts it now. Never rejects on network errors: see `outcome`. */
+  familyUploadNow(): Promise<FamilyUploadResult>;
+  familyUploadStatus(): FamilyUploadStatus;
+
   getBodyMetrics(): BodyMetrics;
   /** Stores the set fields and, when connected, pushes the weight (event 5 dictionary 10006) and resting metabolism (500018) if they changed. */
   setBodyMetrics(update: BodyMetricsUpdate): Promise<BodyMetrics>;
@@ -348,6 +415,17 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * course, ERR_UPLOAD_REJECTED with the watch's code when it refuses the file.
    */
   pushRunningCourse(course: RunningCourse): Promise<RunningCoursePushResult>;
+
+  /** Whether the watch takes routes, from its ExpandCapability bits. Synchronous; all false while no watch is connected. */
+  getRoutes(): RoutesStatus;
+  /**
+   * Sends a route to the watch: the P2P handshake (type 5, the route's name), then the simplified route as a P2P file (type 6),
+   * the way Huawei Health's "Send to wearable" does. Progress arrives as `onUploadProgress`. Rejects with ERR_NOT_CONNECTED,
+   * ERR_UNSUPPORTED (the watch does not set ExpandCapability 70, or has no P2P service), ERR_INVALID_ARGUMENT (bad route),
+   * ERR_ROUTE_FULL (the watch's route list is full), ERR_ROUTE_NAME (name too long for the watch), ERR_UPLOAD_REJECTED (the watch
+   * refused the file or the handshake failed; the message carries its code) and ERR_TIMEOUT (no handshake answer).
+   */
+  pushRoute(route: WatchRoute): Promise<RoutePushResult>;
 }
 
 let nativeModule: HuaweiWearModule;

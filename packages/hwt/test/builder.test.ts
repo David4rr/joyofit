@@ -110,8 +110,8 @@ describe("replace a background and add a static image (Fit 4 Pro sample)", () =>
 });
 
 describe("static images on version 1 layouts", () => {
-  test("SimpleItalic: bottom insert adds an element plus the title pair; top insert appends", () => {
-    const pkg = readHwt(fixture("unlicensed/SimpleItalic.hwt"));
+  test("SynthV1Glyphs: bottom insert adds an element plus the title pair; top insert appends", () => {
+    const pkg = readHwt(fixture("synthetic/SynthV1Glyphs.hwhd02.hwt"));
     const wf = pkg.watchface!;
     const count = readV1Elements(getLayout(wf)).length;
     const idx = addImage(wf, solidImage(20, 20, [1, 2, 3, 255]));
@@ -123,7 +123,7 @@ describe("static images on version 1 layouts", () => {
     expect(els[0]).toEqual({ type: 0, kind: "image", image: imageRef(idx), x: 5, y: 6 });
     expect(els[els.length - 1]).toEqual({ type: 0, kind: "image", image: imageRef(idx), x: 7, y: 8 });
     const named = describeLayout(getLayout(wf2));
-    expect(named.title_en).toEqual(Array((count + 2)).fill("SimpleItalic"));
+    expect(named.title_en).toEqual(Array((count + 2)).fill("SynthGlyphs"));
     expect(verifyWatchface(writeWatchface(wf2)).problems).toEqual([]);
   });
 
@@ -139,21 +139,21 @@ describe("static images on version 1 layouts", () => {
 
 describe("guards", () => {
   test("unknown slots are rejected", () => {
-    const wf = readHwt(fixture("fit4pro/NikeCombo.hwt")).watchface!;
+    const wf = readHwt(fixture("fit4pro/FunctionalForHikes.hwt")).watchface!;
     expect(() => addStaticImage(wf, { x: 0, y: 0, image: 9999 })).toThrow(HwtError);
     expect(() => addStaticImage(wf, { x: 0, y: 0, image: "abc" })).toThrow(HwtError);
     expect(() => replaceImage(wf, -1, solidImage(1, 1, [0, 0, 0, 0]))).toThrow(/no image slot/);
   });
 
   test("raw blobs are accepted when valid and rejected when not", () => {
-    const wf = readHwt(fixture("fit4pro/NikeCombo.hwt")).watchface!;
+    const wf = readHwt(fixture("fit4pro/FunctionalForHikes.hwt")).watchface!;
     const blob = encodeImage(solidImage(3, 3, [9, 8, 7, 255]));
     expect(addImage(wf, blob)).toBe(wf.images.length - 1);
     expect(() => addImage(wf, Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]))).toThrow(/magic/);
   });
 
   test("an irregular image table round-trips and refuses image edits", () => {
-    const wf = readHwt(fixture("fit4pro/NikeCombo.hwt")).watchface!;
+    const wf = readHwt(fixture("fit4pro/FunctionalForHikes.hwt")).watchface!;
     const bytes = writeWatchface(wf);
     const broken = bytes.slice();
     const view = new DataView(broken.buffer);
@@ -256,7 +256,7 @@ describe("FaceBuilder: a face from scratch", () => {
     const f2 = new FaceBuilder(createHwt({ title: "x", cover }).watchface!);
     expect(() => f2.element("time", (e) => e.digits({ digits: clock.slice(0, 9), x: 0, y: 0, align: "left", valueType: 12 }))).toThrow(/10 images/);
     expect(() => f2.element("time", (e) => e.singleImage({ image: 99, x: 0, y: 0 }))).toThrow(/does not name an existing slot/);
-    expect(() => new FaceBuilder(readHwt(fixture("unlicensed/SimpleItalic.hwt")).watchface!)).toThrow(/version 2/);
+    expect(() => new FaceBuilder(readHwt(fixture("synthetic/SynthV1Glyphs.hwhd02.hwt")).watchface!)).toThrow(/version 2/);
   });
 });
 

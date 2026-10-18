@@ -13,8 +13,8 @@ import { parsedFixtures } from "./helpers";
 const all = parsedFixtures();
 
 describe("description.xml", () => {
-  test("renderDescription reproduces the vendor tool's description.xml byte-for-byte (all Fit 4 Pro samples)", () => {
-    for (const f of all.filter((x) => x.name.startsWith("fit4pro/") || x.name.startsWith("other/Gt6") || x.name.startsWith("other/Nike9"))) {
+  test("renderDescription reproduces the vendor tool's description.xml byte-for-byte (Fit 4 Pro, GT6 and synthetic samples)", () => {
+    for (const f of all.filter((x) => x.name.startsWith("fit4pro/") || x.name.startsWith("other/Focus") || x.name.startsWith("synthetic/"))) {
       const xml = utf8Decode(getEntry(f.pkg, "description.xml")!);
       expect(renderDescription(parseDescription(xml))).toBe(xml);
     }
@@ -144,7 +144,7 @@ function jpegSize(b: Uint8Array): [number, number] {
 describe("sample facts the README relies on", () => {
   test("Fit 4 Pro previews are 816x960 (cover, aod) and 331x390 (icon_small); thumbnail slot is 228x269", () => {
     const fit4 = all.filter((f) => f.name.startsWith("fit4pro/"));
-    expect(fit4).toHaveLength(10);
+    expect(fit4).toHaveLength(4);
     for (const f of fit4) {
       expect(jpegSize(getEntry(f.pkg, "preview/cover.jpg")!)).toEqual([816, 960]);
       expect(jpegSize(getEntry(f.pkg, "preview/aod.jpg")!)).toEqual([816, 960]);

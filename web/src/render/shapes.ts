@@ -1,5 +1,5 @@
 import type { HandElement, IconName, RingElement } from "@/model/types";
-import { newSprite, type Ctx2D, type Sprite } from "./canvas";
+import { newSprite, remember, type Ctx2D, type Sprite } from "./canvas";
 
 /** A decoded uploaded image: what the sprite renderer needs, independent of the DOM. */
 export interface AssetImage {
@@ -17,15 +17,15 @@ export interface HandSprite {
 
 const HAND_PAD = 3;
 
-const CACHE_LIMIT = 96;
-
 /** Small insertion-ordered cache so the 30 fps preview does not redraw every sprite each frame. */
 function cached<T>(cache: Map<string, T>, key: string, make: () => T): T {
   const hit = cache.get(key);
-  if (hit) return hit;
+  if (hit) {
+    remember(cache, key, hit);
+    return hit;
+  }
   const value = make();
-  if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value as string);
-  cache.set(key, value);
+  remember(cache, key, value);
   return value;
 }
 
@@ -155,6 +155,16 @@ function drawIcon(name: IconName, size: number, color: string): Sprite {
     const p = new Path2D(
       "M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4",
     );
+    ctx.fill(p);
+    ctx.stroke(p);
+  } else if (name === "mountain") {
+    // Lucide "mountain".
+    const p = new Path2D("m8 3 4 8 5-5 5 15H2L8 3z");
+    ctx.fill(p);
+    ctx.stroke(p);
+  } else if (name === "thermometer") {
+    // Lucide "thermometer".
+    const p = new Path2D("M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z");
     ctx.fill(p);
     ctx.stroke(p);
   } else if (name === "steps") {

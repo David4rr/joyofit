@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 
 import { AppText } from '@/components/AppText';
+import { fmtDate, useTranslation } from '@/i18n';
 import type { WeekPoint } from '@/features/health/metrics';
 import { useColors } from '@/theme';
 
@@ -12,6 +13,7 @@ const DOT = 3.5;
 
 /** Daily means of the last seven days as a line; days without data leave a gap. Newest day is the filled end. */
 export function Sparkline({ points, color, label }: { points: readonly WeekPoint[]; color: string; label: string }) {
+  const { t } = useTranslation('common');
   const colors = useColors();
   const [width, setWidth] = useState(0);
 
@@ -73,10 +75,10 @@ export function Sparkline({ points, color, label }: { points: readonly WeekPoint
       </View>
       <View style={styles.axis}>
         <AppText variant="caption" muted>
-          {first.toLocaleDateString(undefined, { weekday: 'short' })}
+          {fmtDate(first, 'dayShort')}
         </AppText>
         <AppText variant="caption" muted>
-          Today
+          {t('time.today')}
         </AppText>
       </View>
     </View>

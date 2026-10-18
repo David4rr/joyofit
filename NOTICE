@@ -7,11 +7,25 @@ of the License, or (at your option) any later version. See LICENSE.
 
 The Huawei protocol implementation in
 modules/huawei-wear/android/src/main/java/nodomain/freeyourgadget/gadgetbridge/
-and the Kotlin session layer in modules/huawei-wear/android/src/main/java/com/joyodigitama/huaweiwear/
+and the Kotlin session layer in modules/huawei-wear/android/src/main/java/com/joyodigitama/huaweiwear/,
+and their Swift port in modules/huawei-wear/ios/HuaweiProtocol/ (the iOS protocol layer),
 are derived from Gadgetbridge (https://codeberg.org/Freeyourgadget/Gadgetbridge),
 upstream commit bb7a1e83a29837153bf0c3a50e9869dec3dac0dd, licensed AGPL-3.0-or-later.
 Original copyright notices are retained in each ported file; modified files carry a
 "Modified for watch-fit" line.
+
+RouteFile.kt and RouteFile.swift (the route file sent to the watch) are ports of Gadgetbridge's HuaweiConvertTrack.java and
+HuaweiRouteTrack.java, and the route push in P2pController follows its HuaweiP2PFitnessData.java; verbatim copies of the two
+converter classes live in modules/huawei-wear/ios/HuaweiProtocol/GoldenGen/vendor/ only to generate the test fixtures.
+
+The importer for Huawei's Privacy Centre health export (HuaweiExport*.kt, HuaweiHealthDetailParser.kt,
+HuaweiMotionPathParser.kt in modules/huawei-wear/android/) was written for this project. Its idea of the export
+layout (folders, record keys, the motion-path track records, the pause marker and the invalid-JSON quirks) comes from
+reading what these MIT-licensed community tools document; no code was copied from them:
+  m1ty/huawei2gpx (https://github.com/m1ty/huawei2gpx),
+  JordyThien/Huawei-Health-Importer (https://github.com/JordyThien/Huawei-Health-Importer),
+  driemekasten/hhealth2zepp (https://github.com/driemekasten/hhealth2zepp).
+It uses zip4j (https://github.com/srikanth-lingala/zip4j, Apache-2.0) to read the AES-encrypted ZIP.
 
 Huawei and HUAWEI WATCH FIT are trademarks of Huawei Technologies Co., Ltd. This project is not
 affiliated with or endorsed by Huawei.

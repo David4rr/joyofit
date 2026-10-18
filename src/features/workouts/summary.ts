@@ -1,4 +1,5 @@
 import type { WorkoutPointRow } from '@/db/queries';
+import { fmtDecimal, fmtDistance, fmtInt, t } from '@/i18n';
 
 /** One pace block of the watch: per-km (type 0) or per-mile (type 1) split. */
 export interface PaceBlock {
@@ -43,6 +44,14 @@ export interface WorkoutSummary {
   recoveryHours?: number;
   vo2max?: number;
   trainingPoints?: number;
+  /** Watts, rpm (strides per minute on foot): from an imported FIT file, which has no per-sample columns for them. */
+  avgPower?: number;
+  maxPower?: number;
+  normalizedPower?: number;
+  avgCadence?: number;
+  maxCadence?: number;
+  /** Set on workouts imported from a FIT file: the device brand, or `FIT file` when the file does not say. */
+  importedFrom?: string;
   swim?: {
     style?: string;
     strokes?: number;
@@ -55,6 +64,18 @@ export interface WorkoutSummary {
   paceBlocks?: PaceBlock[];
   paceFastestSecPerKm?: number;
   paceSlowestSecPerKm?: number;
+  /** Watch laps, unix seconds; absent for workouts stored before laps were kept. */
+  laps?: SummaryLap[];
+}
+
+/** One lap of `summary_json.laps`. */
+export interface SummaryLap {
+  startTs: number;
+  endTs: number;
+  distanceM: number | null;
+  avgHr: number | null;
+  maxHr: number | null;
+  avgCadence: number | null;
 }
 
 export function parseSummary(json: string): WorkoutSummary {
@@ -74,13 +95,21 @@ export function formatPace(secPerUnit: number, unit: string): string {
   return `${m}:${String(s).padStart(2, '0')} /${unit}`;
 }
 
+/** `19,8 km/j` (id) / `19.8 km/h` (en). */
 export function formatSpeed(metersPerSecond: number): string {
-  return `${(metersPerSecond * 3.6).toFixed(1)} km/h`;
+  return `${fmtDecimal(metersPerSecond * 3.6, 1)} ${t('workouts:analysis.unit.kmh')}`;
 }
 
-/** Metres or kilometres with the precision a list row needs. */
+/** Metres or kilometres with the precision a list row needs: `2,34 km` / `850 m`. */
 export function formatWorkoutDistance(meters: number): string {
-  return meters >= 1000 ? `${(meters / 1000).toFixed(2)} km` : `${Math.round(meters)} m`;
+  return fmtDistance(meters);
+}
+
+/** The same distance as number and unit, for a big figure with a small unit. */
+export function workoutDistanceParts(meters: number): { value: string; unit: string } {
+  return meters >= 1000
+    ? { value: fmtDecimal(meters / 1000, 2), unit: t('workouts:analysis.unit.km') }
+    : { value: fmtInt(meters), unit: t('workouts:analysis.unit.m') };
 }
 
 /** `1:05:09` or `42:10`; seconds matter for workouts, unlike sleep. */

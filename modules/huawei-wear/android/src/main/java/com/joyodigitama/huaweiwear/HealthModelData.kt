@@ -33,13 +33,8 @@ internal object HealthModelData {
     val steps = scalarLong(db, "SELECT COALESCE(SUM(steps), 0) FROM step_samples WHERE timestamp >= ? AND timestamp < ?", from, to) ?: 0L
     val newest = scalarLong(db, "SELECT MAX(timestamp) FROM step_samples WHERE timestamp >= ? AND timestamp < ?", from, to)
     val exerciseSeconds = scalarLong(db, "SELECT COALESCE(SUM(duration), 0) FROM workouts WHERE start >= ? AND start < ?", from, to) ?: 0L
-    // A night counts on the day it ends; awake spans are not sleep.
-    val sleepSeconds = scalarLong(
-      db,
-      "SELECT COALESCE(SUM(end - start), 0) FROM sleep_segments WHERE end > ? AND end <= ? AND (stage IS NULL OR stage != 'awake')",
-      from,
-      to,
-    )?.takeIf { it > 0 }
+    // A night counts on the day it ends; awake spans are not sleep, and stage-less rows are cleaned first (SleepStore).
+    val sleepSeconds = sleepSecondsEndingIn(db, from + 1, to + 1)?.takeIf { it > 0 }
     val stress = scalarLong(db, "SELECT COUNT(*) FROM health_metrics WHERE type = 'emotion' AND ts >= ? AND ts < ?", from, to) ?: 0L
     val bp = scalarLong(db, "SELECT COUNT(*) FROM health_metrics WHERE type = 'blood_pressure' AND ts >= ? AND ts < ?", from, to) ?: 0L
 
@@ -80,5 +75,13 @@ internal object HealthModelData {
       db.rawQuery(sql, Array(args.size) { args[it].toString() }).use { if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else null }
     } catch (e: SQLiteException) {
       null // a table of a later migration is not there yet
+    }
+
+  /** Seconds asleep in cleaned segments that end in `[fromEndSec, toEndSec)`; null when a table of a later migration is not there yet. */
+  private fun sleepSecondsEndingIn(db: SQLiteDatabase, fromEndSec: Long, toEndSec: Long): Long? =
+    try {
+      SleepStore.load(db, fromEndSec, toEndSec).sumOf { if (it.stage == "awake") 0L else maxOf(0L, it.end - it.start) }
+    } catch (e: SQLiteException) {
+      null
     }
 }

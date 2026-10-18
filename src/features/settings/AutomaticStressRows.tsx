@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { Divider } from '@/components/Screen';
 import { NavRow } from '@/components/NavRow';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -10,14 +10,12 @@ import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatDateTime } from '@/format';
 import { HuaweiWear } from '@/wear';
 
-const TURN_ON_HINT =
-  'Turning it on takes 1 minute of sitting still with the watch snug. The phone measures your beat intervals and sends the watch a baseline.';
-
 /**
  * The watch's automatic stress switch and the way to Measure HRV, inside the Heart rate and sensors section.
  * Turning the switch on runs the calibration minute here; turning it off is immediate.
  */
 export function AutomaticStressRows({ connected }: { connected: boolean }) {
+  const { t } = useTranslation(['settings', 'common']);
   const router = useRouter();
   const [status, setStatus] = useState(() => HuaweiWear.getStressStatus());
   const [calibrating, setCalibrating] = useState(false);
@@ -44,42 +42,44 @@ export function AutomaticStressRows({ connected }: { connected: boolean }) {
     }
   };
 
+  const unsupported = !status.supported || status.knownSupported === false;
   const hint = !connected
-    ? 'Connect the watch to change it.'
-    : !status.supported
-      ? 'This watch does not offer it.'
+    ? undefined
+    : unsupported
+      ? t('stress.unavailable')
       : status.enabled
-        ? `On, as last set here${status.lastCalibratedAt !== null ? `. Calibrated ${formatDateTime(status.lastCalibratedAt)}` : ''}.`
-        : TURN_ON_HINT;
+        ? status.lastCalibratedAt !== null
+          ? t('stress.calibrated', { when: formatDateTime(status.lastCalibratedAt) })
+          : undefined
+        : t('stress.calibrate');
 
   return (
     <>
       <SwitchRow
         icon="pulse"
-        label="Automatic stress"
+        label={t('stress.label')}
         hint={hint}
         value={status.enabled}
         onValueChange={(value) => void change(value)}
-        disabled={busy || !connected || !status.supported}
+        disabled={busy || !connected || unsupported}
       />
       {calibrating ? (
         <Notice
           action={{
-            label: 'Cancel',
+            label: t('common:actions.cancel'),
             onPress: () => HuaweiWear.cancelHrvMeasurement().catch((e: unknown) => setError(errorMessage(e))),
           }}>
           {progress
-            ? `Calibrating: sit still, ${progress.secondsLeft} s left, ${progress.beats} beats so far.`
-            : 'Calibrating: sit still with the watch snug. This takes a minute.'}
+            ? t('stress.calibrating', { seconds: progress.secondsLeft, beats: progress.beats })
+            : t('stress.calibratingStart')}
         </Notice>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      <Divider />
       <NavRow
         icon="pulse"
         tint="heart"
-        title="Measure HRV"
-        subtitle="One minute, from your beat-to-beat intervals"
+        title={t('stress.hrvTitle')}
+        subtitle={t('stress.hrvSubtitle')}
         onPress={() => router.push('/hrv')}
       />
     </>

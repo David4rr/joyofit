@@ -8,6 +8,7 @@ import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { MetricCard } from '@/features/health/MetricCard';
 import { metaOrFallback } from '@/features/health/metrics';
 import { useHealthMetrics } from '@/features/health/useHealthMetrics';
+import { useTranslation } from '@/i18n';
 import { useNow } from '@/hooks/useNow';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing } from '@/theme';
@@ -17,6 +18,7 @@ const AGO_TICK_MS = 60_000;
 
 /** Health metrics the watch stores in its data dictionary: latest value, a 7-day line, and what the watch does not support. */
 export function HealthScreen() {
+  const { t } = useTranslation('health');
   const router = useRouter();
   const { linkState, device, dataVersion, sync } = useWatch();
   const { data, error } = useHealthMetrics(dataVersion);
@@ -31,8 +33,8 @@ export function HealthScreen() {
 
   return (
     <Screen refresh={{ refreshing: syncing, onRefresh: () => void sync(), enabled: canSync }}>
-      <HiddenTabHeader title="Health" />
-      {error ? <Notice tone="danger">Could not read stored data: {error}</Notice> : null}
+      <HiddenTabHeader title={t('overview.title')} />
+      {error ? <Notice tone="danger">{t('overview.error', { error })}</Notice> : null}
 
       {data === null && error === null ? (
         <View style={styles.stack}>
@@ -44,20 +46,20 @@ export function HealthScreen() {
       {empty ? (
         <EmptyState
           icon="pulse"
-          title="No health metrics yet"
-          description="Connect the watch and sync. The metrics it supports appear here after the first sync."
+          title={t('overview.emptyTitle')}
+          description={t('overview.emptyDescription')}
           action={
             canSync
-              ? { label: 'Sync now', icon: 'sync', onPress: () => void sync() }
+              ? { label: t('overview.syncNow'), icon: 'sync', onPress: () => void sync() }
               : linkState === 'disconnected'
-                ? { label: 'Connect watch', icon: 'bluetooth', onPress: () => router.push('/watch') }
+                ? { label: t('overview.connectWatch'), icon: 'bluetooth', onPress: () => router.push('/watch') }
                 : undefined
           }
         />
       ) : null}
 
       {data !== null && !empty ? (
-        <Notice>Unverified on the watch: these layouts come from Gadgetbridge and Huawei Health, not from a Fit 4.</Notice>
+        <Notice>{t('overview.unverified')}</Notice>
       ) : null}
 
       {cards.map((metric) => (
@@ -65,7 +67,7 @@ export function HealthScreen() {
       ))}
 
       {unsupported.length > 0 ? (
-        <Section title="Not supported by this watch" icon="close-circle" tint="neutral">
+        <Section title={t('overview.unsupported')} icon="close-circle" tint="neutral">
           {unsupported.map((metric, i) => (
             <View key={metric.type} style={styles.stack}>
               {i > 0 ? <Divider /> : null}

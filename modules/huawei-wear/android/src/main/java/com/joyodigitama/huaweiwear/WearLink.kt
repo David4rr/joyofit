@@ -54,16 +54,24 @@ internal class WearLink(
    */
   internal val syncExtensions = java.util.concurrent.CopyOnWriteArrayList<suspend (HuaweiSession) -> Unit>()
 
+
+
+  companion object {
+    private const val HUAWEI_MANUFACTURER_ID = 0x027D
+    private const val HONOR_MANUFACTURER_ID = 0x0079
+    private const val SERVICE_FE86 = "fe86"
+    private const val SERVICE_3802 = "3802"
+    private const val SCAN_TIMEOUT_MS = 12_000L
+  }
+
   private val lock = Any()
-  private val discoveredDevices = ConcurrentHashMap<String, Map<String, Any?>>()
+  private val discoveredDevices = ConcurrentHashMap<String, DiscoveredDevice>()
   private val discoveredNames = ConcurrentHashMap<String, String>()
-  private val discoveredTransports = ConcurrentHashMap<String, ModelTransport>()
   private var scanCallback: ScanCallback? = null
   private val scanHandler = android.os.Handler(android.os.Looper.getMainLooper())
   private val scanTimeoutRunnable = Runnable { stopScan() }
   @Volatile var isScanning: Boolean = false
     private set
-
   private var current: Connection? = null
 
   @Volatile
@@ -88,14 +96,48 @@ internal class WearLink(
     lateinit var session: HuaweiSession
 
     /** A listed model uses its Gadgetbridge coordinator's link; for other names Android's view of the device decides. */
-    val transportKind: ModelTransport = model.transportFor(isLeOnly(device) || discoveredTransports[address] == ModelTransport.LE)
+    @Volatile
+    var transportKind: ModelTransport = if (settings.forceBle) ModelTransport.LE else model.transportFor(isLeOnly(device))
+      private set
+
+    /** Every event of an LE link is also written to logcat under the JoyoFitBle tag; RFCOMM links log as before. */
+    var linkEvents: WearEvents = if (transportKind == ModelTransport.LE) LogcatMirrorEvents(events) else events
+      private set
 
     /** GB's HuaweiDeviceType for the link: BR, or BLE / AW over GATT. */
-    val deviceType: HuaweiDeviceType = model.deviceType(transportKind)
+    var deviceType: HuaweiDeviceType = model.deviceType(transportKind)
+      private set
 
-    val transport: WatchTransport = when (transportKind) {
+    var transport: WatchTransport = openTransport(adapter)
+      private set
+
+    init {
+      bindSession()
+    }
+
+    /**
+     * Moves a Classic watch whose RFCOMM link did not open onto LE GATT (service 0xFE86), before any protocol traffic. Seen on
+     * the Fit 4 Pro after a phone's Classic pairing went stale: SDP fails (`SDP_CFG_FAILED`) while LE still answers.
+     */
+    fun fallBackToLe() {
+      transport.close()
+      transportKind = ModelTransport.LE
+      linkEvents = LogcatMirrorEvents(events)
+      deviceType = model.deviceType(ModelTransport.LE)
+      transport = openTransport(null)
+      bindSession()
+    }
+
+    private fun bindSession() {
+      session = HuaweiSession(transport, linkEvents)
+      session.params.setTransactionsCrypted(model.crypted)
+      // GB HuaweiSupportProvider: the AW70 bands send their workout records with their own layout.
+      session.params.setAW(deviceType == HuaweiDeviceType.AW)
+    }
+
+    private fun openTransport(adapter: BluetoothAdapter?): WatchTransport = when (transportKind) {
       ModelTransport.BR -> RfcommTransport(
-        adapter = adapter,
+        adapter = checkNotNull(adapter),
         device = device,
         sdp = model.sdp,
         onData = { chunk -> session.onData(chunk) },
@@ -105,17 +147,11 @@ internal class WearLink(
         context = appContext,
         device = device,
         newHonorProtocol = model.newHonorProtocol,
+        watchName = bondedName(device),
         onData = { chunk -> session.onData(chunk) },
         onRemoteClosed = { cause -> onRemoteClosed(this, cause) },
         log = { line -> events.log(LogDirection.INFO, null, null, null, line) },
       )
-    }
-
-    init {
-      session = HuaweiSession(transport, events)
-      session.params.setTransactionsCrypted(model.crypted)
-      // GB HuaweiSupportProvider: the AW70 bands send their workout records with their own layout.
-      session.params.setAW(deviceType == HuaweiDeviceType.AW)
     }
   }
 
@@ -158,31 +194,51 @@ internal class WearLink(
   fun bondedDevices(): List<Map<String, Any?>> {
     val adapter = requireAdapter()
     try {
-      val map = mutableMapOf<String, Map<String, Any?>>()
+      val map = mutableMapOf<String, DiscoveredDevice>()
       for (device in adapter.bondedDevices) {
         val name = device.name ?: device.address
-        map[device.address] = mapOf("address" to device.address, "name" to name) + WatchModels.match(device.name).toJs()
+        val match = WatchModels.match(device.name)
+        map[device.address] = DiscoveredDevice(
+          address = device.address,
+          name = name,
+          model = match.model?.name,
+          support = match.support.wire,
+          reason = match.reason,
+        )
       }
       synchronized(lock) {
         val conn = current
         if (conn != null && !map.containsKey(conn.address)) {
           val name = conn.info?.get("name") as? String ?: lastAttemptName ?: conn.address
-          map[conn.address] = mapOf("address" to conn.address, "name" to name) + conn.model.toJs()
+          map[conn.address] = DiscoveredDevice(
+            address = conn.address,
+            name = name,
+            model = conn.model.model?.name,
+            support = conn.model.support.wire,
+            reason = conn.model.reason,
+          )
         }
       }
       for ((addr, name) in discoveredNames) {
         if (!map.containsKey(addr)) {
           val match = WatchModels.match(name)
           if (match.connectable) {
-            map[addr] = mapOf("address" to addr, "name" to name) + match.toJs()
+            map[addr] = DiscoveredDevice(
+              address = addr,
+              name = name,
+              model = match.model?.name,
+              support = match.support.wire,
+              reason = match.reason,
+            )
           }
         }
       }
-      return map.values.sortedBy { (it["name"] as? String)?.lowercase(Locale.ROOT) ?: "" }
+      return map.values.sortedBy { it.name.lowercase(Locale.ROOT) }.map { it.toJs() }
     } catch (e: SecurityException) {
       throw WearException(ErrorCodes.BLUETOOTH_PERMISSION, "BLUETOOTH_CONNECT permission denied: ${e.message}", e)
     }
   }
+
   @SuppressLint("MissingPermission")
   fun startScan() {
     val adapter = requireAdapter()
@@ -200,9 +256,12 @@ internal class WearLink(
 
     synchronized(this) {
       if (isScanning) return
+      // Each scan starts from nothing: devices an earlier scan saw (a watch that has since left or moved to another phone) must not stay listed.
+      discoveredDevices.clear()
+      discoveredNames.clear()
       isScanning = true
       scanHandler.removeCallbacks(scanTimeoutRunnable)
-      scanHandler.postDelayed(scanTimeoutRunnable, 12_000L)
+      scanHandler.postDelayed(scanTimeoutRunnable, SCAN_TIMEOUT_MS)
     }
     events.scanState(true, null)
 
@@ -213,10 +272,11 @@ internal class WearLink(
           ?: result.scanRecord?.deviceName
         val address = device.address
 
-        val serviceUuids = result.scanRecord?.serviceUuids?.map { it.uuid.toString().lowercase() } ?: emptyList()
-        val isHuaweiService = serviceUuids.any { it.contains("fe86") || it.contains("3802") }
+        val serviceUuids = result.scanRecord?.serviceUuids?.map { it.uuid.toString().lowercase(Locale.ROOT) } ?: emptyList()
+        val isHuaweiService = serviceUuids.any { it.contains(SERVICE_FE86) || it.contains(SERVICE_3802) }
         val manufacturerData = result.scanRecord?.manufacturerSpecificData
-        val isHuaweiManufacturer = manufacturerData != null && (manufacturerData.get(0x027D) != null || manufacturerData.get(0x0079) != null)
+        val isHuaweiManufacturer = manufacturerData != null &&
+          (manufacturerData.get(HUAWEI_MANUFACTURER_ID) != null || manufacturerData.get(HONOR_MANUFACTURER_ID) != null)
 
         if (rawName.isNullOrBlank() && (isHuaweiService || isHuaweiManufacturer)) {
           rawName = "Huawei Wearable (${address.takeLast(5)})"
@@ -226,14 +286,16 @@ internal class WearLink(
           discoveredNames[address] = rawName
           val match = WatchModels.match(rawName)
           if (match.connectable || isHuaweiService || isHuaweiManufacturer) {
-            discoveredTransports[address] = ModelTransport.LE
-            val item = mapOf(
-              "address" to address,
-              "name" to rawName,
-              "rssi" to result.rssi
-            ) + match.toJs()
-            discoveredDevices[address] = item
-            events.deviceDiscovered(item)
+            val entry = DiscoveredDevice(
+              address = address,
+              name = rawName,
+              model = match.model?.name,
+              support = match.support.wire,
+              reason = match.reason,
+              rssi = result.rssi,
+            )
+            discoveredDevices[address] = entry
+            events.deviceDiscovered(entry)
           }
         }
       }
@@ -246,6 +308,7 @@ internal class WearLink(
         synchronized(this@WearLink) {
           isScanning = false
           scanCallback = null
+          scanHandler.removeCallbacks(scanTimeoutRunnable)
         }
         events.scanState(false, "BLE Scan failed with code $errorCode")
       }
@@ -262,6 +325,7 @@ internal class WearLink(
       synchronized(this) {
         isScanning = false
         scanCallback = null
+        scanHandler.removeCallbacks(scanTimeoutRunnable)
       }
       events.scanState(false, e.message)
       throw WearException(ErrorCodes.CONNECT_FAILED, "Could not start BLE scan: ${e.message}", e)
@@ -290,9 +354,8 @@ internal class WearLink(
   }
 
   fun getDiscoveredDevices(): List<Map<String, Any?>> {
-    return discoveredDevices.values.toList().sortedBy { (it["name"] as? String)?.lowercase(Locale.ROOT) ?: "" }
+    return discoveredDevices.values.sortedBy { it.name.lowercase(Locale.ROOT) }.map { it.toJs() }
   }
-
 
   private fun requireAdapter(): BluetoothAdapter {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -313,8 +376,13 @@ internal class WearLink(
 
   // Connect
 
-  @SuppressLint("MissingPermission")
-  suspend fun connect(rawAddress: String): Map<String, Any?> {
+  /**
+   * Opens the link, authenticates and initializes. Every failure rejects with one coded [WearException] and leaves the link
+   * `disconnected` (the transport released), so an immediate retry starts clean. [allowFirstBind] lets this attempt start a
+   * first bind with the watch (which replaces its current phone pairing); without it the connect stops with
+   * ERR_BIND_CONFIRMATION before anything on the watch changes. Only the interactive connect the user confirmed passes true.
+   */
+  suspend fun connect(rawAddress: String, allowFirstBind: Boolean = false): Map<String, Any?> {
     stopScan()
     val address = rawAddress.trim().uppercase(Locale.ROOT)
     val adapter = requireAdapter()
@@ -341,14 +409,8 @@ internal class WearLink(
         }
       }
       if (joining == null) {
-        val device = adapter.getRemoteDevice(address)
-        val name = bondedName(device)
-        val model = WatchModels.match(name)
-        if (!model.connectable) {
-          throw WearException(ErrorCodes.UNSUPPORTED, "${name ?: address}: ${model.reason}")
-        }
-        connection = Connection(address, device, adapter, model)
-        lastAttemptName = name
+        connection = prepare(address, adapter)
+        lastAttemptName = bondedName(connection.device)
         lastAttemptTransport = connection.transportKind
         current = connection
         state = LinkState.CONNECTING
@@ -357,35 +419,50 @@ internal class WearLink(
       }
     }
     joining?.let { return it.ready.await() }
-    events.state(LinkState.CONNECTING, null)
-    val model = connection.model
-    val link = when (connection.transportKind) {
-      ModelTransport.BR -> "RFCOMM, SDP ${model.sdp}"
-      ModelTransport.LE ->
-        "Bluetooth LE GATT (${if (model.newHonorProtocol) "Honor service" else "service 0xFE86"}), device type ${connection.deviceType}"
-    }
-    events.log(
-      LogDirection.INFO,
-      null,
-      null,
-      null,
-      "Connecting to $address \"${lastAttemptName ?: "no name"}\": ${model.model?.name ?: "unknown model"} (${model.support.wire}), " +
-        "$link, encrypted ${model.crypted}",
-    )
 
+    // Everything from here is inside the try: whatever fails, the connection is torn down and the link ends `disconnected`.
     try {
-      connection.transport.connect(Timeouts.CONNECT_MS)
-      events.log(LogDirection.INFO, null, null, null, "${connection.transportKind.label} connected")
+      events.state(LinkState.CONNECTING, null)
+      val model = connection.model
+      val link = when (connection.transportKind) {
+        ModelTransport.BR -> "RFCOMM, SDP ${model.sdp}"
+        ModelTransport.LE ->
+          "Bluetooth LE GATT (${if (model.newHonorProtocol) "Honor service" else "service 0xFE86"}), device type ${connection.deviceType}"
+      }
+      connection.linkEvents.log(
+        LogDirection.INFO,
+        null,
+        null,
+        null,
+        "Connecting to $address \"${lastAttemptName ?: "no name"}\": ${model.model?.name ?: "unknown model"} (${model.support.wire}), " +
+          "$link${if (settings.forceBle) " (forced by the developer switch)" else ""}, encrypted ${model.crypted}" +
+          if (allowFirstBind) ", first bind confirmed by the user" else "",
+      )
+
+      try {
+        connection.transport.connect(Timeouts.CONNECT_MS)
+      } catch (e: Exception) {
+        if (connection.transportKind != ModelTransport.BR || connection.closed.get() || !shouldFallBackToLe(e)) throw e
+        events.log(LogDirection.ERROR, null, null, null, "RFCOMM did not open (${e.message}); trying Bluetooth LE GATT")
+        connection.fallBackToLe()
+        synchronized(lock) { lastAttemptTransport = ModelTransport.LE }
+        try {
+          connection.transport.connect(Timeouts.CONNECT_MS)
+        } catch (le: WearException) {
+          throw afterRfcommFailure(le, e)
+        }
+      }
+      connection.linkEvents.log(LogDirection.INFO, null, null, null, "${connection.transportKind.label} connected")
 
       setState(connection, LinkState.AUTHENTICATING)
       val identity = store.forDevice(address)
-      val authenticator = HuaweiAuthenticator(connection.session, identity, events, connection.deviceType)
-      val authMode = authenticator.authenticate()
+      val authenticator = HuaweiAuthenticator(connection.session, identity, connection.linkEvents, connection.deviceType)
+      val authMode = authenticator.authenticate(firstBindAllowed = allowFirstBind)
 
       setState(connection, LinkState.INITIALIZING)
       val init = HuaweiInitializer(
         session = connection.session,
-        events = events,
+        events = connection.linkEvents,
         bondedName = bondedName(connection.device),
         protocolVersion = authenticator.protocolVersion,
         profile = settings.profile,
@@ -429,18 +506,33 @@ internal class WearLink(
       }
       // Closed under us (user disconnect, watch dropped the link): report what closed it rather than
       // the I/O error that followed. A protocol-level failure of the operation itself wins.
-      val closeCause = connection.closeCause
-      val failure: WearException = when {
-        closeCause != null && (t !is WearException || t.errorCode == ErrorCodes.DISCONNECTED || t.errorCode == ErrorCodes.CONNECT_FAILED) -> closeCause
-        t is WearException -> t
-        t is IOException -> WearException(ErrorCodes.CONNECT_FAILED, "Connect failed: ${t.message}", t)
-        else -> WearException(ErrorCodes.CONNECT_FAILED, "Connect failed: ${t.message ?: t.javaClass.simpleName}", t)
-      }
-      events.log(LogDirection.ERROR, null, null, null, "Connect failed [${failure.errorCode}]: ${failure.message}")
-      teardown(connection, failure, failure.message)
+      val failure = connectFailure(t, connection.closeCause)
+      val needsConfirmation = failure.errorCode == ErrorCodes.BIND_CONFIRMATION
+      connection.linkEvents.log(
+        if (needsConfirmation) LogDirection.INFO else LogDirection.ERROR,
+        null,
+        null,
+        null,
+        "Connect stopped [${failure.errorCode}]: ${failure.message}",
+      )
+      teardown(connection, failure, stateError(failure))
       throw failure
     }
   }
+
+  /** The [Connection] for [address], or a coded failure: ERR_UNSUPPORTED for a watch this app does not drive, ERR_CONNECT_FAILED for anything Android refuses. */
+  private fun prepare(address: String, adapter: BluetoothAdapter): Connection =
+    try {
+      val device = adapter.getRemoteDevice(address)
+      val name = bondedName(device)
+      val model = WatchModels.match(name)
+      if (!model.connectable) throw WearException(ErrorCodes.UNSUPPORTED, "${name ?: address}: ${model.reason}")
+      Connection(address, device, adapter, model)
+    } catch (e: WearException) {
+      throw e
+    } catch (e: Exception) {
+      throw WearException(ErrorCodes.CONNECT_FAILED, "Could not prepare the connection to $address: ${e.message ?: e.javaClass.simpleName}", e)
+    }
 
   /** The watch becomes the one background mode follows, and gets its row in the shared database. */
   private fun rememberWatch(address: String, name: String, info: Map<String, Any?>) {
@@ -453,13 +545,14 @@ internal class WearLink(
     }
   }
 
+  /** Android's name for [device]; when it has none cached (it sometimes drops it), the name remembered for that watch's address. */
   @SuppressLint("MissingPermission")
   private fun bondedName(device: BluetoothDevice): String? =
     try {
-      device.name?.takeIf { it.isNotBlank() } ?: discoveredNames[device.address]
+      device.name
     } catch (e: SecurityException) {
-      discoveredNames[device.address]
-    }
+      null
+    } ?: settings.watchName.takeIf { settings.watchAddress.equals(device.address, ignoreCase = true) }
 
   /** True when Android knows [device] as Bluetooth LE only, so it has no Classic side to open an RFCOMM socket on. */
   @SuppressLint("MissingPermission")
@@ -497,13 +590,24 @@ internal class WearLink(
     teardown(connection, WearException(ErrorCodes.DISCONNECTED, reason, cause), reason)
   }
 
-  /** Idempotent. Fails in-flight requests with [cause]; reports `disconnected` with [error] to JS. */
+  /**
+   * Idempotent. Fails in-flight requests with [cause]; reports `disconnected` with [error] to JS. Whatever the transport does while
+   * closing, the link still ends `disconnected`, so a failed close can never leave the next connect answering BUSY.
+   */
   private fun teardown(connection: Connection, cause: WearException, error: String?) {
     if (!connection.closed.compareAndSet(false, true)) return
     connection.closeCause = cause
     connection.ready.completeExceptionally(cause)
-    connection.session.close(cause)
-    connection.transport.close()
+    try {
+      connection.session.close(cause)
+    } catch (e: Exception) {
+      events.log(LogDirection.ERROR, null, null, null, "Closing the session failed: ${e.message ?: e.javaClass.simpleName}")
+    }
+    try {
+      connection.transport.close()
+    } catch (e: Exception) {
+      events.log(LogDirection.ERROR, null, null, null, "Closing the ${connection.transportKind.label} link failed: ${e.message ?: e.javaClass.simpleName}")
+    }
     val wasCurrent = synchronized(lock) {
       if (current === connection) {
         current = null
@@ -546,10 +650,12 @@ internal class WearLink(
   }
 
   /**
-   * Pulls sleep, steps and totals since the last stored sync, commits them to the shared database
-   * and reports a summary (also as `onSyncComplete`).
+   * Pulls sleep, steps and totals since the last stored sync (everything the watch holds on the first sync), commits
+   * them to the shared database slice by slice and reports a summary (also as `onSyncComplete`). [fullHistory] pulls
+   * everything again; stored rows upsert, so it only adds what is missing. Logs a `History:` summary with the oldest
+   * stored timestamps (logcat tag `JoyoFit`) so the watch's real retention can be read off it.
    */
-  suspend fun syncActivity(): SyncSummary {
+  suspend fun syncActivity(fullHistory: Boolean = false): SyncSummary {
     val connection = requireConnected()
     if (state == LinkState.SYNCING) {
       throw WearException(ErrorCodes.BUSY, "A sync is already running")
@@ -563,12 +669,51 @@ internal class WearLink(
       }
       events.state(LinkState.SYNCING, null)
       try {
-        val last = storage { syncStore.lastSync(connection.address) }
-        val from = syncWindowStart(last, System.currentTimeMillis() / 1000)
-        val result = ActivitySync(connection.session, events).sync(from)
-        val stored = storage { syncStore.save(connection.address, result) }
-        val summary = stored.withWorkouts(syncWorkouts(connection))
-        syncNightHrv(connection)
+        val last = if (fullHistory) null else storage { syncStore.lastSync(connection.address) }
+        val nowSec = System.currentTimeMillis() / 1000
+        val slices = syncSlices(syncWindowStart(last), nowSec)
+        events.log(LogDirection.INFO, null, null, null, "History: ${if (fullHistory) "full" else "incremental"} pull in ${slices.size} slices from ${slices.first().first}")
+        var stored: SyncSummary? = null
+        var samples = 0
+        var sleep = 0
+        var oldestSample: Long? = null
+        var oldestSleep: Long? = null
+        for ((index, slice) in slices.withIndex()) {
+          val result = ActivitySync(connection.session, events).sync(slice.first, slice.second)
+          val slicePart = storage { syncStore.save(connection.address, result) }
+          samples += slicePart.samples
+          sleep += slicePart.sleep
+          result.samples.minOfOrNull { it.timestamp }?.let { oldestSample = minOf(oldestSample ?: it, it) }
+          result.sleep.minOfOrNull { it.start }?.let { oldestSleep = minOf(oldestSleep ?: it, it) }
+          events.log(
+            LogDirection.INFO, null, null, null,
+            "History: slice ${index + 1}/${slices.size} ${slice.first}..${slice.second}: ${slicePart.samples} step samples, ${slicePart.sleep} sleep segments",
+          )
+          stored = slicePart
+        }
+        val finalSlice = stored!!
+        val workoutsSynced = syncWorkouts(connection, fullHistory)
+        val summary = SyncSummary(
+          from = slices.first().first,
+          to = finalSlice.to,
+          samples = samples,
+          sleep = sleep,
+          totalSteps = finalSlice.totalSteps,
+          totalCalories = finalSlice.totalCalories,
+          totalDistance = finalSlice.totalDistance,
+          workouts = workoutsSynced,
+        )
+        val oldestWorkout = storage {
+          syncStore.read { db ->
+            db.rawQuery("SELECT MIN(start) FROM workouts", null).use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null }
+          }
+        }
+        events.log(
+          LogDirection.INFO, null, null, null,
+          "History: summary oldest step sample ${oldestSample ?: "none"}, oldest sleep ${oldestSleep ?: "none"}, " +
+            "oldest stored workout ${oldestWorkout ?: "none"}; $samples step samples, $sleep sleep segments, $workoutsSynced workouts written",
+        )
+        syncNightHrv(connection, fullHistory)
         postMorningSummary()
         for (extension in syncExtensions) {
           try {
@@ -611,12 +756,12 @@ internal class WearLink(
    * Workout sessions and their GPS tracks, after the activity data is stored. Whatever fails here is logged and
    * does not fail the sync: the steps, sleep and totals are already committed.
    */
-  private suspend fun syncWorkouts(connection: Connection): Int {
+  private suspend fun syncWorkouts(connection: Connection, fullHistory: Boolean): Int {
     val workouts = WorkoutStore(syncStore)
     val sync = WorkoutSync(connection.session, events)
     try {
       val now = (System.currentTimeMillis() / 1000).toInt()
-      sync.sync(workouts.syncStart(), now, workouts)
+      sync.sync(workouts.syncStart(fullHistory), now, workouts)
     } catch (e: CancellationException) {
       throw e
     } catch (e: Exception) {
@@ -641,9 +786,9 @@ internal class WearLink(
    * Nightly HRV from the watch's stress records, after the sleep is stored. Whatever fails here is logged and does not fail
    * the sync; only a lost link ends it.
    */
-  private suspend fun syncNightHrv(connection: Connection) {
+  private suspend fun syncNightHrv(connection: Connection, fullHistory: Boolean) {
     try {
-      NightHrvSync(connection.session, events, syncStore).sync(System.currentTimeMillis() / 1000)
+      NightHrvSync(connection.session, events, syncStore, settings).sync(System.currentTimeMillis() / 1000, fullHistory)
     } catch (e: CancellationException) {
       throw e
     } catch (e: WearException) {
@@ -652,5 +797,19 @@ internal class WearLink(
     } catch (e: Exception) {
       events.log(LogDirection.ERROR, null, null, null, "Night HRV failed: ${e.message ?: e.javaClass.simpleName}")
     }
+  }
+}
+
+/** Developer LE mode: every log line of the link (packets, auth and init steps, errors) also goes to logcat under the JoyoFitBle tag. */
+private class LogcatMirrorEvents(private val delegate: WearEvents) : WearEvents by delegate {
+  override fun log(direction: LogDirection, serviceId: Int?, commandId: Int?, hex: String?, message: String) {
+    val command = if (serviceId != null && commandId != null) " %02x/%02x".format(serviceId, commandId) else ""
+    val packet = if (hex != null) " ${hex.take(HEX_CHARS)}${if (hex.length > HEX_CHARS) "..." else ""}" else ""
+    android.util.Log.i("JoyoFitBle", "[${direction.wire}]$command $message$packet")
+    delegate.log(direction, serviceId, commandId, hex, message)
+  }
+
+  private companion object {
+    const val HEX_CHARS = 96
   }
 }

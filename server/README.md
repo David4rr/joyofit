@@ -14,18 +14,52 @@ D1, with a raw-file endpoint into R2 for the future Huawei-export importer.
 All endpoints need `Cookie: <JoyoRogo session cookies>`; without a live session they answer `401`
 (`503` when JoyoRogo itself cannot be reached).
 
+Uploading is a JoyoRogo Pro benefit. `POST /v1/sync` and `POST /v1/imports` ask JoyoRogo's oRPC
+`fitness/cloudAccess` (with the forwarded session cookies) and answer `402 {"error":"founder_required","paywall":true}`
+unless the account is Pro, or the JoyoRogo server has no paywall (self-host: the same `premiumUnlocked` rule
+JoyoRogo uses for its own Pro features). Reads (`GET`) stay open, so existing data is never locked away. If
+JoyoRogo cannot answer (including a `404` from a JoyoRogo that predates the procedure) the answer is `503`, never
+a guess. Deploy JoyoRogo with `fitness.cloudAccess` before this Worker.
+
 | Endpoint | What it does |
 |---|---|
-| `GET /v1/me` | `{ user: {id, email, name}, rev, lastSyncAt }` |
+| `GET /v1/me` | `{ user: {id, email, name}, rev, lastSyncAt, cloud: { unlocked } }`; `unlocked` says whether uploads are accepted |
 | `POST /v1/sync` | Batched upsert. JSON body, at most 3 MB: `stepSamples` (≤ 5 000), `sleepSegments` (≤ 2 000), `workouts` (≤ 50, each with `points`, ≤ 30 000), `devices` (≤ 10). Validated with zod (`400` with the issues, `413` too big). Idempotent: a row identical to the stored one is not rewritten. Answers `{ rev, written }`. |
 | `GET /v1/sync?since=<rev>&limit=<n>` | Pull for other devices: rows changed after `since`, oldest change first, across all tables (`limit` ≤ 1 000, workouts ≤ 25 per page). Answers the four arrays plus `cursor` (the next `since`) and `hasMore`. |
 | `POST /v1/imports?filename=<name>` | The request body is the file, streamed straight into R2 at `imports/<userId>/<uuid>` (needs `Content-Length`, at most `MAX_IMPORT_BYTES`, default 100 MiB). Records an `imports` row (`uploading` → `uploaded`, or `failed`). Answers `201 {id, status, size, ...}`. |
 | `GET /v1/imports` | The caller's 50 newest imports. |
+| `DELETE /v1/data` | Wipes what the app uploaded for the caller (steps, sleep, devices, workout rows of older builds, import files and rows). Keeps the Strava connection and family links. No Pro gate (data is never locked in). Answers `{deleted: true}`. |
+| `DELETE /v1/account` | Everything above plus the Strava connection and family links; the app calls it before it deletes the JoyoRogo account. |
+| `GET /v1/strava`, `GET /v1/strava/authorize`, `POST /v1/strava/token`, `POST /v1/strava/disconnect` | Strava connection of the signed-in user, **free (no Pro gate)**: status, authorize URL (scope `activity:write` plus whatever the athlete already granted JoyoRogo), a fresh short-lived access token, unlink. The Strava application is shared with JoyoRogo and Strava keeps one token per athlete, so the tokens live in **JoyoRogo's D1** (`strava_account`) and this Worker calls JoyoRogo's `/internal/joyofit/strava/*` with the Strava client credentials as HTTP Basic; the refresh token and client secret never reach the phone. The old table `strava_connection` is dropped by [`migrations/0004_drop_strava_connection.sql`](migrations/0004_drop_strava_connection.sql). |
+| `GET /strava/callback`, `GET\|POST /strava/webhook` | Public, called by Strava: the OAuth redirect (JoyoRogo exchanges the code and stores the tokens; redirects to `joyofit://settings/strava`) and the webhook (subscription validation; a deauthorization event is forwarded to JoyoRogo, which deletes that athlete's tokens for both products, `503` when the forward fails so Strava retries). |
+
+| `POST /v1/waitlist` | Public (no session, CORS for `https://fit.joyorogo.com`): the /strava and /iphone invite forms. Body `{ kind: "strava" \| "iphone", email, stravaProfile?, watchModel?, note?, website? }`; `website` is a honeypot (filled = `200`, nothing stored). Upserts by `(kind, email)` (status and `created_at` kept), at most 5 submissions per IP per hour (`429` + `Retry-After`; only a one-hour salted hash of the IP is stored, table `waitlist_rate`). Table `waitlist` ([`migrations/0003_waitlist.sql`](migrations/0003_waitlist.sql)). |
+| `GET /v1/waitlist?kind=&status=` | Owner only: `Authorization: Bearer $WAITLIST_ADMIN_TOKEN` (Worker secret, `503` when unset). Easiest: `scripts/waitlist.sh [strava\|iphone]` from the repo root, which reads the token from `~/.config/joyofit/waitlist-admin-token`. |
+
+Strava needs the `STRAVA_CLIENT_ID` var (in `wrangler.jsonc`) and two secrets, `STRAVA_CLIENT_SECRET` (the same value as on
+JoyoRogo's Worker) and `STRAVA_WEBHOOK_VERIFY_TOKEN`; without the client secret the Strava routes answer `503 strava_not_configured`.
+Owner setup (callback domain, webhook registration, the shared application, review): [`../docs/strava.md`](../docs/strava.md).
 
 `rev` is a per-user change counter: each row a request creates or changes gets its own increasing value,
 which is what `since` filters on. D1 schema: [`migrations/0001_init.sql`](migrations/0001_init.sql)
 (`step_samples`, `sleep_segments` with `stage`, `workouts`, `workout_points`, `device`, `user_state`,
 `imports`).
+
+### Gear sync
+
+Shoes and bikes (and which workout used which) travel as one JSON document per user, table `gear_doc`
+([`migrations/0006_gear.sql`](migrations/0006_gear.sql)); code in `src/gear.ts`.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /v1/gear` | `200 { rev, doc }`; `rev: 0, doc: null` when the user has none. Open to every signed-in account, like `GET /v1/sync`. |
+| `PUT /v1/gear` | Body `{ baseRev, doc }`, at most 1 MiB (`413`). **Pro only** (`402 { error: "founder_required", paywall: true }`, same gate as `POST /v1/sync`). The doc is validated with zod (`400`): `version: 1`, `gear` ≤ 200, `defaults` ≤ 20, `assignments` ≤ 50 000; unknown extra keys are kept, a missing `notified` becomes `0`. The stored JSON is the validated doc re-serialised. |
+
+`rev` is the optimistic-concurrency counter. A write lands only when `baseRev` equals the stored `rev` (`0` when the
+user has no doc): it stores the doc, sets `rev = rev + 1` and answers `200 { rev }`. Otherwise nothing is stored and
+the answer is `409 { error: "conflict", rev, doc }` with the current server state, for the client to merge and retry
+with the new `rev`. The check and the write are one conditional D1 statement, so two concurrent writers with the same
+`baseRev` cannot both win. `DELETE /v1/data` and `DELETE /v1/account` remove the row.
 
 Each table is written as one JSON bind parameter expanded with `json_each`, so a request costs a handful of
 D1 statements however large it is (D1 allows 100 bound parameters and, on the free plan, 50 queries per
@@ -71,13 +105,30 @@ bunx tsc --noEmit
 bun run types        # regenerate worker-configuration.d.ts after editing wrangler.jsonc
 ```
 
-The tests replace JoyoRogo with a fake `get-session` (a stubbed `fetch`, and a fake `AUTH_SERVICE` binding
+The tests replace JoyoRogo with a fake `get-session` and `fitness/cloudAccess` (a stubbed `fetch`, and a fake `AUTH_SERVICE` binding
 for the service-binding path).
+
+## Language of the text the Worker writes
+
+Push and email copy go to someone else's phone or inbox, so they follow the **recipient's** language: `locale` (`id` or `en`) from
+JoyoRogo's `/internal/joyofit/family/users` answer (`RogoUser.locale`; anything else or missing is `id`). `src/i18n/` holds
+`serverT(locale)` (`{{param}}` interpolation, `_one`/`_other` plurals by `Intl.PluralRules`) and
+`locales/{id,en}/{push,email,errors}.json`; `id` is the source. There is no per-isolate "current language": callers pass the `Locale`
+down (`EvalInput.locale`, `deliver(..., locale, ...)`, `sendFamilyEmail(env, to, locale, ...)`).
+
+- Alert titles and bodies are written when the alert is decided and stored in `family_alert_log` as written; a queued alert or digest
+  item goes out in that language. The digest title and the email disclaimer follow the watcher's language at send time.
+- A poke goes to the monitored person, so it uses *their* locale.
+- API errors stay machine codes (`invite_invalid`, ...); the app words them. The only localized API text is the inviter fallback name in
+  `GET /v1/family/invites/:code` (header `x-locale`, else the caller's JoyoRogo locale) and the Strava fallback page (`Accept-Language`).
+- `bun run server/scripts/i18n-keys.ts` (from the repo root) checks that `en` has every `id` key, once per plural category, with no orphans.
 
 ## Notes
 
 - Sessions are cached per isolate for 60 s; a session revoked in JoyoRogo keeps working here for up to
-  that long. Failures are never cached.
-- Deletions are not synced: the app never deletes rows, and the server has no delete endpoint yet.
+  that long. Failures are never cached. The Pro answer is cached the same way (60 s when unlocked, 10 s
+  when locked, so a fresh purchase is noticed quickly).
+- Workouts moved to JoyoRogo: app builds from the cloud-workouts release on keep their workouts (summary, every sample stream, the analysis) in JoyoRogo's D1 and R2, Pro only, restorable on a new phone and shown on joyorogo.com (design in JoyoRogo's `docs/watch-workout-cloud.md`). They no longer send `workouts` to `POST /v1/sync`. The `workouts` and `workout_points` tables and the workout part of `/v1/sync` stay only for older installed builds; drop them in a migration once those are gone.
+- Deleting: the app deletes nothing row by row. `DELETE /v1/data` wipes everything it uploaded, `DELETE /v1/account` additionally drops Strava and family links.
 - The importer for the Huawei export does not exist yet; `imports.r2_key` and `status` are where it will
   pick files up (`uploaded` → its own states).

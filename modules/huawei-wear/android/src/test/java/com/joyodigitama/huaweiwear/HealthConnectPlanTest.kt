@@ -84,8 +84,8 @@ class HealthConnectPlanTest {
       SleepSegment(night + 600, night + 1_200, 0x07, "deep"),
       SleepSegment(night + 1_200, night + 1_500, 0x5656, "rem"),
       SleepSegment(night + 1_500, night + 1_560, 0x5658, "awake"),
-      // Nap 5 h later.
-      SleepSegment(night + 20_000, night + 21_000, 1, null),
+      // A 30-minute nap 5 h later.
+      SleepSegment(night + 20_000, night + 21_800, 1, null),
     )
     val sessions = HealthConnectPlan.sleepSessions(segments, fromSec = 0)
     assertEquals(2, sessions.size)

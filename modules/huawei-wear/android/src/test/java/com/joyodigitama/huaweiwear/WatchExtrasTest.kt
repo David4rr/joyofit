@@ -14,7 +14,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Fall detection, SOS relay, DST and sleep report payloads against the byte examples in FEATURE_CANDIDATES.md. */
+/** Fall detection, SOS relay, DST and sleep report payloads against hand-computed byte examples. */
 class WatchExtrasTest {
   private val plain = HuaweiPacket.ParamsProvider().also { it.setTransactionsCrypted(false) }
 
@@ -113,6 +113,10 @@ class WatchExtrasTest {
       SosReadiness(false, false, true, false).blockers(),
     )
     assertEquals(listOf("this phone has no telephony"), SosReadiness(true, true, false, false).blockers())
+    assertEquals(
+      listOf("this version of JoyoFit (Google Play) cannot send text messages"),
+      SosReadiness(true, true, true, true, buildCanSendSms = false).blockers(),
+    )
   }
 
   @Test

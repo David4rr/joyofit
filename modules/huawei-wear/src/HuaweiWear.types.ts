@@ -1,6 +1,7 @@
 import type { WatchMealLoggedEvent } from './HuaweiWearDiet.types';
 import type { UploadProgressEvent, UploadResultEvent } from './HuaweiWearWatchface.types';
 import type { FaceCustomization } from './HuaweiWearFaceCustom.types';
+import type { HuaweiImportProgressEvent } from './HuaweiWearImport.types';
 
 export type LinkState =
   | 'disconnected'
@@ -28,6 +29,14 @@ export interface BondedDevice {
   support: ModelSupport;
   /** Why it is not `tested`, in a few words; null for tested models. */
   reason: string | null;
+  /**
+   * iOS only (undefined on Android, where the list is the system's bonded devices): the watch was seen just now, advertising or held by
+   * iOS. False for the remembered watch that is out of reach, or still linked to another phone, which then does not advertise.
+   */
+  nearby?: boolean;
+  /** iOS only: iOS already holds a connection to this watch (paired in Settings > Bluetooth, or held by another app), so no scan shows it. */
+  systemConnected?: boolean;
+  /** Android: signal strength in dBm, only on a device the Bluetooth LE scan saw. */
   rssi?: number;
 }
 
@@ -234,6 +243,24 @@ export interface WeatherPlace {
   detail: string | null;
 }
 
+/**
+ * What the forecast step (`0f/08`) of the last weather push did. The watch lists the command in its supported commands or it
+ * does not (`unsupported`: the push is current weather only); a listed one can answer with the OK code, answer with another
+ * code (`rejected`) or not answer within the timeout (`unacknowledged`).
+ */
+export type WeatherForecastState = 'sent' | 'unsupported' | 'unacknowledged' | 'rejected';
+
+export interface WeatherForecastStatus {
+  state: WeatherForecastState;
+  /** Hourly and daily entries in the request; 0 when nothing was sent. */
+  hours: number;
+  days: number;
+  /** Tag 0x7f of the watch's answer (100000 is OK), or null when it did not answer. */
+  replyCode: number | null;
+  /** Unix seconds of the attempt. */
+  at: number;
+}
+
 /** Weather settings and what the last push to the watch did. */
 export interface WeatherStatus {
   /** Off by default: weather needs the internet and the phone's location. */
@@ -257,6 +284,8 @@ export interface WeatherStatus {
   /** Huawei icon name of the last push, e.g. `SUNNY`, `LIGHT_RAIN`. */
   lastCondition: string | null;
   lastLocationName: string | null;
+  /** The forecast step of the last push in this process, or null before the first one. */
+  lastForecast: WeatherForecastStatus | null;
 }
 
 /** A live heart-rate reading the watch pushed (`onHeartRate`); only while `setLiveHeartRate(true)` is in effect. */
@@ -300,6 +329,8 @@ export interface StressStatus {
   lastCalibratedAt: number | null;
   /** The connected watch lists the automatic stress command (20/09); false while no watch is connected. */
   supported: boolean;
+  /** Whether the watch listed the command the last time it connected, kept across restarts; null before any connect. */
+  knownSupported: boolean | null;
 }
 
 /** Which sensor commands the connected watch lists (Gadgetbridge's `HuaweiState.supports*`). */
@@ -398,6 +429,8 @@ export type HuaweiWearModuleEvents = {
   onLiveWorkout: (event: LiveWorkout) => void;
   /** Once a second while `measureHrv` or the calibration of `setAutomaticStress` runs. */
   onHrvProgress: (event: HrvProgressEvent) => void;
+  /** While `importHuaweiExport` runs: at most four times a second, then once with `phase: 'done'`. */
+  onHuaweiImportProgress: (event: HuaweiImportProgressEvent) => void;
   onDeviceDiscovered: (event: BondedDevice) => void;
-  onScanStateChange: (event: { scanning: boolean; error?: string | null }) => void;
+  onScanStateChange: (event: { scanning: boolean; error: string | null }) => void;
 };

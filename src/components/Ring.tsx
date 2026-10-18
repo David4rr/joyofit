@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
+import { FILL_MS } from '@/components/motion';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -18,7 +19,7 @@ interface RingProps {
   children?: ReactNode;
 }
 
-/** Progress ring. Fills once on mount and when the value changes (600 ms); static under reduced motion. */
+/** Progress ring. Fills once on mount and when the value changes (`FILL_MS`); static under reduced motion. */
 export function Ring({ size, stroke, value, max, color, track, accessibilityLabel, children }: RingProps) {
   const reduced = useReducedMotion();
   const ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
@@ -31,7 +32,7 @@ export function Ring({ size, stroke, value, max, color, track, accessibilityLabe
     }
     Animated.timing(progress, {
       toValue: ratio,
-      duration: 600,
+      duration: FILL_MS,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();

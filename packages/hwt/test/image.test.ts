@@ -72,10 +72,10 @@ describe("image codec properties", () => {
 
 describe("image codec on the samples", () => {
   /**
-   * Two older faces (Carrera, Unnamed) were written by an encoder that turns every run of 2+ pixels into an RLE record;
-   * every other sample (Fit 4 Pro, GT6, Band 9, GT3, SimpleItalic) uses runs of 4+ only.
+   * Two version 1 faces (synthetic SynthV1Hands, third-party Unnamed) were written by an encoder that turns every run of 2+ pixels into an RLE record;
+   * every other sample (Fit 4 Pro, FocusWGTru, the other synthetic faces) uses runs of 4+ only.
    */
-  const MIN_RUN_BY_FIXTURE: Record<string, number> = { "unlicensed/Carrera.hwt": 2, "other/Unnamed.hwhd02.hwt": 2 };
+  const MIN_RUN_BY_FIXTURE: Record<string, number> = { "synthetic/SynthV1Hands.hwhd02.hwt": 2, "other/Unnamed.hwhd02.hwt": 2 };
 
   test("every image decodes, decode(encode(x)) == x, and re-encoding reproduces the original bytes", () => {
     let total = 0;
@@ -93,7 +93,7 @@ describe("image codec on the samples", () => {
         if (!bytesEqual(enc, blob)) throw new Error(`${f.name} image ${i}: re-encode with minRun ${minRun} differs from the original`);
       });
     }
-    expect(total).toBeGreaterThan(1100);
+    expect(total).toBeGreaterThan(500);
   });
 
   test("the default encoder policy (minRun 4) is the one the Fit 4 Pro samples use", () => {

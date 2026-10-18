@@ -1,0 +1,106 @@
+{
+  "title": "Gear",
+  "intro": "Keep track of your shoes and bikes, see how far you have used them, and get a reminder when it is time to replace them.",
+  "kinds": {
+    "shoes": "Shoes",
+    "bike": "Bike",
+    "other": "Other"
+  },
+  "sports": {
+    "run": "Running",
+    "walk": "Walking and hiking",
+    "ride": "Cycling"
+  },
+  "list": {
+    "empty": {
+      "title": "No gear yet",
+      "body": "Add shoes or a bike, then make it the default for running, walking or cycling."
+    },
+    "add": "Add gear",
+    "retiredHeading": "Retired",
+    "usage_one": "{{distance}} · {{time}} · {{count}} workout",
+    "usage_other": "{{distance}} · {{time}} · {{count}} workouts",
+    "progress": "{{distance}} of {{limit}}",
+    "noLimit": "No retirement distance",
+    "default": "Default"
+  },
+  "defaults": {
+    "title": "Default per sport",
+    "hint": "New workouts of this sport use your pick automatically. Workouts you already have do not change.",
+    "none": "None"
+  },
+  "edit": {
+    "newTitle": "New gear",
+    "editTitle": "Edit gear",
+    "kind": "Type",
+    "name": "Name",
+    "namePlaceholder": "E.g. Nike Pegasus 41",
+    "brand": "Brand",
+    "model": "Model",
+    "startDistance": "Starting distance (km)",
+    "startDistanceHint": "Distance done before you added it to JoyoFit.",
+    "retireAt": "Retire at (km)",
+    "retireAtHint": "Leave empty for no limit. Running shoes usually last 500 to 800 km.",
+    "photo": {
+      "add": "Choose photo",
+      "change": "Change photo",
+      "remove": "Remove photo",
+      "error": "The photo could not be loaded: {{error}}"
+    },
+    "save": "Save",
+    "nameRequired": "Enter a name first.",
+    "numberInvalid": "Enter a valid number of kilometres.",
+    "lifetime": "Used so far",
+    "lifetimeDistance": "Distance",
+    "lifetimeTime": "Moving time",
+    "lifetimeWorkouts": "Workouts",
+    "distancesTitle": "Distance",
+    "photoTitle": "Photo",
+    "retire": "Retire",
+    "unretire": "Use again",
+    "delete": "Delete",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteBody": "Workouts that used it stay, but are no longer linked to this gear.",
+    "deleteConfirm": "Delete"
+  },
+  "reminder": {
+    "near": "Your {{what}} has done {{km}} km, close to the {{limit}} km limit.",
+    "reached": "Your {{what}} has done {{km}} km, past the {{limit}} km limit. Time to replace it?",
+    "dismiss": "Not now"
+  },
+  "workout": {
+    "title": "Gear",
+    "none": "No gear",
+    "current": "Used",
+    "choose": "Choose gear",
+    "noMatch": "No gear fits this sport yet.",
+    "manage": "Manage gear",
+    "fromDefault": "Default",
+    "total": "{{distance}} total"
+  },
+  "share": {
+    "line": "{{kind}}: {{name}} · {{distance}}"
+  },
+  "strava": {
+    "title": "Strava",
+    "unlinked": "Not linked to Strava gear",
+    "linked": "Linked to {{name}}",
+    "link": "Link to Strava gear",
+    "unlink": "Remove link",
+    "pickShoes": "Choose Strava shoes",
+    "pickBike": "Choose Strava bike",
+    "loading": "Loading Strava gear...",
+    "empty": "There are no {{kind}} on your Strava account. Add them on strava.com, Settings, Gear first: Strava does not let apps create gear.",
+    "error": "Strava gear could not be loaded: {{error}}",
+    "notConnected": "Connect Strava first in Settings, Strava.",
+    "otherNoLink": "Gear of type Other has no counterpart on Strava.",
+    "note": "After a workout is sent, JoyoFit puts this gear on its Strava activity.",
+    "gearAccess": {
+      "title": "Strava gear",
+      "off": "To link gear, JoyoFit needs permission to read your Strava profile. Your shoes and bikes are only read to show them here and are not shared.",
+      "on": "Permission to read gear is granted.",
+      "grant": "Allow reading gear"
+    }
+  },
+  "rowSubtitle": "Shoes, bikes, distance and retirement reminders"
+}

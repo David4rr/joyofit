@@ -1,0 +1,115 @@
+# CI: checks and release builds
+
+Written 2026-10-17. Three workflows in `.github/workflows/`. The repo is public, so GitHub-hosted runners (macOS included) cost nothing.
+
+| Workflow | Runs on | Needs secrets | Does |
+| --- | --- | --- | --- |
+| `ci.yml` | pull requests, pushes to `master`, manual | none (safe for forks, read-only token) | jobs in parallel: app (`tsc`, `bun test ./src/`, `check-api.mjs`, `packages/hwt` tests + types), server (`tsc`, vitest), site (typecheck + build), Kotlin unit tests (`:huawei-wear:testDebugUnitTest` after `expo prebuild`), Swift tests for `HuaweiProtocol` and `ModuleLogicTests` (Swift 6.4.1 on Ubuntu) plus `check-inert-shapes.mjs` |
+| `release-android.yml` | **manual only** (`workflow_dispatch`) | yes, environment `release` | ubuntu, JDK 17, Bun, Gradle cache: `scripts/build-release.sh --play` (AAB + forbidden-permission guard) and/or `scripts/build-release.sh` (sideload APK); artifacts; optional Play upload |
+| `release-ios.yml` | **manual only** | yes, environment `release` | `scripts/ios/mac-build.sh` on `macos-latest`: expo prebuild, pods, `xcodebuild archive` + export, IPA checks, optional TestFlight upload |
+
+The release workflows are ready but never fire by themselves. Tag triggers (`v*`) are commented out at the top of each file; uncomment them to build on tags (the `release` approval below still applies).
+
+## Build numbers
+
+The workflows call the same scripts as the laptop, so the numbers follow the same scheme and CI and local builds never collide:
+
+- Android `versionCode` = minutes since 2024-01-01 UTC (`(now - 1704067200) / 60`).
+- iOS `CFBundleVersion` = `YYYYMMDDHHMM` in UTC (`BUILD_NUMBER` overrides).
+
+## Running a release
+
+Actions tab -> workflow -> **Run workflow**, or:
+
+```bash
+gh workflow run release-android.yml -R dzulfikar08/joyofit -f target=play-aab -f play_track=none   # artifact only
+gh workflow run release-android.yml -R dzulfikar08/joyofit -f target=play-aab -f play_track=alpha -f play_status=draft
+gh workflow run release-ios.yml -R dzulfikar08/joyofit -f upload_testflight=false
+```
+
+The job waits for the owner's approval (environment `release`): Actions run page -> **Review deployments** -> tick `release` -> Approve. Via API: `gh api -X POST repos/dzulfikar08/joyofit/actions/runs/<run-id>/pending_deployments -F 'environment_ids[]=<env-id>' -f state=approved -f comment=ok` (`environment_ids` from `GET .../runs/<run-id>/pending_deployments`).
+
+Results are workflow artifacts (30 days): `joyofit-android-<run>` (AAB and/or sideload APK, checksums in the run summary) and `joyofit-ios-<run>` (IPA). Nothing is uploaded to a store unless you choose it:
+
+- **Play**: `play_track` = `internal`, `alpha` (the API name of the closed-testing track the app is on today) or `beta`. `play_status` = `draft` (default, finish the rollout in Play Console) or `completed`. Production is deliberately not offered.
+- **TestFlight**: tick `upload_testflight`. The IPA goes to App Store Connect (altool); add it to an internal testing group in App Store Connect.
+
+
+## GitHub setup (done)
+
+- Environment `release`: required reviewer `dzulfikar08` (self-review allowed, this is a one-person repo), deployments only from `master` and `v*` tags. All release secrets are **environment secrets**, so a workflow on any other branch cannot read them.
+- Workflows use only `workflow_dispatch` (and optional tag push), never `pull_request_target`; PR runs (`ci.yml`) get no secrets. Every action is pinned to a commit SHA (version in the trailing comment); `GITHUB_TOKEN` is `contents: read`.
+- Signing files are written to the runner at build time and deleted in a final `always()` step; secret values are never echoed.
+
+## Secrets (environment `release`)
+
+Set with `gh secret set NAME --env release -R dzulfikar08/joyofit` (value from stdin or `< file`). Never commit these files.
+
+| Secret | Used by | Source |
+| --- | --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Android | base64 of `keystore/joyofit-release.jks` (from `~/.config/joyofit/keystore.tar.gpg`) |
+| `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | Android | `keystore/keystore.properties` in the same archive |
+| `PLAY_SERVICE_ACCOUNT_JSON` | Android, Play upload | `~/.config/joyorogo/play-billing-sa.json` |
+| `ASC_KEY_BASE64` | iOS | base64 of `AuthKey_BUU2CPKLGM.p8` (App Store Connect API key) |
+| `ASC_KEY_ID` | iOS | `BUU2CPKLGM` |
+| `ASC_ISSUER_ID` | iOS | `9e34111d-e39f-4122-9000-6eb4628fe9b9` |
+| `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD` | iOS | `.p12` of the Apple Distribution identity the Linux pipeline signs with (`~/.config/joyorogo-ios/distribution/{cert.der,key.pem}`), made with a random password, see "iOS signing" |
+
+Refresh commands (run on the laptop):
+
+```bash
+cd "$(mktemp -d)" && gpg --batch --pinentry-mode loopback --passphrase-file ~/.config/joyofit/keystore-backup-passphrase \
+  --decrypt ~/.config/joyofit/keystore.tar.gpg | tar -xf -
+base64 -w0 keystore/joyofit-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 --env release -R dzulfikar08/joyofit
+# the three passwords/alias: read them from keystore/keystore.properties and pipe each into gh secret set (no echo)
+gh secret set PLAY_SERVICE_ACCOUNT_JSON --env release -R dzulfikar08/joyofit < ~/.config/joyorogo/play-billing-sa.json
+base64 -w0 ~/Downloads/AuthKey_BUU2CPKLGM.p8 | gh secret set ASC_KEY_BASE64 --env release -R dzulfikar08/joyofit
+```
+
+## Android notes
+
+- The keystore secrets restore exactly what `gpg --decrypt secrets/keystore.tar.gpg` restores locally; the workflow checks nothing else in your home directory.
+- The sideload APK (`target = sideload-apk` or `both`) is built with the same `scripts/build-release.sh` and is only a workflow artifact; JoyoFit has no site publish step.
+- The Play build is signed with the release key: the dry-run AAB's signer SHA-256 equals the keystore's (`E4:A5:12:CA:...:C8:A9:D2`).
+- Play upload uses `PLAY_SERVICE_ACCOUNT_JSON` (`joyorogo-play-billing@joyorogo.iam.gserviceaccount.com`). On 2026-10-17 a probe with this account created and deleted an edit on `com.joyodigitama.joyorogo` and `com.joyodigitama.joyofit`, listed their tracks, and a track update reached release validation (404 unknown versionCode, not 403), so it has release-management rights. A real AAB upload has **not** been run from CI: the first one is the proof. If Play answers 403, give the service account "Release to testing tracks" for the app in Play Console -> Users and permissions.
+
+## iOS signing
+
+Same split as `scripts/build-ios-mac.sh` (`docs/ios-mac.md`), because a fresh runner has no keychain identity and the API key cannot create a cloud-managed distribution certificate (`Cloud signing permission error`; the team also already holds the maximum of three Apple Distribution certificates):
+
+1. The archive is signed automatically with the API key (`xcodebuild -allowProvisioningUpdates`, Apple Development profile).
+2. The export is signed manually. The job imports `IOS_DIST_CERT_P12_BASE64` into a temporary keychain, `scripts/ios/asc-ci-profile.py` finds that certificate on App Store Connect by serial and reuses or creates the App Store profile `joyo-ci <bundle id> <cert id>` (separate from the `joyo-mac` and Linux profiles, so no flow invalidates another's), and `mac-build.sh` exports with `EXPORT_PROFILE`. The script then checks the IPA (Apple Distribution authority, no device list, `get-task-allow` false, entitlements, bundle contents).
+
+No owner step is needed: the `.p12` was made from the certificate and key the Linux pipeline already uses. To rebuild it (new certificate, new password):
+
+```bash
+cd ~/.config/joyorogo-ios/distribution
+pw=$(openssl rand -hex 16)
+openssl x509 -inform der -in cert.der -out /tmp/cert.pem
+openssl pkcs12 -export -inkey key.pem -in /tmp/cert.pem -out /tmp/dist.p12 -name "Apple Distribution" \
+  -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -macalg sha1 -password pass:$pw   # old algorithms: macOS `security import` needs them
+base64 -w0 /tmp/dist.p12 | gh secret set IOS_DIST_CERT_P12_BASE64 --env release -R dzulfikar08/joyofit
+printf %s "$pw" | gh secret set IOS_DIST_CERT_PASSWORD --env release -R dzulfikar08/joyofit
+shred -u /tmp/dist.p12 /tmp/cert.pem
+```
+
+The certificate expires 2027-10-15; the profile `joyo-ci ...` is recreated by the script when it goes INVALID (for example after enabling a capability in the portal). The runner's Xcode is `latest-stable` (26.6 on the dry run); pick another with the `xcode_version` input. Apple requires Xcode 26 or later for App Store uploads.
+
+## Measured on GitHub-hosted runners (2026-10-17)
+
+| Run | Result | Time |
+| --- | --- | --- |
+| `release-android.yml`, `both` | green; AAB signed with the release key, permission guard passed, `versionCode` 1469611 on the first run | about 17 min (AAB 14 min, APK 1 min reusing the prebuilt `android/`) |
+| `release-ios.yml`, upload off | green; IPA `com.joyodigitama.joyofit` 1.0 (202610171436), `iphoneos26.5`, signed `Apple Distribution: Dzulfikar Ats Tsauri (F6Q6UFUK69)` | about 16 min |
+| `ci.yml` | green | longest job 3 min (Kotlin), Swift jobs 2 min, JS jobs under 30 s once cached |
+
+## Switching to CI from the laptop / MacBook builds
+
+1. Check the secrets table above is fully set (`gh secret list --env release -R dzulfikar08/joyofit`).
+2. Run `release-android.yml` with `play_track = none` once and compare the AAB with a local one.
+3. Run `release-ios.yml` with `upload_testflight` off once and compare with a Mac or Linux IPA.
+4. From then on, choose the track / tick the TestFlight upload in the run form instead of running the scripts locally. The scripts stay as the fallback; do not run a local and a CI build in the same minute.
+
+## Branch protection
+
+`master` requires the six `ci.yml` checks to pass (`App, Server, Site, Kotlin, two Swift jobs`), but admins are not enforced, so the owner's direct pushes still go through (GitHub prints "Bypassed rule violations"). To make the checks binding for everyone, including the owner: Settings -> Branches -> `master` -> tick "Do not allow bypassing the above settings", or `gh api -X PATCH repos/dzulfikar08/joyofit/branches/master/protection/enforce_admins` (POST) after which every change needs a pull request with green checks.

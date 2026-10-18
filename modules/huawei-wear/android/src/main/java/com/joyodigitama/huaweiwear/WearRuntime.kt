@@ -131,7 +131,8 @@ internal class WearRuntime private constructor(context: Context) {
     override fun hrvProgress(secondsLeft: Int, beats: Int) {
       listeners.forEach { it.hrvProgress(secondsLeft, beats) }
     }
-    override fun deviceDiscovered(device: Map<String, Any?>) {
+
+    override fun deviceDiscovered(device: DiscoveredDevice) {
       listeners.forEach { it.deviceDiscovered(device) }
     }
 
@@ -144,10 +145,6 @@ internal class WearRuntime private constructor(context: Context) {
   val sink: WearEvents get() = events
 
   val link = WearLink(appContext, events, settings, syncStore)
-  fun startScan() = link.startScan()
-  fun stopScan() = link.stopScan()
-  fun getDiscoveredDevices() = link.getDiscoveredDevices()
-
 
   /** The support report: the last watch, its capabilities and the kept log, without addresses or serial. */
   fun supportReport(): Map<String, Any?> {
@@ -159,11 +156,14 @@ internal class WearRuntime private constructor(context: Context) {
       linkState = link.currentState(),
       log = supportLog.lines(),
       transport = link.lastAttemptTransport,
+      extraSummary = WeatherDiagnostics.summary(weatherSettings.enabled) +
+        NightHrvDiagnostics.summary(settings.autoStressListed, settings.stressEnabled, stress.status()["lastCalibratedAt"] as Long?),
     )
   }
 
   val forwarder = NotificationForwarder(appContext, settings, link, events, scope)
   val features = PhoneFeatures(appContext, PhoneFeatureSettings(appContext), link, events, scope, forwarder::nextMessageId)
+  val voipCalls = VoipCallNotifications(appContext, settings, features.calls)
   val healthConnect = HealthConnectExporter(appContext, syncStore, events, scope)
   val weatherSettings = WeatherSettings(appContext)
   val weather = WeatherController(appContext, weatherSettings, link, events, scope)
@@ -181,10 +181,33 @@ internal class WearRuntime private constructor(context: Context) {
   val workoutLink = WorkoutLink(appContext, link, events, scope, liveWorkout)
   val extras = WatchExtras(appContext, syncStore, link, events, scope)
   val p2p = P2pController(appContext, P2pSettings(appContext), link, settings, syncStore, events, scope)
+  val family = FamilyUploader(appContext, FamilySettings(appContext), FamilyStoreSource(syncStore), { status.value.battery }, events, scope)
   val ephemeris = EphemerisLink(appContext, link, events, scope)
 
   init {
     DataSyncFeatures.install(this)
+    repairSleepRules()
+  }
+
+  /**
+   * Once after an update that changed the sleep rules ([SleepCleaning.SLEEP_RULES_VERSION]): the Health Connect sessions
+   * the old rules wrote are replaced, and the night HRV rows that are no longer sleep are removed. The Today screen, the
+   * sleep report, the family summary and the model data need nothing: they clean the stored rows on every read. The
+   * night HRV rows that stay are recomputed by the next sync ([NightHrvSync]).
+   */
+  private fun repairSleepRules() {
+    healthConnect.repairSleepIfDue()
+    if (!SleepRulesRepair.nightHrvDue(settings)) return
+    scope.launch(Dispatchers.IO) {
+      try {
+        val removed = SleepRulesRepair.pruneNightHrv(syncStore.db())
+        events.log(LogDirection.INFO, null, null, null, "Sleep rules ${SleepCleaning.SLEEP_RULES_VERSION}: $removed stored night HRV rows were not sleep any more and were removed")
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        events.log(LogDirection.ERROR, null, null, null, "Sleep rules: could not repair the night HRV rows: ${e.message ?: e.javaClass.simpleName}")
+      }
+    }
   }
 
   fun addListener(listener: WearEvents) {
@@ -213,9 +236,18 @@ internal class WearRuntime private constructor(context: Context) {
 
   // Link actions from the app
 
+  /** Watches the user confirmed a first bind for; only [connectFromApp] takes it, never the background reconnect. */
+  private val bindConsent = BindConsent()
+
+  /** The next [connectFromApp] to [rawAddress] may start a first bind, which replaces the watch's current phone pairing. */
+  fun confirmBind(rawAddress: String) {
+    bindConsent.grant(rawAddress)
+  }
+
+  /** Single use: the consent ends with this connect, whatever its outcome. */
   suspend fun connectFromApp(address: String): Map<String, Any?> {
     paused = false
-    return link.connect(address)
+    return link.connect(address, allowFirstBind = bindConsent.take(address))
   }
 
   fun disconnectFromApp() {
@@ -223,11 +255,13 @@ internal class WearRuntime private constructor(context: Context) {
       paused = true
       setNote("Disconnected in the app. Connect there to resume.")
     }
+    bindConsent.clearAll()
     link.disconnect()
   }
 
   fun forget(rawAddress: String) {
     val address = rawAddress.trim().uppercase(Locale.ROOT)
+    bindConsent.clear(address)
     link.forget(address)
     if (settings.watchAddress == address) {
       setBackground(null)
@@ -337,6 +371,13 @@ internal class WearRuntime private constructor(context: Context) {
     } catch (e: android.content.ActivityNotFoundException) {
       appContext.startActivity(list)
     }
+  }
+
+  fun forceBle(): Boolean = settings.forceBle
+
+  /** Takes effect on the next connect; a live link keeps the transport it was opened with. */
+  fun setForceBle(enabled: Boolean) {
+    settings.forceBle = enabled
   }
 
   fun morningSummaryEnabled(): Boolean = settings.morningSummaryEnabled

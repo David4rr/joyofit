@@ -1,5 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { CustomDialogState } from '@/features/watchfaces/ThemedDialog';
 import { resolveCategory, type WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
@@ -19,6 +20,7 @@ export function useWatchfaceImport({
   onInstall,
   setDialog,
 }: UseWatchfaceImportParams) {
+  const { t } = useTranslation(['watch', 'common']);
   const promptInstallAfterSave = useCallback(
     (savedFace: DownloadedFace) => {
       const targetW = list?.width ?? 194;
@@ -29,9 +31,15 @@ export function useWatchfaceImport({
         setDialog({
           visible: true,
           icon: 'alert-circle-outline',
-          title: 'Saved to My Watch',
-          message: `"${savedFace.title}" has been saved to your My watch collection.\n\nNote: This watch face (${savedFace.width}×${savedFace.height}) does not match your watch screen resolution (${targetW}×${targetH}) and cannot be installed to this watch.`,
-          confirmLabel: 'OK',
+          title: t('watch:faces.savedToMyWatch'),
+          message: t('watch:faces.savedIncompatibleHint', {
+            title: savedFace.title,
+            faceW: savedFace.width,
+            faceH: savedFace.height,
+            watchW: targetW,
+            watchH: targetH,
+          }),
+          confirmLabel: t('common:actions.ok'),
           confirmVariant: 'primary',
           onConfirm: () => setDialog(null),
         });
@@ -41,15 +49,15 @@ export function useWatchfaceImport({
       setDialog({
         visible: true,
         icon: 'checkmark-circle-outline',
-        title: 'Saved to My Watch',
-        message: `"${savedFace.title}" has been saved to your My watch collection.\n\nWould you like to install it to your watch right now?`,
-        confirmLabel: 'Install to Watch Now',
+        title: t('watch:faces.savedToMyWatch'),
+        message: t('watch:faces.savedInstallPrompt', { title: savedFace.title }),
+        confirmLabel: t('watch:faces.installToWatchNow'),
         confirmVariant: 'primary',
-        cancelLabel: 'Keep in My Watch',
+        cancelLabel: t('watch:faces.keepInMyWatch'),
         onConfirm: () => void onInstall(savedFace),
       });
     },
-    [list, onInstall, setDialog],
+    [list, onInstall, setDialog, t],
   );
 
   const handleImportToMyWatch = useCallback(async () => {
@@ -64,11 +72,11 @@ export function useWatchfaceImport({
         setDialog({
           visible: true,
           icon: 'alert-circle-outline',
-          title: 'Invalid File Extension',
+          title: t('watch:faces.invalidFileExt'),
           message: isZip
-            ? `"${asset.name}" is a .zip archive, not a .hwt file.\n\nMany watch faces are distributed inside a .zip file. Please extract the .zip using your phone's file manager and import the .hwt file found inside.`
-            : `"${asset.name}" does not have a .hwt extension. Please select a valid Huawei watch face (.hwt) file.`,
-          confirmLabel: 'OK',
+            ? t('watch:faces.zipWarning', { name: asset.name })
+            : t('watch:faces.notHwtWarning', { name: asset.name }),
+          confirmLabel: t('common:actions.ok'),
           confirmVariant: 'primary',
           onConfirm: () => setDialog(null),
         });
@@ -79,13 +87,13 @@ export function useWatchfaceImport({
       try {
         parsed = await HuaweiWear.parseWatchfacePackage(asset.uri);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Invalid watch face package';
+        const msg = err instanceof Error ? err.message : t('watch:faces.invalidPackage');
         setDialog({
           visible: true,
           icon: 'close-circle-outline',
-          title: 'Invalid Watch Face Package',
-          message: `Could not parse "${asset.name}":\n\n${msg}`,
-          confirmLabel: 'OK',
+          title: t('watch:faces.invalidPackage'),
+          message: t('watch:faces.invalidPackageHint', { name: asset.name, error: msg }),
+          confirmLabel: t('common:actions.ok'),
           confirmVariant: 'primary',
           onConfirm: () => setDialog(null),
         });
@@ -93,7 +101,7 @@ export function useWatchfaceImport({
       }
 
       const title = parsed.title || asset.name.replace(/\.hwt$/i, '');
-      const author = parsed.author || 'Custom Import';
+      const author = parsed.author || 'Custom Import'; // i18n-ok default author metadata
       const width = parsed.width || list?.width || 194;
       const height = parsed.height || list?.height || 368;
       const previewUrl = parsed.previewUri || undefined;
@@ -101,8 +109,8 @@ export function useWatchfaceImport({
       const description =
         parsed.description && parsed.description.trim() !== '{}' && parsed.description.trim() !== '[]'
           ? parsed.description
-          : 'No description provided by creator.';
-      const sizeLabel = asset.size ? `${Math.round(asset.size / 1024)} KB` : 'Custom size';
+          : t('watch:faces.noDescription');
+      const sizeLabel = asset.size ? `${Math.round(asset.size / 1024)} KB` : 'Custom size'; // i18n-ok size fallback
 
       const newFace: DownloadedFace = {
         id: `local_${Date.now()}`,
@@ -123,7 +131,7 @@ export function useWatchfaceImport({
     } catch {
       // ignore picker cancel
     }
-  }, [list, promptInstallAfterSave, saveToLibrary, setDialog]);
+  }, [list, promptInstallAfterSave, saveToLibrary, setDialog, t]);
 
   return { handleImportToMyWatch, promptInstallAfterSave };
 }

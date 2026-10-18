@@ -7,8 +7,9 @@
   "description": "Landing page for JoyoFit (fit.joyorogo.com).",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && bun scripts/prerender.ts",
     "typecheck": "tsc --noEmit",
+    "jam": "bun scripts/gen-jam.ts",
     "og": "chromium --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=public/og.png og/og-image.html",
     "deploy": "bun run build && wrangler deploy"
   },

@@ -1,14 +1,16 @@
 import { Stack } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useStackOptions } from '@/components/navigation';
 
 export const unstable_settings = { initialRouteName: 'index' };
 
 export default function WorkoutsLayout() {
+  const { t } = useTranslation('workouts');
   return (
     <Stack screenOptions={useStackOptions()}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="[id]" options={{ title: 'Workout' }} />
+      <Stack.Screen name="[id]" options={{ title: t('detail.title') }} />
     </Stack>
   );
 }

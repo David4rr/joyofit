@@ -2,14 +2,86 @@
   "expo": {
     "name": "JoyoFit",
     "slug": "joyofit",
-    "version": "0.1.0",
+    "version": "1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "joyofit",
     "userInterfaceStyle": "automatic",
-    "platforms": ["android"],
+    "platforms": ["ios", "android"],
+    "ios": {
+      "bundleIdentifier": "com.joyodigitama.joyofit",
+      "buildNumber": "1",
+      "appleTeamId": "F6Q6UFUK69",
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "JoyoFit uses Bluetooth to connect to your Huawei or Honor watch and sync its data.",
+        "NSBluetoothPeripheralUsageDescription": "JoyoFit uses Bluetooth to connect to your Huawei or Honor watch and sync its data.",
+        "NSLocationWhenInUseUsageDescription": "JoyoFit uses your location to look up the weather for your area (only coordinates rounded to about 1 km go to the weather service, Open-Meteo) and to send your position to your watch while a workout you started on the watch is running. Nothing else leaves your phone.",
+        "NSHealthShareUsageDescription": "JoyoFit reads your Apple Health history once, only when you tap Import history from Apple Health, to bring the steps, heart rate, sleep, blood oxygen, active energy and workouts that Huawei Health saved there into JoyoFit. It stays on your phone.",
+        "NSHealthUpdateUsageDescription": "Allow JoyoFit to save the steps, distance, calories, heart rate, blood oxygen, sleep, workouts and workout routes recorded by your watch to Apple Health.",
+        "UIBackgroundModes": ["bluetooth-central"],
+        "LSSupportsOpeningDocumentsInPlace": false,
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "FIT activity",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": ["com.joyodigitama.joyofit.fit"]
+          },
+          {
+            "CFBundleTypeName": "GPX route",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": ["com.joyodigitama.joyofit.gpx"]
+          },
+          {
+            "CFBundleTypeName": "TCX route",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": ["com.joyodigitama.joyofit.tcx"]
+          }
+        ],
+        "UTImportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.joyodigitama.joyofit.fit",
+            "UTTypeDescription": "FIT activity file",
+            "UTTypeConformsTo": ["public.data"],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": ["fit"],
+              "public.mime-type": ["application/vnd.ant.fit"]
+            }
+          },
+          {
+            "UTTypeIdentifier": "com.joyodigitama.joyofit.gpx",
+            "UTTypeDescription": "GPX route file",
+            "UTTypeConformsTo": ["public.xml"],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": ["gpx"],
+              "public.mime-type": ["application/gpx+xml"]
+            }
+          },
+          {
+            "UTTypeIdentifier": "com.joyodigitama.joyofit.tcx",
+            "UTTypeDescription": "TCX route file",
+            "UTTypeConformsTo": ["public.xml"],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": ["tcx"],
+              "public.mime-type": ["application/vnd.garmin.tcx+xml"]
+            }
+          }
+        ]
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": []
+      }
+    },
     "android": {
       "package": "com.joyodigitama.joyofit",
+      "googleServicesFile": "./google-services.json",
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#F9F6F1",
@@ -17,7 +89,144 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [{ "scheme": "content", "mimeType": "application/vnd.ant.fit" }]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "host": "*", "mimeType": "application/octet-stream" },
+            { "pathPattern": ".*\\\\.fit" },
+            { "pathPattern": ".*\\\\..*\\\\.fit" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.fit" },
+            { "pathPattern": ".*\\\\.FIT" },
+            { "pathPattern": ".*\\\\..*\\\\.FIT" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.FIT" }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "host": "*" },
+            { "pathPattern": ".*\\\\.fit" },
+            { "pathPattern": ".*\\\\..*\\\\.fit" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.fit" },
+            { "pathPattern": ".*\\\\.FIT" },
+            { "pathPattern": ".*\\\\..*\\\\.FIT" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.FIT" }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "mimeType": "application/zip" },
+            { "scheme": "content", "mimeType": "application/x-zip-compressed" }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "host": "*", "mimeType": "application/octet-stream" },
+            { "pathPattern": ".*\\\\.zip" },
+            { "pathPattern": ".*\\\\..*\\\\.zip" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.zip" },
+            { "pathPattern": ".*\\\\.ZIP" },
+            { "pathPattern": ".*\\\\..*\\\\.ZIP" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.ZIP" }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "host": "*" },
+            { "pathPattern": ".*\\\\.zip" },
+            { "pathPattern": ".*\\\\..*\\\\.zip" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.zip" },
+            { "pathPattern": ".*\\\\.ZIP" },
+            { "pathPattern": ".*\\\\..*\\\\.ZIP" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.ZIP" }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "mimeType": "application/gpx+xml" },
+            { "scheme": "content", "mimeType": "application/vnd.garmin.tcx+xml" },
+            { "scheme": "content", "mimeType": "application/xml" },
+            { "scheme": "content", "mimeType": "text/xml" }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "host": "*", "mimeType": "application/octet-stream" },
+            { "pathPattern": ".*\\\\.gpx" },
+            { "pathPattern": ".*\\\\..*\\\\.gpx" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.gpx" },
+            { "pathPattern": ".*\\\\.GPX" },
+            { "pathPattern": ".*\\\\..*\\\\.GPX" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.GPX" },
+            { "pathPattern": ".*\\\\.tcx" },
+            { "pathPattern": ".*\\\\..*\\\\.tcx" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.tcx" },
+            { "pathPattern": ".*\\\\.TCX" },
+            { "pathPattern": ".*\\\\..*\\\\.TCX" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.TCX" }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            { "scheme": "content", "host": "*" },
+            { "pathPattern": ".*\\\\.gpx" },
+            { "pathPattern": ".*\\\\..*\\\\.gpx" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.gpx" },
+            { "pathPattern": ".*\\\\.GPX" },
+            { "pathPattern": ".*\\\\..*\\\\.GPX" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.GPX" },
+            { "pathPattern": ".*\\\\.tcx" },
+            { "pathPattern": ".*\\\\..*\\\\.tcx" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.tcx" },
+            { "pathPattern": ".*\\\\.TCX" },
+            { "pathPattern": ".*\\\\..*\\\\.TCX" },
+            { "pathPattern": ".*\\\\..*\\\\..*\\\\.TCX" }
+          ]
+        },
+        {
+          "action": "SEND",
+          "category": ["DEFAULT"],
+          "data": [
+            { "mimeType": "application/vnd.ant.fit" },
+            { "mimeType": "application/octet-stream" },
+            { "mimeType": "application/zip" },
+            { "mimeType": "application/x-zip-compressed" },
+            { "mimeType": "application/gpx+xml" },
+            { "mimeType": "application/vnd.garmin.tcx+xml" },
+            { "mimeType": "application/xml" },
+            { "mimeType": "text/xml" }
+          ]
+        }
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -26,6 +235,9 @@
       "expo-router",
       "expo-sqlite",
       "./plugins/with-release-signing",
+      "./plugins/with-version-code",
+      "./plugins/with-shared-fit",
+      "./plugins/with-no-badge-permissions",
       [
         "expo-build-properties",
         {
@@ -35,8 +247,42 @@
         }
       ],
       "expo-secure-store",
+      "expo-apple-authentication",
       "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#0A6580",
+          "defaultChannel": "family"
+        }
+      ],
       "expo-font",
+      "@maplibre/maplibre-react-native",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "JoyoFit reads a photo only when you pick one, for a watch face or for the image of a workout you share, and when you send that image to Instagram.",
+          "cameraPermission": "JoyoFit uses the camera only when you take a photo to put behind the numbers of a workout you share.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "JoyoFit reads a photo only when you pick one, for a watch face or for the image of a workout you share, and when you send that image to Instagram.",
+          "savePhotosPermission": "JoyoFit saves the image of a workout or day you share to your photos, only when you tap Save.",
+          "granularPermissions": [],
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "react-native-share",
+        {
+          "android": ["com.instagram.android"],
+          "ios": ["instagram", "instagram-stories"]
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -52,7 +298,24 @@
     ],
     "extra": {
       "joyorogoUrl": "https://api.joyorogo.com",
-      "cloudUrl": "https://joyofit-api.dzulfikar-at.workers.dev"
+      "cloudUrl": "https://api.fit.joyorogo.com",
+      "facebookAppId": "1016598258111944",
+      "eas": {
+        "projectId": "6175ba14-6962-4cbe-bc80-a5bb46be7fcb"
+      }
+    },
+    "owner": "dzulfikar08",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6175ba14-6962-4cbe-bc80-a5bb46be7fcb",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
     }
   }
 }

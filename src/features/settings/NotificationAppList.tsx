@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, Switch, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Chip } from '@/components/Chip';
+import { Details } from '@/components/Details';
 import { IconChip } from '@/components/IconChip';
+import { isIos } from '@/components/IosUnavailable';
 import { Field } from '@/components/Input';
 import { groupedRowStyle } from '@/components/NavRow';
 import { useContentPadding } from '@/components/Screen';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { errorMessage } from '@/format';
-import { spacing, useColors } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 import { HuaweiWear, type NotificationApp } from '@/wear';
 
 const ROW_HEIGHT = 64;
@@ -17,7 +20,22 @@ const SKELETON_ROWS = 8;
 
 /** Per-app forwarding switches: searchable, windowed, with a sticky header. Loads the apps once. */
 export function NotificationAppList() {
-  const colors = useColors();
+  const { t } = useTranslation('settings');
+  return isIos ? (
+    <EmptyState
+      icon="apps"
+      title={t('notifApps.iosTitle')}
+      description={t('notifApps.iosDesc')}
+    />
+  ) : (
+    <NotificationAppListAndroid />
+  );
+}
+
+function NotificationAppListAndroid() {
+  const { t } = useTranslation('settings');
+  const theme = useTheme();
+  const { colors } = theme;
   const padding = useContentPadding(false);
   const [apps, setApps] = useState<NotificationApp[] | null>(null);
   const [filter, setFilter] = useState('');
@@ -91,24 +109,22 @@ export function NotificationAppList() {
   const header = (
     <View style={[styles.header, { backgroundColor: colors.background }]}>
       <Field
-        label="Filter apps"
+        label={t('notifApps.filter')}
         icon="search"
         value={filter}
         onChangeText={setFilter}
-        placeholder="Filter apps"
+        placeholder={t('notifApps.filter')}
         autoCapitalize="none"
         autoCorrect={false}
         clearButtonMode="while-editing"
       />
       <View style={styles.headerRow}>
-        <Chip label="Enabled first" role="checkbox" selected={pinned !== null} onPress={toggleEnabledFirst} />
+        <Chip label={t('notifApps.enabledFirst')} role="checkbox" selected={pinned !== null} onPress={toggleEnabledFirst} />
         <AppText variant="caption" muted>
-          {apps ? `${enabledCount} of ${apps.length} on` : ''}
+          {apps ? t('notifApps.onCount', { enabled: enabledCount, total: apps.length }) : ''}
         </AppText>
       </View>
-      <AppText variant="caption" muted>
-        Apps you haven&apos;t chosen are on, except system apps.
-      </AppText>
+      <Details>{t('notifApps.hint')}</Details>
       {error ? <Notice tone="danger">{error}</Notice> : null}
     </View>
   );
@@ -128,7 +144,7 @@ export function NotificationAppList() {
       windowSize={9}
       removeClippedSubviews
       renderItem={({ item, index }) => (
-        <View style={[styles.row, groupedRowStyle(colors, index, visible.length)]}>
+        <View style={[styles.row, groupedRowStyle(theme, index, visible.length)]}>
           <IconChip icon="apps" size="md" />
           <View style={styles.text}>
             <AppText variant="bodyStrong" numberOfLines={1}>
@@ -149,9 +165,9 @@ export function NotificationAppList() {
       )}
       ListEmptyComponent={
         apps === null && !error ? (
-          <View accessibilityLabel="Loading apps">
+          <View accessibilityLabel={t('notifApps.loading')}>
             {Array.from({ length: SKELETON_ROWS }, (_, i) => (
-              <View key={i} style={[styles.row, groupedRowStyle(colors, i, SKELETON_ROWS)]}>
+              <View key={i} style={[styles.row, groupedRowStyle(theme, i, SKELETON_ROWS)]}>
                 <Skeleton width={40} height={40} radius={20} />
                 <View style={styles.text}>
                   <Skeleton width="55%" height={14} />
@@ -163,9 +179,9 @@ export function NotificationAppList() {
         ) : apps !== null ? (
           <EmptyState
             icon="search"
-            title="No apps match"
-            description={filter.trim() ? `Nothing matches "${filter.trim()}".` : 'No apps to show.'}
-            action={filter ? { label: 'Clear filter', onPress: () => setFilter('') } : undefined}
+            title={t('notifApps.noMatchTitle')}
+            description={filter.trim() ? t('notifApps.noMatch', { query: filter.trim() }) : t('notifApps.noApps')}
+            action={filter ? { label: t('notifApps.clear'), onPress: () => setFilter('') } : undefined}
           />
         ) : null
       }
@@ -174,7 +190,7 @@ export function NotificationAppList() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.md, paddingBottom: spacing.md },
+  header: { gap: spacing.sm, paddingBottom: spacing.sm },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   row: {
     height: ROW_HEIGHT,

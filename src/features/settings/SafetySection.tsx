@@ -1,20 +1,24 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, PermissionsAndroid } from 'react-native';
 
-import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { KeyValue } from '@/components/KeyValue';
-import { Divider, Section } from '@/components/Screen';
+import { ButtonRow } from '@/components/ButtonRow';
+import { Details } from '@/components/Details';
+import { isIos } from '@/components/IosUnavailable';
+import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatDateTime } from '@/format';
 import { HuaweiWear } from '@/wear';
 
-const FALL_LABELS = { '-1': 'Not reported yet', '0': 'Off', '1': 'On' } as const;
+const FALL_KEYS = { '-1': 'safety.fall.unknown', '0': 'safety.fall.off', '1': 'safety.fall.on' } as const;
 
 /** Fall detection on the watch, the SOS SMS relay and the morning sleep report. */
 export function SafetySection() {
+  const { t } = useTranslation('settings');
   const [safety, setSafety] = useState(() => HuaweiWear.getSafety());
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
@@ -47,126 +51,133 @@ export function SafetySection() {
         let granted = await PermissionsAndroid.check(permission);
         if (!granted) {
           const result = await PermissionsAndroid.request(permission, {
-            title: 'Send SMS for SOS',
-            message:
-              'When your watch sends an SOS, JoyoFit sends the text message it asks for, from this phone and your SIM. It never sends anything else.',
-            buttonPositive: 'Allow',
-            buttonNegative: 'Not now',
+            title: t('safety.sms.title'),
+            message: t('safety.sms.message'),
+            buttonPositive: t('safety.sms.allow'),
+            buttonNegative: t('safety.sms.notNow'),
           });
           granted = result === PermissionsAndroid.RESULTS.GRANTED;
           setBlocked(result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN);
         }
         if (!granted) {
-          setError('Without the SMS permission JoyoFit cannot send the SOS text. The relay stays off.');
+          setError(t('safety.sms.denied'));
           return;
         }
       }
       await HuaweiWear.setSosRelayEnabled(enabled);
     });
 
-  const fallState = FALL_LABELS[String(safety.fallSwitch) as keyof typeof FALL_LABELS];
+  const checkSos = (
+    <Button
+      label={t('safety.check')}
+      variant="secondary"
+      icon="shield-checkmark"
+      disabled={busy}
+      onPress={() => {
+        setError(null);
+        const result = HuaweiWear.testSosRelay();
+        setTest(
+          result.ready
+            ? t('safety.testReady')
+            : t('safety.testBlocked', { blockers: result.blockers.join('; ') }),
+        );
+        refresh();
+      }}
+    />
+  );
+
+  const fallState = t(FALL_KEYS[String(safety.fallSwitch) as keyof typeof FALL_KEYS]);
 
   return (
     <>
-      <Section title="Fall detection" icon="body">
+      <Section title={t('safety.fallTitle')} icon="body">
         <SwitchRow
           icon="walk"
-          label="Detect falls on the watch"
-          hint={
-            safety.fallSupported
-              ? 'The watch asks you if you are all right after a hard fall and can start an SOS.'
-              : `Not available: ${safety.fallNote}.`
-          }
+          label={t('safety.detect')}
+          hint={safety.fallSupported ? undefined : t('safety.fallUnavailable', { note: safety.fallNote })}
           value={safety.fallSwitch === 1}
           disabled={!safety.fallSupported || busy}
           onValueChange={(enabled) => run(async () => void (await HuaweiWear.setFallDetection(enabled)))}
         />
-        <KeyValue icon="watch" label="Watch reports" value={fallState} />
-        <KeyValue
-          icon="time"
-          label="Last changed"
-          value={safety.fallUpdatedMs > 0 ? formatDateTime(safety.fallUpdatedMs / 1000) : null}
-        />
+        <PairGrid>
+          <Pair label={t('safety.reports')} value={fallState} />
+          <Pair label={t('safety.lastChanged')} value={safety.fallUpdatedMs > 0 ? formatDateTime(safety.fallUpdatedMs / 1000) : null} />
+        </PairGrid>
         <Button
-          label="Ask the watch"
+          label={t('safety.askWatch')}
           variant="secondary"
           icon="refresh"
           disabled={!safety.fallSupported || busy}
           onPress={() => run(async () => void (await HuaweiWear.queryFallDetection()))}
         />
+        <Details>
+          {safety.smsSupported ? t('safety.fallDetailsSms') : t('safety.fallDetails')}
+        </Details>
       </Section>
 
-      <Section title="SOS text messages" icon="alert-circle" tint="heart">
-        <AppText variant="caption" muted>
-          When you start an SOS on the watch, the watch hands this phone a number and a message. With the switch on, JoyoFit sends
-          that text from your SIM and tells the watch whether it went out. The watch (or its emergency contacts in the Huawei
-          settings on it) decides who is texted; JoyoFit never picks a recipient and never sends anything the watch did not ask for.
-        </AppText>
-        <SwitchRow
-          icon="chatbubble-ellipses"
-          label="Send SOS texts for the watch"
-          hint="Off by default. Needs permission to send SMS and a ready SIM; costs whatever your plan charges per text."
-          value={safety.sosRelayEnabled}
-          disabled={busy}
-          onValueChange={toggleSos}
-        />
-        <KeyValue icon="checkmark-circle" label="Permission to send SMS" value={safety.smsPermission ? 'Granted' : 'Not granted'} />
-        <KeyValue icon="card" label="SIM card" value={!safety.telephony ? 'No telephony' : safety.simReady ? 'Ready' : 'Not ready'} />
-        <KeyValue
-          icon="watch"
-          label="Watch lists SOS texts"
-          value={safety.sosListedByWatch ? 'Yes' : 'Not in its capability list'}
-        />
-        <Divider />
-        <Button
-          label="Check without sending"
-          variant="secondary"
-          icon="shield-checkmark"
-          disabled={busy}
-          onPress={() => {
-            setError(null);
-            const result = HuaweiWear.testSosRelay();
-            setTest(
-              result.ready
-                ? 'Ready: an SOS from the watch would be sent as a text. Nothing was sent now.'
-                : `An SOS from the watch would not be sent: ${result.blockers.join('; ')}. The watch would be told it failed. Nothing was sent now.`,
-            );
-            refresh();
-          }}
-        />
-        {test ? <Notice icon={safety.sosReady ? 'checkmark-circle' : 'information-circle'}>{test}</Notice> : null}
-        {error ? <Notice tone="danger">{error}</Notice> : null}
-        {blocked ? (
-          <Button label="Open app settings" variant="secondary" icon="settings-outline" onPress={() => void Linking.openSettings()} />
-        ) : null}
-      </Section>
+      {safety.smsSupported ? (
+        <Section title={t('safety.sosTitle')} icon="alert-circle" tint="heart">
+          <SwitchRow
+            icon="chatbubble-ellipses"
+            label={t('safety.sosSwitch')}
+            value={safety.sosRelayEnabled}
+            disabled={busy}
+            onValueChange={toggleSos}
+          />
+          <PairGrid>
+            <Pair label={t('safety.smsPermission')} value={safety.smsPermission ? t('safety.granted') : t('safety.notGranted')} />
+            <Pair label={t('safety.sim')}
+              value={!safety.telephony ? t('safety.simNone') : safety.simReady ? t('safety.simReady') : t('safety.simNotReady')} />
+            <Pair label={t('safety.watchLists')}
+              value={safety.sosListedByWatch ? t('safety.yes') : t('safety.notListed')} wide />
+          </PairGrid>
+          {blocked ? (
+            <ButtonRow>
+              {checkSos}
+              <Button label={t('safety.appSettings')} variant="secondary" icon="settings-outline" onPress={() => void Linking.openSettings()} />
+            </ButtonRow>
+          ) : (
+            checkSos
+          )}
+          {test ? <Notice icon={safety.sosReady ? 'checkmark-circle' : 'information-circle'}>{test}</Notice> : null}
+          {error ? <Notice tone="danger">{error}</Notice> : null}
+          <Details>{t('safety.sosDetails')}</Details>
+        </Section>
+      ) : isIos ? (
+        <Section title={t('safety.sosTitle')} icon="alert-circle" tint="heart">
+          <Notice>{t('safety.iosNotice')}</Notice>
+          <Details>{t('safety.iosDetails')}</Details>
+        </Section>
+      ) : (
+        <Section title={t('safety.sosTitle')} icon="alert-circle" tint="heart">
+          <Notice>{t('safety.playNotice')}</Notice>
+          <Details>{t('safety.playDetails')}</Details>
+        </Section>
+      )}
 
-      <Section title="Morning sleep report" icon="moon" tint="sleep">
+      <Section title={t('safety.sleepTitle')} icon="moon" tint="sleep">
         <SwitchRow
           icon="notifications"
-          label="Show last night's sleep on the watch"
-          hint={
-            safety.sleepReportSupported
-              ? 'Once each morning, after the first sync that holds last night, the watch shows how long you slept and the stages.'
-              : 'Not available: the watch does not report the event channel it needs.'
-          }
+          label={t('safety.sleepShow')}
+          hint={safety.sleepReportSupported ? undefined : t('safety.sleepUnavailable')}
           value={safety.sleepReportEnabled}
           disabled={!safety.sleepReportSupported || busy}
           onValueChange={(enabled) => run(() => HuaweiWear.setSleepReportEnabled(enabled))}
         />
         <Button
-          label="Send last night's report now"
+          label={t('safety.sleepSend')}
           variant="secondary"
           icon="send"
           disabled={!safety.sleepReportSupported || busy}
           onPress={() =>
             run(async () => {
               const outcome = await HuaweiWear.sendSleepReportNow();
-              setSleepNote(outcome === 'sent' ? 'Sent. Check the watch.' : `Not sent: ${outcome}.`);
+              setSleepNote(outcome === 'sent' ? t('safety.sleepSent') : t('safety.sleepNotSent', { outcome }));
             })
           }
         />
         {sleepNote ? <Notice>{sleepNote}</Notice> : null}
+        <Details>{t('safety.sleepDetails')}</Details>
       </Section>
     </>
   );
