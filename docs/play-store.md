@@ -46,13 +46,14 @@ Other permissions in the Play build and why (the manifest of `dist/joyofit-play-
 |---|---|
 | `BLUETOOTH_CONNECT` (`BLUETOOTH`, `BLUETOOTH_ADMIN` up to Android 11) | Connect to the Huawei/Honor watch you already paired |
 | `BLUETOOTH_SCAN` (declared `neverForLocation`) | "Scan nearby devices" on the Watch tab lists Huawei and Honor watches in range so one can be connected without pairing it in Android Bluetooth settings first (Android 12+ only; a scan only lists, nothing connects or binds). Asked when the button is tapped; no location permission is used for it |
-| `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` | Keep the watch connection alive in the background (Settings, Background) |
+| `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` | Keep the watch connection alive in the background (Settings, Background); keep a heart rate strap or cycling sensor connected during a workout recorded on the phone |
+| `FOREGROUND_SERVICE_LOCATION` | Record the GPS of an outdoor workout started on the phone while the screen is off (a foreground service with an ongoing notification, only while that workout runs) |
 | `POST_NOTIFICATIONS` | The service notification and the optional morning summary |
 | `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK` | Restart the watch connection after a reboot or update; stay awake during a sync |
 | `VIBRATE` | Find my phone |
 | `READ_PHONE_STATE` | Show that the phone is ringing on the watch (optional switch) |
 | `ANSWER_PHONE_CALLS` | The watch's accept and reject buttons (optional switch) |
-| `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION` | Weather for the phone's position (coarse); phone GPS for outdoor workouts the watch records (precise). Foreground only; no background location |
+| `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION` | Weather for the phone's position (coarse); phone GPS for outdoor workouts the watch records and for outdoor workouts recorded on the phone (precise). Used only while the app is open or while a recording's foreground service runs; no `ACCESS_BACKGROUND_LOCATION` |
 | `INTERNET`, `ACCESS_NETWORK_STATE` | Weather (Open-Meteo), optional JoyoFit cloud and JoyoRogo, satellite-assist downloads for the watch |
 | `android.permission.health.WRITE_*` (steps, distance, active calories, heart rate, resting heart rate, oxygen saturation, sleep, exercise) | Write watch data to Health Connect. No read permission |
 | `USE_BIOMETRIC`, `USE_FINGERPRINT` | Added by the `androidx.biometric` library inside `expo-secure-store`. Normal permissions; JoyoFit never asks for biometrics |
@@ -346,6 +347,17 @@ Video (unlisted YouTube link, 1 to 2 minutes, record the screen plus a short cli
 3. Send a notification or ring the phone from the watch (find my phone) while JoyoFit is closed; show it reaching the watch / the phone ringing.
 4. Reopen the app, switch the setting off: the notification disappears.
 
+### Foreground service: `location` (workouts recorded on the phone)
+
+Branch `sensors` adds `RecordingService` (`modules/ble-sensors`), type `location|connectedDevice`. Declaration for `FOREGROUND_SERVICE_LOCATION` (and the sensor half of `FOREGROUND_SERVICE_CONNECTED_DEVICE`):
+
+> When the user starts an outdoor workout (run, walk, ride, hike) on the phone, JoyoFit records the route, distance and pace from the phone's GPS and, if the
+> user paired them, the heart rate, speed, cadence and power of Bluetooth sensors. The workout has to keep recording while the screen is off and the phone is
+> in a pocket or on a bike mount, so it runs as a foreground service with an ongoing notification (time, distance, heart rate). The service starts only when the
+> user taps Start and stops when the workout is finished or discarded. It is never started in the background.
+
+Video: Workouts, Rekam latihan, Lari, allow location, Mulai; lock the screen; show the notification counting; unlock, Selesai, show the saved route.
+
 ### Notification listener (prominent disclosure)
 
 Notification access is a special permission the user grants in Android settings, and the app shows an in-app disclosure first. The disclosure text (shown
@@ -359,7 +371,7 @@ that the user is shown the disclosure above and must grant access in system sett
 
 ### Location
 
-No background location. Foreground only: coarse for the weather position (optional, off by default), precise for the phone GPS during outdoor workouts the watch starts.
+No background location permission. Coarse for the weather position (optional, off by default), precise for the phone GPS during outdoor workouts the watch starts and for outdoor workouts recorded on the phone (the latter keeps running with the screen off inside the `location` foreground service above, started from the foreground by the user's tap).
 JoyoFit explains the GPS use in a dialog before the first Android location prompt (and Settings, Notifications and calls, "Phone GPS for outdoor workouts" asks again). Declare in
 the Data safety form as in section 7. The declared reason: "Location is used for weather on the watch and to give the watch the phone's GPS during workouts."
 

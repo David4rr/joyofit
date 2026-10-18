@@ -100,7 +100,7 @@ jobs:
       - run: bun run build
 
   kotlin:
-    name: Kotlin unit tests (huawei-wear)
+    name: Kotlin unit tests (huawei-wear, ble-sensors)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -126,7 +126,7 @@ jobs:
       - run: bun install --frozen-lockfile
       # android/ is generated (gitignored); the module tests need the Gradle project.
       - run: bunx expo prebuild -p android --no-install
-      - run: ./gradlew :huawei-wear:testDebugUnitTest
+      - run: ./gradlew :huawei-wear:testDebugUnitTest :ble-sensors:testDebugUnitTest
         working-directory: android
 
   swift-protocol:
@@ -209,3 +209,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Inert shapes vs TypeScript declarations
         run: node modules/huawei-wear/ios/ModuleLogicTests/check-inert-shapes.mjs "$RUNNER_TEMP/shapes.json"
+      # The sensor module's pure logic (GATT plan table, reconnect backoff); the CoreBluetooth and CoreLocation files cannot build on Linux.
+      - name: Sensor logic tests (ble-sensors)
+        working-directory: modules/ble-sensors/ios/SensorLogicTests
+        run: swift test

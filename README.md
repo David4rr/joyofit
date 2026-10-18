@@ -791,6 +791,8 @@ The profile, background and notification settings are in native SharedPreference
 
 Several watches: from migration 14 the rows of `step_samples`, `sleep_segments`, `sleep_scores`, `workouts`, `health_metrics` and `hrv_readings` carry a `device` column (the `device.address` that recorded them), `device` has `alias`, `is_primary`, `tracks_health` and `bg_sync`, and triggers keep one merged timeline (the primary watch owns a minute or a night, other watches fill gaps, workouts from any watch are stored once). One link is open at a time. Design, rules and what is native: [`docs/multi-watch.md`](docs/multi-watch.md).
 
+External sensors and phone-recorded workouts: Bluetooth chest straps (heart rate, R-R), cycling speed/cadence and power sensors and running pods are paired under Watch, Sensor (`modules/ble-sensors`, parsers in `src/features/sensors/gatt.ts`), and Workouts, Rekam latihan records a run, walk, ride, hike or indoor workout on the phone (GPS plus sensors, with the screen locked) into a normal workout with a FIT export. Investigation, design, tests and the device test script: [`docs/sensors.md`](docs/sensors.md).
+
 Workouts are two more tables from migration 3: `workouts` (one row per session: watch workout number,
 start/end, Huawei sport type and GB's name for it, duration, distance, calories, average/max heart
 rate, steps, `summary_json` with everything else, `complete`) and `workout_points` (`workout_id`, `ts`,
