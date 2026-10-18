@@ -146,7 +146,7 @@
     "lockedLink": "Latihanmu tetap di ponsel ini. Sinkron cloud adalah keuntungan JoyoRogo Pro. Yang sudah ada di cloud tetap bisa dibaca dan dipulihkan ke ponsel baru.",
     "locked": "Latihanmu tetap di ponsel ini. Sinkron cloud adalah keuntungan JoyoRogo Pro (dapatkan Pro di JoyoRogo). Yang sudah ada di cloud tetap bisa dibaca dan dipulihkan ke ponsel baru.",
     "uploading": "Mengunggah {{done}} dari {{total}}",
-    "refused_other": "{{n}} latihan tidak bisa diunggah. Akan dicoba lagi setelah update aplikasi berikutnya.",
+    "refused_other": "{{n}} latihan tidak bisa diunggah. Akan dicoba lagi besok, atau lebih cepat setelah update aplikasi.",
     "refusedError": "Kesalahan terakhir: {{error}}",
     "labels": {
       "account": "Akun",

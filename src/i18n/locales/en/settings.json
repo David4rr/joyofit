@@ -148,8 +148,8 @@
     "lockedLink": "Your workouts stay on this phone. Cloud sync is a JoyoRogo Pro benefit. What is already in your cloud stays readable and restores onto a new phone.",
     "locked": "Your workouts stay on this phone. Cloud sync is a JoyoRogo Pro benefit (get Pro in JoyoRogo). What is already in your cloud stays readable and restores onto a new phone.",
     "uploading": "Uploading {{done}} of {{total}}",
-    "refused_one": "{{n}} workout could not be uploaded. It is tried again after the next app update.",
-    "refused_other": "{{n}} workouts could not be uploaded. They are tried again after the next app update.",
+    "refused_one": "{{n}} workout could not be uploaded. It is tried again tomorrow, or sooner after an app update.",
+    "refused_other": "{{n}} workouts could not be uploaded. They are tried again tomorrow, or sooner after an app update.",
     "refusedError": "Last error: {{error}}",
     "labels": {
       "account": "Account",
