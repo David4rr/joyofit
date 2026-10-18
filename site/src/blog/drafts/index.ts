@@ -3,9 +3,10 @@
 // top of ../index.ts when its feature ships in a store build.
 import type { Post } from "../types.ts";
 import { analisisLatihan } from "./analisis-latihan.ts";
+import { coach } from "./coach.ts";
 import { fotoProfilSocial } from "./foto-profil-social.ts";
 import { keluarga } from "./keluarga.ts";
 import { metrikKebugaran } from "./metrik-kebugaran.ts";
 import { navigasiRuteJam } from "./navigasi-rute-jam.ts";
 
-export const DRAFTS: readonly Post[] = [analisisLatihan, navigasiRuteJam, keluarga, metrikKebugaran, fotoProfilSocial];
+export const DRAFTS: readonly Post[] = [coach, analisisLatihan, navigasiRuteJam, keluarga, metrikKebugaran, fotoProfilSocial];
