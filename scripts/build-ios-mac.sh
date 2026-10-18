@@ -22,8 +22,10 @@ REPO=watch-fit
 GITHUB_URL=https://github.com/dzulfikar08/joyofit.git
 APP=JoyoFit
 BUNDLE_ID=com.joyodigitama.joyofit
-# HealthKit and Sign in with Apple are portal capabilities: enable them on the bundle id before the profile is made.
-CAPABILITIES=(HEALTHKIT APPLE_ID_AUTH)
+# HealthKit, Sign in with Apple and Push Notifications (Keluarga alerts) are portal capabilities: enable them on the bundle id
+# before the profile is made. A profile made before one was enabled lacks it: asc-mac-profile.py checks the entitlements it needs.
+CAPABILITIES=(HEALTHKIT APPLE_ID_AUTH PUSH_NOTIFICATIONS)
+REQUIRED_ENTITLEMENTS=(aps-environment com.apple.developer.healthkit com.apple.developer.applesignin)
 
 HOST=${MAC_HOST:-allicias-macbook-air}
 PY=${ASC_PYTHON:-$HOME/.local/share/joyorogo-ios/venv/bin/python}
@@ -88,7 +90,7 @@ else
   cert_sha1=$(openssl x509 -noout -fingerprint -sha1 <<< "$cert_pem" | cut -d= -f2 | tr -d :)
   remote "security find-identity -v -p codesigning" | grep -q "$cert_sha1" ||
     { echo "$IDENTITY is not a valid signing identity in the Mac's keychain (no private key, or expired)" >&2; exit 1; }
-  IFS=$'\t' read -r PROFILE_UUID PROFILE_NAME < <("$PY" "$ROOT/scripts/ios/asc-mac-profile.py" "$BUNDLE_ID" "$cert_serial" "$tmp/app.mobileprovision")
+  IFS=$'\t' read -r PROFILE_UUID PROFILE_NAME < <("$PY" "$ROOT/scripts/ios/asc-mac-profile.py" "$BUNDLE_ID" "$cert_serial" "$tmp/app.mobileprovision" "${REQUIRED_ENTITLEMENTS[@]}")
   PROFILE_DIR="$MAC_HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
   remote "mkdir -p '$PROFILE_DIR'"
   remote "cat > '$PROFILE_DIR/$PROFILE_UUID.mobileprovision'" < "$tmp/app.mobileprovision"

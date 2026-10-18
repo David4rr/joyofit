@@ -153,6 +153,8 @@ security cms -D -i "$APPDIR/embedded.mobileprovision" > "$OUT/profile.plist"
 [ -z "$(plist "$OUT/profile.plist" ProvisionedDevices)" ] || fail "embedded profile lists devices (not an App Store profile)"
 codesign -d --entitlements :- "$APPDIR" > "$OUT/entitlements.plist" 2> /dev/null
 [ "$(plist "$OUT/entitlements.plist" get-task-allow)" = false ] || fail "get-task-allow is not false"
+# Push (Keluarga alerts): prebuild writes aps-environment development, the export must have signed production.
+[ "$(plist "$OUT/entitlements.plist" aps-environment)" = production ] || fail "aps-environment is not production"
 for key in com.apple.developer.healthkit com.apple.developer.applesignin; do
   plist "$OUT/entitlements.plist" "$key" > /dev/null || echo "   note: entitlement $key is not signed in (the Linux IPA has what app.json asks for)"
 done
