@@ -576,6 +576,8 @@ public final class HuaweiWearModule: Module {
 
         rejects("openNotificationAccess")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
+        rejects("parseWatchfacePackage", String.self)
+        rejects("deleteLocalWatchfaceFile", String.self)
     }
 }
 

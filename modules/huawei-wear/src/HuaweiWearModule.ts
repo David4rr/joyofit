@@ -1,5 +1,4 @@
 import { NativeModule, requireNativeModule } from 'expo';
-
 import type {
   BackgroundStatus,
   BondedDevice,
@@ -32,7 +31,7 @@ import type {
   DietDay,
   DietStatus,
 } from './HuaweiWearDiet.types';
-import type { WatchfaceInstallResult, WatchfaceList } from './HuaweiWearWatchface.types';
+import type { ParsedWatchfacePackage, WatchfaceInstallResult, WatchfaceList } from './HuaweiWearWatchface.types';
 import type { FaceApplyResult, FaceCustomization } from './HuaweiWearFaceCustom.types';
 import type { PhotoFace } from './HuaweiWearPhotoFace.types';
 import type { CoursesStatus, HealthyLivingStatus, RunningCourse, RunningCoursePushResult } from './HuaweiWearP2p.types';
@@ -296,6 +295,10 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   setActiveWatchface(id: string): Promise<WatchfaceList>;
   /** Deletes the face with this id; resolves with the list read afterwards, rejects if the face is still there. */
   deleteWatchface(id: string): Promise<WatchfaceList>;
+  /** Parses metadata, description, and preview image from a local .hwt file. Set persist=true to keep an internal copy in app storage. */
+  parseWatchfacePackage(uri: string, persist?: boolean): Promise<ParsedWatchfacePackage>;
+  /** Deletes an imported watchface binary from the phone's local storage. */
+  deleteLocalWatchfaceFile(filePath: string): Promise<boolean>;
   /**
    * A face's current options (DataSync 800100008). Resolves with what the watch reports; a face with no editable options does not answer
    * (ERR_TIMEOUT). ERR_NOT_CONNECTED, ERR_UNSUPPORTED (watch lacks ExpandCapability 84), ERR_INVALID_ARGUMENT (face not on the watch).
