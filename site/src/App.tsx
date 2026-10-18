@@ -778,6 +778,67 @@ const SOCIAL_POINTS: { Icon: LucideIcon; title: string; body: string }[] = [
   },
 ];
 
+const COACH_POINTS: { Icon: LucideIcon; title: string; body: string }[] = [
+  {
+    Icon: HeartPulse,
+    title: "Saran harian",
+    body: "\"Lari santai 30 menit, zona 2\" atau \"istirahat aktif\", dihitung dari kesiapan, HRV, tidur, dan beban latihan. Aturannya terbuka, tanpa AI, dan alasannya ditampilkan.",
+  },
+  {
+    Icon: Route,
+    title: "Rencana lari",
+    body: "5K, 10K, half marathon, atau lari rutin 3x seminggu. Kamu pilih tujuan, level, dan hari; volume disesuaikan tiap minggu dengan sesi yang selesai dan pemulihanmu.",
+  },
+  {
+    Icon: Dumbbell,
+    title: "Kekuatan dan perpustakaan gerakan",
+    body: "Full body 2 atau 3 kali seminggu di rumah atau gym, dengan sekitar 100 gerakan lengkap dengan langkah dan kesalahan umum. Ulangan dicatat manual: jam Huawei tidak melaporkannya.",
+  },
+  {
+    Icon: MessageCircle,
+    title: "Tanya coach",
+    body: "Chat tentang latihan, pemulihan, dan rencanamu dengan konteks data jam dan catatan makanmu. Maksimal 20 pesan sehari, tidak disimpan di server, dan bukan saran medis.",
+  },
+];
+
+function CoachSection() {
+  return (
+    <section id="coach" data-section="coach" className="scroll-mt-16 border-t border-border/70 py-20 md:py-28">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
+        <div className="max-w-2xl">
+          <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Baru, untuk JoyoRogo Pro</p>
+          <SectionTitle>Coach: tahu harus latihan apa hari ini</SectionTitle>
+          <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+            Coach membaca pemulihanmu dan memberi saran latihan hari ini, lengkap dengan rencana lari dan latihan kekuatan. Rencanamu tersimpan di akun JoyoRogo dan ikut ke ponsel lain.
+          </p>
+        </div>
+        <ul className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {COACH_POINTS.map(({ Icon, title, body }) => (
+            <li key={title} className="rounded-[1.75rem] bg-card p-6">
+              <span className="flex size-10 items-center justify-center rounded-full bg-bakar-soft text-bakar-ink">
+                <Icon className="size-5" aria-hidden />
+              </span>
+              <h3 className="mt-4 text-lg font-extrabold tracking-tight">{title}</h3>
+              <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-muted-foreground">{body}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-6 text-[0.9375rem] text-muted-foreground">
+          Langkahnya ada di{" "}
+          <a href={`${PANDUAN_PATH}#coach`} className="font-semibold text-foreground underline underline-offset-4">
+            panduan Coach
+          </a>{" "}
+          dan{" "}
+          <a href="/blog/coach" className="font-semibold text-foreground underline underline-offset-4">
+            tulisan tentang Coach
+          </a>
+          . Coach bukan saran medis.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function SocialSection() {
   return (
     <section id="social" data-section="social" className="scroll-mt-16 bg-card py-20 md:py-28">
@@ -1846,6 +1907,7 @@ function HomePage() {
       <Workouts />
       <Scores />
       <Features />
+      <CoachSection />
       <SocialSection />
       <SendSection />
       <WatchSection />
