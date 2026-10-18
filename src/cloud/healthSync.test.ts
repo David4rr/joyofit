@@ -1,7 +1,8 @@
 import { Database } from 'bun:sqlite';
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import * as prefsSyncModule from '@/cloud/prefsSync';
 import { createHealthAdapters, countDirtyHealth, scanHealth, setCycleGate, type HealthOptions } from '@/cloud/healthRecords';
 import { forgetHealthRestore, restoreWindow, type FetchRestorePage, type RestoreOptions, type RestorePage, type RestoreTable } from '@/cloud/healthRestore';
 import { runSync } from '@/cloud/syncEngine';
@@ -622,6 +623,9 @@ describe('pending count and scan cost', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
+// A copy of the real module, taken before the mock below replaces it for every test file that loads later.
+const realPrefsSync = { ...prefsSyncModule };
+
 // the public wrapper
 
 // The wrapper imports the app's HTTP client and KV store, which only exist once mocked: the mocks must be in place
@@ -650,7 +654,11 @@ describe('healthSync wrapper', () => {
     },
   }));
   mock.module('@/cloud/rogo', () => ({ rogoCall: async (_path: string, input: unknown) => void wipes.push(input) }));
-  mock.module('@/cloud/prefsSync', () => ({ notePrefChanged: async (key: string) => void noted.push(key) }));
+  mock.module('@/cloud/prefsSync', () => ({ ...realPrefsSync, notePrefChanged: async (key: string) => void noted.push(key) }));
+  // A module mock outlives the file that made it: put the real module back for `prefsSync.test.ts` and any file that loads later.
+  afterAll(() => {
+    mock.module('@/cloud/prefsSync', () => realPrefsSync);
+  });
 
   it('cycle sync is on by default; setCycleSync flips the KV, notes the pref and wipes the cloud kinds', async () => {
     const { cycleSyncEnabled, setCycleSync } = await import('@/cloud/healthSync');

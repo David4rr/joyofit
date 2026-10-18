@@ -16,12 +16,15 @@ import { clearAlertNotification, presentAlert } from './alertPresenter';
 import { hasLiveConsent, liveTracker } from './live/liveConfig';
 import { elevationStrip } from './nav';
 import { BikeSession, type BikeSnapshot } from './session';
+import { alertPriority } from './ride/alerts';
 import { recordRideDrain } from './ride/batteryStore';
 import { SAVER_IDLE, saverAccept, saverDismiss, saverStep, type SaverState } from './ride/saver';
 import { bikeSettingsStore, chosenRoute } from './settings';
 import type { RideAlert } from './types';
 
-const ALERT_SHOWN_MS = 6000;
+/** How long an alert banner stays when the rider does not tap it: information and warnings, then the ones that must be seen. */
+const ALERT_SHOWN_MS = 8000;
+const URGENT_ALERT_SHOWN_MS = 20_000;
 const BATTERY_POLL_MS = 30_000;
 const STRIP_BINS = 120;
 const MAP_LINE_POINTS = 1500;
@@ -172,7 +175,8 @@ export function BikeRideProvider({ children }: { children: ReactNode }) {
   // A banner stays for a few seconds.
   useEffect(() => {
     if (!alert) return;
-    const timer = setTimeout(() => setAlert((current) => (current === alert ? null : current)), ALERT_SHOWN_MS);
+    const shownMs = alertPriority(alert.kind) === 'urgent' ? URGENT_ALERT_SHOWN_MS : ALERT_SHOWN_MS;
+    const timer = setTimeout(() => setAlert((current) => (current === alert ? null : current)), shownMs);
     return () => clearTimeout(timer);
   }, [alert]);
 

@@ -65,6 +65,13 @@ export function RideFrame({ palette, landscape, insets, status, pages, renderPag
     <View onTouchStart={onTouch} style={[styles.root, { backgroundColor: palette.background }, landscape && styles.rootRow]}>
       <View style={[styles.main, { paddingTop: insets.top, paddingBottom: landscape ? insets.bottom : 0 }, side]}>
         <StatusStrip palette={palette} {...status} />
+        {/* In the flow, above the pages: an alert shrinks the data grid, it never covers a number. */}
+        {offCourseText !== null || alert ? (
+          <View>
+            {offCourseText !== null ? <AlertBanner text={offCourseText} tone="danger" palette={palette} /> : null}
+            {alert ? <AlertBanner key={alert.key} text={alert.text} tone={alert.tone} palette={palette} onDismiss={alert.onDismiss} /> : null}
+          </View>
+        ) : null}
         <View style={styles.pager} onLayout={onLayout}>
           {pager.width > 0 ? (
             <FlatList
@@ -84,12 +91,6 @@ export function RideFrame({ palette, landscape, insets, status, pages, renderPag
                 <View style={{ width: pager.width, height: pager.height }}>{renderPage(item, Math.abs(index - current) <= 1, pager.width)}</View>
               )}
             />
-          ) : null}
-          {offCourseText !== null || alert ? (
-            <View style={styles.banners} pointerEvents="box-none">
-              {offCourseText !== null ? <AlertBanner text={offCourseText} tone="danger" palette={palette} /> : null}
-              {alert ? <AlertBanner key={alert.key} text={alert.text} tone={alert.tone} palette={palette} onDismiss={alert.onDismiss} /> : null}
-            </View>
           ) : null}
         </View>
         {pages.length > 1 ? (
@@ -115,7 +116,6 @@ const styles = StyleSheet.create({
   rootRow: { flexDirection: 'row' },
   main: { flex: 1 },
   pager: { flex: 1 },
-  banners: { position: 'absolute', top: 0, left: 0, right: 0 },
   dots: { height: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   dotOn: { width: 22 },
