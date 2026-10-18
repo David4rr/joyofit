@@ -13,7 +13,7 @@ Code (Android): `modules/huawei-wear/android/.../Ephemeris.kt` (exchange, status
 `AgpsSource.kt` (where the data comes from), `AgpsPolicy.kt` (schedule, validation), `AgpsStore.kt` (persisted state),
 `AgpsModuleApi.kt` (JS API). Code (iOS, `modules/huawei-wear/ios`): `Ephemeris.swift` (`AgpsExchange`, `EphemerisLink`), `AgpsSource.swift` (source,
 HTTP, Caches copy), `AgpsStore.swift`, `AgpsReachability.swift`, and in `HuaweiProtocol/Sources/HuaweiProtocol`: `AgpsWire.swift` (`AgpsPolicy`,
-`AgpsMessages`) and `Packet+FileChunk.swift` (the `1C/05` frames). UI: `src/features/device/AgpsSection.tsx`, `agps.ts`. Wire details:
+`AgpsMessages`) and `Packet+FileChunk.swift` (the `1C/05` frames). UI: `src/features/device/AgpsSection.tsx`, `agps.ts`. **The Watch tab row is hidden** unless the watch's last ask was download version 0 (`agpsVisible`: `lastAskAt > 0` and `lastAskVersion === 0`); a Fit 4 Pro asks for version 3 and sees no row (owner decision, 2026-10-18). Native code is unchanged and still answers state 4. Wire details:
 `protocol/README.md`, section "AGPS / ephemeris".
 
 ## How it works on the wire
@@ -170,3 +170,5 @@ Logcat (tag `JoyoFit`), repeated four times, about 20 s apart (22:06:29, 22:06:5
 So the Fit 4 Pro asks for version 3 / `HW_PGNSS_PRED` (Huawei's predicted ephemeris, Huawei servers only), never version 0 (Broadcom LTO). There is no handler,
 parse or timing fault: the phone answered within milliseconds each time. The watch's "timed out" text is its wording for an update that ended without data.
 Nothing in the policy (Broadcom LTO only, no Huawei servers) can satisfy this kind, so there is no code fix; the decline is the intended behaviour.
+
+**Consequence for the UI (owner decision, 2026-10-18):** the "Data satelit" row in Watch is not shown for this watch, since it can only ever be declined. It appears if a watch asks for version 0. There is no other entry point (no setting, help text or onboarding step mentions it). The "what to do instead" help text was removed with it.

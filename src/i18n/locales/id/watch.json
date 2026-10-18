@@ -679,7 +679,6 @@
       "downloading": "Mengunduh data satelit...",
       "waiting": "Data siap, menunggu jam-mu mengambilnya...",
       "sending": "Mengirim ke jam-mu..."
-    },
-    "makerHelp": "Coba pembaruan di jam-mu sendiri kalau ada lewat Wi-Fi: Pengaturan > Pengaturan olahraga > Layanan lokasi > Pembaruan satelit. Saat olahraga di luar ruangan, JoyoFit mengirim GPS HP ini ke jam-mu supaya posisi pertama lebih cepat ditemukan."
+    }
   }
 }

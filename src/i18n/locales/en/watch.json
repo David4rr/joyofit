@@ -682,7 +682,6 @@
       "downloading": "Downloading satellite data...",
       "waiting": "Data ready, waiting for your watch to take it...",
       "sending": "Sending to your watch..."
-    },
-    "makerHelp": "Try the watch's own update if it offers one over Wi-Fi: Settings > Workout settings > Location Services > Satellite updates. During outdoor workouts JoyoFit sends this phone's GPS to your watch, which speeds up the first fix."
+    }
   }
 }

@@ -6,7 +6,7 @@ import { ButtonRow } from '@/components/ButtonRow';
 import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
-import { agpsView } from '@/features/device/agps';
+import { agpsView, agpsVisible } from '@/features/device/agps';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatClock, formatDateTime } from '@/format';
@@ -25,8 +25,8 @@ function read(): AgpsStatus | null {
 
 /**
  * The satellite-data (A-GPS) row of the Watch tab: when the watch last took data, how big it was, "Update now", the last result
- * in words, and, once the watch has asked for a kind of data only the watch maker's app prepares, what to do instead. The exchange lives in the
- * native module (Kotlin and Swift). OTA bundles on an older binary have no `getAgps` and show nothing.
+ * in words. It shows only for a watch that asked for the Broadcom kind (`agpsVisible`). The exchange lives in the native module (Kotlin and
+ * Swift). OTA bundles on an older binary have no `getAgps` and show nothing.
  */
 export function AgpsSection() {
   const { t } = useTranslation('watch');
@@ -51,7 +51,7 @@ export function AgpsSection() {
     return () => clearInterval(timer);
   }, [supported, active, refresh]);
 
-  if (!supported || status === null) return null;
+  if (!supported || status === null || !agpsVisible(status)) return null;
 
   const view = agpsView(status, now);
 
@@ -97,7 +97,6 @@ export function AgpsSection() {
           <Button label={t('agps.cancel')} variant="secondary" icon="close" onPress={() => void HuaweiWear.cancelAgps().then(refresh)} />
         ) : null}
       </ButtonRow>
-      {view.needsMakerData ? <Notice icon="information-circle">{t('agps.makerHelp')}</Notice> : null}
       <Details>{t('agps.details')}</Details>
     </Section>
   );

@@ -39,8 +39,6 @@ export interface AgpsView {
   detail: string | null;
   /** An automatic retry is waiting until this time (ms); null when not. */
   retryAtMs: number | null;
-  /** The watch's last ask was for a kind of data only the watch maker's app prepares (download version 1 or higher): the row says what to do instead. */
-  needsMakerData: boolean;
 }
 
 const OUTCOME_STATUS: Record<AgpsOutcome, { key: AgpsStatusKey; tone: AgpsTone }> = {
@@ -65,6 +63,15 @@ const PHASE_STATUS: Record<string, AgpsStatusKey> = {
   waiting: 'waiting',
   sending: 'sending',
 };
+
+/**
+ * The row shows only for a watch whose last ask was download version 0, the Broadcom LTO kind JoyoFit can serve. A watch that never asked, or
+ * asked for a kind only the watch maker's app prepares (version 1 or higher), gets no row: JoyoFit would answer "failed" and the row could only
+ * offer a button that cannot help.
+ */
+export function agpsVisible(status: AgpsStatus): boolean {
+  return status.lastAskAt > 0 && status.lastAskVersion === 0;
+}
 
 /** Turns the native status into what the row shows. `nowMs` is passed in so the result is a pure function of its inputs. */
 export function agpsView(status: AgpsStatus, nowMs: number): AgpsView {
@@ -97,6 +104,5 @@ export function agpsView(status: AgpsStatus, nowMs: number): AgpsView {
     tone,
     detail: failed ? status.error : null,
     retryAtMs: !busy && status.retryAt > nowMs ? status.retryAt : null,
-    needsMakerData: status.lastAskVersion >= 1,
   };
 }

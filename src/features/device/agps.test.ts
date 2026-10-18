@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import type { AgpsStatus } from '@/wear';
 
-import { agpsView } from './agps';
+import { agpsView, agpsVisible } from './agps';
 
 const NOW = 1_800_000_000_000;
 const HOUR = 3_600_000;
@@ -34,7 +34,6 @@ describe('agpsView', () => {
     expect(view.lastUpdatedMs).toBeNull();
     expect(view.sizeKb).toBeNull();
     expect(view.busy).toBe(false);
-    expect(view.needsMakerData).toBe(false);
   });
 
   test('a delivery shows its time and size in whole KB and the good tone', () => {
@@ -108,11 +107,13 @@ describe('agpsView', () => {
     expect(agpsView({ ...BLANK, retryAt: NOW + 1000, phase: 'asking' }, NOW).retryAtMs).toBeNull();
   });
 
-  test('the "what to do instead" help shows once the watch asked for a kind only the maker prepares', () => {
-    expect(agpsView({ ...BLANK, lastAskVersion: -1 }, NOW).needsMakerData).toBe(false);
-    expect(agpsView({ ...BLANK, lastAskVersion: 0 }, NOW).needsMakerData).toBe(false);
-    expect(agpsView({ ...BLANK, lastAskVersion: 1 }, NOW).needsMakerData).toBe(true);
-    expect(agpsView({ ...BLANK, lastAskVersion: 3, outcome: 'unsupported' }, NOW).needsMakerData).toBe(true);
+  test('the row shows only for a watch whose last ask was the Broadcom kind (version 0)', () => {
+    expect(agpsVisible({ ...BLANK })).toBe(false);
+    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: -1 })).toBe(false);
+    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 0 })).toBe(true);
+    expect(agpsVisible({ ...BLANK, lastAskAt: 0, lastAskVersion: 0 })).toBe(false);
+    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 1 })).toBe(false);
+    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 3, outcome: 'unsupported' })).toBe(false);
   });
 
   test('every native outcome has a status line', () => {
