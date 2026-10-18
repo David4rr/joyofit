@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Linking, StyleSheet, View } from 'react-native';
 
@@ -7,11 +7,12 @@ import { Button } from '@/components/Button';
 import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { StatusDot } from '@/components/StatusDot';
-import { Card, Section } from '@/components/Screen';
+import { Card, Divider, Section } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
 import { Notice } from '@/components/States';
 import { heartZone } from '@/features/live/liveWorkout';
 import { kindChannels } from '@/features/sensors/store';
+import { SensorLinkRow } from '@/features/sensors/ui/SensorLinkRow';
 import { useAnalysisPalette } from '@/features/workouts/analysis/palette';
 import { SPORT_ROWS } from '@/features/workouts/manual';
 import { sportLabel } from '@/features/workouts/sportLabel';
@@ -63,6 +64,9 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
   const sportName = sportLabel(SPORT_ROWS[sport].name);
   const statusColor = paused ? colors.heroWarn : colors.heroLink;
   const laps = lapRows(snapshot.laps);
+  // On a bike the cadence sits in the dark panel beside the heart rate; on foot it stays a tile below.
+  const cadenceInHero = tiles.cadence && !foot;
+  const sensorRows = snapshot.sensorIds.flatMap((id) => saved.find((s) => s.id === id) ?? []);
 
   return (
     <>
@@ -108,26 +112,42 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
           </View>
         </View>
 
-        {tiles.hr ? (
-          <View accessible accessibilityLabel={`${t('record.live.hr')}: ${live.hr === null ? DASH : fmtInt(live.hr)}`} style={styles.heart}>
-            <View style={styles.heartValue}>
-              <AppText variant="label" color={colors.heroMuted}>
-                {t('record.live.hr')}
-              </AppText>
-              <Metric
-                value={live.hr === null ? DASH : fmtInt(live.hr)}
-                unit={t('analysis.unit.bpm')}
-                size="lg"
-                color={colors.heroHeart}
-                unitColor={colors.heroMuted}
-              />
-            </View>
-            {zone ? (
-              <View style={styles.zone}>
-                <View style={[styles.zoneDot, { backgroundColor: palette.zones[zone.zone - 1] }]} />
-                <AppText variant="label" color={colors.heroForeground}>
-                  {t('record.live.zone', { zone: zone.zone, label: zone.label })}
+        {tiles.hr || cadenceInHero ? (
+          <View style={styles.pair}>
+            {tiles.hr ? (
+              <View accessible accessibilityLabel={`${t('record.live.hr')}: ${live.hr === null ? DASH : fmtInt(live.hr)}`} style={styles.pairCell}>
+                <AppText variant="label" color={colors.heroMuted}>
+                  {t('record.live.hr')}
                 </AppText>
+                <Metric
+                  value={live.hr === null ? DASH : fmtInt(live.hr)}
+                  unit={t('analysis.unit.bpm')}
+                  size="lg"
+                  color={colors.heroHeart}
+                  unitColor={colors.heroMuted}
+                />
+                {zone ? (
+                  <View style={styles.zone}>
+                    <View style={[styles.zoneDot, { backgroundColor: palette.zones[zone.zone - 1] }]} />
+                    <AppText variant="label" color={colors.heroForeground}>
+                      {t('record.live.zone', { zone: zone.zone, label: zone.label })}
+                    </AppText>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+            {cadenceInHero ? (
+              <View accessible accessibilityLabel={`${t('record.live.cadence')}: ${live.cadence === null ? DASH : fmtInt(live.cadence)}`} style={styles.pairCell}>
+                <AppText variant="label" color={colors.heroMuted}>
+                  {t('record.live.cadence')}
+                </AppText>
+                <Metric
+                  value={live.cadence === null ? DASH : fmtInt(live.cadence)}
+                  unit={t('analysis.unit.rpm')}
+                  size="lg"
+                  color={colors.heroForeground}
+                  unitColor={colors.heroMuted}
+                />
               </View>
             ) : null}
           </View>
@@ -158,7 +178,7 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
       )}
 
       <View style={styles.tiles}>
-        {tiles.cadence ? (
+        {tiles.cadence && !cadenceInHero ? (
           <StatTile
             icon="sync"
             tint="steps"
@@ -201,6 +221,16 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
         </Section>
       ) : null}
 
+      {sensorRows.length > 0 ? (
+        <Section title={t('record.live.sensors')} icon="bluetooth" tint="link">
+          {sensorRows.map((sensor, index) => (
+            <Fragment key={sensor.id}>
+              {index > 0 ? <Divider /> : null}
+              <SensorLinkRow sensor={sensor} managed />
+            </Fragment>
+          ))}
+        </Section>
+      ) : null}
       {snapshot.sensorError !== null ? (
         <Notice
           icon="bluetooth"
@@ -224,8 +254,6 @@ const styles = StyleSheet.create({
   clock: { alignItems: 'center', paddingVertical: spacing.xs },
   pair: { flexDirection: 'row', gap: spacing.md },
   pairCell: { flex: 1, gap: 2 },
-  heart: { gap: spacing.xs },
-  heartValue: { gap: 2 },
   zone: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   zoneDot: { width: 12, height: 12, borderRadius: 6 },
   controls: { gap: spacing.sm },

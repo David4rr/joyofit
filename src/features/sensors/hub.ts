@@ -26,6 +26,7 @@ import {
   parseBatteryLevel,
   parseInfoString,
   SensorTracker,
+  type CscMode,
   type SensorContact,
   type SensorKind,
   type SensorReadings,
@@ -64,6 +65,15 @@ export interface LinkInfo {
   /** Latest readings of this sensor alone, for a "live" line on the sensor screen. */
   preview: SensorReadings;
   contact: SensorContact | null;
+  /** Values the sensor delivered since its current attempt began (any characteristic that carries a reading), and when the last one arrived (epoch ms; kept across reconnects). */
+  frames: number;
+  lastValueAt: number | null;
+  /** What the sensor's CSC frames carry (wheel, crank or both); null before its first frame and for other sensors. */
+  cscMode: CscMode | null;
+  /** The failure of the latest connect attempt, kept while the link keeps retrying, cleared once connected or when the person drops the sensor. */
+  lastFailure: string | null;
+  /** Failed attempts since the link was last connected. */
+  failedAttempts: number;
 }
 
 export interface HubSnapshot {
@@ -98,7 +108,8 @@ export class SensorHub {
   private readonly found = new Map<string, ScanItem>();
   private readonly trackers = new Map<string, SensorTracker>();
   private subscriptions: { remove(): void }[] = [];
-  private previewTimer: ReturnType<typeof setTimeout> | null = null;
+  private refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly counters = new Map<string, { frames: number; lastValueAt: number | null }>();
   private wheelCircumferenceM = DEFAULT_WHEEL_CIRCUMFERENCE_MM / 1000;
 
   constructor(
@@ -163,8 +174,7 @@ export class SensorHub {
   stop(): void {
     for (const s of this.subscriptions) s.remove();
     this.subscriptions = [];
-    clearTimeout(this.previewTimer ?? undefined);
-    this.previewTimer = null;
+    this.syncRefresh(true);
   }
 
   private set(patch: Partial<HubSnapshot>): void {
@@ -200,6 +210,11 @@ export class SensorHub {
         model: null,
         preview: {},
         contact: null,
+        frames: 0,
+        lastValueAt: null,
+        cscMode: null,
+        lastFailure: null,
+        failedAttempts: 0,
       }
     );
   }
@@ -212,14 +227,25 @@ export class SensorHub {
     const prev = this.link(e.id);
     const kinds = e.state === 'connected' ? kindsOfServices(e.services) : prev.kinds;
     if (e.state === 'disconnected') this.trackers.delete(e.id);
+    if (e.state === 'connecting') this.counters.set(e.id, { frames: 0, lastValueAt: this.counters.get(e.id)?.lastValueAt ?? prev.lastValueAt });
+    // A failure stays visible while the link retries; a drop the person asked for (no error) and a connect clear it.
+    const failure =
+      e.state === 'connecting'
+        ? { lastFailure: prev.lastFailure, failedAttempts: prev.failedAttempts }
+        : e.state === 'disconnected' && e.error
+          ? { lastFailure: e.error, failedAttempts: prev.failedAttempts + 1 }
+          : { lastFailure: null, failedAttempts: 0 };
     this.setLink({
       ...prev,
       state: e.state,
       kinds,
       error: e.error,
-      ...(e.state === 'disconnected' ? { preview: {}, contact: null } : {}),
+      ...failure,
+      ...(e.state === 'connecting' ? { frames: 0 } : {}),
+      ...(e.state === 'disconnected' ? { preview: {}, contact: null, cscMode: null } : {}),
     });
     if (e.state === 'connected' && kinds.length > 0) this.emitInfo({ id: e.id, kinds });
+    this.syncRefresh();
   }
 
   private emitInfo(info: SensorInfo): void {
@@ -249,24 +275,58 @@ export class SensorHub {
       tracker = new SensorTracker(this.wheelCircumferenceM);
       this.trackers.set(e.id, tracker);
     }
-    if (tracker.ingest(characteristic, e.value, e.ts)) this.schedulePreview();
+    if (tracker.ingest(characteristic, e.value, e.ts)) {
+      const counter = this.counters.get(e.id) ?? { frames: 0, lastValueAt: null };
+      this.counters.set(e.id, { frames: counter.frames + 1, lastValueAt: e.ts });
+      this.syncRefresh();
+    }
   }
 
-  /** At most one snapshot per second out of the value stream. */
-  private schedulePreview(): void {
-    if (this.previewTimer) return;
-    this.previewTimer = setTimeout(() => {
-      this.previewTimer = null;
-      const now = this.now();
-      const links = { ...this.snapshot.links };
-      for (const [id, tracker] of this.trackers) {
-        const link = links[id];
-        if (!link) continue;
-        const preview = tracker.read(now);
-        links[id] = { ...link, preview, contact: preview.hrContact ?? link.contact };
+  /**
+   * Runs the preview refresh once a second while a link is up or a tracker holds readings, and stops it when there is nothing left to
+   * refresh (or `halt`). The refresh also makes a stopped crank read 0 on screen instead of its last value.
+   */
+  private syncRefresh(halt = false): void {
+    const active = !halt && (this.trackers.size > 0 || Object.values(this.snapshot.links).some((l) => l.state === 'connected'));
+    if (active && !this.refreshTimer) {
+      this.refreshTimer = setInterval(() => this.refreshPreviews(), PREVIEW_INTERVAL_MS);
+    } else if (!active && this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
+
+  /** Re-reads every tracker and publishes only when a link's preview, frame count or last value time changed. */
+  private refreshPreviews(): void {
+    const now = this.now();
+    const links = { ...this.snapshot.links };
+    let changed = false;
+    for (const [id, tracker] of this.trackers) {
+      const link = links[id];
+      if (!link) continue;
+      const preview = tracker.read(now);
+      const counter = this.counters.get(id);
+      const next: LinkInfo = {
+        ...link,
+        preview,
+        contact: preview.hrContact ?? link.contact,
+        frames: counter?.frames ?? link.frames,
+        lastValueAt: counter?.lastValueAt ?? link.lastValueAt,
+        cscMode: tracker.cscMode,
+      };
+      if (
+        next.frames !== link.frames ||
+        next.lastValueAt !== link.lastValueAt ||
+        next.cscMode !== link.cscMode ||
+        next.contact !== link.contact ||
+        JSON.stringify(next.preview) !== JSON.stringify(link.preview)
+      ) {
+        links[id] = next;
+        changed = true;
       }
-      this.set({ links });
-    }, PREVIEW_INTERVAL_MS);
+    }
+    if (changed) this.set({ links });
+    this.syncRefresh();
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -288,8 +348,19 @@ export class SensorHub {
     await this.native().stopScan();
   }
 
-  connect(id: string): Promise<void> {
-    return this.native().connect(id);
+  /**
+   * Connects the sensor and keeps it connected (the link retries by itself after a loss). A link that is down and waiting out its retry
+   * delay is restarted at once: the person asked for it, or a recording is starting.
+   */
+  async connect(id: string): Promise<void> {
+    const link = this.snapshot.links[id];
+    if (link && link.state === 'disconnected' && link.error !== null) await this.native().disconnect(id);
+    await this.native().connect(id);
+  }
+
+  /** The link of every sensor the radio knows, by id (what a recording reads to see which of its sensors are down). */
+  links(): Readonly<Record<string, LinkInfo>> {
+    return this.snapshot.links;
   }
 
   disconnect(id: string): Promise<void> {

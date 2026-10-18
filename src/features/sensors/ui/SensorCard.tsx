@@ -7,13 +7,16 @@ import { IconChip } from '@/components/IconChip';
 import { KeyValue } from '@/components/KeyValue';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { useNow } from '@/hooks/useNow';
 import { fmtPercent } from '@/i18n';
 import { useSensors } from '@/state/SensorsProvider';
 import { spacing } from '@/theme';
 
+import { sensorStatus } from '../linkStatus';
 import { sensorLabel, type SavedSensor } from '../store';
-import { linkHint, readingLine, sensorIcon } from './format';
-import { KindTags, LinkStatusLine } from './parts';
+import { linkHint, modeLabel, readingLine, sensorIcon } from './format';
+import { SensorStatusLine } from './SensorStatusLine';
+import { KindTags } from './parts';
 
 interface SensorCardProps {
   sensor: SavedSensor;
@@ -33,10 +36,12 @@ export function SensorCard({ sensor, busy, onConnect, onDisconnect, onRename, on
   const { t } = useTranslation('watch');
   const { hub, setAutoConnect, rename } = useSensors();
   const link = hub.links[sensor.id];
+  const now = useNow(1000);
+  const status = sensorStatus(link, now);
   const state = link?.state ?? 'disconnected';
   const connected = state === 'connected';
   const reading = connected && link ? readingLine(link.preview) : null;
-  const hint = link ? linkHint(link, sensor.kinds) : null;
+  const hint = link ? linkHint(link, sensor.kinds, now) : null;
   const battery = link?.battery ?? sensor.battery;
   const manufacturer = link?.manufacturer ?? sensor.manufacturer;
   const model = link?.model ?? sensor.model;
@@ -54,17 +59,22 @@ export function SensorCard({ sensor, busy, onConnect, onDisconnect, onRename, on
               {sensor.name}
             </AppText>
           ) : null}
-          <LinkStatusLine state={state} reading={null} />
+          <SensorStatusLine status={status} reading={null} />
         </View>
       </View>
       <KindTags kinds={sensor.kinds} />
+      {status.mode && sensor.kinds.includes('csc') ? (
+        <AppText variant="caption" muted>
+          {modeLabel(status.mode)}
+        </AppText>
+      ) : null}
       {reading ? (
         <AppText variant="figure" numberOfLines={1} adjustsFontSizeToFit accessibilityLiveRegion="polite">
           {reading}
         </AppText>
       ) : null}
       {hint ? (
-        <Notice tone={hint === 'failed' || hint === 'signalLost' ? 'danger' : 'info'}>{t(`sensors.hint.${hint}`)}</Notice>
+        <Notice tone={hint === 'failed' ? 'danger' : 'info'}>{t(`sensors.hint.${hint}`)}</Notice>
       ) : null}
       {state === 'disconnected' ? (
         <Button label={t('sensors.paired.connect')} variant="primary" icon="bluetooth" loading={busy} onPress={onConnect} />

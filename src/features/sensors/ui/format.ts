@@ -5,8 +5,9 @@
 import type { IconName } from '@/components/IconChip';
 import { fmtDecimal, fmtInt, fmtPercent, t } from '@/i18n';
 
-import { WHEEL_CIRCUMFERENCE_MM, type SensorKind, type SensorReadings } from '../gatt';
+import { WHEEL_CIRCUMFERENCE_MM, type CscMode, type SensorKind, type SensorReadings } from '../gatt';
 import type { HubSnapshot, LinkInfo, ScanItem } from '../hub';
+import { sensorStatus, type SensorStatus, type StatusLink } from '../linkStatus';
 import type { Granted } from '../permissions';
 
 /** The order sensor kinds are listed in everywhere: the same as `kindsOfServices`. */
@@ -89,21 +90,52 @@ export function readingLine(r: SensorReadings): string | null {
   return parts.length === 0 ? null : parts.join(' · ');
 }
 
-export type LinkHint = 'signalLost' | 'failed' | 'contactLost' | 'waitingHr' | 'waitingBike' | 'waitingPod';
+export type LinkHint = 'notFound' | 'lost' | 'failed' | 'contactLost' | 'waitingHr' | 'waitingBike' | 'waitingPod' | 'speedMode';
+
+/** Link fields `linkHint` reads: the status fields and what the sensor reports. */
+export type HintLink = StatusLink & Pick<LinkInfo, 'contact' | 'preview'>;
 
 /**
- * Why a sensor row has no number, or null when there is nothing to add. `error` is the link's last failure: a link that is trying
- * again with an error lost its signal, one that gave up never got through.
+ * Why a sensor row has no number or a number that is not the whole story, or null when there is nothing to add. A link that failed and
+ * keeps trying is "not found" (it never reached the sensor) or "lost" (it was up and dropped); a CSC sensor whose frames carry wheel
+ * revolutions only is in speed mode, whatever it is mounted on.
  */
-export function linkHint(link: Pick<LinkInfo, 'state' | 'error' | 'contact' | 'preview'>, kinds: readonly SensorKind[]): LinkHint | null {
-  if (link.state === 'connecting') return link.error ? 'signalLost' : null;
-  if (link.state === 'disconnected') return link.error ? 'failed' : null;
+export function linkHint(link: HintLink, kinds: readonly SensorKind[], now: number): LinkHint | null {
+  const status = sensorStatus(link, now);
+  if (status.phase === 'searching') return status.failure === 'lost' ? 'lost' : 'notFound';
+  if (status.phase === 'failed') return 'failed';
+  if (status.phase === 'idle' || status.phase === 'connecting') return null;
   if (link.contact === 'lost' || link.preview.hrContact === 'lost') return 'contactLost';
-  if (readingParts(link.preview).length > 0) return null;
+  if (status.mode === 'speed' && kinds.includes('csc')) return 'speedMode';
+  if (status.phase === 'receiving' && readingParts(link.preview).length > 0) return null;
   const first = sortKinds(kinds)[0];
-  if (first === 'hr') return 'waitingHr';
+  if (first === 'hr') return status.phase === 'receiving' ? null : 'waitingHr';
   if (first === 'rsc') return 'waitingPod';
   return first ? 'waitingBike' : null;
+}
+
+/** "just now", "5 s ago", "2 min ago", "3 h ago". */
+export function ageText(seconds: number): string {
+  if (seconds < 2) return t('watch:sensors.age.now');
+  if (seconds < 60) return t('watch:sensors.age.seconds', { value: seconds });
+  if (seconds < 3600) return t('watch:sensors.age.minutes', { value: Math.floor(seconds / 60) });
+  return t('watch:sensors.age.hours', { value: Math.floor(seconds / 3600) });
+}
+
+/**
+ * The state of a sensor in words, with how long ago it was heard once it has been ("Tersambung, data masuk · 2 dtk lalu",
+ * "Mencari sensor · nilai terakhir 3 mnt lalu").
+ */
+export function statusLabel(status: SensorStatus): string {
+  const label = t(`watch:sensors.status.${status.phase}`);
+  if (status.ageSec === null || status.phase === 'connecting' || status.phase === 'failed') return label;
+  if (status.phase === 'receiving') return `${label} · ${ageText(status.ageSec)}`;
+  return `${label} · ${t('watch:sensors.status.lastValue', { age: ageText(status.ageSec) })}`;
+}
+
+/** "Mode kadence": what a CSC sensor's frames carry, as its own words for the person. */
+export function modeLabel(mode: CscMode): string {
+  return t(`watch:sensors.mode.${mode}`);
 }
 
 export const WHEEL_MIN_MM = 1000;

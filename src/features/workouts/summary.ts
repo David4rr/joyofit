@@ -83,6 +83,10 @@ export interface SummarySensor {
   id: string;
   name: string;
   kinds: string[];
+  /** Values the recording took from it; 0 when it was asked for and never sent one. Absent on recordings made before this was kept. */
+  frames?: number;
+  /** What its CSC frames carried: `speed` (wheel only), `cadence` (crank only) or `both`. */
+  mode?: 'speed' | 'cadence' | 'both';
 }
 
 /** One lap of `summary_json.laps`. */

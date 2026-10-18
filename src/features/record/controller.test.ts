@@ -30,6 +30,8 @@ class FakeHub implements HubApi {
   connects: string[] = [];
   disconnects: string[] = [];
   failConnect: string | null = null;
+  /** The link state of each sensor: a sensor that is asked to connect is up at once, like a strap on a chest. */
+  state: Record<string, 'connecting' | 'connected' | 'disconnected'> = {};
   onValue(l: (e: ValueEvent) => void) {
     this.values.push(l);
     return () => (this.values = this.values.filter((x) => x !== l));
@@ -41,9 +43,14 @@ class FakeHub implements HubApi {
   async connect(id: string) {
     if (this.failConnect) throw Object.assign(new Error('bt'), { code: this.failConnect });
     this.connects.push(id);
+    this.state[id] = 'connected';
   }
   async disconnect(id: string) {
     this.disconnects.push(id);
+    delete this.state[id];
+  }
+  links() {
+    return Object.fromEntries(Object.entries(this.state).map(([id, state]) => [id, { state, error: null, lastFailure: null }]));
   }
   emitValue(id: string, characteristic: string, hex: string, ts: number) {
     for (const l of this.values) l({ id, ts, service: '', characteristic, value: hex });
@@ -417,7 +424,7 @@ describe('a workout from start to saved', () => {
     expect(row!.avg_hr).toBeGreaterThan(145);
     const summary = JSON.parse(row!.summary_json as string);
     expect(summary.source).toBe('phone');
-    expect(summary.sensors).toEqual([{ id: strap.id, name: 'My strap', kinds: ['hr'] }]);
+    expect(summary.sensors).toEqual([{ id: strap.id, name: 'My strap', kinds: ['hr'], frames: 60 }]);
     expect(summary.laps).toHaveLength(2);
     expect(all('SELECT * FROM workout_sensor')).toHaveLength(1);
     // the journal is gone, the radio and the session are released, the controller is idle again
@@ -428,14 +435,16 @@ describe('a workout from start to saved', () => {
     expect(controller.getSnapshot().phase).toBe('idle');
   });
 
-  it('a sensor that never sent a heart rate is not listed on the workout', async () => {
+  it('a sensor that was asked for and never sent a value is listed on the workout with no values, so the workout can say so', async () => {
     const { controller, run, all } = await setup();
     await controller.prepare('treadmill', 'Treadmill');
     controller.start();
     run(10);
     const result = await controller.finish();
-    expect(all('SELECT * FROM workout_sensor WHERE workout_id = ?', result!.workoutId)).toEqual([]);
-    expect(JSON.parse(all<{ summary_json: string }>('SELECT summary_json FROM workouts')[0]!.summary_json).kcalSource).toBe('met');
+    expect(all('SELECT sensor_id FROM workout_sensor WHERE workout_id = ?', result!.workoutId)).toEqual([{ sensor_id: strap.id }]);
+    const summary = JSON.parse(all<{ summary_json: string }>('SELECT summary_json FROM workouts')[0]!.summary_json);
+    expect(summary.sensors).toEqual([{ id: strap.id, name: 'My strap', kinds: ['hr'], frames: 0 }]);
+    expect(summary.kcalSource).toBe('met');
   });
 
   it('discard drops the journal and the radio but saves nothing', async () => {

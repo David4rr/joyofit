@@ -1,29 +1,31 @@
 import { useRouter } from 'expo-router';
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { IconChip } from '@/components/IconChip';
 import { NavRow } from '@/components/NavRow';
 import { Divider, Section } from '@/components/Screen';
+import { Notice } from '@/components/States';
 import { useSensors } from '@/state/SensorsProvider';
-import { spacing } from '@/theme';
 
-import { sensorLabel, type SavedSensor } from '../store';
-import { batteryLabel, kindsLabel, readingLine, sensorIcon } from './format';
-import { LinkStatusLine } from './parts';
+import { radioProblem } from './format';
+import { SensorLinkRow } from './SensorLinkRow';
 
 /**
- * The Watch tab's "Sensor" card: the paired sensors in one line each (what it is, battery, link and live reading) and the way into the
- * manager. With none paired it explains what sensors are for and offers to add one. Independent of any watch.
+ * The Watch tab's "Sensor" card: every paired sensor as a row with its link, battery and last value and the one button to connect or
+ * disconnect it, so a sensor can be woken and checked without opening the manager, and the way into the manager (scan, pair, rename,
+ * remove). With none paired it explains what sensors are for and offers to add one. Independent of any watch.
  */
 export function SensorsSection() {
   const { t } = useTranslation('watch');
   const router = useRouter();
-  const { saved, loaded } = useSensors();
+  const { saved, loaded, hub } = useSensors();
   if (!loaded) return null;
   const open = () => router.push('/watch/sensors');
+  // Bluetooth off or not allowed concerns every row alike, so it is said once above them.
+  const problem = saved.length > 0 ? radioProblem(hub, null, null) : null;
 
   return (
     <Section
@@ -45,8 +47,18 @@ export function SensorsSection() {
         </>
       ) : (
         <>
-          {saved.map((sensor) => (
-            <SensorRow key={sensor.id} sensor={sensor} />
+          {problem ? (
+            <Notice
+              tone="danger"
+              action={problem === 'permission' ? { label: t('sensors.problem.openSettings'), onPress: () => void Linking.openSettings() } : undefined}>
+              {t(`sensors.problem.${problem}`)}
+            </Notice>
+          ) : null}
+          {saved.map((sensor, index) => (
+            <Fragment key={sensor.id}>
+              {index > 0 ? <Divider /> : null}
+              <SensorLinkRow sensor={sensor} />
+            </Fragment>
           ))}
           <Divider />
           <NavRow icon="bluetooth" title={t('sensors.hub.manage')} subtitle={t('sensors.hub.manageSub')} style={styles.navRow} onPress={open} />
@@ -56,31 +68,6 @@ export function SensorsSection() {
   );
 }
 
-function SensorRow({ sensor }: { sensor: SavedSensor }) {
-  const link = useSensors().hub.links[sensor.id];
-  const state = link?.state ?? 'disconnected';
-  const battery = batteryLabel(link?.battery ?? sensor.battery);
-  const details = [kindsLabel(sensor.kinds), battery].filter((part): part is string => !!part).join(' · ');
-  return (
-    <View style={styles.row}>
-      <IconChip icon={sensorIcon(sensor.kinds)} tint={state === 'connected' ? 'link' : 'neutral'} />
-      <View style={styles.text}>
-        <AppText variant="bodyStrong" numberOfLines={1}>
-          {sensorLabel(sensor)}
-        </AppText>
-        {details ? (
-          <AppText variant="caption" muted numberOfLines={1}>
-            {details}
-          </AppText>
-        ) : null}
-        <LinkStatusLine state={state} reading={state === 'connected' && link ? readingLine(link.preview) : null} />
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  text: { flex: 1, gap: 1 },
   navRow: { paddingHorizontal: 0 },
 });

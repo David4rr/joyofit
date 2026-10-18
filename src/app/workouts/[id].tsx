@@ -32,7 +32,7 @@ import { ShareRunButton } from '@/features/stickers/ui/ShareRunButton';
 import { ReplayButton } from '@/features/replay/ui/ReplayButton';
 import { ShareToRogoButton } from '@/features/social/ShareToRogo';
 import { SaveWorkoutRouteButton } from '@/features/routes/SaveWorkoutRouteButton';
-import { useRoleText } from '@/features/record/ui/SensorRow';
+import { useRoleText } from '@/features/record/ui/roleText';
 import { listWorkoutSensors, type WorkoutSensor } from '@/features/sensors/store';
 import { analyzeWorkout } from '@/features/workouts/analysis/analyze';
 import { loadAnalysisHistory } from '@/features/workouts/analysis/history';
@@ -478,14 +478,29 @@ export default function WorkoutDetailScreen() {
         {summary.source === 'phone' ? (
           <>
             <KeyValue icon="phone-portrait-outline" label={t('detail.more.recordedBy')} value={t('detail.more.phone')} />
-            {loaded.sensors.map((sensor) => (
-              <KeyValue
-                key={sensor.id}
-                icon="bluetooth-outline"
-                label={t('detail.more.sensor')}
-                value={roleText(sensor.kinds) === '' ? sensor.name : `${sensor.name} (${roleText(sensor.kinds)})`}
-              />
-            ))}
+            {loaded.sensors.map((sensor) => {
+              const name = roleText(sensor.kinds) === '' ? sensor.name : `${sensor.name} (${roleText(sensor.kinds)})`;
+              const silent = summary.sensors?.find((s) => s.id === sensor.id)?.frames === 0;
+              return (
+                <KeyValue
+                  key={sensor.id}
+                  icon="bluetooth-outline"
+                  label={t('detail.more.sensor')}
+                  value={silent ? `${name} · ${t('detail.more.sensorSilent')}` : name}
+                />
+              );
+            })}
+            {(summary.sensors ?? []).map((sensor) =>
+              sensor.frames === 0 && (sensor.kinds.includes('csc') || sensor.kinds.includes('power')) ? (
+                <Notice key={`${sensor.id}-silent`} icon="bluetooth">
+                  {t('detail.more.sensorNoDataNotice', { name: sensor.name })}
+                </Notice>
+              ) : sensor.mode === 'speed' && sensor.kinds.includes('csc') ? (
+                <Notice key={`${sensor.id}-speed`} icon="speedometer-outline">
+                  {t('detail.more.sensorSpeedNotice', { name: sensor.name })}
+                </Notice>
+              ) : null,
+            )}
           </>
         ) : null}
         {paceRows(summary, workout.distance, times.movingSec).map((row) => (

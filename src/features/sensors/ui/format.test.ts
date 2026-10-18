@@ -2,11 +2,14 @@ import { describe, expect, it } from 'bun:test';
 
 import { applyLocale } from '@/i18n';
 
+import type { SensorStatus } from '../linkStatus';
 import {
+  ageText,
   batteryLabel,
   errorCode,
   kindsLabel,
   linkHint,
+  modeLabel,
   needsWheelSize,
   parseWheelMm,
   radioProblem,
@@ -17,6 +20,7 @@ import {
   signalBars,
   signalLevel,
   sortKinds,
+  statusLabel,
   wheelPresetOf,
 } from './format';
 
@@ -97,33 +101,82 @@ describe('reading line', () => {
 });
 
 describe('link hint', () => {
+  const NOW = 1_700_000_000_000;
   const link = (over: Partial<Parameters<typeof linkHint>[0]>): Parameters<typeof linkHint>[0] => ({
     state: 'connected',
     error: null,
+    lastFailure: null,
+    frames: 0,
+    lastValueAt: null,
+    cscMode: null,
     contact: null,
     preview: {},
     ...over,
   });
+  const flowing = { frames: 8, lastValueAt: NOW - 1000 };
 
-  it('tells apart a lost signal from a connection that never came up', () => {
-    expect(linkHint(link({ state: 'connecting', error: 'x' }), ['hr'])).toBe('signalLost');
-    expect(linkHint(link({ state: 'connecting' }), ['hr'])).toBeNull();
-    expect(linkHint(link({ state: 'disconnected', error: 'x' }), ['hr'])).toBe('failed');
-    expect(linkHint(link({ state: 'disconnected' }), ['hr'])).toBeNull();
+  it('tells a sensor that was not found, one whose signal dropped and a failure retrying will not fix apart', () => {
+    expect(linkHint(link({ state: 'disconnected', lastFailure: 'connecting timed out', error: 'connecting timed out' }), ['csc'], NOW)).toBe('notFound');
+    expect(linkHint(link({ state: 'connecting', lastFailure: 'connecting timed out' }), ['csc'], NOW)).toBe('notFound');
+    expect(linkHint(link({ state: 'disconnected', lastFailure: 'Link ended: GATT status 8 (connection timeout)' }), ['csc'], NOW)).toBe('lost');
+    expect(linkHint(link({ state: 'disconnected', lastFailure: 'no supported service' }), ['hr'], NOW)).toBe('failed');
+  });
+
+  it('says nothing about a sensor that is not connected and was never asked, or is on its first attempt', () => {
+    expect(linkHint(link({ state: 'disconnected' }), ['hr'], NOW)).toBeNull();
+    expect(linkHint(link({ state: 'connecting' }), ['hr'], NOW)).toBeNull();
   });
 
   it('asks a quiet strap for skin contact, then for a heartbeat', () => {
-    expect(linkHint(link({ preview: { hr: 80, hrContact: 'lost' } }), ['hr'])).toBe('contactLost');
-    expect(linkHint(link({ contact: 'lost' }), ['hr'])).toBe('contactLost');
-    expect(linkHint(link({}), ['hr'])).toBe('waitingHr');
+    expect(linkHint(link({ preview: { hr: 80, hrContact: 'lost' } }), ['hr'], NOW)).toBe('contactLost');
+    expect(linkHint(link({ contact: 'lost' }), ['hr'], NOW)).toBe('contactLost');
+    expect(linkHint(link({}), ['hr'], NOW)).toBe('waitingHr');
   });
 
   it('asks a quiet bike sensor to be woken, a pod to be moved, and says nothing once values flow', () => {
-    expect(linkHint(link({}), ['csc'])).toBe('waitingBike');
-    expect(linkHint(link({}), ['power', 'csc'])).toBe('waitingBike');
-    expect(linkHint(link({}), ['rsc'])).toBe('waitingPod');
-    expect(linkHint(link({ preview: { watts: 100 } }), ['power'])).toBeNull();
-    expect(linkHint(link({}), [])).toBeNull();
+    expect(linkHint(link({}), ['csc'], NOW)).toBe('waitingBike');
+    expect(linkHint(link({}), ['power', 'csc'], NOW)).toBe('waitingBike');
+    expect(linkHint(link({}), ['rsc'], NOW)).toBe('waitingPod');
+    expect(linkHint(link({ ...flowing, preview: { watts: 100 } }), ['power'], NOW)).toBeNull();
+    expect(linkHint(link({ ...flowing, cscMode: 'cadence', preview: { cadenceRpm: 80 } }), ['csc'], NOW)).toBeNull();
+    expect(linkHint(link({}), [], NOW)).toBeNull();
+  });
+
+  it('asks a bike sensor that has gone quiet for the pedals again', () => {
+    const quiet = { frames: 40, lastValueAt: NOW - 20_000, cscMode: 'cadence' as const, preview: { cadenceRpm: 0 } };
+    expect(linkHint(link(quiet), ['csc'], NOW)).toBe('waitingBike');
+  });
+
+  it('names a speed-mode sensor even while its wheel numbers flow, but only for a CSC sensor', () => {
+    const speedFrames = { ...flowing, cscMode: 'speed' as const, preview: { speedMps: 5 } };
+    expect(linkHint(link(speedFrames), ['csc'], NOW)).toBe('speedMode');
+    expect(linkHint(link(speedFrames), ['hr'], NOW)).toBeNull();
+  });
+});
+
+describe('sensor status in words', () => {
+  it('says how long ago in the unit that fits', () => {
+    expect(ageText(0)).toBe('baru saja');
+    expect(ageText(1)).toBe('baru saja');
+    expect(ageText(5)).toBe('5 dtk lalu');
+    expect(ageText(125)).toBe('2 mnt lalu');
+    expect(ageText(7300)).toBe('2 jam lalu');
+  });
+
+  it('reads the state with the age of the last value', () => {
+    const s = (phase: SensorStatus['phase'], ageSec: number | null): SensorStatus => ({ phase, failure: null, ageSec, mode: null });
+    expect(statusLabel(s('receiving', 2))).toBe('Tersambung, data masuk · 2 dtk lalu');
+    expect(statusLabel(s('quiet', 12))).toBe('Tersambung, belum ada data baru · nilai terakhir 12 dtk lalu');
+    expect(statusLabel(s('waiting', null))).toBe('Tersambung, menunggu data');
+    expect(statusLabel(s('searching', 90))).toBe('Mencari sensor · nilai terakhir 1 mnt lalu');
+    expect(statusLabel(s('connecting', 40))).toBe('Menyambung');
+    expect(statusLabel(s('idle', null))).toBe('Tidak tersambung');
+  });
+
+  it('names the CSC modes', () => {
+    expect(modeLabel('cadence')).toBe('Mode kadence');
+    expect(modeLabel('speed')).toBe('Mode kecepatan');
+    expect(modeLabel('both')).toBe('Kecepatan dan kadence');
   });
 });
 

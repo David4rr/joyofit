@@ -535,10 +535,26 @@
       "rpm": "{{value}} rpm",
       "kmh": "{{value}} km/j"
     },
-    "link": {
-      "connected": "Tersambung",
+    "status": {
+      "idle": "Tidak tersambung",
       "connecting": "Menyambung",
-      "disconnected": "Tidak tersambung"
+      "searching": "Mencari sensor",
+      "failed": "Gagal tersambung",
+      "waiting": "Tersambung, menunggu data",
+      "receiving": "Tersambung, data masuk",
+      "quiet": "Tersambung, belum ada data baru",
+      "lastValue": "nilai terakhir {{age}}"
+    },
+    "age": {
+      "now": "baru saja",
+      "seconds": "{{value}} dtk lalu",
+      "minutes": "{{value}} mnt lalu",
+      "hours": "{{value}} jam lalu"
+    },
+    "mode": {
+      "speed": "Mode kecepatan",
+      "cadence": "Mode kadence",
+      "both": "Kecepatan dan kadence"
     },
     "signal": {
       "strong": "Sinyal kuat",
@@ -547,12 +563,14 @@
       "weak": "Sinyal lemah"
     },
     "hint": {
-      "signalLost": "Sinyal hilang. Dekatkan sensor ke HP, aplikasi mencoba menyambung lagi.",
+      "notFound": "Sensor tidak ditemukan, pastikan sensor aktif: putar pedal",
+      "lost": "Sinyal sensor terputus. Putar pedal supaya sensor aktif lagi, aplikasi menyambung ulang sendiri.",
       "failed": "Gagal tersambung. Pastikan sensor menyala, dekat, dan tidak tersambung ke aplikasi atau jam lain.",
       "contactLost": "Strap tidak menyentuh kulit. Basahi elektrodanya dan kencangkan di dada.",
       "waitingHr": "Belum ada detak. Pakai strap di dada dan basahi elektrodanya.",
       "waitingBike": "Belum ada data. Putar pedal atau roda supaya sensor bangun.",
-      "waitingPod": "Belum ada data. Mulai jalan atau lari supaya pod bangun."
+      "waitingPod": "Belum ada data. Mulai jalan atau lari supaya pod bangun.",
+      "speedMode": "Sensor dalam mode kecepatan: hanya putaran roda yang terkirim, jadi tidak ada kadence. Kalau dipasang di engkol, ganti ke mode kadence di aplikasi sensornya (XOSS Vortex: aplikasi XOSS)."
     },
     "hub": {
       "empty": "Pasangkan strap detak jantung, sensor kecepatan dan kadence, power meter, atau pod lari lewat Bluetooth. Latihan yang direkam di HP memakainya, jam tidak wajib.",

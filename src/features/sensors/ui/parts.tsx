@@ -3,11 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { StatusDot } from '@/components/StatusDot';
 import { spacing, useColors, useTheme } from '@/theme';
 
 import type { SensorKind } from '../gatt';
-import type { LinkInfo } from '../hub';
 import { kindIcon, kindLabel, signalBars, signalLevel, sortKinds } from './format';
 
 /** Non-interactive labels of what a sensor measures: a glyph and a word each, so no kind is told by colour alone. */
@@ -50,26 +48,9 @@ export function Signal({ rssi }: { rssi: number }) {
   );
 }
 
-/** The link state as a dot and a word (the dot pulses while the link is up or being set up), then the live reading when there is one. */
-export function LinkStatusLine({ state, reading }: { state: LinkInfo['state']; reading: string | null }) {
-  const { t } = useTranslation('watch');
-  const colors = useColors();
-  const color = state === 'connected' ? colors.link : state === 'connecting' ? colors.warning : colors.mutedForeground;
-  return (
-    <View style={styles.status}>
-      <StatusDot color={color} live={state !== 'disconnected'} size={8} />
-      <AppText variant="caption" style={styles.statusText} numberOfLines={1}>
-        {reading ? `${t(`sensors.link.${state}`)} · ${reading}` : t(`sensors.link.${state}`)}
-      </AppText>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   tag: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: 4 },
   signal: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
-  status: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  statusText: { flex: 1 },
 });

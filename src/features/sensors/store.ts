@@ -9,7 +9,7 @@
  */
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import type { SensorKind } from './gatt';
+import type { CscMode, SensorKind } from './gatt';
 
 export interface SavedSensor {
   id: string;
@@ -176,6 +176,13 @@ export interface WorkoutSensor {
   id: string;
   name: string;
   kinds: SensorKind[];
+  /**
+   * Values of this sensor the recording took. 0 is a sensor the recording asked for that never sent one (its row says so on the workout);
+   * absent on a recording made before this was kept. Kept in the workout's summary, not in `workout_sensor`.
+   */
+  frames?: number;
+  /** What its CSC frames carried (wheel only, crank only or both), absent when it sent none or is not a CSC sensor. */
+  mode?: CscMode;
 }
 
 /** The sensors a workout used, as they were called when it was recorded. */

@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { ChipRow } from '@/components/ChipRow';
 import { Divider, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
+import { SensorLinkRow } from '@/features/sensors/ui/SensorLinkRow';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { MANUAL_SPORTS, SPORT_ROWS, type ManualSport } from '@/features/workouts/manual';
 import { BikeSetupPanel } from '@/features/bikecomputer/record/BikeSetupPanel';
@@ -19,7 +20,6 @@ import { spacing } from '@/theme';
 import { canPrepare, permissionPlan } from './format';
 import { GpsLine } from './GpsLine';
 import { PermissionCards, useRecordPermissions } from './PermissionGate';
-import { SensorRow } from './SensorRow';
 import { useGpsWarmUp } from './useGpsWarmUp';
 
 const LOCATION_DENIED = 'ERR_LOCATION_PERMISSION';
@@ -86,7 +86,7 @@ export function SetupView({ sport, onSport, notice }: SetupViewProps) {
           autoSensors.map((sensor, index) => (
             <Fragment key={sensor.id}>
               {index > 0 ? <Divider /> : null}
-              <SensorRow sensor={sensor} link={hub.links[sensor.id]} beforeStart />
+              <SensorLinkRow sensor={sensor} willConnect />
             </Fragment>
           ))
         ) : (

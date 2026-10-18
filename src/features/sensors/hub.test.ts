@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it, vi } from 'bun:test';
 
 import type { ConnectionEvent } from '../../../modules/ble-sensors/src/BleSensors.types';
 import { bytesToHex } from './gatt';
 import { SensorHub, type BleSensorsApi, type SensorInfo } from './hub';
+
+afterEach(() => vi.useRealTimers());
 
 class FakeNative implements BleSensorsApi {
   handlers = new Map<string, (event: never) => void>();
@@ -132,5 +134,64 @@ describe('SensorHub', () => {
     expect(native.calls).toEqual(['startScan', 'stopScan', 'connect A', 'disconnect A', 'disconnectAll']);
     expect(await hub.refreshBluetooth()).toBe('on');
     expect(hub.getSnapshot().bluetooth).toBe('on');
+  });
+
+  it('keeps the last failure while the link retries and clears it on connect or when the person drops the sensor', async () => {
+    const { native, hub } = await setup();
+    native.emit('onConnection', { id: 'A', state: 'connecting', services: [], error: null });
+    native.emit('onConnection', { id: 'A', state: 'disconnected', services: [], error: 'connecting timed out' });
+    native.emit('onConnection', { id: 'A', state: 'connecting', services: [], error: null });
+    expect(hub.getSnapshot().links.A).toMatchObject({ state: 'connecting', error: null, lastFailure: 'connecting timed out', failedAttempts: 1 });
+    native.emit('onConnection', { id: 'A', state: 'disconnected', services: [], error: 'Link ended: GATT status 133 (generic GATT error)' });
+    expect(hub.getSnapshot().links.A).toMatchObject({ failedAttempts: 2 });
+    native.emit('onConnection', { id: 'A', state: 'connected', services: ['1816'], error: null });
+    expect(hub.getSnapshot().links.A).toMatchObject({ lastFailure: null, failedAttempts: 0 });
+    native.emit('onConnection', { id: 'A', state: 'disconnected', services: [], error: 'Link ended: GATT status 8 (connection timeout)' });
+    native.emit('onConnection', { id: 'A', state: 'disconnected', services: [], error: null });
+    expect(hub.getSnapshot().links.A).toMatchObject({ lastFailure: null, failedAttempts: 0 });
+  });
+
+  it('counts the frames of the current attempt, remembers when the last one came and which CSC mode they show', async () => {
+    vi.useFakeTimers();
+    const { native, hub, tick } = await setup();
+    native.emit('onConnection', { id: 'A', state: 'connected', services: ['1816'], error: null });
+    const crank = (revs: number, time: number) => hex(0x02, revs & 255, revs >> 8, time & 255, time >> 8);
+    native.emit('onValue', { id: 'A', ts: tick(0), service: '1816', characteristic: '2a5b', value: crank(10, 1000) });
+    native.emit('onValue', { id: 'A', ts: tick(750), service: '1816', characteristic: '2a5b', value: crank(11, 1768) });
+    vi.advanceTimersByTime(1000);
+    const link = hub.getSnapshot().links.A!;
+    expect(link).toMatchObject({ frames: 2, lastValueAt: 1_000_750, cscMode: 'cadence' });
+    expect(link.preview.cadenceRpm).toBeCloseTo(80, 0);
+    // a drop forgets the readings but not when the sensor was last heard; a new attempt starts the count again
+    native.emit('onConnection', { id: 'A', state: 'disconnected', services: [], error: 'Link ended: GATT status 8 (connection timeout)' });
+    expect(hub.getSnapshot().links.A).toMatchObject({ frames: 2, lastValueAt: 1_000_750, cscMode: null, preview: {} });
+    native.emit('onConnection', { id: 'A', state: 'connecting', services: [], error: null });
+    expect(hub.getSnapshot().links.A).toMatchObject({ frames: 0, lastValueAt: 1_000_750 });
+  });
+
+  it('lets a stopped crank read 0 on screen without waiting for another frame', async () => {
+    vi.useFakeTimers();
+    const { native, hub, tick } = await setup();
+    native.emit('onConnection', { id: 'A', state: 'connected', services: ['1816'], error: null });
+    const crank = (revs: number, time: number) => hex(0x02, revs & 255, revs >> 8, time & 255, time >> 8);
+    native.emit('onValue', { id: 'A', ts: tick(0), service: '1816', characteristic: '2a5b', value: crank(10, 1000) });
+    native.emit('onValue', { id: 'A', ts: tick(1000), service: '1816', characteristic: '2a5b', value: crank(11, 2024) });
+    vi.advanceTimersByTime(1000);
+    expect(hub.getSnapshot().links.A!.preview.cadenceRpm).toBeCloseTo(60, 0);
+    tick(4000);
+    vi.advanceTimersByTime(1000);
+    expect(hub.getSnapshot().links.A!.preview.cadenceRpm).toBe(0);
+  });
+
+  it('connect restarts a link that is down and waiting out its retry delay, and only asks once for one that is not', async () => {
+    const { native, hub } = await setup();
+    native.emit('onConnection', { id: 'A', state: 'disconnected', services: [], error: 'connecting timed out' });
+    await hub.connect('A');
+    expect(native.calls).toEqual(['disconnect A', 'connect A']);
+    native.calls.length = 0;
+    native.emit('onConnection', { id: 'A', state: 'connecting', services: [], error: null });
+    await hub.connect('A');
+    await hub.connect('B');
+    expect(native.calls).toEqual(['connect A', 'connect B']);
   });
 });

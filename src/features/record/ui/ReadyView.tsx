@@ -8,6 +8,7 @@ import { Divider, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { BikeReadyPanel } from '@/features/bikecomputer/record/BikeReadyPanel';
 import { useBikeSettings } from '@/features/bikecomputer/ui/useBikeSettings';
+import { SensorLinkRow } from '@/features/sensors/ui/SensorLinkRow';
 import { SPORT_ROWS } from '@/features/workouts/manual';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { useRecorder } from '@/state/RecorderProvider';
@@ -16,13 +17,12 @@ import { spacing } from '@/theme';
 
 import { GpsLine } from './GpsLine';
 import { sensorErrorKind } from './format';
-import { SensorRow } from './SensorRow';
 
 /** Phase `ready`: the native session runs, GPS and sensors are connecting. "Mulai" starts the clock, "Batal" leaves without a recording. */
 export function ReadyView() {
   const { t } = useTranslation('workouts');
   const { snapshot, start, cancel } = useRecorder();
-  const { saved, hub } = useSensors();
+  const { saved } = useSensors();
   const bike = useBikeSettings();
   const sensors = snapshot.sensorIds.flatMap((id) => saved.find((s) => s.id === id) ?? []);
   const sensorError = snapshot.sensorError === null ? null : sensorErrorKind(snapshot.sensorError);
@@ -55,7 +55,7 @@ export function ReadyView() {
           {sensors.map((sensor, index) => (
             <Fragment key={sensor.id}>
               {index > 0 ? <Divider /> : null}
-              <SensorRow sensor={sensor} link={hub.links[sensor.id]} beforeStart={false} />
+              <SensorLinkRow sensor={sensor} managed />
             </Fragment>
           ))}
         </Section>

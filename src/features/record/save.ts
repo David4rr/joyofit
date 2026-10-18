@@ -57,7 +57,13 @@ export function summaryOf(w: RecordedWorkout, sensors: readonly WorkoutSensor[],
         ? w.laps.map((l) => ({ startTs: l.startTs, endTs: l.endTs, distanceM: Math.round(l.distanceM), avgHr: l.avgHr, maxHr: l.maxHr, avgCadence: l.avgCadence }))
         : undefined,
     source: 'phone',
-    sensors: sensors.map((s) => ({ id: s.id, name: s.name, kinds: [...s.kinds] })),
+    sensors: sensors.map((s) => ({
+      id: s.id,
+      name: s.name,
+      kinds: [...s.kinds],
+      ...(s.frames !== undefined ? { frames: s.frames } : {}),
+      ...(s.mode !== undefined ? { mode: s.mode } : {}),
+    })),
     kcalSource: w.kcalSource,
   };
   const elevation = workoutElevation({ start, end, duration: w.movingSec }, summary, samples);

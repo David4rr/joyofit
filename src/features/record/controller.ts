@@ -15,7 +15,8 @@ import type { LocationEvent, ValueEvent, WorkoutSessionOptions } from '../../../
 import type { ManualSport } from '../workouts/manual';
 import type { SavedSensor } from '../sensors/store';
 import type { WorkoutSensor } from '../sensors/store';
-import type { SensorKind } from '../sensors/gatt';
+import { cscModeOf, hexToBytes, parseCsc, type SensorKind } from '../sensors/gatt';
+import type { LinkInfo } from '../sensors/hub';
 import { appendJournal, clearJournal, loadJournal, saveJournalState } from './journal';
 import { Recorder, MAX_FIX_ACCURACY_M, type LiveStats, type RecordedLap, type RecordedWorkout, type RecorderMeta, type RecorderStatus } from './recorder';
 import type { EnergyProfile } from './energy';
@@ -73,8 +74,11 @@ export interface SessionApi {
 export interface HubApi {
   onValue(listener: (e: ValueEvent) => void): () => void;
   onLocation(listener: (e: LocationEvent) => void): () => void;
+  /** Connects the sensor and keeps it connected; a link that is down and waiting out its retry delay is restarted at once. */
   connect(id: string): Promise<void>;
   disconnect(id: string): Promise<void>;
+  /** The state of every link the radio knows, by sensor id. */
+  links(): Readonly<Record<string, Pick<LinkInfo, 'state' | 'error' | 'lastFailure'>>>;
 }
 
 export type RecordingDb = SaveDb & Pick<SQLiteDatabase, 'runAsync' | 'getFirstAsync' | 'getAllAsync'>;
@@ -93,16 +97,28 @@ export interface RecordingDeps {
   log?: (message: string) => void;
 }
 
+/** What the recording took from one sensor: how many values, which CSC parts they carried. */
+interface SensorTake {
+  frames: number;
+  wheel: boolean;
+  crank: boolean;
+}
+
 /** What the journal remembers of the controller besides the recorder. */
 interface JournalMeta {
   recorder: RecorderMeta;
   sensorIds: string[];
   used: string[];
   title: string;
+  /** Absent in a journal written before the takes were kept. */
+  takes?: Record<string, SensorTake>;
 }
 
 const JOURNAL_EVERY_S = 10;
 const NOTIFICATION_EVERY_S = 5;
+/** A sensor of the recording seen down is connected again after this long, then after twice that, and so on up to the maximum. */
+const SENSOR_RETRY_FIRST_MS = 3000;
+const SENSOR_RETRY_MAX_MS = 30_000;
 
 const codeOf = (error: unknown): string => String((error as { code?: unknown } | null)?.code ?? '');
 
@@ -135,6 +151,14 @@ export class RecordingController {
   /** Since when (ms) the fixes have been good enough for the recorder without a break, null while they are not. */
   private usableSince: number | null = null;
   private lastFixAt: number | null = null;
+  /** Values taken from each sensor since "Mulai" (the recorder only listens while the recording is active), for the workout's sensor list. */
+  private takes = new Map<string, SensorTake>();
+  /** The sensors whose first value of a characteristic was written to the log, so the log shows the frames once, not every second. */
+  private loggedFirst = new Set<string>();
+  /** Per wanted sensor that is down: when its link is restarted next and how many restarts it took so far. */
+  private readonly retries = new Map<string, { nextAt: number; attempts: number }>();
+  /** The link state last written to the log, per wanted sensor, so only changes are logged. */
+  private readonly loggedState = new Map<string, string>();
 
   constructor(private readonly deps: RecordingDeps) {}
 
@@ -200,7 +224,8 @@ export class RecordingController {
         noService = await this.beginSession(gps, title);
       }
       const ids = this.deps.sensors().filter((s) => s.autoConnect).map((s) => s.id);
-      this.snap = { ...idleSnapshot(), phase: 'ready', sport, gps, noService };
+      this.resetSensors();
+      this.snap = { ...idleSnapshot(), phase: 'ready', sport, gps, noService, sensorIds: ids };
       this.beginTimer();
       this.publish();
       const sensorError = await this.connectAll(ids);
@@ -315,13 +340,15 @@ export class RecordingController {
     await this.stopWarmUp();
     const journal = await loadJournal<JournalMeta>(this.deps.db, 'phone');
     if (!journal) return false;
-    const { recorder: meta, sensorIds, used, title } = journal.meta;
+    const { recorder: meta, sensorIds, used, title, takes } = journal.meta;
     if (meta.status === 'finished' || meta.status === 'idle') {
       await clearJournal(this.deps.db, 'phone');
       return false;
     }
     this.title = title;
     this.used = new Set(used);
+    this.resetSensors();
+    this.takes = new Map(Object.entries(takes ?? {}));
     this.resetFix();
     this.attach();
     const recorder = Recorder.restore(meta, journal.samples);
@@ -346,9 +373,18 @@ export class RecordingController {
     try {
       if (workout) {
         const saved = this.deps.sensors();
-        const sensors: WorkoutSensor[] = [...this.used].map((id) => {
+        // Every sensor the recording asked for is listed, also one that never sent a value: the workout then says so.
+        const sensors: WorkoutSensor[] = [...new Set([...this.snap.sensorIds, ...this.used])].map((id) => {
           const s = saved.find((x) => x.id === id);
-          return { id, name: s ? (s.alias?.trim() || s.name) : id, kinds: (s?.kinds ?? []) as SensorKind[] };
+          const take = this.takes.get(id);
+          const mode = take ? cscModeOf(take.wheel, take.crank) : null;
+          return {
+            id,
+            name: s ? (s.alias?.trim() || s.name) : id,
+            kinds: (s?.kinds ?? []) as SensorKind[],
+            frames: take?.frames ?? 0,
+            ...(mode ? { mode } : {}),
+          };
         });
         result = { workoutId: await saveRecordedWorkout(this.deps.db, workout, sensors) };
       }
@@ -383,6 +419,7 @@ export class RecordingController {
   tick(): void {
     // Getting ready or warming up nothing is recorded, but the GPS age on the screen keeps counting.
     if (this.snap.phase === 'ready' || (this.snap.phase === 'idle' && this.warmSport !== null)) {
+      if (this.snap.phase === 'ready') this.superviseSensors(this.deps.now());
       this.publish();
       return;
     }
@@ -390,6 +427,7 @@ export class RecordingController {
     if (!recorder || this.snap.phase !== 'active') return;
     const now = this.deps.now();
     recorder.tick(now);
+    this.superviseSensors(now);
     for (const observer of this.observers) {
       try {
         observer({ recorder, now });
@@ -411,9 +449,7 @@ export class RecordingController {
   private attach(): void {
     this.detach();
     this.off = [
-      this.deps.hub.onValue((e) => {
-        if (this.recorder && this.snap.phase === 'active' && this.recorder.sensor(e.characteristic, e.value, e.ts)) this.used.add(e.id);
-      }),
+      this.deps.hub.onValue((e) => this.onSensorValue(e)),
       this.deps.hub.onLocation((e) => {
         this.lastFix = e;
         const now = this.deps.now();
@@ -432,6 +468,77 @@ export class RecordingController {
   private detach(): void {
     for (const off of this.off) off();
     this.off = [];
+  }
+
+  /** A raw value from any connected sensor: logged the first time (the frames are the evidence of what a sensor sends), taken into the recording while it is active. */
+  private onSensorValue(e: ValueEvent): void {
+    const characteristic = e.characteristic.toLowerCase();
+    const key = `${e.id}/${characteristic}`;
+    if (!this.loggedFirst.has(key)) {
+      this.loggedFirst.add(key);
+      this.deps.log?.(`sensor ${this.sensorName(e.id)}: first ${characteristic} value ${e.value}${this.snap.phase === 'active' ? '' : ' (not recording yet)'}`);
+    }
+    const recorder = this.recorder;
+    if (!recorder || this.snap.phase !== 'active' || !recorder.sensor(e.characteristic, e.value, e.ts)) return;
+    this.used.add(e.id);
+    const take = this.takes.get(e.id) ?? { frames: 0, wheel: false, crank: false };
+    take.frames += 1;
+    if (characteristic === '2a5b') {
+      const csc = parseCsc(hexToBytes(e.value));
+      if (csc?.wheel) take.wheel = true;
+      if (csc?.crank) take.crank = true;
+    }
+    this.takes.set(e.id, take);
+  }
+
+  private sensorName(id: string): string {
+    const s = this.deps.sensors().find((x) => x.id === id);
+    return s ? s.alias?.trim() || s.name : id;
+  }
+
+  private resetSensors(): void {
+    this.takes = new Map();
+    this.loggedFirst = new Set();
+    this.retries.clear();
+    this.loggedState.clear();
+  }
+
+  /**
+   * The sensors of the recording stay wanted for the whole session. A sensor that sleeps until the crank turns, drops out of range or
+   * loses its link is connected again for as long as the recording runs: its link is restarted `SENSOR_RETRY_FIRST_MS` after it is seen
+   * down, then after growing pauses up to `SENSOR_RETRY_MAX_MS`, never given up. The link's own retries (native, with backoff) go on
+   * in between; this only cuts their waiting. Link changes are written to the log.
+   */
+  private superviseSensors(now: number): void {
+    const links = this.deps.hub.links();
+    for (const id of this.connected) {
+      const link = links[id];
+      const state = link?.state ?? 'disconnected';
+      const note = state === 'disconnected' ? `not connected${link?.lastFailure ? ` (${link.lastFailure})` : ''}` : state;
+      if (this.loggedState.get(id) !== note) {
+        this.loggedState.set(id, note);
+        this.deps.log?.(`sensor ${this.sensorName(id)}: ${note}`);
+      }
+      if (state === 'connected') {
+        this.retries.delete(id);
+        continue;
+      }
+      if (state === 'connecting') continue;
+      let retry = this.retries.get(id);
+      if (!retry) {
+        retry = { nextAt: now + SENSOR_RETRY_FIRST_MS, attempts: 0 };
+        this.retries.set(id, retry);
+      }
+      if (now < retry.nextAt) continue;
+      retry.attempts += 1;
+      retry.nextAt = now + Math.min(SENSOR_RETRY_MAX_MS, SENSOR_RETRY_FIRST_MS * 2 ** retry.attempts);
+      this.deps.log?.(`sensor ${this.sensorName(id)}: connecting again (attempt ${retry.attempts})`);
+      this.deps.hub.connect(id).catch((error: unknown) => {
+        this.deps.log?.(`connect ${id} failed: ${String(error)}`);
+        this.publish({ sensorError: codeOf(error) || String(error) });
+      });
+    }
+    if (this.snap.sensorError !== null && this.connected.every((id) => links[id]?.state === 'connected')) this.publish({ sensorError: null });
   }
 
   private beginTimer(): void {
@@ -476,7 +583,13 @@ export class RecordingController {
     const recorder = this.recorder;
     if (!recorder) return;
     const samples = recorder.drainNew();
-    const meta: JournalMeta = { recorder: recorder.meta(), sensorIds: this.snap.sensorIds, used: [...this.used], title: this.title };
+    const meta: JournalMeta = {
+      recorder: recorder.meta(),
+      sensorIds: this.snap.sensorIds,
+      used: [...this.used],
+      title: this.title,
+      takes: Object.fromEntries(this.takes),
+    };
     const now = this.deps.now();
     this.io = this.io
       .then(() => appendJournal(this.deps.db, 'phone', samples))
@@ -506,6 +619,7 @@ export class RecordingController {
       ),
     );
     this.connected = [];
+    this.retries.clear();
     await this.deps.session.end().catch((e) => this.deps.log?.(`ending the session failed: ${String(e)}`));
   }
 }

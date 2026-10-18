@@ -537,10 +537,26 @@
       "rpm": "{{value}} rpm",
       "kmh": "{{value}} km/h"
     },
-    "link": {
-      "connected": "Connected",
+    "status": {
+      "idle": "Not connected",
       "connecting": "Connecting",
-      "disconnected": "Not connected"
+      "searching": "Looking for the sensor",
+      "failed": "Could not connect",
+      "waiting": "Connected, waiting for data",
+      "receiving": "Connected, data coming in",
+      "quiet": "Connected, no new data",
+      "lastValue": "last value {{age}}"
+    },
+    "age": {
+      "now": "just now",
+      "seconds": "{{value}} s ago",
+      "minutes": "{{value}} min ago",
+      "hours": "{{value}} h ago"
+    },
+    "mode": {
+      "speed": "Speed mode",
+      "cadence": "Cadence mode",
+      "both": "Speed and cadence"
     },
     "signal": {
       "strong": "Strong signal",
@@ -549,12 +565,14 @@
       "weak": "Weak signal"
     },
     "hint": {
-      "signalLost": "Signal lost. Bring the sensor closer to the phone; the app is trying to reconnect.",
+      "notFound": "Sensor not found, make sure it is awake: turn the pedals",
+      "lost": "The sensor signal dropped. Turn the pedals to wake it, the app reconnects by itself.",
       "failed": "Could not connect. Make sure the sensor is on, close by, and not connected to another app or watch.",
       "contactLost": "The strap is not touching your skin. Wet the electrodes and tighten it on your chest.",
       "waitingHr": "No heartbeat yet. Wear the strap on your chest and wet its electrodes.",
       "waitingBike": "No data yet. Turn the pedals or the wheel to wake the sensor.",
-      "waitingPod": "No data yet. Start walking or running to wake the pod."
+      "waitingPod": "No data yet. Start walking or running to wake the pod.",
+      "speedMode": "The sensor is in speed mode: it only sends wheel revolutions, so there is no cadence. If it sits on the crank, switch it to cadence mode in the sensor's app (XOSS Vortex: the XOSS app)."
     },
     "hub": {
       "empty": "Pair a heart rate strap, a speed and cadence sensor, a power meter or a running pod over Bluetooth. Workouts recorded on the phone use them; a watch is not required.",

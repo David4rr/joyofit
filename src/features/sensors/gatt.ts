@@ -362,10 +362,38 @@ export const DEFAULT_WHEEL_CIRCUMFERENCE_MM = WHEEL_CIRCUMFERENCE_MM['700x25c'];
 // ---------------------------------------------------------------------------------------------------------------------
 // Stream tracker: turns a sequence of raw events into current speed / cadence / power
 
-/** After this long without a new wheel or crank event the rider has stopped: speed and cadence read 0. */
+/** After this long without a new wheel or crank event the rider has stopped: speed and cadence read 0 (longer for a slow crank, see `holdMs`). */
 export const COAST_TIMEOUT_MS = 3000;
+/** The longest a slow crank or wheel is waited for before it reads 0. */
+export const COAST_TIMEOUT_MAX_MS = 5000;
 /** A heart rate or power value older than this is dropped from the sample instead of being held. */
 export const VALUE_FRESH_MS = 5000;
+/** A crank step faster than this is a counter glitch (a sensor that reset its revolutions), not a rider. */
+export const MAX_CADENCE_RPM = 250;
+/** A wheel step faster than this (m/s, 144 km/h) is a counter glitch too. */
+export const MAX_WHEEL_MPS = 40;
+
+/**
+ * How long a speed or cadence from a revolution counter holds after its last event before it reads 0: the shortest the timeout allows,
+ * or a revolution and a half plus a second for a slow crank (a sensor only reports at each revolution, and the radio delivers
+ * in connection-interval steps), never more than `COAST_TIMEOUT_MAX_MS`.
+ */
+export function holdMs(stepSeconds: number): number {
+  return Math.min(COAST_TIMEOUT_MAX_MS, Math.max(COAST_TIMEOUT_MS, stepSeconds * 1500 + 1000));
+}
+
+/**
+ * What a Cycling Speed and Cadence sensor measures, from the flags of the frames it sent: `speed` = wheel revolutions only (a sensor in
+ * speed mode, e.g. an XOSS Vortex set to speed in its app), `cadence` = crank revolutions only, `both` = a sensor that sends both.
+ */
+export type CscMode = 'speed' | 'cadence' | 'both';
+
+/** The mode of a CSC sensor whose frames carried a wheel part and/or a crank part so far; null before the first frame. */
+export function cscModeOf(wheelSeen: boolean, crankSeen: boolean): CscMode | null {
+  if (wheelSeen && crankSeen) return 'both';
+  if (wheelSeen) return 'speed';
+  return crankSeen ? 'cadence' : null;
+}
 
 export interface SensorReadings {
   hr?: number;
@@ -378,6 +406,8 @@ export interface SensorReadings {
   cadenceRpm?: number;
   /** Wheel speed in m/s from a speed sensor. */
   speedMps?: number;
+  /** What a CSC sensor sends (wheel, crank or both), known from its first frame; absent for other sensors. */
+  cscMode?: CscMode;
   /** Foot pod: speed in m/s, step cadence and stride. */
   podSpeedMps?: number;
   podCadenceSpm?: number;
@@ -387,6 +417,8 @@ export interface SensorReadings {
 interface Timed<T> {
   value: T;
   at: number;
+  /** How long the value holds before it reads 0 (revolution counters only). */
+  hold?: number;
 }
 
 /**
@@ -413,13 +445,31 @@ export class SensorTracker {
   wheelDistanceM = 0;
   /** kJ the strap counted since this tracker started (counter resets are ignored, wraps handled), null while it sent none. */
   energyKj: number | null = null;
+  /** Frames of any characteristic this tracker used, and the radio time (ms) of the last one: "data received" for a status line. */
+  frames = 0;
+  lastValueAt: number | null = null;
+  private cscWheelSeen = false;
+  private cscCrankSeen = false;
+
+  /** What the CSC frames seen so far carry, null before the first one. */
+  get cscMode(): CscMode | null {
+    return cscModeOf(this.cscWheelSeen, this.cscCrankSeen);
+  }
 
   constructor(private readonly wheelCircumferenceM: number) {}
 
   /** Returns true when the event carried a value this tracker uses. `ts` is the radio timestamp in ms. */
   ingest(characteristic: string, hex: string, ts: number): boolean {
-    const bytes = hexToBytes(hex);
-    switch (characteristic.toLowerCase()) {
+    const used = this.apply(characteristic.toLowerCase(), hexToBytes(hex), ts);
+    if (used) {
+      this.frames += 1;
+      this.lastValueAt = ts;
+    }
+    return used;
+  }
+
+  private apply(characteristic: string, bytes: Uint8Array, ts: number): boolean {
+    switch (characteristic) {
       case '2a37': {
         const m = parseHeartRate(bytes);
         if (!m) return false;
@@ -432,8 +482,14 @@ export class SensorTracker {
       case '2a5b': {
         const m = parseCsc(bytes);
         if (!m) return false;
-        if (m.wheel) this.wheelEvent(m.wheel, CSC_TICKS, ts, 'csc');
-        if (m.crank) this.crankEvent(m.crank, ts, 'csc');
+        if (m.wheel) {
+          this.cscWheelSeen = true;
+          this.wheelEvent(m.wheel, CSC_TICKS, ts, 'csc');
+        }
+        if (m.crank) {
+          this.cscCrankSeen = true;
+          this.crankEvent(m.crank, ts, 'csc');
+        }
         return true;
       }
       case '2a63': {
@@ -474,8 +530,10 @@ export class SensorTracker {
     const step = revolutionStep(prev, now, { revsModulo: WHEEL_REVS_MODULO, ticksPerSecond });
     if (!step) return;
     const { speedMps, distanceM } = wheelSpeed(step, this.wheelCircumferenceM);
+    // A counter that restarted (a sensor waking from sleep) looks like a lap of the whole counter in a second or two.
+    if (speedMps > MAX_WHEEL_MPS) return;
     this.wheelDistanceM += distanceM;
-    this.speed = { value: speedMps, at: ts };
+    this.speed = { value: speedMps, at: ts, hold: holdMs(step.seconds) };
   }
 
   private crankEvent(now: RevolutionSample, ts: number, from: 'csc' | 'power'): void {
@@ -484,13 +542,15 @@ export class SensorTracker {
     else this.prevPowerCrank = now;
     const step = revolutionStep(prev, now, { revsModulo: CRANK_REVS_MODULO, ticksPerSecond: CRANK_TICKS });
     if (!step) return;
-    this.cadence = { value: cadenceRpm(step), at: ts };
+    const rpm = cadenceRpm(step);
+    if (rpm > MAX_CADENCE_RPM) return;
+    this.cadence = { value: rpm, at: ts, hold: holdMs(step.seconds) };
   }
 
   /**
    * What the sensors say at `nowMs`. Heart rate and power are held for `VALUE_FRESH_MS`; speed and cadence from revolution counters read
-   * 0 once `COAST_TIMEOUT_MS` passes without a new event (a stopped wheel or crank sends no new event), and disappear after
-   * `VALUE_FRESH_MS` + coasting only if the sensor never sent anything.
+   * 0 once their hold (`holdMs`: 3 s, longer for a slow crank) passes without a new event, because a stopped wheel or crank sends no new
+   * event; they are absent only while the sensor has never sent a step.
    */
   read(nowMs: number): SensorReadings {
     const out: SensorReadings = {};
@@ -502,8 +562,10 @@ export class SensorTracker {
     }
     if (this.power && nowMs - this.power.at <= VALUE_FRESH_MS) out.watts = this.power.value;
     if (this.balance && nowMs - this.balance.at <= VALUE_FRESH_MS) out.balanceLeftPct = this.balance.value;
-    if (this.cadence) out.cadenceRpm = nowMs - this.cadence.at > COAST_TIMEOUT_MS ? 0 : this.cadence.value;
-    if (this.speed) out.speedMps = nowMs - this.speed.at > COAST_TIMEOUT_MS ? 0 : this.speed.value;
+    if (this.cadence) out.cadenceRpm = nowMs - this.cadence.at > (this.cadence.hold ?? COAST_TIMEOUT_MS) ? 0 : this.cadence.value;
+    if (this.speed) out.speedMps = nowMs - this.speed.at > (this.speed.hold ?? COAST_TIMEOUT_MS) ? 0 : this.speed.value;
+    const mode = this.cscMode;
+    if (mode) out.cscMode = mode;
     if (this.pod && nowMs - this.pod.at <= VALUE_FRESH_MS) {
       out.podSpeedMps = this.pod.value.speed;
       out.podCadenceSpm = this.pod.value.cadence;
