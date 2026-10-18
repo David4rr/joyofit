@@ -100,7 +100,7 @@ jobs:
       - run: bun run build
 
   kotlin:
-    name: Kotlin unit tests (huawei-wear, ble-sensors)
+    name: Kotlin unit tests (huawei-wear, ble-sensors, replay-encoder)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -126,7 +126,7 @@ jobs:
       - run: bun install --frozen-lockfile
       # android/ is generated (gitignored); the module tests need the Gradle project.
       - run: bunx expo prebuild -p android --no-install
-      - run: ./gradlew :huawei-wear:testDebugUnitTest :ble-sensors:testDebugUnitTest
+      - run: ./gradlew :huawei-wear:testDebugUnitTest :ble-sensors:testDebugUnitTest :replay-encoder:testDebugUnitTest
         working-directory: android
 
   swift-protocol:
@@ -212,4 +212,8 @@ jobs:
       # The sensor module's pure logic (GATT plan table, reconnect backoff); the CoreBluetooth and CoreLocation files cannot build on Linux.
       - name: Sensor logic tests (ble-sensors)
         working-directory: modules/ble-sensors/ios/SensorLogicTests
+        run: swift test
+      # The replay encoder's pure logic (config, frame timing, fit rectangles); the AVFoundation and ImageIO files cannot build on Linux.
+      - name: Encoder logic tests (replay-encoder)
+        working-directory: modules/replay-encoder/ios/EncoderLogicTests
         run: swift test
