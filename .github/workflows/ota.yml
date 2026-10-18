@@ -26,6 +26,11 @@ on:
         type: choice
         options: [all, android, ios]
         default: all
+      runtime_version:
+        description: "Only with a single platform: the runtimeVersion the installed binary carries, when it differs from the one the script prints (docs/ota.md). Empty = computed"
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -43,6 +48,7 @@ jobs:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       CHANNEL: ${{ inputs.channel }}
       PLATFORM: ${{ inputs.platform }}
+      RUNTIME_VERSION: ${{ inputs.runtime_version }}
       MESSAGE: ${{ inputs.message }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -68,4 +74,7 @@ jobs:
         run: '[ -n "$EXPO_TOKEN" ] || { echo "EXPO_TOKEN is not set in the release environment (docs/ota.md)" >&2; exit 1; }'
 
       - name: Publish
-        run: scripts/ota.sh --channel "$CHANNEL" --platform "$PLATFORM" -- "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          args=(--channel "$CHANNEL" --platform "$PLATFORM")
+          [ -z "$RUNTIME_VERSION" ] || args+=(--runtime-version "$RUNTIME_VERSION")
+          scripts/ota.sh "${args[@]}" -- "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"

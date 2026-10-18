@@ -56,6 +56,18 @@ Consequences:
 - Off in dev clients and Expo Go (`Updates.isEnabled` false): the section and checks do not exist there.
 - **Failure falls back to the embedded bundle.** A failed check or download changes nothing. A downloaded update that crashes on start is dropped by expo-updates' launch error recovery and the app runs the previous or embedded bundle. (Not exercised on a device in this session: do the test below after the first OTA-enabled build.)
 
+## When the printed runtime does not match the installed one
+
+`scripts/ota.sh --runtime` computes the fingerprint on a clean tree. The Gradle build of a store binary computes it **while it runs**
+(`expo-updates` `createUpdatesResources`, generated files already in the module and app directories), and the two can differ: the
+Play build 1470409 (CI, 9688a11) carries `e542e6f1...` while `--runtime` and the OTA workflow print `ed436776...` for the same sources.
+An update published for the printed hash reaches nobody. Read what the binary carries:
+
+- Android: `unzip -p base.apk assets/fingerprint` (`adb shell pm path <package>`, `adb pull`), or Settings, About, Quick updates (first 8 characters).
+- Publish for exactly that value: `scripts/ota.sh --platform android --runtime-version <40 hex> "message"`, or the OTA workflow's `runtime_version` input (single platform).
+
+The next store build will carry whatever its Gradle step computes; read it from that binary again before the first update.
+
 ## Publish
 
 ```

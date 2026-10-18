@@ -5,6 +5,8 @@
 #   scripts/ota.sh --platform ios "Copy fix"                         one platform only
 #   scripts/ota.sh --channel preview "Try the new notice"            preview channel (needs a binary built for it)
 #   scripts/ota.sh --runtime                                         print the runtimeVersion of this commit, publish nothing
+#   scripts/ota.sh --platform android --runtime-version <hash> "Copy fix"
+#                                                                    target the runtimeVersion a binary really carries (see below)
 #
 # Steps: translation key parity + no hard-coded UI text (scripts/i18n-check.ts), typecheck + unit tests, then a release `expo export` (bundle sanity checks), then `eas update` with that
 # bundle. Prints the update group id. Nothing is uploaded to a store.
@@ -13,6 +15,12 @@
 # permissions, entitlements), a native dependency or the lockfile changes the fingerprint runtimeVersion: the update
 # would then target a runtimeVersion that no installed binary has, so nobody receives it. Ship a new binary for those
 # (docs/ota.md "When OTA is not enough").
+#
+# --runtime-version: the Gradle build computes the fingerprint while it runs (generated files in the module and app
+# directories already exist), so a store build can carry a runtimeVersion that `--runtime` (computed on a clean tree) does not
+# print, and an update for the printed one then reaches nobody. Read what the installed binary carries (Android:
+# `unzip -p base.apk assets/fingerprint`; Settings, About, Quick updates shows its first 8 characters) and pass it here
+# (one platform). docs/ota.md "When the printed runtime does not match the installed one".
 #
 # Needs: bun, jq and an EAS login (`bunx eas-cli login`, owner dzulfikar08) or EXPO_TOKEN. EAS Update code signing needs a paid EAS plan the account
 # does not have, so updates are unsigned.
@@ -23,12 +31,13 @@ EAS=(bunx "eas-cli@${EAS_CLI_VERSION:-25.1.1}")
 
 usage() { sed -n '2,9p' "$0" >&2; exit 2; }
 
-channel=production platform=all message= runtime_only=0
+channel=production platform=all message= runtime_only=0 runtime_override=
 while [ $# -gt 0 ]; do
   case $1 in
     --channel) channel=${2:?--channel needs production or preview}; shift ;;
     --platform) platform=${2:?--platform needs android, ios or all}; shift ;;
     --runtime) runtime_only=1 ;;
+    --runtime-version) runtime_override=${2:?--runtime-version needs the hash of the installed binary}; shift ;;
     -h|--help) usage ;;
     --) shift; message=${message:+$message }$*; break ;;
     -*) echo "unknown option: $1" >&2; usage ;;
@@ -39,6 +48,8 @@ done
 [ "$runtime_only" = 1 ] || [ -n "$message" ] || { echo "an update message is required" >&2; usage; }
 case $channel in production|preview) ;; *) echo "channel must be production or preview" >&2; exit 2 ;; esac
 case $platform in android|ios|all) ;; *) echo "platform must be android, ios or all" >&2; exit 2 ;; esac
+[ -z "$runtime_override" ] || [ "$platform" != all ] || { echo "--runtime-version needs --platform android or ios (the hash is per platform)" >&2; exit 2; }
+[ -z "$runtime_override" ] || [[ $runtime_override =~ ^[0-9a-f]{40}$ ]] || { echo "--runtime-version must be the 40-character hash" >&2; exit 2; }
 command -v jq > /dev/null || { echo "jq is required" >&2; exit 1; }
 
 step() { printf '\n== %s ==\n' "$*"; }
@@ -76,15 +87,25 @@ publish() {
   LC_ALL=C grep -aqF 'https://api.joyorogo.com' "$bundle" || fail "$p: bundle holds no app code"
   echo "   bundle $(basename "$bundle") $(stat -c %s "$bundle") bytes, app code present"
 
-  local runtime
-  runtime=$(bunx expo-updates runtimeversion:resolve --platform "$p" | tail -n 1 | jq -r .runtimeVersion)
-  [ -n "$runtime" ] && [ "$runtime" != null ] || fail "$p: runtimeVersion did not resolve"
+  local runtime=$runtime_override
+  if [ -z "$runtime" ]; then
+    runtime=$(bunx expo-updates runtimeversion:resolve --platform "$p" | tail -n 1 | jq -r .runtimeVersion)
+    [ -n "$runtime" ] && [ "$runtime" != null ] || fail "$p: runtimeVersion did not resolve"
+  fi
 
   step "3. $p: eas update --channel $channel (runtimeVersion $runtime)"
+  if [ -n "$runtime_override" ]; then
+    # eas-cli takes the runtimeVersion from the app config: pin it for this one call with a throw-away dynamic config.
+    [ ! -e app.config.js ] || fail "app.config.js exists; remove it before using --runtime-version"
+    printf 'module.exports = ({ config }) => ({ ...config, runtimeVersion: process.env.OTA_RUNTIME_VERSION });\n' > app.config.js
+    trap 'rm -f "$ROOT/app.config.js"' EXIT
+    export OTA_RUNTIME_VERSION=$runtime
+  fi
   "${EAS[@]}" update --channel "$channel" --platform "$p" --message "$message" \
     --skip-bundler --input-dir "$out" --environment "$channel" \
     --non-interactive --json > "$json"
   local group
+  rm -f "$ROOT/app.config.js"
   group=$(jq -r '[.[]? | .group] | map(select(. != null)) | .[0] // empty' "$json")
   [ -n "$group" ] || { cat "$json" >&2; fail "$p: eas update printed no update group id"; }
   rm -f "$json"
