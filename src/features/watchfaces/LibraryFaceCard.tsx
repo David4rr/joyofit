@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -27,7 +28,7 @@ interface LibraryFaceCardProps {
 }
 
 /** Card rendering an item from the phone's personal offline watch face library. */
-export function LibraryFaceCard({
+export const LibraryFaceCard = memo(function LibraryFaceCard({
   face,
   matchedWatchFace,
   screenWidth,
@@ -181,7 +182,7 @@ export function LibraryFaceCard({
       </View>
     </Card>
   );
-}
+});
 
 const styles = StyleSheet.create({
   cardHeaderPressable: {

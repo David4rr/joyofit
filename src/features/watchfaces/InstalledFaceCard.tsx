@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -28,7 +29,7 @@ interface InstalledFaceCardProps {
 }
 
 /** Card rendering an installed hardware watchface on the connected watch. */
-export function InstalledFaceCard({
+export const InstalledFaceCard = memo(function InstalledFaceCard({
   face,
   match,
   screenWidth,
@@ -135,7 +136,7 @@ export function InstalledFaceCard({
       </View>
     </Card>
   );
-}
+});
 
 const styles = StyleSheet.create({
   cardHeaderPressable: {

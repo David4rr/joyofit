@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -297,6 +297,8 @@ export function WatchfacesScreen() {
           refreshControl={refreshControl}
           initialNumToRender={8}
           windowSize={7}
+          maxToRenderPerBatch={8}
+          removeClippedSubviews={Platform.OS === 'android'}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           renderItem={({ item: face }) => (
@@ -327,6 +329,11 @@ export function WatchfacesScreen() {
           ListEmptyComponent={libraryEmpty}
           ItemSeparatorComponent={Separator}
           refreshControl={refreshControl}
+          initialNumToRender={8}
+          windowSize={7}
+          maxToRenderPerBatch={8}
+          removeClippedSubviews={Platform.OS === 'android'}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           renderItem={({ item: face }) => (
             <LibraryFaceCard
