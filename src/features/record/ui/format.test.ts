@@ -2,6 +2,8 @@ import { describe, expect, it } from 'bun:test';
 
 import { MAX_FIX_ACCURACY_M, type RecordedLap } from '../recorder';
 import {
+  GPS_READY_ACCURACY_M,
+  GPS_SETTLE_SEC,
   GPS_STALE_SEC,
   canPrepare,
   gpsStatus,
@@ -23,8 +25,19 @@ describe('gpsStatus', () => {
     expect(gpsStatus({ accuracyM: 5, ageSec: GPS_STALE_SEC + 1 })).toBe('searching');
   });
 
-  it('is ready up to the accuracy the recorder accepts', () => {
-    expect(gpsStatus({ accuracyM: 6, ageSec: 1 })).toBe('ready');
+  it('is ready at once for a fix as accurate as 25 m', () => {
+    expect(gpsStatus({ accuracyM: 6, ageSec: 1, usableSec: 0 })).toBe('ready');
+    expect(gpsStatus({ accuracyM: GPS_READY_ACCURACY_M, ageSec: GPS_STALE_SEC, usableSec: 0 })).toBe('ready');
+  });
+
+  it('is fair for a usable 25-35 m fix until it has held for a few seconds, then ready', () => {
+    expect(gpsStatus({ accuracyM: 30, ageSec: 1, usableSec: 0 })).toBe('fair');
+    expect(gpsStatus({ accuracyM: MAX_FIX_ACCURACY_M, ageSec: 1, usableSec: GPS_SETTLE_SEC - 1 })).toBe('fair');
+    expect(gpsStatus({ accuracyM: MAX_FIX_ACCURACY_M, ageSec: 1, usableSec: null })).toBe('fair');
+    expect(gpsStatus({ accuracyM: MAX_FIX_ACCURACY_M, ageSec: 1, usableSec: GPS_SETTLE_SEC })).toBe('ready');
+  });
+
+  it('counts a usable fix as settled where nobody measures how long it held (while recording)', () => {
     expect(gpsStatus({ accuracyM: MAX_FIX_ACCURACY_M, ageSec: GPS_STALE_SEC })).toBe('ready');
   });
 

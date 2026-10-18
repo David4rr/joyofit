@@ -48,8 +48,8 @@ class FakeHub implements HubApi {
   emitValue(id: string, characteristic: string, hex: string, ts: number) {
     for (const l of this.values) l({ id, ts, service: '', characteristic, value: hex });
   }
-  emitFix(ts: number, meters: number) {
-    for (const l of this.fixes) l({ ts, lat: 10 + meters / 111_194.93, lon: 20, alt: 100, accuracy: 5, speed: 3, bearing: null });
+  emitFix(ts: number, meters: number, accuracy = 5) {
+    for (const l of this.fixes) l({ ts, lat: 10 + meters / 111_194.93, lon: 20, alt: 100, accuracy, speed: 3, bearing: null });
   }
 }
 
@@ -119,10 +119,10 @@ describe('prepare and cancel', () => {
     const s = controller.getSnapshot();
     expect(s).toMatchObject({ phase: 'ready', sport: 'run', gps: true, sensorIds: [strap.id], status: 'idle', live: null });
     hub.emitFix(T0, 0);
-    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 5, ageSec: 0 });
+    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 5, ageSec: 0, usableSec: 0 });
     // nothing is recorded yet, but the age of the fix keeps counting on screen
     run(3);
-    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 5, ageSec: 3 });
+    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 5, ageSec: 3, usableSec: 3 });
     expect(controller.getSnapshot().live).toBeNull();
   });
 
@@ -165,6 +165,223 @@ describe('prepare and cancel', () => {
     hub.failConnect = 'ERR_BLUETOOTH_OFF';
     await controller.prepare('run', 'Lari');
     expect(controller.getSnapshot()).toMatchObject({ phase: 'ready', sensorError: 'ERR_BLUETOOTH_OFF' });
+  });
+});
+
+describe('GPS warm-up', () => {
+  it('starts the GPS session as soon as the picker asks, before anything is prepared', async () => {
+    const { controller, session, hub } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    expect(session.starts).toEqual([{ title: 'Lari', text: 'Lari', gps: true }]);
+    expect(hub.connects).toEqual([]);
+    expect(hub.fixes).toHaveLength(1);
+    expect(controller.getSnapshot()).toMatchObject({ phase: 'idle', warm: true, fix: null, status: 'idle' });
+  });
+
+  it('shows the fixes of the warm-up and for how long they have been good enough', async () => {
+    const { controller, hub, run } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    hub.emitFix(T0, 0, 80);
+    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 80, ageSec: 0, usableSec: null });
+    run(1, (now) => hub.emitFix(now, 0, 30));
+    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 30, ageSec: 0, usableSec: 0 });
+    run(2, (now) => hub.emitFix(now, 0, 28));
+    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 28, ageSec: 0, usableSec: 2 });
+    // a bad fix breaks the run of good ones
+    run(1, (now) => hub.emitFix(now, 0, 60));
+    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 60, ageSec: 0, usableSec: null });
+  });
+
+  it('restarts the run of good fixes after the signal was gone for a while', async () => {
+    const { controller, hub, run } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    hub.emitFix(T0, 0, 10);
+    run(15);
+    hub.emitFix(T0 + 15_000, 0, 10);
+    expect(controller.getSnapshot().fix).toEqual({ accuracyM: 10, ageSec: 0, usableSec: 0 });
+  });
+
+  it('lets the age of the fix count while no new one arrives', async () => {
+    const { controller, hub, run } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    hub.emitFix(T0, 0, 10);
+    run(4);
+    expect(controller.getSnapshot().fix?.ageSec).toBe(4);
+  });
+
+  it('prepare takes the running session over: no second start, the fix stays, the sensors connect now', async () => {
+    const { controller, hub, session } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    hub.emitFix(T0, 0, 8);
+    await controller.prepare('run', 'Lari');
+    expect(session.starts).toHaveLength(1);
+    expect(session.ended).toBe(0);
+    expect(hub.connects).toEqual([strap.id]);
+    expect(controller.getSnapshot()).toMatchObject({ phase: 'ready', warm: false, gps: true, fix: { accuracyM: 8 } });
+  });
+
+  it('prepare right behind warmUp waits for it and starts one session only', async () => {
+    const { controller, session } = await setup();
+    live = controller;
+    void controller.warmUp('run', 'Lari');
+    await controller.prepare('run', 'Lari');
+    expect(session.starts).toHaveLength(1);
+    expect(controller.getSnapshot().phase).toBe('ready');
+  });
+
+  it('prepare for a sport without GPS ends the warm-up and starts its own session', async () => {
+    const { controller, hub, session } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    hub.emitFix(T0, 0, 8);
+    await controller.prepare('treadmill', 'Treadmill');
+    expect(session.ended).toBe(1);
+    expect(session.starts.map((s) => s.gps)).toEqual([true, false]);
+    expect(controller.getSnapshot()).toMatchObject({ phase: 'ready', gps: false, fix: null });
+  });
+
+  it('stopWarmUp ends the session, forgets the fix and stops listening', async () => {
+    const { controller, hub, session, run } = await setup();
+    await controller.warmUp('run', 'Lari');
+    hub.emitFix(T0, 0, 8);
+    await controller.stopWarmUp();
+    expect(session.ended).toBe(1);
+    expect(hub.fixes).toHaveLength(0);
+    expect(controller.getSnapshot()).toMatchObject({ phase: 'idle', warm: false, fix: null });
+    // the clock is stopped with it: nothing publishes any more
+    let published = 0;
+    controller.subscribe(() => (published += 1));
+    run(3);
+    expect(published).toBe(0);
+  });
+
+  it('stopWarmUp with nothing warm does nothing', async () => {
+    const { controller, session } = await setup();
+    await controller.stopWarmUp();
+    expect(session.ended).toBe(0);
+  });
+
+  it('a stop right behind the start never leaves the GPS running', async () => {
+    const { controller, session } = await setup();
+    const started = controller.warmUp('run', 'Lari');
+    const stopped = controller.stopWarmUp();
+    await Promise.all([started, stopped]);
+    expect(session.starts.length).toBe(session.ended);
+    expect(controller.getSnapshot().warm).toBe(false);
+  });
+
+  it('a sport without GPS does not warm up, and switching to one ends the warm-up', async () => {
+    const { controller, session } = await setup();
+    await controller.warmUp('treadmill', 'Treadmill');
+    expect(session.starts).toEqual([]);
+    await controller.warmUp('run', 'Lari');
+    expect(controller.getSnapshot().warm).toBe(true);
+    await controller.warmUp('treadmill', 'Treadmill');
+    expect(session.ended).toBe(1);
+    expect(controller.getSnapshot().warm).toBe(false);
+  });
+
+  it('changing between outdoor sports keeps the one session running', async () => {
+    const { controller, hub, session } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    hub.emitFix(T0, 0, 8);
+    await controller.warmUp('ride', 'Ride');
+    expect(session.starts).toHaveLength(1);
+    expect(session.ended).toBe(0);
+    expect(controller.getSnapshot().fix?.accuracyM).toBe(8);
+    // and "Mulai" then carries the chosen sport
+    await controller.prepare('ride', 'Ride');
+    expect(controller.getSnapshot()).toMatchObject({ phase: 'ready', sport: 'ride', gps: true });
+  });
+
+  it('a refused location leaves the warm-up off without failing', async () => {
+    const { controller, session, hub, logs } = await setup();
+    session.failWith = 'ERR_LOCATION_PERMISSION';
+    await controller.warmUp('run', 'Lari');
+    expect(controller.getSnapshot().warm).toBe(false);
+    expect(hub.fixes).toHaveLength(0);
+    expect(logs.some((l) => l.includes('GPS warm-up'))).toBe(true);
+    // it can be tried again once the permission is there
+    session.failWith = null;
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    expect(controller.getSnapshot().warm).toBe(true);
+  });
+
+  it('carries the refused foreground service over to the recording', async () => {
+    const { controller, session } = await setup();
+    live = controller;
+    session.failWith = 'ERR_SERVICE_NOT_ALLOWED';
+    await controller.warmUp('run', 'Lari');
+    expect(controller.getSnapshot()).toMatchObject({ warm: true, noService: true });
+    await controller.prepare('run', 'Lari');
+    expect(controller.getSnapshot()).toMatchObject({ phase: 'ready', noService: true });
+  });
+
+  it('a stop while prepare runs leaves the session to prepare', async () => {
+    const { controller, session } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    const preparing = controller.prepare('run', 'Lari');
+    const stopped = controller.stopWarmUp();
+    await Promise.all([preparing, stopped]);
+    expect(session.ended).toBe(0);
+    expect(controller.getSnapshot().phase).toBe('ready');
+  });
+
+  it('does not warm up while a recording is prepared or running', async () => {
+    const { controller, session } = await setup();
+    live = controller;
+    await controller.prepare('run', 'Lari');
+    await controller.warmUp('run', 'Lari');
+    await controller.stopWarmUp();
+    expect(session.starts).toHaveLength(1);
+    expect(session.ended).toBe(0);
+    controller.start();
+    await controller.warmUp('ride', 'Ride');
+    expect(session.starts).toHaveLength(1);
+    expect(controller.getSnapshot().phase).toBe('active');
+  });
+
+  it('warms up again after a cancel, with a fresh fix', async () => {
+    const { controller, hub } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    hub.emitFix(T0, 0, 8);
+    await controller.prepare('run', 'Lari');
+    await controller.cancel();
+    expect(controller.getSnapshot()).toMatchObject({ phase: 'idle', warm: false, fix: null });
+    await controller.warmUp('run', 'Lari');
+    expect(controller.getSnapshot()).toMatchObject({ warm: true, fix: null });
+  });
+
+  it('restore ends a warm-up first', async () => {
+    const { controller, session } = await setup();
+    await controller.warmUp('run', 'Lari');
+    expect(await controller.restore()).toBe(false);
+    expect(session.ended).toBe(1);
+    expect(controller.getSnapshot().warm).toBe(false);
+  });
+
+  it('records from the first good fix of the warm-up onwards', async () => {
+    const { controller, hub, run } = await setup();
+    live = controller;
+    await controller.warmUp('run', 'Lari');
+    await controller.prepare('run', 'Lari');
+    controller.start();
+    let meters = 0;
+    run(1, (now) => hub.emitFix(now, 0, 90));
+    run(10, (now) => hub.emitFix(now, (meters += 3), 8));
+    const s = controller.getSnapshot();
+    expect(s.phase).toBe('active');
+    expect(s.live?.distanceM).toBeGreaterThan(20);
+    expect(s.live?.distanceM).toBeLessThan(35);
   });
 });
 

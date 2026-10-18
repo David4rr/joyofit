@@ -6,6 +6,10 @@
  * Phases: `idle` -> `prepare` -> `ready` (sensors connecting, GPS warming up, nothing recorded) -> `start` -> `active` (the Recorder runs,
  * paused or not) -> `finish` (saves) or `discard` -> `idle`. `cancel` leaves `ready` without a workout. After the app was killed
  * mid-workout `restore` brings the `active` phase back, paused.
+ *
+ * GPS warm-up: while the picker is open (phase `idle`) the screen calls `warmUp` for an outdoor sport, which starts the native session
+ * with GPS at once, so the first fix is already on its way when the person taps "Mulai"; `prepare` then takes the running session over
+ * instead of starting one. `stopWarmUp` (leaving the picker, another sport, the app going to the background) ends it again.
  */
 import type { LocationEvent, ValueEvent, WorkoutSessionOptions } from '../../../modules/ble-sensors/src/BleSensors.types';
 import type { ManualSport } from '../workouts/manual';
@@ -13,7 +17,7 @@ import type { SavedSensor } from '../sensors/store';
 import type { WorkoutSensor } from '../sensors/store';
 import type { SensorKind } from '../sensors/gatt';
 import { appendJournal, clearJournal, loadJournal, saveJournalState } from './journal';
-import { Recorder, type LiveStats, type RecordedLap, type RecordedWorkout, type RecorderMeta, type RecorderStatus } from './recorder';
+import { Recorder, MAX_FIX_ACCURACY_M, type LiveStats, type RecordedLap, type RecordedWorkout, type RecorderMeta, type RecorderStatus } from './recorder';
 import type { EnergyProfile } from './energy';
 import { saveRecordedWorkout, type SaveDb } from './save';
 import type { SQLiteDatabase } from 'expo-sqlite';
@@ -23,19 +27,27 @@ export type RecordingPhase = 'idle' | 'ready' | 'active' | 'saving';
 /** Outdoor sports record the phone's GPS; the others do not. */
 export const GPS_SPORTS: readonly ManualSport[] = ['run', 'walk', 'ride', 'hike'];
 
+/** Longer than this without a fix (ms) and the signal was lost: the stretch of good fixes starts over. */
+const FIX_GAP_MS = 10_000;
+
 export interface RecordingSnapshot {
   phase: RecordingPhase;
   sport: ManualSport | null;
   /** The phone's GPS is part of this recording. */
   gps: boolean;
+  /** Phase `idle` only: the GPS warm-up runs (see `warmUp`) and `fix` is its latest fix. */
+  warm: boolean;
   status: RecorderStatus;
   /** Null until `start`. Refreshed every second while active. */
   live: LiveStats | null;
   laps: RecordedLap[];
   /** Ids of the sensors this recording asked the radio to connect. */
   sensorIds: string[];
-  /** Latest GPS fix, also before `start`, so the screen can say "GPS ready". */
-  fix: { accuracyM: number | null; ageSec: number } | null;
+  /**
+   * Latest GPS fix, also before `start`, so the screen can say "GPS ready". `usableSec` is how long the fixes have been good enough
+   * for the recorder in a row (null while the newest one is not).
+   */
+  fix: { accuracyM: number | null; ageSec: number; usableSec: number | null } | null;
   /** The foreground service was refused (Android): the workout runs, but may stop with the screen off. */
   noService: boolean;
   /** Error code of the last failed sensor connect (ERR_BLUETOOTH_OFF, ...), null while fine. */
@@ -103,6 +115,18 @@ export class RecordingController {
   private off: (() => void)[] = [];
   /** Journal writes run one after the other, never two statements at once. */
   private io: Promise<unknown> = Promise.resolve();
+  /** What the picker asks for: the outdoor sport to warm the GPS up for, or null for no warm-up. */
+  private wantWarm: { sport: ManualSport; title: string } | null = null;
+  /** The sport of the running warm-up session, null while there is none. */
+  private warmSport: ManualSport | null = null;
+  private warmNoService = false;
+  /** `prepare` is under way: the warm-up is its to take over, `stopWarmUp` leaves it alone. */
+  private preparing = false;
+  /** Warm-up starts and stops run one after the other, never two native calls at once. */
+  private warmIo: Promise<void> = Promise.resolve();
+  /** Since when (ms) the fixes have been good enough for the recorder without a break, null while they are not. */
+  private usableSince: number | null = null;
+  private lastFixAt: number | null = null;
 
   constructor(private readonly deps: RecordingDeps) {}
 
@@ -116,7 +140,11 @@ export class RecordingController {
   private publish(patch: Partial<RecordingSnapshot> = {}): void {
     const now = this.deps.now();
     const fix = this.lastFix
-      ? { accuracyM: this.lastFix.accuracy, ageSec: Math.max(0, Math.floor((now - this.lastFix.ts) / 1000)) }
+      ? {
+          accuracyM: this.lastFix.accuracy,
+          ageSec: Math.max(0, Math.floor((now - this.lastFix.ts) / 1000)),
+          usableSec: this.usableSince === null ? null : Math.max(0, Math.floor((now - this.usableSince) / 1000)),
+        }
       : null;
     const recorder = this.recorder;
     this.snap = {
@@ -134,23 +162,98 @@ export class RecordingController {
   // lifecycle
 
   /**
-   * Gets ready: starts the native session (GPS for outdoor sports, the foreground service) and connects the paired sensors that are set
-   * to auto-connect. Rejects with ERR_LOCATION_PERMISSION when an outdoor sport has no precise location; ask first
-   * (`ensureLocation`). Does nothing when a recording is already prepared or running.
+   * Gets ready: starts the native session (GPS for outdoor sports, the foreground service), or takes over the one `warmUp` started and
+   * keeps its fix, and connects the paired sensors that are set to auto-connect. Rejects with ERR_LOCATION_PERMISSION when an outdoor
+   * sport has no precise location; ask first (`ensureLocation`). Does nothing when a recording is already prepared or running.
    */
   async prepare(sport: ManualSport, title: string): Promise<void> {
-    if (this.snap.phase !== 'idle') return;
-    const gps = GPS_SPORTS.includes(sport);
-    this.title = title;
+    if (this.snap.phase !== 'idle' || this.preparing) return;
+    this.preparing = true;
+    try {
+      this.wantWarm = null;
+      await this.warmIo;
+      const gps = GPS_SPORTS.includes(sport);
+      this.title = title;
+      this.used = new Set();
+      let noService: boolean;
+      if (gps && this.warmSport !== null) {
+        noService = this.warmNoService;
+        this.warmSport = null;
+      } else {
+        if (this.warmSport !== null) await this.endWarm();
+        this.resetFix();
+        this.attach();
+        noService = await this.beginSession(gps, title);
+      }
+      const ids = this.deps.sensors().filter((s) => s.autoConnect).map((s) => s.id);
+      this.snap = { ...idleSnapshot(), phase: 'ready', sport, gps, noService };
+      this.beginTimer();
+      this.publish();
+      const sensorError = await this.connectAll(ids);
+      this.publish({ sensorIds: ids, sensorError });
+    } finally {
+      this.preparing = false;
+    }
+  }
+
+  /**
+   * Starts the GPS ahead of `prepare`, while the picker is open: the native session with GPS runs and `snapshot.fix` follows it, so a
+   * fix is waiting when "Mulai" is tapped. Only for an outdoor sport that already has precise location (it never asks), only in phase
+   * `idle`. Changing between outdoor sports keeps the session. Never rejects: a refusal just leaves the warm-up off.
+   */
+  warmUp(sport: ManualSport, title: string): Promise<void> {
+    if (!GPS_SPORTS.includes(sport)) return this.stopWarmUp();
+    this.wantWarm = { sport, title };
+    return this.reconcileWarm();
+  }
+
+  /** Ends the warm-up (leaving the picker, a sport without GPS, the app in the background). Does nothing while `prepare` runs. */
+  stopWarmUp(): Promise<void> {
+    this.wantWarm = null;
+    return this.reconcileWarm();
+  }
+
+  private reconcileWarm(): Promise<void> {
+    this.warmIo = this.warmIo.then(() => this.applyWarm()).catch((e) => this.deps.log?.(`GPS warm-up failed: ${String(e)}`));
+    return this.warmIo;
+  }
+
+  private async applyWarm(): Promise<void> {
+    if (this.snap.phase !== 'idle' || this.preparing) return;
+    const want = this.wantWarm;
+    if (want && this.warmSport === null) {
+      this.resetFix();
+      this.attach();
+      try {
+        this.warmNoService = await this.beginSession(true, want.title);
+      } catch (error) {
+        this.deps.log?.(`GPS warm-up not started: ${String(error)}`);
+        return;
+      }
+      this.warmSport = want.sport;
+      this.beginTimer();
+      this.publish({ warm: true, noService: this.warmNoService });
+    } else if (want && this.warmSport !== want.sport) {
+      this.warmSport = want.sport;
+    } else if (!want && this.warmSport !== null) {
+      await this.endWarm();
+    }
+  }
+
+  private async endWarm(): Promise<void> {
+    clearInterval(this.timer ?? undefined);
+    this.timer = null;
+    this.detach();
+    this.warmSport = null;
+    this.resetFix();
+    await this.deps.session.end().catch((e) => this.deps.log?.(`ending the warm-up failed: ${String(e)}`));
+    this.publish({ warm: false, noService: false });
+  }
+
+  private resetFix(): void {
     this.lastFix = null;
-    this.used = new Set();
-    this.attach();
-    const noService = await this.beginSession(gps, title);
-    const ids = this.deps.sensors().filter((s) => s.autoConnect).map((s) => s.id);
-    this.snap = { ...idleSnapshot(), phase: 'ready', sport, gps, noService };
-    this.beginTimer();
-    const sensorError = await this.connectAll(ids);
-    this.publish({ sensorIds: ids, sensorError });
+    this.usableSince = null;
+    this.lastFixAt = null;
   }
 
   /** Leaves `ready` without recording anything. */
@@ -195,6 +298,7 @@ export class RecordingController {
   /** Brings back a recording the app lost (killed, crashed, phone restarted). True when there was one. */
   async restore(): Promise<boolean> {
     if (this.snap.phase !== 'idle') return false;
+    await this.stopWarmUp();
     const journal = await loadJournal<JournalMeta>(this.deps.db, 'phone');
     if (!journal) return false;
     const { recorder: meta, sensorIds, used, title } = journal.meta;
@@ -204,7 +308,7 @@ export class RecordingController {
     }
     this.title = title;
     this.used = new Set(used);
-    this.lastFix = null;
+    this.resetFix();
     this.attach();
     const recorder = Recorder.restore(meta, journal.samples);
     this.recorder = recorder;
@@ -263,8 +367,8 @@ export class RecordingController {
 
   /** One second of the clock; also called when the app comes back to the foreground to fill the seconds a throttled thread missed. */
   tick(): void {
-    // While getting ready nothing is recorded, but the GPS age on the screen keeps counting.
-    if (this.snap.phase === 'ready') {
+    // Getting ready or warming up nothing is recorded, but the GPS age on the screen keeps counting.
+    if (this.snap.phase === 'ready' || (this.snap.phase === 'idle' && this.warmSport !== null)) {
       this.publish();
       return;
     }
@@ -291,10 +395,15 @@ export class RecordingController {
       }),
       this.deps.hub.onLocation((e) => {
         this.lastFix = e;
+        const now = this.deps.now();
+        if (this.lastFixAt !== null && now - this.lastFixAt > FIX_GAP_MS) this.usableSince = null;
+        this.lastFixAt = now;
+        if (e.accuracy !== null && e.accuracy > MAX_FIX_ACCURACY_M) this.usableSince = null;
+        else this.usableSince ??= now;
         if (this.recorder && this.snap.phase === 'active') {
           this.recorder.fix({ ts: e.ts, lat: e.lat, lon: e.lon, alt: e.alt, accuracy: e.accuracy, speed: e.speed });
         }
-        if (this.snap.phase === 'ready') this.publish();
+        if (this.snap.phase === 'ready' || this.warmSport !== null) this.publish();
       }),
     ];
   }
@@ -368,6 +477,7 @@ export class RecordingController {
     clearInterval(this.timer ?? undefined);
     this.timer = null;
     this.detach();
+    this.resetFix();
     this.recorder = null;
     await Promise.all(
       this.connected.map((id) =>
@@ -380,5 +490,5 @@ export class RecordingController {
 }
 
 function idleSnapshot(): RecordingSnapshot {
-  return { phase: 'idle', sport: null, gps: false, status: 'idle', live: null, laps: [], sensorIds: [], fix: null, noService: false, sensorError: null };
+  return { phase: 'idle', sport: null, gps: false, warm: false, status: 'idle', live: null, laps: [], sensorIds: [], fix: null, noService: false, sensorError: null };
 }

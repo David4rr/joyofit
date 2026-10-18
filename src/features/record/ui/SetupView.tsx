@@ -16,8 +16,10 @@ import { useSensors } from '@/state/SensorsProvider';
 import { spacing } from '@/theme';
 
 import { canPrepare, permissionPlan } from './format';
+import { GpsLine } from './GpsLine';
 import { PermissionCards, useRecordPermissions } from './PermissionGate';
 import { SensorRow } from './SensorRow';
+import { useGpsWarmUp } from './useGpsWarmUp';
 
 const LOCATION_DENIED = 'ERR_LOCATION_PERMISSION';
 
@@ -32,7 +34,7 @@ interface SetupViewProps {
 export function SetupView({ sport, onSport, notice }: SetupViewProps) {
   const { t } = useTranslation('workouts');
   const router = useRouter();
-  const { prepare } = useRecorder();
+  const { prepare, snapshot } = useRecorder();
   const { saved, hub } = useSensors();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,9 @@ export function SetupView({ sport, onSport, notice }: SetupViewProps) {
   const plan = permissionPlan(sport, autoSensors.length);
   const permissions = useRecordPermissions(plan, hub.bluetooth);
   const allowed = canPrepare(plan, permissions.location, permissions.bluetooth);
+  // The GPS starts looking while the sport and the sensors are still being picked, not after "Mulai".
+  const warming = plan.location && permissions.location === 'granted';
+  useGpsWarmUp(sport, warming);
 
   const start = async () => {
     setBusy(true);
@@ -70,6 +75,7 @@ export function SetupView({ sport, onSport, notice }: SetupViewProps) {
       <AppText variant="caption" muted>
         {plan.location ? t('record.setup.gpsNote') : t('record.setup.noGpsNote')}
       </AppText>
+      {warming ? <GpsLine fix={snapshot.fix} /> : null}
       {notice ? <Notice icon="information-circle">{notice}</Notice> : null}
 
       <Section title={t('record.setup.sensors')} icon="bluetooth" tint="link">

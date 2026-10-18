@@ -23,6 +23,12 @@ export interface RecorderContextValue {
   snapshot: RecordingSnapshot;
   /** Gets ready to record `sport` (native session, GPS, sensors). `title` is the Android notification title. Rejects with ERR_LOCATION_PERMISSION for an outdoor sport without precise location; ask first (`ensureLocation`). */
   prepare: (sport: ManualSport, title: string) => Promise<void>;
+  /**
+   * Starts the GPS while the picker is open (an outdoor sport with precise location already granted; never asks), so a fix is waiting at
+   * `prepare`. `stopWarmUp` ends it when the picker closes, the sport has no GPS or the app leaves the foreground. Neither rejects.
+   */
+  warmUp: (sport: ManualSport, title: string) => Promise<void>;
+  stopWarmUp: () => Promise<void>;
   cancel: () => Promise<void>;
   start: () => void;
   pause: () => void;
@@ -103,6 +109,9 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [controller]);
 
+  const warmUp = useCallback((sport: ManualSport, title: string) => controller.warmUp(sport, title), [controller]);
+  const stopWarmUp = useCallback(() => controller.stopWarmUp(), [controller]);
+
   const finish = useCallback(
     async (options: { strava: boolean }) => {
       const result = await controller.finish();
@@ -119,6 +128,8 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
     () => ({
       snapshot,
       prepare: (sport, title) => controller.prepare(sport, title),
+      warmUp,
+      stopWarmUp,
       cancel: () => controller.cancel(),
       start: () => controller.start(),
       pause: () => controller.pause(),
@@ -127,7 +138,7 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
       finish,
       discard: () => controller.discard(),
     }),
-    [controller, finish, snapshot],
+    [controller, finish, snapshot, stopWarmUp, warmUp],
   );
 
   return <RecorderContext.Provider value={value}>{children}</RecorderContext.Provider>;

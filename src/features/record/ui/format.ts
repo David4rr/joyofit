@@ -8,25 +8,38 @@ import { SPORT_ROWS, type ManualSport } from '../../workouts/manual';
 import { GPS_SPORTS } from '../controller';
 import { MAX_FIX_ACCURACY_M, type LiveStats, type RecordedLap } from '../recorder';
 
-export type GpsStatus = 'searching' | 'ready' | 'weak';
+export type GpsStatus = 'searching' | 'ready' | 'fair' | 'weak';
 
 /** A fix older than this (seconds) is not the position any more: the signal is gone. */
 export const GPS_STALE_SEC = 10;
+
+/** A fix this accurate (metres) is "ready" at once; the recorder accepts up to 35 m, and accuracy keeps improving while it records. */
+export const GPS_READY_ACCURACY_M = 25;
+
+/** A fix between 25 and 35 m is "ready" too once the fixes have been that good for this long (seconds): waiting longer rarely helps. */
+export const GPS_SETTLE_SEC = 4;
 
 /** A GPS fix as the snapshot (`fix`) and the live numbers (`fixAccuracyM`, `fixAgeSec`) report it. */
 export interface FixInfo {
   accuracyM: number | null;
   ageSec: number | null;
+  /**
+   * Seconds the fixes have been good enough for the recorder in a row, null while the newest is not. Left out (undefined) where nobody
+   * measures it (while recording): the signal counts as settled then.
+   */
+  usableSec?: number | null;
 }
 
 /**
  * `searching` until a fresh fix arrives, `weak` while the newest fix is worse than the recorder accepts (35 m, it ignores those),
- * `ready` otherwise. A fix without an accuracy figure is used by the recorder, so it counts as ready.
+ * `fair` while it is usable (25-35 m) but has not held for `GPS_SETTLE_SEC` yet, `ready` otherwise. A fix without an accuracy figure is
+ * used by the recorder, so it counts as ready.
  */
 export function gpsStatus(fix: FixInfo | null): GpsStatus {
   if (!fix || fix.ageSec === null || fix.ageSec > GPS_STALE_SEC) return 'searching';
   if (fix.accuracyM !== null && fix.accuracyM > MAX_FIX_ACCURACY_M) return 'weak';
-  return 'ready';
+  if (fix.accuracyM === null || fix.accuracyM <= GPS_READY_ACCURACY_M || fix.usableSec === undefined) return 'ready';
+  return (fix.usableSec ?? 0) >= GPS_SETTLE_SEC ? 'ready' : 'fair';
 }
 
 export type SpeedKind = 'pace' | 'speed';

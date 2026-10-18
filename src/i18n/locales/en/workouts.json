@@ -524,6 +524,7 @@
       "searching": "Looking for a GPS signal",
       "ready": "GPS ready, accuracy {{meters}} m",
       "readyNoAccuracy": "GPS ready",
+      "fair": "GPS signal good enough, accuracy {{meters}} m. It keeps improving while you record.",
       "weak": "Weak GPS signal, accuracy {{meters}} m. Find a more open spot."
     },
     "ready": {

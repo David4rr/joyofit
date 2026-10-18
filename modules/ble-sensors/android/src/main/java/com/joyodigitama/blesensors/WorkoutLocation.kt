@@ -5,11 +5,16 @@ import android.content.Context
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.location.LocationRequest
+import android.os.Build
 import android.os.Looper
 
 /**
- * GPS fixes of a recorded workout, about once a second, straight from the GPS provider (no Google Play services). A last known
- * location is never delivered: a stale fix must not enter a workout.
+ * Location fixes of a recorded workout, about once a second. Android 12 and newer: the system's fused provider at high accuracy (the
+ * framework API, so no Play services dependency; with Google Play services it is Google's fused provider), which hands out a Wi-Fi/cell
+ * position within a second or two and moves on to GNSS accuracy as satellites lock, so the first fix comes much sooner than from the
+ * raw GPS provider alone. Older versions, and devices without a fused provider: the GPS provider. A last known location is never
+ * delivered: a stale fix must not enter a workout.
  */
 @SuppressLint("MissingPermission")
 internal class WorkoutLocation(private val context: Context, private val hub: SensorHub) {
@@ -20,7 +25,8 @@ internal class WorkoutLocation(private val context: Context, private val hub: Se
   fun start() {
     if (listener != null) return
     val manager = context.getSystemService(LocationManager::class.java)
-    if (manager == null || LocationManager.GPS_PROVIDER !in manager.allProviders) {
+    val fused = manager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && LocationManager.FUSED_PROVIDER in manager.allProviders
+    if (manager == null || (!fused && LocationManager.GPS_PROVIDER !in manager.allProviders)) {
       throw SensorException(ErrorCodes.LOCATION_PERMISSION, "This device has no GPS provider")
     }
     // Before Android 11 the other callbacks are abstract; a lambda would crash there when the provider changes.
@@ -37,7 +43,12 @@ internal class WorkoutLocation(private val context: Context, private val hub: Se
       override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
     }
     try {
-      manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, UPDATE_INTERVAL_MS, 0f, l, Looper.getMainLooper())
+      if (fused) {
+        val request = LocationRequest.Builder(UPDATE_INTERVAL_MS).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).build()
+        manager.requestLocationUpdates(LocationManager.FUSED_PROVIDER, request, context.mainExecutor, l)
+      } else {
+        manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, UPDATE_INTERVAL_MS, 0f, l, Looper.getMainLooper())
+      }
     } catch (e: SecurityException) {
       throw SensorException(ErrorCodes.LOCATION_PERMISSION, "Precise location permission is not granted", e)
     }

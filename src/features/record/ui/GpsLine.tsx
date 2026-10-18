@@ -26,9 +26,11 @@ export function GpsLine({ fix, color }: GpsLineProps) {
       ? t('record.gps.searching')
       : status === 'weak'
         ? t('record.gps.weak', { meters })
-        : meters !== null
-          ? t('record.gps.ready', { meters })
-          : t('record.gps.readyNoAccuracy');
+        : status === 'fair'
+          ? t('record.gps.fair', { meters })
+          : meters !== null
+            ? t('record.gps.ready', { meters })
+            : t('record.gps.readyNoAccuracy');
   return (
     <View accessible accessibilityLiveRegion="polite" accessibilityLabel={text} style={styles.row}>
       <StatusDot color={status === 'ready' ? colors.link : colors.warning} live={status === 'ready'} />

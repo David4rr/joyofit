@@ -519,6 +519,7 @@
       "searching": "Mencari sinyal GPS",
       "ready": "GPS siap, akurasi {{meters}} m",
       "readyNoAccuracy": "GPS siap",
+      "fair": "Sinyal GPS sudah cukup, akurasi {{meters}} m. Akurasinya terus membaik selama kamu merekam.",
       "weak": "Sinyal GPS lemah, akurasi {{meters}} m. Cari tempat yang lebih terbuka."
     },
     "ready": {

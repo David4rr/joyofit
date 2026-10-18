@@ -72,7 +72,17 @@ Looked at both existing stacks and chose **a new small module, `modules/ble-sens
 - **Energy:** from the heart rate (Keytel et al. 2005, the same equation the watch-link live session uses) when the strap covers at least half of the time, else MET x weight x time. `summary_json.kcalSource` says which.
 - Laps, moving time that excludes pauses, normalized power (30 s rolling), max speed (3 s smoothed).
 
-`controller.ts` wires it to the hub and the native session (prepare = GPS warm-up and sensor connect, start, pause, lap, finish = save, restore after a kill); `state/RecorderProvider.tsx` is its React shell.
+`controller.ts` wires it to the hub and the native session (warm-up and prepare = GPS and sensor connect, start, pause, lap, finish = save, restore after a kill); `state/RecorderProvider.tsx` is its React shell.
+
+### Getting a GPS fix quickly
+
+A fix is slow when the GPS starts late and listens to one source, so both were changed (the owner saw "finding location" take noticeably longer than Huawei Health on a Xiaomi 2506BPN68G, Android 16):
+
+- **It starts when the picker opens, not at "Mulai".** Before, the native GPS only began inside `prepare`, i.e. after choosing the sport, tapping "Mulai", and the foreground service start (awaited) on the second screen. Now `RecordScreen > SetupView` calls `useGpsWarmUp`: for an outdoor sport whose precise location is already allowed (it never asks) the controller's `warmUp` starts the same native session with GPS at once, and `GpsLine` shows the signal under the sport chips. `prepare` takes the running session over (no second start, the fix is kept). `stopWarmUp` ends it when the picker loses focus (the sensors page opens over it), the app leaves the foreground (screen off included), the sport has no GPS, or the picker closes without a recording; changing between outdoor sports keeps the session. Android shows the recording notification and holds the wake lock during the warm-up, iOS the location pill; both end with it.
+- **Android uses the fused provider** (`WorkoutLocation.kt`): on Android 12+ the system's `FUSED_PROVIDER` at `QUALITY_HIGH_ACCURACY`, 1 s, which gives a Wi-Fi/cell position within a second or two and then GNSS accuracy; before 12, or without a fused provider, the raw GPS provider as before. It is the framework API, so there is no Play services dependency and Huawei phones without GMS fall back by themselves. A last known location is still never delivered into a workout. iOS already used `kCLLocationAccuracyBest`.
+- **"Ready" at 25 m, usable at 35 m.** `gpsStatus`: `ready` at a fix of 25 m or better, or at 25-35 m once the fixes have held for 4 s (`fair`, "Sinyal GPS sudah cukup", until then); worse than 35 m is `weak` (the recorder ignores those). "Mulai" is never disabled: the track starts at the first fix the recorder accepts and accuracy keeps improving while it records.
+
+Not verified on hardware (no build with the recorder is installed on the test phone): the time to first fix on the fused provider against the GPS provider, and how long Xiaomi's notification and battery policies let the warm-up run.
 
 ## 4. Export and follow-ups
 
