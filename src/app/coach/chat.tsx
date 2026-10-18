@@ -89,7 +89,7 @@ function ChatBody() {
           </AppText>
           <View style={styles.suggestions}>
             {(['q1', 'q2', 'q3'] as const).map((key) => (
-              <Button key={key} label={t(`chat.suggest.${key}`)} variant="secondary" onPress={() => void send(t(`chat.suggest.${key}`))} disabled={sending} />
+              <Button key={key} label={t(`chat.suggest.${key}`)} variant="secondary" lines={2} onPress={() => void send(t(`chat.suggest.${key}`))} disabled={sending} />
             ))}
           </View>
         </Card>

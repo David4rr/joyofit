@@ -399,7 +399,7 @@
     "suggest": {
       "q1": "What is the right workout for today?",
       "q2": "Why is my suggestion what it is today?",
-      "q3": "How does my food support my training plan?"
+      "q3": "Is my food enough for training?"
     },
     "placeholder": "Write your question",
     "send": "Send",

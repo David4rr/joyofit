@@ -6,11 +6,11 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Chip } from '@/components/Chip';
 import { Input } from '@/components/Input';
-import { NavRow } from '@/components/NavRow';
 import { Screen } from '@/components/Screen';
 import { EmptyState } from '@/components/States';
 import { exerciseName, searchExercises, type ExerciseSetting } from '@/features/coach/exercises';
 import type { ExercisePattern } from '@/features/coach/exercises/types';
+import { ExerciseRow } from '@/features/coach/ui/ExerciseRow';
 import { fmtInt, getLocale, useLocale } from '@/i18n';
 import { spacing } from '@/theme';
 
@@ -52,10 +52,9 @@ export default function LibraryScreen() {
       ) : (
         <View style={styles.list}>
           {results.map((def) => (
-            <NavRow
+            <ExerciseRow
               key={def.id}
-              icon="barbell-outline"
-              tint="workouts"
+              def={def}
               title={exerciseName(def, getLocale())}
               subtitle={`${t(`pattern.${def.pattern}`)} \u00b7 ${t(`equipment.${def.equipment}`)}`}
               onPress={() => router.push({ pathname: '/coach/library/[id]', params: { id: def.id } })}
