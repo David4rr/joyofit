@@ -1,5 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { ACTIVE_STEPS_PER_MIN, cleanUnstagedSleep, workoutSpan, type SleepEvidence } from '@/features/sleep/cleanSleep';
+import type { SleepSpan } from '@/features/today/stats';
 import type { DayHeartLoad } from '@/features/today/strain';
 import type { SleepSegment, StepSample } from '@/wear';
 
@@ -32,17 +34,70 @@ export function getLatestHeartRate(db: SQLiteDatabase): Promise<{ bpm: number; t
   );
 }
 
+/**
+ * What the stored workouts, spot HRV measurements and per-minute steps say about `[from, to]`, for
+ * `cleanUnstagedSleep`. Only minutes with real walking are read, never the whole step history.
+ */
+async function sleepEvidence(db: SQLiteDatabase, from: number, to: number): Promise<SleepEvidence> {
+  const [workouts, spots, active] = await Promise.all([
+    db.getAllAsync<{ start: number; end: number; duration: number }>(
+      'SELECT start, end, duration FROM workouts WHERE end >= ? AND start <= ?',
+      from,
+      to,
+    ),
+    db.getAllAsync<{ start: number; end: number }>(
+      "SELECT start, end FROM hrv_readings WHERE source = 'spot' AND end >= ? AND start <= ?",
+      from,
+      to,
+    ),
+    db.getAllAsync<{ timestamp: number }>(
+      'SELECT timestamp FROM step_samples WHERE timestamp >= ? AND timestamp <= ? AND steps >= ?',
+      from - 60,
+      to,
+      ACTIVE_STEPS_PER_MIN,
+    ),
+  ]);
+  return {
+    workouts: workouts.map((w) => workoutSpan(w.start, w.end, w.duration)),
+    spots,
+    activeMinutes: active.map((a) => a.timestamp),
+  };
+}
+
+/**
+ * Stored segments, with the stage-less ones cleaned of what was not sleep (`cleanUnstagedSleep`): workouts, spot HRV
+ * measurements, minutes of walking, fragments too short to be sleep. The raw rows stay as the watch sent them, so a
+ * rule change re-derives every stored night the next time it is read. Staged segments come back as stored.
+ */
+async function cleanedSleep(db: SQLiteDatabase, rows: SleepSegment[]): Promise<SleepSpan[]> {
+  let from = Infinity;
+  let to = -Infinity;
+  for (const r of rows) {
+    if (r.stage) continue;
+    from = Math.min(from, r.start);
+    to = Math.max(to, r.end);
+  }
+  if (from > to) return rows;
+  return cleanUnstagedSleep(rows, await sleepEvidence(db, from, to));
+}
+
 /** Segments that end at or after `sinceSec`, oldest first. */
-export function listSleepSince(db: SQLiteDatabase, sinceSec: number): Promise<SleepSegment[]> {
-  return db.getAllAsync<SleepSegment>(
-    'SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start',
-    sinceSec,
+export async function listSleepSince(db: SQLiteDatabase, sinceSec: number): Promise<SleepSpan[]> {
+  return cleanedSleep(
+    db,
+    await db.getAllAsync<SleepSegment>(
+      'SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start',
+      sinceSec,
+    ),
   );
 }
 
 /** Every stored segment, oldest first. A night is tens of rows, so the whole history stays small. */
-export function listAllSleep(db: SQLiteDatabase): Promise<SleepSegment[]> {
-  return db.getAllAsync<SleepSegment>('SELECT start, end, type, stage FROM sleep_segments ORDER BY start, end');
+export async function listAllSleep(db: SQLiteDatabase): Promise<SleepSpan[]> {
+  return cleanedSleep(
+    db,
+    await db.getAllAsync<SleepSegment>('SELECT start, end, type, stage FROM sleep_segments ORDER BY start, end'),
+  );
 }
 
 /** The watch's own score for one night (`sleep_scores`); `start` / `end` span the night it scored. */

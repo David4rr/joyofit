@@ -79,6 +79,12 @@ export function hourlySteps(samples: readonly StepSample[]): number[] {
 export const SESSION_GAP_SEC = 3 * 3600;
 
 /**
+ * A stored segment, plus the one thing only the cleaning step knows (`cleanUnstagedSleep`): a workout or a long awake
+ * stretch lies between this segment and the one before it, so it starts a new session however close the two are.
+ */
+export type SleepSpan = SleepSegment & { breakBefore?: boolean };
+
+/**
  * Drops unstaged segments within {@link SESSION_GAP_SEC} of a staged one: the watch stores short unstaged spans
  * around a staged night, and next to real stages they only stretch it. An unstaged nap far from staged sleep
  * stays. Same rule as `withoutStrayUnstaged` in SleepReport.kt.
@@ -150,12 +156,12 @@ export interface SleepSummary {
  * Summarises the most recent sleep session: the latest segment plus earlier segments chained to it
  * with gaps up to {@link SESSION_GAP_SEC}. Expects `segments` oldest-first.
  */
-export function lastSleepSession(segments: readonly SleepSegment[]): SleepSummary | null {
+export function lastSleepSession(segments: readonly SleepSpan[]): SleepSummary | null {
   const sorted = withoutBlips(withoutStrayUnstaged(segments));
   if (sorted.length === 0) return null;
   let first = sorted.length - 1;
   let earliestStart = sorted[first].start;
-  while (first > 0 && earliestStart - sorted[first - 1].end <= SESSION_GAP_SEC) {
+  while (first > 0 && !sorted[first].breakBefore && earliestStart - sorted[first - 1].end <= SESSION_GAP_SEC) {
     first--;
     earliestStart = Math.min(earliestStart, sorted[first].start);
   }
