@@ -15,6 +15,7 @@ import { IconAction } from '@/features/courses/IconAction';
 import { formatRouteDateTime } from './copy';
 import { formatRouteDistance, type SavedRoute } from './routeModel';
 import { listWorkoutsWithGps, saveWorkoutAsRoute, type WorkoutWithGps } from './saveWorkoutRoute';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 interface WorkoutPickerSheetProps {
   visible: boolean;
@@ -99,7 +100,7 @@ export function WorkoutPickerSheet({ visible, onClose, onSaved }: WorkoutPickerS
               renderItem={({ item }) => {
                 const { workout } = item;
                 const when = formatRouteDateTime(workout.start * 1000);
-                const label = t('workoutPicker.rowLabel', { sport: workout.sportName, date: when });
+                const label = t('workoutPicker.rowLabel', { sport: sportLabel(workout.sportName), date: when });
                 return (
                   <PressableScale
                     accessibilityRole="button"
@@ -112,7 +113,7 @@ export function WorkoutPickerSheet({ visible, onClose, onSaved }: WorkoutPickerS
                     <IconChip icon={sportIcon(workout.sportName)} tint="workouts" size="md" />
                     <View style={styles.rowText}>
                       <AppText variant="bodyStrong" numberOfLines={1}>
-                        {workout.sportName}
+                        {sportLabel(workout.sportName)}
                       </AppText>
                       <AppText variant="caption" muted numberOfLines={1}>
                         {[when, workout.distance > 0 ? formatRouteDistance(workout.distance) : null, t('workoutPicker.gpsPoints', { count: item.gpsPoints })]

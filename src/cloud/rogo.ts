@@ -1,7 +1,7 @@
 import { NotSignedInError } from '@/cloud/api';
 import { authClient } from '@/cloud/auth';
 import { JOYOROGO_URL } from '@/cloud/config';
-import { t } from '@/i18n';
+import { getLocale, t } from '@/i18n';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 
 /**
@@ -37,7 +37,7 @@ export async function rogoCall<T>(path: string, input: unknown): Promise<T> {
   try {
     const response = await fetch(`${JOYOROGO_URL}/rpc/${path}`, {
       method: 'POST',
-      headers: { Cookie: cookie, Accept: 'application/json', 'Content-Type': 'application/json' },
+      headers: { Cookie: cookie, Accept: 'application/json', 'Content-Type': 'application/json', 'x-locale': getLocale() },
       body: JSON.stringify({ json: input }),
       credentials: 'omit',
       signal: controller.signal,

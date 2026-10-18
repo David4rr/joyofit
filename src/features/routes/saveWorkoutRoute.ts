@@ -7,6 +7,7 @@ import { formatRouteDate } from './copy';
 import type { SavedRoute } from './routeModel';
 import { saveRoute } from './routeStore';
 import { workoutRouteDraft } from './workoutRoute';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 export interface WorkoutWithGps {
   workout: WorkoutRow;
@@ -34,7 +35,7 @@ export async function saveWorkoutAsRoute(
   workout: Pick<WorkoutRow, 'id' | 'sportName' | 'start'>,
 ): Promise<SavedRoute> {
   const rows = await listWorkoutPoints(db, workout.id);
-  const name = t('routes:workoutPicker.defaultName', { sport: workout.sportName, date: formatRouteDate(workout.start * 1000) });
+  const name = t('routes:workoutPicker.defaultName', { sport: sportLabel(workout.sportName), date: formatRouteDate(workout.start * 1000) });
   const draft = workoutRouteDraft(name, rows);
   if (draft === null) throw new Error(t('routes:workoutPicker.noGps'));
   return saveRoute(draft);

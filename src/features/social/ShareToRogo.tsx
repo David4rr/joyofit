@@ -19,6 +19,7 @@ import { buildWatchPost, canShareToRogo, hrSeries, routePairs } from '@/features
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import { errorMessage } from '@/format';
 import { HIT, spacing, useColors } from '@/theme';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 /** JoyoRogo's limit for a post caption. */
 const CAPTION_MAX = 1000;
@@ -113,7 +114,7 @@ export function ShareToRogoButton({ workout, points, analysis, analysisPending }
                 </>
               ) : (
                 <>
-                  <AppText variant="bodyStrong">{workout.sportName}</AppText>
+                  <AppText variant="bodyStrong">{sportLabel(workout.sportName)}</AppText>
                   <Field
                     label={t('share.caption')}
                     hint={t('share.captionHint')}

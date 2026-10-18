@@ -7,6 +7,7 @@ import { ShareSheet, type ShareSubject } from '@/features/share/ShareSheet';
 import { buildShareStats, formatShareDate } from '@/features/share/shareStats';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import type { RoutePoint, WorkoutSummary } from '@/features/workouts/summary';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 interface Props {
   workout: WorkoutRow;
@@ -21,7 +22,7 @@ export function ShareWorkoutButton({ workout, summary, route }: Props) {
   const subject = useMemo<ShareSubject>(
     () => ({
       heading: t('sharing:share.workout.heading'),
-      title: workout.sportName,
+      title: sportLabel(workout.sportName),
       subtitle: formatShareDate(workout.start),
       icon: sportIcon(workout.sportName),
       stats: buildShareStats(workout, summary),

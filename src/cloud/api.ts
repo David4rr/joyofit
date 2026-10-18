@@ -1,4 +1,4 @@
-import { t } from '@/i18n';
+import { getLocale, t } from '@/i18n';
 import { authClient } from '@/cloud/auth';
 import { CLOUD_CONFIGURED, CLOUD_URL } from '@/cloud/config';
 
@@ -72,6 +72,8 @@ async function requestOnce<T>(method: string, path: string, body: unknown): Prom
       headers: {
         Cookie: cookie,
         Accept: 'application/json',
+        // The language the app shows: the Worker words text it returns to the app (invite pages) in it.
+        'x-locale': getLocale(),
         ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
       },
       body: body === undefined ? undefined : JSON.stringify(body),

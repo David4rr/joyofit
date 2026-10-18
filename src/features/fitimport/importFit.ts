@@ -26,6 +26,7 @@ import { fmtClock, fmtDate, fmtDecimal, t } from '@/i18n';
 
 import { formatElapsed } from '../workouts/summary';
 import { type FitActivity, type FitImportError, parseFitActivity } from './parseFit';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 export interface FitImported {
   ok: true;
@@ -114,13 +115,13 @@ async function collision(db: Pick<SQLiteDatabase, 'getAllAsync'>, a: FitActivity
       return {
         ok: false,
         reason: 'duplicate',
-        message: t('sharing:fitImport.duplicate', { sport: row.sportName, when: clock(row.start) }),
+        message: t('sharing:fitImport.duplicate', { sport: sportLabel(row.sportName), when: clock(row.start) }),
       };
     }
     return {
       ok: false,
       reason: 'overlap',
-      message: t('sharing:fitImport.overlap', { sport: row.sportName, when: clock(row.start) }),
+      message: t('sharing:fitImport.overlap', { sport: sportLabel(row.sportName), when: clock(row.start) }),
     };
   }
   return null;

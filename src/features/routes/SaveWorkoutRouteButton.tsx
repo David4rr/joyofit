@@ -13,6 +13,7 @@ import { formatRouteDate } from './copy';
 import type { SavedRoute } from './routeModel';
 import { saveRoute } from './routeStore';
 import { workoutRouteDraft } from './workoutRoute';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 interface SaveWorkoutRouteButtonProps {
   workout: Pick<WorkoutRow, 'sportName' | 'start'>;
@@ -25,7 +26,7 @@ export function SaveWorkoutRouteButton({ workout, points }: SaveWorkoutRouteButt
   const { t } = useTranslation('routes');
   const router = useRouter();
   const draft = useMemo(
-    () => workoutRouteDraft(t('workoutPicker.defaultName', { sport: workout.sportName, date: formatRouteDate(workout.start * 1000) }), points),
+    () => workoutRouteDraft(t('workoutPicker.defaultName', { sport: sportLabel(workout.sportName), date: formatRouteDate(workout.start * 1000) }), points),
     [workout.sportName, workout.start, points, t],
   );
   const [saving, setSaving] = useState(false);

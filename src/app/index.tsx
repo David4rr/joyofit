@@ -43,6 +43,7 @@ import { getLocale, INTL_TAG, useLocale } from '@/i18n';
 import { useLiveWorkout } from '@/state/LiveWorkoutProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 /** Splits `1.23 km` into its number and unit. */
 function splitDistance(meters: number): { value: string; unit: string } {
@@ -130,7 +131,7 @@ export default function TodayScreen() {
               icon="pulse"
               tint="workouts"
               title={t(liveWorkout.status === 'paused' ? 'home.workoutPaused' : 'home.workoutInProgress', {
-                sport: liveWorkout.sportName ?? t('home.workoutDefault'),
+                sport: liveWorkout.sportName ? sportLabel(liveWorkout.sportName) : t('home.workoutDefault'),
               })}
               subtitle={t(liveWorkout.heartRate !== null ? 'home.workoutSubtitleHr' : 'home.workoutSubtitle', {
                 elapsed: formatElapsed(elapsedSec(liveWorkout, nowMs)),

@@ -27,6 +27,7 @@ import { useNow } from '@/hooks/useNow';
 import { useLiveWorkout } from '@/state/LiveWorkoutProvider';
 import { radius, spacing, useColors } from '@/theme';
 import { HuaweiWear, type LiveWorkout } from '@/wear';
+import { sportLabel } from '@/features/workouts/sportLabel';
 
 const TICK_MS = 1_000;
 const DASH = '--';
@@ -53,7 +54,7 @@ export function LiveWorkoutScreen() {
 
   return (
     <Screen>
-      <HiddenTabHeader title={live.sportName ?? t('live.title')} />
+      <HiddenTabHeader title={live.sportName ? sportLabel(live.sportName) : t('live.title')} />
       <LiveBody live={live} />
       {live.status === 'ended' ? (
         <Button
@@ -102,7 +103,7 @@ function LiveBody({ live }: { live: LiveWorkout }) {
           <IconChip icon={sportIcon(live.sportName ?? '')} tint="workouts" size="lg" />
           <View style={styles.headText}>
             <AppText variant="heading" numberOfLines={1}>
-              {live.sportName ?? t('live.workout')}
+              {live.sportName ? sportLabel(live.sportName) : t('live.workout')}
             </AppText>
             <View style={styles.statusRow}>
               <View style={[styles.dot, { backgroundColor: statusColor }]} />
