@@ -3,11 +3,13 @@ import { HTTPException } from "hono/http-exception";
 import { ZodError } from "zod";
 
 import { account, syncedData } from "./account";
+import { readJson } from "./body";
 import { cloudUnlocked, requireFounder } from "./access";
 import { AuthUnavailableError, requireUser } from "./auth";
 import type { AppContext, AppEnv } from "./env";
 import { family, familyDevice } from "./family/routes";
 import { runScheduled } from "./family/cron";
+import { gear } from "./gear";
 import { imports } from "./imports";
 import { MAX_SYNC_BODY_BYTES, PULL_DEFAULT_LIMIT, PULL_MAX_LIMIT } from "./limits";
 import { syncBodySchema } from "./schemas";
@@ -26,37 +28,6 @@ app.route("/v1/family", familyDevice);
 
 const v1 = new Hono<AppContext>();
 v1.use("*", requireUser);
-
-/** Reads and parses a JSON body, refusing more than `max` bytes even when `Content-Length` is missing or wrong. */
-async function readJson(request: Request, max: number): Promise<unknown> {
-  const declared = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > max) throw new HTTPException(413, { message: "too_large" });
-  const reader = request.body?.getReader();
-  if (!reader) throw new HTTPException(400, { message: "empty_body" });
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > max) {
-      await reader.cancel();
-      throw new HTTPException(413, { message: "too_large" });
-    }
-    chunks.push(value);
-  }
-  const bytes = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  try {
-    return JSON.parse(new TextDecoder().decode(bytes));
-  } catch {
-    throw new HTTPException(400, { message: "invalid_json" });
-  }
-}
 
 v1.get("/me", async (c) => {
   const user = c.get("user");
@@ -98,6 +69,7 @@ v1.route("/account", account);
 v1.route("/data", syncedData);
 v1.route("/imports", imports);
 v1.route("/strava", strava);
+v1.route("/gear", gear);
 v1.route("/family", family);
 app.route("/v1", v1);
 app.route("/strava", stravaPublic);

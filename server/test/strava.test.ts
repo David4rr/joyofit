@@ -151,8 +151,26 @@ describe("Strava status", () => {
     grantApi.handler = () => Response.json({ connected: true, athleteId: 4242, connectedAt: 1_700_000_000, requestedScope: "activity:write" });
     const { user, cookie } = signUp("sam");
     const status = (await (await call("/v1/strava", { cookie })).json()) as Record<string, unknown>;
-    expect(status).toEqual({ configured: true, connected: true, athleteId: 4242, connectedAt: 1_700_000_000 });
+    expect(status).toEqual({ configured: true, connected: true, athleteId: 4242, connectedAt: 1_700_000_000, gearScope: false });
     expect(grantApi.calls[0]?.body).toEqual({ userId: user.id });
+  });
+
+  it("says the gear scope is granted when JoyoRogo's requested scope carries it", async () => {
+    grantApi.handler = () => Response.json({ connected: true, athleteId: 4242, connectedAt: 1, requestedScope: "activity:write,profile:read_all" });
+    const { cookie } = signUp("gina");
+    expect(await (await call("/v1/strava", { cookie })).json()).toMatchObject({ connected: true, gearScope: true });
+  });
+
+  it("asks for profile:read_all on top of the granted scope only with ?gear=1", async () => {
+    grantApi.handler = notConnected("activity:write,read,activity:read_all");
+    const { cookie } = signUp("hana");
+    const plain = (await (await call("/v1/strava/authorize", { cookie })).json()) as { url: string };
+    expect(new URL(plain.url).searchParams.get("scope")).toBe("activity:write,read,activity:read_all");
+    const gear = (await (await call("/v1/strava/authorize?gear=1", { cookie })).json()) as { url: string };
+    expect(new URL(gear.url).searchParams.get("scope")).toBe("activity:write,read,activity:read_all,profile:read_all");
+    grantApi.handler = notConnected("activity:write,profile:read_all");
+    const again = (await (await call("/v1/strava/authorize?gear=1", { cookie })).json()) as { url: string };
+    expect(new URL(again.url).searchParams.get("scope")).toBe("activity:write,profile:read_all");
   });
 
   it("is not connected when JoyoRogo says so, including a JoyoRogo-only grant without the upload scope", async () => {

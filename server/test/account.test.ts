@@ -20,6 +20,7 @@ async function seed(userId: string) {
     env.DB.prepare(
       "INSERT INTO imports (id, user_id, r2_key, status, created_at) VALUES (?1, ?2, ?3, 'uploaded', 1)",
     ).bind(`import-${userId}`, userId, `imports/${userId}/file`),
+    env.DB.prepare("INSERT INTO gear_doc (user_id, doc, rev, updated_at) VALUES (?1, '{}', 1, 1)").bind(userId),
   ]);
   await env.IMPORTS.put(`imports/${userId}/file`, "zip");
 }
@@ -29,7 +30,7 @@ async function rows(table: string, userId: string): Promise<number> {
   return row?.n ?? 0;
 }
 
-const TABLES = ["user_state", "step_samples", "sleep_segments", "workouts", "workout_points", "device", "imports"];
+const TABLES = ["user_state", "step_samples", "sleep_segments", "workouts", "workout_points", "device", "imports", "gear_doc"];
 
 describe("DELETE /v1/account", () => {
   it("requires a session", async () => {

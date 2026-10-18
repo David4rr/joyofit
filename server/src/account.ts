@@ -5,7 +5,7 @@ import { deleteFamilyData } from "./family/store";
 import { dropStravaConnection } from "./strava";
 
 /** Every table with a `user_id` column. `user_state` goes last so a half-finished deletion can still be repeated. */
-const USER_TABLES = ["workout_points", "workouts", "step_samples", "sleep_segments", "device", "imports", "user_state"] as const;
+const USER_TABLES = ["workout_points", "workouts", "step_samples", "sleep_segments", "device", "imports", "gear_doc", "user_state"] as const;
 
 /** Deletes the objects under `imports/<user id>/` in pages; R2 lists at most 1000 keys per call. */
 async function deleteImportFiles(env: AppEnv, userId: string): Promise<void> {

@@ -45,6 +45,22 @@ which is what `since` filters on. D1 schema: [`migrations/0001_init.sql`](migrat
 (`step_samples`, `sleep_segments` with `stage`, `workouts`, `workout_points`, `device`, `user_state`,
 `imports`).
 
+### Gear sync
+
+Shoes and bikes (and which workout used which) travel as one JSON document per user, table `gear_doc`
+([`migrations/0006_gear.sql`](migrations/0006_gear.sql)); code in `src/gear.ts`.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /v1/gear` | `200 { rev, doc }`; `rev: 0, doc: null` when the user has none. Open to every signed-in account, like `GET /v1/sync`. |
+| `PUT /v1/gear` | Body `{ baseRev, doc }`, at most 1 MiB (`413`). **Pro only** (`402 { error: "founder_required", paywall: true }`, same gate as `POST /v1/sync`). The doc is validated with zod (`400`): `version: 1`, `gear` ≤ 200, `defaults` ≤ 20, `assignments` ≤ 50 000; unknown extra keys are kept, a missing `notified` becomes `0`. The stored JSON is the validated doc re-serialised. |
+
+`rev` is the optimistic-concurrency counter. A write lands only when `baseRev` equals the stored `rev` (`0` when the
+user has no doc): it stores the doc, sets `rev = rev + 1` and answers `200 { rev }`. Otherwise nothing is stored and
+the answer is `409 { error: "conflict", rev, doc }` with the current server state, for the client to merge and retry
+with the new `rev`. The check and the write are one conditional D1 statement, so two concurrent writers with the same
+`baseRev` cannot both win. `DELETE /v1/data` and `DELETE /v1/account` remove the row.
+
 Each table is written as one JSON bind parameter expanded with `json_each`, so a request costs a handful of
 D1 statements however large it is (D1 allows 100 bound parameters and, on the free plan, 50 queries per
 invocation).

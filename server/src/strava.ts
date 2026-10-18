@@ -15,7 +15,7 @@ import { STRAVA_BROKER_TIMEOUT_MS, STRAVA_STATE_TTL_S, STRAVA_WEBHOOK_BROKER_TIM
  * free: nothing here checks Founder. Strava data is never read, stored or forwarded; only the athlete id travels.
  *
  * - `GET  /v1/strava`             status (signed-in user)
- * - `GET  /v1/strava/authorize`   `{ url }` to open in a browser (signed-in user)
+ * - `GET  /v1/strava/authorize`   `{ url }` to open in a browser (signed-in user); `?gear=1` adds `profile:read_all`
  * - `POST /v1/strava/token`       `{ accessToken, expiresAt, athleteId }`, refreshed by JoyoRogo (signed-in user)
  * - `POST /v1/strava/disconnect`  unlink JoyoFit; JoyoRogo revokes at Strava when nothing else uses the grant
  * - `GET  /strava/callback`       Strava's redirect; hands the code to JoyoRogo, redirects to the app (`joyofit://settings/strava`)
@@ -23,6 +23,10 @@ import { STRAVA_BROKER_TIMEOUT_MS, STRAVA_STATE_TTL_S, STRAVA_WEBHOOK_BROKER_TIM
  */
 
 const STRAVA_OAUTH = "https://www.strava.com/oauth";
+/** Strava scope that lets the app list the athlete's shoes and bikes (`GET /athlete`), to link them to JoyoFit's gear. */
+const GEAR_SCOPE = "profile:read_all";
+
+const scopeList = (scope: string) => scope.split(/[\s,]+/).filter(Boolean);
 const APP_DEEP_LINK = "joyofit://settings/strava";
 
 /** A callback request failed in a way the user can act on; `reason` ends up in the app deep link. */
@@ -149,7 +153,10 @@ strava.get("/", async (c) => {
   if (!configured(c.env)) return c.json({ configured: false, connected: false });
   const status = await grantStatus(c.env, c.get("user").id);
   if (!status.connected) return c.json({ configured: true, connected: false });
-  return c.json({ configured: true, connected: true, athleteId: status.athleteId, connectedAt: status.connectedAt });
+  // JoyoRogo's `requestedScope` is JoyoFit's own scope plus everything already granted, and JoyoFit's own never includes the
+  // gear scope, so the gear scope is in it exactly when the athlete granted it.
+  const gearScope = scopeList(status.requestedScope).includes(GEAR_SCOPE);
+  return c.json({ configured: true, connected: true, athleteId: status.athleteId, connectedAt: status.connectedAt, gearScope });
 });
 
 strava.get("/authorize", async (c) => {
@@ -160,12 +167,14 @@ strava.get("/authorize", async (c) => {
   // JoyoRogo answers with JoyoFit's scope plus what the athlete already granted JoyoRogo, so connecting here never
   // narrows the grant JoyoRogo reads activities with.
   const { requestedScope } = await grantStatus(c.env, userId);
+  // `?gear=1`: also ask for `profile:read_all` (the athlete's shoes and bikes), a second consent for an existing connection.
+  const scope = c.req.query("gear") === "1" ? [...new Set([...scopeList(requestedScope), GEAR_SCOPE])].join(",") : requestedScope;
   const query = new URLSearchParams({
     client_id: c.env.STRAVA_CLIENT_ID,
     redirect_uri: redirectUri,
     response_type: "code",
     approval_prompt: "auto",
-    scope: requestedScope,
+    scope,
     state,
   });
   // The mobile endpoint opens the Strava app when it is installed and falls back to the web page otherwise.

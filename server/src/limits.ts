@@ -1,6 +1,9 @@
 /** Largest JSON body accepted by POST /v1/sync. Each table travels to D1 as one JSON bind parameter (2 MB cap). */
 export const MAX_SYNC_BODY_BYTES = 3_000_000;
 
+/** Largest JSON body accepted by PUT /v1/gear. */
+export const MAX_GEAR_BODY_BYTES = 1_048_576;
+
 export const MAX_STEP_SAMPLES = 5_000;
 export const MAX_SLEEP_SEGMENTS = 2_000;
 export const MAX_WORKOUTS = 50;
