@@ -14,6 +14,7 @@ import { imports } from "./imports";
 import { livePage, livePublic, liveSession } from "./live";
 import { MAX_SYNC_BODY_BYTES, PULL_DEFAULT_LIMIT, PULL_MAX_LIMIT, RESTORE_DEFAULT_LIMIT, RESTORE_MAX_AGE_DAYS, RESTORE_MAX_LIMIT } from "./limits";
 import { syncBodySchema } from "./schemas";
+import { ride } from "./ride/routes";
 import { strava, stravaPublic } from "./strava";
 import { applySync, pullSync, restoreSleep, restoreSteps } from "./sync";
 import { waitlist } from "./waitlist";
@@ -30,6 +31,9 @@ app.route("/v1/family", familyDevice);
 // Only `POST /v1/live` (start) needs the session, so it is mounted under `v1` below.
 app.route("/v1/live", livePublic);
 app.route("/live", livePage);
+
+// "Ride on the web" relay (docs/ride.md): public room creation, phone join with a session, WebSocket by token.
+app.route("/ride", ride);
 
 const v1 = new Hono<AppContext>();
 v1.use("*", requireUser);
@@ -118,6 +122,10 @@ app.onError((error, c) => {
   console.error(JSON.stringify({ event: "unhandled", path: c.req.path, message: error.message }));
   return c.json({ error: "internal_error" }, 500);
 });
+
+// Durable Object classes of the ride relay; wrangler.jsonc binds them (RIDE_ROOM, RIDE_INDEX).
+export { RideIndex } from "./ride/lookup";
+export { RideRoom } from "./ride/room";
 
 export default {
   fetch: app.fetch,
