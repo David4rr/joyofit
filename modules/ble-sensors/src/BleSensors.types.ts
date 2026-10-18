@@ -101,7 +101,36 @@ export interface WorkoutSessionOptions {
    * Without it, or when it is not a link of the app, the tap resumes the app where it was. iOS has no notification: ignored.
    */
   openUrl?: string;
+  /**
+   * Android: Pause/Resume and Lap buttons on the notification, with their texts in the app's language. A press arrives as `onWorkoutAction`.
+   * Without it the notification has no buttons. iOS ignores it.
+   */
+  controls?: WorkoutControls;
 }
+
+export interface WorkoutControls {
+  /** BCP 47 tag the notification formats the distance with (decimal separator), e.g. `id`. */
+  locale: string;
+  /** Shown in front of the frozen time while paused. */
+  paused: string;
+  pause: string;
+  resume: string;
+  lap: string;
+}
+
+/**
+ * What `updateWorkoutSession` reports (Android): the recorder's own numbers. The notification counts the time itself (a chronometer, no
+ * update needed) and adds GPS distance from its own fixes between two reports, so a throttled JS thread leaves it counting.
+ */
+export interface WorkoutSessionState {
+  /** The recorder's clock in seconds (stops while paused). */
+  movingSec: number;
+  distanceM: number;
+  hr: number | null;
+  paused: boolean;
+}
+
+export type WorkoutAction = 'pause' | 'resume' | 'lap';
 
 export type BleSensorsModuleEvents = {
   onScanResult: (event: ScanResultEvent) => void;
@@ -110,4 +139,6 @@ export type BleSensorsModuleEvents = {
   onValue: (event: ValueEvent) => void;
   onLocation: (event: LocationEvent) => void;
   onBluetoothState: (event: { state: BluetoothState }) => void;
+  /** Android: a button of the recording notification was pressed (only with `WorkoutSessionOptions.controls`). */
+  onWorkoutAction: (event: { action: WorkoutAction }) => void;
 };

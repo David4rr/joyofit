@@ -16,6 +16,24 @@ class WorkoutSessionOptionsRecord : Record {
   @Field var text: String = ""
   @Field var gps: Boolean = false
   @Field var openUrl: String? = null
+  @Field var controls: WorkoutControlsRecord? = null
+}
+
+/** `WorkoutControls` in `BleSensors.types.ts`. */
+class WorkoutControlsRecord : Record {
+  @Field var locale: String = "en"
+  @Field var paused: String = ""
+  @Field var pause: String = ""
+  @Field var resume: String = ""
+  @Field var lap: String = ""
+}
+
+/** `WorkoutSessionState` in `BleSensors.types.ts`. */
+class WorkoutSessionStateRecord : Record {
+  @Field var movingSec: Int = 0
+  @Field var distanceM: Double = 0.0
+  @Field var hr: Int? = null
+  @Field var paused: Boolean = false
 }
 
 /**
@@ -31,7 +49,7 @@ class BleSensorsModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("BleSensors")
 
-    Events("onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState")
+    Events("onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction")
 
     OnCreate {
       hub().install(this@BleSensorsModule) { name, payload -> sendEvent(name, payload) }
@@ -62,10 +80,13 @@ class BleSensorsModule : Module() {
     }
 
     AsyncFunction("startWorkoutSession") Coroutine { options: WorkoutSessionOptionsRecord ->
-      WorkoutSession.start(context(), options.title, options.text, options.gps, options.openUrl)
+      val controls = options.controls?.let { RecordingNotificationSpec.Controls(it.locale, it.paused, it.pause, it.resume, it.lap) }
+      WorkoutSession.start(context(), options.title, options.text, options.gps, options.openUrl, controls)
     }
 
-    AsyncFunction("updateWorkoutSession") { text: String -> WorkoutSession.update(context(), text) }
+    AsyncFunction("updateWorkoutSession") { state: WorkoutSessionStateRecord ->
+      WorkoutSession.update(context(), RecordingProgress.Update(state.movingSec * 1000L, state.distanceM, state.hr, state.paused))
+    }
 
     AsyncFunction("endWorkoutSession") { WorkoutSession.end(context()) }
 

@@ -2,19 +2,18 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
-import { BleSensors } from '@/ble';
+import { BleSensors, type WorkoutControls } from '@/ble';
 import { cloudLog as log } from '@/cloud/log';
-import { fmtDecimal, t } from '@/i18n';
+import { getLocale, t } from '@/i18n';
 import { afterRecordingSaved } from '@/features/record/afterSave';
 import { RecordingController, type ControllerTick, type FinishResult, type RecordingSnapshot } from '@/features/record/controller';
 import type { EnergyProfile, Sex } from '@/features/record/energy';
-import type { LiveStats } from '@/features/record/recorder';
 import { LIVE_URL } from '@/features/record/liveRoute';
 import { sensorHub } from '@/features/sensors/instance';
 import { getWheelMm } from '@/features/sensors/settings';
 import { userWeightKg } from '@/features/strength/profile';
 import { DEFAULT_AGE } from '@/features/workouts/substrate';
-import { formatElapsed, type VirtualRide } from '@/features/workouts/summary';
+import type { VirtualRide } from '@/features/workouts/summary';
 import type { ManualSport } from '@/features/workouts/manual';
 import { useSensors } from '@/state/SensorsProvider';
 import { useWatch } from '@/state/WatchProvider';
@@ -65,13 +64,15 @@ function energyProfile(): EnergyProfile {
   return { weightKg: userWeightKg(), age: Math.min(100, Math.max(10, age)), sex };
 }
 
-function notificationText(live: LiveStats): string {
-  const time = formatElapsed(live.movingSec);
-  const distance = live.distanceM >= 10 ? `${fmtDecimal(live.distanceM / 1000, 2)} km` : null;
-  if (distance && live.hr !== null) return t('workouts:record.notification.timeDistanceHr', { time, distance, hr: live.hr });
-  if (distance) return t('workouts:record.notification.timeDistance', { time, distance });
-  if (live.hr !== null) return t('workouts:record.notification.timeHr', { time, hr: live.hr });
-  return time;
+/** The notification's buttons and the language it formats the distance in (the notification itself counts the time). */
+function notificationControls(): WorkoutControls {
+  return {
+    locale: getLocale(),
+    paused: t('workouts:liveEntry.paused'),
+    pause: t('workouts:record.live.pause'),
+    resume: t('workouts:record.live.resume'),
+    lap: t('workouts:record.live.lap'),
+  };
 }
 
 /**
@@ -91,16 +92,19 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
         hub: sensorHub,
         session: {
           // The notification opens the live screen, the same place back leads to (see `liveRoute.ts`).
-          start: (options) => BleSensors.startWorkoutSession({ ...options, openUrl: LIVE_URL }),
-          update: (text) => BleSensors.updateWorkoutSession(text),
+          start: (options) => BleSensors.startWorkoutSession({ ...options, openUrl: LIVE_URL, controls: notificationControls() }),
+          update: (state) => BleSensors.updateWorkoutSession(state),
           end: () => BleSensors.endWorkoutSession(),
+          onAction: (listener) => {
+            const sub = BleSensors.addListener('onWorkoutAction', (event) => listener(event.action));
+            return () => sub.remove();
+          },
         },
         db,
         now: Date.now,
         profile: energyProfile,
         wheelCircumferenceM: () => getWheelMm() / 1000,
         sensors: () => savedRef.current,
-        notificationText,
         log: (message) => log(`recording: ${message}`),
       }),
     [db],

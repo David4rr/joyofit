@@ -102,6 +102,9 @@ class FakeSession implements SessionApi {
     this.starts.push(o);
   }
   async update() {}
+  onAction() {
+    return () => {};
+  }
   async end() {}
 }
 
@@ -139,7 +142,6 @@ async function session(opts: Session) {
     profile: () => ({ weightKg: 70, age: 35, sex: 'male' }),
     wheelCircumferenceM: () => 2.105,
     sensors: () => [vor],
-    notificationText: () => '',
     log: (m) => logs.push(m),
   });
   live = controller;

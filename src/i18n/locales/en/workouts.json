@@ -494,11 +494,6 @@
   },
   "record": {
     "title": "Record workout",
-    "notification": {
-      "timeDistance": "{{time}} · {{distance}}",
-      "timeHr": "{{time}} · {{hr}} bpm",
-      "timeDistanceHr": "{{time}} · {{distance}} · {{hr}} bpm"
-    },
     "setup": {
       "sensors": "Sensors",
       "noSensors": "No sensors paired yet. You can add a heart rate strap or a bike sensor any time, none is required.",

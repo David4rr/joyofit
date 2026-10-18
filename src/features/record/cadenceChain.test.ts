@@ -62,6 +62,9 @@ class FakeSession implements SessionApi {
     this.starts.push(o);
   }
   async update() {}
+  onAction() {
+    return () => {};
+  }
   async end() {}
 }
 
@@ -92,7 +95,6 @@ async function ride({ frames, sport = 'ride', warm = false, seconds }: RideOptio
     profile: () => ({ weightKg: 70, age: 35, sex: 'male' }),
     wheelCircumferenceM: () => 2.105,
     sensors: () => [vor],
-    notificationText: () => '',
   });
   live = controller;
   if (warm) await controller.warmUp(sport, 'Ride');

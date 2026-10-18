@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 
-import type { LocationEvent, ValueEvent, WorkoutSessionOptions } from '../../../modules/ble-sensors/src/BleSensors.types';
+import type { LocationEvent, ValueEvent, WorkoutAction, WorkoutSessionOptions, WorkoutSessionState } from '../../../modules/ble-sensors/src/BleSensors.types';
 import { bytesToHex } from '../sensors/gatt';
 import { ensureSensorSchema, type SavedSensor } from '../sensors/store';
 import { RecordingController, type HubApi, type SessionApi } from './controller';
@@ -62,15 +62,23 @@ class FakeHub implements HubApi {
 
 class FakeSession implements SessionApi {
   starts: WorkoutSessionOptions[] = [];
-  updates: string[] = [];
+  updates: WorkoutSessionState[] = [];
+  actionListeners = new Set<(a: WorkoutAction) => void>();
   ended = 0;
   failWith: string | null = null;
   async start(o: WorkoutSessionOptions) {
     if (this.failWith) throw Object.assign(new Error('x'), { code: this.failWith });
     this.starts.push(o);
   }
-  async update(text: string) {
-    this.updates.push(text);
+  async update(state: WorkoutSessionState) {
+    this.updates.push(state);
+  }
+  onAction(listener: (a: WorkoutAction) => void) {
+    this.actionListeners.add(listener);
+    return () => this.actionListeners.delete(listener);
+  }
+  press(action: WorkoutAction) {
+    for (const l of this.actionListeners) l(action);
   }
   async end() {
     this.ended += 1;
@@ -93,7 +101,6 @@ async function setup(sensors: SavedSensor[] = [strap, idle]) {
     profile: () => ({ weightKg: 70, age: 35, sex: 'male' }),
     wheelCircumferenceM: () => 2.105,
     sensors: () => sensors,
-    notificationText: (live) => `${live.movingSec}s`,
     log: (m) => logs.push(m),
   });
   /** Advances the fake clock and runs the controller's own tick for every second. */
@@ -435,6 +442,44 @@ describe('a workout from start to saved', () => {
     expect(controller.getSnapshot().phase).toBe('idle');
   });
 
+  it('reports the clock to the notification on start, pause and resume, and the numbers every 15 s while recording', async () => {
+    const { controller, hub, session, run } = await setup();
+    await controller.prepare('run', 'Lari');
+    controller.start();
+    expect(session.updates).toEqual([{ movingSec: 0, distanceM: 0, hr: null, paused: false }]);
+    let meters = 0;
+    run(30, (clock) => {
+      hub.emitValue(strap.id, '2a37', hr(150), clock);
+      hub.emitFix(clock, (meters += 3));
+    });
+    expect(session.updates).toHaveLength(3); // start, 15 s, 30 s
+    expect(session.updates[2]).toMatchObject({ movingSec: 30, hr: 150, paused: false });
+    expect(session.updates[2]!.distanceM).toBeGreaterThan(50);
+    controller.pause();
+    expect(session.updates[3]).toMatchObject({ movingSec: 30, paused: true });
+    run(30); // paused: nothing is reported, the notification shows the frozen time
+    expect(session.updates).toHaveLength(4);
+    controller.resume();
+    expect(session.updates[4]).toMatchObject({ movingSec: 30, paused: false });
+  });
+
+  it('the buttons of the notification pause, resume and lap the recording', async () => {
+    const { controller, session, run } = await setup();
+    await controller.prepare('run', 'Lari');
+    session.press('pause'); // nothing runs yet
+    expect(controller.getSnapshot().status).toBe('idle');
+    controller.start();
+    run(5);
+    session.press('lap');
+    expect(controller.getSnapshot().laps).toHaveLength(1);
+    session.press('pause');
+    expect(controller.getSnapshot().status).toBe('paused');
+    session.press('resume');
+    expect(controller.getSnapshot().status).toBe('recording');
+    await controller.discard();
+    expect(session.actionListeners.size).toBe(0);
+  });
+
   it('a sensor that was asked for and never sent a value is listed on the workout with no values, so the workout can say so', async () => {
     const { controller, run, all } = await setup();
     await controller.prepare('treadmill', 'Treadmill');
@@ -491,7 +536,6 @@ describe('restore after the app was killed', () => {
       profile: () => ({ weightKg: 70, age: 35, sex: 'male' }),
       wheelCircumferenceM: () => 2.105,
       sensors: () => [strap, idle],
-      notificationText: () => '',
     });
     live = back;
     expect(await back.restore()).toBe(true);

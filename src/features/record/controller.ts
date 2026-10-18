@@ -11,7 +11,7 @@
  * with GPS at once, so the first fix is already on its way when the person taps "Mulai"; `prepare` then takes the running session over
  * instead of starting one. `stopWarmUp` (leaving the picker, another sport, the app going to the background) ends it again.
  */
-import type { LocationEvent, ValueEvent, WorkoutSessionOptions } from '../../../modules/ble-sensors/src/BleSensors.types';
+import type { LocationEvent, ValueEvent, WorkoutAction, WorkoutSessionOptions, WorkoutSessionState } from '../../../modules/ble-sensors/src/BleSensors.types';
 import type { ManualSport } from '../workouts/manual';
 import type { SavedSensor } from '../sensors/store';
 import type { WorkoutSensor } from '../sensors/store';
@@ -68,8 +68,11 @@ export interface FinishResult {
 
 export interface SessionApi {
   start(options: WorkoutSessionOptions): Promise<void>;
-  update(text: string): Promise<void>;
+  /** The recorder's numbers for the notification (Android); it counts the time itself between two reports. */
+  update(state: WorkoutSessionState): Promise<void>;
   end(): Promise<void>;
+  /** The notification's Pause/Resume/Lap buttons (Android). Returns the unsubscribe. */
+  onAction(listener: (action: WorkoutAction) => void): () => void;
 }
 
 export interface HubApi {
@@ -93,8 +96,6 @@ export interface RecordingDeps {
   wheelCircumferenceM: () => number;
   /** The paired sensors right now (names for the workout's sensor list, `autoConnect`). */
   sensors: () => readonly SavedSensor[];
-  /** Notification text (Android) for the live numbers. */
-  notificationText: (live: LiveStats) => string;
   log?: (message: string) => void;
 }
 
@@ -116,7 +117,8 @@ interface JournalMeta {
 }
 
 const JOURNAL_EVERY_S = 10;
-const NOTIFICATION_EVERY_S = 5;
+/** The notification counts the time itself, so this only corrects its distance and heart rate. */
+const NOTIFICATION_EVERY_S = 15;
 /** A sensor of the recording seen down is connected again after this long, then after twice that, and so on up to the maximum. */
 const SENSOR_RETRY_FIRST_MS = 3000;
 const SENSOR_RETRY_MAX_MS = 30_000;
@@ -315,18 +317,21 @@ export class RecordingController {
     this.beginTimer();
     this.persist();
     this.publish();
+    this.pushSession();
   }
 
   pause(): void {
     this.recorder?.pause(this.deps.now());
     this.persist();
     this.publish();
+    this.pushSession();
   }
 
   resume(): void {
     this.recorder?.resume(this.deps.now());
     this.persist();
     this.publish();
+    this.pushSession();
   }
 
   lap(): void {
@@ -359,6 +364,7 @@ export class RecordingController {
     const sensorError = await this.connectAll(sensorIds);
     this.beginTimer();
     this.publish({ sensorError });
+    this.pushSession();
     return true;
   }
 
@@ -447,7 +453,7 @@ export class RecordingController {
     this.ticks += 1;
     if (this.ticks % JOURNAL_EVERY_S === 0) this.persist();
     if (this.ticks % NOTIFICATION_EVERY_S === 0 && recorder.status === 'recording') {
-      void this.deps.session.update(this.deps.notificationText(recorder.live(now))).catch(() => {});
+      this.pushSession();
     }
     this.publish();
   }
@@ -455,9 +461,27 @@ export class RecordingController {
   // -------------------------------------------------------------------------------------------------------------------
   // internals
 
+  /** Reports the clock, distance and heart rate to the notification (Android): on every change of state and every `NOTIFICATION_EVERY_S`. */
+  private pushSession(): void {
+    const recorder = this.recorder;
+    if (!recorder || (recorder.status !== 'recording' && recorder.status !== 'paused')) return;
+    const live = recorder.live(this.deps.now());
+    const paused = recorder.status === 'paused';
+    void this.deps.session.update({ movingSec: live.movingSec, distanceM: live.distanceM, hr: live.hr, paused }).catch(() => {});
+  }
+
+  /** A button of the notification: the same as the one on the live screen. */
+  private onNotificationAction(action: WorkoutAction): void {
+    if (this.snap.phase !== 'active') return;
+    if (action === 'pause') this.pause();
+    else if (action === 'resume') this.resume();
+    else this.lap();
+  }
+
   private attach(): void {
     this.detach();
     this.off = [
+      this.deps.session.onAction((action) => this.onNotificationAction(action)),
       this.deps.hub.onValue((e) => this.onSensorValue(e)),
       this.deps.hub.onLocation((e) => {
         this.lastFix = e;

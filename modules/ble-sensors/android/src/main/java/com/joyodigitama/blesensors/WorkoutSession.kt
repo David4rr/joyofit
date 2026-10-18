@@ -2,11 +2,14 @@ package com.joyodigitama.blesensors
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
 import kotlinx.coroutines.CancellationException
@@ -24,7 +27,8 @@ internal object WorkoutSession {
   private const val WAKE_LOCK_TAG = "joyofit:recording"
   private const val START_TIMEOUT_MS = 10_000L
 
-  class Snapshot(val title: String, val text: String, val gps: Boolean, val openUrl: String?)
+  /** How often the service re-posts the notification by itself (the distance); the clock needs no update, it is a chronometer. */
+  private const val REFRESH_MS = 15_000L
 
   private val lock = Any()
 
@@ -35,6 +39,9 @@ internal object WorkoutSession {
   private var text = ""
   private var gps = false
   private var openUrl: String? = null
+  private var controls: RecordingNotificationSpec.Controls? = null
+  private val progress = RecordingProgress()
+  private var appContext: Context? = null
   private var wakeLock: PowerManager.WakeLock? = null
   private var location: WorkoutLocation? = null
 
@@ -44,13 +51,26 @@ internal object WorkoutSession {
   /** The service is in the foreground right now; only then is there a notification to update and a service whose end ends the session. */
   @Volatile private var serviceUp = false
 
-  fun snapshot(): Snapshot = synchronized(lock) { Snapshot(title, text, gps, openUrl) }
+  private val handler by lazy { Handler(Looper.getMainLooper()) }
+
+  private val refresh = Runnable {
+    appContext?.let { notifyNow(it) }
+    scheduleRefresh()
+  }
+
+  fun gps(): Boolean = synchronized(lock) { gps }
+
+  /** The notification for the session as it is right now. */
+  fun notification(context: Context): Notification = synchronized(lock) {
+    val spec = RecordingNotificationSpec.spec(title, text, progress, System.currentTimeMillis(), controls, Build.VERSION.SDK_INT)
+    RecordingNotification.build(context, spec, openUrl)
+  }
 
   /**
    * Starts the session, or updates the options of a running one. Returns when the service is in the foreground and GPS runs. When Android
    * refuses the service, GPS and the wake lock start anyway and the call then throws ERR_SERVICE_NOT_ALLOWED.
    */
-  suspend fun start(context: Context, title: String, text: String, gps: Boolean, openUrl: String?) {
+  suspend fun start(context: Context, title: String, text: String, gps: Boolean, openUrl: String?, controls: RecordingNotificationSpec.Controls?) {
     if (gps && !hasFineLocation(context)) {
       throw SensorException(ErrorCodes.LOCATION_PERMISSION, "Precise location permission is not granted")
     }
@@ -62,6 +82,9 @@ internal object WorkoutSession {
       this.text = text
       this.gps = gps
       this.openUrl = openUrl
+      this.controls = controls
+      this.appContext = context.applicationContext
+      if (!isActive) progress.reset()
       pending = ready
       isActive.also {
         isActive = true
@@ -95,7 +118,7 @@ internal object WorkoutSession {
     try {
       synchronized(lock) {
         if (plan.gps) {
-          (location ?: WorkoutLocation(context, hub).also { location = it }).start()
+          (location ?: WorkoutLocation(context, hub, ::onFix).also { location = it }).start()
         } else {
           location?.stop()
         }
@@ -108,13 +131,35 @@ internal object WorkoutSession {
     if (plan.reportNoService) serviceError?.let { throw it }
   }
 
-  fun update(context: Context, text: String) {
-    val (current, url) = synchronized(lock) {
-      this.text = text
+  /** JS reports the recorder's numbers: the clock, distance and heart rate the notification counts on from here. */
+  fun update(context: Context, state: RecordingProgress.Update) {
+    synchronized(lock) {
+      progress.apply(state, System.currentTimeMillis())
       if (!isActive || !serviceUp) return
-      title to openUrl
     }
-    context.getSystemService(NotificationManager::class.java)?.notify(RecordingNotification.ID, RecordingNotification.build(context, current, text, url))
+    notifyNow(context)
+    scheduleRefresh()
+  }
+
+  /** A button of the notification was pressed; JS owns the recorder and acts on it. */
+  fun control(control: RecordingNotificationSpec.Control) {
+    SensorHub.peek()?.emit("onWorkoutAction", mapOf("action" to control.wire))
+  }
+
+  private fun onFix(lat: Double, lon: Double, tsMs: Long, accuracyM: Double?) {
+    synchronized(lock) { progress.onFix(lat, lon, tsMs, accuracyM) }
+  }
+
+  private fun notifyNow(context: Context) {
+    if (!isActive || !serviceUp) return
+    context.getSystemService(NotificationManager::class.java)?.notify(RecordingNotification.ID, notification(context))
+  }
+
+  /** Re-posts every [REFRESH_MS] while the clock runs, whether or not JS gets to report: the distance comes from the fixes the service sees. */
+  private fun scheduleRefresh() {
+    handler.removeCallbacks(refresh)
+    val again = synchronized(lock) { isActive && serviceUp && progress.running }
+    if (again) handler.postDelayed(refresh, REFRESH_MS)
   }
 
   /** Stops GPS, the service and the wake lock. Idempotent. */
@@ -126,12 +171,14 @@ internal object WorkoutSession {
       location = null
       releaseWakeLock()
     }
+    handler.removeCallbacks(refresh)
     context.stopService(Intent(context, RecordingService::class.java))
   }
 
   fun serviceStarted() {
     serviceUp = true
     pending?.complete(Unit)
+    scheduleRefresh()
   }
 
   fun serviceFailed(error: RuntimeException) {

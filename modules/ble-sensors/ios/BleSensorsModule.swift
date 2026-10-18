@@ -40,7 +40,7 @@ public final class BleSensorsModule: Module {
 
         Name("BleSensors")
 
-        Events("onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState")
+        Events("onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction")
 
         OnCreate {
             let module = self
@@ -88,7 +88,7 @@ public final class BleSensorsModule: Module {
             await location.requestPermission()
         }
 
-        // `options` is WorkoutSessionOptions: title, text, gps and `openUrl` (the Android notification's link). Only `gps` matters here: iOS has no notification.
+        // `options` is WorkoutSessionOptions: title, text, gps and `openUrl` and `controls` (the Android notification's link and buttons). Only `gps` matters here: iOS has no notification.
         AsyncFunction("startWorkoutSession") { (options: [String: Any]) async throws -> Void in
             let gps = options["gps"] as? Bool ?? false
             if gps {
@@ -102,8 +102,8 @@ public final class BleSensorsModule: Module {
             WorkoutSession.active = true
         }
 
-        // The notification text only exists on Android.
-        AsyncFunction("updateWorkoutSession") { (text: String) async -> Void in }
+        // The notification only exists on Android (its numbers, chronometer and buttons).
+        AsyncFunction("updateWorkoutSession") { (state: [String: Any]) async -> Void in }
 
         AsyncFunction("endWorkoutSession") { () async -> Void in
             location.stop()

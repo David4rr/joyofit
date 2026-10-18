@@ -9,6 +9,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
@@ -21,11 +22,15 @@ class RecordingService : Service() {
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-    val session = WorkoutSession.snapshot()
-    val notification = RecordingNotification.build(this, session.title, session.text, session.openUrl)
+    // A notification button: tell JS (it owns the recorder) and leave the service as it is.
+    RecordingNotificationSpec.Control.fromAction(intent?.action)?.let { control ->
+      if (WorkoutSession.isActive) WorkoutSession.control(control) else stopSelf()
+      return START_NOT_STICKY
+    }
+    val notification = WorkoutSession.notification(this)
     val types = ForegroundTypes.compute(
       Build.VERSION.SDK_INT,
-      session.gps,
+      WorkoutSession.gps(),
       checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED,
       Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
         checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED,
@@ -53,29 +58,55 @@ class RecordingService : Service() {
 
 internal object RecordingNotification {
   const val ID = 4707
-  private const val CHANNEL_ID = "workout_recording"
-  private const val CHANNEL_NAME = "Workout recording"
 
-  fun build(context: Context, title: String, text: String, openUrl: String?): Notification {
-    val manager = context.getSystemService(NotificationManager::class.java)
-    manager?.createNotificationChannel(
-      NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW).apply {
-        setShowBadge(false)
-        setSound(null, null)
-      },
-    )
-    val builder = Notification.Builder(context, CHANNEL_ID)
+  /** Copies the [RecordingNotificationSpec] into a notification: tap opens `openUrl`, buttons go back to [RecordingService]. */
+  fun build(context: Context, spec: RecordingNotificationSpec.Spec, openUrl: String?): Notification {
+    ensureChannel(context)
+    val builder = Notification.Builder(context, spec.channelId)
       .setSmallIcon(smallIcon(context))
-      .setContentTitle(title)
-      .setContentText(text)
-      .setOngoing(true)
-      .setOnlyAlertOnce(true)
-      .setCategory(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Notification.CATEGORY_WORKOUT else Notification.CATEGORY_SERVICE)
+      .setContentTitle(spec.title)
+      .setContentText(spec.text)
+      .setOngoing(spec.ongoing)
+      .setOnlyAlertOnce(spec.onlyAlertOnce)
+      .setVisibility(spec.visibility)
+      .setCategory(spec.category)
+    val base = spec.chronometerBase
+    if (base != null) {
+      builder.setWhen(base).setShowWhen(true).setUsesChronometer(true).setChronometerCountDown(false)
+    } else {
+      builder.setShowWhen(false).setUsesChronometer(false)
+    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+    for (action in spec.actions) {
+      val intent = Intent(context, RecordingService::class.java).setAction(action.control.action)
+      val pending = PendingIntent.getService(context, action.control.ordinal + 1, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+      builder.addAction(Notification.Action.Builder(Icon.createWithResource(context, actionIcon(action.control)), action.title, pending).build())
+    }
     contentIntent(context, openUrl)?.let { open ->
       builder.setContentIntent(PendingIntent.getActivity(context, 0, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
     }
     return builder.build()
+  }
+
+  private fun ensureChannel(context: Context) {
+    val manager = context.getSystemService(NotificationManager::class.java) ?: return
+    val spec = RecordingNotificationSpec.channel
+    manager.createNotificationChannel(
+      NotificationChannel(RecordingNotificationSpec.CHANNEL_ID, RecordingNotificationSpec.CHANNEL_NAME, spec.importance).apply {
+        lockscreenVisibility = spec.lockscreenVisibility
+        setShowBadge(spec.badge)
+        if (!spec.sound) setSound(null, null)
+        enableVibration(spec.vibration)
+      },
+    )
+    // The LOW channel of earlier builds: its importance cannot be raised, and a leftover would keep showing in the app's settings.
+    manager.deleteNotificationChannel(RecordingNotificationSpec.LEGACY_CHANNEL_ID)
+  }
+
+  private fun actionIcon(control: RecordingNotificationSpec.Control): Int = when (control) {
+    RecordingNotificationSpec.Control.PAUSE -> android.R.drawable.ic_media_pause
+    RecordingNotificationSpec.Control.RESUME -> android.R.drawable.ic_media_play
+    RecordingNotificationSpec.Control.LAP -> android.R.drawable.ic_menu_add
   }
 
   /**

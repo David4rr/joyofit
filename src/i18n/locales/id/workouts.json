@@ -489,11 +489,6 @@
   },
   "record": {
     "title": "Rekam latihan",
-    "notification": {
-      "timeDistance": "{{time}} · {{distance}}",
-      "timeHr": "{{time}} · {{hr}} bpm",
-      "timeDistanceHr": "{{time}} · {{distance}} · {{hr}} bpm"
-    },
     "setup": {
       "sensors": "Sensor",
       "noSensors": "Belum ada sensor yang dipasangkan. Strap detak jantung atau sensor sepeda bisa kamu tambah kapan saja, tidak wajib.",

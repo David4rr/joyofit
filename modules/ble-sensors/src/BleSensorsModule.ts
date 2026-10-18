@@ -5,6 +5,7 @@ import type {
   ConnectionEvent,
   LocationPermission,
   WorkoutSessionOptions,
+  WorkoutSessionState,
 } from './BleSensors.types';
 
 declare class BleSensorsModule extends NativeModule<BleSensorsModuleEvents> {
@@ -58,8 +59,8 @@ declare class BleSensorsModule extends NativeModule<BleSensorsModuleEvents> {
    * continues and warns that the recording may stop with the screen locked).
    */
   startWorkoutSession(options: WorkoutSessionOptions): Promise<void>;
-  /** Android: replaces the notification text. iOS: no-op. */
-  updateWorkoutSession(text: string): Promise<void>;
+  /** Android: reports the recorder's numbers to the notification (it counts the time itself between reports). iOS: no-op. */
+  updateWorkoutSession(state: WorkoutSessionState): Promise<void>;
   /** Stops GPS, the foreground service and the wake lock. Sensor links stay up (disconnect them yourself). */
   endWorkoutSession(): Promise<void>;
   isWorkoutSessionActive(): boolean;

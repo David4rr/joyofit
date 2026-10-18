@@ -17,7 +17,12 @@ import android.os.Looper
  * delivered: a stale fix must not enter a workout.
  */
 @SuppressLint("MissingPermission")
-internal class WorkoutLocation(private val context: Context, private val hub: SensorHub) {
+internal class WorkoutLocation(
+  private val context: Context,
+  private val hub: SensorHub,
+  /** Every fix also goes here, in the service's process, so the notification can count the distance without JS. */
+  private val onFix: (lat: Double, lon: Double, tsMs: Long, accuracyM: Double?) -> Unit,
+) {
   private var listener: LocationListener? = null
 
   /** Throws [SensorException] with ERR_LOCATION_PERMISSION when the fine location permission is gone or the device has no GPS. */
@@ -33,6 +38,7 @@ internal class WorkoutLocation(private val context: Context, private val hub: Se
     val l = object : LocationListener {
       override fun onLocationChanged(location: Location) {
         hub.emit("onLocation", payload(location))
+        onFix(location.latitude, location.longitude, location.time, if (location.hasAccuracy()) location.accuracy.toDouble() else null)
       }
 
       override fun onProviderEnabled(provider: String) {}
