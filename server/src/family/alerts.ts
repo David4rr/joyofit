@@ -1,4 +1,5 @@
 import type { AppEnv } from "../env";
+import { matchLocale, type Locale } from "../i18n";
 import { fetchRogoUsers } from "./joyorogo";
 import { sendExpoPush, sendFamilyEmail } from "./notify";
 import { chipOf, dataAt, evaluate, localParts, nextCheckAt, shiftDate, type EvalInput, type Finding, type Verdict } from "./rules";
@@ -60,6 +61,8 @@ export interface LinkContext {
   link: LinkRow;
   rules: Rules;
   pro: boolean;
+  /** The watcher's language, from their JoyoRogo profile. */
+  locale: Locale;
 }
 
 /** Free keeps only the "no sync" push: every other rule, email and the digest need Pro. */
@@ -89,8 +92,8 @@ export async function pushTokens(db: D1Database, userId: string): Promise<string
   return results.map((r) => r.token);
 }
 
-/** Sends one alert on the channels the watcher chose. Email is Pro only; it is the fallback when push reached nobody. */
-export async function deliver(env: AppEnv, watcherId: string, rules: Rules, pro: boolean, title: string, lines: string[], data: Record<string, string>): Promise<Delivered> {
+/** Sends one alert on the channels the watcher chose. Email is Pro only; it is the fallback when push reached nobody. `title` and `lines` are already in `locale`, which the email's own text follows. */
+export async function deliver(env: AppEnv, watcherId: string, rules: Rules, pro: boolean, locale: Locale, title: string, lines: string[], data: Record<string, string>): Promise<Delivered> {
   const channels: string[] = [];
   if (rules.push) {
     const tokens = await pushTokens(env.DB, watcherId);
@@ -101,14 +104,14 @@ export async function deliver(env: AppEnv, watcherId: string, rules: Rules, pro:
   if (pro && (rules.email || (rules.push && channels.length === 0))) {
     const users = await fetchRogoUsers(env, [watcherId]);
     const email = users.get(watcherId)?.email;
-    if (email && (await sendFamilyEmail(env, email, title, lines))) channels.push("email");
+    if (email && (await sendFamilyEmail(env, email, locale, title, lines))) channels.push("email");
   }
   return { channels };
 }
 
 /** Takes the claim for this finding and delivers it. False when it was snoozed or already claimed. */
 async function fire(env: AppEnv, ctx: LinkContext, finding: Finding, now: number): Promise<boolean> {
-  const { link, rules, pro } = ctx;
+  const { link, rules, pro, locale } = ctx;
   const db = env.DB;
   if (link.snoozeUntil !== null && link.snoozeUntil > now) return false;
   let level = finding.level;
@@ -123,7 +126,7 @@ async function fire(env: AppEnv, ctx: LinkContext, finding: Finding, now: number
     .run();
   if (claimed.meta.changes !== 1) return false;
   if (status !== "sent") return true;
-  const delivered = await deliver(env, link.watcherId, rules, pro, finding.title, [finding.body], { type: "family_alert", linkId: link.id, rule: finding.rule });
+  const delivered = await deliver(env, link.watcherId, rules, pro, locale, finding.title, [finding.body], { type: "family_alert", linkId: link.id, rule: finding.rule });
   await db
     .prepare("UPDATE family_alert_log SET channels = ?2, status = ?3 WHERE id = ?1")
     .bind(id, delivered.channels.join(","), delivered.channels.length > 0 ? "sent" : "failed")
@@ -161,6 +164,8 @@ export interface EvaluateOptions {
   absenceOnly?: boolean;
   /** Whether this watcher is Pro; looked up when omitted. */
   pro?: boolean;
+  /** The watcher's language; looked up when omitted. */
+  locale?: Locale;
   /** Whether the watcher's link is within their plan (not frozen). */
   frozen?: boolean;
 }
@@ -168,17 +173,19 @@ export interface EvaluateOptions {
 /** Evaluates one link now, sends what is due and schedules the next absence check. */
 export async function evaluateLink(env: AppEnv, link: LinkRow, now: number, options: EvaluateOptions = {}): Promise<void> {
   if (effectiveStatus(link, now) !== "active") return;
-  const pro = options.pro ?? (await fetchRogoUsers(env, [link.watcherId], now)).get(link.watcherId)?.pro ?? false;
+  const watcher = options.pro === undefined || options.locale === undefined ? (await fetchRogoUsers(env, [link.watcherId], now)).get(link.watcherId) : undefined;
+  const pro = options.pro ?? watcher?.pro ?? false;
+  const locale = options.locale ?? matchLocale(watcher?.locale);
   const stored = await loadRules(env.DB, link.id);
   const rules = effectiveRules(stored, pro);
   const state = await loadState(env.DB, link.monitoredId);
   const local = localParts(now, state?.tzOffsetMin ?? 420);
   const days = await loadDays(env.DB, link.monitoredId, shiftDate(local.date, -21));
-  const input: EvalInput = { now, label: link.label, scopes: link.scopes, rules, state, days };
+  const input: EvalInput = { now, label: link.label, locale, scopes: link.scopes, rules, state, days };
   if (!options.frozen) {
     let verdicts = evaluate(input);
     if (options.absenceOnly) verdicts = verdicts.filter((v) => v.slot === "noSync" || v.slot === "noSteps");
-    await apply(env, { link, rules, pro }, verdicts, now);
+    await apply(env, { link, rules, pro, locale }, verdicts, now);
   }
   await env.DB.prepare("UPDATE family_link SET next_check_at = ?2 WHERE id = ?1").bind(link.id, nextCheckAt(input)).run();
 }

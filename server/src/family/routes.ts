@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { sha256Hex } from "../auth";
 import type { AppContext, AppEnv } from "../env";
+import { matchLocale, serverT } from "../i18n";
 import { chipFor, effectiveRules, pushTokens } from "./alerts";
 import { evaluateOnIngest } from "./cron";
 import { fetchRogoUsers, type RogoUser } from "./joyorogo";
@@ -105,8 +106,10 @@ async function liveInvite(env: AppEnv, code: string, now: number): Promise<Invit
 
 family.get("/invites/:code", async (c) => {
   const invite = await liveInvite(c.env, c.req.param("code"), Date.now());
-  const inviter = (await fetchRogoUsers(c.env, [invite.inviter_id])).get(invite.inviter_id);
-  return c.json({ inviterName: inviter?.name ?? "Seseorang", inviterRole: invite.role, label: invite.label, expiresAt: invite.expires_at });
+  const users = await fetchRogoUsers(c.env, [invite.inviter_id, c.get("user").id]);
+  const inviter = users.get(invite.inviter_id);
+  const t = serverT(matchLocale(c.req.header("x-locale") ?? users.get(c.get("user").id)?.locale));
+  return c.json({ inviterName: inviter?.name ?? t("errors:family.inviterFallback"), inviterRole: invite.role, label: invite.label, expiresAt: invite.expires_at });
 });
 
 family.post("/invites/accept", async (c) => {
@@ -308,10 +311,13 @@ family.post("/links/:id/poke", async (c) => {
     c.header("retry-after", String(Math.max(1, Math.ceil(((link.lastPokedAt ?? now) + POKE_THROTTLE_MS - now) / 1000))));
     throw fail(429, "poke_throttled");
   }
-  const name = (await fetchRogoUsers(c.env, [me.id])).get(me.id)?.name ?? me.name ?? "Seseorang";
+  const users = await fetchRogoUsers(c.env, [me.id, link.monitoredId]);
+  // The text goes to the monitored person's phone: their language, not the watcher's.
+  const t = serverT(matchLocale(users.get(link.monitoredId)?.locale));
+  const name = users.get(me.id)?.name ?? me.name ?? t("push:family.poke.someone");
   const result = await sendExpoPush(c.env, await pushTokens(c.env.DB, link.monitoredId), {
-    title: `${name} menanyakan kabarmu`,
-    body: "Kalau sempat, kabari ya.",
+    title: t("push:family.poke.title", { name }),
+    body: t("push:family.poke.body"),
     data: { type: "family_poke", linkId: link.id },
   });
   return c.json({ sent: result.delivered > 0 });

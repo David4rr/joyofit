@@ -230,11 +230,20 @@ describe("poke", () => {
     expect(expo.sent[0]).toMatchObject({ to: "ExponentPushToken[mom]", title: "pk menanyakan kabarmu", data: { type: "family_poke", linkId: id } });
     expect((await call(`/v1/family/links/${id}/poke`, { method: "POST", cookie: watcher.cookie })).status).toBe(429);
   });
+
+  it("writes the poke in the monitored person's language, not the watcher's", async () => {
+    const watcher = signUp("pke");
+    const mom = signUp("pkem", { locale: "en" });
+    const id = await link(watcher, mom);
+    await registerPush(mom, "ExponentPushToken[momen]");
+    expect(await (await call(`/v1/family/links/${id}/poke`, { method: "POST", cookie: watcher.cookie })).json()).toEqual({ sent: true });
+    expect(expo.sent[0]).toMatchObject({ title: "pke is checking in on you", body: "Let them know you're okay when you get a chance." });
+  });
 });
 
 describe("alerts end to end", () => {
-  async function setup(opts: { watcherPro: boolean; scopes?: Record<string, boolean>; tz?: number }) {
-    const watcher = signUp(`aw${Math.random().toString(36).slice(2, 6)}`, { founder: opts.watcherPro });
+  async function setup(opts: { watcherPro: boolean; scopes?: Record<string, boolean>; tz?: number; locale?: string }) {
+    const watcher = signUp(`aw${Math.random().toString(36).slice(2, 6)}`, { founder: opts.watcherPro, ...(opts.locale ? { locale: opts.locale } : {}) });
     const mom = signUp(`am${Math.random().toString(36).slice(2, 6)}`, { founder: false });
     const id = await link(watcher, mom, opts.scopes ?? ALL);
     await registerPush(watcher, `ExponentPushToken[${watcher.user.id}]`);
@@ -356,6 +365,63 @@ describe("alerts end to end", () => {
     expect(outbox[0]!.text).toContain("bukan alat darurat");
     // The dead token is gone.
     expect(await countRows("SELECT COUNT(*) AS n FROM family_push_token WHERE user_id = ?1", watcher.user.id)).toBe(0);
+  });
+
+  it("writes push and email in the watcher's language: English, and Indonesian for an unknown one", async () => {
+    const english = await setup({ watcherPro: true, scopes: NONE_BUT_SYNC, locale: "en" });
+    await ingest(english.token, { tzOffsetMin: english.tz, watchSyncAt: Date.now() - 15 * HOUR, battery: 50, days: [] });
+    expect(expo.sent).toHaveLength(1);
+    expect(expo.sent[0]).toMatchObject({ title: "No word from Ibu yet", body: expect.stringContaining("hasn't synced for 15 hours") });
+    // Push reaches nobody: the email follows the same language, down to the disclaimer and the document language.
+    expo.sent = [];
+    expo.failWith = "DeviceNotRegistered";
+    await env.DB.prepare("DELETE FROM family_alert_log").run();
+    await env.DB.prepare("DELETE FROM family_alert_state").run();
+    await registerPush(english.watcher, "ExponentPushToken[again]");
+    await ingest(english.token, { tzOffsetMin: english.tz, watchSyncAt: Date.now() - 15 * HOUR, battery: 50, days: [] });
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]).toMatchObject({ subject: "No word from Ibu yet" });
+    expect(outbox[0]!.text).toContain("not an emergency tool");
+    expect(outbox[0]!.html).toContain('<html lang="en">');
+    expect(outbox[0]!.html).toContain("not an emergency tool");
+
+    expo.failWith = null;
+    expo.sent = [];
+    outbox.length = 0;
+    const unknown = await setup({ watcherPro: true, scopes: NONE_BUT_SYNC, locale: "fr" });
+    await ingest(unknown.token, { tzOffsetMin: unknown.tz, watchSyncAt: Date.now() - 15 * HOUR, battery: 50, days: [] });
+    expect(expo.sent.at(-1)).toMatchObject({ title: "Belum ada kabar dari Ibu", body: expect.stringContaining("sejak 15 jam lalu") });
+  });
+
+  it("writes the Indonesian email for an Indonesian watcher", async () => {
+    const { watcher, token, tz } = await setup({ watcherPro: true, scopes: NONE_BUT_SYNC });
+    expo.failWith = "DeviceNotRegistered";
+    await ingest(token, { tzOffsetMin: tz, watchSyncAt: Date.now() - 15 * HOUR, battery: 50, days: [] });
+    expect(outbox[0]).toMatchObject({ to: watcher.user.email, subject: "Belum ada kabar dari Ibu" });
+    expect(outbox[0]!.html).toContain('<html lang="id">');
+  });
+
+  it("sends the digest in the watcher's language", async () => {
+    const { watcher, id } = await setup({ watcherPro: true, locale: "en" });
+    await env.DB.prepare("INSERT INTO family_alert_log (id, link_id, watcher_id, rule, dedupe_key, at, level, status, title, body) VALUES ('d1', ?1, ?2, 'sleep', 'sleep:x', ?3, 'digest', 'digest', 't', 'Ibu slept about 3.3 hours last night.')").bind(id, watcher.user.id, Date.now() - HOUR).run();
+    await runScheduled(cronEnv, "0 12 * * *", Date.now());
+    expect(expo.sent).toHaveLength(1);
+    expect(expo.sent[0]).toMatchObject({ title: "Family check-in summary", body: "Ibu slept about 3.3 hours last night." });
+  });
+
+  it("flushes a queued alert in the language it was written in, with the email in the watcher's current one", async () => {
+    const { watcher, id, token } = await setup({ watcherPro: true, scopes: NONE_BUT_SYNC, tz: 420, locale: "en" });
+    const night = Date.parse("2026-10-14T15:00:00Z");
+    await ingest(token, { tzOffsetMin: (20 - 15) * 60, watchSyncAt: night - 14 * HOUR, battery: 50, days: [] });
+    await env.DB.prepare("UPDATE family_link SET next_check_at = 0").run();
+    await runScheduled(cronEnv, "*/15 * * * *", night);
+    const queued = await env.DB.prepare("SELECT title, send_after FROM family_alert_log WHERE link_id = ?1").bind(id).first<{ title: string; send_after: number }>();
+    expect(queued?.title).toBe("No word from Ibu yet");
+    expo.failWith = "DeviceNotRegistered";
+    await runScheduled(cronEnv, "*/15 * * * *", queued!.send_after + 1);
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]).toMatchObject({ to: watcher.user.email, subject: "No word from Ibu yet" });
+    expect(outbox[0]!.text).toContain("not an emergency tool");
   });
 
   it("Free watchers get no email", async () => {

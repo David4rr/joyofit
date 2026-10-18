@@ -1,4 +1,5 @@
 import type { AppEnv } from "../env";
+import { matchLocale, serverT } from "../i18n";
 import { deliver, effectiveRules, evaluateLink } from "./alerts";
 import { fetchRogoUsers } from "./joyorogo";
 import { frozenLinkIds } from "./plan";
@@ -26,7 +27,7 @@ export async function runAbsenceChecks(env: AppEnv, now: number): Promise<number
   }
   for (const link of links) {
     try {
-      await evaluateLink(env, link, now, { absenceOnly: true, pro: users.get(link.watcherId)?.pro ?? false, frozen: frozen.has(link.id) });
+      await evaluateLink(env, link, now, { absenceOnly: true, pro: users.get(link.watcherId)?.pro ?? false, locale: matchLocale(users.get(link.watcherId)?.locale), frozen: frozen.has(link.id) });
     } catch (error) {
       console.error(JSON.stringify({ event: "family_eval_failed", link: link.id, message: error instanceof Error ? error.message : String(error) }));
     }
@@ -55,7 +56,7 @@ export async function flushQueued(env: AppEnv, now: number): Promise<number> {
     const claimed = await env.DB.prepare("UPDATE family_alert_log SET status = 'sending' WHERE id = ?1 AND status = 'queued'").bind(row.id).run();
     if (claimed.meta.changes !== 1) continue;
     const rules = effectiveRules(await loadRules(env.DB, row.link_id), pro);
-    const delivered = await deliver(env, row.watcher_id, rules, pro, row.title, [row.body], { type: "family_alert", linkId: row.link_id, rule: row.rule });
+    const delivered = await deliver(env, row.watcher_id, rules, pro, matchLocale(users.get(row.watcher_id)?.locale), row.title, [row.body], { type: "family_alert", linkId: row.link_id, rule: row.rule });
     await env.DB.prepare("UPDATE family_alert_log SET status = ?2, channels = ?3 WHERE id = ?1")
       .bind(row.id, delivered.channels.length > 0 ? "sent" : "failed", delivered.channels.join(","))
       .run();
@@ -79,7 +80,8 @@ export async function sendDigests(env: AppEnv, now: number): Promise<number> {
     if (!pro) continue;
     const rules = effectiveRules(await loadRules(env.DB, rows[0]!.link_id), pro);
     const lines = rows.map((r) => r.body);
-    const delivered = await deliver(env, watcherId, rules, pro, "Ringkasan kabar keluarga", lines, { type: "family_digest", linkId: rows[0]!.link_id, rule: "digest" });
+    const locale = matchLocale(users.get(watcherId)?.locale);
+    const delivered = await deliver(env, watcherId, rules, pro, locale, serverT(locale)("push:family.digest.title"), lines, { type: "family_digest", linkId: rows[0]!.link_id, rule: "digest" });
     if (delivered.channels.length > 0) sent += 1;
   }
   return sent;
@@ -124,7 +126,7 @@ export async function evaluateOnIngest(env: AppEnv, monitoredId: string, now: nu
     try {
       const pro = users.get(link.watcherId)?.pro ?? false;
       const frozen = frozenLinkIds(await linksOf(env.DB, "watcher_id", link.watcherId), pro).has(link.id);
-      await evaluateLink(env, link, now, { pro, frozen });
+      await evaluateLink(env, link, now, { pro, locale: matchLocale(users.get(link.watcherId)?.locale), frozen });
     } catch (error) {
       console.error(JSON.stringify({ event: "family_eval_failed", link: link.id, message: error instanceof Error ? error.message : String(error) }));
     }

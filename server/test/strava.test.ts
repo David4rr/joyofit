@@ -87,6 +87,14 @@ describe("Strava connect", () => {
     expect(exchange?.headers.get("authorization")).toBe(BASIC);
   });
 
+  it("words the fallback page in the browser's language (Indonesian when it names none we ship)", async () => {
+    const page = async (acceptLanguage?: string) => (await call("/strava/callback?code=abc", { headers: acceptLanguage ? { "accept-language": acceptLanguage } : {} })).text();
+    expect(await page("en-US,en;q=0.9")).toContain("Return to JoyoFit to finish.");
+    expect(await page("id-ID,id;q=0.9,en;q=0.5")).toContain("Kembali ke JoyoFit untuk menyelesaikan.");
+    expect(await page("fr")).toContain("Kembali ke JoyoFit untuk menyelesaikan.");
+    expect(await page()).toContain("Buka JoyoFit");
+  });
+
   it("refuses a callback with a forged, missing or expired state and asks JoyoRogo for nothing", async () => {
     grantApi.handler = notConnected();
     const forged = await call("/strava/callback?code=abc&scope=activity:write&state=forged.sig");

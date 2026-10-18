@@ -16,7 +16,7 @@ const history = (n: number, hr: number): DayRow[] => Array.from({ length: n }, (
 
 function run(over: Omit<Partial<EvalInput>, "rules"> & { rules?: Partial<Rules> } = {}) {
   const { rules, ...rest } = over;
-  return evaluate({ now: NOW, label: "Ibu", scopes: ALL, rules: { ...DEFAULT_RULES, ...rules }, state: state(), days: [], ...rest });
+  return evaluate({ now: NOW, label: "Ibu", locale: "id", scopes: ALL, rules: { ...DEFAULT_RULES, ...rules }, state: state(), days: [], ...rest });
 }
 const slot = (v: ReturnType<typeof run>, name: string) => v.find((x) => x.slot === name);
 
@@ -142,9 +142,61 @@ describe("rule 5: low SpO2", () => {
 
 describe("nextCheckAt", () => {
   it("waits for the first threshold but never under 15 minutes", () => {
-    const next = nextCheckAt({ now: NOW, label: "Ibu", scopes: ALL, rules: { ...DEFAULT_RULES, noSteps: { on: false, hour: 11 } }, state: state({ watchSyncAt: NOW - 2 * HOUR_MS }), days: [] });
+    const next = nextCheckAt({ now: NOW, label: "Ibu", locale: "id", scopes: ALL, rules: { ...DEFAULT_RULES, noSteps: { on: false, hour: 11 } }, state: state({ watchSyncAt: NOW - 2 * HOUR_MS }), days: [] });
     expect(next).toBe(NOW + 10 * HOUR_MS);
-    const soon = nextCheckAt({ now: NOW, label: "Ibu", scopes: ALL, rules: { ...DEFAULT_RULES, noSteps: { on: false, hour: 11 } }, state: state({ watchSyncAt: NOW - 12 * HOUR_MS + 60_000 }), days: [] });
+    const soon = nextCheckAt({ now: NOW, label: "Ibu", locale: "id", scopes: ALL, rules: { ...DEFAULT_RULES, noSteps: { on: false, hour: 11 } }, state: state({ watchSyncAt: NOW - 12 * HOUR_MS + 60_000 }), days: [] });
     expect(soon).toBe(NOW + 15 * 60_000);
+  });
+});
+
+describe("locale of the text", () => {
+  const silent = state({ watchSyncAt: NOW - 13 * HOUR_MS, phoneSeenAt: NOW - 13 * HOUR_MS });
+
+  it("writes the no-sync alert in Indonesian and English, with the hours as a plural", () => {
+    const id = slot(run({ state: silent }), "noSync")?.finding;
+    expect(id).toMatchObject({ title: "Belum ada kabar dari Ibu", body: expect.stringContaining("sejak 13 jam lalu") });
+    const en = slot(run({ locale: "en", state: silent }), "noSync")?.finding;
+    expect(en).toMatchObject({ title: "No word from Ibu yet", body: "Ibu's phone hasn't checked in for 13 hours. It may be off, offline, or JoyoFit hasn't been opened." });
+    const one = slot(run({ locale: "en", state: state({ watchSyncAt: NOW - HOUR_MS, phoneSeenAt: NOW - HOUR_MS }), rules: { noSync: { on: true, hours: 1 } } }), "noSync")?.finding;
+    expect(one?.body).toContain("for 1 hour.");
+  });
+
+  it("adds the battery sentence inside the same translated text", () => {
+    const watch = state({ watchSyncAt: NOW - 13 * HOUR_MS, phoneSeenAt: NOW - 600_000, battery: 8 });
+    expect(slot(run({ state: watch }), "noSync")?.finding?.body).toBe("Jam Ibu belum tersinkron sejak 13 jam lalu. Ponselnya masih terhubung, jadi jamnya mungkin jauh dari ponsel atau tidak terpasang. Baterai jam terakhir terbaca 8%.");
+    expect(slot(run({ locale: "en", state: watch }), "noSync")?.finding?.body).toBe("Ibu's watch hasn't synced for 13 hours. The phone is still connected, so the watch may be away from the phone or not being worn. The watch battery was last read at 8%.");
+  });
+
+  it("writes the steps alert with the clock the locale uses", () => {
+    const days = [day(TODAY, { steps: 20 })];
+    expect(slot(run({ days }), "noSteps")?.finding?.body).toBe("Sampai jam 12.00 baru 20 langkah tercatat dari Ibu. Mungkin jamnya belum dipakai. Coba tanya kabarnya.");
+    expect(slot(run({ locale: "en", days }), "noSteps")?.finding?.body).toBe("As of 12:00 PM, only 20 steps have been recorded from Ibu. The watch may not be on yet. Try checking in.");
+  });
+
+  it("writes the heart-rate alerts with and without a baseline", () => {
+    const base = history(10, 60);
+    const high = (locale: "id" | "en", days: DayRow[]) => slot(run({ locale, days }), "restingHr")?.finding;
+    expect(high("id", [day(TODAY, { restingHr: 101 })])?.body).toBe("Detak jantung istirahat Ibu 101 bpm. Ini bukan diagnosis. Coba tanya kabarnya.");
+    expect(high("en", [day(TODAY, { restingHr: 101 })])).toMatchObject({ title: "Ibu's resting heart rate is higher than usual", body: "Ibu's resting heart rate is 101 bpm. This is not a diagnosis. Try checking in." });
+    expect(high("en", [...base, day(TODAY, { restingHr: 101 })])?.body).toBe("Ibu's resting heart rate is 101 bpm, usually around 60 bpm. This is not a diagnosis. Try checking in.");
+    expect(high("id", [...base, day(TODAY, { restingHr: 44 })])).toMatchObject({ rule: "rhrLow", title: "Detak jantung istirahat Ibu lebih rendah dari biasanya" });
+    expect(high("en", [...base, day(TODAY, { restingHr: 44 })])?.title).toBe("Ibu's resting heart rate is lower than usual");
+  });
+
+  it("writes sleep hours with the locale's decimal mark and plural", () => {
+    const sleep = (locale: "id" | "en", min: number) => slot(run({ locale, days: [day(TODAY, { sleepMin: min })] }), "sleep")?.finding?.body;
+    expect(sleep("id", 200)).toBe("Semalam Ibu tidur sekitar 3,3 jam.");
+    expect(sleep("en", 200)).toBe("Ibu slept about 3.3 hours last night.");
+    expect(sleep("en", 60)).toBe("Ibu slept about 1 hour last night.");
+    const three = [day(TODAY, { sleepMin: 320 }), day(shiftDate(TODAY, -1), { sleepMin: 300 }), day(shiftDate(TODAY, -2), { sleepMin: 310 })];
+    expect(slot(run({ days: three }), "sleep")?.finding?.body).toBe("Ibu tidur kurang dari 5,5 jam tiga malam berturut-turut.");
+    expect(slot(run({ locale: "en", days: three }), "sleep")?.finding?.body).toBe("Ibu slept under 5.5 hours three nights in a row.");
+  });
+
+  it("writes the oxygen alert", () => {
+    const days = [day(TODAY, { spo2Min: 88, spo2LowCount: 2 })];
+    const spo2 = (locale: "id" | "en") => slot(run({ locale, rules: { spo2: { on: true } }, days }), "spo2")?.finding;
+    expect(spo2("id")?.title).toBe("Jam Ibu mencatat oksigen rendah");
+    expect(spo2("en")).toMatchObject({ title: "Ibu's watch recorded low oxygen", body: "According to the watch, Ibu's oxygen level dipped to 88%. Watch readings can be off and this is not a diagnosis. Try checking in." });
   });
 });

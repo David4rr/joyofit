@@ -1,3 +1,5 @@
+import { fmtDecimal, fmtHour } from "../i18n/format";
+import { serverT, type Locale } from "../i18n";
 import { DAY_MS, HOUR_MS, type AlertLevel, type Chip, type DayRow, type RuleId, type Rules, type Scopes, type StateRow } from "./types";
 
 /** Local calendar pieces of an instant in the monitored person's time zone (offset in minutes east of UTC). */
@@ -58,15 +60,16 @@ export interface Verdict {
 
 export interface EvalInput {
   now: number;
+  /** What the watcher called this person: spliced into the text as is. */
   label: string;
+  /** The watcher's language: titles and bodies are written in it. */
+  locale: Locale;
   scopes: Scopes;
   rules: Rules;
   state: StateRow | null;
   /** At least the last 14 days, any order. */
   days: DayRow[];
 }
-
-const tag = (label: string) => label;
 
 /** Which of the two silent states it is, from the last time the phone talked to the server and the watch battery. */
 function silenceCause(state: StateRow | null, now: number, hours: number): "phone" | "watch" {
@@ -77,6 +80,7 @@ function silenceCause(state: StateRow | null, now: number, hours: number): "phon
 /** Rule 2. Fires from `rules.noSync.hours` of silence between 07:00 and 21:00 local, again at 24 h and 72 h, then stops. */
 function noSync(input: EvalInput, last: number | null, local: { hour: number }): Verdict {
   const { now, label, rules, state } = input;
+  const t = serverT(input.locale);
   const hours = rules.noSync.hours;
   if (last === null) return { slot: "noSync", active: null };
   const silent = (now - last) / HOUR_MS;
@@ -85,10 +89,7 @@ function noSync(input: EvalInput, last: number | null, local: { hour: number }):
   const tier = silent >= 72 ? 2 : silent >= 24 ? 1 : 0;
   const cause = silenceCause(state, now, hours);
   const low = state?.battery !== null && state?.battery !== undefined && state.battery <= 15;
-  const what =
-    cause === "phone"
-      ? `Ponsel ${tag(label)} belum mengirim kabar sejak ${Math.floor(silent)} jam lalu. Mungkin ponselnya mati, tanpa internet, atau JoyoFit belum dibuka.`
-      : `Jam ${tag(label)} belum tersinkron sejak ${Math.floor(silent)} jam lalu. Ponselnya masih terhubung, jadi jamnya mungkin jauh dari ponsel atau tidak terpasang.`;
+  const what = `family.alert.noSync.${cause === "phone" ? "phoneSilent" : "watchSilent"}${low ? "LowBattery" : ""}` as const;
   return {
     slot: "noSync",
     active: true,
@@ -96,14 +97,15 @@ function noSync(input: EvalInput, last: number | null, local: { hour: number }):
       rule: "noSync",
       key: `noSync:${last}:${tier}`,
       level: "push",
-      title: `Belum ada kabar dari ${tag(label)}`,
-      body: low ? `${what} Baterai jam terakhir terbaca ${state!.battery}%.` : what,
+      title: t("push:family.alert.noSync.title", { label }),
+      body: t(`push:${what}`, { label, count: Math.floor(silent), battery: state?.battery ?? 0 }),
     },
   };
 }
 
 function noSteps(input: EvalInput, fresh: boolean, local: { date: string; hour: number }, today: DayRow | undefined): Verdict {
   const { label, rules, scopes } = input;
+  const t = serverT(input.locale);
   if (!scopes.steps || !fresh || !today || today.steps === null) return { slot: "noSteps", active: null };
   if (local.hour < rules.noSteps.hour) return { slot: "noSteps", active: null };
   if (today.steps >= 200) return { slot: "noSteps", active: false };
@@ -114,14 +116,15 @@ function noSteps(input: EvalInput, fresh: boolean, local: { date: string; hour: 
       rule: "noSteps",
       key: `noSteps:${local.date}`,
       level: "push",
-      title: `Belum ada langkah dari ${tag(label)}`,
-      body: `Sampai jam ${String(local.hour).padStart(2, "0")}.00 baru ${today.steps} langkah tercatat dari ${tag(label)}. Mungkin jamnya belum dipakai. Coba tanya kabarnya.`,
+      title: t("push:family.alert.noSteps.title", { label }),
+      body: t("push:family.alert.noSteps.body", { label, count: today.steps, time: fmtHour(local.hour, input.locale) }),
     },
   };
 }
 
 function restingHr(input: EvalInput, local: { date: string }, byDate: Map<string, DayRow>): Verdict[] {
   const { label, scopes, rules, days } = input;
+  const t = serverT(input.locale);
   if (!scopes.restingHr) return [{ slot: "restingHr", active: null }];
   const today = byDate.get(local.date);
   const yesterday = byDate.get(shiftDate(local.date, -1));
@@ -141,8 +144,8 @@ function restingHr(input: EvalInput, local: { date: string }, byDate: Map<string
           rule: "rhrHigh",
           key: `rhrHigh:${local.date}`,
           level: "push",
-          title: `Detak jantung istirahat ${tag(label)} lebih tinggi dari biasanya`,
-          body: `Detak jantung istirahat ${tag(label)} ${value} bpm${base === null ? "" : `, biasanya sekitar ${Math.round(base)} bpm`}. Ini bukan diagnosis. Coba tanya kabarnya.`,
+          title: t("push:family.alert.heartRateHigh.title", { label }),
+          body: base === null ? t("push:family.alert.heartRateHigh.body", { label, value }) : t("push:family.alert.heartRateHigh.bodyWithBaseline", { label, value, baseline: Math.round(base) }),
         },
       },
     ];
@@ -156,8 +159,8 @@ function restingHr(input: EvalInput, local: { date: string }, byDate: Map<string
           rule: "rhrLow",
           key: `rhrLow:${local.date}`,
           level: "push",
-          title: `Detak jantung istirahat ${tag(label)} lebih rendah dari biasanya`,
-          body: `Detak jantung istirahat ${tag(label)} ${value} bpm, biasanya sekitar ${Math.round(base!)} bpm. Ini bukan diagnosis. Coba tanya kabarnya.`,
+          title: t("push:family.alert.heartRateLow.title", { label }),
+          body: t("push:family.alert.heartRateLow.body", { label, value, baseline: Math.round(base!) }),
         },
       },
     ];
@@ -167,6 +170,7 @@ function restingHr(input: EvalInput, local: { date: string }, byDate: Map<string
 
 function sleep(input: EvalInput, local: { date: string }, byDate: Map<string, DayRow>): Verdict {
   const { label, scopes, rules } = input;
+  const t = serverT(input.locale);
   if (!scopes.sleep || !rules.sleep.on) return { slot: "sleep", active: null };
   const night = (offset: number) => byDate.get(shiftDate(local.date, -offset))?.sleepMin ?? null;
   const last = night(0);
@@ -175,7 +179,7 @@ function sleep(input: EvalInput, local: { date: string }, byDate: Map<string, Da
   const nights = [night(0), night(1), night(2)];
   const run = nights.every((m) => m !== null && m < 330);
   if (last >= 240 && !run) return { slot: "sleep", active: false };
-  const hours = (last / 60).toFixed(1).replace(".", ",");
+  const hours = Math.round(last / 6) / 10;
   return {
     slot: "sleep",
     active: true,
@@ -183,14 +187,15 @@ function sleep(input: EvalInput, local: { date: string }, byDate: Map<string, Da
       rule: "sleep",
       key: `sleep:${local.date}`,
       level: "digest",
-      title: `Tidur ${tag(label)} kurang dari biasanya`,
-      body: run && last >= 240 ? `${tag(label)} tidur kurang dari 5,5 jam tiga malam berturut-turut.` : `Semalam ${tag(label)} tidur sekitar ${hours} jam.`,
+      title: t("push:family.alert.sleep.title", { label }),
+      body: run && last >= 240 ? t("push:family.alert.sleep.streak", { label }) : t("push:family.alert.sleep.lastNight", { label, count: hours, hours: fmtDecimal(hours, input.locale) }),
     },
   };
 }
 
 function spo2(input: EvalInput, local: { date: string }, byDate: Map<string, DayRow>): Verdict {
   const { label, scopes, rules, days } = input;
+  const t = serverT(input.locale);
   if (!scopes.spo2 || !rules.spo2.on) return { slot: "spo2", active: null };
   const from = shiftDate(local.date, -7);
   // Only people whose watch has reported SpO2 in the last week.
@@ -208,8 +213,8 @@ function spo2(input: EvalInput, local: { date: string }, byDate: Map<string, Day
       rule: "spo2",
       key: `spo2:${local.date}`,
       level: "push",
-      title: `Jam ${tag(label)} mencatat oksigen rendah`,
-      body: `Kata jam, kadar oksigen ${tag(label)} sempat di ${today.spo2Min}%. Angka jam bisa meleset dan ini bukan diagnosis. Coba tanya kabarnya.`,
+      title: t("push:family.alert.spo2.title", { label }),
+      body: t("push:family.alert.spo2.body", { label, value: today.spo2Min }),
     },
   };
 }

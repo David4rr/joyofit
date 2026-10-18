@@ -92,6 +92,21 @@ bun run types        # regenerate worker-configuration.d.ts after editing wrangl
 The tests replace JoyoRogo with a fake `get-session` and `fitness/cloudAccess` (a stubbed `fetch`, and a fake `AUTH_SERVICE` binding
 for the service-binding path).
 
+## Language of the text the Worker writes
+
+Push and email copy go to someone else's phone or inbox, so they follow the **recipient's** language: `locale` (`id` or `en`) from
+JoyoRogo's `/internal/joyofit/family/users` answer (`RogoUser.locale`; anything else or missing is `id`). `src/i18n/` holds
+`serverT(locale)` (`{{param}}` interpolation, `_one`/`_other` plurals by `Intl.PluralRules`) and
+`locales/{id,en}/{push,email,errors}.json`; `id` is the source. There is no per-isolate "current language": callers pass the `Locale`
+down (`EvalInput.locale`, `deliver(..., locale, ...)`, `sendFamilyEmail(env, to, locale, ...)`).
+
+- Alert titles and bodies are written when the alert is decided and stored in `family_alert_log` as written; a queued alert or digest
+  item goes out in that language. The digest title and the email disclaimer follow the watcher's language at send time.
+- A poke goes to the monitored person, so it uses *their* locale.
+- API errors stay machine codes (`invite_invalid`, ...); the app words them. The only localized API text is the inviter fallback name in
+  `GET /v1/family/invites/:code` (header `x-locale`, else the caller's JoyoRogo locale) and the Strava fallback page (`Accept-Language`).
+- `bun run server/scripts/i18n-keys.ts` (from the repo root) checks that `en` has every `id` key, once per plural category, with no orphans.
+
 ## Notes
 
 - Sessions are cached per isolate for 60 s; a session revoked in JoyoRogo keeps working here for up to

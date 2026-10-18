@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
 import type { AppContext, AppEnv } from "./env";
+import { matchAcceptLanguage, serverT } from "./i18n";
 import { STRAVA_BROKER_TIMEOUT_MS, STRAVA_STATE_TTL_S, STRAVA_WEBHOOK_BROKER_TIMEOUT_MS } from "./limits";
 
 /**
@@ -204,12 +205,14 @@ strava.post("/disconnect", async (c) => {
 
 export const stravaPublic = new Hono<AppContext>();
 
-function appRedirect(params: Record<string, string>): Response {
+/** `request` only supplies the browser's language for the fallback page; the deep link is what the app reads. */
+function appRedirect(request: Request, params: Record<string, string>): Response {
+  const t = serverT(matchAcceptLanguage(request.headers.get("accept-language")));
   const location = `${APP_DEEP_LINK}?${new URLSearchParams(params)}`;
   const body =
     `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
     `<title>JoyoFit</title><body style="font-family:system-ui;padding:2rem;text-align:center">` +
-    `<p>Return to JoyoFit to finish.</p><p><a href="${location.replace(/&/g, "&amp;")}">Open JoyoFit</a></p>`;
+    `<p>${t("errors:strava.redirect.finish")}</p><p><a href="${location.replace(/&/g, "&amp;")}">${t("errors:strava.redirect.open")}</a></p>`;
   return new Response(body, { status: 302, headers: { location, "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }
 
@@ -220,7 +223,7 @@ const EXCHANGE_FAILURE_REASON: Record<string, string> = {
 };
 
 stravaPublic.get("/callback", async (c) => {
-  if (!configured(c.env)) return appRedirect({ status: "error", reason: "not_configured" });
+  if (!configured(c.env)) return appRedirect(c.req.raw, { status: "error", reason: "not_configured" });
   const env = c.env;
   const q = c.req.query();
   try {
@@ -242,9 +245,9 @@ stravaPublic.get("/callback", async (c) => {
       throw new StravaFlowError((failure.success && EXCHANGE_FAILURE_REASON[failure.data.error]) || "exchange_failed");
     }
     await response.body?.cancel();
-    return appRedirect({ status: "connected" });
+    return appRedirect(c.req.raw, { status: "connected" });
   } catch (error) {
-    if (error instanceof StravaFlowError) return appRedirect({ status: "error", reason: error.reason });
+    if (error instanceof StravaFlowError) return appRedirect(c.req.raw, { status: "error", reason: error.reason });
     throw error;
   }
 });

@@ -16,6 +16,8 @@ export interface FakeUser {
 
 /** The sessions the fake JoyoRogo knows: token -> user. */
 const sessions = new Map<string, FakeUser>();
+/** The `locale` JoyoRogo's profile holds per user id; a user not listed is `id`. */
+export const locales = new Map<string, string>();
 /** Users whose JoyoRogo account counts as Founder (`fitness.cloudAccess` says `unlocked`). */
 export const founders = new Set<string>();
 export const upstream = {
@@ -41,21 +43,22 @@ export const expo = {
 };
 
 /** Emails the Worker sent through the EMAIL binding. */
-export const outbox: { to: string; subject: string; text: string }[] = [];
+export const outbox: { to: string; subject: string; text: string; html: string }[] = [];
 export const fakeEmail = {
-  send: async (message: { to: string; subject: string; text: string }) => {
-    outbox.push({ to: message.to, subject: message.subject, text: message.text });
+  send: async (message: { to: string; subject: string; text: string; html: string }) => {
+    outbox.push({ to: message.to, subject: message.subject, text: message.text, html: message.html });
   },
 } as unknown as SendEmail;
 
 let counter = 0;
 /** Registers a user and returns the Cookie header the app would send for them. Founder unless `founder` is false. */
-export function signUp(name: string, { founder = true }: { founder?: boolean } = {}): { user: FakeUser; cookie: string } {
+export function signUp(name: string, { founder = true, locale = "id" }: { founder?: boolean; locale?: string } = {}): { user: FakeUser; cookie: string } {
   counter += 1;
   const user = { id: `user-${name}-${counter}`, email: `${name}-${counter}@example.com`, name };
   const token = `token-${name}-${counter}`;
   sessions.set(token, user);
   if (founder) founders.add(user.id);
+  locales.set(user.id, locale);
   return { user, cookie: `__Secure-better-auth.session_token=${token}.sig` };
 }
 
@@ -85,7 +88,7 @@ export function fakeCloudAccess(cookie: string | null): Response {
 export function fakeFamilyUsers(userIds: string[]): Response {
   const users = [...sessions.values()]
     .filter((u) => userIds.includes(u.id))
-    .map((u) => ({ id: u.id, name: u.name, email: u.email, locale: "id", tier: founders.has(u.id) ? "founder" : "free", pro: founders.has(u.id) }));
+    .map((u) => ({ id: u.id, name: u.name, email: u.email, locale: locales.get(u.id) ?? "id", tier: founders.has(u.id) ? "founder" : "free", pro: founders.has(u.id) }));
   return Response.json({ users });
 }
 
