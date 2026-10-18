@@ -20,7 +20,7 @@ import { useWatchfaceImport } from '@/features/watchfaces/useWatchfaceImport';
 import { useWatchfaceLibrary, type DownloadedFace } from '@/features/watchfaces/useWatchfaceLibrary';
 import { useWatchfaces } from '@/features/watchfaces/useWatchfaces';
 import { radius, spacing, useColors } from '@/theme';
-import type { WatchfaceInfo } from '@/wear';
+import { hasNative, type WatchfaceInfo } from '@/wear';
 
 type TabMode = 'installed' | 'library';
 
@@ -83,6 +83,7 @@ export function WatchfacesScreen() {
     onRefresh: () => void refresh(),
     enabled: connected,
   });
+  const canImport = Platform.OS !== 'ios' && hasNative('parseWatchfacePackage');
   const idle = busy === null;
   const installing = busy === 'install';
   const percent =
@@ -179,7 +180,7 @@ export function WatchfacesScreen() {
           <AppText variant="caption">
             {t('watch:faces.personalLibraryHint')}
           </AppText>
-          {Platform.OS !== 'ios' ? (
+          {canImport ? (
             <View style={styles.actionRow}>
               <Button
                 label={t('watch:faces.importHwt')}
@@ -189,6 +190,8 @@ export function WatchfacesScreen() {
                 onPress={() => void handleImportToMyWatch()}
               />
             </View>
+          ) : Platform.OS !== 'ios' ? (
+            <AppText variant="caption">{t('watch:faces.updateApp')}</AppText>
           ) : null}
         </Section>
       )}
@@ -278,7 +281,7 @@ export function WatchfacesScreen() {
         title={t('watch:faces.noSaved')}
         description={t('watch:faces.noSavedHint')}
         action={
-          Platform.OS !== 'ios'
+          canImport
             ? {
                 label: t('watch:faces.importHwt'),
                 icon: 'document-attach-outline',

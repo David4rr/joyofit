@@ -1,7 +1,7 @@
 import { openDatabaseSync } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
 import type { WatchCategory, WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
-import { HuaweiWear } from '@/wear';
+import { HuaweiWear, hasNative } from '@/wear';
 
 export interface DownloadedFace extends WatchfaceItem {
   readonly savedAt: number;
@@ -32,8 +32,9 @@ export function useWatchfaceLibrary() {
         }
       }
       setLibrary(items);
+      const canParse = hasNative('parseWatchfacePackage');
       for (const item of items) {
-        if (item.downloadUrl && !item.previewUrl) {
+        if (canParse && item.downloadUrl && !item.previewUrl) {
           void HuaweiWear.parseWatchfacePackage(item.downloadUrl, false)
             .then((parsed) => {
               if (parsed.previewUri) {
@@ -116,11 +117,12 @@ export function useWatchfaceLibrary() {
       try {
         initDb();
         const faceToDelete = library.find((f) => f.id === id);
+        const canDelete = hasNative('deleteLocalWatchfaceFile');
         if (faceToDelete) {
-          if (faceToDelete.downloadUrl?.startsWith('file://')) {
+          if (canDelete && faceToDelete.downloadUrl?.startsWith('file://')) {
             void HuaweiWear.deleteLocalWatchfaceFile(faceToDelete.downloadUrl);
           }
-          if (faceToDelete.previewUrl?.startsWith('file://')) {
+          if (canDelete && faceToDelete.previewUrl?.startsWith('file://')) {
             void HuaweiWear.deleteLocalWatchfaceFile(faceToDelete.previewUrl);
           }
         }

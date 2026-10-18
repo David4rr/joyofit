@@ -261,6 +261,7 @@
     "deleteFromPhone": "Delete from Phone",
     "personalLibrary": "Personal library",
     "personalLibraryHint": "Watch faces stored on your phone. Keep your favorites here and swap them onto your watch anytime.",
+    "updateApp": "Update the app to use this feature",
     "importHwt": "Import .hwt file",
     "noSaved": "No watch faces saved",
     "noSavedHint": "Import a .hwt file from your phone storage to build your personal offline collection.",
