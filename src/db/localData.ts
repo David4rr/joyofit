@@ -3,11 +3,18 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import Storage from 'expo-sqlite/kv-store';
 
 import { resetSyncedPrefs } from '@/cloud/prefsSync';
+import { baselineRecordSync } from '@/cloud/recordSync';
 import { loadCoachDoc } from '@/features/coach/store';
 
-import { deleteLocalRows } from './localDataCore';
+import { deleteLocalRows, detachLocalData as detachRows, keepApart as keepApartRows } from './localDataCore';
 
-export { accountSwitchOf, countDirtyStrength, detachLocalData, hasLocalData, keepApart } from './localDataCore';
+export { accountSwitchOf, countDirtyStrength, hasLocalData } from './localDataCore';
+
+/** `detachRows` with the app's record baseline: preferences, templates, routes and health records are never sent to the next account either. */
+export const detachLocalData = (db: SQLiteDatabase, now?: number): Promise<void> => detachRows(db, now, baselineRecordSync);
+
+/** "Keep separate": the account that signed in takes over the bookkeeping and this phone's data is baselined, or neither happens. */
+export const keepApart = (db: SQLiteDatabase, userId: string, email: string): Promise<void> => keepApartRows(db, userId, email, baselineRecordSync);
 
 /** Folders of `Paths.document` that hold the person's files: saved routes (`routeStore.ts`) and gear photos (`gear-edit.tsx`). */
 const DATA_FOLDERS = ['routes', 'gear'] as const;

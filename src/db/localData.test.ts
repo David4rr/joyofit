@@ -305,4 +305,22 @@ describe('keepApart', () => {
     expect(state.email).toBe('a@x.id');
     expect(await accountSwitchOf(p.db, 'user-b')).not.toBeNull();
   });
+
+  it('runs the app record baseline instead of the health one, and rolls back when it fails', async () => {
+    const p = await phone();
+    await fill(p);
+    let calls = 0;
+    await keepApart(p.db, 'user-b', 'b@x.id', async () => {
+      calls += 1;
+    });
+    expect(calls).toBe(1);
+    const q = await phone();
+    await fill(q);
+    await expect(
+      keepApart(q.db, 'user-b', 'b@x.id', async () => {
+        throw new Error('baseline failed');
+      }),
+    ).rejects.toThrow('baseline failed');
+    expect((await getCloudState(q.db)).userId).toBe('user-a');
+  });
 });

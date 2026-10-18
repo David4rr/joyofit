@@ -105,6 +105,9 @@ async function maxRev(db: Pick<SQLiteDatabase, 'getFirstAsync'>, table: string):
   return row?.rev ?? 0;
 }
 
+/** Records the preferences, templates, routes and health rows this phone holds as already synced (`baselineRecordSync` in the app). */
+export type RecordBaseline = (db: SQLiteDatabase) => Promise<void>;
+
 /**
  * Marks everything this phone holds as "already uploaded" without uploading it, so the account that signs in next never
  * receives it. Call it after the new account has been adopted (`adoptAccount` resets the cursors this raises again):
@@ -118,7 +121,11 @@ async function maxRev(db: Pick<SQLiteDatabase, 'getFirstAsync'>, table: string):
  *   back what is not newer than it (see `syncGearDoc`, `syncCoachDoc`).
  * Anything edited or written after this call goes up normally. Strava bookkeeping is untouched.
  */
-export async function detachLocalData(db: SQLiteDatabase, now = Date.now()): Promise<void> {
+export async function detachLocalData(
+  db: SQLiteDatabase,
+  now = Date.now(),
+  baselineRecords: RecordBaseline = (target) => baselineHealthSync(target, now),
+): Promise<void> {
   for (const table of CLOUD_TABLES) await setUploaded(db, table, await maxRev(db, table));
 
   const uploadedAt = Math.floor(now / 1000);
@@ -132,9 +139,10 @@ export async function detachLocalData(db: SQLiteDatabase, now = Date.now()): Pro
       await db.runAsync('DELETE FROM strength_meta WHERE key = ?', key);
     }
   }
-  // Health rows are tracked in `sync_item` too (the native writers have no `imported` column): record what is there as known.
+  // Health rows are tracked in `sync_item` too (the native writers have no `imported` column), and preferences, templates and
+  // routes that were never synced have no row at all: `baselineRecords` records what is there as known, then dirty rows are cleaned.
   await ensureSyncItemSchema(db);
-  await baselineHealthSync(db, now);
+  await baselineRecords(db);
   await db.runAsync('UPDATE sync_item SET dirty = 0');
 
   await setCloudState(db, { [DETACHED_AT_KEY]: String(now) });
@@ -145,11 +153,11 @@ export async function detachLocalData(db: SQLiteDatabase, now = Date.now()): Pro
  * (`detachLocalData`). Either both happen or neither: when the baseline fails the previous account is bound again, so the next
  * sync asks again instead of uploading everything.
  */
-export async function keepApart(db: SQLiteDatabase, userId: string, email: string): Promise<void> {
+export async function keepApart(db: SQLiteDatabase, userId: string, email: string, baselineRecords?: RecordBaseline): Promise<void> {
   const before = await getCloudState(db);
   try {
     await adoptAccount(db, userId, email);
-    await detachLocalData(db);
+    await detachLocalData(db, Date.now(), baselineRecords);
   } catch (error) {
     await setCloudState(db, { user_id: before.userId, email: before.email }).catch(() => {});
     throw error;
