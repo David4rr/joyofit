@@ -51,6 +51,30 @@ class WatchfaceTest {
 
   private val binary = ByteArray(300) { (it * 5 + 1).toByte() }
 
+  @Test
+  fun testAllFixturesParsingAndPreview() {
+    val root = java.io.File("../../../packages/hwt/fixtures")
+    if (!root.exists()) return
+    val files = root.walkTopDown().filter { it.extension == "hwt" }.toList()
+    for (f in files) {
+      val bytes = f.readBytes()
+      val preview = WatchfacePackages.extractPreview(bytes)
+      assertNotNull("Preview should be extracted for ${f.name}", preview)
+      assertTrue("Preview bytes should not be empty for ${f.name}", preview!!.first.isNotEmpty())
+    }
+  }
+  @Test
+  fun testDownloadsHwtPreviews() {
+    for (name in listOf("AlienWatchEN.hwt", "AE1200GREY.hwt")) {
+      val f = java.io.File("/Users/mac/Downloads/$name")
+      if (!f.exists()) continue
+      val preview = WatchfacePackages.extractPreview(f.readBytes(), targetW = 194, targetH = 368)
+      assertNotNull("Preview should exist for $name", preview)
+      val (bytes, mime) = preview!!
+      println("TEST $name: mime=$mime, bytes=${bytes.size}")
+      java.io.File("/tmp/test_${name}.bmp").writeBytes(bytes)
+    }
+  }
   private fun hwt(screen: String = "HWHD13", nested: Boolean = true, root: String = "HwTheme", bom: Boolean = false): ByteArray {
     val inner = if (nested) zip("watchface.bin" to binary, "other.txt" to byteArrayOf(1)) else binary
     val entry = if (root == "HnTheme") "com.honor.watchface" else "com.huawei.watchface"

@@ -468,6 +468,148 @@ internal class WatchfaceController(
 
   suspend fun delete(id: String): Map<String, Any?> = withWatch { ops -> ops.delete(id).toJs() }
 
+  /** Parses a .hwt package locally without requiring an active watch connection. */
+  suspend fun parsePackage(uri: String): Map<String, Any?> = withContext(Dispatchers.IO) {
+    val bytes = readUri(uri)
+
+    if (bytes.size < 64) {
+      throw WearException(ErrorCodes.INVALID_ARGUMENT, "File is too small to be a valid watch face (${bytes.size} bytes)")
+    }
+    val sample = String(bytes.take(256).toByteArray(), Charsets.UTF_8).lowercase(java.util.Locale.ROOT)
+    if (sample.contains("<!doctype html") || sample.contains("<html")) {
+      throw WearException(ErrorCodes.INVALID_ARGUMENT, "The URL returned an HTML web page instead of a direct .hwt file. Please use a direct download link.")
+    }
+
+    // 1. Parse package / description.xml to determine target screen dimensions
+    val pkg = try {
+      WatchfacePackages.parse(bytes)
+    } catch (_: Exception) {
+      null
+    }
+    val desc = pkg?.description ?: run {
+      val descBytes = WatchfacePackages.entry(bytes, "description.xml")
+      if (descBytes != null) {
+        try {
+          WatchfacePackages.parseDescription(descBytes)
+        } catch (_: Exception) {
+          null
+        }
+      } else null
+    }
+
+    val isRawBinary = bytes.size >= 8 && bytes[0] == 0x45.toByte() && bytes[1] == 0x23.toByte()
+    val hasWatchfaceEntry = WatchfacePackages.entry(bytes, "com.huawei.watchface") != null
+      || WatchfacePackages.entry(bytes, "com.honor.watchface") != null
+      || WatchfacePackages.entry(bytes, "watchface.bin") != null
+      || desc != null
+
+    if (pkg == null && !hasWatchfaceEntry && !isRawBinary) {
+      throw WearException(ErrorCodes.INVALID_ARGUMENT, "The file is not a valid Huawei watch face package (.hwt). It does not contain watch face binaries or description.xml.")
+    }
+
+    val title = (desc?.title ?: pkg?.description?.title ?: "").ifBlank {
+      desc?.titleCn ?: pkg?.description?.titleCn ?: ""
+    }
+    val author = (desc?.author ?: pkg?.description?.author ?: "").ifBlank {
+      desc?.designer ?: pkg?.description?.designer ?: ""
+    }
+    val designer = desc?.designer ?: pkg?.description?.designer ?: ""
+    val version = desc?.version ?: pkg?.description?.version ?: "1.0.0"
+    val screen = desc?.screen ?: pkg?.description?.screen ?: ""
+
+    val (height, width) = if (screen.isNotBlank()) {
+      val res = WatchfaceResolutions.screenByThemeVersion(screen)
+      val parts = res.split('*')
+      val h = parts.getOrNull(0)?.toIntOrNull()?.takeIf { it > 0 } ?: 368
+      val w = parts.getOrNull(1)?.toIntOrNull()?.takeIf { it > 0 } ?: 194
+      h to w
+    } else {
+      368 to 194
+    }
+
+    // 2. Extract preview targeting the exact screen resolution (or best available texture)
+    var previewUri: String? = null
+    val previewPair = WatchfacePackages.extractPreview(bytes, targetW = width, targetH = height)
+    if (previewPair != null && previewPair.first.isNotEmpty()) {
+      val (previewBytes, mime) = previewPair
+      try {
+        val previewDir = java.io.File(context.filesDir, "watchfaces/previews").apply { mkdirs() }
+        val bitmap = try {
+          android.graphics.BitmapFactory.decodeByteArray(previewBytes, 0, previewBytes.size)
+        } catch (_: Throwable) {
+          null
+        }
+
+        if (bitmap != null) {
+          val jpgFile = java.io.File(previewDir, "prev_${System.currentTimeMillis()}_${WatchfacePackages.randomName()}.jpg")
+          java.io.FileOutputStream(jpgFile).use { outStream ->
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outStream)
+          }
+          previewUri = android.net.Uri.fromFile(jpgFile).toString()
+        } else {
+          val ext = when (mime) {
+            "image/png" -> "png"
+            "image/webp" -> "webp"
+            "image/bmp" -> "bmp"
+            else -> "jpg"
+          }
+          val previewFile = java.io.File(previewDir, "prev_${System.currentTimeMillis()}_${WatchfacePackages.randomName()}.$ext")
+          previewFile.writeBytes(previewBytes)
+          previewUri = android.net.Uri.fromFile(previewFile).toString()
+        }
+      } catch (_: Exception) {
+        val b64 = android.util.Base64.encodeToString(previewBytes, android.util.Base64.NO_WRAP)
+        previewUri = "data:$mime;base64,$b64"
+      }
+    }
+    val rawDesc = (desc?.briefinfo ?: pkg?.description?.briefinfo ?: "").trim()
+    val descriptionText = if (rawDesc.isNotBlank() && rawDesc != "{}" && rawDesc != "[]") {
+      rawDesc
+    } else {
+      "No description provided by creator."
+    }
+
+    val localUri: String? = try {
+      val dir = java.io.File(context.filesDir, "watchfaces").apply { mkdirs() }
+      val fileName = "${System.currentTimeMillis()}_${WatchfacePackages.randomName(version = version)}.hwt"
+      val dest = java.io.File(dir, fileName)
+      dest.writeBytes(bytes)
+      android.net.Uri.fromFile(dest).toString()
+    } catch (_: Exception) {
+      null
+    }
+
+    mapOf(
+      "title" to title,
+      "author" to author,
+      "designer" to designer,
+      "description" to descriptionText,
+      "version" to version,
+      "screen" to screen,
+      "width" to width,
+      "height" to height,
+      "previewUri" to previewUri,
+      "sizeBytes" to bytes.size,
+      "localUri" to localUri,
+    )
+  }
+  /** Deletes an internal watchface or preview file securely, preventing directory traversal. */
+  fun deleteLocalFile(uri: String): Boolean {
+    return try {
+      val parsed = android.net.Uri.parse(uri)
+      val path = parsed.path ?: uri
+      val file = java.io.File(path)
+      val baseDir = java.io.File(context.filesDir, "watchfaces").canonicalPath
+      if (file.exists() && file.canonicalPath.startsWith(baseDir)) {
+        file.delete()
+      } else {
+        false
+      }
+    } catch (_: Exception) {
+      false
+    }
+  }
+
   /**
    * [signature] is a Huawei `getresourcesign` response string (Huawei Health sends it in tag 0x08 of the
    * announcement). [fileName] overrides the random `<id>_<version>` install name; a replayed signature only
@@ -477,9 +619,10 @@ internal class WatchfaceController(
     link.handle() ?: throw notConnected()
     val bytes = withContext(Dispatchers.IO) { readUri(uri) }
     val pkg = WatchfacePackages.parse(bytes)
-    val name = fileName ?: WatchfacePackages.randomName(version = pkg.description.version)
-    if (fileName != null && fileName.indexOf('_') <= 0) {
-      throw WearException(ErrorCodes.INVALID_ARGUMENT, "The install name must be `<id>_<version>`, got '$fileName'")
+    val name = if (fileName != null && fileName.indexOf('_') > 0) {
+      fileName
+    } else {
+      WatchfacePackages.randomName(version = pkg.description.version)
     }
     var lastEmit = 0L
     val progress = { done: Int, total: Int ->
@@ -515,50 +658,46 @@ internal class WatchfaceController(
 
   private fun notConnected() = WearException(ErrorCodes.NOT_CONNECTED, "Not connected to a watch")
 
+  private fun readStreamBounded(stream: java.io.InputStream, limit: Int = WatchfacePackages.MAX_PACKAGE_BYTES): ByteArray {
+    return stream.use {
+      val out = java.io.ByteArrayOutputStream()
+      val buffer = ByteArray(16384)
+      while (true) {
+        val n = it.read(buffer)
+        if (n < 0) break
+        out.write(buffer, 0, n)
+        if (out.size() > limit) {
+          throw WearException(ErrorCodes.INVALID_ARGUMENT, "File is larger than ${limit / 1024 / 1024} MiB limit")
+        }
+      }
+      out.toByteArray()
+    }
+  }
+
   private fun readUri(uri: String): ByteArray {
     if (uri.startsWith("http://") || uri.startsWith("https://")) {
-      try {
-        val url = java.net.URL(uri)
-        val conn = url.openConnection() as java.net.HttpURLConnection
-        conn.connectTimeout = 15000
-        conn.readTimeout = 30000
-        conn.instanceFollowRedirects = true
-        return conn.inputStream.use { stream ->
-          val out = java.io.ByteArrayOutputStream()
-          val buffer = ByteArray(16384)
-          while (true) {
-            val n = stream.read(buffer)
-            if (n < 0) break
-            out.write(buffer, 0, n)
-            if (out.size() > WatchfacePackages.MAX_PACKAGE_BYTES) {
-              throw WearException(ErrorCodes.INVALID_ARGUMENT, "Downloaded file is larger than limit")
-            }
-          }
-          out.toByteArray()
-        }
-      } catch (e: WearException) {
-        throw e
-      } catch (e: Exception) {
-        throw WearException(ErrorCodes.INVALID_ARGUMENT, "Could not download watch face: ${e.message}", e)
+      throw WearException(ErrorCodes.INVALID_ARGUMENT, "Web URLs are not supported. Please select a local .hwt file.")
+    }
+    // Check filesystem directly for file:// schemes or raw paths
+    val localFile = when {
+      uri.startsWith("file://") -> {
+        val path = Uri.parse(uri).path
+        if (path != null) java.io.File(path) else null
       }
+      uri.startsWith("/") -> java.io.File(uri)
+      else -> null
+    }
+    if (localFile != null && localFile.exists() && localFile.canRead()) {
+      if (localFile.length() > WatchfacePackages.MAX_PACKAGE_BYTES) {
+        throw WearException(ErrorCodes.INVALID_ARGUMENT, "That file is larger than ${WatchfacePackages.MAX_PACKAGE_BYTES / 1024 / 1024} MiB, too big for a watch face")
+      }
+      return localFile.readBytes()
     }
     val parsed = Uri.parse(uri)
     try {
       val stream = context.contentResolver.openInputStream(parsed)
         ?: throw WearException(ErrorCodes.INVALID_ARGUMENT, "Could not open $uri")
-      return stream.use {
-        val out = java.io.ByteArrayOutputStream()
-        val buffer = ByteArray(16384)
-        while (true) {
-          val n = it.read(buffer)
-          if (n < 0) break
-          out.write(buffer, 0, n)
-          if (out.size() > WatchfacePackages.MAX_PACKAGE_BYTES) {
-            throw WearException(ErrorCodes.INVALID_ARGUMENT, "That file is larger than ${WatchfacePackages.MAX_PACKAGE_BYTES / 1024 / 1024} MiB, too big for a watch face")
-          }
-        }
-        out.toByteArray()
-      }
+      return readStreamBounded(stream)
     } catch (e: WearException) {
       throw e
     } catch (e: IOException) {

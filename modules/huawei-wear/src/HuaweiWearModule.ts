@@ -1,5 +1,5 @@
 import { NativeModule, requireNativeModule } from 'expo';
-
+import { Platform } from 'react-native';
 import type {
   BackgroundStatus,
   BondedDevice,
@@ -32,7 +32,7 @@ import type {
   DietDay,
   DietStatus,
 } from './HuaweiWearDiet.types';
-import type { WatchfaceInstallResult, WatchfaceList } from './HuaweiWearWatchface.types';
+import type { ParsedWatchfacePackage, WatchfaceInstallResult, WatchfaceList } from './HuaweiWearWatchface.types';
 import type { FaceApplyResult, FaceCustomization } from './HuaweiWearFaceCustom.types';
 import type { PhotoFace } from './HuaweiWearPhotoFace.types';
 import type { CoursesStatus, HealthyLivingStatus, RunningCourse, RunningCoursePushResult } from './HuaweiWearP2p.types';
@@ -238,6 +238,10 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   setActiveWatchface(id: string): Promise<WatchfaceList>;
   /** Deletes the face with this id; resolves with the list read afterwards, rejects if the face is still there. */
   deleteWatchface(id: string): Promise<WatchfaceList>;
+  /** Parses a .hwt package locally, extracting title, author, screen resolution and preview image cover. */
+  parseWatchfacePackage(uri: string): Promise<ParsedWatchfacePackage>;
+  /** Deletes an internal watchface or preview file from phone storage. */
+  deleteLocalWatchfaceFile(uri: string): Promise<boolean>;
   /**
    * A face's current options (DataSync 800100008). Resolves with what the watch reports; a face with no editable options does not answer
    * (ERR_TIMEOUT). ERR_NOT_CONNECTED, ERR_UNSUPPORTED (watch lacks ExpandCapability 84), ERR_INVALID_ARGUMENT (face not on the watch).
@@ -346,4 +350,18 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   pushRunningCourse(course: RunningCourse): Promise<RunningCoursePushResult>;
 }
 
-export default requireNativeModule<HuaweiWearModule>('HuaweiWear');
+let nativeModule: HuaweiWearModule;
+try {
+  nativeModule = requireNativeModule<HuaweiWearModule>('HuaweiWear');
+} catch {
+  nativeModule = new Proxy({} as HuaweiWearModule, {
+    get(_, prop) {
+      if (prop === 'addListener' || prop === 'removeListener' || prop === 'removeAllListeners') {
+        return () => {};
+      }
+      return () => Promise.reject(new Error(`HuaweiWear.${String(prop)} is not available on ${Platform.OS}`));
+    },
+  });
+}
+
+export default nativeModule;

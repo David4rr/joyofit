@@ -1,81 +1,80 @@
-import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { IconChip } from '@/components/IconChip';
-import { Field } from '@/components/Input';
 import { Card, Section, useContentPadding, useRefreshControl } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
-import { EmptyState, Notice, Skeleton } from '@/components/States';
-import { COMMUNITY_WATCHFACES, type CommunityFace } from '@/features/watchfaces/communityCatalog';
+import { EmptyState, Notice } from '@/components/States';
+import { InstalledFaceCard } from '@/features/watchfaces/InstalledFaceCard';
+import { LibraryFaceCard } from '@/features/watchfaces/LibraryFaceCard';
+import { ThemedDialog, type CustomDialogState } from '@/features/watchfaces/ThemedDialog';
+import { WatchfacePreviewModal } from '@/features/watchfaces/WatchfacePreviewModal';
+import { WatchStorageCard } from '@/features/watchfaces/WatchStorageCard';
+import { FaceSkeleton } from '@/features/watchfaces/WatchThumbnail';
+import {
+  COMMUNITY_WATCHFACES,
+  resolveCategory,
+  type WatchfaceItem,
+} from '@/features/watchfaces/communityCatalog';
+import { useWatchfaceLibrary, type DownloadedFace } from '@/features/watchfaces/useWatchfaceLibrary';
 import { useWatchfaces } from '@/features/watchfaces/useWatchfaces';
-import { formatDateTime } from '@/format';
-import { radius, spacing, tintColors, useColors } from '@/theme';
-import type { WatchfaceInfo } from '@/wear';
+import { radius, spacing, useColors } from '@/theme';
+import { HuaweiWear, type WatchfaceInfo } from '@/wear';
+
+type TabMode = 'installed' | 'library';
 
 const TAB_OPTIONS = [
   { value: 'installed', label: 'On watch' },
-  { value: 'catalog', label: 'Free catalog' },
+  { value: 'library', label: 'My watch' },
 ] as const;
 
-type TabMode = (typeof TAB_OPTIONS)[number]['value'];
 const SKELETON_ROWS = [0, 1, 2];
 
-/** "Active" badge on the face that is on the watch's screen now. */
-function ActivePill() {
-  const colors = useColors();
-  const link = tintColors(colors, 'link');
-  return (
-    <View style={[styles.pill, { backgroundColor: link.soft }]}>
-      <AppText variant="label" color={link.text}>
-        Active on Wrist
-      </AppText>
-    </View>
+/** Matches an installed watch hardware face to a library or catalog entry. */
+export function findFaceMatch(
+  face: WatchfaceInfo,
+  library: readonly DownloadedFace[],
+  catalog: readonly WatchfaceItem[] = [],
+): WatchfaceItem | undefined {
+  const normFaceName = face.name.toLowerCase().trim();
+  const libMatch = library.find(
+    (l) =>
+      l.hardwareId === face.id ||
+      l.id === face.id ||
+      l.title.toLowerCase().trim() === normFaceName ||
+      normFaceName.includes(l.title.toLowerCase().trim()) ||
+      l.title.toLowerCase().trim().includes(normFaceName),
+  );
+  if (libMatch) return libMatch;
+
+  return catalog.find(
+    (c) =>
+      c.id === face.id ||
+      c.title.toLowerCase().trim() === normFaceName ||
+      normFaceName.includes(c.title.toLowerCase().trim()) ||
+      c.title.toLowerCase().trim().includes(normFaceName) ||
+      normFaceName.includes(c.id.toLowerCase()),
   );
 }
 
-/** Stand-in for a face card while the list is being read. */
-function FaceSkeleton() {
-  return (
-    <Card>
-      <View style={styles.faceHeader}>
-        <Skeleton width={40} height={40} radius={20} />
-        <View style={styles.faceText}>
-          <Skeleton width="55%" height={16} />
-          <Skeleton width="35%" height={12} />
-        </View>
-      </View>
-      <View style={styles.actions}>
-        <Skeleton width={120} height={48} radius={radius.pill} />
-        <Skeleton width={96} height={48} radius={radius.pill} />
-      </View>
-    </Card>
-  );
-}
-
-function WatchThumbnail({ face, active }: { face: CommunityFace; active?: boolean }) {
-  const isRound = face.category === 'Round (466x466)';
-  const isFit = face.category === 'Fit (336x480)';
-  return (
-    <View
-      style={[
-        styles.thumbBase,
-        isRound ? styles.thumbRound : isFit ? styles.thumbFit : styles.thumbBand,
-        active && styles.thumbActive,
-      ]}>
-      {face.previewUrl ? (
-        <Image
-          source={{ uri: face.previewUrl }}
-          style={styles.fillImage}
-          resizeMode={isRound ? 'contain' : 'cover'}
-        />
-      ) : (
-        <IconChip icon="watch" tint={active ? 'link' : 'neutral'} />
-      )}
-    </View>
+/** Finds whether a library/catalog face is installed on the active watch. */
+export function findInstalledFace(
+  face: { id: string; title: string; hardwareId?: string },
+  faces: readonly WatchfaceInfo[] | undefined,
+): WatchfaceInfo | undefined {
+  if (!faces || faces.length === 0) return undefined;
+  const targetTitle = face.title.toLowerCase().trim();
+  return faces.find(
+    (f) =>
+      (face.hardwareId && f.id === face.hardwareId) ||
+      f.id === face.id ||
+      f.name.toLowerCase().trim() === targetTitle ||
+      targetTitle.includes(f.name.toLowerCase().trim()) ||
+      f.name.toLowerCase().trim().includes(targetTitle),
   );
 }
 
@@ -84,12 +83,14 @@ export function WatchfacesScreen() {
   const router = useRouter();
   const colors = useColors();
   const padding = useContentPadding(false);
-  const { connected, list, busy, error, notice, progress, refresh, setActive, remove, install, installFromUri } =
+  const { connected, list, busy, error, notice, progress, refresh, setActive, remove, installFromUri } =
     useWatchfaces();
+  const { library, saveToLibrary, removeFromLibrary } = useWatchfaceLibrary();
   const [tab, setTab] = useState<TabMode>('installed');
-  const [customUrl, setCustomUrl] = useState('');
   const [installingUrl, setInstallingUrl] = useState<string | null>(null);
-  const [previewFace, setPreviewFace] = useState<CommunityFace | null>(null);
+  const [previewFace, setPreviewFace] = useState<WatchfaceItem | null>(null);
+  const [dialog, setDialog] = useState<CustomDialogState | null>(null);
+
   const refreshControl = useRefreshControl({
     refreshing: busy === 'list',
     onRefresh: () => void refresh(),
@@ -99,29 +100,173 @@ export function WatchfacesScreen() {
   const installing = busy === 'install';
   const percent =
     progress && progress.total > 0 ? Math.min(100, Math.round((progress.bytes / progress.total) * 100)) : 0;
-  const confirmDelete = (face: WatchfaceInfo) =>
-    Alert.alert('Delete watch face', `Delete "${face.name}" from the watch?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => void remove(face.id) },
-    ]);
 
-  const handleInstall = async (url: string, title: string) => {
-    setInstallingUrl(url);
-    const ok = await installFromUri(url);
-    if (!ok) {
-      Alert.alert(
-        'Pemasangan Ditolak',
-        `Jam menolak pemasangan "${title}". Pastikan koneksi Bluetooth stabil dan file cocok dengan Huawei Band 10.`
-      );
+  const promptInstallAfterSave = (savedFace: DownloadedFace) => {
+    const targetW = list?.width ?? 194;
+    const targetH = list?.height ?? 368;
+    const isCompatible = savedFace.width === targetW && savedFace.height === targetH;
+
+    if (!isCompatible) {
+      setDialog({
+        visible: true,
+        icon: 'alert-circle-outline',
+        title: 'Saved to My Watch',
+        message: `"${savedFace.title}" has been saved to your My watch collection.\n\nNote: This watch face (${savedFace.width}×${savedFace.height}) does not match your watch screen resolution (${targetW}×${targetH}) and cannot be installed to this watch.`,
+        confirmLabel: 'OK',
+        confirmVariant: 'primary',
+        onConfirm: () => setDialog(null),
+      });
+      return;
+    }
+
+    setDialog({
+      visible: true,
+      icon: 'checkmark-circle-outline',
+      title: 'Saved to My Watch',
+      message: `"${savedFace.title}" has been saved to your My watch collection.\n\nWould you like to install it to your watch right now?`,
+      confirmLabel: 'Install to Watch Now',
+      confirmVariant: 'primary',
+      cancelLabel: 'Keep in My Watch',
+      onConfirm: () => void handleInstall(savedFace),
+    });
+  };
+
+  const handleInstall = async (face: WatchfaceItem) => {
+    setInstallingUrl(face.downloadUrl);
+    const outcome = await installFromUri(face.downloadUrl);
+    if (outcome) {
+      saveToLibrary({
+        id: face.id,
+        title: face.title,
+        author: face.author,
+        width: face.width,
+        height: face.height,
+        sizeLabel: face.sizeLabel,
+        description: face.description,
+        downloadUrl: face.downloadUrl,
+        previewUrl: face.previewUrl,
+        category: face.category,
+      });
+    } else {
+      setDialog({
+        visible: true,
+        icon: 'close-circle-outline',
+        title: 'Install Rejected',
+        message: `The watch rejected "${face.title}". The watch memory may be full, or the file is incompatible with your screen size.`,
+        confirmLabel: 'OK',
+        confirmVariant: 'primary',
+        onConfirm: () => setDialog(null),
+      });
     }
     setInstallingUrl(null);
+  };
+
+  const confirmDeleteFromWatch = (face: WatchfaceInfo) => {
+    setDialog({
+      visible: true,
+      icon: 'trash-outline',
+      title: 'Delete from Watch',
+      message: `Permanently delete "${face.name}" from your watch hardware? Pre-installed factory faces cannot be deleted.`,
+      confirmLabel: 'Delete',
+      confirmVariant: 'destructive',
+      cancelLabel: 'Cancel',
+      onConfirm: () => void remove(face.id),
+    });
+  };
+
+  const confirmDeleteFromLibrary = (face: DownloadedFace) => {
+    const isOnWatch = Boolean(findInstalledFace(face, list?.faces));
+    setDialog({
+      visible: true,
+      icon: 'trash-outline',
+      title: 'Delete from Storage',
+      message: isOnWatch
+        ? `Delete "${face.title}" from your phone storage?\n\nIt is currently installed on your watch and will stay on the watch until uninstalled.`
+        : `Permanently delete "${face.title}" from your phone storage? To reinstall it in the future, you will need to re-import it.`,
+      confirmLabel: 'Delete from Phone',
+      confirmVariant: 'destructive',
+      cancelLabel: 'Cancel',
+      onConfirm: () => removeFromLibrary(face.id),
+    });
+  };
+
+  const handleImportToMyWatch = async () => {
+    try {
+      const picked = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+      if (picked.canceled || picked.assets.length === 0) return;
+      const asset = picked.assets[0];
+
+      const isHwt = asset.name.toLowerCase().endsWith('.hwt');
+      if (!isHwt) {
+        const isZip = asset.name.toLowerCase().endsWith('.zip');
+        setDialog({
+          visible: true,
+          icon: 'alert-circle-outline',
+          title: 'Invalid File Extension',
+          message: isZip
+            ? `"${asset.name}" is a .zip archive, not a .hwt file.\n\nMany watch faces are distributed inside a .zip file. Please extract the .zip using your phone's file manager and import the .hwt file found inside.`
+            : `"${asset.name}" does not have a .hwt extension. Please select a valid Huawei watch face (.hwt) file.`,
+          confirmLabel: 'OK',
+          confirmVariant: 'primary',
+          onConfirm: () => setDialog(null),
+        });
+        return;
+      }
+
+      let parsed;
+      try {
+        parsed = await HuaweiWear.parseWatchfacePackage(asset.uri);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Invalid watch face package';
+        setDialog({
+          visible: true,
+          icon: 'close-circle-outline',
+          title: 'Invalid Watch Face Package',
+          message: `Could not parse "${asset.name}":\n\n${msg}`,
+          confirmLabel: 'OK',
+          confirmVariant: 'primary',
+          onConfirm: () => setDialog(null),
+        });
+        return;
+      }
+
+      const title = parsed.title || asset.name.replace(/\.hwt$/i, '');
+      const author = parsed.author || 'Custom Import';
+      const width = parsed.width || list?.width || 194;
+      const height = parsed.height || list?.height || 368;
+      const previewUrl = parsed.previewUri || undefined;
+      const downloadPath = parsed.localUri || asset.uri;
+      const description =
+        parsed.description && parsed.description.trim() !== '{}' && parsed.description.trim() !== '[]'
+          ? parsed.description
+          : 'No description provided by creator.';
+      const sizeLabel = asset.size ? `${Math.round(asset.size / 1024)} KB` : 'Custom size';
+
+      const newFace: DownloadedFace = {
+        id: `local_${Date.now()}`,
+        title,
+        author,
+        width,
+        height,
+        sizeLabel,
+        description,
+        downloadUrl: downloadPath,
+        previewUrl,
+        category: resolveCategory(width),
+        savedAt: Date.now(),
+      };
+
+      saveToLibrary(newFace);
+      promptInstallAfterSave(newFace);
+    } catch {
+      // ignore picker cancel
+    }
   };
 
   const listMeta = list
     ? [
         list.width && list.height ? `Screen ${list.width} x ${list.height} px` : null,
-        list.maxVersion ? `Newest face format ${list.maxVersion}` : null,
-        `Read ${formatDateTime(list.updatedAt / 1000)}`,
+        list.faces ? `${list.faces.length} on watch` : null,
       ]
         .filter(Boolean)
         .join(' · ')
@@ -132,60 +277,25 @@ export function WatchfacesScreen() {
       <Segmented options={TAB_OPTIONS} value={tab} onChange={setTab} />
 
       {tab === 'installed' ? (
-        <Section title="Install from file" icon="cloud-upload">
-          <AppText variant="caption">
-            Make faces in Huawei Theme Studio Pro and export them as .hwt files.{' '}
-            {list?.width && list.height
-              ? `This watch's screen is ${list.width} x ${list.height} px.`
-              : "Make them for your watch's screen size."}{' '}
-            A face made for another screen is refused before it is sent.
-          </AppText>
-          {!connected ? (
-            <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
-              Connect your watch to manage its faces.
-            </Notice>
-          ) : null}
-          <Button
-            label="Install from .hwt file"
-            variant="primary"
-            icon="document"
-            disabled={!connected || !idle}
-            loading={installing && installingUrl === null}
-            onPress={() => void install()}
-          />
-        </Section>
+        !connected ? (
+          <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
+            Connect your watch to manage its faces.
+          </Notice>
+        ) : null
       ) : (
-        <Section title="Community Watch Faces" icon="globe-outline">
+        <Section title="Personal library" icon="folder-open-outline">
           <AppText variant="caption">
-            Browse free community watch faces. Tap Install to download and transfer to your watch in 1 click.
-            {list?.width && list.height ? ` Connected screen: ${list.width} x ${list.height} px.` : ''}
+            Watch faces stored on your phone. Keep your favorites here and swap them onto your watch anytime.
           </AppText>
-          {!connected ? (
-            <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
-              Connect your watch to install faces directly.
-            </Notice>
-          ) : null}
-          <Field
-            label="Install from custom URL"
-            hint="Direct link to any public .hwt file"
-            placeholder="https://example.com/watchface.hwt"
-            value={customUrl}
-            onChangeText={setCustomUrl}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Button
-            label="Download & Install from URL"
-            icon="cloud-download-outline"
-            variant="primary"
-            disabled={!connected || !idle || !customUrl.trim().startsWith('http')}
-            loading={installing && installingUrl === customUrl}
-            onPress={() => {
-              const url = customUrl.trim();
-              setInstallingUrl(url);
-              void installFromUri(url).finally(() => setInstallingUrl(null));
-            }}
-          />
+          <View style={styles.actionRow}>
+            <Button
+              label="Import .hwt file"
+              variant="primary"
+              icon="document-attach-outline"
+              style={{ flex: 1 }}
+              onPress={() => void handleImportToMyWatch()}
+            />
+          </View>
         </Section>
       )}
 
@@ -199,7 +309,7 @@ export function WatchfacesScreen() {
           </View>
           <AppText variant="caption" muted>
             {progress.total > 0
-              ? `${percent}% (${progress.bytes.toLocaleString()} of ${progress.total.toLocaleString()} bytes)`
+              ? `Transferring: ${percent}% (${progress.bytes.toLocaleString()} of ${progress.total.toLocaleString()} bytes)`
               : 'Transferring to watch...'}
           </AppText>
         </View>
@@ -209,8 +319,10 @@ export function WatchfacesScreen() {
 
       <View style={styles.listTitle}>
         <View style={styles.listTitleRow} accessibilityRole="header">
-          <IconChip icon={tab === 'installed' ? 'watch' : 'grid'} size="sm" />
-          <AppText variant="heading">{tab === 'installed' ? 'On the watch' : 'Curated faces'}</AppText>
+          <IconChip icon={tab === 'installed' ? 'watch' : 'folder'} size="sm" />
+          <AppText variant="heading">
+            {tab === 'installed' ? 'On the watch' : 'My watch collection'}
+          </AppText>
         </View>
         {tab === 'installed' && listMeta ? (
           <AppText variant="caption" muted>
@@ -218,10 +330,13 @@ export function WatchfacesScreen() {
           </AppText>
         ) : null}
       </View>
+      {tab === 'installed' && list ? <WatchStorageCard list={list} library={library} /> : null}
     </View>
   );
 
-  const empty = (() => {
+  const matchedPreview = previewFace ? findInstalledFace(previewFace, list?.faces) : undefined;
+
+  const installedEmpty = (() => {
     if (list === null && !connected) {
       return (
         <Card>
@@ -255,439 +370,128 @@ export function WatchfacesScreen() {
           <EmptyState
             icon="watch"
             title="No watch faces"
-            description="The watch lists no faces. Install one from a file above."
+            description="The watch lists no faces. Install one from your My watch library."
           />
         )}
       </Card>
     );
   })();
 
-  const previewModal = (
-    <Modal
-      visible={previewFace !== null}
-      animationType="slide"
-      transparent
-      onRequestClose={() => setPreviewFace(null)}>
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-          <View style={styles.modalHeader}>
-            <AppText variant="heading" numberOfLines={1} style={{ flex: 1 }}>
-              {previewFace?.title}
-            </AppText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              onPress={() => setPreviewFace(null)}
-              hitSlop={12}
-              style={styles.modalCloseBtn}>
-              <Ionicons name="close-circle" size={28} color={colors.mutedForeground} />
-            </Pressable>
-          </View>
-
-          <View style={styles.modalPreviewArea}>
-            <View
-              style={[
-                styles.modalWatchChassis,
-                previewFace?.category === 'Round (466x466)'
-                  ? styles.modalChassisRound
-                  : previewFace?.category === 'Fit (336x480)'
-                    ? styles.modalChassisFit
-                    : styles.modalChassisBand,
-              ]}>
-              {previewFace?.previewUrl ? (
-                <Image
-                  source={{ uri: previewFace.previewUrl }}
-                  style={styles.fillImage}
-                  resizeMode={previewFace?.category === 'Round (466x466)' ? 'contain' : 'cover'}
-                />
-              ) : null}
-            </View>
-          </View>
-
-          <View style={styles.modalMeta}>
-            <View style={styles.modalMetaRow}>
-              <AppText variant="caption" muted>
-                Author: {previewFace?.author}
-              </AppText>
-              <AppText variant="caption" muted>
-                Format: {previewFace?.sizeLabel}
-              </AppText>
-            </View>
-            <View style={styles.modalMetaRow}>
-              <AppText variant="caption" muted>
-                Resolution: {previewFace?.width}x{previewFace?.height} px
-              </AppText>
-              {previewFace && list?.width && list.height ? (
-                previewFace.width === list.width && previewFace.height === list.height ? (
-                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                    <AppText variant="label" color={colors.primary}>
-                      Matches Band 10
-                    </AppText>
-                  </View>
-                ) : (
-                  <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                      <AppText variant="label" color={colors.destructive}>
-                      Different Resolution
-                    </AppText>
-                  </View>
-                )
-              ) : null}
-            </View>
-            <AppText variant="caption" style={{ marginTop: spacing.xs }}>
-              {previewFace?.description}
-            </AppText>
-          </View>
-
-          {previewFace ? (
-            <View style={styles.modalActions}>
-              {(() => {
-                const isModalMatch =
-                  list?.width && list.height
-                    ? list.width === previewFace.width && list.height === previewFace.height
-                    : null;
-                const isModalWrong = isModalMatch === false;
-                const isModalInstalled = list?.faces?.some(
-                  (f) => f.name.toLowerCase().includes(previewFace.title.toLowerCase()) || f.id === previewFace.id
-                );
-                const isModalInstalling = installing && installingUrl === previewFace.downloadUrl;
-
-                return (
-                  <Button
-                    label={
-                      isModalInstalled
-                        ? 'Installed on Watch'
-                        : isModalWrong
-                          ? `Incompatible Screen (${previewFace.width}x${previewFace.height})`
-                          : isModalInstalling
-                            ? 'Installing...'
-                            : 'Install to Watch'
-                    }
-                    icon={
-                      isModalInstalled
-                        ? 'checkmark-circle'
-                        : isModalWrong
-                          ? 'alert-circle-outline'
-                          : 'cloud-download-outline'
-                    }
-                    variant={isModalWrong || isModalInstalled ? 'secondary' : 'primary'}
-                    disabled={!connected || !idle || isModalInstalled || isModalWrong || isModalInstalling}
-                    loading={isModalInstalling}
-                    onPress={() => {
-                      void handleInstall(previewFace.downloadUrl, previewFace.title).then(() => {
-                        setPreviewFace(null);
-                      });
-                    }}
-                  />
-                );
-              })()}
-            </View>
-          ) : null}
-        </View>
-      </View>
-    </Modal>
+  const libraryEmpty = (
+    <Card>
+      <EmptyState
+        icon="folder"
+        title="No watch faces saved"
+        description="Import a .hwt file from your phone storage to build your personal offline collection."
+        action={{
+          label: 'Import .hwt file',
+          icon: 'document-attach-outline',
+          onPress: () => void handleImportToMyWatch(),
+        }}
+      />
+    </Card>
   );
-
-  if (tab === 'catalog') {
-    return (
-      <>
-        <FlatList
-          style={{ backgroundColor: colors.background }}
-          contentContainerStyle={padding}
-          data={COMMUNITY_WATCHFACES}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={header}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          refreshControl={refreshControl}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item: face }) => {
-            const matchesScreen =
-              list?.width && list.height ? list.width === face.width && list.height === face.height : null;
-            const isWrongScreen = matchesScreen === false;
-            const isInstalled = list?.faces?.some(
-              (f) => f.name.toLowerCase().includes(face.title.toLowerCase()) || f.id === face.id
-            );
-            const isCurrentInstalling = installing && installingUrl === face.downloadUrl;
-
-            return (
-              <Card>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Preview ${face.title}`}
-                  onPress={() => setPreviewFace(face)}
-                  style={styles.catalogCardRow}>
-                  <WatchThumbnail face={face} />
-                  <View style={styles.faceText}>
-                    <View style={styles.titleLine}>
-                      <AppText variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
-                        {face.title}
-                      </AppText>
-                      {matchesScreen ? (
-                        <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                          <AppText variant="label" color={colors.primary}>
-                            Matches
-                          </AppText>
-                        </View>
-                      ) : isWrongScreen ? (
-                        <View style={[styles.pill, { backgroundColor: colors.muted }]}>
-                          <AppText variant="label" color={colors.destructive}>
-                            Different size
-                          </AppText>
-                        </View>
-                      ) : null}
-                    </View>
-                    <AppText variant="caption" muted>
-                      by {face.author}
-                    </AppText>
-                    <AppText variant="caption" muted>
-                      {face.width}x{face.height} px · {face.sizeLabel}
-                    </AppText>
-                  </View>
-                  <Ionicons name="eye-outline" size={20} color={colors.mutedForeground} />
-                </Pressable>
-                <AppText variant="caption">{face.description}</AppText>
-                <View style={styles.actions}>
-                  <Button
-                    label={
-                      isInstalled
-                        ? 'Installed'
-                        : isWrongScreen
-                          ? `Incompatible (${face.width}x${face.height})`
-                          : isCurrentInstalling
-                            ? 'Installing...'
-                            : '1-Click Install'
-                    }
-                    icon={
-                      isInstalled
-                        ? 'checkmark-circle'
-                        : isWrongScreen
-                          ? 'alert-circle-outline'
-                          : 'cloud-download-outline'
-                    }
-                    variant={isWrongScreen || isInstalled ? 'secondary' : 'primary'}
-                    disabled={!connected || !idle || isInstalled || isCurrentInstalling}
-                    loading={isCurrentInstalling}
-                    onPress={() => {
-                      if (isWrongScreen) {
-                        Alert.alert(
-                          'Ukuran Layar Tidak Cocok',
-                          `Watch face ini dibuat khusus untuk layar ${face.width}x${face.height} px.\n\nHuawei Band 10 Anda berlayar ${list?.width}x${list?.height} px, sehingga jam akan menolak file ini agar tampilan tidak rusak.`
-                        );
-                        return;
-                      }
-                      void handleInstall(face.downloadUrl, face.title);
-                    }}
-                  />
-                  <Button label="Preview" icon="eye-outline" onPress={() => setPreviewFace(face)} />
-                </View>
-              </Card>
-            );
-          }}
-        />
-        {previewModal}
-      </>
-    );
-  }
 
   return (
     <>
-      <FlatList
-        style={{ backgroundColor: colors.background }}
-        contentContainerStyle={padding}
-        data={list?.faces ?? []}
-        keyExtractor={(face) => face.id}
-        ListHeaderComponent={header}
-        ListEmptyComponent={empty}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        refreshControl={refreshControl}
-        initialNumToRender={8}
-        windowSize={7}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item: face }) => {
-          const working = typeof busy === 'object' && busy !== null && busy.id === face.id;
-          const action = typeof busy === 'object' && busy !== null ? busy.action : null;
-          const catalogMatch = COMMUNITY_WATCHFACES.find(
-            (c) =>
-              c.id === face.id ||
-              face.name.toLowerCase().includes(c.title.toLowerCase()) ||
-              face.name.toLowerCase().includes(c.id) ||
-              (c.id === 'nike9_sport_band' && face.name.toLowerCase().includes('nike'))
-          );
+      {tab === 'installed' ? (
+        <FlatList
+          style={{ backgroundColor: colors.background }}
+          contentContainerStyle={padding}
+          data={list?.faces ?? []}
+          keyExtractor={(face) => face.id}
+          ListHeaderComponent={header}
+          ListEmptyComponent={installedEmpty}
+          ItemSeparatorComponent={Separator}
+          refreshControl={refreshControl}
+          initialNumToRender={8}
+          windowSize={7}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item: face }) => (
+            <InstalledFaceCard
+              face={face}
+              match={findFaceMatch(face, library, COMMUNITY_WATCHFACES)}
+              screenWidth={list?.width}
+              screenHeight={list?.height}
+              busy={busy}
+              connected={connected}
+              idle={idle}
+              onPreview={setPreviewFace}
+              onSetActive={(id) => void setActive(id)}
+              onCustomize={(id, name) =>
+                router.push({ pathname: '/watch/face-edit', params: { id, name } })
+              }
+              onDelete={confirmDeleteFromWatch}
+            />
+          )}
+        />
+      ) : (
+        <FlatList
+          style={{ backgroundColor: colors.background }}
+          contentContainerStyle={padding}
+          data={library}
+          keyExtractor={(face) => face.id}
+          ListHeaderComponent={header}
+          ListEmptyComponent={libraryEmpty}
+          ItemSeparatorComponent={Separator}
+          refreshControl={refreshControl}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item: face }) => (
+            <LibraryFaceCard
+              face={face}
+              matchedWatchFace={findInstalledFace(face, list?.faces)}
+              screenWidth={list?.width}
+              screenHeight={list?.height}
+              busy={busy}
+              connected={connected}
+              idle={idle}
+              installing={installing}
+              installingUrl={installingUrl}
+              onPreview={setPreviewFace}
+              onSetActive={(id) => void setActive(id)}
+              onInstall={handleInstall}
+              onDelete={confirmDeleteFromLibrary}
+            />
+          )}
+        />
+      )}
 
-          return (
-            <Card style={face.active ? [styles.activeCard, { borderColor: colors.primary }] : undefined}>
-              <View style={styles.faceHeader}>
-                {catalogMatch ? (
-                  <Pressable onPress={() => setPreviewFace(catalogMatch)}>
-                    <WatchThumbnail face={catalogMatch} active={face.active} />
-                  </Pressable>
-                ) : (
-                  <View style={[styles.thumbBase, styles.thumbBand, face.active && styles.thumbActive]}>
-                    <IconChip icon={face.photo ? 'image' : 'watch'} tint={face.active ? 'link' : 'neutral'} />
-                  </View>
-                )}
-                <View style={styles.faceText}>
-                  <View style={styles.titleLine}>
-                    <AppText variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
-                      {face.name}
-                    </AppText>
-                    {face.active ? <ActivePill /> : null}
-                  </View>
-                  <AppText variant="caption" muted>
-                    {face.id} v{face.version}
-                    {face.factory ? ' · preinstalled' : ''}
-                    {face.tryout ? ' · trial' : ''}
-                    {face.video ? ' · video' : ''}
-                    {face.photo ? ' · photo' : ''}
-                  </AppText>
-                </View>
-              </View>
-              <View style={styles.actions}>
-                <Button
-                  label="Set active"
-                  icon="checkmark-circle"
-                  disabled={!connected || !idle || face.active}
-                  loading={working && action === 'activate'}
-                  onPress={() => void setActive(face.id)}
-                />
-                {face.editable ? (
-                  <Button
-                    label="Customize"
-                    icon="color-palette"
-                    disabled={!connected || !idle}
-                    onPress={() =>
-                      router.push({ pathname: '/watch/face-edit', params: { id: face.id, name: face.name } })
-                    }
-                  />
-                ) : null}
-                {catalogMatch ? (
-                  <Button label="Preview" icon="eye-outline" onPress={() => setPreviewFace(catalogMatch)} />
-                ) : null}
-                <Button
-                  label="Delete"
-                  icon="trash"
-                  variant="destructive"
-                  disabled={!connected || !idle || face.factory}
-                  loading={working && action === 'delete'}
-                  onPress={() => confirmDelete(face)}
-                />
-              </View>
-            </Card>
-          );
-        }}
+      <WatchfacePreviewModal
+        previewFace={previewFace}
+        list={list}
+        tab={tab}
+        connected={connected}
+        idle={idle}
+        installing={installing}
+        installingUrl={installingUrl}
+        matchedFace={matchedPreview}
+        onClose={() => setPreviewFace(null)}
+        onInstall={handleInstall}
+        onSetActive={(id) => void setActive(id)}
       />
-      {previewModal}
+
+      <ThemedDialog dialog={dialog} onClose={() => setDialog(null)} />
     </>
   );
 }
 
+function Separator() {
+  return <View style={styles.separator} />;
+}
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xl, marginBottom: spacing.md },
+  header: { gap: spacing.lg, marginBottom: spacing.md },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
   listTitle: { gap: spacing.xs },
   listTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 32 },
   separator: { height: spacing.md },
   skeletons: { gap: spacing.md },
-  faceHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  faceText: { flex: 1, gap: 2 },
-  pill: { borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 4 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   progress: { gap: spacing.sm },
   track: { height: 8, borderRadius: radius.pill, overflow: 'hidden' },
   bar: { height: 8, borderRadius: radius.pill },
-  catalogCardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  titleLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  activeCard: { borderWidth: 1.5 },
-  thumbBase: {
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  thumbBand: {
-    width: 52,
-    height: 80,
-    borderRadius: 14,
-    backgroundColor: '#050505',
-  },
-  thumbRound: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#ffffff',
-  },
-  thumbFit: {
-    width: 56,
-    height: 76,
-    borderRadius: 12,
-    backgroundColor: '#050505',
-  },
-  thumbActive: {
-    borderColor: '#3b82f6',
-    borderWidth: 2,
-  },
-  fillImage: {
-    width: '100%',
-    height: '100%',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: spacing.xl,
-    gap: spacing.lg,
-    maxHeight: '85%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  modalCloseBtn: {
-    padding: 4,
-  },
-  modalPreviewArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.md,
-  },
-  modalWatchChassis: {
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.15)',
-    overflow: 'hidden',
-  },
-  modalChassisBand: {
-    width: 130,
-    height: 246,
-    borderRadius: 28,
-    backgroundColor: '#050505',
-  },
-  modalChassisRound: {
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: '#ffffff',
-  },
-  modalChassisFit: {
-    width: 150,
-    height: 214,
-    borderRadius: 24,
-    backgroundColor: '#050505',
-  },
-  modalMeta: {
-    gap: spacing.xs,
-  },
-  modalMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  modalActions: {
-    marginTop: spacing.xs,
-  },
 });

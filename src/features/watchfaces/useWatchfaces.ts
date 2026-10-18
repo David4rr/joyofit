@@ -5,7 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 
 import { errorMessage } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
-import { HuaweiWear, type UploadProgressEvent, type WatchfaceList } from '@/wear';
+import { HuaweiWear, type UploadProgressEvent, type WatchfaceInstallResult, type WatchfaceList } from '@/wear';
 
 /** What the screen is waiting for: reading the list, installing a file, or an operation on one face. */
 export type WatchfaceBusy = 'list' | 'install' | { id: string; action: 'activate' | 'delete' } | null;
@@ -54,25 +54,28 @@ export function useWatchfaces() {
   );
 
   /** Installs a watch face from an explicit URI (file://, content://, or http/https URL). */
-  const installFromUri = useCallback(async (uri: string, signature?: string, fileName?: string): Promise<boolean> => {
-    setProgress({ bytes: 0, total: 0 });
-    let ok = false;
-    await run('install', async () => {
-      try {
-        const result = await HuaweiWear.installWatchface(uri, signature, fileName);
-        if (result.list) setList(result.list);
-        if (result.listed) {
-          setNotice(`${result.name}: ${result.message}`);
-          ok = true;
-        } else {
-          setError(`${result.name}: ${result.message}`);
+  const installFromUri = useCallback(
+    async (uri: string, signature?: string, fileName?: string): Promise<WatchfaceInstallResult | null> => {
+      setProgress({ bytes: 0, total: 0 });
+      let outcome: WatchfaceInstallResult | null = null;
+      await run('install', async () => {
+        try {
+          const result = await HuaweiWear.installWatchface(uri, signature, fileName);
+          if (result.list) setList(result.list);
+          if (result.listed) {
+            setNotice(`${result.name}: ${result.message}`);
+            outcome = result;
+          } else {
+            setError(`${result.name}: ${result.message}`);
+          }
+        } finally {
+          setProgress(null);
         }
-      } finally {
-        setProgress(null);
-      }
-    });
-    return ok;
-  }, [run]);
+      });
+      return outcome;
+    },
+    [run],
+  );
 
   /** Installs a picked .hwt; `signature` + `fileName` replay a captured Huawei signature (see installWatchface). */
   const install = useCallback(async (signature?: string, fileName?: string) => {
