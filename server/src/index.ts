@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { ZodError } from "zod";
 
-import { account } from "./account";
+import { account, syncedData } from "./account";
 import { cloudUnlocked, requireFounder } from "./access";
 import { AuthUnavailableError, requireUser } from "./auth";
 import type { AppContext, AppEnv } from "./env";
@@ -95,6 +95,7 @@ v1.get("/sync", async (c) => {
 });
 
 v1.route("/account", account);
+v1.route("/data", syncedData);
 v1.route("/imports", imports);
 v1.route("/strava", strava);
 v1.route("/family", family);

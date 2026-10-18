@@ -18,13 +18,29 @@ async function deleteImportFiles(env: AppEnv, userId: string): Promise<void> {
   }
 }
 
+/** The rows and files the app uploaded (steps, sleep, workouts, devices, imports); not Strava or family. Repeatable. */
+export async function deleteSyncedData(env: AppEnv, userId: string): Promise<void> {
+  await deleteImportFiles(env, userId);
+  await env.DB.batch(USER_TABLES.map((table) => env.DB.prepare(`DELETE FROM ${table} WHERE user_id = ?1`).bind(userId)));
+}
+
 /** Everything JoyoFit holds for one JoyoRogo user: synced rows, imported files, the Strava connection, family links (both roles). Repeatable. */
 export async function deleteUserData(env: AppEnv, userId: string): Promise<void> {
   await dropStravaConnection(env, userId);
   await deleteFamilyData(env, userId);
-  await deleteImportFiles(env, userId);
-  await env.DB.batch(USER_TABLES.map((table) => env.DB.prepare(`DELETE FROM ${table} WHERE user_id = ?1`).bind(userId)));
+  await deleteSyncedData(env, userId);
 }
+
+/**
+ * `DELETE /v1/data` (Settings, Cloud sync, Delete cloud data): wipes what the app uploaded and keeps the account's
+ * Strava connection and family links. Repeatable.
+ */
+export const syncedData = new Hono<AppContext>();
+
+syncedData.delete("/", async (c) => {
+  await deleteSyncedData(c.env, c.get("user").id);
+  return c.json({ deleted: true });
+});
 
 /**
  * `DELETE /v1/account` — wipes this user's JoyoFit cloud data (the app calls it before it deletes the JoyoRogo

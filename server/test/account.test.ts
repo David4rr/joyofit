@@ -62,3 +62,29 @@ describe("DELETE /v1/account", () => {
     expect((await call("/v1/account", { method: "DELETE", cookie })).status).toBe(200);
   });
 });
+
+describe("DELETE /v1/data", () => {
+  it("requires a session", async () => {
+    expect((await call("/v1/data", { method: "DELETE" })).status).toBe(401);
+  });
+
+  it("wipes the synced rows and imported files of the caller only, and never touches the Strava connection", async () => {
+    const dana = signUp("dana");
+    const erin = signUp("erin");
+    await seed(dana.user.id);
+    await seed(erin.user.id);
+    grantApi.handler = () => Response.json({ revoked: true });
+
+    const response = await call("/v1/data", { method: "DELETE", cookie: dana.cookie });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ deleted: true });
+    expect(grantApi.calls).toEqual([]);
+
+    for (const table of TABLES) {
+      expect(await rows(table, dana.user.id), table).toBe(0);
+      expect(await rows(table, erin.user.id), table).toBe(1);
+    }
+    expect(await env.IMPORTS.get(`imports/${dana.user.id}/file`)).toBeNull();
+    expect(await env.IMPORTS.get(`imports/${erin.user.id}/file`)).not.toBeNull();
+  });
+});

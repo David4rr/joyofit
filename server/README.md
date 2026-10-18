@@ -28,6 +28,8 @@ a guess. Deploy JoyoRogo with `fitness.cloudAccess` before this Worker.
 | `GET /v1/sync?since=<rev>&limit=<n>` | Pull for other devices: rows changed after `since`, oldest change first, across all tables (`limit` ≤ 1 000, workouts ≤ 25 per page). Answers the four arrays plus `cursor` (the next `since`) and `hasMore`. |
 | `POST /v1/imports?filename=<name>` | The request body is the file, streamed straight into R2 at `imports/<userId>/<uuid>` (needs `Content-Length`, at most `MAX_IMPORT_BYTES`, default 100 MiB). Records an `imports` row (`uploading` → `uploaded`, or `failed`). Answers `201 {id, status, size, ...}`. |
 | `GET /v1/imports` | The caller's 50 newest imports. |
+| `DELETE /v1/data` | Wipes what the app uploaded for the caller (steps, sleep, devices, workout rows of older builds, import files and rows). Keeps the Strava connection and family links. No Pro gate (data is never locked in). Answers `{deleted: true}`. |
+| `DELETE /v1/account` | Everything above plus the Strava connection and family links; the app calls it before it deletes the JoyoRogo account. |
 | `GET /v1/strava`, `GET /v1/strava/authorize`, `POST /v1/strava/token`, `POST /v1/strava/disconnect` | Strava connection of the signed-in user, **free (no Pro gate)**: status, authorize URL (scope `activity:write` plus whatever the athlete already granted JoyoRogo), a fresh short-lived access token, unlink. The Strava application is shared with JoyoRogo and Strava keeps one token per athlete, so the tokens live in **JoyoRogo's D1** (`strava_account`) and this Worker calls JoyoRogo's `/internal/joyofit/strava/*` with the Strava client credentials as HTTP Basic; the refresh token and client secret never reach the phone. The old table `strava_connection` is dropped by [`migrations/0004_drop_strava_connection.sql`](migrations/0004_drop_strava_connection.sql). |
 | `GET /strava/callback`, `GET\|POST /strava/webhook` | Public, called by Strava: the OAuth redirect (JoyoRogo exchanges the code and stores the tokens; redirects to `joyofit://settings/strava`) and the webhook (subscription validation; a deauthorization event is forwarded to JoyoRogo, which deletes that athlete's tokens for both products, `503` when the forward fails so Strava retries). |
 
@@ -95,6 +97,7 @@ for the service-binding path).
 - Sessions are cached per isolate for 60 s; a session revoked in JoyoRogo keeps working here for up to
   that long. Failures are never cached. The Pro answer is cached the same way (60 s when unlocked, 10 s
   when locked, so a fresh purchase is noticed quickly).
-- Deletions are not synced: the app never deletes rows, and the server has no delete endpoint yet.
+- Workouts moved to JoyoRogo: app builds from the cloud-workouts release on keep their workouts (summary, every sample stream, the analysis) in JoyoRogo's D1 and R2, Pro only, restorable on a new phone and shown on joyorogo.com (design in JoyoRogo's `docs/watch-workout-cloud.md`). They no longer send `workouts` to `POST /v1/sync`. The `workouts` and `workout_points` tables and the workout part of `/v1/sync` stay only for older installed builds; drop them in a migration once those are gone.
+- Deleting: the app deletes nothing row by row. `DELETE /v1/data` wipes everything it uploaded, `DELETE /v1/account` additionally drops Strava and family links.
 - The importer for the Huawei export does not exist yet; `imports.r2_key` and `status` are where it will
   pick files up (`uploaded` → its own states).
