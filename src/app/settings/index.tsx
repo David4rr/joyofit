@@ -3,7 +3,9 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SectionList, StyleSheet, View } from 'react-native';
 
+import { authClient } from '@/cloud/auth';
 import { AppText } from '@/components/AppText';
+import { Avatar } from '@/components/Avatar';
 import { BrandMark } from '@/components/BrandMark';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { isIos } from '@/components/IosUnavailable';
@@ -47,6 +49,7 @@ export default function SettingsScreen() {
   const cloud = useCloud();
   const strava = useStrava();
   const presence = useWatchPresence();
+  const user = authClient.useSession().data?.user;
   const { askSignOut, askDelete, dialogs } = useAccountDialogs();
 
   // Until the database has been read (null) the watch rows stay, so the list does not jump when it answers.
@@ -139,7 +142,6 @@ export default function SettingsScreen() {
       : pro
         ? t('hub.account.pro')
         : t('hub.account.free');
-  const initial = cloud.email?.trim().charAt(0).toUpperCase();
 
   return (
     <SectionList
@@ -154,15 +156,7 @@ export default function SettingsScreen() {
           <PageHeader title={t('index.title')} />
           <NavRow
             leading={
-              initial && cloud.signedIn ? (
-                <View style={[styles.avatar, { backgroundColor: colors.primary }]} accessible={false}>
-                  <AppText variant="heading" color={colors.primaryForeground}>
-                    {initial}
-                  </AppText>
-                </View>
-              ) : (
-                <IconChip icon="person" size="lg" />
-              )
+              cloud.signedIn ? <Avatar name={user?.name?.trim() || cloud.email || ''} image={user?.image} size="xl" /> : <IconChip icon="person" size="lg" />
             }
             title={cloud.signedIn ? (cloud.email ?? t('hub.account.signedIn')) : t('hub.account.signedOut')}
             subtitle={accountLine}
@@ -203,5 +197,4 @@ const styles = StyleSheet.create({
   groupTitle: { paddingTop: spacing.lg, paddingBottom: spacing.sm },
   groupGap: { height: spacing.lg },
   summary: { marginTop: spacing.md },
-  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

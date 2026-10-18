@@ -685,7 +685,27 @@
   "account": {
     "signOutTitle": "Keluar dari JoyoRogo?",
     "signOutMessage": "Data di ponsel ini tetap ada. Sinkron cloud berhenti sampai kamu masuk lagi.",
-    "deleteTitle": "Hapus akun JoyoRogo?"
+    "deleteTitle": "Hapus akun JoyoRogo?",
+    "photo": {
+      "title": "Foto profil",
+      "change": "Ubah foto",
+      "remove": "Hapus foto",
+      "askTitle": "Pilih foto dari galeri",
+      "askBody": "Pilih foto dari galeri untuk foto profilmu. Foto dikirim ke akun JoyoRogo-mu dan terlihat oleh orang lain di feed dan grup.",
+      "continue": "Lanjut",
+      "removeTitle": "Hapus foto profil?",
+      "removeBody": "Foto yang kamu unggah dihapus dari akun JoyoRogo-mu. Kalau akunmu sebelumnya memakai foto Google, foto itu dipakai lagi; kalau tidak, yang tampil inisial namamu.",
+      "updated": "Foto profil diperbarui.",
+      "removed": "Foto profil dihapus.",
+      "denied": "JoyoFit tidak bisa membuka galeri. Izinkan akses foto di pengaturan, lalu coba lagi.",
+      "openSettings": "Buka pengaturan",
+      "error": {
+        "process": "Foto tidak bisa disiapkan: {{error}}",
+        "empty": "Foto kosong setelah diproses.",
+        "upload": "Foto belum terkirim: {{error}}",
+        "remove": "Foto belum terhapus: {{error}}"
+      }
+    }
   },
   "signOut": {
     "emptyMessage": "Sinkron cloud berhenti sampai kamu masuk lagi.",

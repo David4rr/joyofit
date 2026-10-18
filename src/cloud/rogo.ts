@@ -3,6 +3,7 @@ import { authClient } from '@/cloud/auth';
 import { JOYOROGO_URL } from '@/cloud/config';
 import { getLocale, t } from '@/i18n';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
+import type { SportKind } from '@/features/social/feedRoute';
 
 /**
  * Minimal client for JoyoRogo's oRPC API (`packages/api` in the joyorogo repo, mounted at `<server>/rpc`).
@@ -181,6 +182,8 @@ export interface RogoPost {
   kcal: number | null;
   durationMin: number | null;
   stats?: Record<string, number | string | null>;
+  /** A workout post's route as a Google encoded polyline (precision 5), trimmed and simplified by JoyoRogo; only present when a map is to be shown (never inside `stats`). */
+  mapLine?: string;
   caption: string | null;
   visibility: RogoVisibility;
   /** ISO timestamp. */
@@ -203,6 +206,8 @@ export interface RogoSocialProfile {
   followerCount: number;
   followingCount: number;
   postCount: number;
+  /** The account switch "Peta rute di postingan": off hides the maps of all of the account's posts, for everyone. */
+  shareMaps: boolean;
 }
 
 /** `social.publicProfile`; a private profile comes back with `publicProfile: false`, no `stats` and no posts. */
@@ -240,6 +245,16 @@ export interface RogoWatchStats {
   startedAt: number;
   /** 1 when `social.workoutDetail` has a heart-rate series or a route for the post. */
   hasDetail: 0 | 1;
+  /** `run`, `walk`, `ride`, `swim` or `other`; null on posts made before JoyoRogo stored it. */
+  sportKind: SportKind | null;
+  /** Moving time in seconds; null on older posts or when the post has no analysis. */
+  movingSec: number | null;
+  /** Elevation gain in metres; null on older posts or without elevation data. */
+  elevGainM: number | null;
+  /** 1 when the post has a stored route map (`mapLine` is sent only while `showMap` is 1 and the author's account allows maps). */
+  hasMap: 0 | 1;
+  /** The author's per-post "Tampilkan peta" switch. */
+  showMap: 0 | 1;
 }
 
 /** Heart rate as `post_workout_detail.hr_json`: one reading per `intervalSec`, null where the watch had none. */
@@ -266,6 +281,8 @@ export interface RogoWatchPostInput {
   detail?: { hr?: RogoHrSeries | null; route?: RogoRoute | null; analysis?: WorkoutAnalysis | null };
   caption?: string;
   visibility: RogoVisibility;
+  /** "Tampilkan peta": default on. The line others get is trimmed 200 m at both ends and simplified by JoyoRogo. */
+  showMap?: boolean;
 }
 
 /** `social.workoutDetail`: what the viewer may see of a watch post's detail. `locked` means the viewer is not Pro. */
@@ -357,6 +374,13 @@ export const rogo = {
     rogoCall<RogoFoodItem>('food/add', { ...input, source: 'manual' }),
   /** Stores the day's Recovery / Strain / Sleep and body metrics (sleep hours, resting HR, HRV, VO2max, training status, recovery time) for JoyoRogo's diary and its AI connector. JoyoRogo answers 404 until it is deployed with the `fitness` router. */
   pushScores: (days: RogoScoreDay[]) => rogoCall<{ saved: number }>('fitness/upsertScores', { days }),
+  avatar: {
+    /** Replaces the profile photo; the answer is the new server-relative `/avatar/...` path. */
+    upload: (input: { imageBase64: string; mimeType: 'image/jpeg' | 'image/png' | 'image/webp' }) =>
+      rogoCall<{ image: string }>('avatar/upload', input),
+    /** Removes an uploaded photo; the answer is the account's image after that: the Google photo it had before, or null. */
+    remove: () => rogoCall<{ image: string | null }>('avatar/remove', {}),
+  },
   mcp: {
     info: () => rogoCall<RogoMcpInfo>('mcpConnection/info', {}),
     list: () => rogoCall<RogoMcpConnection[]>('mcpConnection/list', {}),
@@ -385,5 +409,9 @@ export const rogo = {
     createWatchPost: (input: RogoWatchPostInput) =>
       rogoCall<{ id: string; visibility: RogoVisibility }>('social/createWatchPost', input),
     workoutDetail: (postId: string) => rogoCall<RogoWorkoutDetail>('social/workoutDetail', { postId }),
+    /** The author's per-post "Tampilkan peta" switch, for a post whose `stats.hasMap` is 1 (NOT_FOUND otherwise). */
+    setPostMap: (postId: string, show: boolean) => rogoCall<{ showMap: 0 | 1 }>('social/setPostMap', { postId, show }),
+    /** Account feed settings; `shareMaps` is "Peta rute di postingan". */
+    updateProfile: (input: { shareMaps?: boolean }) => rogoCall<{ ok: true }>('social/updateProfile', input),
   },
 };

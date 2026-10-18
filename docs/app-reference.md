@@ -343,9 +343,18 @@ JoyoFit reads and writes JoyoRogo's social backend with the shared JoyoRogo acco
   with *Share JoyoFit scores* (`group.setShareFitness`); *Share food names* is JoyoRogo's existing switch.
 - **Share to JoyoRogo** (workout screen) posts the summary (sport, duration, kcal, distance, average and maximum heart rate) as a `latihan` post, visible to
   your groups or public, with the workout analysis as its detail (`detail.analysis`, at most 200 KB; thinned to a coarser series above 190 KB). The composer has switches for
-  *Heart-rate data*, *Route* (off drops the map track) and *Comparison with earlier workouts*, which `shareableAnalysis` applies to the full analysis before it
+  *Heart-rate data*, *Show map* (the route: off drops the map track, so the post has no map) and *Comparison with earlier workouts*, which `shareableAnalysis` applies to the full analysis before it
   is sent; turning heart rate off also removes zones, effort, load and per-split heart rate. Workouts without an analysis fall back to the older heart-rate
   series (at most 600 averaged readings) and route (at most 1000 points). Building that input is `features/social/watchPost.ts`.
+- **Route map and figures on workout posts.** A post of a workout with GPS shows a route drawing under its title in the feed (`RouteMapPreview`, 2:1) and a larger
+  one (4:3, with start and finish labels and a hint) on the post screen (`PostMapSection`), above the analysis. It is a plain SVG polyline on a soft grid, drawn by the
+  phone from the post's `mapLine`: a Google encoded polyline (precision 5, at most 100 points) that JoyoRogo builds when the post is created, from the route with the
+  first and last 200 m cut, simplified. No map tiles and no network request. `src/features/social/feedRoute.ts` is a verbatim copy of JoyoRogo's
+  `packages/api/src/lib/feed-route.ts` (and `feedRoute.test.ts` of its test); change both together. `mapLine` is absent when the workout had no GPS or was too short, or
+  when the post's or the account's switch hides it. The author switches one post's map on the post screen (*Show map*, `social.setPostMap`) and every map of the account
+  in *My profile* (*Route map on posts*, `social.updateProfile({ shareMaps })`). Other viewers get the shared line in `social.workoutDetail`, never the full track. The
+  figures row (`postStats.ts`) is distance, time (moving time when the post has it), pace per km on foot or speed for a ride, elevation gain, then energy and heart rate.
+  Renders of `RouteMapPreview` (card and detail size, light and dark): `docs/screenshots/social-route-map-light.png`, `social-route-map-dark.png`.
 - **Pro paywall on viewing, not sharing.** Anyone can share the detail. The author always sees their own; another viewer gets the full analysis (map, charts, splits, zones, best efforts and more) only on
   JoyoRogo Pro (`social.workoutDetail` answers `locked: true` otherwise, and the post shows a Pro card). The card's link follows the store rules of
   `proOffer`: a web link outside Google Play, the JoyoRogo Play listing on Play, text only on iOS.

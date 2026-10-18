@@ -696,7 +696,27 @@
   "account": {
     "signOutTitle": "Sign out of JoyoRogo?",
     "signOutMessage": "Data on this phone stays. Cloud sync stops until you sign in again.",
-    "deleteTitle": "Delete your JoyoRogo account?"
+    "deleteTitle": "Delete your JoyoRogo account?",
+    "photo": {
+      "title": "Profile photo",
+      "change": "Change photo",
+      "remove": "Remove photo",
+      "askTitle": "Choose a photo from your gallery",
+      "askBody": "Pick a photo from your gallery for your profile picture. The photo is sent to your JoyoRogo account and is visible to other people in the feed and groups.",
+      "continue": "Continue",
+      "removeTitle": "Remove profile photo?",
+      "removeBody": "The photo you uploaded is deleted from your JoyoRogo account. If your account used a Google photo before, that photo is used again; otherwise your initials show.",
+      "updated": "Profile photo updated.",
+      "removed": "Profile photo removed.",
+      "denied": "JoyoFit cannot open the gallery. Allow photo access in settings, then try again.",
+      "openSettings": "Open settings",
+      "error": {
+        "process": "The photo could not be prepared: {{error}}",
+        "empty": "The photo is empty after processing.",
+        "upload": "The photo was not sent: {{error}}",
+        "remove": "The photo was not removed: {{error}}"
+      }
+    }
   },
   "signOut": {
     "emptyMessage": "Cloud sync stops until you sign in again.",
