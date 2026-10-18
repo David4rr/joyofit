@@ -45,7 +45,7 @@ export const FAQ: readonly FaqItem[] = [
   },
   {
     q: "Apa yang diunggah ke cloud?",
-    a: "Sampel langkah, segmen tidur, olahraga beserta titik rutenya, dan data perangkat. Saat ini aplikasi hanya mengunggah; membaca balik dari cloud belum ada. Penghapusan, profil, alarm, dan pengaturan tidak disinkronkan.",
+    a: "Sampel langkah, segmen tidur, dan data perangkat untuk akun yang masuk. Untuk akun JoyoRogo Pro, setiap olahraga juga diunggah sebagai satu berkas terkompresi berisi ringkasan, rute GPS, detak jantung, ketinggian, kecepatan, kadensi, panjang langkah, daya, dan analisisnya; akun Gratis tidak mengunggah olahraga. Setelah masuk di HP baru, olahraga dipulihkan dari cloud dan juga tampil di joyorogo.com. Unggahan bisa dibatasi hanya lewat Wi-Fi. Profil, alarm, dan pengaturan tidak disinkronkan.",
   },
   {
     q: "Bisa dipakai tanpa cloud sama sekali?",
