@@ -2,7 +2,7 @@
 // tile pipeline and scene builder (only the painter differs: SVG string -> sharp instead of react-native-svg).
 //
 //   bun scripts/replay-preview.ts --fit FILE [--out DIR] [--frames 5] [--mp4] [--fps 30] [--width 540]
-//        [--mode dark|light] [--locale id|en] [--trim 200] [--offline] [--speed 1]
+//        [--mode dark|light] [--locale id|en] [--trim 200] [--offline] [--speed 1] [--name OUTPUT_PREFIX]
 //
 // Needs `node` (sharp's SVG text path hangs under Bun) and, for --mp4, the system `ffmpeg` (previews only: the app encodes
 // with its native MediaCodec / AVAssetWriter module). Tiles come from OpenFreeMap through the app's tile source and are cached
@@ -10,7 +10,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 import { createTileSource } from '../src/features/map/tileCache';
 import { parseFitActivity } from '../src/features/fitimport/parseFit';
@@ -136,7 +136,7 @@ const stills = Array.from({ length: count }, (_, i) => {
   return timeOfProgress(timing, count <= 3 ? 0.5 : 0.1 + (0.8 * (i - 1)) / (count - 3));
 })
   .map((t, i) => ({ name: `frame-${String(i + 1).padStart(2, '0')}`, t }));
-const base = `${track.kind}-${mode}-${locale}`;
+const base = opt('name', `${basename(fit, '.fit').replace(/[^A-Za-z0-9]+/g, '-').toLowerCase()}-${mode}-${locale}`);
 const stillJobs = renderJobs(stills.map((s) => ({ name: `${base}-${s.name}`, t: s.t })), out, 1080);
 await rasterize(tmp, stillJobs);
 console.log(`  wrote ${stillJobs.length} stills to ${out}`);

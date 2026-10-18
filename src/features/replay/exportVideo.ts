@@ -25,6 +25,10 @@ export class EncoderUnsupportedError extends Error {
   }
 }
 
+function hasCode(error: unknown, code: string): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
+}
+
 export interface EncodedVideo {
   /** `file://` URI of the MP4 in the cache. */
   uri: string;
@@ -72,7 +76,10 @@ export async function encodeReplay(opts: EncodeOptions): Promise<EncodedVideo> {
   if (!support || !support.available || !support.h264) throw new EncoderUnsupportedError();
   clearOldVideos();
   const file = new File(cacheDir(), `replay-${Date.now()}.mp4`);
-  const session = await ReplayEncoder.begin({ path: file.uri, width: EXPORT_WIDTH, height: EXPORT_HEIGHT, fps: EXPORT_FPS });
+  const session = await ReplayEncoder.begin({ path: file.uri, width: EXPORT_WIDTH, height: EXPORT_HEIGHT, fps: EXPORT_FPS }).catch((e: unknown) => {
+    // No encoder takes 1080 x 1920 H.264 on this phone: say so, rather than a code.
+    throw hasCode(e, 'ERR_ENCODER_UNSUPPORTED') ? new EncoderUnsupportedError() : e;
+  });
   const sink: FrameSink = {
     appendFrame: (index, uri) => ReplayEncoder.appendFrame(session.id, uri, index),
     finish: () => ReplayEncoder.finish(session.id),

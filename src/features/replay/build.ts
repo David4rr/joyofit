@@ -222,6 +222,8 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
   const clockSec = plan.track.totals.movingSec > 0 ? plan.track.totals.movingSec : plan.track.totals.elapsedSec;
 
   const unit = (k: string) => t(`unit.${k}`);
+  /** Pins and km marks the camera has left behind slide under the counter: they fade out before they reach it. */
+  const hudFade = (y: number) => 1 - smoothstep(1110, 1250, y);
 
   // ---- pins ---------------------------------------------------------------------------------------------------
   function pinColor(kind: CalloutKind): string {
@@ -399,7 +401,7 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
             { k: 'ellipse', cx: mk.x, cy: mk.y, rx: 27, ry: 27, fill: theme.surfaceStrong, stroke: { color: theme.bg, width: 4 } },
             text(mk.x, mk.y + 10, label, label.length > 2 ? 24 : 28, 800, theme.fg, 'middle'),
           ],
-          mk.alpha,
+          mk.alpha * hudFade(mk.y),
         ),
       );
     }
@@ -418,7 +420,7 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
       group(ridges, ridgeAlpha),
       fogBottom,
       group(marks),
-      group(f.pins.flatMap(pinNodes)),
+      group(f.pins.flatMap((pin) => (hudFade(pin.y) > 0.02 ? [group(pinNodes(pin), hudFade(pin.y))] : []))),
       group(rider),
       group(f.counterAlpha > 0.01 ? counterNodes(f) : [], f.counterAlpha),
       group(chartNodes(f)),

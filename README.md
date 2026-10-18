@@ -146,6 +146,7 @@ Site (`site/`): `bun install`, `bun run dev`, `bun run build` (typecheck, Vite b
 | [docs/strength.md](docs/strength.md), [docs/strength-cloud.md](docs/strength-cloud.md) | Strength logger and its cloud sync |
 | [docs/multi-watch.md](docs/multi-watch.md) | Several watches: device column, primary rules, switching, background visits |
 | [docs/sensors.md](docs/sensors.md) | External sensors, phone-recorded workouts, device test script |
+| [docs/replay.md](docs/replay.md) | Workout replay: player, camera, map, MP4 export with the native encoder, privacy, known limits |
 | [docs/coach.md](docs/coach.md) | Coach rules, plans, library, chat |
 | [docs/strava.md](docs/strava.md) | Strava integration and review checklist |
 | [docs/family-monitoring.md](docs/family-monitoring.md) | Keluarga |
