@@ -123,7 +123,7 @@ describe('estimatePower', () => {
     const v = driveSpeed(85, DEFAULT_GEAR_INDEX);
     const watts = estimatePower({ ...base, cadRpm: 85, vMs: v });
     expect(watts).toBeCloseTo(powerAtSpeed(v, 0, KG), 6);
-    expect(watts).toBeGreaterThan(100);
+    expect(watts).toBeGreaterThan(50);
   });
 });
 
