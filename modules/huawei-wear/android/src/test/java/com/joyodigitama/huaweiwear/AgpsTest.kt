@@ -77,15 +77,6 @@ class AgpsTest {
   }
 
   @Test
-  fun otherFilesAreCappedAndMustNotBeWebPagesOrJson() {
-    assertNull(AgpsPolicy.validateOther(byteArrayOf(1, 2, 3)))
-    assertNotNull(AgpsPolicy.validateOther(ByteArray(0)))
-    assertNotNull(AgpsPolicy.validateOther(ByteArray(AgpsPolicy.OTHER_MAX_BYTES + 1) { 1 }))
-    assertNotNull(AgpsPolicy.validateOther("<html>".toByteArray()))
-    assertNotNull(AgpsPolicy.validateOther("{\"error\":1}".toByteArray()))
-  }
-
-  @Test
   fun frameCountRoundsUpAndRefusesAbsurdTransfers() {
     assertEquals(1, AgpsPolicy.frameCount(1, 100))
     assertEquals(1, AgpsPolicy.frameCount(100, 100))
@@ -194,9 +185,8 @@ class AgpsTest {
   // The store
 
   @Test
-  fun theStoreStartsEmptyWithTheHuaweiSwitchOff() {
+  fun theStoreStartsEmpty() {
     val store = AgpsStore(MemoryPrefs())
-    assertFalse(store.huaweiServers)
     assertEquals(0L, store.cachedAtMs)
     assertEquals(-1, store.lastAskVersion)
     assertEquals(AgpsOutcome.NONE, store.lastOutcome)
@@ -261,7 +251,7 @@ class AgpsTest {
   private val ltoUrl = EphemerisNet.LTO_HOST + EphemerisNet.LTO_PATH
 
   private fun source(cache: AgpsCache, store: AgpsStore, online: Boolean = true) =
-    NetworkAgpsSource(cache, store, log = { }, logRaw = { }, isOnline = { online }, nowMs = { 50_000L })
+    NetworkAgpsSource(cache, store, log = { }, isOnline = { online }, nowMs = { 50_000L })
 
   @Test
   fun versionZeroServesAGoodCachedFileAndMarksItAsCached() {
@@ -292,25 +282,16 @@ class AgpsTest {
   }
 
   @Test
-  fun huaweiVersionsAreDeclinedUntilTheUserAllowsTheirServers() {
+  fun versionsOneToThreeAreDeclinedAsUnsupportedWithoutTouchingTheNetworkOrTheCache() {
+    val cache = MemoryCache().also { it.entries[ltoUrl] = lto() }
     val store = AgpsStore(MemoryPrefs())
-    val consult = AgpsConsult(3, "p/q/HW_AGNSS;x/HW_PGNSS_PRED", emptyList())
-    val fetch = source(MemoryCache(), store).fetch(consult, force = false)
-    assertFalse(fetch.ok)
-    assertEquals(AgpsOutcome.HUAWEI_OFF, fetch.outcome)
-    for (version in 1..2) {
-      assertEquals(AgpsOutcome.HUAWEI_OFF, source(MemoryCache(), store).fetch(AgpsConsult(version, "x", emptyList()), false).outcome)
+    for (version in 1..3) {
+      val fetch = source(cache, store).fetch(AgpsConsult(version, "p/q/HW_AGNSS;x/HW_PGNSS_PRED", emptyList()), force = false)
+      assertFalse("the Broadcom file is never offered to a watch that asked for another kind", fetch.ok)
+      assertEquals(AgpsOutcome.UNSUPPORTED, fetch.outcome)
+      assertTrue(fetch.message.contains("HW_AGNSS,HW_PGNSS_PRED"))
+      assertFalse("paths are not echoed", fetch.message.contains("p/q"))
     }
-  }
-
-  @Test
-  fun withTheSwitchOnOnlyTheKindThatIsAPlainDownloadIsAttempted() {
-    val store = AgpsStore(MemoryPrefs()).also { it.huaweiServers = true }
-    val other = source(MemoryCache(), store).fetch(AgpsConsult(3, "x/HW_PGNSS_PRED;y/HW_RSMC_A", emptyList()), false)
-    assertEquals(AgpsOutcome.UNSUPPORTED, other.outcome)
-    assertTrue(other.message.contains("HW_PGNSS_PRED"))
-    val noPath = source(MemoryCache(), store).fetch(AgpsConsult(3, "HW_AGNSS", emptyList()), false)
-    assertEquals(AgpsOutcome.UNSUPPORTED, noPath.outcome)
   }
 
   @Test

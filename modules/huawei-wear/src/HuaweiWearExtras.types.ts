@@ -103,8 +103,7 @@ export type AgpsOutcome =
   | 'no_network'
   | 'download_failed'
   | 'invalid_file'
-  /** The watch asked for data from the watch maker's servers and the switch for them is off. */
-  | 'huawei_off'
+  /** The watch asked for a kind of data only the watch maker's own app prepares; it was answered "failed". */
   | 'unsupported'
   | 'watch_refused'
   | 'timeout'
@@ -120,8 +119,6 @@ export interface AgpsStatus {
   /** A watch is connected now. */
   linked: boolean;
   phase: AgpsPhase;
-  /** The user allows data from the watch maker's servers. Off by default. */
-  huaweiServers: boolean;
   /** The newest download on the phone. */
   cachedAt: number;
   cachedSize: number;

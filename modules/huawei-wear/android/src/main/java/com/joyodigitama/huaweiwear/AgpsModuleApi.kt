@@ -19,8 +19,4 @@ internal fun ModuleDefinitionBuilder.agpsApi(runtime: () -> WearRuntime) {
   AsyncFunction("cancelAgps") Coroutine { ->
     runtime().ephemeris.cancel()
   }
-
-  AsyncFunction("setAgpsHuaweiServers") { enabled: Boolean ->
-    runtime().ephemeris.setHuaweiServers(enabled)
-  }
 }

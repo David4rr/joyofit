@@ -16,10 +16,7 @@ internal object AgpsOutcome {
   const val DOWNLOAD_FAILED = "download_failed"
   const val INVALID_FILE = "invalid_file"
 
-  /** The watch asked for data from the watch maker's servers and the user has not allowed that. */
-  const val HUAWEI_OFF = "huawei_off"
-
-  /** The watch asked for a kind of data this app cannot make. */
+  /** The watch asked for a kind of data this app cannot and must not make (only the watch maker's own app prepares it). */
   const val UNSUPPORTED = "unsupported"
   const val WATCH_REFUSED = "watch_refused"
   const val TIMEOUT = "timeout"
@@ -65,9 +62,6 @@ internal object AgpsPolicy {
   const val LTO_MIN_BYTES = 16 * 1024
   const val LTO_MAX_BYTES = 1024 * 1024
 
-  /** Cap for any other file the watch may be sent. */
-  const val OTHER_MAX_BYTES = 4 * 1024 * 1024
-
   /** Most data one 1C/04 answer may carry, whatever the watch asks for. */
   const val MAX_DATA_PER_REQUEST = 1024 * 1024
 
@@ -88,14 +82,6 @@ internal object AgpsPolicy {
     data.size < LTO_MIN_BYTES -> "file too small (${data.size} bytes)"
     data.size > LTO_MAX_BYTES -> "file too large (${data.size} bytes)"
     !data.copyOfRange(0, LTO_MAGIC.size).contentEquals(LTO_MAGIC) -> "not an LTO file (unexpected header)"
-    else -> null
-  }
-
-  /** Why [data] is not fit to send under another name, or null: not empty, under the cap, and not a web page or error body. */
-  fun validateOther(data: ByteArray): String? = when {
-    data.isEmpty() -> "empty file"
-    data.size > OTHER_MAX_BYTES -> "file too large (${data.size} bytes)"
-    data[0] == '<'.code.toByte() || data[0] == '{'.code.toByte() -> "text, not data"
     else -> null
   }
 

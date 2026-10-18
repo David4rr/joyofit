@@ -1,7 +1,6 @@
 package com.joyodigitama.huaweiwear
 
 import android.content.Context
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -9,7 +8,6 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
-import java.util.zip.GZIPInputStream
 
 /** A download the watch asked for failed (no network, HTTP error, unreadable body); the message goes to the log. */
 internal open class AgpsFetchException(message: String, cause: Throwable? = null) : IOException(message, cause)
@@ -22,7 +20,7 @@ internal class AgpsDownload(val body: ByteArray, val lastModifiedMs: Long)
  * caller, a plain GET with no credentials and no app identification.
  */
 internal object EphemerisNet {
-  /** The public Broadcom LTO file (valid for 7 days) is what is downloaded unless the user allows the watch maker's servers. */
+  /** The public Broadcom LTO file (valid for 7 days) is the only thing downloaded. */
   const val LTO_HOST = "https://gllto.glpals.com"
   const val LTO_PATH = "/7day/v6/latest/lto.dat"
 
@@ -72,28 +70,6 @@ internal object EphemerisNet {
       if (n < 0) break
       if (out.size() + n > limit) throw AgpsFetchException("response larger than $limit bytes")
       out.write(buffer, 0, n)
-    }
-    return out.toByteArray()
-  }
-
-  /** A body that starts with the gzip magic is unwrapped (capped); anything else is returned as it is. */
-  fun gunzipIfNeeded(data: ByteArray, maxBytes: Int): ByteArray {
-    if (data.size < 2 || data[0] != 0x1F.toByte() || data[1] != 0x8B.toByte()) return data
-    val out = ByteArrayOutputStream()
-    try {
-      GZIPInputStream(ByteArrayInputStream(data)).use { input ->
-        val buffer = ByteArray(8192)
-        while (true) {
-          val n = input.read(buffer)
-          if (n < 0) break
-          if (out.size() + n > maxBytes) throw AgpsFetchException("unzipped response larger than $maxBytes bytes")
-          out.write(buffer, 0, n)
-        }
-      }
-    } catch (e: AgpsFetchException) {
-      throw e
-    } catch (e: IOException) {
-      throw AgpsFetchException("gunzip failed: ${e.message}", e)
     }
     return out.toByteArray()
   }

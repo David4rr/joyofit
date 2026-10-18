@@ -660,9 +660,7 @@
     "refresh": "Update now",
     "cancel": "Cancel",
     "phoneCopy": "Copy on this phone",
-    "huaweiSwitch": "Use Huawei satellite servers",
-    "huaweiHint": "Your watch asks for satellite data from Huawei's servers. When this is on, this phone downloads it from them and Huawei can see your IP address. Off by default.",
-    "details": "Your watch uses satellite data to find its GPS position quickly. The data is good for about 7 days. JoyoFit downloads it from Broadcom's public server, with no account, and gives it to your watch when the watch asks.",
+    "details": "Your watch uses satellite data to find its GPS position quickly. The data is good for about 7 days. If your watch asks for the Broadcom kind, JoyoFit downloads it from Broadcom's public server, with no account, and gives it to the watch. Other kinds are prepared only by Huawei's own app; JoyoFit never sends the watch anything it did not ask for.",
     "retryAt": "Next automatic try around {{time}}.",
     "sizeValue": "{{kb}} KB",
     "status": {
@@ -674,9 +672,8 @@
       "noNetwork": "This phone has no internet. Try again when it is connected.",
       "downloadFailed": "The satellite data could not be downloaded.",
       "invalidFile": "What was downloaded is not valid satellite data, so it was not sent to your watch.",
-      "huaweiOff": "Your watch asked for data from Huawei's servers, and that is switched off. Turn it on below if you agree.",
-      "unsupported": "Your watch asked for a kind of data JoyoFit cannot make yet.",
-      "watchRefused": "Your watch closed the transfer before it finished.",
+      "unsupported": "Your watch needs satellite data that only Huawei's own app can prepare, and JoyoFit cannot provide it.",
+      "watchRefused": "Your watch did not take part in the exchange. It starts the update itself.",
       "timeout": "The transfer to your watch stopped halfway, so it was dropped.",
       "cancelled": "The update was cancelled.",
       "busy": "An update is already running.",
@@ -685,6 +682,7 @@
       "downloading": "Downloading satellite data...",
       "waiting": "Data ready, waiting for your watch to take it...",
       "sending": "Sending to your watch..."
-    }
+    },
+    "makerHelp": "Try the watch's own update if it offers one over Wi-Fi: Settings > Workout settings > Location Services > Satellite updates. During outdoor workouts JoyoFit sends this phone's GPS to your watch, which speeds up the first fix."
   }
 }

@@ -440,9 +440,15 @@ internal class AgpsExchange(
     val tlv = packet.getTlv()
     val consult = AgpsMessages.parseConsult(tlv)
     if (consult == null) {
-      log("consult answer without a 0x81 container: ${describeTlv(tlv)}")
+      // The watch refused the question itself (e.g. 118001 when no request is open on its side): nothing was started, so there is
+      // nothing to tell it either; the request just ends here.
+      val code = tlv?.getBytes(0x7F, null)?.let { agpsUnsigned(it) }
+      val why = if (code != null) "the watch answered the phone's question with error $code (it has no request open); only the watch can start one" else "the watch's answer had no parameters"
+      logError(why)
+      task = false
+      store.recordOutcome(nowMs(), AgpsOutcome.WATCH_REFUSED, why, false)
       consultSeen?.complete(Unit)
-      sendStatusLater(AgpsMessages.STATE_FAILED, AgpsOutcome.WATCH_REFUSED, "no parameters in the consult answer")
+      finishWith(AgpsOutcome.WATCH_REFUSED)
       return
     }
     log("consult answer: download version ${consult.version}, tag ${consult.tag.length} chars (${consult.tagNames}), ${consult.urls.size} urls")
@@ -452,15 +458,6 @@ internal class AgpsExchange(
     state = 1
     download?.cancel()
     download = scope.launch { download(consult) }
-  }
-
-  private fun sendStatusLater(state: Int, outcome: String, why: String) {
-    download?.cancel()
-    download = scope.launch {
-      store.recordOutcome(nowMs(), outcome, why, false)
-      sendStatus(state, why)
-      finishWith(outcome)
-    }
   }
 
   private suspend fun download(consult: AgpsConsult) {
@@ -658,7 +655,7 @@ internal class AgpsExchange(
 
 /**
  * The satellite-data job of the process: attaches an [AgpsExchange] to every live connection, keeps the phone-side copy
- * fresh from the background sync, and answers the app's questions (status, refresh now, the Huawei-servers switch).
+ * fresh from the background sync, and answers the app's questions (status, refresh now, cancel).
  */
 internal class EphemerisLink(
   context: Context,
@@ -673,8 +670,6 @@ internal class EphemerisLink(
     EphemerisCache(appContext),
     store,
     log = { message -> events.log(LogDirection.INFO, null, null, null, "AGPS: $message") },
-    // Logcat only: the tag list and URLs can carry the user's rough position, so they stay out of the shareable support log.
-    logRaw = { message -> android.util.Log.i("JoyoFit", "AGPS: $message") },
     isOnline = { isOnline(appContext) },
   )
   private val lock = Any()
@@ -711,12 +706,6 @@ internal class EphemerisLink(
 
   private fun currentExchange(): AgpsExchange? = synchronized(lock) { exchange }
 
-  /** The Huawei-servers switch. Turning it off takes effect for the next request; it never interrupts one. */
-  fun setHuaweiServers(enabled: Boolean) {
-    store.huaweiServers = enabled
-    log("watch maker's satellite servers: switched ${if (enabled) "ON" else "OFF"} by the user")
-  }
-
   /** What the Watch tab shows; cheap, read from the store and the live exchange. */
   fun status(): Map<String, Any?> {
     val ex = currentExchange()
@@ -725,7 +714,6 @@ internal class EphemerisLink(
     return mapOf(
       "linked" to (ex != null),
       "phase" to (ex?.phase?.takeIf { it != "idle" } ?: if (refreshing.get()) "downloading" else "idle"),
-      "huaweiServers" to store.huaweiServers,
       "cachedAt" to store.cachedAtMs,
       "cachedSize" to store.cachedSize,
       "cachedSource" to store.cachedSource,

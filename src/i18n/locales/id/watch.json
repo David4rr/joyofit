@@ -657,9 +657,7 @@
     "refresh": "Perbarui sekarang",
     "cancel": "Batal",
     "phoneCopy": "Salinan di HP ini",
-    "huaweiSwitch": "Pakai server satelit Huawei",
-    "huaweiHint": "Jam-mu meminta data satelit dari server Huawei. Kalau ini dinyalakan, HP ini mengunduhnya dari server itu dan Huawei bisa melihat alamat IP-mu. Mati secara bawaan.",
-    "details": "Jam-mu memakai data satelit supaya GPS cepat menemukan posisi. Datanya berlaku sekitar 7 hari. JoyoFit mengunduhnya dari server publik Broadcom tanpa akun, lalu memberikannya ke jam-mu saat jam-mu memintanya.",
+    "details": "Jam-mu memakai data satelit supaya GPS cepat menemukan posisi. Datanya berlaku sekitar 7 hari. Kalau jam-mu meminta jenis Broadcom, JoyoFit mengunduhnya dari server publik Broadcom tanpa akun, lalu memberikannya ke jam. Jenis lain hanya disiapkan aplikasi Huawei sendiri; JoyoFit tidak pernah mengirim jam-mu sesuatu yang tidak diminta.",
     "retryAt": "Percobaan otomatis berikutnya sekitar {{time}}.",
     "sizeValue": "{{kb}} KB",
     "status": {
@@ -671,9 +669,8 @@
       "noNetwork": "HP ini tidak punya internet. Coba lagi saat sudah tersambung.",
       "downloadFailed": "Data satelit gagal diunduh.",
       "invalidFile": "Yang terunduh bukan data satelit yang valid, jadi tidak dikirim ke jam-mu.",
-      "huaweiOff": "Jam-mu meminta data dari server Huawei, dan itu sedang dimatikan. Nyalakan di bawah kalau kamu setuju.",
-      "unsupported": "Jam-mu meminta jenis data yang belum bisa dibuat JoyoFit.",
-      "watchRefused": "Jam-mu menutup pengiriman sebelum selesai.",
+      "unsupported": "Jam-mu butuh data satelit yang hanya bisa disiapkan aplikasi Huawei sendiri, dan JoyoFit tidak bisa menyediakannya.",
+      "watchRefused": "Jam-mu tidak ikut dalam pertukaran ini. Pembaruan dimulai dari jam sendiri.",
       "timeout": "Pengiriman ke jam-mu berhenti di tengah jalan, jadi dibatalkan.",
       "cancelled": "Pembaruan dibatalkan.",
       "busy": "Pembaruan sedang berjalan.",
@@ -682,6 +679,7 @@
       "downloading": "Mengunduh data satelit...",
       "waiting": "Data siap, menunggu jam-mu mengambilnya...",
       "sending": "Mengirim ke jam-mu..."
-    }
+    },
+    "makerHelp": "Coba pembaruan di jam-mu sendiri kalau ada lewat Wi-Fi: Pengaturan > Pengaturan olahraga > Layanan lokasi > Pembaruan satelit. Saat olahraga di luar ruangan, JoyoFit mengirim GPS HP ini ke jam-mu supaya posisi pertama lebih cepat ditemukan."
   }
 }

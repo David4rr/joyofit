@@ -1,29 +1,28 @@
-import type { AgpsOutcome, AgpsStatus } from "@/wear";
+import type { AgpsOutcome, AgpsStatus } from '@/wear';
 
 /** The `watch:agps.status.<key>` strings. */
 export type AgpsStatusKey =
-  | "never"
-  | "delivered"
-  | "expired"
-  | "stored"
-  | "watchSilent"
-  | "noNetwork"
-  | "downloadFailed"
-  | "invalidFile"
-  | "huaweiOff"
-  | "unsupported"
-  | "watchRefused"
-  | "timeout"
-  | "cancelled"
-  | "busy"
-  | "linkLost"
-  | "asking"
-  | "downloading"
-  | "waiting"
-  | "sending";
+  | 'never'
+  | 'delivered'
+  | 'expired'
+  | 'stored'
+  | 'watchSilent'
+  | 'noNetwork'
+  | 'downloadFailed'
+  | 'invalidFile'
+  | 'unsupported'
+  | 'watchRefused'
+  | 'timeout'
+  | 'cancelled'
+  | 'busy'
+  | 'linkLost'
+  | 'asking'
+  | 'downloading'
+  | 'waiting'
+  | 'sending';
 
 /** How the status line is drawn. */
-export type AgpsTone = "ok" | "info" | "danger";
+export type AgpsTone = 'ok' | 'info' | 'danger';
 
 export interface AgpsView {
   /** When the watch last took data (ms), or null when it never did. */
@@ -40,63 +39,55 @@ export interface AgpsView {
   detail: string | null;
   /** An automatic retry is waiting until this time (ms); null when not. */
   retryAtMs: number | null;
-  /** The Huawei-servers switch is only relevant once the watch asked for that kind of data, or after it was switched on. */
-  showHuaweiSwitch: boolean;
+  /** The watch's last ask was for a kind of data only the watch maker's app prepares (download version 1 or higher): the row says what to do instead. */
+  needsMakerData: boolean;
 }
 
-const OUTCOME_STATUS: Record<
-  AgpsOutcome,
-  { key: AgpsStatusKey; tone: AgpsTone }
-> = {
-  none: { key: "never", tone: "info" },
-  delivered: { key: "delivered", tone: "ok" },
-  stored: { key: "stored", tone: "info" },
-  watch_silent: { key: "watchSilent", tone: "info" },
-  no_network: { key: "noNetwork", tone: "danger" },
-  download_failed: { key: "downloadFailed", tone: "danger" },
-  invalid_file: { key: "invalidFile", tone: "danger" },
-  huawei_off: { key: "huaweiOff", tone: "info" },
-  unsupported: { key: "unsupported", tone: "info" },
-  watch_refused: { key: "watchRefused", tone: "danger" },
-  timeout: { key: "timeout", tone: "danger" },
-  cancelled: { key: "cancelled", tone: "info" },
-  busy: { key: "busy", tone: "info" },
-  link_lost: { key: "linkLost", tone: "danger" },
+const OUTCOME_STATUS: Record<AgpsOutcome, { key: AgpsStatusKey; tone: AgpsTone }> = {
+  none: { key: 'never', tone: 'info' },
+  delivered: { key: 'delivered', tone: 'ok' },
+  stored: { key: 'stored', tone: 'info' },
+  watch_silent: { key: 'watchSilent', tone: 'info' },
+  no_network: { key: 'noNetwork', tone: 'danger' },
+  download_failed: { key: 'downloadFailed', tone: 'danger' },
+  invalid_file: { key: 'invalidFile', tone: 'danger' },
+  unsupported: { key: 'unsupported', tone: 'info' },
+  watch_refused: { key: 'watchRefused', tone: 'danger' },
+  timeout: { key: 'timeout', tone: 'danger' },
+  cancelled: { key: 'cancelled', tone: 'info' },
+  busy: { key: 'busy', tone: 'info' },
+  link_lost: { key: 'linkLost', tone: 'danger' },
 };
 
 const PHASE_STATUS: Record<string, AgpsStatusKey> = {
-  asking: "asking",
-  downloading: "downloading",
-  waiting: "waiting",
-  sending: "sending",
+  asking: 'asking',
+  downloading: 'downloading',
+  waiting: 'waiting',
+  sending: 'sending',
 };
 
 /** Turns the native status into what the row shows. `nowMs` is passed in so the result is a pure function of its inputs. */
 export function agpsView(status: AgpsStatus, nowMs: number): AgpsView {
-  const busy = status.phase !== "idle";
+  const busy = status.phase !== 'idle';
   const lastUpdatedMs = status.deliveredAt > 0 ? status.deliveredAt : null;
-  const size =
-    status.deliveredSize > 0 ? status.deliveredSize : status.cachedSize;
+  const size = status.deliveredSize > 0 ? status.deliveredSize : status.cachedSize;
   const expired = status.expiresAt > 0 && nowMs >= status.expiresAt;
 
   let statusKey: AgpsStatusKey;
   let tone: AgpsTone;
   if (busy) {
-    statusKey = PHASE_STATUS[status.phase] ?? "asking";
-    tone = "info";
-  } else if (
-    expired &&
-    (status.outcome === "delivered" || status.outcome === "none")
-  ) {
-    statusKey = "expired";
-    tone = "danger";
+    statusKey = PHASE_STATUS[status.phase] ?? 'asking';
+    tone = 'info';
+  } else if (expired && (status.outcome === 'delivered' || status.outcome === 'none')) {
+    statusKey = 'expired';
+    tone = 'danger';
   } else {
     const known = OUTCOME_STATUS[status.outcome] ?? OUTCOME_STATUS.none;
     statusKey = known.key;
     tone = known.tone;
   }
 
-  const failed = tone === "danger" && status.error.length > 0;
+  const failed = tone === 'danger' && status.error.length > 0;
   return {
     lastUpdatedMs,
     sizeKb: size > 0 ? Math.max(1, Math.round(size / 1024)) : null,
@@ -106,6 +97,6 @@ export function agpsView(status: AgpsStatus, nowMs: number): AgpsView {
     tone,
     detail: failed ? status.error : null,
     retryAtMs: !busy && status.retryAt > nowMs ? status.retryAt : null,
-    showHuaweiSwitch: status.huaweiServers || status.lastAskVersion >= 1,
+    needsMakerData: status.lastAskVersion >= 1,
   };
 }

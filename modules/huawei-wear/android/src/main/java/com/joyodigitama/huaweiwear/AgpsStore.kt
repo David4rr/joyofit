@@ -4,17 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 
 /**
- * What the satellite-data job remembers between runs: the user's one choice, the newest download on the phone, the last delivery
+ * What the satellite-data job remembers between runs: the newest download on the phone, the last delivery
  * to the watch, what the watch last asked for, and the retry state. Own SharedPreferences file; nothing here is personal data
  * (only tag names, never the paths and URLs the watch names, which can carry a rough position).
  */
 internal class AgpsStore(private val prefs: SharedPreferences) {
   constructor(context: Context) : this(context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE))
-
-  /** The user allows data from the watch maker's servers. Off until the user turns it on. */
-  var huaweiServers: Boolean
-    get() = prefs.getBoolean(KEY_HUAWEI, false)
-    set(value) = prefs.edit().putBoolean(KEY_HUAWEI, value).apply()
 
   /** When the newest download finished (phone clock, ms); 0 when none. */
   val cachedAtMs: Long get() = prefs.getLong(KEY_CACHED_AT, 0L)
@@ -88,7 +83,6 @@ internal class AgpsStore(private val prefs: SharedPreferences) {
 
   private companion object {
     const val PREFS_NAME = "joyofit_agps"
-    const val KEY_HUAWEI = "huawei_servers"
     const val KEY_CACHED_AT = "cached_at"
     const val KEY_CACHED_DATA = "cached_data"
     const val KEY_CACHED_SIZE = "cached_size"

@@ -295,23 +295,39 @@ class AgpsExchangeTest {
   }
 
   @Test
-  fun aHuaweiVersionIsAnsweredFailedAndTheAskIsRecordedWithTagNamesOnly() {
+  fun aKindOnlyTheWatchMakersAppPreparesIsAnsweredFailedAndTheAskIsRecordedWithTagNamesOnly() {
     val store = this.store
     val real = NetworkAgpsSource(object : AgpsCache {
       override fun read(url: String, maxAgeMs: Long): ByteArray? = null
       override fun write(url: String, data: ByteArray) = Unit
       override fun delete(url: String) = Unit
-    }, store, { }, { }, { true })
+    }, store, { }, { true })
     start(real)
     op1()
     await(0x1F, 0x02)
     consult(3, "secret/path/HW_PGNSS_PRED")
     assertEquals(4, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
-    assertEquals(AgpsOutcome.HUAWEI_OFF, store.lastOutcome)
+    assertEquals(AgpsOutcome.UNSUPPORTED, store.lastOutcome)
     assertEquals(3, store.lastAskVersion)
     assertEquals("HW_PGNSS_PRED", store.lastAskTags)
     assertEquals("a refused kind is not a download failure", 0, store.failures)
     assertTrue(events.logs.none { it.contains("secret/path") })
+    assertTrue("no file is offered afterwards", watch.all(0x1C, 0x01).isEmpty())
+    fromWatch(0x1C, 0x01, HuaweiTLV().put(0x02, 1.toByte()))
+    assertEquals(100001, await(0x1C, 0x01).tlv!!.getInteger(0x7F))
+  }
+
+  @Test
+  fun aWatchThatAnswersThePhoneStartedQuestionWithAnErrorEndsItWithoutAnyStatus() = runBlocking {
+    val ex = start(FakeSource(mapOf(AgpsSources.LTO_FILE to ltoFile())))
+    val outcome = scope.async { ex.probe(force = true) }
+    await(0x1F, 0x02)
+    // What the Fit 4 Pro answers when it has no request open: 7f 118001, no 0x81 container.
+    fromWatch(0x1F, 0x02, HuaweiTLV().put(0x7F, 118001))
+    assertEquals(AgpsOutcome.WATCH_REFUSED, withTimeout(5_000) { outcome.await() })
+    assertTrue(store.lastError.contains("118001"))
+    assertTrue("nothing was started, so no status is sent", watch.all(0x1F, 0x03).isEmpty())
+    assertFalse(ex.busy)
   }
 
   @Test

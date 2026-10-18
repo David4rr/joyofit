@@ -361,8 +361,6 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   refreshAgps(): Promise<AgpsRefreshResult>;
   /** Cancels an update that is running (tells the watch "failed" so it does not wait). */
   cancelAgps(): Promise<void>;
-  /** Allows or forbids data from the watch maker's servers when the watch asks for it. Off by default. */
-  setAgpsHuaweiServers(enabled: boolean): Promise<void>;
 
   /** The cycle log, estimates and switches. Predictions are an average-cycle estimate. */
   getCycle(): Promise<CycleOverview>;
