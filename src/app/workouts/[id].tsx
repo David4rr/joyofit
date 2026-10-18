@@ -3,6 +3,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { CloudWorkoutLine } from '@/cloud/CloudWorkoutLine';
 import { AppText } from '@/components/AppText';
 import { Details } from '@/components/Details';
 import { IconChip } from '@/components/IconChip';
@@ -266,6 +267,7 @@ export default function WorkoutDetailScreen() {
           analysisPending={analysisState.status === 'pending'}
         />
         <SaveWorkoutRouteButton workout={workout} points={loaded.points} />
+        <CloudWorkoutLine start={workout.start} />
       </Card>
 
       {analysisState.status === 'ready' ? (
