@@ -43,6 +43,7 @@ describe('platform filtering', () => {
       'background',
       'account',
       'pro',
+      'cloud',
       'done',
     ]);
   });
@@ -51,19 +52,20 @@ describe('platform filtering', () => {
     const steps = visibleSteps(startState({ hasPairedWatch: false }), IOS);
     expect(steps).not.toContain('background');
     expect(steps).toContain('notifications');
-    expect(steps).toHaveLength(10);
+    expect(steps).toHaveLength(11);
   });
 
-  test('a build without the cloud server hides the Pro step', () => {
+  test('a build without the cloud server hides the Pro and cloud steps', () => {
     const steps = visibleSteps(startState({ hasPairedWatch: false }), { platform: 'android', cloudConfigured: false });
     expect(steps).not.toContain('pro');
+    expect(steps).not.toContain('cloud');
     expect(steps).toContain('account');
   });
 
   test('progress counts only the visible steps', () => {
     const state = walkTo('account', IOS);
-    expect(progress(state, IOS)).toEqual({ index: 8, total: 10 });
-    expect(progress(walkTo('account', ANDROID), ANDROID)).toEqual({ index: 9, total: 11 });
+    expect(progress(state, IOS)).toEqual({ index: 8, total: 11 });
+    expect(progress(walkTo('account', ANDROID), ANDROID)).toEqual({ index: 9, total: 12 });
   });
 
   test('walking forward on iOS never lands on a hidden step', () => {
@@ -244,7 +246,7 @@ describe('reopening from Settings', () => {
     const state = walkTo('sync', ANDROID, startState({ hasPairedWatch: true }));
     const restored = parseState(serializeState(state)) as OnboardingState;
     expect(progress(restored, ANDROID)).toEqual(progress(state, ANDROID));
-    expect(progress(restored, ANDROID).total).toBe(10);
+    expect(progress(restored, ANDROID).total).toBe(11);
   });
 });
 
@@ -278,6 +280,11 @@ describe('footer buttons', () => {
   test('the account step continues only when signed in, otherwise Later', () => {
     expect(footerFor('account', idle)).toMatchObject({ primary: null, skip: 'Later' });
     expect(footerFor('account', { linkState: 'disconnected', signedIn: true })).toMatchObject({ primary: 'Continue', skip: null });
+  });
+
+  test('the cloud step is Lanjut or Lewati, and with nobody signed in only Lewati', () => {
+    expect(footerFor('cloud', idle)).toMatchObject({ primary: null, skip: 'Lewati', back: true });
+    expect(footerFor('cloud', { linkState: 'disconnected', signedIn: true })).toMatchObject({ primary: 'Lanjut', skip: 'Lewati', back: true });
   });
 
   test('the first step can end the whole guide and the last one finishes it', () => {

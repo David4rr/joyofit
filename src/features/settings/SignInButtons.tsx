@@ -5,14 +5,14 @@ import { isIos } from '@/components/IosUnavailable';
 import { useCloud } from '@/state/CloudProvider';
 
 /** The JoyoRogo sign-in buttons: Apple and Google where Sign in with Apple runs (iPhone), Google otherwise. Settings and the setup guide both use it. */
-export function SignInButtons() {
+export function SignInButtons({ label = 'Sign in with JoyoRogo', prompt = 'Sign in with' }: { label?: string; prompt?: string } = {}) {
   const cloud = useCloud();
 
   if (isIos && cloud.appleAvailable) {
     return (
       <>
         <AppText variant="label" muted>
-          Sign in with
+          {prompt}
         </AppText>
         <ButtonRow>
           <Button
@@ -37,7 +37,7 @@ export function SignInButtons() {
 
   return (
     <Button
-      label="Sign in with JoyoRogo"
+      label={label}
       variant="primary"
       icon="log-in-outline"
       onPress={() => void cloud.signIn()}

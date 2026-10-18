@@ -704,6 +704,10 @@ function SetupGuide({ lang }: { lang: Lang }) {
                 "Background (hanya Android): jaga jam tetap tersambung di latar belakang.",
                 "JoyoRogo: masuk dengan akun JoyoRogo untuk cloud, Strava, dan Social. Lalu JoyoRogo Pro, hanya informasi dan tidak menghalangi langkah berikutnya.",
                 <>
+                  <B>JoyoRogo Cloud</B>: cadangan semua workout beserta analisisnya, bisa dilihat di joyorogo.com/jam dan dipulihkan di HP baru.
+                  Untuk akun Pro; akun Free tetap menyimpan workout di HP. Bisa dilewati.
+                </>,
+                <>
                   <B>Done</B>: tips terakhir.
                 </>,
               ]
@@ -724,6 +728,10 @@ function SetupGuide({ lang }: { lang: Lang }) {
                 "Notifications, Health Connect (Apple Health on iPhone), and Weather: optional permissions.",
                 "Background (Android only): keep the watch connected in the background.",
                 "JoyoRogo: sign in with your JoyoRogo account for the cloud, Strava and Social. Then JoyoRogo Pro, information only, which never blocks the next step.",
+                <>
+                  <B>JoyoRogo Cloud</B>: a backup of every workout with its analysis, viewable at joyorogo.com/jam and restorable on a
+                  new phone. For Pro accounts; Free accounts keep workouts on the phone. Can be skipped.
+                </>,
                 <>
                   <B>Done</B>: last tips.
                 </>,

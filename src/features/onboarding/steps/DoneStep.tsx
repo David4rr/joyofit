@@ -23,6 +23,7 @@ const WHERE_TO_FINISH: Partial<Record<StepId, string>> = {
   weather: 'Settings, Weather',
   background: 'Settings, Background and sync',
   account: `Settings, ${HEALTH_SETTINGS}`,
+  cloud: 'Settings, Sinkron cloud',
 };
 
 const STEP_NAME: Partial<Record<StepId, string>> = {
@@ -34,6 +35,7 @@ const STEP_NAME: Partial<Record<StepId, string>> = {
   weather: 'Weather',
   background: 'Background connection',
   account: 'JoyoRogo sign-in',
+  cloud: 'JoyoRogo Cloud',
 };
 
 interface Tip {

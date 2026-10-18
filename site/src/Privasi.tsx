@@ -471,7 +471,7 @@ function English() {
           length and power, and the analysis JoyoFit derives from them. These files are kept in JoyoRogo&apos;s
           Cloudflare storage (a database for the list and object storage for the files), private to your
           account, and shown on joyorogo.com to the same login. Free accounts upload no workouts: they stay on the
-          phone. Upload can be limited to Wi-Fi in Settings, Cloud sync, which also shows an estimate of what is
+          phone. Upload can be limited to Wi-Fi in Settings, Sinkron cloud, which also shows an estimate of what is
           waiting. The other data above (steps, heart rate, sleep, devices) stays in JoyoFit&apos;s own cloud
           database.
         </p>
@@ -691,7 +691,7 @@ function English() {
             "Strava: Disconnect Strava in the app, or revoke the app on strava.com; the tokens are deleted from the JoyoRogo server at once (if JoyoRogo still uses the same connection, the access on Strava is revoked when both are disconnected).",
             "Strava or iPhone waitlist: email the contact address on this page with the subject Hapus daftar tunggu JoyoFit (see the invite lists section).",
             "Account and cloud: in the app, Settings, Health & cloud, tap Delete JoyoRogo account and confirm. It immediately deletes your JoyoFit cloud data (steps, sleep, devices, imported files, Strava tokens), your cloud workouts and your JoyoRogo account with its JoyoRogo data. The JoyoRogo account is shared, so it is gone in JoyoRogo as well. An account that signs in with Apple asks you to confirm with Apple first, and the Sign in with Apple grant is revoked. Data on your phone is not deleted.",
-            "Cloud data only: in the app, Settings, Cloud sync, tap Delete cloud data. It wipes your workouts, steps and sleep from the cloud and turns automatic sync off, so nothing is uploaded again until you switch it back on. Your account and the data on your phone stay.",
+            "Cloud data only: in the app, Settings, Sinkron cloud, tap Delete cloud data. It wipes your workouts, steps and sleep from the cloud and turns automatic sync off, so nothing is uploaded again until you switch it back on. Your account and the data on your phone stay.",
             "Cloud workouts on the web: on joyorogo.com, open the JoyoFit workouts page (Latihan JoyoFit) to delete a single workout or everything. A workout deleted there is also removed from your phones the next time they sync.",
             <>
               Without the app: email <Mail /> from the address of the account you signed in with, subject{" "}

@@ -55,7 +55,7 @@ export function CloudSection() {
   };
 
   return (
-    <Section title="Cloud sync" icon="cloud-upload">
+    <Section title="Sinkron cloud" icon="cloud-upload">
       {!cloud.configured ? (
         <Notice tone="danger">
           No cloud server URL in this build. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.

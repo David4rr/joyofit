@@ -14,7 +14,8 @@
  *    the remembered watch from step 3 and is Android only.
  * 6. `account`: JoyoRogo sign-in. After the sync, so the scores it shows in the diary already exist.
  * 7. `pro`: after sign-in, because Pro is an account feature. Information only; never blocks.
- * 8. `done`: tips.
+ * 8. `cloud`: JoyoRogo Cloud for workouts. After `pro`, because what it offers depends on the account being Pro. Never blocks.
+ * 9. `done`: tips.
  */
 
 export type Platform = 'ios' | 'android';
@@ -30,6 +31,7 @@ export const STEP_IDS = [
   'background',
   'account',
   'pro',
+  'cloud',
   'done',
 ] as const;
 
@@ -50,6 +52,7 @@ interface StepRule {
 const RULES: Partial<Record<StepId, StepRule>> = {
   background: { platforms: ['android'] },
   pro: { needsCloud: true },
+  cloud: { needsCloud: true },
 };
 
 export type OnboardingStatus = 'active' | 'completed' | 'dismissed' | 'bypassed';
@@ -180,7 +183,7 @@ export interface FooterFacts {
 /**
  * The buttons under each step. Back and a skip exist everywhere but mid-pairing (see `navigationLocked`). Two steps hold Continue back
  * until it means something: pairing until the watch is linked, and the account step until someone is signed in; until then "Later" is the
- * way on.
+ * way on. The cloud step is in Indonesian (Lanjut, Lewati) and offers sign-in or skip when nobody is signed in.
  */
 export function footerFor(step: StepId, facts: FooterFacts): Footer {
   const linkUp = facts.linkState === 'connected' || facts.linkState === 'syncing';
@@ -200,6 +203,10 @@ export function footerFor(step: StepId, facts: FooterFacts): Footer {
         : { primary: null, primaryDisabled: false, skip: 'Later', back: true };
     case 'pro':
       return { primary: 'Continue', primaryDisabled: false, skip: 'Not now', back: true };
+    case 'cloud':
+      return facts.signedIn
+        ? { primary: 'Lanjut', primaryDisabled: false, skip: 'Lewati', back: true }
+        : { primary: null, primaryDisabled: false, skip: 'Lewati', back: true };
     case 'done':
       return { primary: 'Finish', primaryDisabled: false, skip: null, back: true };
     default:

@@ -67,7 +67,7 @@ export interface CloudContextValue {
   refusedWorkouts: number;
   refusedError: string | null;
   /** The account's workouts in JoyoRogo; null until known (offline, or not asked yet). */
-  cloudWorkouts: Pick<CloudWorkoutStatus, 'count' | 'bytes' | 'quotaBytes'> | null;
+  cloudWorkouts: Pick<CloudWorkoutStatus, 'unlocked' | 'count' | 'bytes' | 'quotaBytes'> | null;
   /** Automatic runs wait for Wi-Fi or Ethernet. */
   wifiOnly: boolean;
   setWifiOnly: (value: boolean) => void;

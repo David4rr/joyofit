@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { FadeIn } from '@/components/motion';
 import { currentStep, footerFor, progress, type StepId } from '@/features/onboarding/flow';
 import { StepProgress } from '@/features/onboarding/StepProgress';
+import { CloudStep } from '@/features/onboarding/steps/CloudStep';
 import { AccountStep } from '@/features/onboarding/steps/AccountStep';
 import { DoneStep } from '@/features/onboarding/steps/DoneStep';
 import { PairStep } from '@/features/onboarding/steps/PairStep';
@@ -31,6 +32,7 @@ const BODIES: Record<StepId, () => ReactElement> = {
   background: () => <BackgroundStep />,
   account: () => <AccountStep />,
   pro: () => <ProStep />,
+  cloud: () => <CloudStep />,
   done: () => <DoneStep />,
 };
 
