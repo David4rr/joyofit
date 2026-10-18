@@ -11,6 +11,7 @@ import {
 } from '@/db/strava';
 import { getWorkout, listWorkoutPoints } from '@/db/queries';
 import { buildFit, buildUploadForm, duplicateOf } from '@/features/strava/activityFile';
+import { workoutElevation } from '@/features/workouts/analysis/elevation';
 import { parseSummary } from '@/features/workouts/summary';
 import { errorMessage } from '@/format';
 import { pushLog } from '@/state/logStore';
@@ -177,8 +178,10 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
       const points = await listWorkoutPoints(db, workoutId);
       const { addLink } = await getStravaSettings(db);
       const summary = parseSummary(summaryJson);
+      // The ascent and descent the app shows (smoothed, see `elevation.ts`), not the barometer's raw sum.
+      const elevation = workoutElevation(workout, summary, points);
       const fit = buildFit(
-        { ...workout, elevationGain: summary.elevationGain, elevationLoss: summary.elevationLoss, maxSpeed: summary.maxSpeed },
+        { ...workout, elevationGain: elevation?.gainM, elevationLoss: elevation?.lossM, maxSpeed: summary.maxSpeed },
         points,
       );
       const form = buildUploadForm(workout, fit.bytes, { addLink });

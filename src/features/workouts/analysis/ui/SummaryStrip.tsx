@@ -48,7 +48,7 @@ function SummaryStripImpl({ analysis }: { analysis: WorkoutAnalysis }) {
     const d = distanceParts(distanceM);
     hero.push({ key: 'distance', label: t('summary.distance'), value: d.value, unit: t(d.unit === 'km' ? 'unit.km' : 'unit.m') });
   }
-  const paused = elapsedSec - movingSec > 5;
+  const paused = elapsedSec > movingSec;
   hero.push({
     key: 'time',
     label: paused ? t('summary.movingTime') : t('summary.time'),

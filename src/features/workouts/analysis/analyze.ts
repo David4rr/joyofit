@@ -2,6 +2,7 @@ import type { WorkoutRow } from '@/db/queries';
 import { workoutStrain } from '@/features/today/strain';
 import { splitWorkout } from '@/features/workouts/substrate';
 import type { WorkoutSummary } from '@/features/workouts/summary';
+import { averagePaceSec, averageSpeedMs } from '@/features/workouts/times';
 import type { StepSample } from '@/wear';
 
 import { buildEffort, buildLoad, type TrimpEntry } from './effort';
@@ -133,10 +134,10 @@ function buildStats(
   const validBpm = (v: number | null) => (v !== null && v >= MIN_BPM && v <= MAX_BPM ? v : null);
 
   const bestPace = minOf(grid.pace) ?? finitePositive(summary.paceFastestSecPerKm) ?? finitePositive(summary.minPaceSecPerKm);
-  const movingSec = grid.movingSec;
-  const computedPace = hasPace(kind) && distanceM !== null && distanceM >= 100 && movingSec > 0 ? movingSec / (distanceM / 1000) : null;
-  const avgPace = hasPace(kind) ? (finitePositive(summary.avgPaceSecPerKm) ?? computedPace) : null;
-  const avgSpeed = finitePositive(summary.avgSpeed) ?? (distanceM !== null && distanceM >= 100 && movingSec > 0 ? distanceM / movingSec : null);
+  // Average pace and speed are the watch's distance over the moving time, as Strava computes them; the summary's own
+  // figures (distance over the watch's active time) only stand in when there is no distance.
+  const avgSpeed = (distanceM === null ? null : averageSpeedMs(distanceM, grid.movingSec)) ?? finitePositive(summary.avgSpeed);
+  const avgPace = hasPace(kind) ? (distanceM === null ? null : averagePaceSec(distanceM, grid.movingSec)) ?? finitePositive(summary.avgPaceSecPerKm) : null;
   const maxSpeed = finitePositive(summary.maxSpeed) ?? (bestPace !== null ? 1000 / bestPace : null);
 
   let strideSum = 0;
@@ -210,7 +211,7 @@ export function analyzeWorkout(input: AnalyzeInput, options: AnalyzeOptions): Wo
   const hrPoints = points.filter((p) => p.hr !== null && p.hr >= MIN_BPM && p.hr <= MAX_BPM);
   const strain = workoutStrain(hrPoints, input.maxHr);
 
-  const profile = grid.alt ? elevationProfile(grid.alt) : null;
+  const profile = grid.altRaw ? elevationProfile(grid.altRaw, grid.stepSec) : null;
   const splitGrid: SplitGrid = {
     stepSec: grid.stepSec,
     n: grid.n,
@@ -232,7 +233,7 @@ export function analyzeWorkout(input: AnalyzeInput, options: AnalyzeOptions): Wo
   const candidates = thresholdCandidates(efforts, history.efforts);
   const threshold = foot && grid.pace ? thresholdPace(candidates) : null;
 
-  const distanceM = grid.dist && grid.dist[grid.n - 1] > 0 ? Math.round(grid.dist[grid.n - 1]) : workout.distance > 0 ? Math.round(workout.distance) : null;
+  const distanceM = workout.distance > 0 ? Math.round(workout.distance) : grid.dist && grid.dist[grid.n - 1] > 0 ? Math.round(grid.dist[grid.n - 1]) : null;
   const split = options.includeHr && workout.calories > 0 ? splitWorkout(workout.calories, hrPoints, input.maxHr) : null;
   const e = elevationSummary(grid.alt, profile, summary);
   const similar = options.includeComparison

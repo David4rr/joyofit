@@ -1,7 +1,7 @@
 import type { WorkoutPointRow } from '@/db/queries';
+import { movingOf } from '@/features/workouts/times';
 
 import { cleanFixes, haversineM, type CleanFix } from './geo';
-import { MIN_MOVING_SPEED_MS, movingSeconds } from './moving';
 import { hasPace } from './sport';
 import type { LatLon, SportKind } from './types';
 
@@ -29,6 +29,8 @@ const TRACK_GAP_SEC = 30;
 const TRACK_GAP_M = 40;
 /** Smallest GPS track (metres) that counts as a recording; a few stray fixes in a gym do not. */
 const MIN_GPS_DISTANCE_M = 50;
+/** Under this ground speed (m/s) a stretch has no pace. */
+const MIN_MOVING_SPEED_MS = 0.5;
 const ALT_SMOOTH_SEC = 15;
 const MIN_ALT_M = -500;
 const MAX_ALT_M = 9000;
@@ -46,10 +48,12 @@ export interface Grid {
   hr: (number | null)[] | null;
   pace: (number | null)[] | null;
   alt: (number | null)[] | null;
+  /** Altitude with the gaps filled and no smoothing: what the elevation gain and loss are computed from. */
+  altRaw: (number | null)[] | null;
   cad: (number | null)[] | null;
   power: (number | null)[] | null;
   track: (LatLon | null)[] | null;
-  /** Seconds the GPS track was moving; the elapsed time when there is no GPS. */
+  /** Seconds counted as moving: the watch's active time when a pause explains the difference, else the elapsed time (see `times.ts`). */
   movingSec: number;
   /** Cleaned GPS fixes (empty without a usable track), for best efforts. */
   fixes: CleanFix[];
@@ -185,6 +189,34 @@ function gridFromFixes(fixes: readonly CleanFix[], start: number, step: number, 
 }
 
 /**
+ * The GPS path length on the grid turned into the watch's distance, the way the Strava file spreads it (`withDistance` in
+ * `strava/activityFile.ts`): the stretch before the first fix and the one after the last move at the workout's average
+ * speed (`total` over the moving time; the watch has no fix there, not no movement) and the fixes' path, scaled, takes the
+ * rest, so the last sample is exactly `total` and the splits are Strava's. A path that would be left with nothing is only
+ * scaled. `path` is the grid's cumulative GPS distance (0 before the first fix, the full length after the last).
+ */
+function toWatchDistance(path: readonly number[], fixes: readonly CleanFix[], start: number, step: number, elapsedSec: number, movingSec: number, total: number): number[] {
+  const first = fixes[0];
+  const last = fixes[fixes.length - 1];
+  const length = last.dist;
+  const lead = Math.min(Math.max(0, first.ts - start), elapsedSec);
+  const tail = Math.max(0, elapsedSec - Math.max(0, last.ts - start));
+  const speed = movingSec > 0 ? total / movingSec : 0;
+  const leadM = speed * lead;
+  const tailM = speed * tail;
+  if (!(total - leadM - tailM > 0)) return path.map((d) => (d * total) / length);
+  const scale = (total - leadM - tailM) / length;
+  const firstSec = first.ts - start;
+  const lastSec = last.ts - start;
+  return path.map((d, i) => {
+    const t = Math.min(i * step, elapsedSec);
+    if (t <= firstSec) return firstSec > 0 ? (leadM * t) / firstSec : 0;
+    if (t >= lastSec) return leadM + scale * length + (elapsedSec > lastSec ? (tailM * (t - lastSec)) / (elapsedSec - lastSec) : 0);
+    return leadM + scale * d;
+  });
+}
+
+/**
  * Cumulative distance without GPS: `total` metres spread over the grid in proportion to `weights` (trapezoid), i.e. the
  * per-sample speed; uniformly when there are none. With no total, the integrated speed itself is the distance.
  */
@@ -213,10 +245,17 @@ function paceSeries(dist: readonly number[], step: number, elapsedSec: number): 
   });
 }
 
+/** Altitude of the points on the grid, empty buckets filled by interpolation, not smoothed. */
+export function altitudeGrid(points: readonly AnalysisPoint[], start: number, stepSec: number, n: number): (number | null)[] {
+  return fillGaps(bucketMean(collect(points, start, (p) => p.alt, (v) => v > MIN_ALT_M && v < MAX_ALT_M), stepSec, n), stepSec, Infinity);
+}
+
 /**
  * Builds the shared time grid: sample `i` is `i * stepSec` seconds after the start, `stepSec = max(1, ceil(elapsed / 600))`.
  * Heart rate is the mean per bucket with short gaps (up to 3 steps, at least 15 s) interpolated and longer ones left null;
- * altitude is interpolated and smoothed; position and distance follow the cleaned GPS track; with no GPS the distance is
+ * altitude is interpolated and smoothed; the position follows the cleaned GPS track and the distance is that track's
+ * path length scaled so the last sample is exactly the watch's total (GPS distance drifts; the watch's is what Strava
+ * shows), so the track gives the map and the shape of the splits and the watch the total; with no GPS the distance is
  * the watch total spread over the speed samples (or uniformly), and the track is absent.
  */
 export function buildGrid(input: GridInput): Grid {
@@ -230,7 +269,7 @@ export function buildGrid(input: GridInput): Grid {
   const hr = fillGaps(hrRaw, stepSec, fillSec);
   const cad = fillGaps(bucketMean(collect(points, start, (p) => p.cadence, (v) => v > 0), stepSec, n), stepSec, fillSec);
   const power = fillGaps(bucketMean(collect(points, start, (p) => p.power, (v) => v >= 0), stepSec, n), stepSec, fillSec);
-  const altRaw = fillGaps(bucketMean(collect(points, start, (p) => p.alt, (v) => v > MIN_ALT_M && v < MAX_ALT_M), stepSec, n), stepSec, Infinity);
+  const altRaw = altitudeGrid(points, start, stepSec, n);
   const alt = smooth(altRaw, stepSec);
 
   const fixes = cleanFixes(points, kind);
@@ -240,7 +279,7 @@ export function buildGrid(input: GridInput): Grid {
   let track: (LatLon | null)[] | null = null;
   if (hasGps) {
     const g = gridFromFixes(fixes, start, stepSec, n);
-    dist = g.dist;
+    dist = input.distance > 0 ? toWatchDistance(g.dist, fixes, start, stepSec, elapsedSec, movingOf(elapsedSec, input.duration), input.distance) : g.dist;
     track = g.track;
     distSource = 'gps';
   } else {
@@ -266,12 +305,13 @@ export function buildGrid(input: GridInput): Grid {
     dist,
     distSource,
     hr: hasValue(hr) ? hr : null,
+    altRaw: hasValue(altRaw) ? altRaw : null,
     pace: hasValue(pace) ? pace : null,
     alt: hasValue(alt) ? alt : null,
     cad: hasValue(cad) ? cad : null,
     power: hasValue(power) ? power : null,
     track: hasGps && track && track.some((p) => p !== null) ? track : null,
-    movingSec: movingSeconds(hasGps ? dist : null, stepSec, elapsedSec),
+    movingSec: movingOf(elapsedSec, input.duration),
     fixes: hasGps ? fixes : [],
   };
 }

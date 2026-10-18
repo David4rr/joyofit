@@ -169,6 +169,23 @@ comes from the file's timer events when it has any and is otherwise recomputed f
 (else between samples), and the record distance is flat across it. The pause's length is the watch's; its exact position is
 not stored by the watch, so it can be off by the difference between the GPS gap and the pause (seconds).
 
+**The app shows the numbers Strava shows.** One set of figures serves the workout screen, the list, the analysis card, the
+share image, the JoyoRogo post and this file (`src/features/workouts/times.ts`, `analysis/elevation.ts`,
+`analysis/series.ts`):
+
+| Figure | Rule | Why |
+|---|---|---|
+| Distance | The watch's total (`workouts.distance`) everywhere. The GPS track only draws the map and shapes the splits: its path length is scaled so the last sample is exactly the watch total, and the unrecorded start and end (before the first fix, after the last) move at the average speed, as in the file's `withDistance`. | The GPS path of the owner's 18 Oct walk was 1.97 km, the watch and Strava 2.01 km. |
+| Moving time | The watch's active time (`workouts.duration`) when it is at least 30 s shorter than the elapsed time (`end - start`), a pause; otherwise the elapsed time. The file's `total_timer_time` follows the same rule. "Elapsed" is shown next to it only when they differ. | Strava takes the moving time of our file from its timer events and record stream, which cover the whole workout except a pause. The watch timer and `end - start` differ by 3 s on the owner's walk (25:23 against 25:26); the stored data cannot say why (rounding cannot make 3 s; a timer starting after the start stamp or a stop stamp written after the timer stops can). It is not a pause, and Strava shows 25:26 for moving and elapsed time. The app used to detect pauses from the GPS speed (24:18). |
+| Pace, speed | Distance over moving time. | Strava's 12:39 per km is 2,010 m over 25:26; the watch's own 12:38 is over its timer. |
+| Elevation gain and loss | A 60 s centred moving mean of the altitude, then a 1 m hysteresis (`ELEVATION_SMOOTH_SEC`, `ELEVATION_HYSTERESIS_M`); the file's `total_ascent` and `total_descent` are the same figures. An imported file keeps its own totals. | The watch's value is the sum of every barometer rise (59 m); Strava replaces the altitude with its terrain model (24 m on the owner's walk) and the method is fitted to its results, see the comment in `elevation.ts`. |
+| Calories, heart rate, steps | The watch totals, as before. | They already matched Strava (143 kcal, 127/156 bpm, 2,672 steps). |
+
+The regression tests are `src/features/workouts/analysis/stravaParity.test.ts`, with the altitude and heart rate of the walk
+and of two others in `stravaWalks.fixture.ts` (positions left out: a route is a home address). To get more data points:
+open `https://www.strava.com/activities/<id>/export_original` in a logged-in browser for the original file; the figures
+Strava shows are in `https://www.strava.com/athlete/training_activities?...` (`elevation_gain_raw`, `moving_time_raw`).
+
 ## 4. Review submission checklist
 
 Submit through the form <https://share.hsforms.com/1VXSwPUYqSH6IxK0y51FjHwcnkd8> (it asks for the application, what it does,

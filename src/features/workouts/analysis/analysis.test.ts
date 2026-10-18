@@ -186,12 +186,19 @@ describe('pause', () => {
     { sec: 600, speed: FIVE_MIN_KM },
   ];
   const synth = straightRun({ legs, hr: hrRamp(1620), alt: () => 20 });
-  const a = analyze(synth);
+  const a = analyze(synth, { duration: 1500 });
 
-  it('moving time excludes the pause', () => {
+  it('moving time is the watch active time when a pause explains the difference', () => {
     expect(a.elapsedSec).toBe(1620);
-    expect(a.movingSec).toBeGreaterThan(1500 - 8);
-    expect(a.movingSec).toBeLessThan(1500 + 8);
+    expect(a.movingSec).toBe(1500);
+  });
+
+  it('moving time is the elapsed time when the watch timer is only seconds shorter', () => {
+    for (const duration of [1617, 1591, 1620, 1700, 0]) {
+      const b = analyze(synth, { duration });
+      expect(b.movingSec).toBe(1620);
+    }
+    expect(analyze(synth, { duration: 1590 }).movingSec).toBe(1590);
   });
 
   it('splits keep elapsed time, so the split with the pause is longer', () => {
@@ -240,22 +247,42 @@ describe('elevation', () => {
     expect(a.elevation!.minM).toBeLessThan(2);
   });
 
-  it('rejects noise under the 2 m hysteresis', () => {
+  it('rejects noise under the 1 m hysteresis and averages out sensor jitter', () => {
     const noisy = (t: number) => 50 + (t % 2 === 0 ? 0.8 : -0.8);
     const a = analyze(straightRun({ legs: [{ sec: 1200, speed: 2 }], alt: noisy, hr: () => 140 }));
     expect(a.elevation!.gainM).toBe(0);
     expect(a.elevation!.lossM).toBe(0);
-    const raw = elevationProfile(Array.from({ length: 100 }, (_, i) => 50 + (i % 2 === 0 ? 0.9 : -0.9)));
-    expect(raw.gain).toBe(0);
-    const ramp = elevationProfile(Array.from({ length: 101 }, (_, i) => i * 0.5));
-    expect(ramp.gain).toBeGreaterThan(48);
+    // Jitter of 2 m peak to peak on every sample is gone after the 60 s mean.
+    const jitter = elevationProfile(Array.from({ length: 600 }, (_, i) => 50 + (i % 2 === 0 ? 1 : -1)));
+    expect(jitter.gain).toBe(0);
   });
 
-  it('prefers the watch barometer gain but takes min and max from the altitude', () => {
+  it('counts a long slope in full to within the smoothing at its ends', () => {
+    const ramp = elevationProfile(Array.from({ length: 601 }, (_, i) => i * 0.1));
+    expect(ramp.gain).toBeGreaterThan(53);
+    expect(ramp.gain).toBeLessThanOrEqual(60);
+    expect(ramp.loss).toBe(0);
+  });
+
+  it('takes the gain and loss of the smoothed altitude, not the watch barometer sum, and min and max from the altitude', () => {
     const a = analyze(straightRun({ legs: [{ sec: 600, speed: 2 }], alt: () => 40, hr: () => 140 }), {
       summary: { elevationGain: 12, elevationLoss: 9, minAltitude: 1, maxAltitude: 99 },
     });
+    expect(a.elevation).toEqual({ gainM: 0, lossM: 0, minM: 40, maxM: 40 });
+  });
+
+  it('keeps the totals of an imported file, which are the other device\'s own', () => {
+    const a = analyze(straightRun({ legs: [{ sec: 600, speed: 2 }], alt: () => 40, hr: () => 140 }), {
+      summary: { elevationGain: 12, elevationLoss: 9, importedFrom: 'Garmin' },
+    });
     expect(a.elevation).toEqual({ gainM: 12, lossM: 9, minM: 40, maxM: 40 });
+  });
+
+  it('falls back to the watch figures and altitude range when the points have no altitude', () => {
+    const a = analyze(straightRun({ legs: [{ sec: 600, speed: 2 }], hr: () => 140 }), {
+      summary: { elevationGain: 12, elevationLoss: 9, minAltitude: 1, maxAltitude: 99 },
+    });
+    expect(a.elevation).toEqual({ gainM: 12, lossM: 9, minM: 1, maxM: 99 });
   });
 
   it('is null when nothing reports altitude', () => {
@@ -575,16 +602,30 @@ describe('laps', () => {
 });
 
 describe('stats', () => {
-  it('uses the watch figures first and doubles FIT strides on foot', () => {
+  it('takes cadence and top speed from the watch and doubles FIT strides on foot', () => {
     const a = analyze(steady5k(), {
       summary: { avgCadence: 85, maxCadence: 92, importedFrom: 'Garmin', avgSpeed: 3.3, maxSpeed: 5.1, avgPaceSecPerKm: 303 },
     });
     expect(a.stats.avgCad).toBe(170);
     expect(a.stats.maxCad).toBe(184);
-    expect(a.stats.avgSpeedMs).toBe(3.3);
     expect(a.stats.maxSpeedMs).toBe(5.1);
-    expect(a.stats.avgPaceSecKm).toBe(303);
     expect(a.stats.bestPaceSecKm).toBe(300);
+  });
+
+  it('averages pace and speed as distance over the moving time, not the watch figures', () => {
+    const a = analyze(steady5k(), { summary: { avgSpeed: 3.3, avgPaceSecPerKm: 303 } });
+    expect(a.stats.avgSpeedMs).toBe(Math.round((a.distanceM! / a.movingSec) * 100) / 100);
+    expect(a.stats.avgPaceSecKm).toBe(Math.round(a.movingSec / (a.distanceM! / 1000)));
+  });
+
+  it('falls back to the watch pace and speed when there is no distance', () => {
+    const a = analyze(straightRun({ legs: [{ sec: 600, speed: 2 }], noGps: true, hr: () => 140 }), {
+      distance: 0,
+      summary: { avgSpeed: 3.3, avgPaceSecPerKm: 303 },
+    });
+    expect(a.distanceM).toBeNull();
+    expect(a.stats.avgSpeedMs).toBe(3.3);
+    expect(a.stats.avgPaceSecKm).toBe(303);
   });
 
   it('reads avg, max and min heart rate from the points', () => {

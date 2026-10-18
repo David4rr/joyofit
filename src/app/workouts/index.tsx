@@ -17,6 +17,7 @@ import { listWorkouts, type WorkoutRow } from '@/db/queries';
 import { pickFitFile } from '@/features/fitimport/useFitImport';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import { formatElapsed, formatWorkoutDistance } from '@/features/workouts/summary';
+import { workoutTimes } from '@/features/workouts/times';
 import { useWorkoutStrain } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatCount, formatDateTime } from '@/format';
 import { useWatch } from '@/state/WatchProvider';
@@ -65,7 +66,7 @@ function WorkoutCard({ workout }: { workout: WorkoutRow }) {
         <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
       </View>
       <View style={styles.metrics}>
-        <Metric value={formatElapsed(workout.duration)} size="sm" />
+        <Metric value={formatElapsed(workoutTimes(workout).movingSec)} size="sm" />
         {workout.distance > 0 ? <Metric value={distance} unit={distanceUnit} size="sm" /> : null}
         {workout.calories > 0 ? <Metric value={formatCount(workout.calories)} unit="kcal" size="sm" /> : null}
         {workout.avgHr !== null ? (

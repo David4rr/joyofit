@@ -5,6 +5,7 @@ import {
   formatWorkoutDistance,
   type WorkoutSummary,
 } from '@/features/workouts/summary';
+import { averagePaceSec, averageSpeedMs, workoutTimes } from '@/features/workouts/times';
 
 export type ShareStatKey =
   | 'distance'
@@ -41,22 +42,25 @@ export function effortKind(sportName: string): EffortKind {
 /** Longer than an hour per unit means the watch had no real movement to average over. */
 const MAX_PACE_SEC = 3600;
 /** Below this the average over distance and time is mostly GPS noise. */
-const MIN_DERIVED_METERS = 100;
 const MIN_DERIVED_SECONDS = 30;
 
-/** The sport's average pace or speed: the watch's own figure when the summary has it, else distance over active time. */
+/**
+ * The sport's average pace or speed, as Strava computes it: the watch's distance over the moving time (see
+ * `workoutTimes`), the watch's own figure only when the workout has no usable distance or time.
+ */
 export function effortStat(workout: WorkoutRow, summary: WorkoutSummary): ShareStat | null {
   const kind = effortKind(workout.sportName);
-  const derivable = workout.distance >= MIN_DERIVED_METERS && workout.duration >= MIN_DERIVED_SECONDS;
+  const { movingSec } = workoutTimes(workout);
+  const derivable = movingSec >= MIN_DERIVED_SECONDS;
   if (kind === 'speed') {
-    const metersPerSecond = summary.avgSpeed ?? (derivable ? workout.distance / workout.duration : undefined);
-    if (metersPerSecond === undefined || !(metersPerSecond > 0)) return null;
+    const metersPerSecond = (derivable ? averageSpeedMs(workout.distance, movingSec) : null) ?? summary.avgSpeed;
+    if (metersPerSecond === undefined || metersPerSecond === null || !(metersPerSecond > 0)) return null;
     return { key: 'speed', label: 'Avg speed', value: (metersPerSecond * 3.6).toFixed(1), unit: 'km/h' };
   }
   const per100 = kind === 'pace100m';
   const watchPace = per100 ? summary.avgPaceSecPer100m : summary.avgPaceSecPerKm;
-  const pace = watchPace ?? (derivable ? workout.duration / (workout.distance / (per100 ? 100 : 1000)) : undefined);
-  if (pace === undefined || !(pace > 0) || pace > MAX_PACE_SEC) return null;
+  const pace = (derivable ? averagePaceSec(workout.distance, movingSec, per100 ? 100 : 1000) : null) ?? watchPace;
+  if (pace === undefined || pace === null || !(pace > 0) || pace > MAX_PACE_SEC) return null;
   return { key: 'pace', label: 'Avg pace', value: formatElapsed(pace), unit: per100 ? '/100 m' : '/km' };
 }
 
@@ -70,8 +74,9 @@ export function buildShareStats(workout: WorkoutRow, summary: WorkoutSummary): S
     const [value, unit] = formatWorkoutDistance(workout.distance).split(' ');
     stats.push({ key: 'distance', label: 'Distance', value, unit });
   }
-  if (workout.duration > 0) {
-    stats.push({ key: 'time', label: 'Time', value: formatElapsed(workout.duration) });
+  const { movingSec } = workoutTimes(workout);
+  if (movingSec > 0) {
+    stats.push({ key: 'time', label: 'Time', value: formatElapsed(movingSec) });
   }
   const effort = effortStat(workout, summary);
   if (effort) stats.push(effort);

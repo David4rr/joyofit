@@ -30,6 +30,7 @@ import { SaveWorkoutRouteButton } from '@/features/routes/SaveWorkoutRouteButton
 import { analyzeWorkout } from '@/features/workouts/analysis/analyze';
 import { loadAnalysisHistory } from '@/features/workouts/analysis/history';
 import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/palette';
+import { workoutElevation } from '@/features/workouts/analysis/elevation';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import { WorkoutAnalysisView, makeEnglishT } from '@/features/workouts/analysis/ui';
 import { sportIcon } from '@/features/workouts/sportIcon';
@@ -43,6 +44,7 @@ import {
   routePoints,
   type WorkoutSummary,
 } from '@/features/workouts/summary';
+import { averagePaceSec, averageSpeedMs, workoutTimes } from '@/features/workouts/times';
 import { sourceLabel } from '@/features/fitness/format';
 import { effectWord, trainingEffect } from '@/features/fitness/trainingEffect';
 import { plausibleVo2 } from '@/features/fitness/vo2max';
@@ -65,23 +67,24 @@ function metres(value: number | undefined): string | null {
 }
 
 /** The pace or speed rows that fit the sport: swimming per 100 m, running and walking per km, the rest km/h. */
-function paceRows(summary: WorkoutSummary): { label: string; value: string }[] {
+function paceRows(summary: WorkoutSummary, distanceM: number, movingSec: number): { label: string; value: string }[] {
   if (summary.avgPaceSecPer100m !== undefined) {
-    const rows = [{ label: 'Average pace', value: formatPace(summary.avgPaceSecPer100m, '100 m') }];
+    const rows = [{ label: 'Average pace', value: formatPace(averagePaceSec(distanceM, movingSec, 100) ?? summary.avgPaceSecPer100m, '100 m') }];
     if (summary.minPaceSecPer100m !== undefined) {
       rows.push({ label: 'Best pace', value: formatPace(summary.minPaceSecPer100m, '100 m') });
     }
     return rows;
   }
   if (summary.avgPaceSecPerKm !== undefined) {
-    const rows = [{ label: 'Average pace', value: formatPace(summary.avgPaceSecPerKm, 'km') }];
+    const rows = [{ label: 'Average pace', value: formatPace(averagePaceSec(distanceM, movingSec) ?? summary.avgPaceSecPerKm, 'km') }];
     if (summary.minPaceSecPerKm !== undefined) {
       rows.push({ label: 'Best pace', value: formatPace(summary.minPaceSecPerKm, 'km') });
     }
     return rows;
   }
   const rows: { label: string; value: string }[] = [];
-  if (summary.avgSpeed !== undefined) rows.push({ label: 'Average speed', value: formatSpeed(summary.avgSpeed) });
+  const avgSpeed = averageSpeedMs(distanceM, movingSec) ?? summary.avgSpeed;
+  if (avgSpeed !== undefined && avgSpeed !== null) rows.push({ label: 'Average speed', value: formatSpeed(avgSpeed) });
   if (summary.maxSpeed !== undefined) rows.push({ label: 'Top speed', value: formatSpeed(summary.maxSpeed) });
   return rows;
 }
@@ -163,6 +166,13 @@ export default function WorkoutDetailScreen() {
     effect.load !== null ||
     (loaded?.summary.recoveryHours ?? 0) > 0 ||
     vo2 !== null;
+  // One set of numbers for the whole screen, the same ones the analysis, the share card, the post and the Strava file use.
+  const times = useMemo(() => (loaded ? workoutTimes(loaded.workout) : { elapsedSec: 0, movingSec: 0 }), [loaded]);
+  const elevation = useMemo(() => (loaded ? workoutElevation(loaded.workout, loaded.summary, loaded.points) : null), [loaded]);
+  const shareSummary = useMemo(
+    () => (loaded ? { ...loaded.summary, elevationGain: elevation?.gainM, elevationLoss: elevation?.lossM } : {}),
+    [loaded, elevation],
+  );
   const colors = useColors();
 
   if (!loaded) {
@@ -214,9 +224,14 @@ export default function WorkoutDetailScreen() {
           </View>
         </View>
         <View style={styles.figures}>
-          <Figure label="Duration">
-            <Metric value={formatElapsed(workout.duration)} size="md" />
+          <Figure label={times.elapsedSec > times.movingSec ? 'Moving time' : 'Duration'}>
+            <Metric value={formatElapsed(times.movingSec)} size="md" />
           </Figure>
+          {times.elapsedSec > times.movingSec ? (
+            <Figure label="Elapsed time">
+              <Metric value={formatElapsed(times.elapsedSec)} size="md" />
+            </Figure>
+          ) : null}
           {workout.distance > 0 ? (
             <Figure label="Distance">
               <Metric value={distance} unit={distanceUnit} size="md" />
@@ -243,7 +258,7 @@ export default function WorkoutDetailScreen() {
             </Figure>
           ) : null}
         </View>
-        <ShareWorkoutButton workout={workout} summary={summary} route={route} />
+        <ShareWorkoutButton workout={workout} summary={shareSummary} route={route} />
         <ShareToRogoButton
           workout={workout}
           points={loaded.points}
@@ -342,17 +357,17 @@ export default function WorkoutDetailScreen() {
           label="Time of day"
           value={`${formatClock(workout.start)} to ${formatClock(workout.end)}`}
         />
-        {paceRows(summary).map((row) => (
+        {paceRows(summary, workout.distance, times.movingSec).map((row) => (
           <KeyValue key={row.label} icon="speedometer-outline" label={row.label} value={row.value} />
         ))}
         {summary.minHr !== undefined ? (
           <KeyValue icon="heart-outline" label="Lowest heart rate" value={`${summary.minHr} bpm`} />
         ) : null}
-        {summary.elevationGain !== undefined ? (
-          <KeyValue icon="trending-up-outline" label="Elevation gain" value={metres(summary.elevationGain)} />
-        ) : null}
-        {summary.elevationLoss !== undefined ? (
-          <KeyValue icon="trending-down-outline" label="Elevation loss" value={metres(summary.elevationLoss)} />
+        {elevation !== null ? (
+          <>
+            <KeyValue icon="trending-up-outline" label="Elevation gain" value={`${Math.round(elevation.gainM)} m`} />
+            <KeyValue icon="trending-down-outline" label="Elevation loss" value={`${Math.round(elevation.lossM)} m`} />
+          </>
         ) : null}
         {summary.maxAltitude !== undefined ? (
           <KeyValue icon="chevron-up-circle-outline" label="Highest point" value={metres(summary.maxAltitude)} />

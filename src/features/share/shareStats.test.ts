@@ -36,33 +36,33 @@ describe('effortKind', () => {
 });
 
 describe('effortStat', () => {
-  test('uses the watch pace for running and formats it as m:ss', () => {
+  test('is the distance over the moving time, formatted as m:ss, whatever pace the watch reports', () => {
+    // 1800 s over 5 km is 360 s per km; the watch's own 5:32 is not used.
     expect(effortStat(workout(), { avgPaceSecPerKm: 332 })).toEqual({
       key: 'pace',
       label: 'Avg pace',
-      value: '5:32',
+      value: '6:00',
       unit: '/km',
     });
   });
 
-  test('derives the pace from distance and active time when the summary has none', () => {
-    // 1800 s over 5 km is 360 s per km.
-    expect(effortStat(workout(), {})?.value).toBe('6:00');
+  test('uses the watch pace only when the workout has no distance', () => {
+    expect(effortStat(workout({ distance: 0 }), { avgPaceSecPerKm: 332 })?.value).toBe('5:32');
   });
 
-  test('swimming is per 100 m, from the watch figure or derived', () => {
-    expect(effortStat(workout({ sportName: 'Pool swimming' }), { avgPaceSecPer100m: 105 })).toMatchObject({
-      value: '1:45',
+  test('swimming is per 100 m', () => {
+    // 600 s over 500 m is 120 s per 100 m.
+    expect(effortStat(workout({ sportName: 'Pool swimming', distance: 500, duration: 600, end: 1_760_000_600 }), { avgPaceSecPer100m: 105 })).toMatchObject({
+      value: '2:00',
       unit: '/100 m',
     });
-    // 600 s over 500 m is 120 s per 100 m.
-    expect(effortStat(workout({ sportName: 'Pool swimming', distance: 500, duration: 600 }), {})?.value).toBe('2:00');
+    expect(effortStat(workout({ sportName: 'Pool swimming', distance: 0 }), { avgPaceSecPer100m: 105 })?.value).toBe('1:45');
   });
 
-  test('cycling is km/h, from avgSpeed in m/s or derived', () => {
-    const ride = workout({ sportName: 'Outdoor cycling', distance: 20_000, duration: 3600 });
-    expect(effortStat(ride, { avgSpeed: 6 })).toMatchObject({ key: 'speed', value: '21.6', unit: 'km/h' });
-    expect(effortStat(ride, {})?.value).toBe('20.0');
+  test('cycling is km/h, derived or from avgSpeed in m/s without a distance', () => {
+    const ride = workout({ sportName: 'Outdoor cycling', distance: 20_000, duration: 3600, end: 1_760_003_600 });
+    expect(effortStat(ride, { avgSpeed: 6 })).toMatchObject({ key: 'speed', value: '20.0', unit: 'km/h' });
+    expect(effortStat({ ...ride, distance: 0 }, { avgSpeed: 6 })?.value).toBe('21.6');
   });
 
   test('no figure when there is nothing to average over', () => {
@@ -72,7 +72,13 @@ describe('effortStat', () => {
   });
 
   test('drops an absurd pace', () => {
-    expect(effortStat(workout(), { avgPaceSecPerKm: 5000 })).toBeNull();
+    expect(effortStat(workout({ distance: 120 }), {})).toBeNull();
+  });
+
+  test('a 3 s difference between the watch timer and the end time is not a pause: pace and time of the owner\'s walk', () => {
+    const walk = workout({ sportName: 'Outdoor walk', end: 1_760_001_526, duration: 1523, distance: 2010 });
+    expect(effortStat(walk, { avgPaceSecPerKm: 758 })?.value).toBe('12:39');
+    expect(buildShareStats(walk, {})[1]).toEqual({ key: 'time', label: 'Time', value: '25:26' });
   });
 });
 

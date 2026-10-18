@@ -2,6 +2,7 @@ import type { RogoHrSeries, RogoRoute, RogoVisibility, RogoWatchPostInput } from
 import type { WorkoutPointRow, WorkoutRow } from '@/db/queries';
 import type { WorkoutAnalysis, AnalysisSeries } from '@/features/workouts/analysis/types';
 import { downsample, heartRateBuckets, routePoints } from '@/features/workouts/summary';
+import { workoutTimes } from '@/features/workouts/times';
 
 /** The server's limits for `social.createWatchPost` (zod in JoyoRogo's `social.ts`). */
 const MAX_SPORT_NAME = 60;
@@ -142,7 +143,7 @@ export function buildWatchPost(
   analysis: WorkoutAnalysis | null = null,
 ): RogoWatchPostInput {
   const caption = options.caption.trim();
-  let durationMin = Math.max(1, Math.round(workout.duration / 60));
+  let durationMin = Math.max(1, Math.round(workoutTimes(workout).movingSec / 60));
   let shared: WorkoutAnalysis | null = null;
   if (analysis) {
     shared = shareableAnalysis(analysis, options);
