@@ -1,3 +1,4 @@
+import { AIR_DENSITY, BIKE_KG, CDA, CRR, DRIVETRAIN_EFFICIENCY, GRAVITY } from '@/features/ride/physics';
 import { cleanFixes, type CleanFix } from '@/features/workouts/analysis/geo';
 import { movingOf } from '@/features/workouts/times';
 
@@ -87,13 +88,7 @@ const MIN_GPS_PATH_M = 50;
 const SPEED_SMOOTH_SEC = 3;
 
 // The power-to-speed model of an indoor ride without a wheel sensor (flat road, still air): P x efficiency = 1/2 rho CdA v^3 + Crr m g v.
-const AIR_DENSITY = 1.2;
-/** Hoods position of a road rider, 0.32 to 0.40 m^2 in the wind tunnel data of Martin et al. 1998. */
-const CDA = 0.35;
-const CRR = 0.004;
-const BIKE_KG = 9;
-const GRAVITY = 9.81;
-const DRIVETRAIN_EFFICIENCY = 0.976;
+// Its constants are the ones of the web game's physics (features/ride/physics.ts), so the two never drift apart.
 
 /** Metres per second a rider puts down at `watts` on the flat (the model above); 0 for no power. */
 export function virtualSpeedMs(watts: number, riderKg: number): number {
