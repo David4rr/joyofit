@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Alert, Image, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -8,6 +9,7 @@ import { Card, Section, useContentPadding, useRefreshControl } from '@/component
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { CropEditor } from '@/features/photoface/CropEditor';
 import { usePhotoFace } from '@/features/photoface/usePhotoFace';
+import { fmtInt } from '@/i18n';
 import { radius, spacing, tintColors, useColors, useTheme } from '@/theme';
 import type { PhotoFacePhoto } from '@/wear';
 
@@ -25,23 +27,24 @@ function PhotoTile({
   deleting: boolean;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation('watch');
   const { colors, radius: themeRadius } = useTheme();
   return (
     <View style={styles.tile}>
       <View style={[styles.thumb, { aspectRatio: ratio, backgroundColor: colors.muted, borderRadius: themeRadius.tile }]}>
         {photo.uri ? (
-          <Image source={{ uri: photo.uri }} style={styles.fill} resizeMode="cover" accessibilityLabel={`Photo ${photo.index}`} />
+          <Image source={{ uri: photo.uri }} style={styles.fill} resizeMode="cover" accessibilityLabel={t('photo.photoA11y', { n: photo.index })} />
         ) : (
           <View style={styles.standIn}>
             <IconChip icon="image" />
             <AppText variant="caption" muted style={styles.centered}>
-              Added from another phone, no preview
+              {t('photo.noPreview')}
             </AppText>
           </View>
         )}
       </View>
       <Button
-        label={`Delete photo ${photo.index}`}
+        label={t('photo.deleteN', { n: photo.index })}
         icon="trash"
         variant="destructive"
         disabled={disabled}
@@ -55,6 +58,7 @@ function PhotoTile({
 /** Adds, lists and deletes the photos of the watch's photo face. */
 export function PhotoFaceScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['watch', 'common']);
   const colors = useColors();
   const padding = useContentPadding(false);
   const { connected, face, busy, error, notice, progress, cropSource, cancelCrop, refresh, activate, remove, pick, sendCrop } =
@@ -66,9 +70,9 @@ export function PhotoFaceScreen() {
   const link = tintColors(colors, 'link');
 
   const confirmDelete = (photo: PhotoFacePhoto) =>
-    Alert.alert('Delete photo', `Remove photo ${photo.index} from the watch face?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => void remove(photo.name) },
+    Alert.alert(t('watch:photo.deleteTitle'), t('watch:photo.deleteMessage', { n: photo.index }), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('common:actions.delete'), style: 'destructive', onPress: () => void remove(photo.name) },
     ]);
 
   return (
@@ -78,10 +82,10 @@ export function PhotoFaceScreen() {
         contentContainerStyle={[padding, styles.content]}
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}>
-        <Section title="Photo watch face" icon="images">
+        <Section title={t('watch:photo.title')} icon="images">
           {!connected ? (
-            <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
-              Connect your watch to manage the photos on its photo face.
+            <Notice icon="bluetooth" action={{ label: t('watch:openWatch'), onPress: () => router.navigate('/watch') }}>
+              {t('watch:photo.connect')}
             </Notice>
           ) : null}
           {busy === 'read' && face === null ? (
@@ -98,20 +102,20 @@ export function PhotoFaceScreen() {
                     {face.face.name}
                   </AppText>
                   <AppText variant="caption" muted>
-                    {face.photos.length} of {face.maxPhotos} photos · {face.width} x {face.height} px
+                    {t('watch:photo.summary', { used: face.photos.length, max: face.maxPhotos, width: face.width, height: face.height })}
                   </AppText>
                 </View>
                 {face.face.active ? (
                   <View style={[styles.pill, { backgroundColor: link.soft }]}>
                     <AppText variant="label" color={link.text}>
-                      Active
+                      {t('watch:faces.active')}
                     </AppText>
                   </View>
                 ) : null}
               </View>
               <View style={styles.actions}>
                 <Button
-                  label="Add a photo"
+                  label={t('watch:photo.add')}
                   icon="add-circle"
                   variant="primary"
                   disabled={!connected || !idle || full}
@@ -120,7 +124,7 @@ export function PhotoFaceScreen() {
                 />
                 {!face.face.active ? (
                   <Button
-                    label="Show on the watch"
+                    label={t('watch:photo.show')}
                     icon="checkmark-circle"
                     disabled={!connected || !idle}
                     loading={busy === 'activate'}
@@ -128,7 +132,7 @@ export function PhotoFaceScreen() {
                   />
                 ) : null}
               </View>
-              {full ? <AppText variant="caption" muted>The face holds {face.maxPhotos} photos. Delete one to add another.</AppText> : null}
+              {full ? <AppText variant="caption" muted>{t('watch:photo.full', { max: face.maxPhotos })}</AppText> : null}
             </>
           ) : null}
           {busy === 'send' && progress ? (
@@ -141,8 +145,8 @@ export function PhotoFaceScreen() {
               </View>
               <AppText variant="caption" muted>
                 {progress.total > 0
-                  ? `${percent}% (${progress.bytes.toLocaleString()} of ${progress.total.toLocaleString()} bytes)`
-                  : 'Waiting for the watch to ask for the photo...'}
+                  ? t('watch:faces.progress', { percent: fmtInt(percent), bytes: fmtInt(progress.bytes), total: fmtInt(progress.total) })
+                  : t('watch:photo.waiting')}
               </AppText>
             </View>
           ) : null}
@@ -151,12 +155,12 @@ export function PhotoFaceScreen() {
         </Section>
 
         {face ? (
-          <Section title="Photos on the face" icon="image">
+          <Section title={t('watch:photo.listTitle')} icon="image">
             {face.photos.length === 0 ? (
               <EmptyState
                 icon="image"
-                title="No photos yet"
-                description="The face has no photo to show. Add one from your gallery and crop it to the watch screen."
+                title={t('watch:photo.none')}
+                description={t('watch:photo.noneHint')}
               />
             ) : (
               <View style={styles.grid}>
@@ -177,13 +181,13 @@ export function PhotoFaceScreen() {
           <Card>
             <EmptyState
               icon="images"
-              title={connected ? 'Photo face not read' : 'Watch not connected'}
+              title={connected ? t('watch:photo.notRead') : t('watch:faces.notConnected')}
               description={
                 connected
-                  ? 'Read the face from your watch to see its photos.'
-                  : 'The photo face of your watch appears here once it is connected.'
+                  ? t('watch:photo.notReadHint')
+                  : t('watch:photo.notConnectedHint')
               }
-              action={connected ? { label: 'Read from the watch', icon: 'refresh', onPress: () => void refresh() } : undefined}
+              action={connected ? { label: t('watch:faces.read'), icon: 'refresh', onPress: () => void refresh() } : undefined}
             />
           </Card>
         )}

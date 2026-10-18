@@ -1,9 +1,10 @@
 import { Alert, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { IconChip } from '@/components/IconChip';
-import { canConnect, SUPPORT_LABEL } from '@/features/device/modelSupport';
+import { canConnect, supportLabel } from '@/features/device/modelSupport';
 import { spacing } from '@/theme';
 import type { BondedDevice, LinkState } from '@/wear';
 
@@ -25,16 +26,17 @@ export function BondedRow({
   onDisconnect,
   onForget,
 }: BondedRowProps) {
+  const { t } = useTranslation(['watch', 'common']);
   const isActive = activeAddress === device.address && linkState !== 'disconnected';
   const idle = linkState === 'disconnected';
 
   function confirmForget() {
     Alert.alert(
-      'Forget pairing?',
-      'This drops the stored auth key for this watch. The next connect is a first-time bind and has to be confirmed on the watch. Android Bluetooth pairing is not touched.',
+      t('watch:device.bonded.forgetTitle'),
+      t('watch:device.bonded.forgetMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Forget', style: 'destructive', onPress: () => onForget(device.address) },
+        { text: t('common:actions.cancel'), style: 'cancel' },
+        { text: t('watch:device.bonded.forget'), style: 'destructive', onPress: () => onForget(device.address) },
       ],
     );
   }
@@ -47,10 +49,10 @@ export function BondedRow({
         <IconChip icon="watch" tint={isActive ? 'link' : 'neutral'} />
         <View style={styles.text}>
           <AppText variant="bodyStrong" numberOfLines={1}>
-            {device.name || 'Unnamed device'}
+            {device.name || t('watch:device.bonded.unnamed')}
           </AppText>
           <AppText variant="mono" muted numberOfLines={1}>
-            {device.address} · {device.model ? `${device.model}, ${SUPPORT_LABEL[device.support]}` : SUPPORT_LABEL[device.support]}
+            {device.address} · {device.model ? `${device.model}, ${supportLabel(device.support)}` : supportLabel(device.support)}
           </AppText>
           {device.reason ? (
             <AppText variant="caption" muted>
@@ -59,11 +61,11 @@ export function BondedRow({
           ) : null}
           {device.systemConnected ? (
             <AppText variant="caption" muted>
-              Already connected to this iPhone. Tap Connect to use it here.
+              {t('watch:device.bonded.systemConnected')}
             </AppText>
           ) : device.nearby === false && !isActive ? (
             <AppText variant="caption" muted>
-              Not in reach. If it is on another phone, disconnect it there first.
+              {t('watch:device.bonded.notInReach')}
             </AppText>
           ) : null}
         </View>
@@ -71,20 +73,20 @@ export function BondedRow({
       <View style={styles.actions}>
         {isActive ? (
           <Button
-            label={linkState === 'connecting' ? 'Cancel' : 'Disconnect'}
+            label={linkState === 'connecting' ? t('common:actions.cancel') : t('watch:device.bonded.disconnect')}
             onPress={onDisconnect}
             disabled={linkState === 'syncing'}
           />
         ) : (
           <Button
-            label="Connect"
+            label={t('watch:device.bonded.connect')}
             variant="primary"
             disabled={!connectable || !idle}
             onPress={() => onConnect(device.address)}
           />
         )}
         {connectable ? (
-          <Button label="Forget pairing" variant="destructive" disabled={!idle && !isActive} onPress={confirmForget} />
+          <Button label={t('watch:device.bonded.forgetPairing')} variant="destructive" disabled={!idle && !isActive} onPress={confirmForget} />
         ) : null}
       </View>
     </View>

@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -11,34 +12,26 @@ import { AvailableWatchesSection } from '@/features/device/AvailableWatchesSecti
 import { BindConfirmDialog } from '@/features/device/BindConfirmDialog';
 import { FindWatchSection } from '@/features/device/FindWatchSection';
 import { GuideLink } from '@/features/device/GuideLink';
-import { SUPPORT_LABEL } from '@/features/device/modelSupport';
+import { supportLabel } from '@/features/device/modelSupport';
 import { SupportReportSection } from '@/features/device/SupportReportSection';
 import { WatchStatusCard } from '@/features/device/WatchStatusCard';
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
 import { useBondedDevices } from '@/features/device/useBondedDevices';
 import { useWatch } from '@/state/WatchProvider';
-import { copy as routeCopy } from '@/features/routes/copy';
+import { fmtPercent } from '@/i18n';
 import { spacing, useTheme } from '@/theme';
-
-const CONNECT_STEPS = isIos
-  ? [
-      'Keep the watch close to the iPhone with Bluetooth on. If it is still connected to another phone, disconnect it there first. It shows up in the list below.',
-      'Unbind it from Huawei Health first, or the watch will refuse this app.',
-      'On the first connect, keep the watch awake, accept the prompt on its screen, then tap Pair on the iPhone.',
-    ]
-  : [
-      'Unbind the watch from Huawei Health first, or the watch will refuse this app.',
-      'Pair it in Android Bluetooth settings, or tap "Scan nearby devices" below to find it.',
-      'On the first connect, keep the watch awake and accept the prompt on its screen.',
-    ];
 
 /** The three things that have to be true before the first connect, in the order they happen. */
 function ConnectSteps() {
   const { colors, fonts } = useTheme();
+  const { t } = useTranslation('watch');
+  const steps = isIos
+    ? [t('connectSteps.ios.s1'), t('connectSteps.ios.s2'), t('connectSteps.ios.s3')]
+    : [t('connectSteps.android.s1'), t('connectSteps.android.s2'), t('connectSteps.android.s3')];
   return (
-    <Section title="Before you connect" icon="list">
-      <Details title="3 steps before the first connect">
-        {CONNECT_STEPS.map((step, index) => (
+    <Section title={t('connectSteps.title')} icon="list">
+      <Details title={t('connectSteps.details')}>
+        {steps.map((step, index) => (
           <View key={step} style={styles.step}>
             <View style={[styles.stepNumber, { backgroundColor: colors.muted }]}>
               <AppText variant="label" style={[styles.stepDigit, { fontFamily: fonts.bold }]}>
@@ -58,6 +51,7 @@ function ConnectSteps() {
 
 export default function WatchScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['watch', 'routes']);
   const watch = useWatch();
   const permission = useBluetoothPermission();
   const granted = permission.status === 'granted';
@@ -67,25 +61,25 @@ export default function WatchScreen() {
   const pairedWatches = <AvailableWatchesSection permission={permission} bonded={bonded} />;
 
   const watchDetails = device ? (
-    <Section title="Watch details" icon="watch">
+    <Section title={t('watch:details.title')} icon="watch">
       <View style={styles.grid}>
-        <Pair label="Name" value={device.name} />
-        <Pair label="Model" value={device.model ?? device.productModel} />
-        <Pair label="Support" value={SUPPORT_LABEL[device.support]} />
-        {device.model ? <Pair label="Product code" value={device.productModel} /> : null}
-        <Pair label="Software" value={device.softwareVersion} />
-        <Pair label="Hardware" value={device.hardwareVersion} />
-        <Pair label="Serial" value={device.serialNumber} />
-        <Pair label="Auth mode" value={device.authMode} />
-        <Pair label="Battery" value={watch.battery === null ? null : `${watch.battery}%`} />
+        <Pair label={t('watch:details.name')} value={device.name} />
+        <Pair label={t('watch:details.model')} value={device.model ?? device.productModel} />
+        <Pair label={t('watch:details.support')} value={supportLabel(device.support)} />
+        {device.model ? <Pair label={t('watch:details.productCode')} value={device.productModel} /> : null}
+        <Pair label={t('watch:details.software')} value={device.softwareVersion} />
+        <Pair label={t('watch:details.hardware')} value={device.hardwareVersion} />
+        <Pair label={t('watch:details.serial')} value={device.serialNumber} />
+        <Pair label={t('watch:details.authMode')} value={device.authMode} />
+        <Pair label={t('watch:details.battery')} value={watch.battery === null ? null : fmtPercent(watch.battery)} />
       </View>
       {watch.linkState !== 'connected' ? (
         <AppText variant="caption" muted>
-          {watch.linkState === 'syncing' ? 'Available when the sync finishes.' : 'Connect your watch first.'}
+          {watch.linkState === 'syncing' ? t('watch:details.afterSync') : t('watch:device.connectFirst')}
         </AppText>
       ) : null}
       <Button
-        label="Refresh battery"
+        label={t('watch:details.refreshBattery')}
         icon="refresh"
         disabled={watch.linkState !== 'connected'}
         onPress={() => void watch.refreshBattery()}
@@ -94,35 +88,35 @@ export default function WatchScreen() {
   ) : null;
 
   const onTheWatch = (
-    <Section title="On the watch" icon="watch">
+    <Section title={t('watch:hub.title')} icon="watch">
       <NavRow
         icon="color-palette"
-        title="Watch faces"
-        subtitle="Switch, delete, install"
+        title={t('watch:hub.faces')}
+        subtitle={t('watch:hub.facesSub')}
         style={styles.navRow}
         onPress={() => router.push('/watch/faces')}
       />
       <Divider />
       <NavRow
         icon="images"
-        title="Photo face"
-        subtitle="Your photos on the watch"
+        title={t('watch:hub.photo')}
+        subtitle={t('watch:hub.photoSub')}
         style={styles.navRow}
         onPress={() => router.push('/watch/photos')}
       />
       <Divider />
       <NavRow
         icon="alarm"
-        title="Alarms"
-        subtitle="Read and change"
+        title={t('watch:hub.alarms')}
+        subtitle={t('watch:hub.alarmsSub')}
         style={styles.navRow}
         onPress={() => router.push('/watch/alarms')}
       />
       <Divider />
       <NavRow
         icon="trail-sign"
-        title={routeCopy.hub.title}
-        subtitle={routeCopy.hub.subtitle}
+        title={t('routes:hub.title')}
+        subtitle={t('routes:hub.subtitle')}
         style={styles.navRow}
         onPress={() => router.push('/routes')}
       />
@@ -131,7 +125,7 @@ export default function WatchScreen() {
 
   return (
     <Screen
-      title="Watch"
+      title={t('watch:title')}
       refresh={{ refreshing: bonded.loading, onRefresh: () => void bonded.refresh(), enabled: granted }}>
       <WatchStatusCard />
       {/* Connected, the list is only needed to disconnect or switch, so the watch's own pages come first. */}

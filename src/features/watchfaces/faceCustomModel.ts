@@ -1,16 +1,16 @@
 import { FACE_EDIT_MODES, type FaceCustomization, type FaceStyleChoice } from '@/wear';
 
-/** The edit modes in the order the editor shows them, with the words the screen uses. */
-export const FACE_MODE_ROWS: readonly { mode: number; title: string }[] = [
-  { mode: FACE_EDIT_MODES.style, title: 'Style' },
-  { mode: FACE_EDIT_MODES.background, title: 'Background' },
-  { mode: FACE_EDIT_MODES.typeface, title: 'Typeface' },
-  { mode: FACE_EDIT_MODES.hand, title: 'Hands' },
-  { mode: FACE_EDIT_MODES.symbol, title: 'Symbol' },
-  { mode: FACE_EDIT_MODES.time, title: 'Time' },
-  { mode: FACE_EDIT_MODES.scale, title: 'Scale' },
-  { mode: FACE_EDIT_MODES.dual, title: 'Dual' },
-];
+/** The edit modes in the order the editor shows them; `key` is the label under `watch:faceEdit.modes`. */
+export const FACE_MODE_ROWS = [
+  { mode: FACE_EDIT_MODES.style, key: 'style' },
+  { mode: FACE_EDIT_MODES.background, key: 'background' },
+  { mode: FACE_EDIT_MODES.typeface, key: 'typeface' },
+  { mode: FACE_EDIT_MODES.hand, key: 'hands' },
+  { mode: FACE_EDIT_MODES.symbol, key: 'symbol' },
+  { mode: FACE_EDIT_MODES.time, key: 'time' },
+  { mode: FACE_EDIT_MODES.scale, key: 'scale' },
+  { mode: FACE_EDIT_MODES.dual, key: 'dual' },
+] as const;
 
 /** The highest index a one-byte TLV value can carry (`FaceCustomWire.MAX_INDEX`). */
 export const MAX_OPTION_INDEX = 255;

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image, Modal, PanResponder, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -48,6 +49,7 @@ export function CropEditor({ source, target, busy, onCancel, onConfirm }: CropEd
 }
 
 function CropSurface({ source, target, busy, onCancel, onConfirm }: CropEditorProps & { source: CropSource }) {
+  const { t } = useTranslation(['watch', 'common']);
   const { colors, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
@@ -78,9 +80,9 @@ function CropSurface({ source, target, busy, onCancel, onConfirm }: CropEditorPr
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom + spacing.md }]}>
       <View style={styles.head}>
-        <AppText variant="heading">Crop the photo</AppText>
+        <AppText variant="heading">{t('watch:photo.crop.title')}</AppText>
         <AppText variant="caption" muted>
-          Drag to move, pinch to zoom. The frame is what the watch shows, {target.width} x {target.height} px.
+          {t('watch:photo.crop.hint', { width: target.width, height: target.height })}
         </AppText>
       </View>
 
@@ -88,7 +90,7 @@ function CropSurface({ source, target, busy, onCancel, onConfirm }: CropEditorPr
         <View
           {...responder.panHandlers}
           accessible
-          accessibilityLabel="Crop frame. Drag to move the photo, use the zoom buttons to scale it."
+          accessibilityLabel={t('watch:photo.crop.frameA11y')}
           style={[styles.frame, { width: frame.width, height: frame.height, backgroundColor: colors.muted, borderRadius: radius.tile }]}>
           <Image
             source={{ uri: source.uri }}
@@ -105,12 +107,12 @@ function CropSurface({ source, target, busy, onCancel, onConfirm }: CropEditorPr
       </View>
 
       <View style={styles.zoomRow}>
-        <Button label="Zoom out" icon="remove" disabled={busy || view.scale <= minScale * 1.001} onPress={() => zoom(1 / ZOOM_STEP)} />
-        <Button label="Zoom in" icon="add" disabled={busy || view.scale >= minScale * MAX_ZOOM * 0.999} onPress={() => zoom(ZOOM_STEP)} />
+        <Button label={t('watch:photo.crop.zoomOut')} icon="remove" disabled={busy || view.scale <= minScale * 1.001} onPress={() => zoom(1 / ZOOM_STEP)} />
+        <Button label={t('watch:photo.crop.zoomIn')} icon="add" disabled={busy || view.scale >= minScale * MAX_ZOOM * 0.999} onPress={() => zoom(ZOOM_STEP)} />
       </View>
       <View style={styles.zoomRow}>
-        <Button label="Cancel" variant="ghost" disabled={busy} onPress={onCancel} />
-        <Button label="Send to the watch" variant="primary" icon="cloud-upload" loading={busy} onPress={() => onConfirm(cropRect(view, source, frame))} />
+        <Button label={t('common:actions.cancel')} variant="ghost" disabled={busy} onPress={onCancel} />
+        <Button label={t('watch:photo.crop.send')} variant="primary" icon="cloud-upload" loading={busy} onPress={() => onConfirm(cropRect(view, source, frame))} />
       </View>
     </View>
   );

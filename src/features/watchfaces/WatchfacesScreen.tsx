@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -9,6 +10,7 @@ import { Card, Section, useContentPadding, useRefreshControl } from '@/component
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { useWatchfaces } from '@/features/watchfaces/useWatchfaces';
 import { formatDateTime } from '@/format';
+import { fmtInt } from '@/i18n';
 import { radius, spacing, tintColors, useColors } from '@/theme';
 import type { WatchfaceInfo } from '@/wear';
 
@@ -16,12 +18,13 @@ const SKELETON_ROWS = [0, 1, 2];
 
 /** "Active" badge on the face that is on the watch's screen now. */
 function ActivePill() {
+  const { t } = useTranslation('watch');
   const colors = useColors();
   const link = tintColors(colors, 'link');
   return (
     <View style={[styles.pill, { backgroundColor: link.soft }]}>
       <AppText variant="label" color={link.text}>
-        Active
+        {t('faces.active')}
       </AppText>
     </View>
   );
@@ -49,6 +52,7 @@ function FaceSkeleton() {
 /** Lists, activates, deletes and installs watch faces on the connected watch. */
 export function WatchfacesScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['watch', 'common']);
   const colors = useColors();
   const padding = useContentPadding(false);
   const { connected, list, busy, error, notice, progress, refresh, setActive, remove, install } = useWatchfaces();
@@ -63,16 +67,16 @@ export function WatchfacesScreen() {
     progress && progress.total > 0 ? Math.min(100, Math.round((progress.bytes / progress.total) * 100)) : 0;
 
   const confirmDelete = (face: WatchfaceInfo) =>
-    Alert.alert('Delete watch face', `Delete "${face.name}" from the watch?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => void remove(face.id) },
+    Alert.alert(t('watch:faces.deleteTitle'), t('watch:faces.deleteMessage', { name: face.name }), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('common:actions.delete'), style: 'destructive', onPress: () => void remove(face.id) },
     ]);
 
   const listMeta = list
     ? [
-        list.width && list.height ? `Screen ${list.width} x ${list.height} px` : null,
-        list.maxVersion ? `Newest face format ${list.maxVersion}` : null,
-        `Read ${formatDateTime(list.updatedAt / 1000)}`,
+        list.width && list.height ? t('watch:faces.screenSize', { width: list.width, height: list.height }) : null,
+        list.maxVersion ? t('watch:faces.maxVersion', { version: list.maxVersion }) : null,
+        t('watch:faces.readAt', { time: formatDateTime(list.updatedAt / 1000) }),
       ]
         .filter(Boolean)
         .join(' · ')
@@ -80,21 +84,19 @@ export function WatchfacesScreen() {
 
   const header = (
     <View style={styles.header}>
-      <Section title="Install a watch face" icon="cloud-upload">
+      <Section title={t('watch:faces.installTitle')} icon="cloud-upload">
         <Details>
-          {`Make faces in Huawei Theme Studio Pro and export them as .hwt files. ${
-            list?.width && list.height
-              ? `This watch's screen is ${list.width} x ${list.height} px.`
-              : "Make them for your watch's screen size."
-          } A face made for another screen is refused before it is sent.\n\nWhether the watch accepts a face that Huawei did not sign is not known. If it refuses, the exact status code it returned is shown here and in the log.`}
+          {list?.width && list.height
+            ? t('watch:faces.installAboutSized', { width: list.width, height: list.height })
+            : t('watch:faces.installAbout')}
         </Details>
         {!connected ? (
-          <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
-            Connect your watch to manage its faces.
+          <Notice icon="bluetooth" action={{ label: t('watch:openWatch'), onPress: () => router.navigate('/watch') }}>
+            {t('watch:faces.connect')}
           </Notice>
         ) : null}
         <Button
-          label="Install from file"
+          label={t('watch:faces.install')}
           variant="primary"
           icon="document"
           disabled={!connected || !idle}
@@ -111,8 +113,8 @@ export function WatchfacesScreen() {
             </View>
             <AppText variant="caption" muted>
               {progress.total > 0
-                ? `${percent}% (${progress.bytes.toLocaleString()} of ${progress.total.toLocaleString()} bytes)`
-                : 'Waiting for the watch to accept the file...'}
+                ? t('watch:faces.progress', { percent: fmtInt(percent), bytes: fmtInt(progress.bytes), total: fmtInt(progress.total) })
+                : t('watch:faces.waiting')}
             </AppText>
           </View>
         ) : null}
@@ -125,7 +127,7 @@ export function WatchfacesScreen() {
       <View style={styles.listTitle}>
         <View style={styles.listTitleRow} accessibilityRole="header">
           <IconChip icon="watch" size="sm" />
-          <AppText variant="heading">On the watch</AppText>
+          <AppText variant="heading">{t('watch:faces.onWatch')}</AppText>
         </View>
         {listMeta ? (
           <AppText variant="caption" muted>
@@ -142,8 +144,8 @@ export function WatchfacesScreen() {
         <Card>
           <EmptyState
             icon="watch"
-            title="Watch not connected"
-            description="The faces on your watch appear here once it is connected."
+            title={t('watch:faces.notConnected')}
+            description={t('watch:faces.notConnectedHint')}
           />
         </Card>
       );
@@ -162,15 +164,15 @@ export function WatchfacesScreen() {
         {list === null ? (
           <EmptyState
             icon="watch"
-            title="Faces not read yet"
-            description="Read the list from your watch to see its faces."
-            action={{ label: 'Read from the watch', icon: 'refresh', onPress: () => void refresh() }}
+            title={t('watch:faces.notRead')}
+            description={t('watch:faces.notReadHint')}
+            action={{ label: t('watch:faces.read'), icon: 'refresh', onPress: () => void refresh() }}
           />
         ) : (
           <EmptyState
             icon="watch"
-            title="No watch faces"
-            description="The watch lists no faces. Install one from a file above."
+            title={t('watch:faces.none')}
+            description={t('watch:faces.noneHint')}
           />
         )}
       </Card>
@@ -203,18 +205,22 @@ export function WatchfacesScreen() {
                   {face.name}
                 </AppText>
                 <AppText variant="caption" muted>
-                  {face.id} v{face.version}
-                  {face.factory ? ' · preinstalled' : ''}
-                  {face.tryout ? ' · trial' : ''}
-                  {face.video ? ' · video' : ''}
-                  {face.photo ? ' · photo' : ''}
+                  {[
+                    `${face.id} v${face.version}`,
+                    face.factory ? t('watch:faces.tagFactory') : null,
+                    face.tryout ? t('watch:faces.tagTrial') : null,
+                    face.video ? t('watch:faces.tagVideo') : null,
+                    face.photo ? t('watch:faces.tagPhoto') : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </AppText>
               </View>
               {face.active ? <ActivePill /> : null}
             </View>
             <View style={styles.actions}>
               <Button
-                label="Set active"
+                label={t('watch:faces.setActive')}
                 icon="checkmark-circle"
                 disabled={!connected || !idle || face.active}
                 loading={working && action === 'activate'}
@@ -222,14 +228,14 @@ export function WatchfacesScreen() {
               />
               {face.editable ? (
                 <Button
-                  label="Customize"
+                  label={t('watch:faces.customize')}
                   icon="color-palette"
                   disabled={!connected || !idle}
                   onPress={() => router.push({ pathname: '/watch/face-edit', params: { id: face.id, name: face.name } })}
                 />
               ) : null}
               <Button
-                label="Delete"
+                label={t('common:actions.delete')}
                 icon="trash"
                 variant="destructive"
                 disabled={!connected || !idle || face.factory}

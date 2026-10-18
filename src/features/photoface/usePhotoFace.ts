@@ -7,6 +7,7 @@ import { useCallback, useState } from 'react';
 import type { CropSource } from '@/features/photoface/CropEditor';
 import { isExactScreenSize, type CropRect } from '@/features/photoface/cropMath';
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type PhotoFace, type UploadProgressEvent } from '@/wear';
 
@@ -79,7 +80,7 @@ export function usePhotoFace() {
         try {
           const png = await rendered.saveAsync({ format: SaveFormat.PNG });
           setFace(await HuaweiWear.addPhoto(png.uri));
-          setNotice('Photo added to the watch face.');
+          setNotice(t('watch:photo.added'));
         } finally {
           setProgress(null);
         }
@@ -103,7 +104,7 @@ export function usePhotoFace() {
           const png = await cut.saveAsync({ format: SaveFormat.PNG });
           setFace(await HuaweiWear.addPhoto(png.uri));
           setCropSource(null);
-          setNotice('Photo added to the watch face.');
+          setNotice(t('watch:photo.added'));
         } finally {
           setProgress(null);
         }

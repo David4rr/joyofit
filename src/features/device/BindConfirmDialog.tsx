@@ -1,4 +1,5 @@
 import { useIsFocused } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { isIos } from '@/components/IosUnavailable';
@@ -10,18 +11,15 @@ import { useWatch } from '@/state/WatchProvider';
  * asks for its own accept.
  */
 export function BindConfirmDialog() {
+  const { t } = useTranslation('watch');
   const watch = useWatch();
   const focused = useIsFocused();
   return (
     <ConfirmDialog
       visible={focused && watch.bindRequest !== null}
-      title="Pair this watch with this phone?"
-      message={
-        `This watch is not paired with this ${isIos ? 'iPhone' : 'phone'} yet. A watch keeps one phone pairing, so continuing replaces ` +
-        'the pairing with your other phone or app (Huawei Health, or JoyoFit on another phone), which will have to pair again. ' +
-        'You will then confirm on the watch.'
-      }
-      confirmLabel="Continue"
+      title={t('device.bind.title')}
+      message={t(isIos ? 'device.bind.messageIos' : 'device.bind.messageAndroid')}
+      confirmLabel={t('device.bind.continue')}
       onConfirm={() => void watch.confirmBind()}
       onCancel={watch.cancelBind}
     />

@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, Share } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -19,6 +20,7 @@ type Busy = 'github' | 'share' | null;
  * the log is too long for the link, so it goes to the clipboard to paste into the issue's Log field.
  */
 export function SupportReportSection() {
+  const { t } = useTranslation('watch');
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -46,26 +48,23 @@ export function SupportReportSection() {
   const shareText = () =>
     run('share', async () => {
       const report = await HuaweiWear.getSupportReport();
-      await Share.share({ title: 'JoyoFit support report', message: reportText(report) });
+      await Share.share({ title: t('device.support.shareTitle'), message: reportText(report) });
     });
 
   return (
-    <Section title="Help support your watch" icon="chatbubbles">
+    <Section title={t('device.support.title')} icon="chatbubbles">
       <Details>
-        JoyoFit is tested on the Huawei Watch Fit 4 Pro. Other Huawei and Honor watches are experimental. If something
-        does not work, connect once, then send a report. It lists what your watch answered on its last connect, without
-        Bluetooth addresses or the serial number.
+        {t('device.support.intro')}
       </Details>
       {copied ? (
         <Notice>
-          The full report is on your clipboard. On GitHub, say what works and what does not, then paste the report into
-          the Log field.
+          {t('device.support.copied')}
         </Notice>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <ButtonRow>
         <Button
-          label="GitHub report"
+          label={t('device.support.github')}
           variant="primary"
           icon="logo-github"
           loading={busy === 'github'}
@@ -73,7 +72,7 @@ export function SupportReportSection() {
           onPress={() => void reportOnGitHub()}
         />
         <Button
-          label="Share text"
+          label={t('device.support.share')}
           icon="share-social"
           loading={busy === 'share'}
           disabled={busy !== null}

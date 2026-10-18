@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -30,6 +31,7 @@ interface AlarmEditorProps {
 
 /** Time, days and (per kind) name or wake-up window of one alarm. Validation messages stay inside the form. */
 export function AlarmEditor({ initial, kind, saving, onSave, onCancel, onDelete }: AlarmEditorProps) {
+  const { t } = useTranslation(['watch', 'common']);
   const [hour, setHour] = useState(String(initial.hour));
   const [minute, setMinute] = useState(String(initial.minute));
   const [name, setName] = useState(initial.name);
@@ -41,15 +43,15 @@ export function AlarmEditor({ initial, kind, saving, onSave, onCancel, onDelete 
     const h = parseBounded(hour, 0, 23);
     const m = parseBounded(minute, 0, 59);
     const a = parseBounded(ahead, 0, 127);
-    if (h === null) return setProblem('Hour must be 0 to 23.');
-    if (m === null) return setProblem('Minute must be 0 to 59.');
-    if (kind === 'smart' && a === null) return setProblem('Wake-up window must be 0 to 127 minutes.');
+    if (h === null) return setProblem(t('watch:alarms.editor.hourRange'));
+    if (m === null) return setProblem(t('watch:alarms.editor.minuteRange'));
+    if (kind === 'smart' && a === null) return setProblem(t('watch:alarms.editor.aheadRange'));
     setProblem(null);
     onSave({
       hour: h,
       minute: m,
       repeat,
-      name: name.trim() || 'Alarm',
+      name: name.trim() || t('watch:alarms.defaultName'),
       aheadMinutes: a ?? initial.aheadMinutes,
     });
   };
@@ -58,16 +60,16 @@ export function AlarmEditor({ initial, kind, saving, onSave, onCancel, onDelete 
     <View style={styles.form}>
       <View style={styles.timeRow}>
         <View style={styles.time}>
-          <Field label="Hour (0-23)" value={hour} onChangeText={setHour} keyboardType="number-pad" maxLength={3} />
+          <Field label={t('watch:alarms.editor.hour')} value={hour} onChangeText={setHour} keyboardType="number-pad" maxLength={3} />
         </View>
         <View style={styles.time}>
-          <Field label="Minute (0-59)" value={minute} onChangeText={setMinute} keyboardType="number-pad" maxLength={3} />
+          <Field label={t('watch:alarms.editor.minute')} value={minute} onChangeText={setMinute} keyboardType="number-pad" maxLength={3} />
         </View>
       </View>
-      {kind === 'event' ? <Field label="Name" value={name} onChangeText={setName} maxLength={64} icon="pricetag" /> : null}
+      {kind === 'event' ? <Field label={t('watch:alarms.editor.name')} value={name} onChangeText={setName} maxLength={64} icon="pricetag" /> : null}
       {kind === 'smart' ? (
         <Field
-          label="Wake me up to this many minutes early"
+          label={t('watch:alarms.editor.ahead')}
           value={ahead}
           onChangeText={setAhead}
           keyboardType="number-pad"
@@ -76,17 +78,17 @@ export function AlarmEditor({ initial, kind, saving, onSave, onCancel, onDelete 
       ) : null}
       <View style={styles.repeat}>
         <AppText variant="label" muted>
-          Repeat
+          {t('watch:alarms.editor.repeat')}
         </AppText>
         <DayChips value={repeat} onChange={setRepeat} />
         <AppText variant="caption" muted>
-          No day selected means once.
+          {t('watch:alarms.editor.repeatHint')}
         </AppText>
       </View>
       {problem ? <Notice tone="danger">{problem}</Notice> : null}
-      <Button label="Save to the watch" variant="primary" icon="checkmark" loading={saving} onPress={save} />
-      <Button label="Cancel" disabled={saving} onPress={onCancel} />
-      {onDelete ? <Button label="Delete alarm" variant="destructive" icon="trash" disabled={saving} onPress={onDelete} /> : null}
+      <Button label={t('watch:alarms.editor.save')} variant="primary" icon="checkmark" loading={saving} onPress={save} />
+      <Button label={t('common:actions.cancel')} disabled={saving} onPress={onCancel} />
+      {onDelete ? <Button label={t('watch:alarms.editor.delete')} variant="destructive" icon="trash" disabled={saving} onPress={onDelete} /> : null}
     </View>
   );
 }

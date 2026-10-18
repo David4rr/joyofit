@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -32,6 +33,7 @@ function OptionPicker({
   disabled: boolean;
   onSelect: (index: number) => void;
 }) {
+  const { t } = useTranslation('watch');
   const [extra, setExtra] = useState(0);
   const count = visibleOptions(selected, extra);
   return (
@@ -49,7 +51,7 @@ function OptionPicker({
             onPress={() => !disabled && onSelect(index)}
           />
         ))}
-        {count <= MAX_OPTION_INDEX ? <Chip label="More" selected={false} onPress={() => setExtra((e) => e + 4)} /> : null}
+        {count <= MAX_OPTION_INDEX ? <Chip label={t('faceEdit.more')} selected={false} onPress={() => setExtra((e) => e + 4)} /> : null}
       </View>
     </View>
   );
@@ -58,6 +60,7 @@ function OptionPicker({
 /** Edits the options of a face that is already on the watch: style, background, typeface, hands, colour and widget slots. */
 export function FaceCustomizeScreen() {
   const router = useRouter();
+  const { t } = useTranslation('watch');
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const { connected, draft, setDraft, busy, error, notice, dirty, revertable, load, apply, revert } = useFaceCustomization(id);
   const idle = busy === null;
@@ -65,8 +68,8 @@ export function FaceCustomizeScreen() {
   if (!connected) {
     return (
       <Screen>
-        <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
-          Connect your watch to customize its faces.
+        <Notice icon="bluetooth" action={{ label: t('openWatch'), onPress: () => router.navigate('/watch') }}>
+          {t('faceEdit.connect')}
         </Notice>
       </Screen>
     );
@@ -76,16 +79,16 @@ export function FaceCustomizeScreen() {
     return (
       <Screen>
         {busy === 'load' ? (
-          <LoadingState label="Asking the watch for this face's options..." />
+          <LoadingState label={t('faceEdit.loading')} />
         ) : (
           <>
             {error ? <Notice tone="danger">{error}</Notice> : null}
             <Card>
               <EmptyState
                 icon="color-palette"
-                title="No options read"
-                description="The watch answers only for faces that have options to edit. Make sure the face is one of those, then try again."
-                action={{ label: 'Try again', icon: 'refresh', onPress: () => void load() }}
+                title={t('faceEdit.noneRead')}
+                description={t('faceEdit.noneReadHint')}
+                action={{ label: t('faceEdit.tryAgain'), icon: 'refresh', onPress: () => void load() }}
               />
             </Card>
           </>
@@ -101,17 +104,15 @@ export function FaceCustomizeScreen() {
     <Screen>
       <View style={styles.title}>
         <AppText variant="title" accessibilityRole="header">
-          {name ?? `Face ${id}`}
+          {name ?? t('faceEdit.faceId', { id })}
         </AppText>
         <AppText variant="caption" muted>
-          Face {id}
+          {t('faceEdit.faceId', { id })}
         </AppText>
       </View>
 
       <Notice icon="information-circle">
-        The watch reports which option is selected, not how many exist or what they are called, so choices are numbered
-        by position. Pick one, press Apply, and look at the watch. A number the face does not have is refused and the
-        message says so.
+        {t('faceEdit.explain')}
       </Notice>
       {notice ? <Notice icon="checkmark-circle">{notice}</Notice> : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
@@ -120,18 +121,18 @@ export function FaceCustomizeScreen() {
         <Card>
           <EmptyState
             icon="color-palette"
-            title="Nothing to edit"
-            description="The watch reported this face but none of its options."
+            title={t('faceEdit.nothing')}
+            description={t('faceEdit.nothingHint')}
           />
         </Card>
       ) : null}
 
       {modes.length > 0 ? (
-        <Section title="Look" icon="color-palette">
+        <Section title={t('faceEdit.look')} icon="color-palette">
           {modes.map((row) => (
             <OptionPicker
               key={row.mode}
-              label={row.title}
+              label={t(`faceEdit.modes.${row.key}`)}
               selected={styleIndex(draft, row.mode)}
               disabled={!idle}
               onSelect={(index) => setDraft(withStyle(draft, row.mode, index))}
@@ -141,32 +142,32 @@ export function FaceCustomizeScreen() {
       ) : null}
 
       {hasColour ? (
-        <Section title="Colour" icon="color-fill">
+        <Section title={t('faceEdit.colour')} icon="color-fill">
           <OptionPicker
-            label="Palette"
+            label={t('faceEdit.palette')}
             selected={draft.colourIndex}
             disabled={!idle}
             onSelect={(index) => setDraft({ ...draft, colourIndex: index })}
           />
           <Field
-            label="Custom colour"
-            hint="Optional. Sent as text exactly as typed (for example #FF8800); the format the watch expects is not confirmed."
+            label={t('faceEdit.customColour')}
+            hint={t('faceEdit.customColourHint')}
             value={draft.customColour ?? ''}
             editable={idle}
             autoCapitalize="characters"
             autoCorrect={false}
-            placeholder="#RRGGBB"
+            placeholder="#RRGGBB" // i18n-ok: colour format
             onChangeText={(text) => setDraft({ ...draft, customColour: text.trim() === '' ? null : text.trim() })}
           />
         </Section>
       ) : null}
 
       {draft.widgets.length > 0 ? (
-        <Section title="Widgets" icon="apps">
+        <Section title={t('faceEdit.widgets')} icon="apps">
           {draft.widgets.map((option, slot) => (
             <OptionPicker
               key={slot}
-              label={`Slot ${slot + 1}`}
+              label={t('faceEdit.slot', { n: slot + 1 })}
               selected={option}
               disabled={!idle}
               onSelect={(index) => setDraft(withWidget(draft, slot, index))}
@@ -177,7 +178,7 @@ export function FaceCustomizeScreen() {
 
       <View style={styles.actions}>
         <Button
-          label="Apply"
+          label={t('faceEdit.apply')}
           variant="primary"
           icon="checkmark-circle"
           disabled={!dirty || !idle}
@@ -185,7 +186,7 @@ export function FaceCustomizeScreen() {
           onPress={() => void apply()}
         />
         <Button
-          label="Revert"
+          label={t('faceEdit.revert')}
           icon="arrow-undo"
           disabled={!revertable || !idle}
           loading={busy === 'revert'}

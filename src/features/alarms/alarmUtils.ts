@@ -1,6 +1,21 @@
+import { t } from '@/i18n';
 import { ALARM_DAYS, ALARM_SLOTS, type WatchAlarm, type WatchSmartAlarm } from '@/wear';
 
 const pad = (n: number) => String(n).padStart(2, '0');
+
+/** Weekday bit of `ALARM_DAYS` to its key under `watch:alarms.days`. */
+const DAY_KEYS = { 1: 'mon', 2: 'tue', 4: 'wed', 8: 'thu', 16: 'fri', 32: 'sat', 64: 'sun' } as const;
+type DayBit = keyof typeof DAY_KEYS;
+
+/** Three-letter weekday name ("Sen", "Mon"). */
+export function dayName(bit: number): string {
+  return t(`watch:alarms.days.${DAY_KEYS[bit as DayBit]}`);
+}
+
+/** Two-letter weekday for a round chip, unique within the week ("Sn" and "Sl", not "Se" twice). */
+export function dayInitials(bit: number): string {
+  return t(`watch:alarms.dayChips.${DAY_KEYS[bit as DayBit]}`);
+}
 
 export function formatAlarmTime(hour: number, minute: number): string {
   return `${pad(hour)}:${pad(minute)}`;
@@ -12,12 +27,12 @@ const EVERY_DAY = WEEKDAYS | WEEKEND;
 
 /** "Once", "Every day", "Weekdays", "Weekends" or the day names. */
 export function describeRepeat(repeat: number): string {
-  if (repeat === 0) return 'Once';
-  if (repeat === EVERY_DAY) return 'Every day';
-  if (repeat === WEEKDAYS) return 'Weekdays';
-  if (repeat === WEEKEND) return 'Weekends';
+  if (repeat === 0) return t('watch:alarms.repeat.once');
+  if (repeat === EVERY_DAY) return t('watch:alarms.repeat.everyDay');
+  if (repeat === WEEKDAYS) return t('watch:alarms.repeat.weekdays');
+  if (repeat === WEEKEND) return t('watch:alarms.repeat.weekends');
   return ALARM_DAYS.filter((day) => (repeat & day.bit) !== 0)
-    .map((day) => day.label)
+    .map((day) => dayName(day.bit))
     .join(' ');
 }
 

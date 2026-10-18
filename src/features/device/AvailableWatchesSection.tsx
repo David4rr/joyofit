@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -7,7 +8,7 @@ import { isIos } from '@/components/IosUnavailable';
 import { Divider, Section } from '@/components/Screen';
 import { EmptyState, LoadingState, Notice } from '@/components/States';
 import { BondedRow } from '@/features/device/BondedRow';
-import { NO_WATCH_FOUND_HINT, NO_WATCH_FOUND_SCAN_HINT } from '@/features/device/connectFailure';
+import { noWatchFoundHint, noWatchFoundScanHint } from '@/features/device/connectFailure';
 import { supportRank } from '@/features/device/modelSupport';
 import type { BluetoothPermission } from '@/features/device/useBluetoothPermission';
 import type { BondedDevices } from '@/features/device/useBondedDevices';
@@ -27,6 +28,7 @@ interface AvailableWatchesSectionProps {
  * the setup guide both show it, each owning the permission and device hooks (the tab feeds them to pull-to-refresh).
  */
 export function AvailableWatchesSection({ permission, bonded }: AvailableWatchesSectionProps) {
+  const { t } = useTranslation('watch');
   const watch = useWatch();
   const granted = permission.status === 'granted';
   // Measured row heights, so the list shows exactly VISIBLE_BONDED rows before it scrolls.
@@ -65,12 +67,12 @@ export function AvailableWatchesSection({ permission, bonded }: AvailableWatches
 
   return (
     <Section
-      title={bonded.scanning ? 'Searching for devices...' : 'Available watches'}
+      title={bonded.scanning ? t('device.list.searching') : t('device.list.title')}
       icon="bluetooth"
       trailing={
         bonded.scanning ? (
           <AppText variant="caption" muted>
-            Scanning...
+            {t('device.list.scanningShort')}
           </AppText>
         ) : devices.length > 0 ? (
           <AppText variant="caption" muted>
@@ -79,41 +81,41 @@ export function AvailableWatchesSection({ permission, bonded }: AvailableWatches
         ) : null
       }>
       {permission.status === 'checking' ? (
-        <LoadingState label="Checking Bluetooth permission" />
+        <LoadingState label={t('device.list.checkingPermission')} />
       ) : !granted ? (
         <>
-          <Notice tone="danger">Bluetooth permission is needed to list paired watches and open the connection.</Notice>
+          <Notice tone="danger">{t('device.list.permissionNeeded')}</Notice>
           {permission.status === 'blocked' ? (
-            <Button label="Open app settings" icon="settings" onPress={() => void Linking.openSettings()} />
+            <Button label={t('device.list.openSettings')} icon="settings" onPress={() => void Linking.openSettings()} />
           ) : (
-            <Button label="Continue" variant="primary" icon="bluetooth" onPress={() => void permission.request()} />
+            <Button label={t('device.list.continue')} variant="primary" icon="bluetooth" onPress={() => void permission.request()} />
           )}
         </>
       ) : (
         <>
-          {bonded.error ? <Notice tone="danger">Could not read paired devices: {bonded.error}</Notice> : null}
+          {bonded.error ? <Notice tone="danger">{t('device.list.readError', { error: bonded.error })}</Notice> : null}
           {showNotInReach ? (
-            <Notice action={{ label: 'Refresh', onPress: () => void bonded.refresh() }}>{NO_WATCH_FOUND_HINT}</Notice>
+            <Notice action={{ label: t('device.list.refresh'), onPress: () => void bonded.refresh() }}>{noWatchFoundHint()}</Notice>
           ) : null}
           {!isIos && !bonded.scanning && bonded.scanFound === 0 && !linked ? (
-            <Notice action={{ label: 'Scan again', onPress: () => void bonded.startScan() }}>{NO_WATCH_FOUND_SCAN_HINT}</Notice>
+            <Notice action={{ label: t('device.list.scanAgain'), onPress: () => void bonded.startScan() }}>{noWatchFoundScanHint()}</Notice>
           ) : null}
           {showEmpty ? (
             <EmptyState
               icon="bluetooth"
-              title={isIos ? 'No paired devices' : bonded.scanning ? 'Scanning for devices...' : 'No devices found'}
+              title={isIos ? t('device.list.emptyIos') : bonded.scanning ? t('device.list.scanning') : t('device.list.emptyAndroid')}
               description={
                 isIos
-                  ? NO_WATCH_FOUND_HINT
+                  ? noWatchFoundHint()
                   : bonded.scanning
-                    ? 'Looking for nearby Huawei and Honor watches or bands. Make sure your device is ready to connect.'
-                    : 'Pair the watch in Android Bluetooth settings, or tap Scan nearby devices.'
+                    ? t('device.list.scanningHint')
+                    : t('device.list.emptyHint')
               }
               action={
                 isIos
-                  ? { label: 'Refresh list', icon: 'refresh', onPress: () => void bonded.refresh() }
+                  ? { label: t('device.list.refreshList'), icon: 'refresh', onPress: () => void bonded.refresh() }
                   : {
-                      label: bonded.scanning ? 'Scanning...' : 'Scan nearby devices',
+                      label: bonded.scanning ? t('device.list.scanningShort') : t('device.list.scan'),
                       icon: 'refresh',
                       onPress: () => {
                         void bonded.reload();
@@ -155,10 +157,10 @@ export function AvailableWatchesSection({ permission, bonded }: AvailableWatches
                 ))}
               </ScrollView>
               {isIos ? (
-                <Button label="Refresh list" icon="refresh" loading={bonded.loading} onPress={() => void bonded.refresh()} />
+                <Button label={t('device.list.refreshList')} icon="refresh" loading={bonded.loading} onPress={() => void bonded.refresh()} />
               ) : (
                 <Button
-                  label={bonded.scanning ? 'Stop scanning' : linked ? 'Scan for other devices' : 'Scan nearby devices'}
+                  label={bonded.scanning ? t('device.list.stopScan') : linked ? t('device.list.scanOther') : t('device.list.scan')}
                   icon={bonded.scanning ? 'close' : 'refresh'}
                   loading={bonded.loading}
                   onPress={() => {

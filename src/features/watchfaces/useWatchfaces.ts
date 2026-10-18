@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type UploadProgressEvent, type WatchfaceList } from '@/wear';
 
@@ -69,8 +70,8 @@ export function useWatchfaces() {
       try {
         const result = await HuaweiWear.installWatchface(asset.uri, signature, fileName);
         if (result.list) setList(result.list);
-        if (result.listed) setNotice(`${result.name}: ${result.message}`);
-        else setError(`${result.name}: ${result.message}`);
+        if (result.listed) setNotice(t('watch:faces.installResult', { name: result.name, message: result.message }));
+        else setError(t('watch:faces.installResult', { name: result.name, message: result.message }));
       } finally {
         setProgress(null);
       }

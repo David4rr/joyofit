@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { supportRank } from '@/features/device/modelSupport';
 import { ensureBluetoothScan } from '@/features/device/useBluetoothPermission';
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { HuaweiWear, type BondedDevice } from '@/wear';
 
 interface BondedState {
@@ -101,14 +102,13 @@ export function useBondedDevices(enabled: boolean): BondedDevices {
     if (Platform.OS === 'android') {
       // Below Android 12 a BLE scan needs the location permission, which JoyoFit does not ask for a Bluetooth scan.
       if (Number(Platform.Version) < 31) {
-        setState((s) => ({ ...s, error: 'Scanning needs Android 12 or newer. Pair the watch in Android Bluetooth settings instead.' }));
+        setState((s) => ({ ...s, error: t('watch:device.scan.needsAndroid12') }));
         return;
       }
       if ((await ensureBluetoothScan()) !== 'granted') {
         setState((s) => ({
           ...s,
-          error:
-            'The Bluetooth scan permission is needed to find nearby watches. Allow it in the app settings, or pair the watch in Android Bluetooth settings.',
+          error: t('watch:device.scan.permission'),
         }));
         return;
       }

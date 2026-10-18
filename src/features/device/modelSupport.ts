@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import type { BondedDevice, ModelSupport } from '@/wear';
 
 /** Lower first: tested watches, then the ones worth trying, then the ones JoyoFit cannot talk to. */
@@ -13,9 +14,6 @@ export function canConnect(device: Pick<BondedDevice, 'support'>): boolean {
 }
 
 /** Short word for a pill or a value row. */
-export const SUPPORT_LABEL: Record<ModelSupport, string> = {
-  tested: 'Tested',
-  experimental: 'Experimental',
-  unknown: 'Unknown model',
-  unsupported: 'Not supported',
-};
+export function supportLabel(support: ModelSupport): string {
+  return t(`watch:support.${support}`);
+}

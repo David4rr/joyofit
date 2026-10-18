@@ -1,12 +1,14 @@
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
 import { Metric } from '@/components/Metric';
 import { StatusDot } from '@/components/StatusDot';
 import { Notice } from '@/components/States';
-import { isLinkLive, isLinkUp, LINK_LABEL } from '@/features/device/linkState';
+import { isLinkLive, isLinkUp, linkLabel } from '@/features/device/linkState';
 import { useBackgroundStatus } from '@/features/settings/useBackgroundStatus';
 import { formatSyncTime } from '@/format';
+import { fmtPercent } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { radius, spacing, useTheme } from '@/theme';
 
@@ -18,25 +20,26 @@ const LOW_BATTERY = 20;
  * last sync. The dot pulses only while the link is up or being set up.
  */
 export function WatchStatusCard() {
+  const { t } = useTranslation(['watch', 'common']);
   const { colors, radius: themeRadius } = useTheme();
   const { linkState, device, battery, lastSync, error, retryAddress, connect } = useWatch();
   const { status: background } = useBackgroundStatus();
 
-  const label = LINK_LABEL[linkState];
+  const label = linkLabel(linkState);
   const dotColor = isLinkUp(linkState) ? colors.heroLink : linkState === 'disconnected' ? colors.heroMuted : colors.heroWarn;
   const batteryColor = battery !== null && battery <= LOW_BATTERY ? colors.heroWarn : colors.heroLink;
 
   return (
     <View style={[styles.card, { backgroundColor: colors.hero, borderRadius: themeRadius.card }]}>
-      <View style={styles.linkRow} accessible accessibilityLabel={`Link state: ${label}`}>
+      <View style={styles.linkRow} accessible accessibilityLabel={t('watch:device.status.linkA11y', { label })}>
         <StatusDot color={dotColor} live={isLinkLive(linkState)} />
         <AppText variant="heading" color={colors.heroForeground} style={styles.linkLabel}>
           {label}
         </AppText>
         {battery !== null ? (
-          <View style={styles.batteryRow} accessible accessibilityLabel={`Battery ${battery}%`}>
+          <View style={styles.batteryRow} accessible accessibilityLabel={t('watch:device.status.batteryA11y', { value: fmtPercent(battery) })}>
             <AppText variant="label" color={colors.heroMuted}>
-              Battery
+              {t('watch:device.status.battery')}
             </AppText>
             <Metric value={String(battery)} unit="%" size="md" color={colors.heroForeground} unitColor={colors.heroMuted} />
           </View>
@@ -45,10 +48,10 @@ export function WatchStatusCard() {
 
       <View style={styles.identity}>
         <AppText variant="heading" color={colors.heroForeground} numberOfLines={1}>
-          {device?.name ?? 'No watch connected'}
+          {device?.name ?? t('watch:device.status.noWatch')}
         </AppText>
         <AppText variant="caption" color={colors.heroMuted} numberOfLines={1}>
-          {device ? (device.productModel ?? 'Model not reported') : 'Connect a paired watch below.'}
+          {device ? (device.productModel ?? t('watch:device.status.modelUnknown')) : t('watch:device.status.connectBelow')}
         </AppText>
       </View>
 
@@ -63,7 +66,7 @@ export function WatchStatusCard() {
       {error ? (
         <Notice
           tone="danger"
-          action={retryAddress && linkState === 'disconnected' ? { label: 'Retry', onPress: () => void connect(retryAddress) } : undefined}>
+          action={retryAddress && linkState === 'disconnected' ? { label: t('common:actions.retry'), onPress: () => void connect(retryAddress) } : undefined}>
           {error}
         </Notice>
       ) : null}
@@ -72,12 +75,12 @@ export function WatchStatusCard() {
         <View style={[styles.footer, { borderTopColor: colors.heroDivider }]}>
           {lastSync !== null ? (
             <AppText variant="caption" color={colors.heroMuted}>
-              Last sync {formatSyncTime(lastSync)}
+              {t('watch:device.status.lastSync', { time: formatSyncTime(lastSync) })}
             </AppText>
           ) : null}
           {background.address ? (
             <AppText variant="caption" color={colors.heroMuted} numberOfLines={1}>
-              Background: {background.name ?? background.address}
+              {t('watch:device.status.background', { name: background.name ?? background.address })}
             </AppText>
           ) : null}
         </View>

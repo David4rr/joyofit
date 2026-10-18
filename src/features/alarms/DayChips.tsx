@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { Animated, StyleSheet, View } from 'react-native';
 
 import { useToggleMix } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
+import { dayInitials, dayName } from '@/features/alarms/alarmUtils';
 import { fontSize, HIT, useTheme } from '@/theme';
 import { ALARM_DAYS } from '@/wear';
 
@@ -13,19 +15,21 @@ interface DayChipsProps {
 
 /** Seven round weekday toggles; each sits in a 48 dp tall hit row. */
 export function DayChips({ value, onChange }: DayChipsProps) {
+  // Names come from the active language; subscribing re-renders them on a switch.
+  useTranslation('watch');
   return (
     <View style={styles.row}>
       {ALARM_DAYS.map((day) => {
         const selected = (value & day.bit) !== 0;
         return (
-          <DayChip key={day.bit} label={day.label} selected={selected} onPress={() => onChange(selected ? value & ~day.bit : value | day.bit)} />
+          <DayChip key={day.bit} label={dayName(day.bit)} initials={dayInitials(day.bit)} selected={selected} onPress={() => onChange(selected ? value & ~day.bit : value | day.bit)} />
         );
       })}
     </View>
   );
 }
 
-function DayChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+function DayChip({ label, initials, selected, onPress }: { label: string; initials: string; selected: boolean; onPress: () => void }) {
   const { colors, fonts } = useTheme();
   const mix = useToggleMix(selected);
   return (
@@ -38,7 +42,7 @@ function DayChip({ label, selected, onPress }: { label: string; selected: boolea
             lineHeight: 18,
             color: mix.interpolate({ inputRange: [0, 1], outputRange: [colors.foreground, colors.primaryForeground] }),
           }}>
-          {label.slice(0, 2)}
+          {initials}
         </Animated.Text>
       </Animated.View>
     </PressableScale>

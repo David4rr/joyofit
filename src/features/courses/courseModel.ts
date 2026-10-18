@@ -1,3 +1,4 @@
+import { fmtNumber, t } from '@/i18n';
 import type {
   CourseIntensityKind,
   CourseStepKind,
@@ -57,31 +58,17 @@ const HR_MAX = 100;
 const CADENCE_MIN = 100;
 const CADENCE_MAX = 300;
 
-export const STEP_KINDS: readonly { value: CourseStepKind; label: string }[] = [
-  { value: 'warmup', label: 'Warm-up' },
-  { value: 'run', label: 'Run' },
-  { value: 'walk', label: 'Walk' },
-  { value: 'rest', label: 'Rest' },
-  { value: 'cooldown', label: 'Cool-down' },
-];
+const STEP_KIND_VALUES = ['warmup', 'run', 'walk', 'rest', 'cooldown'] as const satisfies readonly CourseStepKind[];
+const TARGET_KIND_VALUES = ['time', 'distance', 'none'] as const satisfies readonly CourseTargetKind[];
+const INTENSITY_KIND_VALUES = ['none', 'pace', 'hrPercent', 'cadence'] as const satisfies readonly CourseIntensityKind[];
+const DISTANCE_UNIT_VALUES = ['m', 'km'] as const;
 
-export const TARGET_KINDS: readonly { value: CourseTargetKind; label: string }[] = [
-  { value: 'time', label: 'Time' },
-  { value: 'distance', label: 'Distance' },
-  { value: 'none', label: 'None' },
-];
-
-export const INTENSITY_KINDS: readonly { value: CourseIntensityKind; label: string }[] = [
-  { value: 'none', label: 'None' },
-  { value: 'pace', label: 'Pace' },
-  { value: 'hrPercent', label: 'Heart rate' },
-  { value: 'cadence', label: 'Cadence' },
-];
-
-export const DISTANCE_UNITS = [
-  { value: 'm', label: 'Metres' },
-  { value: 'km', label: 'Kilometres' },
-] as const;
+/** Picker options with their labels in the active language. Call during render, never at module level. */
+export const stepKinds = () => STEP_KIND_VALUES.map((value) => ({ value, label: t(`watch:courses.stepKinds.${value}`) }));
+export const targetKinds = () => TARGET_KIND_VALUES.map((value) => ({ value, label: t(`watch:courses.targetKinds.${value}`) }));
+export const intensityKinds = () =>
+  INTENSITY_KIND_VALUES.map((value) => ({ value, label: t(`watch:courses.intensityKinds.${value}`) }));
+export const distanceUnits = () => DISTANCE_UNIT_VALUES.map((value) => ({ value, label: t(`watch:courses.distanceUnits.${value}`) }));
 
 let counter = 0;
 export function newId(): string {
@@ -142,15 +129,18 @@ export function newIntervalGroup(): BlockDraft {
 }
 
 export interface Preset {
+  id: 'easy' | 'intervals';
   name: string;
   build: () => CourseDraft;
 }
 
-export const PRESETS: readonly Preset[] = [
+/** The starter courses, named in the active language. */
+export const presets = (): readonly Preset[] => [
   {
-    name: 'Easy 20 min',
+    id: 'easy',
+    name: t('watch:courses.presets.easy'),
     build: () => ({
-      name: 'Easy 20 min',
+      name: t('watch:courses.presets.easy'),
       blocks: [
         newBlock([makeStep({ kind: 'warmup', seconds: 300 })]),
         newBlock([makeStep({ kind: 'run', seconds: 1200 })]),
@@ -159,9 +149,10 @@ export const PRESETS: readonly Preset[] = [
     }),
   },
   {
-    name: 'Intervals',
+    id: 'intervals',
+    name: t('watch:courses.presets.intervals'),
     build: () => ({
-      name: 'Intervals',
+      name: t('watch:courses.presets.intervals'),
       blocks: [
         newBlock([makeStep({ kind: 'warmup', seconds: 600 })]),
         newBlock(
@@ -233,10 +224,15 @@ function utf8Length(text: string): number {
 
 // --- labels ---------------------------------------------------------------------------------------------------
 
+/** A repeated or multi-step block; a plain block is a single step run once. */
+function isGroup(block: BlockDraft): boolean {
+  return !(block.repeat === 1 && block.steps.length === 1);
+}
+
 /** "Step 2" for a plain step, "Group 2" for a repeated or multi-step block. */
 export function blockLabel(draft: CourseDraft, blockIndex: number): string {
-  const block = draft.blocks[blockIndex];
-  return block.repeat === 1 && block.steps.length === 1 ? `Step ${blockIndex + 1}` : `Group ${blockIndex + 1}`;
+  const n = blockIndex + 1;
+  return isGroup(draft.blocks[blockIndex]) ? t('watch:courses.group', { n }) : t('watch:courses.step', { n });
 }
 
 export function formatPace(secondsPerKm: number): string {
@@ -250,14 +246,16 @@ export function formatSeconds(total: number): string {
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
   const parts: string[] = [];
-  if (h > 0) parts.push(`${h} h`);
-  if (m > 0) parts.push(`${m} min`);
-  if (s > 0 || parts.length === 0) parts.push(`${s} s`);
+  if (h > 0) parts.push(t('watch:courses.unit.h', { n: h }));
+  if (m > 0) parts.push(t('watch:courses.unit.min', { n: m }));
+  if (s > 0 || parts.length === 0) parts.push(t('watch:courses.unit.s', { n: s }));
   return parts.join(' ');
 }
 
 export function formatMetres(metres: number): string {
-  return metres < 1000 ? `${metres} m` : `${metres / 1000} km`;
+  return metres < 1000
+    ? t('common:units.m', { value: fmtNumber(metres) })
+    : t('common:units.km', { value: fmtNumber(metres / 1000, 3) });
 }
 
 // --- validation and conversion -------------------------------------------------------------------------------
@@ -266,13 +264,13 @@ function buildStep(step: StepDraft): { step: RunningCourseStep } | { error: stri
   let targetValue = 0;
   if (step.target === 'time') {
     const s = timeSeconds(step);
-    if (s === null) return { error: 'Seconds are 0 to 59, minutes are whole numbers.' };
-    if (s < 1 || s > TIME_MAX_S) return { error: 'A time target is 1 s to 24 h.' };
+    if (s === null) return { error: t('watch:courses.errors.timeFormat') };
+    if (s < 1 || s > TIME_MAX_S) return { error: t('watch:courses.errors.timeRange') };
     targetValue = s;
   } else if (step.target === 'distance') {
     const m = distanceMetres(step);
-    if (m === null) return { error: 'Enter the distance as a number.' };
-    if (m < 1 || m > DISTANCE_MAX_M) return { error: 'A distance target is 1 m to 100 km.' };
+    if (m === null) return { error: t('watch:courses.errors.distanceFormat') };
+    if (m < 1 || m > DISTANCE_MAX_M) return { error: t('watch:courses.errors.distanceRange') };
     targetValue = m;
   }
 
@@ -281,11 +279,11 @@ function buildStep(step: StepDraft): { step: RunningCourseStep } | { error: stri
   if (step.intensity === 'pace') {
     const fast = paceSeconds(step.paceFastMin, step.paceFastSec);
     const slow = paceSeconds(step.paceSlowMin, step.paceSlowSec);
-    if (fast === null || slow === null) return { error: 'Pace seconds are 0 to 59, minutes are whole numbers.' };
+    if (fast === null || slow === null) return { error: t('watch:courses.errors.paceFormat') };
     if (fast < PACE_MIN_S || fast > PACE_MAX_S || slow < PACE_MIN_S || slow > PACE_MAX_S) {
-      return { error: 'A pace bound is 1:00 to 15:00 per km.' };
+      return { error: t('watch:courses.errors.paceRange') };
     }
-    if (fast > slow) return { error: 'The faster pace must be the smaller time.' };
+    if (fast > slow) return { error: t('watch:courses.errors.paceOrder') };
     low = fast;
     high = slow;
   } else if (step.intensity === 'hrPercent' || step.intensity === 'cadence') {
@@ -294,11 +292,11 @@ function buildStep(step: StepDraft): { step: RunningCourseStep } | { error: stri
     const max = hr ? HR_MAX : CADENCE_MAX;
     const a = parseWhole(step.rangeLow);
     const b = parseWhole(step.rangeHigh);
-    if (a === null || b === null) return { error: `Enter both ${hr ? 'heart-rate' : 'cadence'} bounds.` };
+    if (a === null || b === null) return { error: t(hr ? 'watch:courses.errors.hrBoth' : 'watch:courses.errors.cadenceBoth') };
     if (a < min || a > max || b < min || b > max) {
-      return { error: hr ? 'A heart-rate bound is 20 to 100 % of the maximum.' : 'A cadence bound is 100 to 300 steps per minute.' };
+      return { error: t(hr ? 'watch:courses.errors.hrRange' : 'watch:courses.errors.cadenceRange') };
     }
-    if (a > b) return { error: `The lower ${hr ? 'heart rate' : 'cadence'} must come first.` };
+    if (a > b) return { error: t(hr ? 'watch:courses.errors.hrOrder' : 'watch:courses.errors.cadenceOrder') };
     low = a;
     high = b;
   }
@@ -314,26 +312,26 @@ export type BuildResult = { course: RunningCourse; error: null } | { course: nul
 export function buildCourse(draft: CourseDraft): BuildResult {
   const fail = (error: string): BuildResult => ({ course: null, error });
   const name = draft.name.trim();
-  if (name === '') return fail('Give the course a name.');
-  if (utf8Length(name) > MAX_NAME_BYTES) return fail(`The course name is too long (${MAX_NAME_BYTES} bytes at most).`);
-  if (draft.blocks.length === 0) return fail('Add at least one step.');
+  if (name === '') return fail(t('watch:courses.errors.name'));
+  if (utf8Length(name) > MAX_NAME_BYTES) return fail(t('watch:courses.errors.nameLong', { max: MAX_NAME_BYTES }));
+  if (draft.blocks.length === 0) return fail(t('watch:courses.errors.noSteps'));
   const actions = draft.blocks.reduce((sum, b) => sum + b.steps.length, 0);
-  if (actions > MAX_ACTIONS) return fail(`A course can have at most ${MAX_ACTIONS} steps.`);
+  if (actions > MAX_ACTIONS) return fail(t('watch:courses.errors.tooMany', { max: MAX_ACTIONS }));
 
   const blocks: RunningCourseBlock[] = [];
   for (let b = 0; b < draft.blocks.length; b += 1) {
     const block = draft.blocks[b];
     const label = blockLabel(draft, b);
-    if (block.steps.length === 0) return fail(`${label}: add a step to this group.`);
+    if (block.steps.length === 0) return fail(t('watch:courses.errors.emptyGroup', { label }));
     if (!Number.isInteger(block.repeat) || block.repeat < REPEAT_MIN || block.repeat > REPEAT_MAX) {
-      return fail(`${label}: a group repeats 1 to 99 times.`);
+      return fail(t('watch:courses.errors.repeatRange', { label }));
     }
     const steps: RunningCourseStep[] = [];
     for (let s = 0; s < block.steps.length; s += 1) {
       const built = buildStep(block.steps[s]);
       if ('error' in built) {
-        const where = label.startsWith('Group') ? `${label}, step ${s + 1}` : label;
-        return fail(`${where}: ${built.error}`);
+        const where = isGroup(block) ? t('watch:courses.errors.inGroup', { label, n: s + 1 }) : label;
+        return fail(t('watch:courses.errors.at', { where, error: built.error }));
       }
       steps.push(built.step);
     }
@@ -377,8 +375,8 @@ export function summarize(draft: CourseDraft): CourseSummary {
 
 const asText = (value: unknown, fallback = ''): string => (typeof value === 'string' ? value : fallback);
 
-function oneOf<T extends string>(value: unknown, options: readonly { value: T }[], fallback: T): T {
-  return options.some((o) => o.value === value) ? (value as T) : fallback;
+function oneOf<T extends string>(value: unknown, options: readonly T[], fallback: T): T {
+  return options.includes(value as T) ? (value as T) : fallback;
 }
 
 function reviveStep(raw: unknown): StepDraft | null {
@@ -387,13 +385,13 @@ function reviveStep(raw: unknown): StepDraft | null {
   const base = newStep();
   return {
     id: newId(),
-    kind: oneOf(r.kind, STEP_KINDS, base.kind),
-    target: oneOf(r.target, TARGET_KINDS, base.target),
+    kind: oneOf(r.kind, STEP_KIND_VALUES, base.kind),
+    target: oneOf(r.target, TARGET_KIND_VALUES, base.target),
     minutes: sanitizeNumber(asText(r.minutes, base.minutes)),
     seconds: sanitizeNumber(asText(r.seconds, base.seconds)),
     distance: sanitizeNumber(asText(r.distance), true),
-    distanceUnit: oneOf(r.distanceUnit, DISTANCE_UNITS, 'm'),
-    intensity: oneOf(r.intensity, INTENSITY_KINDS, 'none'),
+    distanceUnit: oneOf(r.distanceUnit, DISTANCE_UNIT_VALUES, 'm'),
+    intensity: oneOf(r.intensity, INTENSITY_KIND_VALUES, 'none'),
     paceFastMin: sanitizeNumber(asText(r.paceFastMin, base.paceFastMin)),
     paceFastSec: sanitizeNumber(asText(r.paceFastSec, base.paceFastSec)),
     paceSlowMin: sanitizeNumber(asText(r.paceSlowMin, base.paceSlowMin)),

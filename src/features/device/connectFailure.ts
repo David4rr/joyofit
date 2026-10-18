@@ -1,4 +1,5 @@
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 
 /** What the Watch tab does with a rejected `HuaweiWear.connect`. */
 export type ConnectFailure =
@@ -12,9 +13,7 @@ export type ConnectFailure =
 export const BIND_CONFIRMATION = 'ERR_BIND_CONFIRMATION';
 
 /** The one place that tells the person what usually blocks a connect: the watch's single link is held elsewhere. */
-export const WATCH_BUSY_HINT =
-  'Could not connect to the watch. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), ' +
-  'disconnect it there first. Keep the watch awake and close to this phone, then tap Retry.';
+export const watchBusyHint = () => t('watch:device.hint.busy');
 
 const UNREACHABLE_CODES: Record<string, true> = {
   ERR_CONNECT_FAILED: true,
@@ -31,14 +30,12 @@ export function errorCode(e: unknown): string | null {
 export function describeConnectFailure(e: unknown): ConnectFailure {
   const code = errorCode(e);
   if (code === BIND_CONFIRMATION) return { kind: 'bind' };
-  if (code !== null && UNREACHABLE_CODES[code]) return { kind: 'unreachable', message: WATCH_BUSY_HINT };
+  if (code !== null && UNREACHABLE_CODES[code]) return { kind: 'unreachable', message: watchBusyHint() };
   return { kind: 'other', message: errorMessage(e) };
 }
 
 /** Shown when the list has no watch that is in reach on iOS (a watch linked to another phone does not advertise). */
-export const NO_WATCH_FOUND_HINT =
-  'Watch not found. If it is still connected to another phone, disconnect it there first. Make sure the watch is on and close to this phone, then tap Refresh.';
+export const noWatchFoundHint = () => t('watch:device.hint.noWatchIos');
 
 /** Android: a scan that saw no watch. The same cause as on iOS, a watch linked to another phone or app does not advertise. */
-export const NO_WATCH_FOUND_SCAN_HINT =
-  'No watch found nearby. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again.';
+export const noWatchFoundScanHint = () => t('watch:device.hint.noWatchScan');

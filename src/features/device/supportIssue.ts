@@ -10,6 +10,7 @@ export function reportText(report: SupportReport): string {
   return `${report.summary}\n\n${report.log}`;
 }
 
+// i18n-ok: the issue is written for the maintainers' GitHub tracker, which is English.
 /**
  * A new watch-report issue with the watch and the summary in a prefilled body. Form-field parameters
  * (`template=` plus field ids) were dropped on the phone: only the title arrived. A plain `body` is honoured
