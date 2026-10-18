@@ -19,6 +19,7 @@ import { APP_BUILD } from '@/cloud/build';
 import { CLOUD_CONFIGURED } from '@/cloud/config';
 import { loadOverview, type CloudOverview } from '@/cloud/overview';
 import { onUnmeteredNetwork, readSyncSettings, writeAutoSync, writeWifiOnly, type SyncSettings } from '@/cloud/syncSettings';
+import { syncStrength } from '@/cloud/strengthSync';
 import { runUpload } from '@/cloud/uploader';
 import {
   bindAccount,
@@ -205,6 +206,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           await syncGear(db).catch((e) => cloudLog(`gear sync failed: ${errorMessage(e)}`, 'error'));
           // The Coach plan: read by every signed-in account, written by Pro; same rule, same isolation.
           await syncCoach(db).catch((e) => cloudLog(`coach sync failed: ${errorMessage(e)}`, 'error'));
+          // Strength history: read by every signed-in account, written by Pro; after the workouts pull so a logged workout finds its watch row.
+          await syncStrength(db).catch((e) => cloudLog(`strength sync failed: ${errorMessage(e)}`, 'error'));
           const pushed = await pushWorkouts(db, setProgress);
           await runUpload(db);
           if (pushed.quota) setError(pushed.quota);

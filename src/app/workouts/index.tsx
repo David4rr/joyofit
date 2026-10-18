@@ -16,6 +16,11 @@ import { PageHeader, useContentPadding, useRefreshControl } from '@/components/S
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { listWorkouts, type WorkoutRow } from '@/db/queries';
 import { pickFitFile } from '@/features/fitimport/useFitImport';
+import { useStrengthHistory } from '@/features/strength/history';
+import { workoutTotals } from '@/features/strength/calc';
+import type { StrengthWorkout } from '@/features/strength/types';
+import { ActiveWorkoutBanner } from '@/features/strength/ui/ActiveWorkoutBanner';
+import { volumeText } from '@/features/strength/ui/liftFormat';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { formatElapsed, workoutDistanceParts } from '@/features/workouts/summary';
@@ -43,19 +48,25 @@ function groupByMonth(workouts: readonly WorkoutRow[]): MonthGroup[] {
   return groups;
 }
 
-function WorkoutCard({ workout }: { workout: WorkoutRow }) {
+function WorkoutCard({ workout, strength }: { workout: WorkoutRow; strength?: StrengthWorkout }) {
   const router = useRouter();
   const { colors, radius } = useTheme();
   const heart = tintColors(colors, 'heart');
   const { t } = useTranslation('workouts');
-  const sport = sportLabel(workout.sportName);
+  const { t: lifts } = useTranslation('lifts');
+  const sport = strength?.name.trim() || sportLabel(workout.sportName);
   const { value: distance, unit: distanceUnit } = workoutDistanceParts(workout.distance);
   const strain = useWorkoutStrain(workout);
+  const totals = useMemo(() => (strength ? workoutTotals(strength) : null), [strength]);
   return (
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={t('list.cardA11y', { sport, date: formatDateTime(workout.start) })}
-      onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: String(workout.id) } })}
+      onPress={() =>
+        strength
+          ? router.push({ pathname: '/strength/summary/[id]', params: { id: strength.id } })
+          : router.push({ pathname: '/workouts/[id]', params: { id: String(workout.id) } })
+      }
       style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.card }]}>
       <View style={styles.cardHead}>
         <IconChip icon={sportIcon(workout.sportName)} tint="workouts" />
@@ -80,6 +91,14 @@ function WorkoutCard({ workout }: { workout: WorkoutRow }) {
           <Metric value={fmtDecimal(strain, 1)} unit={t('list.unit.strain')} size="sm" color={colors.workoutsText} unitColor={colors.workoutsText} />
         ) : null}
       </View>
+      {totals ? (
+        <View style={styles.strengthLine}>
+          <Ionicons name="barbell-outline" size={16} color={colors.mutedForeground} />
+          <AppText variant="caption" muted style={styles.partialText}>
+            {lifts('list.strengthLine', { count: totals.sets, volume: volumeText(totals.volume) })}
+          </AppText>
+        </View>
+      ) : null}
       {!workout.complete ? (
         <View style={styles.partial}>
           <Ionicons name="cloud-download-outline" size={16} color={colors.mutedForeground} />
@@ -108,6 +127,7 @@ export default function WorkoutsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation('workouts');
+  const { t: lifts } = useTranslation('lifts');
   const locale = useLocale();
   // The status-bar inset is applied outside the list so sticky month headers stop below it.
   const padding = useContentPadding(false);
@@ -116,6 +136,13 @@ export default function WorkoutsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [pulling, setPulling] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
+  // Strength workouts by the `workouts.start` they are stored as (their own row, or the watch row they merged with).
+  const { workouts: strengthWorkouts } = useStrengthHistory();
+  const strengthByStart = useMemo(() => {
+    const map = new Map<number, StrengthWorkout>();
+    for (const w of strengthWorkouts) if (w.workoutStart !== null) map.set(w.workoutStart, w);
+    return map;
+  }, [strengthWorkouts]);
 
   useFocusEffect(
     useCallback(() => {
@@ -185,6 +212,9 @@ export default function WorkoutsScreen() {
                 <SyncButton variant="primary" />
               }
             />
+            <ActiveWorkoutBanner />
+            <Button label={lifts('list.start')} variant="primary" icon="barbell" onPress={() => router.push('/strength')} />
+            <Button label={lifts('list.history')} variant="secondary" icon="calendar" onPress={() => router.push('/strength/history')} />
             <Button
               label={t('list.importFit')}
               variant="secondary"
@@ -225,7 +255,7 @@ export default function WorkoutsScreen() {
             </AppText>
           </View>
         )}
-        renderItem={({ item }) => <WorkoutCard workout={item} />}
+        renderItem={({ item }) => <WorkoutCard workout={item} strength={strengthByStart.get(item.start)} />}
       />
     </View>
   );
@@ -245,6 +275,7 @@ const styles = StyleSheet.create({
   cardTitle: { flex: 1, gap: 2 },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, rowGap: 0 },
   partial: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  strengthLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   partialText: { flex: 1 },
   skeletons: { gap: spacing.md },
 });

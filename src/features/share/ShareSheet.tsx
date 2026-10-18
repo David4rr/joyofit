@@ -70,6 +70,16 @@ export interface ShareSubject {
   cardHint: string;
   /** A line on the card above the wordmark (a workout's gear), when there is one. */
   extraLine?: string | null;
+  /** Draws the card itself instead of `ShareCard` (a strength workout's sets); `stats` and `route` are then ignored. */
+  renderCard?: (props: SubjectCardProps) => ReactNode;
+}
+
+/** What the sheet hands a custom card: the chosen format and background, and the photo with its load callback. */
+export interface SubjectCardProps {
+  format: ShareFormat;
+  background: ShareBackground;
+  photoUri: string | null;
+  onPhotoStatus: (status: PhotoStatus) => void;
 }
 
 /** Dark checkerboard: the sticker is light text on nothing, so it needs a dark stage to be seen. */
@@ -310,18 +320,22 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
                     transformOrigin: 'top left',
                   }}>
                   <View ref={cardRef} collapsable={false}>
-                    <ShareCard
-                      format={format}
-                      background={background}
-                      title={subject.title}
-                      subtitle={subject.subtitle}
-                      icon={subject.icon}
-                      stats={subject.stats}
-                      route={route}
-                      photoUri={photoUri}
-                      onPhotoStatus={setPhotoStatus}
-                      extraLine={subject.extraLine}
-                    />
+                    {subject.renderCard ? (
+                      subject.renderCard({ format, background, photoUri, onPhotoStatus: setPhotoStatus })
+                    ) : (
+                      <ShareCard
+                        format={format}
+                        background={background}
+                        title={subject.title}
+                        subtitle={subject.subtitle}
+                        icon={subject.icon}
+                        stats={subject.stats}
+                        route={route}
+                        photoUri={photoUri}
+                        onPhotoStatus={setPhotoStatus}
+                        extraLine={subject.extraLine}
+                      />
+                    )}
                   </View>
                 </View>
               )}

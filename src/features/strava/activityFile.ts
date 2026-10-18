@@ -309,7 +309,7 @@ function withDistance(samples: Sample[], total: number, pause: Pause | null): vo
 }
 
 /** FIT message numbers of the global profile. */
-const MESG = { fileId: 0, session: 18, lap: 19, record: 20, event: 21, deviceInfo: 23, activity: 34 } as const;
+const MESG = { fileId: 0, session: 18, lap: 19, record: 20, event: 21, deviceInfo: 23, activity: 34, set: 225 } as const;
 
 /** FIT enum values used below. */
 const FIT = {
@@ -330,6 +330,8 @@ const FIT = {
   deviceSoftware: 1,
   /** `source_type` `local`: the device is the recorder itself, not a paired sensor. */
   sourceLocal: 6,
+  /** `set_type` of a set message: 0 rest, 1 active. */
+  setActive: 1,
 } as const;
 
 /** The software that writes the file; the recording device is the watch when it is known (`options.device`). */
@@ -340,6 +342,22 @@ type Entry = readonly [num: number, type: FitFieldType, value: FitValue];
 
 /** A whole number above zero, or null: what the watch did not measure is not written. */
 const positive = (value: number | null | undefined): number | null => (value !== null && value !== undefined && value > 0 ? Math.round(value) : null);
+
+/**
+ * One set of a strength workout as a FIT `set` message (global message 225). Times are epoch milliseconds; `buildFit` rounds them
+ * to seconds and keeps them inside the workout. `category` is a FIT `exercise_category` (see `exerciseCategory`).
+ */
+export interface FitSet {
+  startMs: number;
+  endMs: number;
+  /** Repetitions; null for a timed set. */
+  reps: number | null;
+  /** Load in kg; null or 0 = bodyweight (no weight field is written). */
+  weightKg: number | null;
+  /** Active time in ms: the set's `duration` field. */
+  durationMs: number;
+  category: number;
+}
 
 export interface BuiltFit {
   bytes: Uint8Array;
@@ -358,8 +376,15 @@ export interface BuiltFit {
  * workout; it defaults to this device's. `device` is the watch that recorded the workout (`stravaDevice`): it becomes
  * the file's manufacturer, product and product name and the creator `device_info`, with JoyoFit as a second device
  * (the software that wrote the file). Without it the file is JoyoFit's own, manufacturer 255.
+ * `sets` (a strength workout) are written as `set` messages in time order between the last record and the timer stop: the
+ * timestamp is the end of the set, `start_time` its start, both clamped to the file's span, `duration` its active time in ms,
+ * `weight` kg x 16, `category` one `exercise_category` (a one element uint16 array) and `message_index` the position.
  */
-export function buildFit(workout: StravaWorkout, points: readonly StravaPoint[], options: { utcOffsetSeconds?: number; device?: StravaDevice | null } = {}): BuiltFit {
+export function buildFit(
+  workout: StravaWorkout,
+  points: readonly StravaPoint[],
+  options: { utcOffsetSeconds?: number; device?: StravaDevice | null; sets?: readonly FitSet[] } = {},
+): BuiltFit {
   const samples = collectSamples(workout, points);
   const total = workout.distance > 0 ? workout.distance : 0;
   const pause = findPause(workout, samples);
@@ -471,6 +496,37 @@ export function buildFit(workout: StravaWorkout, points: readonly StravaPoint[],
     fit.write(record, values);
   }
 
+  if (options.sets && options.sets.length > 0) {
+    const definition = fit.define(8, MESG.set, [
+      { num: 254, type: 'uint32' },
+      { num: 0, type: 'uint32' },
+      { num: 3, type: 'uint16' },
+      { num: 4, type: 'uint16' },
+      { num: 5, type: 'uint8' },
+      { num: 6, type: 'uint32' },
+      // `category` is an array field: its size is two bytes per element, so one uint16 is an array of one.
+      { num: 7, type: 'uint16' },
+      { num: 10, type: 'uint16' },
+    ]);
+    const within = (seconds: number) => Math.min(end, Math.max(start, Math.round(seconds)));
+    [...options.sets]
+      .sort((a, b) => a.endMs - b.endMs)
+      .forEach((set, index) => {
+        const stop = within(set.endMs / 1000);
+        const begin = Math.min(stop, within(set.startMs / 1000));
+        fit.write(definition, [
+          toFitTime(stop),
+          Math.min(set.durationMs, (stop - start) * 1000),
+          set.reps,
+          set.weightKg !== null && set.weightKg > 0 ? set.weightKg * 16 : null,
+          FIT.setActive,
+          toFitTime(begin),
+          set.category,
+          index,
+        ]);
+      });
+  }
+
   event(end, FIT.eventTypeStopAll);
 
   const position = (fix: Sample | undefined, lat: number, long: number): Entry[] => [
@@ -568,16 +624,24 @@ export interface UploadForm {
  * (`{ uri }`), and the file here exists only in memory, so the body is assembled by hand and sent with fetch (a
  * `Uint8Array` body goes out as binary).
  */
-export function buildUploadForm(workout: StravaWorkout, file: Uint8Array, options: { addLink: boolean }): UploadForm {
+export function buildUploadForm(
+  workout: StravaWorkout,
+  file: Uint8Array,
+  options: { addLink: boolean; /** Replaces the sport name as the activity title. */ name?: string; /** Text above the optional link. */ description?: string },
+): UploadForm {
   const sport = stravaSport(workout.sportType);
   const boundary = `----joyofit${workout.start.toString(36)}${file.length.toString(36)}`;
   const fields: Record<string, string> = {
     data_type: 'fit',
-    name: workout.sportName,
+    name: options.name ?? workout.sportName,
     external_id: externalId(workout.start),
     sport_type: sport.sportType,
     ...(sport.trainer ? { trainer: '1' } : {}),
-    ...(options.addLink ? { description: DESCRIPTION_LINK } : {}),
+    ...(options.description
+      ? { description: options.addLink ? `${options.description}\n\n${DESCRIPTION_LINK}` : options.description }
+      : options.addLink
+        ? { description: DESCRIPTION_LINK }
+        : {}),
   };
   let head = '';
   for (const [name, value] of Object.entries(fields)) {

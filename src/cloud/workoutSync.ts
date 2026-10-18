@@ -10,6 +10,7 @@ import { buildWorkoutDoc, gzipDoc, readWorkoutDoc } from '@/cloud/workoutDoc';
 import { loadStoredWorkout } from '@/cloud/workoutAnalysis';
 import { clearFailure, parseFailures, partitionPending, recordFailure, type WorkoutFailures } from '@/cloud/workoutFailures';
 import { deleteLocalWorkout, restoreWorkout } from '@/cloud/workoutStore';
+import { wipeStrengthCloud } from '@/cloud/strengthSync';
 import {
   adoptAccount,
   forgetCloudWorkouts,
@@ -255,13 +256,14 @@ export async function bindAccount(db: SQLiteDatabase, userId: string, email: str
 }
 
 /**
- * "Delete cloud data": removes the account's workouts from JoyoRogo and its steps, sleep, devices and imports from the
- * JoyoFit cloud. The account and this phone's data stay. What the phone remembered of the cloud is cleared after each
- * step that succeeded, so a failure half way never leaves it claiming workouts the cloud no longer has.
+ * "Delete cloud data": removes the account's workouts and strength records from JoyoRogo and its steps, sleep, devices and
+ * imports from the JoyoFit cloud. The account and this phone's data stay. What the phone remembered of the cloud is cleared
+ * after each step that succeeded, so a failure half way never leaves it claiming workouts the cloud no longer has.
  */
 export async function wipeCloudData(db: SQLiteDatabase): Promise<void> {
   await rogoCall<unknown>('watchWorkout/wipe', {});
   await forgetCloudWorkouts(db);
+  await wipeStrengthCloud(db);
   await cloudRequest<{ deleted: boolean }>('DELETE', '/v1/data');
   await resetCloudCursors(db);
   cloudLog('deleted the cloud data of this account');

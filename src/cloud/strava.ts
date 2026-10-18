@@ -16,6 +16,7 @@ import { gearSport, stravaGearFits } from '@/features/gear/model';
 import { gearOfWorkout, getStravaGearSent, reconcileDefaults, setStravaGearSent } from '@/features/gear/store';
 import { buildFit, buildUploadForm, duplicateOf } from '@/features/strava/activityFile';
 import { stravaDevice } from '@/features/strava/device';
+import { strengthUploadExtras } from '@/features/strength/share/uploadExtras';
 import { workoutElevation } from '@/features/workouts/analysis/elevation';
 import { parseSummary } from '@/features/workouts/summary';
 import { errorMessage } from '@/format';
@@ -199,12 +200,17 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
       // The watch that recorded it: the one that synced last. A workout imported from a file or an export says nothing about it.
       const watches = workout.imported ? [] : await listDevices(db);
       const watch = watches.sort((a, b) => (b.lastSync ?? 0) - (a.lastSync ?? 0))[0];
+      // A strength workout from the logger sends its sets, its own name and a summary of the lifts.
+      const strength = await strengthUploadExtras(db, workout.start);
       const fit = buildFit(
         { ...workout, elevationGain: elevation?.gainM, elevationLoss: elevation?.lossM, maxSpeed: summary.maxSpeed },
         points,
-        { device: stravaDevice(watch) },
+        { device: stravaDevice(watch), ...(strength ? { sets: strength.sets } : {}) },
       );
-      const form = buildUploadForm(workout, fit.bytes, { addLink });
+      const form = buildUploadForm(workout, fit.bytes, {
+        addLink,
+        ...(strength ? { ...(strength.name ? { name: strength.name } : {}), description: strength.description } : {}),
+      });
       try {
         status = await stravaFetch('/uploads', { method: 'POST', headers: { 'Content-Type': form.contentType }, body: form.body });
       } catch (error) {

@@ -53,6 +53,10 @@ import { sourceLabel } from '@/features/fitness/format';
 import { effectWord, trainingEffect } from '@/features/fitness/trainingEffect';
 import { plausibleVo2 } from '@/features/fitness/vo2max';
 import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
+import { useStrengthHistory } from '@/features/strength/history';
+import { getStrengthWorkoutByStart } from '@/features/strength/store';
+import type { StrengthWorkout } from '@/features/strength/types';
+import { StrengthDetailSection } from '@/features/strength/ui/StrengthDetailSection';
 import { errorMessage, formatClock, formatCount, formatDateTime } from '@/format';
 import { fmtDecimal, fmtInt, t as translate } from '@/i18n';
 import { spacing, useColors } from '@/theme';
@@ -64,6 +68,8 @@ interface Loaded {
   points: WorkoutPointRow[];
   /** Per-minute samples of the workout's day, for its share of that day's strain. */
   daySamples: StepSample[];
+  /** The strength workout stored as this row (its own, or the one merged with this watch workout). */
+  strength: StrengthWorkout | null;
 }
 
 /** `x,y m`, or null when the summary does not have the value. */
@@ -102,7 +108,7 @@ function paceRows(summary: WorkoutSummary, distanceM: number, movingSec: number)
 }
 
 /** The analysis of the workout on screen: computed after the rest of the screen is drawn. */
-type AnalysisState = { status: 'pending' } | { status: 'ready'; analysis: WorkoutAnalysis } | { status: 'error'; message: string };
+type AnalysisState = { status: 'pending' } | { status: 'none' } | { status: 'ready'; analysis: WorkoutAnalysis } | { status: 'error'; message: string };
 
 export default function WorkoutDetailScreen() {
   const db = useSQLiteContext();
@@ -115,6 +121,7 @@ export default function WorkoutDetailScreen() {
   const mapTheme = useMapTheme();
   const { t } = useTranslation('workouts');
   const analysisT = useAnalysisT();
+  const { catalog } = useStrengthHistory();
 
   useFocusEffect(
     useCallback(() => {
@@ -125,13 +132,19 @@ export default function WorkoutDetailScreen() {
         const found = await getWorkout(db, workoutId);
         if (!found) throw new Error(translate('workouts:detail.errors.notStored'));
         const points = await listWorkoutPoints(db, workoutId);
+        const strength = await getStrengthWorkoutByStart(db, found.workout.start);
         const day = startOfLocalDay(found.workout.start);
         const daySamples = (await listStepSamplesSince(db, day)).filter((s) => s.timestamp < day + 86400);
-        return { workout: found.workout, summary: parseSummary(found.summaryJson), points, daySamples };
+        return { workout: found.workout, summary: parseSummary(found.summaryJson), points, daySamples, strength };
       })().then(
         async (value) => {
           if (cancelled) return;
           setLoaded(value);
+          // The logger's own row has no heart rate, GPS or samples: there is nothing to analyse.
+          if (value.strength !== null && value.points.length === 0) {
+            setAnalysisState({ status: 'none' });
+            return;
+          }
           try {
             const maxHr = userMaxHr();
             const history = await loadAnalysisHistory(db, value.workout, maxHr);
@@ -205,6 +218,7 @@ export default function WorkoutDetailScreen() {
   }
 
   const { workout, summary } = loaded;
+  const bare = loaded.strength !== null && loaded.points.length === 0;
   const jumpRope = summary.kind === 'JUMP_ROPING';
   const swim = summary.swim;
   const sport = sportLabel(workout.sportName);
@@ -271,55 +285,63 @@ export default function WorkoutDetailScreen() {
           ) : null}
         </View>
         <ShareWorkoutButton workout={workout} summary={shareSummary} route={route} />
-        <ShareToRogoButton
-          workout={workout}
-          points={loaded.points}
-          analysis={analysisState.status === 'ready' ? analysisState.analysis : null}
-          analysisPending={analysisState.status === 'pending'}
-        />
-        <SaveWorkoutRouteButton workout={workout} points={loaded.points} />
+        {bare ? null : (
+          <>
+            <ShareToRogoButton
+              workout={workout}
+              points={loaded.points}
+              analysis={analysisState.status === 'ready' ? analysisState.analysis : null}
+              analysisPending={analysisState.status === 'pending'}
+            />
+            <SaveWorkoutRouteButton workout={workout} points={loaded.points} />
+          </>
+        )}
         <CloudWorkoutLine start={workout.start} />
       </Card>
+
+      {loaded.strength ? <StrengthDetailSection strength={loaded.strength} catalog={catalog} /> : null}
 
       {analysisState.status === 'ready' ? (
         <WorkoutAnalysisView analysis={analysisState.analysis} palette={palette} t={analysisT} mapTheme={mapTheme} onScrubActive={setScrubbing} />
       ) : analysisState.status === 'error' ? (
         <Notice tone="danger">{t('detail.errors.analysis', { message: analysisState.message })}</Notice>
-      ) : (
+      ) : analysisState.status === 'none' ? null : (
         <Skeleton width="100%" height={320} radius="card" />
       )}
       {summary.gps === 'failed' ? <Notice icon="location-outline">{t('detail.gpsFailed')}</Notice> : null}
       <CoachFeedbackSection workoutStart={workout.start} analysis={analysisState.status === 'ready' ? analysisState.analysis : null} />
 
-      <Section title={t('detail.strain.title')} icon="pulse" tint="workouts">
-        {strain ? (
-          <>
-            <View style={styles.strainRow}>
-              <Ring
-                size={72}
-                stroke={7}
-                value={strain.strain}
-                max={STRAIN_MAX}
-                color={colors.workouts}
-                track={colors.workoutsSoft}
-                accessibilityLabel={t('detail.strain.a11y', { value: fmtDecimal(strain.strain, 1), max: STRAIN_MAX })}>
-                <AppText variant="heading" style={styles.strainValue}>
-                  {fmtDecimal(strain.strain, 1)}
-                </AppText>
-              </Ring>
-              <View style={styles.strainText}>
-                <Metric value={`+${fmtDecimal(strain.share.added, 1)}`} unit={t('detail.strain.toTheDay')} size="md" color={colors.workoutsText} unitColor={colors.workoutsText} />
-                <AppText variant="caption" muted>
-                  {t('detail.strain.dayNow', { value: fmtDecimal(strain.share.dayStrain, 1) })}
-                </AppText>
+      {bare ? null : (
+        <Section title={t('detail.strain.title')} icon="pulse" tint="workouts">
+          {strain ? (
+            <>
+              <View style={styles.strainRow}>
+                <Ring
+                  size={72}
+                  stroke={7}
+                  value={strain.strain}
+                  max={STRAIN_MAX}
+                  color={colors.workouts}
+                  track={colors.workoutsSoft}
+                  accessibilityLabel={t('detail.strain.a11y', { value: fmtDecimal(strain.strain, 1), max: STRAIN_MAX })}>
+                  <AppText variant="heading" style={styles.strainValue}>
+                    {fmtDecimal(strain.strain, 1)}
+                  </AppText>
+                </Ring>
+                <View style={styles.strainText}>
+                  <Metric value={`+${fmtDecimal(strain.share.added, 1)}`} unit={t('detail.strain.toTheDay')} size="md" color={colors.workoutsText} unitColor={colors.workoutsText} />
+                  <AppText variant="caption" muted>
+                    {t('detail.strain.dayNow', { value: fmtDecimal(strain.share.dayStrain, 1) })}
+                  </AppText>
+                </View>
               </View>
-            </View>
-            <Details title={t('detail.strain.how')}>{t('detail.strain.explain', { maxHr })}</Details>
-          </>
-        ) : (
-          <Notice icon="heart-outline">{t('detail.strain.noHr')}</Notice>
-        )}
-      </Section>
+              <Details title={t('detail.strain.how')}>{t('detail.strain.explain', { maxHr })}</Details>
+            </>
+          ) : (
+            <Notice icon="heart-outline">{t('detail.strain.noHr')}</Notice>
+          )}
+        </Section>
+      )}
 
       {effectShown ? (
         <Section title={t('detail.effect.title')} icon="fitness" tint="workouts">
