@@ -284,6 +284,7 @@ public final class WearLink: @unchecked Sendable {
             let authenticator = HuaweiAuthenticator(
                 session: session, identity: identity, log: log, deviceType: connection.deviceType, phoneModel: phoneModel
             )
+            authenticator.linkRecovery = { [transport] attempt in try await transport.recoverLink(beforeAttempt: attempt) }
             // A first bind replaces the watch's one stored credential (an Android phone bound to it loses its binding), so it only ever
             // runs from a connect the user asked for AND agreed to bind (`allowBind`); a background reconnect that finds the watch does not
             // know this phone stops here, and so does an interactive one without the user's agreement (ERR_BIND_CONFIRMATION).

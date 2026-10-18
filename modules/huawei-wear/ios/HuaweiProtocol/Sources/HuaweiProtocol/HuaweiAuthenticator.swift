@@ -18,7 +18,18 @@ struct LinkTimeouts {
     var syncDataMs = Timeouts.syncDataMs
     /// GB: "The watch never answers to this command" (SetUpDeviceStatus), so this wait is short.
     var setupStatusMs = 300
+    /// LinkParams is a query that changes nothing on the watch, so a watch that says nothing is asked again: up to `linkParamsAttempts`
+    /// times, the first wait being `authMs`, the later ones `linkParamsRetryMs`. After a silence the authenticator is quiet for
+    /// `linkParamsBackoffMs` times the number of the attempt that just failed (1 s, then 2 s), then runs `LinkRecovery`, then asks again.
+    var linkParamsAttempts = 3
+    var linkParamsRetryMs = 8_000
+    var linkParamsBackoffMs = 1_000
 }
+
+/// What the authenticator asks of the transport before a LinkParams retry (`attempt` is 2 or 3, the one about to start): do something to the
+/// link that the earlier attempts did not. Returns a line saying what was done, for the log; nil when there is nothing different to try.
+/// Throws `.disconnected` (or the Bluetooth errors) only when the link itself is gone; any other error is logged and the attempt still runs.
+public typealias LinkRecovery = @Sendable (_ attempt: Int) async throws -> String?
 
 /// Why `authenticate(firstBindAllowed: false)` stopped: the watch needs a first bind (it does not know this phone, or this phone holds no key).
 /// Carried as the `underlying` error of the ERR_AUTH_FAILED `WearError`.
@@ -46,6 +57,9 @@ public final class HuaweiAuthenticator {
     /// Replaced by tests: the phase timeouts and the clock that stamps a HiChain request.
     var timeouts = LinkTimeouts()
     var clock: () -> Date = { Date() }
+
+    /// Set by the link that owns the transport: what to change about the link between two LinkParams attempts. Nil: attempts only repeat.
+    public var linkRecovery: LinkRecovery?
 
     /// HuaweiConstants.GROUP_ID.
     private static let hiChainGroupId = "7B0BC0CBCE474F6C238D9661C63400B797B166EA7849B3A370FC73A9A236E989"
@@ -165,11 +179,12 @@ public final class HuaweiAuthenticator {
 
     // MARK: GetLinkParamsRequest
 
+    /// Asks the watch for its link parameters. Over Bluetooth LE a watch that is connected and has notifications on can still say nothing
+    /// (another central owns its session, a stale GATT table, a write it dropped), so after a silence the request is repeated, and
+    /// `linkRecovery` is given the quiet in between to change something about the link. The error of the last silence keeps the "LinkParams:
+    /// no response" text, so what the person sees names the same step as before.
     private func linkParams() async throws -> Bytes {
-        let response = try await session.request(
-            DeviceConfig.LinkParams.request(deviceType: deviceType), as: DeviceConfig.LinkParams.Response.self,
-            timeoutMs: timeouts.authMs, label: "LinkParams"
-        )
+        let response = try await requestLinkParams()
         params.deviceSupportType = UInt8(bitPattern: response.deviceSupportType)
         params.sliceSize = Int(response.sliceSize) // Kotlin Short.toInt(): signed
         params.mtu = Int(response.mtu)
@@ -184,6 +199,46 @@ public final class HuaweiAuthenticator {
                 + "mtu=\(response.mtu) sliceSize=\(response.sliceSize)"
         )
         return response.serverNonce
+    }
+
+    private func requestLinkParams() async throws -> DeviceConfig.LinkParams.Response {
+        let attempts = max(timeouts.linkParamsAttempts, 1)
+        var attempt = 1
+        while true {
+            let waitMs = attempt == 1 ? timeouts.authMs : timeouts.linkParamsRetryMs
+            do {
+                let response = try await session.request(
+                    DeviceConfig.LinkParams.request(deviceType: deviceType), as: DeviceConfig.LinkParams.Response.self,
+                    timeoutMs: waitMs, label: "LinkParams"
+                )
+                if attempt > 1 { info("LinkParams: answered on attempt \(attempt) of \(attempts)") }
+                return response
+            } catch let silence as WearError where silence.code == .timeout {
+                guard attempt < attempts else {
+                    throw WearError(.timeout, "\(silence.message) (\(attempt) \(attempt == 1 ? "attempt" : "attempts"))", underlying: silence)
+                }
+                let quietMs = timeouts.linkParamsBackoffMs * attempt
+                info("LinkParams: no answer within \(waitMs) ms (attempt \(attempt) of \(attempts)); trying again in \(quietMs) ms")
+                try await Task.sleep(nanoseconds: UInt64(max(quietMs, 0)) * 1_000_000)
+                attempt += 1
+                try await recoverLink(beforeAttempt: attempt)
+            }
+        }
+    }
+
+    /// Lets the transport change something about the link before LinkParams attempt `attempt`. A failed recovery is logged and the attempt
+    /// still runs (it ends in the same silence or in the link error); only a link that is gone or a cancelled connect stops here.
+    private func recoverLink(beforeAttempt attempt: Int) async throws {
+        guard let linkRecovery else { return }
+        do {
+            if let done = try await linkRecovery(attempt) { info("LinkParams: before attempt \(attempt): \(done)") }
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let e as WearError where e.code == .disconnected || e.code == .bluetoothOff || e.code == .bluetoothPermission {
+            throw e
+        } catch {
+            info("LinkParams: before attempt \(attempt): the link could not be changed (\(error)); asking anyway")
+        }
     }
 
     // MARK: GetDeviceStatusRequest

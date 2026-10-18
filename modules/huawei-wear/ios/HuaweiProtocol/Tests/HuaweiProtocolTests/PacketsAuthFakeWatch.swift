@@ -48,6 +48,8 @@ final class PacketsAuthFakeWatch: FrameSink, @unchecked Sendable {
         // Behaviour switches
         var silent = false
         var silentCommands: Set<String> = []
+        /// How many of the first requests with each label (`"01/01"`) the watch ignores before it starts answering them.
+        var ignoreFirst: [String: Int] = [:]
         var corruptHiChainToken = false
         var hiChainErrorCode: Int?
         var deviceStatus: Int8? = nil
@@ -157,6 +159,7 @@ final class PacketsAuthFakeWatch: FrameSink, @unchecked Sendable {
         let seen = Seen(service: packet.serviceId, command: packet.commandId, tlv: tlv, encrypted: packet.isEncrypted)
         lock.lock(); _seen.append(seen); lock.unlock()
         if config.silent || config.silentCommands.contains(seen.label) { return }
+        if let skip = config.ignoreFirst[seen.label], requests(seen.label).count <= skip { return }
 
         switch (Int(packet.serviceId), Int(packet.commandId)) {
         case (1, 0x01): try linkParams()

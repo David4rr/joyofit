@@ -30,6 +30,8 @@ final class AuthFlowTests: XCTestCase {
         t.syncCountMs = 1500
         t.syncDataMs = 1500
         t.setupStatusMs = 80
+        t.linkParamsRetryMs = auth
+        t.linkParamsBackoffMs = 5
         return t
     }
 
@@ -50,6 +52,17 @@ final class AuthFlowTests: XCTestCase {
         let authenticator = HuaweiAuthenticator(session: session, identity: identity, log: log.sink, deviceType: deviceType, phoneModel: "iPhone17,1")
         authenticator.timeouts = fastTimeouts(auth: auth)
         return Rig(watch: watch, session: session, identity: identity, log: log, authenticator: authenticator)
+    }
+
+    /// A rig whose LinkParams waits are `waitMs` while the HiChain steps keep their generous timeouts (the crypto of a first bind is slow in a
+    /// debug build), so a retry test does not wait seconds and still authenticates once the watch answers.
+    private func shortLinkParamsRig(_ config: PacketsAuthFakeWatch.Config, waitMs: Int) -> Rig {
+        let rig = makeRig(config)
+        var timeouts = rig.authenticator.timeouts
+        timeouts.authMs = waitMs
+        timeouts.linkParamsRetryMs = waitMs
+        rig.authenticator.timeouts = timeouts
+        return rig
     }
 
     private let hiChainLabels = Array(repeating: "01/28", count: 7)
@@ -442,18 +455,79 @@ final class AuthFlowTests: XCTestCase {
 
     // MARK: failures
 
-    func testASilentWatchEndsInErrTimeout() async throws {
+    func testASilentWatchIsAskedThreeTimesAndEndsInErrTimeout() async throws {
         var config = PacketsAuthFakeWatch.Config()
         config.silent = true
         let rig = makeRig(config, auth: 120)
+        let recoveries = RecoveryCalls()
+        rig.authenticator.linkRecovery = { attempt in
+            recoveries.add(attempt)
+            return "changed the link for attempt \(attempt)"
+        }
         do {
             _ = try await rig.authenticator.authenticate()
             XCTFail("a silent watch cannot authenticate")
         } catch let e as WearError {
             XCTAssertEqual(e.code, .timeout)
-            XCTAssertTrue(e.message.hasPrefix("Authentication timed out: LinkParams: no response"), e.message)
+            XCTAssertTrue(e.message.hasPrefix("Authentication timed out: LinkParams: no response (service 0x01, command 0x01) within 120 ms"), e.message)
+            XCTAssertTrue(e.message.hasSuffix("(3 attempts)"), e.message)
+        }
+        XCTAssertEqual(rig.watch.labels, ["01/01", "01/01", "01/01"])
+        XCTAssertEqual(recoveries.attempts, [2, 3])
+        XCTAssertTrue(rig.log.contains("LinkParams: no answer within 120 ms (attempt 1 of 3); trying again in 5 ms"))
+        XCTAssertTrue(rig.log.contains("LinkParams: no answer within 120 ms (attempt 2 of 3); trying again in 10 ms"))
+        XCTAssertTrue(rig.log.contains("LinkParams: before attempt 3: changed the link for attempt 3"))
+    }
+
+    func testALinkParamsAnswerOnTheSecondAttemptStillAuthenticates() async throws {
+        var config = PacketsAuthFakeWatch.Config()
+        config.ignoreFirst = ["01/01": 1]
+        let rig = shortLinkParamsRig(config, waitMs: 150)
+        let recoveries = RecoveryCalls()
+        rig.authenticator.linkRecovery = { attempt in
+            recoveries.add(attempt)
+            return nil
+        }
+        let mode = try await rig.authenticator.authenticate()
+        XCTAssertEqual(mode, .hichain3)
+        XCTAssertEqual(Array(rig.watch.labels.prefix(3)), ["01/01", "01/01", "01/33"])
+        XCTAssertEqual(recoveries.attempts, [2])
+        XCTAssertTrue(rig.log.contains("LinkParams: answered on attempt 2 of 3"))
+        XCTAssertEqual(rig.session.params.sliceSize, 1022)
+    }
+
+    func testAFailedRecoveryIsLoggedAndTheAttemptStillRuns() async throws {
+        var config = PacketsAuthFakeWatch.Config()
+        config.ignoreFirst = ["01/01": 1]
+        let rig = shortLinkParamsRig(config, waitMs: 150)
+        rig.authenticator.linkRecovery = { _ in throw WearError(.timeout, "GATT connect: no answer from the watch within 8000 ms") }
+        let mode = try await rig.authenticator.authenticate()
+        XCTAssertEqual(mode, .hichain3)
+        XCTAssertTrue(rig.log.contains("LinkParams: before attempt 2: the link could not be changed"))
+        XCTAssertTrue(rig.log.contains("LinkParams: answered on attempt 2 of 3"))
+    }
+
+    func testALostLinkDuringRecoveryStopsTheAttempts() async throws {
+        var config = PacketsAuthFakeWatch.Config()
+        config.silent = true
+        let rig = makeRig(config, auth: 100)
+        rig.authenticator.linkRecovery = { _ in throw WearError(.disconnected, "Bluetooth LE link ended: the watch ended the connection") }
+        do {
+            _ = try await rig.authenticator.authenticate()
+            XCTFail("a lost link ends the authentication")
+        } catch let e as WearError {
+            XCTAssertEqual(e.code, .disconnected)
         }
         XCTAssertEqual(rig.watch.labels, ["01/01"])
+    }
+
+    func testWithoutARecoveryTheAttemptsOnlyRepeat() async throws {
+        var config = PacketsAuthFakeWatch.Config()
+        config.ignoreFirst = ["01/01": 2]
+        let rig = shortLinkParamsRig(config, waitMs: 100)
+        let mode = try await rig.authenticator.authenticate()
+        XCTAssertEqual(mode, .hichain3)
+        XCTAssertTrue(rig.log.contains("LinkParams: answered on attempt 3 of 3"))
     }
 
     func testAWatchThatStopsAnsweringMidwayEndsInErrTimeout() async throws {
@@ -705,5 +779,25 @@ final class AuthFlowTests: XCTestCase {
         // iOS waits 120 s for the first bind (the user confirms on the watch); the reconnect values are Kotlin's.
         XCTAssertEqual([t.authMs, t.firstAuthMs, t.hichainFirstStepMs, t.hichainStepMs, t.initMs, t.queryMs, t.syncCountMs, t.syncDataMs, t.setupStatusMs],
                        [10_000, 120_000, 5_000, 10_000, 2_000, 5_000, 10_000, 15_000, 300])
+        // LinkParams is asked up to three times: 10 s, then 8 s twice, with 1 s and 2 s of quiet between.
+        XCTAssertEqual([t.linkParamsAttempts, t.linkParamsRetryMs, t.linkParamsBackoffMs], [3, 8_000, 1_000])
+    }
+}
+
+/// The attempt numbers the authenticator asked the link to recover for, in order.
+private final class RecoveryCalls: @unchecked Sendable {
+    private let lock = NSLock()
+    private var recorded: [Int] = []
+
+    func add(_ attempt: Int) {
+        lock.lock()
+        recorded.append(attempt)
+        lock.unlock()
+    }
+
+    var attempts: [Int] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recorded
     }
 }

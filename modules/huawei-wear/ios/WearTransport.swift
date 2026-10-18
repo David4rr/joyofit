@@ -58,10 +58,16 @@ public protocol WatchTransport: FrameSink {
     /// Whether iOS lets the watch read the iPhone's notifications over ANCS (`CBPeripheral.ancsAuthorized`); nil when the transport has no
     /// such notion or before the link is open.
     var ancsAuthorized: Bool? { get }
+
+    /// The watch did not answer the first request after the link came up (LinkParams): `attempt` (2 or 3) is the try about to start.
+    /// Change something about the link the earlier tries did not; returns a line saying what was done (the support log), nil when there is
+    /// nothing different to try. Throws `.disconnected` when the link is gone.
+    func recoverLink(beforeAttempt attempt: Int) async throws -> String?
 }
 
 extension WatchTransport {
     public var ancsAuthorized: Bool? { nil }
+    public func recoverLink(beforeAttempt attempt: Int) async throws -> String? { nil }
 }
 
 /// The Bluetooth radio as the link sees it before a connect: ready, or a coded error (off, not permitted, missing).

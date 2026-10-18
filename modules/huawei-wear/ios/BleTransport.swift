@@ -253,6 +253,13 @@ public final class BleCentral: NSObject, CBCentralManagerDelegate, BluetoothGate
         return connected.first { $0.name?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == wanted }
     }
 
+    /// True when iOS already lists a connection to the watch with `identifier` before this app opens one: the watch is paired in Settings >
+    /// Bluetooth, or another app (Huawei Health) is connected to it. That link carries the other side's Huawei session. Needs a started central.
+    func holdsConnection(_ identifier: UUID) -> Bool {
+        guard let manager else { return false }
+        return manager.retrieveConnectedPeripherals(withServices: BleUUID.systemConnectedProbe).contains { $0.identifier == identifier }
+    }
+
     /// Huawei and Honor watches iOS already holds a connection to (paired in Settings > Bluetooth, or held by ANCS or another app). They do not
     /// advertise, so no scan sees them; `retrieveConnectedPeripherals` lists them by the services they expose, and iOS gives no way to ask
     /// for "all", so the probe is a broad list (`BleUUID.systemConnectedProbe`). Only named Huawei/Honor devices, and the remembered one
@@ -433,6 +440,8 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
     private var registered = false
     /// True between our own `cancelPeripheralConnection` and the disconnect callback it causes, which is not a lost link.
     private var cancelRequested = false
+    /// Whether iOS already held a connection to the watch when `open` started (`BleCentral.holdsConnection`); for the log only.
+    private var heldBeforeOpen = false
 
     private let nameLock = NSLock()
     private var name: String?
@@ -531,11 +540,49 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
         }
     }
 
+    /// The watch said nothing to LinkParams although the link is up and notifications are on. Attempt 2 stays on the link: notifications off
+    /// and on (the watch sees a fresh descriptor write) and the GATT database read again (no stale handle). Attempt 3 closes the link, opens
+    /// it anew, reads the database again and, when the write characteristic allows both write types, writes the other way.
+    public func recoverLink(beforeAttempt attempt: Int) async throws -> String? {
+        guard let target = await onQueue({ self.closed ? nil : self.peripheral }) else {
+            throw WearError(.disconnected, "Bluetooth LE link is closed or not ready")
+        }
+        let state = await snapshot(target)
+        step("link before LinkParams attempt \(attempt): \(state)")
+        if attempt <= 2 {
+            if let read = await onQueue({ self.readCharacteristic }), read.isNotifying {
+                try await awaitStep(.notify, what: "disable notifications", timeoutMs: BleTransport.notifyMs) {
+                    target.setNotifyValue(false, for: read)
+                }
+            }
+            try await rediscover(target, alternateWrite: false)
+            return "notifications switched off and on, GATT services discovered again"
+        }
+        try await disconnectAndWait(target)
+        try await connectOnce(target, timeoutMs: BleTransport.attemptMs)
+        step("GATT link up again")
+        try await rediscover(target, alternateWrite: true)
+        let type = await onQueue { self.writeType }
+        return "GATT link closed and opened again, services discovered again, writing \(type == .withoutResponse ? "without" : "with") response"
+    }
+
     // MARK: open
 
     private func open() async throws {
         try await central.requireReady()
         await onQueue { self.claimRoute() }
+        let heldByOthers = await onQueue { () -> Bool in
+            let held = self.central.holdsConnection(self.identifier)
+            self.heldBeforeOpen = held
+            return held
+        }
+        if heldByOthers {
+            step(
+                "iOS already holds a connection to this watch before JoyoFit opens its own: the watch is paired in Settings > Bluetooth, " +
+                    "another app such as Huawei Health is connected to it, or JoyoFit's own link of a moment ago is still closing; " +
+                    "the Huawei session on that link may not answer a second app"
+            )
+        }
         let target = try await findTarget()
         try await connectWithRetry(target)
         step("GATT connected")
@@ -713,7 +760,7 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
 
     // MARK: discovery
 
-    private func discover(_ target: CBPeripheral) async throws {
+    private func discover(_ target: CBPeripheral, alternateWrite: Bool = false) async throws {
         try await awaitStep(.services, what: "service discovery", timeoutMs: BleTransport.discoveryMs) {
             target.discoverServices(nil)
         }
@@ -744,17 +791,25 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
                     "services found: \(services.map(\.uuid.uuidString).joined(separator: ", "))"
             )
         }
-        // GB leaves the characteristic's write type as the stack sets it: no response when the characteristic allows it.
+        // GB leaves the characteristic's write type as the stack sets it: no response when the characteristic allows it. A characteristic that
+        // allows both is written the other way (`alternateWrite`) when the watch did not answer the first request.
+        let withoutResponse = write.properties.contains(.writeWithoutResponse)
+        let withResponse = write.properties.contains(.write)
         let type: CBCharacteristicWriteType
-        if write.properties.contains(.writeWithoutResponse) {
+        if withoutResponse && withResponse {
+            type = alternateWrite ? .withResponse : .withoutResponse
+        } else if withoutResponse {
             type = .withoutResponse
-        } else if write.properties.contains(.write) {
+        } else if withResponse {
             type = .withResponse
         } else {
             throw WearError(.connectFailed, "GATT characteristic \(writeUuid.uuidString) cannot be written")
         }
         await onQueue { self.writeType = type }
-        step("GATT write \(type == .withoutResponse ? "without" : "with") response; notify characteristic \(readUuid.uuidString)")
+        step(
+            "GATT write \(type == .withoutResponse ? "without" : "with") response (the characteristic allows \(BleTransport.writeKinds(write))); " +
+                "notify characteristic \(readUuid.uuidString)"
+        )
     }
 
     private func enableNotifications(_ target: CBPeripheral) async throws {
@@ -767,6 +822,25 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
             target.setNotifyValue(true, for: read)
         }
         step("GATT notifications on")
+    }
+
+    /// Forgets the characteristics found earlier, asks for the GATT database again and subscribes again.
+    private func rediscover(_ target: CBPeripheral, alternateWrite: Bool) async throws {
+        await onQueue {
+            self.readCharacteristic = nil
+            self.writeCharacteristic = nil
+        }
+        try await discover(target, alternateWrite: alternateWrite)
+        try await enableNotifications(target)
+    }
+
+    /// The link as it is now, for the log when LinkParams gets no answer: what a support report needs to tell the causes apart.
+    private func snapshot(_ target: CBPeripheral) async -> String {
+        let (read, write, type, held) = await onQueue { (self.readCharacteristic, self.writeCharacteristic, self.writeType, self.heldBeforeOpen) }
+        return "peripheral \(BleCentral.describe(target.state)), notifications on \(read?.isNotifying == true ? "yes" : "no"), " +
+            "writing \(type == .withoutResponse ? "without" : "with") response (the characteristic allows \(BleTransport.writeKinds(write))), " +
+            "canSendWriteWithoutResponse \(target.canSendWriteWithoutResponse), ANCS \(target.ancsAuthorized ? "yes" : "no"), " +
+            "iOS held a link to the watch before JoyoFit opened one: \(held ? "yes" : "no")"
     }
 
     // MARK: write
@@ -999,6 +1073,15 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
 
     /// The first bytes of a packet, enough to see the 0x5A frame start, length, service and command.
     static func headHex(_ bytes: Bytes) -> String { Bytes(bytes.prefix(8)).hexLower }
+
+    /// The write types a characteristic allows, for the log.
+    static func writeKinds(_ characteristic: CBCharacteristic?) -> String {
+        guard let characteristic else { return "unknown" }
+        var kinds: [String] = []
+        if characteristic.properties.contains(.writeWithoutResponse) { kinds.append("write without response") }
+        if characteristic.properties.contains(.write) { kinds.append("write with response") }
+        return kinds.isEmpty ? "no write" : kinds.joined(separator: " and ")
+    }
 }
 
 #endif
