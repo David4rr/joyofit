@@ -201,7 +201,7 @@
       "title": "No workouts yet",
       "description": "Watch sessions appear here after a sync.",
       "syncNow": "Sync now",
-      "descriptionNoWatch": "Workouts you log or import from a FIT file show up here. No watch needed."
+      "descriptionNoWatch": "Workouts you record on the phone, log or import from a FIT file show up here. No watch needed."
     },
     "partial": "Partly downloaded; next sync fetches the rest.",
     "cardA11y": "{{sport}}, {{date}}",
@@ -305,7 +305,11 @@
       "partial": "Partly downloaded; the next sync fetches the rest.",
       "missing": "The watch refused to return some data for this workout, so parts may be missing.",
       "recordedBy": "Recorded by",
-      "removedWatch": "A removed watch"
+      "removedWatch": "A removed watch",
+      "phone": "Phone",
+      "sensor": "Sensor",
+      "kcalHr": "Calories are calculated from heart rate.",
+      "kcalMet": "Calories are an estimate (MET). Wear a heart rate strap for a more accurate count."
     },
     "value": {
       "perMin": "{{value}} /min"
@@ -469,10 +473,121 @@
     }
   },
   "record": {
+    "title": "Record workout",
     "notification": {
       "timeDistance": "{{time}} · {{distance}}",
       "timeHr": "{{time}} · {{hr}} bpm",
       "timeDistanceHr": "{{time}} · {{distance}} · {{hr}} bpm"
+    },
+    "setup": {
+      "sensors": "Sensors",
+      "noSensors": "No sensors paired yet. You can add a heart rate strap or a bike sensor any time, none is required.",
+      "manageSensors": "Manage sensors",
+      "gpsNote": "The phone's GPS records the route and distance of this workout.",
+      "noGpsNote": "No GPS. Distance and speed come from your sensors, if you have any.",
+      "start": "Start",
+      "prepareError": "Could not get the recording ready: {{error}}",
+      "bluetoothOff": "Bluetooth is off. Turn it on so your sensors can connect."
+    },
+    "permission": {
+      "continue": "Continue",
+      "openSettings": "Open settings",
+      "location": {
+        "title": "Precise location",
+        "body": "Route, distance and pace come from the phone's GPS. Your location is only used while you record a workout.",
+        "denied": "Precise location is not allowed yet, so outdoor workouts cannot be recorded. Open settings to allow it, or pick an indoor sport."
+      },
+      "bluetooth": {
+        "title": "Bluetooth",
+        "body": "Used to connect the heart rate strap and other sensors you paired.",
+        "denied": "Bluetooth is not allowed yet, so your sensors will not connect. You can still record without sensors, or open settings to allow it."
+      }
+    },
+    "gps": {
+      "searching": "Looking for a GPS signal",
+      "ready": "GPS ready, accuracy {{meters}} m",
+      "readyNoAccuracy": "GPS ready",
+      "weak": "Weak GPS signal, accuracy {{meters}} m. Find a more open spot."
+    },
+    "ready": {
+      "gps": "GPS",
+      "hint": "You can start without waiting for GPS. Distance counts as soon as the signal is ready.",
+      "hintNoGps": "Press Start when you are ready.",
+      "noService": "A dark screen can stop the recording. Allow notifications and turn off battery saver for JoyoFit in the phone's settings so it keeps running.",
+      "start": "Start",
+      "cancel": "Cancel"
+    },
+    "sensor": {
+      "connected": "Connected",
+      "connecting": "Connecting",
+      "disconnected": "Not connected",
+      "willConnect": "Connects automatically when you start",
+      "a11y": "{{name}}, {{state}}",
+      "role": {
+        "hr": "Heart rate",
+        "speed": "Speed",
+        "cadence": "Cadence",
+        "power": "Power",
+        "pod": "Foot pod"
+      }
+    },
+    "sensorError": {
+      "off": "Bluetooth is off, so your sensors are not connected. Turn Bluetooth on to read them.",
+      "permission": "Bluetooth is not allowed yet, so your sensors are not connected.",
+      "unavailable": "This phone has no Bluetooth LE, so sensors cannot be used.",
+      "other": "A sensor could not connect. The recording still works without it."
+    },
+    "live": {
+      "status": {
+        "recording": "Recording",
+        "paused": "Paused"
+      },
+      "time": "Time",
+      "timeA11y": "Workout time {{value}}",
+      "distance": "Distance",
+      "pace": "Pace",
+      "speed": "Speed",
+      "hr": "Heart rate",
+      "cadence": "Cadence",
+      "power": "Power",
+      "calories": "Calories",
+      "zone": "Zone {{zone}}: {{label}}",
+      "pausedBanner": "Recording paused. Time and distance stop until you resume.",
+      "pause": "Pause",
+      "resume": "Resume",
+      "lap": "Lap",
+      "finish": "Finish",
+      "lapName": "Lap {{number}}",
+      "lapNow": "Current lap",
+      "lapStats": "{{distance}} · {{time}}",
+      "laps": "Earlier laps",
+      "lapStatsHr": "{{distance}} · {{time}} · {{hr}} bpm",
+      "saving": "Saving workout",
+      "saveFailed": "The workout was not saved: {{error}}. Your data is safe, try saving again.",
+      "saveAgain": "Save again"
+    },
+    "finish": {
+      "title": "Finish workout?",
+      "time": "Time",
+      "distance": "Distance",
+      "calories": "Calories",
+      "strava": "Send to Strava",
+      "stravaHint": "Uploaded once the workout is saved.",
+      "save": "Save workout",
+      "resume": "Keep going",
+      "discard": "Discard workout",
+      "nothing": "Nothing was recorded yet, so no workout was saved.",
+      "discardTitle": "Discard this workout?",
+      "discardMessage": "This recording is deleted and cannot be brought back.",
+      "discardConfirm": "Discard"
+    },
+    "banner": {
+      "recording": "Recording now",
+      "paused": "Recording paused",
+      "unsaved": "Workout not saved",
+      "ready": "Ready to record",
+      "progress": "{{sport}} · {{time}} · {{distance}}",
+      "a11y": "{{title}}. {{detail}}. Open the recording."
     }
   }
 }

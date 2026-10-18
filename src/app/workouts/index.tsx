@@ -18,8 +18,8 @@ import { PageHeader, useContentPadding, useRefreshControl } from '@/components/S
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { listWorkouts, type WorkoutRow } from '@/db/queries';
 import { pickFitFile } from '@/features/fitimport/useFitImport';
+import { RecordingBanner } from '@/features/record/ui/RecordingBanner';
 import { useStrengthHistory } from '@/features/strength/history';
-import { startStrengthWorkout } from '@/features/strength/start';
 import { workoutTotals } from '@/features/strength/calc';
 import type { StrengthWorkout } from '@/features/strength/types';
 import { ActiveWorkoutBanner } from '@/features/strength/ui/ActiveWorkoutBanner';
@@ -31,6 +31,7 @@ import { workoutTimes } from '@/features/workouts/times';
 import { useWorkoutStrain } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatCount, formatDateTime } from '@/format';
 import { fmtDate, fmtDecimal, useLocale } from '@/i18n';
+import { useRecorder } from '@/state/RecorderProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, tintColors, useColors, useTheme } from '@/theme';
 
@@ -135,6 +136,7 @@ export default function WorkoutsScreen() {
   // The status-bar inset is applied outside the list so sticky month headers stop below it.
   const padding = useContentPadding(false);
   const { linkState, device, dataVersion, sync } = useWatch();
+  const recording = useRecorder().snapshot.phase !== 'idle';
   const presence = useWatchPresence();
   // A phone that never had a watch gets no Sync button and no "connect your watch" nagging; the strength logger is the point of this tab.
   const watchUi = presence !== null && showsWatchUi(presence);
@@ -219,6 +221,8 @@ export default function WorkoutsScreen() {
               right={watchUi ? <SyncButton variant="primary" /> : undefined}
             />
             <ActiveWorkoutBanner />
+            <RecordingBanner />
+            {recording ? null : <Button label={t('record.title')} variant="primary" icon="radio-button-on" onPress={() => router.push('/workouts/record')} />}
             <Button label={lifts('list.start')} variant="primary" icon="barbell" onPress={() => router.push('/strength')} />
             <Button label={lifts('list.history')} variant="secondary" icon="calendar" onPress={() => router.push('/strength/history')} />
             <Button label={t('list.logManual')} variant="secondary" icon="create-outline" onPress={() => router.push('/workouts/manual')} />
@@ -250,7 +254,7 @@ export default function WorkoutsScreen() {
               description={watchUi ? t('list.empty.description') : t('list.empty.descriptionNoWatch')}
               action={
                 !watchUi
-                  ? { label: lifts('list.start'), icon: 'barbell', onPress: () => startStrengthWorkout() }
+                  ? { label: t('record.title'), icon: 'radio-button-on', onPress: () => router.push('/workouts/record') }
                   : canSync
                     ? { label: t('list.empty.syncNow'), icon: 'sync', onPress: () => void sync() }
                     : syncing

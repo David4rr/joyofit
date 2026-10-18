@@ -31,6 +31,8 @@ import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
 import { ShareWorkoutButton } from '@/features/share/ShareWorkoutSheet';
 import { ShareToRogoButton } from '@/features/social/ShareToRogo';
 import { SaveWorkoutRouteButton } from '@/features/routes/SaveWorkoutRouteButton';
+import { useRoleText } from '@/features/record/ui/SensorRow';
+import { listWorkoutSensors, type WorkoutSensor } from '@/features/sensors/store';
 import { analyzeWorkout } from '@/features/workouts/analysis/analyze';
 import { loadAnalysisHistory } from '@/features/workouts/analysis/history';
 import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/palette';
@@ -71,6 +73,8 @@ interface Loaded {
   daySamples: StepSample[];
   /** The strength workout stored as this row (its own, or the one merged with this watch workout). */
   strength: StrengthWorkout | null;
+  /** The sensors a phone recording used; empty for every other workout. */
+  sensors: WorkoutSensor[];
 }
 
 /** `x,y m`, or null when the summary does not have the value. */
@@ -124,6 +128,7 @@ export default function WorkoutDetailScreen() {
   const analysisT = useAnalysisT();
   const { catalog } = useStrengthHistory();
   const recordedBy = useWorkoutSource(Number(id));
+  const roleText = useRoleText();
 
   useFocusEffect(
     useCallback(() => {
@@ -137,7 +142,9 @@ export default function WorkoutDetailScreen() {
         const strength = await getStrengthWorkoutByStart(db, found.workout.start);
         const day = startOfLocalDay(found.workout.start);
         const daySamples = (await listStepSamplesSince(db, day)).filter((s) => s.timestamp < day + 86400);
-        return { workout: found.workout, summary: parseSummary(found.summaryJson), points, daySamples, strength };
+        const summary = parseSummary(found.summaryJson);
+        const sensors = summary.source === 'phone' ? await listWorkoutSensors(db, workoutId) : [];
+        return { workout: found.workout, summary, points, daySamples, strength, sensors };
       })().then(
         async (value) => {
           if (cancelled) return;
@@ -415,6 +422,19 @@ export default function WorkoutDetailScreen() {
           value={t('detail.more.timeRange', { from: formatClock(workout.start), to: formatClock(workout.end) })}
         />
         {recordedBy !== null ? <KeyValue icon="watch-outline" label={t('detail.more.recordedBy')} value={recordedBy} /> : null}
+        {summary.source === 'phone' ? (
+          <>
+            <KeyValue icon="phone-portrait-outline" label={t('detail.more.recordedBy')} value={t('detail.more.phone')} />
+            {loaded.sensors.map((sensor) => (
+              <KeyValue
+                key={sensor.id}
+                icon="bluetooth-outline"
+                label={t('detail.more.sensor')}
+                value={roleText(sensor.kinds) === '' ? sensor.name : `${sensor.name} (${roleText(sensor.kinds)})`}
+              />
+            ))}
+          </>
+        ) : null}
         {paceRows(summary, workout.distance, times.movingSec).map((row) => (
           <KeyValue key={row.key} icon="speedometer-outline" label={row.label} value={row.value} />
         ))}
@@ -455,6 +475,9 @@ export default function WorkoutDetailScreen() {
           <Notice icon="document-outline">
             {t('detail.more.imported', { brand: summary.importedFrom, health: isIos ? t('detail.more.healthIos') : t('detail.more.healthAndroid') })}
           </Notice>
+        ) : null}
+        {summary.source === 'phone' && summary.kcalSource !== undefined ? (
+          <Notice icon="flame-outline">{t(summary.kcalSource === 'hr' ? 'detail.more.kcalHr' : 'detail.more.kcalMet')}</Notice>
         ) : null}
         {!workout.complete ? <Notice icon="cloud-download-outline">{t('detail.more.partial')}</Notice> : null}
         {summary.missingData ? <Notice>{t('detail.more.missing')}</Notice> : null}
