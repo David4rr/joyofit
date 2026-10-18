@@ -1,8 +1,10 @@
 package com.joyodigitama.huaweiwear
 
 import android.content.Context
+import android.database.DatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
+import android.util.Log
 import java.io.File
 import org.json.JSONArray
 
@@ -92,6 +94,7 @@ internal class SyncStore(context: Context) {
       file.path,
       null,
       SQLiteDatabase.OPEN_READWRITE or SQLiteDatabase.CREATE_IF_NECESSARY or SQLiteDatabase.ENABLE_WRITE_AHEAD_LOGGING,
+      KEEP_CORRUPT_FILE,
     )
     try {
       // The framework default is 2.5 s. JS may hold the file briefly (its own migration), so wait longer.
@@ -233,5 +236,13 @@ internal class SyncStore(context: Context) {
     const val DATABASE_NAME = "joyofit.db"
     const val MIGRATIONS_ASSET = "joyofit-db-migrations.json"
     const val BUSY_TIMEOUT_MS = 10_000
+    private const val TAG = "SyncStore"
+
+    /**
+     * The framework's default handler deletes the database file and its WAL when this connection meets corruption, while the JS
+     * connection (expo-sqlite, its own SQLite) still holds the file and writes into the deleted one. This one only says so: the
+     * JS repair (`src/db/recovery`) keeps a copy of the damaged file and rebuilds the database from what can be read.
+     */
+    val KEEP_CORRUPT_FILE = DatabaseErrorHandler { db -> Log.e(TAG, "Corruption reported by sqlite on ${db.path}; the file is left for the repair") }
   }
 }
