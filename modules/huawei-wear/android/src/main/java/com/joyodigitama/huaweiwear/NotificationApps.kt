@@ -4,10 +4,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Build
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.async
@@ -24,7 +26,7 @@ internal object NotificationApps {
     val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
     val seen = HashSet<String>()
     val found = ArrayList<ApplicationInfo>()
-    for (resolved in pm.queryIntentActivities(launcher, PackageManager.ResolveInfoFlags.of(0))) {
+    for (resolved in launcherActivities(pm, launcher)) {
       val info = resolved.activityInfo?.applicationInfo ?: continue
       if (info.packageName == context.packageName || !seen.add(info.packageName)) continue
       found.add(info)
@@ -48,6 +50,15 @@ internal object NotificationApps {
       .sortedBy { it.first }
       .map { it.second }
   }
+
+  /** `ResolveInfoFlags` exists from Android 13 (API 33); the overload with an int is what Android 12 and below have. */
+  @Suppress("DEPRECATION")
+  private fun launcherActivities(pm: PackageManager, launcher: Intent): List<ResolveInfo> =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      pm.queryIntentActivities(launcher, PackageManager.ResolveInfoFlags.of(0))
+    } else {
+      pm.queryIntentActivities(launcher, 0)
+    }
 
   private fun iconUri(pm: PackageManager, cache: AppIconCache, packageName: String): String? =
     try {

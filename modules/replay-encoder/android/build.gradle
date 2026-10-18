@@ -12,13 +12,12 @@ android {
     versionCode 1
     versionName "0.1.0"
   }
-  lintOptions {
-    abortOnError false
-  }
   testOptions {
     unitTests.returnDefaultValues = true
   }
 }
+
+apply from: '../../newapi-lint.gradle'
 
 dependencies {
   testImplementation 'junit:junit:4.13.2'

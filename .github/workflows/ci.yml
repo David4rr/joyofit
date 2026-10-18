@@ -103,7 +103,7 @@ jobs:
       - run: bun run build
 
   kotlin:
-    name: Kotlin unit tests (huawei-wear, ble-sensors, replay-encoder)
+    name: Kotlin (unit tests, NewApi lint)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -130,6 +130,10 @@ jobs:
       # android/ is generated (gitignored); the module tests need the Gradle project.
       - run: bunx expo prebuild -p android --no-install
       - run: ./gradlew :huawei-wear:testDebugUnitTest :ble-sensors:testDebugUnitTest :replay-encoder:testDebugUnitTest
+        working-directory: android
+      # NewApi only (modules/newapi-lint.gradle): a call newer than minSdk 29 outside a Build.VERSION.SDK_INT check
+      # compiles and then throws NoSuchMethodError on an older phone. Findings print to the log.
+      - run: ./gradlew :huawei-wear:lintDebug :ble-sensors:lintDebug :replay-encoder:lintDebug
         working-directory: android
 
   swift-protocol:

@@ -34,13 +34,12 @@ android {
       assets.srcDirs += file('../schema')
     }
   }
-  lintOptions {
-    abortOnError false
-  }
   testOptions {
     unitTests.returnDefaultValues = true
   }
 }
+
+apply from: '../../newapi-lint.gradle'
 
 dependencies {
   implementation 'org.slf4j:slf4j-api:2.0.17'
