@@ -13,6 +13,7 @@ import { BindConfirmDialog } from '@/features/device/BindConfirmDialog';
 import { FindWatchSection } from '@/features/device/FindWatchSection';
 import { GuideLink } from '@/features/device/GuideLink';
 import { supportLabel } from '@/features/device/modelSupport';
+import { SilentWatchHelp } from '@/features/device/SilentWatchHelp';
 import { SupportReportSection } from '@/features/device/SupportReportSection';
 import { WatchStatusCard } from '@/features/device/WatchStatusCard';
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
@@ -128,6 +129,7 @@ export default function WatchScreen() {
       title={t('watch:title')}
       refresh={{ refreshing: bonded.loading, onRefresh: () => void bonded.refresh(), enabled: granted }}>
       <WatchStatusCard />
+      <SilentWatchHelp />
       {/* Connected, the list is only needed to disconnect or switch, so the watch's own pages come first. */}
       {linked ? (
         <>

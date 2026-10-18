@@ -1,13 +1,14 @@
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Linking, Share } from 'react-native';
+import { Linking } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
 import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
+import { shareSupportReport } from '@/features/device/shareSupportReport';
 import { issueUrl, reportText } from '@/features/device/supportIssue';
 import { errorMessage } from '@/format';
 import { HuaweiWear } from '@/wear';
@@ -45,12 +46,6 @@ export function SupportReportSection() {
       await Linking.openURL(issueUrl(report));
     });
 
-  const shareText = () =>
-    run('share', async () => {
-      const report = await HuaweiWear.getSupportReport();
-      await Share.share({ title: t('device.support.shareTitle'), message: reportText(report) });
-    });
-
   return (
     <Section title={t('device.support.title')} icon="chatbubbles">
       <Details>
@@ -76,7 +71,7 @@ export function SupportReportSection() {
           icon="share-social"
           loading={busy === 'share'}
           disabled={busy !== null}
-          onPress={() => void shareText()}
+          onPress={() => void run('share', shareSupportReport)}
         />
       </ButtonRow>
     </Section>

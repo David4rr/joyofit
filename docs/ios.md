@@ -111,6 +111,29 @@ claims to have reached the watch unless it did.
   found. If it is still connected to another phone, disconnect it there first. Make sure the watch is on and close to this phone, then tap
   Refresh" and a failed connect (`ERR_CONNECT_FAILED`, `ERR_TIMEOUT`, `ERR_DISCONNECTED`, `ERR_AUTH_FAILED`) shows the same advice with a
   **Retry** button (`src/features/device/connectFailure.ts`, shared with Android).
+- **A watch that connects and then says nothing** (`Authentication timed out: LinkParams: no response (service 0x01, command 0x01) within 10000 ms`,
+  reported by an iPhone owner with a Fit 4, no log). Where it sits: `BleTransport.open()` connects, discovers the services and characteristics
+  and returns only after `didUpdateNotificationStateFor` confirmed the FE02 subscription (GB queues `notify(read, true)` before the first write
+  too), then the 16-byte LinkParams frame goes to FE01 as a write without response (GB's `HuaweiLESupport.getSendWriteRequestResponse()` is
+  `false`; the Fit 4 Pro's FE01 only allows that type) and no notification comes back. `BleTransport.kt` does the same steps, plus
+  `requestMtu(512)`. What only iOS adds: the link can be shared with the system or another app, iOS caches the GATT table of a bonded
+  peripheral, and a write without response never reports an error. Causes, none confirmed (no capture): (1) the Huawei session on that link
+  is not ours: Huawei Health on this iPhone or Settings > Bluetooth holds the link (`cancelPeripheralConnection` only drops JoyoFit's claim,
+  the log says `iOS already holds a connection to this watch before JoyoFit opens its own`), or another phone's Huawei Health or JoyoFit owns
+  the watch's one session; an authenticated session ignores a plaintext LinkParams; (2) FE01 wants an encrypted link: the dropped write
+  has no ATT error, and iOS starts pairing only when an operation fails with insufficient authentication, while every Android run so far was
+  from a phone with a Classic bond (the README's "not tested" line); (3) a stale cached GATT table (unlikely, the CCCD write was accepted);
+  (4) the watch itself (just restarted, in a pairing or reset state, power saving), which only a restart shows. Not the cause: the service
+  choice (FE86 is what the Fit 4 Pro answers on; missing FE01/FE02 fails earlier with "no Huawei GATT characteristics"), the MTU, the order of
+  subscribe and write. In code (`HuaweiAuthenticator.requestLinkParams`, `BleTransport.recoverLink`; native, needs the next iOS build):
+  LinkParams is asked up to three times (waits 10 s, 8 s, 8 s; 1 s and 2 s quiet before the 2nd and 3rd). Before the 2nd the notifications are
+  switched off and on and the services are discovered again; before the 3rd the GATT link is closed and opened anew, discovered again, and the
+  other write type is used if FE01 allowed both. Every step logs a `link before LinkParams attempt N: ...` line (peripheral state,
+  notifying, write types, `canSendWriteWithoutResponse`, ANCS, whether iOS already held the link) to the support report, and the last error
+  keeps the `LinkParams: no response` text. In the app (JS, over the air): a LinkParams timeout is `kind: 'silent'` in `connectFailure.ts`;
+  the Watch tab shows `SilentWatchHelp` (disconnect from Huawei Health and other phones, forget the watch in Settings > Bluetooth on iOS,
+  restart the watch, toggle Bluetooth) with **Coba lagi** and **Kirim laporan** (share sheet with the support report, so the BLE log), and Today
+  shows the short line; the native English error of the state event no longer replaces what the failed `connect()` worded.
 - **MTU.** iOS negotiates it. Writes are cut to `maximumWriteValueLength(for: .withoutResponse)` with write-without-response flow
   control; notifications of any size are reassembled. The negotiated length and every chunk size are logged (tag `JoyoFitBle`, support report).
 - **First bind replaces the existing binding.** The watch keeps one credential. A first bind needs two confirmations (ACCEPT on the watch and
@@ -181,6 +204,10 @@ The package also type-checks against the iPhoneOS SDK (`swiftc -typecheck -sdk <
 - JRG-173, none of it run on the iPhone yet: that `retrieveConnectedPeripherals` with the probe list returns a Fit 4 Pro that iOS holds through
   Settings > Bluetooth (the Fit 4 Pro's service list comes from an Android GATT read, not from iOS's cache); connecting such a watch from the app;
   the "Watch not found" advice while the Android phone holds the watch; the bind confirmation before a first bind and none on a reconnect.
+- The LinkParams retry and recovery (`BleTransport.recoverLink`: notifications off and on, services discovered again, the link closed and
+  opened anew, the other write type): the retry loop is tested against a scripted watch (`AuthFlowTests`), but the `BleTransport.swift` part is
+  CoreBluetooth-only, so it was never compiled on Linux and never run on an iPhone. Whether any of it makes a watch that is silent on first
+  contact answer is open: the cause of the 2026-10-18 report is unknown until its support report arrives.
 - A reconnect with a key bound from iOS (HiChain op2) and a first bind over LE (op1 steps 2 to 4 are unproven on any client; only step 1 was
   seen, from Android, which loses the 514-byte reply on Android 14+).
 - State restoration and the background wake path; the Keychain after reinstall; HealthKit replacement on a repeated sync identifier; expo-sqlite

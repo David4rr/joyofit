@@ -66,6 +66,19 @@
       "noWatchIos": "Jam tidak ditemukan. Kalau jam masih terhubung ke HP lain, putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu ketuk Segarkan.",
       "noWatchScan": "Tidak ada jam di sekitar. Kalau jam masih terhubung ke HP atau aplikasi lain (Huawei Health, atau JoyoFit di HP lain), putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu cari lagi."
     },
+    "silent": {
+      "short": "Jam tersambung lewat Bluetooth tapi tidak menjawab. Langkah perbaikannya ada di tab Jam.",
+      "title": "Jam tersambung tapi tidak menjawab",
+      "intro": "JoyoFit sudah menjangkau jam lewat Bluetooth, tapi jam tidak membalas permintaan pertama. Biasanya jam sedang dipakai aplikasi atau HP lain. Coba satu per satu, lalu ketuk Coba lagi.",
+      "step": {
+        "release": "Putuskan jam dari Huawei Health dan dari HP lain, lalu tutup aplikasinya sepenuhnya.",
+        "forgetIos": "Di iPhone, buka Pengaturan > Bluetooth, ketuk ikon (i) di samping jam, lalu pilih Lupakan Perangkat Ini.",
+        "restart": "Restart jam, tunggu sampai layarnya menyala penuh, lalu dekatkan ke HP.",
+        "bluetooth": "Matikan Bluetooth HP, nyalakan lagi, lalu coba hubungkan."
+      },
+      "reportHelp": "Kalau masih gagal, kirim laporan. Isinya log Bluetooth terakhir, tanpa alamat Bluetooth atau nomor seri.",
+      "report": "Kirim laporan"
+    },
     "status": {
       "linkA11y": "Status koneksi: {{label}}",
       "battery": "Baterai",

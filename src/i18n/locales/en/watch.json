@@ -66,6 +66,19 @@
       "noWatchIos": "Watch not found. If it is still connected to another phone, disconnect it there first. Make sure the watch is on and close to this phone, then tap Refresh.",
       "noWatchScan": "No watch found nearby. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again."
     },
+    "silent": {
+      "short": "The watch connected over Bluetooth but does not answer. What to try is on the Watch tab.",
+      "title": "The watch connected but does not answer",
+      "intro": "JoyoFit reached the watch over Bluetooth, but the watch did not reply to the first request. Usually another app or phone is using it. Try these one at a time, then tap Retry.",
+      "step": {
+        "release": "Disconnect the watch from Huawei Health and from any other phone, then close that app completely.",
+        "forgetIos": "On the iPhone, open Settings > Bluetooth, tap the (i) icon next to the watch, then choose Forget This Device.",
+        "restart": "Restart the watch, wait until its screen is fully on, then bring it close to the phone.",
+        "bluetooth": "Turn the phone's Bluetooth off and on again, then try to connect."
+      },
+      "reportHelp": "If it still fails, send a report. It holds the latest Bluetooth log, without Bluetooth addresses or the serial number.",
+      "report": "Send report"
+    },
     "status": {
       "linkA11y": "Link state: {{label}}",
       "battery": "Battery",

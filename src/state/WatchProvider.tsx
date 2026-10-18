@@ -49,6 +49,8 @@ export interface WatchContextValue {
   cancelBind: () => void;
   /** The watch of the last connect that could not reach it (busy elsewhere, out of reach); `connect` to it again is Retry. */
   retryAddress: string | null;
+  /** The last connect reached the watch over Bluetooth but the watch never answered: the Watch tab shows the checklist and the report button. */
+  silentWatch: boolean;
   disconnect: () => Promise<void>;
   forget: (address: string) => Promise<void>;
   refreshBattery: () => Promise<void>;
@@ -56,6 +58,9 @@ export interface WatchContextValue {
   /** Pulls everything the watch still holds again; rows already stored are kept. */
   syncFullHistory: () => Promise<void>;
 }
+
+/** How long after a failed connect() a disconnect event's English error is still the same failure, not news. */
+const CONNECT_EVENT_GRACE_MS = 1500;
 
 const WatchContext = createContext<WatchContextValue | null>(null);
 
@@ -75,6 +80,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [bindRequest, setBindRequest] = useState<{ address: string } | null>(null);
   const [retryAddress, setRetryAddress] = useState<string | null>(null);
+  const [silentWatch, setSilentWatch] = useState(false);
   // The background service may already own the link when the UI starts; read it synchronously.
   const [device, setDevice] = useState<DeviceInfo | null>(() => HuaweiWear.getDevice());
   const [activeAddress, setActiveAddress] = useState<string | null>(() =>
@@ -87,6 +93,10 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   const [totals, setTotals] = useState<WatchTotals | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
   const syncing = useRef(false);
+  // A failed connect() reports its failure through the rejected promise (worded for the person); the state event the native side emits
+  // for the same failure carries the English log line, which must not replace it.
+  const connectInFlight = useRef(false);
+  const connectFailedAt = useRef(0);
 
   /** Adopts a link that the background service connected while the UI was not watching. */
   const adoptNativeLink = useCallback(async () => {
@@ -125,7 +135,9 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   useEventListener(HuaweiWear, 'onStateChange', (event) => {
     setLinkState(event.state);
     if (event.state === 'connecting') setError(null);
-    if (event.error) setError(event.error);
+    const connectOwnsError =
+      event.state === 'disconnected' && (connectInFlight.current || Date.now() - connectFailedAt.current < CONNECT_EVENT_GRACE_MS);
+    if (event.error && !connectOwnsError) setError(event.error);
     if (event.state === 'disconnected') {
       setActiveAddress(null);
       setDevice(null);
@@ -145,14 +157,17 @@ export function WatchProvider({ children }: { children: ReactNode }) {
     async (address: string) => {
       setError(null);
       setRetryAddress(null);
+      setSilentWatch(false);
       setBindRequest(null);
       setActiveAddress(address);
+      connectInFlight.current = true;
       try {
         const info = await HuaweiWear.connect(address);
         setDevice(info);
         setBattery(info.batteryLevel);
         setLastSync(await getLastSync(db, info.address));
       } catch (e) {
+        connectFailedAt.current = Date.now();
         setActiveAddress(null);
         const failure = describeConnectFailure(e);
         if (failure.kind === 'bind') {
@@ -161,7 +176,10 @@ export function WatchProvider({ children }: { children: ReactNode }) {
           return;
         }
         setError(failure.message);
-        if (failure.kind === 'unreachable') setRetryAddress(address);
+        if (failure.kind === 'unreachable' || failure.kind === 'silent') setRetryAddress(address);
+        setSilentWatch(failure.kind === 'silent');
+      } finally {
+        connectInFlight.current = false;
       }
     },
     [db],
@@ -241,6 +259,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       confirmBind,
       cancelBind,
       retryAddress,
+      silentWatch,
       disconnect,
       forget,
       refreshBattery,
@@ -262,6 +281,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       confirmBind,
       cancelBind,
       retryAddress,
+      silentWatch,
       disconnect,
       forget,
       refreshBattery,

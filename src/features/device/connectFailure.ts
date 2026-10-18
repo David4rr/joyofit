@@ -5,6 +5,8 @@ import { t } from '@/i18n';
 export type ConnectFailure =
   /** The watch does not know this phone: ask the user before a bind replaces its current phone pairing. */
   | { kind: 'bind' }
+  /** The Bluetooth link came up but the watch never answered the first request: the checklist and the report button. */
+  | { kind: 'silent'; message: string }
   /** The watch could not be reached or refused the link: say what to check, offer Retry. */
   | { kind: 'unreachable'; message: string }
   /** Anything else (Bluetooth off, not allowed, unsupported model, ...): the plain message. */
@@ -27,9 +29,27 @@ export function errorCode(e: unknown): string | null {
   return null;
 }
 
+/**
+ * The link is up and notifications are on, but the watch never answered LinkParams, the first request of the handshake
+ * ("Authentication timed out: LinkParams: no response (service 0x01, command 0x01) within 10000 ms"). The Swift and the Kotlin
+ * authenticators both word it that way; the part after "no response" differs by build.
+ */
+export function isSilentWatch(e: unknown): boolean {
+  return errorCode(e) === 'ERR_TIMEOUT' && /LinkParams: no response/.test(errorMessage(e));
+}
+
+/** The checks for a watch that connects and then says nothing, most likely first. iOS has the Bluetooth settings entry to forget. */
+export function silentWatchSteps(platform: 'ios' | 'android'): string[] {
+  const steps = [t('watch:device.silent.step.release')];
+  if (platform === 'ios') steps.push(t('watch:device.silent.step.forgetIos'));
+  steps.push(t('watch:device.silent.step.restart'), t('watch:device.silent.step.bluetooth'));
+  return steps;
+}
+
 export function describeConnectFailure(e: unknown): ConnectFailure {
   const code = errorCode(e);
   if (code === BIND_CONFIRMATION) return { kind: 'bind' };
+  if (isSilentWatch(e)) return { kind: 'silent', message: t('watch:device.silent.short') };
   if (code !== null && UNREACHABLE_CODES[code]) return { kind: 'unreachable', message: watchBusyHint() };
   return { kind: 'other', message: errorMessage(e) };
 }
