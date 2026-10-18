@@ -18,6 +18,14 @@ export async function hasStoredWatch(db: SQLiteDatabase): Promise<boolean> {
   return (await db.getFirstAsync<{ address: string }>('SELECT address FROM device LIMIT 1')) !== null;
 }
 
+/** The database holds anything a watch (or a Huawei Health, FIT or Health export) produced: steps, sleep, or a workout that was not logged here. */
+export async function hasWatchData(db: SQLiteDatabase): Promise<boolean> {
+  const row = await db.getFirstAsync<{ present: number }>(
+    `SELECT (EXISTS (SELECT 1 FROM step_samples) OR EXISTS (SELECT 1 FROM sleep_segments) OR EXISTS (SELECT 1 FROM workouts WHERE imported = 0)) AS present`,
+  );
+  return (row?.present ?? 0) === 1;
+}
+
 export function listStepSamplesSince(db: SQLiteDatabase, sinceSec: number): Promise<StepSample[]> {
   return db.getAllAsync<StepSample>(
     `SELECT timestamp, steps, calories, distance,
