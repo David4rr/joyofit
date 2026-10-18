@@ -403,6 +403,16 @@ instructions are sent. The P2P push is native (`modules/huawei-wear`, `HuaweiWea
 - **Limits.** Only watches that list route support (`getRoutes().deliver`) take routes; the watch simplifies long routes to a few
   hundred points. Not verified on a watch yet. Tests: `src/features/routes/*.test.ts`, `src/features/sharedfile/`.
 
+## Deep links (`joyofit://`)
+
+Every URL that opens the app goes through `src/app/+native-intent.ts` before Expo Router matches it. `src/features/deeplink/mapDeepLink.ts` normalises `joyofit:` links only (https links, the dev client launcher and `content://`/`file://` files are handled elsewhere or left alone):
+
+- `joyofit://strength` (host form), `joyofit:///strength` (path form) and a trailing slash all open `/strength`. In the host form "strength" is the URL host, not a path; the router handles both.
+- `joyofit://?open=strength` opens `/strength` too. JoyoRogo uses this form: a JoyoFit bundle that has no `/strength` yet (an install that has not applied its over-the-air update, which takes the second launch) shows Today for it, while `joyofit://strength` there is the router's "Unmatched Route" page, and because that open succeeds JoyoRogo never falls back to the plain `joyofit://` link.
+- A link no screen answers to (checked against the route files in the bundle, read from the router's own file list) opens Today, query dropped. In-app navigation to a missing route is not a system URL, so it still ends in `src/app/+not-found.tsx` ("Halaman tidak ditemukan" with a button home).
+
+Tests: `src/features/deeplink/` run the real Expo Router URL parsing and matcher over the route files, with Bun's `URL` and the phone's (`whatwg-url-minimum`).
+
 ## Where data lives
 
 `joyofit.db` in `<app files>/SQLite` is shared by the screens (expo-sqlite, read) and the native

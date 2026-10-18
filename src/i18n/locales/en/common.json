@@ -133,5 +133,10 @@
       "name": "Ocean",
       "tagline": "Clean blue and white. Follows the phone."
     }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "This link doesn't lead to any page in JoyoFit. If an update just came out, close the app and open it again.",
+    "home": "Go home"
   }
 }
