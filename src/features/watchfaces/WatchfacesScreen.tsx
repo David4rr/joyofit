@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -66,6 +67,7 @@ export function findInstalledFace(
 /** Lists, activates, deletes and installs watch faces on the connected watch. */
 export function WatchfacesScreen() {
   const router = useRouter();
+  const { t } = useTranslation(['watch', 'common']);
   const colors = useColors();
   const padding = useContentPadding(false);
   const { connected, list, busy, error, notice, progress, refresh, setActive, remove, installFromUri } =
@@ -128,11 +130,11 @@ export function WatchfacesScreen() {
     setDialog({
       visible: true,
       icon: 'trash-outline',
-      title: 'Delete from Watch',
-      message: `Permanently delete "${face.name}" from your watch hardware? Pre-installed factory faces cannot be deleted.`,
-      confirmLabel: 'Delete',
+      title: t('watch:faces.deleteTitle'),
+      message: t('watch:faces.deleteMessage', { name: face.name }),
+      confirmLabel: t('common:actions.delete'),
       confirmVariant: 'destructive',
-      cancelLabel: 'Cancel',
+      cancelLabel: t('common:actions.cancel'),
       onConfirm: () => void remove(face.id),
     });
   };
@@ -148,15 +150,14 @@ export function WatchfacesScreen() {
         : `Permanently delete "${face.title}" from your phone storage? To reinstall it in the future, you will need to re-import it.`,
       confirmLabel: 'Delete from Phone',
       confirmVariant: 'destructive',
-      cancelLabel: 'Cancel',
+      cancelLabel: t('common:actions.cancel'),
       onConfirm: () => removeFromLibrary(face.id),
     });
   };
 
-
   const listMeta = list
     ? [
-        list.width && list.height ? `Screen ${list.width} x ${list.height} px` : null,
+        list.width && list.height ? t('watch:faces.screenSize', { width: list.width, height: list.height }) : null,
         list.faces ? `${list.faces.length} on watch` : null,
       ]
         .filter(Boolean)
@@ -169,8 +170,8 @@ export function WatchfacesScreen() {
 
       {tab === 'installed' ? (
         !connected ? (
-          <Notice icon="bluetooth" action={{ label: 'Open Watch', onPress: () => router.navigate('/watch') }}>
-            Connect your watch to manage its faces.
+          <Notice icon="bluetooth" action={{ label: t('watch:openWatch'), onPress: () => router.navigate('/watch') }}>
+            {t('watch:faces.connect')}
           </Notice>
         ) : null
       ) : (
@@ -201,7 +202,7 @@ export function WatchfacesScreen() {
           <AppText variant="caption" muted>
             {progress.total > 0
               ? `Transferring: ${percent}% (${progress.bytes.toLocaleString()} of ${progress.total.toLocaleString()} bytes)`
-              : 'Transferring to watch...'}
+              : t('watch:faces.waiting')}
           </AppText>
         </View>
       ) : null}
@@ -212,7 +213,7 @@ export function WatchfacesScreen() {
         <View style={styles.listTitleRow} accessibilityRole="header">
           <IconChip icon={tab === 'installed' ? 'watch' : 'folder'} size="sm" />
           <AppText variant="heading">
-            {tab === 'installed' ? 'On the watch' : 'My watch collection'}
+            {tab === 'installed' ? t('watch:faces.onWatch') : 'My watch collection'}
           </AppText>
         </View>
         {tab === 'installed' && listMeta ? (
@@ -233,8 +234,8 @@ export function WatchfacesScreen() {
         <Card>
           <EmptyState
             icon="watch"
-            title="Watch not connected"
-            description="The faces on your watch appear here once it is connected."
+            title={t('watch:faces.notConnected')}
+            description={t('watch:faces.notConnectedHint')}
           />
         </Card>
       );
@@ -253,15 +254,15 @@ export function WatchfacesScreen() {
         {list === null ? (
           <EmptyState
             icon="watch"
-            title="Faces not read yet"
-            description="Read the list from your watch to see its faces."
-            action={{ label: 'Read from the watch', icon: 'refresh', onPress: () => void refresh() }}
+            title={t('watch:faces.notRead')}
+            description={t('watch:faces.notReadHint')}
+            action={{ label: t('watch:faces.read'), icon: 'refresh', onPress: () => void refresh() }}
           />
         ) : (
           <EmptyState
             icon="watch"
-            title="No watch faces"
-            description="The watch lists no faces. Install one from your My watch library."
+            title={t('watch:faces.none')}
+            description={t('watch:faces.noneHint')}
           />
         )}
       </Card>
