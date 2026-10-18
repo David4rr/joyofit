@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,16 +23,6 @@ import { HIT, spacing, useColors } from '@/theme';
 /** JoyoRogo's limit for a post caption. */
 const CAPTION_MAX = 1000;
 
-const VISIBILITY = [
-  { value: 'grup', label: 'Group' },
-  { value: 'publik', label: 'Public' },
-] as const;
-
-const VISIBILITY_HINT: Record<RogoVisibility, string> = {
-  grup: 'Only people who share a JoyoRogo group with you.',
-  publik: 'Anyone on JoyoRogo. Your JoyoRogo profile has to be public.',
-};
-
 interface Props {
   workout: WorkoutRow;
   points: readonly WorkoutPointRow[];
@@ -47,6 +38,7 @@ interface Props {
  * a workout that may not be shared (see `canShareToRogo`).
  */
 export function ShareToRogoButton({ workout, points, analysis, analysisPending }: Props) {
+  const { t } = useTranslation(['social', 'common']);
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -64,6 +56,11 @@ export function ShareToRogoButton({ workout, points, analysis, analysisPending }
   const hasComparison = analysis?.comparison != null;
 
   if (!canShareToRogo(workout)) return null;
+
+  const visibilityOptions = [
+    { value: 'grup', label: t('share.visibilityGroup') },
+    { value: 'publik', label: t('share.visibilityPublic') },
+  ] as const;
 
   const close = () => {
     setOpen(false);
@@ -87,14 +84,14 @@ export function ShareToRogoButton({ workout, points, analysis, analysisPending }
 
   return (
     <>
-      <Button label="Share to JoyoRogo" icon="people-outline" onPress={() => setOpen(true)} />
+      <Button label={t('share.button')} icon="people-outline" onPress={() => setOpen(true)} />
       <Modal visible={open} animationType="slide" onRequestClose={close} statusBarTranslucent>
         <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
           <View style={styles.header}>
             <AppText variant="heading" accessibilityRole="header" style={styles.headerTitle}>
-              Share to JoyoRogo
+              {t('share.title')}
             </AppText>
-            <PressableScale accessibilityRole="button" accessibilityLabel="Close" onPress={close} style={styles.close}>
+            <PressableScale accessibilityRole="button" accessibilityLabel={t('common:actions.close')} onPress={close} style={styles.close}>
               <Ionicons name="close" size={24} color={colors.foreground} />
             </PressableScale>
           </View>
@@ -102,9 +99,9 @@ export function ShareToRogoButton({ workout, points, analysis, analysisPending }
             <SignInGate>
               {postedId !== null ? (
                 <>
-                  <Notice icon="checkmark-circle">Posted to JoyoRogo.</Notice>
+                  <Notice icon="checkmark-circle">{t('share.posted')}</Notice>
                   <Button
-                    label="View post"
+                    label={t('share.viewPost')}
                     variant="primary"
                     icon="open-outline"
                     onPress={() => {
@@ -112,14 +109,14 @@ export function ShareToRogoButton({ workout, points, analysis, analysisPending }
                       router.push({ pathname: '/social/post/[id]', params: { id: postedId } });
                     }}
                   />
-                  <Button label="Done" onPress={close} />
+                  <Button label={t('common:actions.done')} onPress={close} />
                 </>
               ) : (
                 <>
                   <AppText variant="bodyStrong">{workout.sportName}</AppText>
                   <Field
-                    label="Caption"
-                    hint="Optional."
+                    label={t('share.caption')}
+                    hint={t('share.captionHint')}
                     value={caption}
                     onChangeText={setCaption}
                     maxLength={CAPTION_MAX}
@@ -128,30 +125,30 @@ export function ShareToRogoButton({ workout, points, analysis, analysisPending }
                   />
                   <View style={styles.group}>
                     <AppText variant="label" muted>
-                      Who can see it
+                      {t('share.whoCanSee')}
                     </AppText>
-                    <Segmented options={VISIBILITY} value={visibility} onChange={setVisibility} />
+                    <Segmented options={visibilityOptions} value={visibility} onChange={setVisibility} />
                     <AppText variant="caption" muted>
-                      {VISIBILITY_HINT[visibility]}
+                      {visibility === 'grup' ? t('share.hintGroup') : t('share.hintPublic')}
                     </AppText>
                   </View>
-                  {hasHr ? <SwitchRow label="Heart-rate data" value={includeHr} onValueChange={setIncludeHr} /> : null}
+                  {hasHr ? <SwitchRow label={t('share.includeHr')} value={includeHr} onValueChange={setIncludeHr} /> : null}
                   {hasRoute ? (
                     <SwitchRow
-                      label="Route"
-                      hint="Shows where you started and finished."
+                      label={t('share.includeRoute')}
+                      hint={t('share.includeRouteHint')}
                       value={includeRoute}
                       onValueChange={setIncludeRoute}
                     />
                   ) : null}
                   {hasComparison ? (
-                    <SwitchRow label="Comparison with earlier workouts" value={includeComparison} onValueChange={setIncludeComparison} />
+                    <SwitchRow label={t('share.includeComparison')} value={includeComparison} onValueChange={setIncludeComparison} />
                   ) : null}
                   <AppText variant="caption" muted>
-                    Everyone you share with sees the summary. The full analysis (map, charts, splits, zones, best efforts and more) is visible to JoyoRogo Pro members and to you.
+                    {t('share.note')}
                   </AppText>
                   {error ? <Notice tone="danger">{error}</Notice> : null}
-                  <Button label="Post" variant="primary" icon="send" loading={posting || analysisPending} onPress={() => void post()} />
+                  <Button label={t('share.post')} variant="primary" icon="send" loading={posting || analysisPending} onPress={() => void post()} />
                 </>
               )}
             </SignInGate>

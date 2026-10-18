@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -18,6 +19,7 @@ interface ProfileHeaderProps {
 
 /** Name, @handle, bio and the post, follower and following counts of a profile. */
 export function ProfileHeader({ name, handle, image, bio, counts }: ProfileHeaderProps) {
+  const { t } = useTranslation('social');
   return (
     <Card>
       <View style={styles.head}>
@@ -36,9 +38,9 @@ export function ProfileHeader({ name, handle, image, bio, counts }: ProfileHeade
       {bio ? <AppText variant="body">{bio}</AppText> : null}
       {counts ? (
         <View style={styles.counts}>
-          <Count label="Posts" value={counts.posts} />
-          <Count label="Followers" value={counts.followers} />
-          <Count label="Following" value={counts.following} />
+          <Count label={t('profile.posts')} value={counts.posts} />
+          <Count label={t('profile.followers')} value={counts.followers} />
+          <Count label={t('profile.following')} value={counts.following} />
         </View>
       ) : null}
     </Card>

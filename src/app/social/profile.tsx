@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { authClient } from '@/cloud/auth';
 import { rogo } from '@/cloud/rogo';
@@ -14,6 +15,7 @@ import { useCloud } from '@/state/CloudProvider';
 
 /** The signed-in person's feed profile and their own posts. Tapping a post opens it; other people's names open theirs. */
 export default function MyProfileScreen() {
+  const { t } = useTranslation(['social', 'common']);
   const cloud = useCloud();
   const user = authClient.useSession().data?.user;
   const name = user?.name ?? '';
@@ -37,16 +39,16 @@ export default function MyProfileScreen() {
             counts={{ posts: profile.data.postCount, followers: profile.data.followerCount, following: profile.data.followingCount }}
           />
         ) : profile.error !== null ? (
-          <Notice tone="danger" action={{ label: 'Try again', onPress: () => void profile.refresh() }}>
+          <Notice tone="danger" action={{ label: t('common:actions.retry'), onPress: () => void profile.refresh() }}>
             {profile.error}
           </Notice>
         ) : (
           <Skeleton width="100%" height={120} radius="card" />
         )}
         <AppText variant="heading" accessibilityRole="header">
-          My posts
+          {t('profile.myPosts')}
         </AppText>
-        <PostList posts={posts} linkAuthor={false} empty={{ title: 'No posts yet', description: 'Share a workout from its screen and it shows up here.' }} />
+        <PostList posts={posts} linkAuthor={false} empty={{ title: t('profile.myPostsEmptyTitle'), description: t('profile.myPostsEmptyDescription') }} />
       </SignInGate>
     </Screen>
   );

@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { rogo, type RogoPublicProfile } from '@/cloud/rogo';
 import { AppText } from '@/components/AppText';
@@ -15,6 +16,7 @@ const profilePosts = (profile: RogoPublicProfile) => profile.posts;
 
 /** Someone's public JoyoRogo profile and their public posts. */
 export default function PublicProfileScreen() {
+  const { t } = useTranslation(['social', 'common']);
   const { handle } = useLocalSearchParams<{ handle: string }>();
   const cloud = useCloud();
   const fetchProfile = useCallback((cursor?: number) => rogo.social.publicProfile(handle, cursor), [handle]);
@@ -37,16 +39,16 @@ export default function PublicProfileScreen() {
             {profile.publicProfile ? (
               <>
                 <AppText variant="heading" accessibilityRole="header">
-                  Public posts
+                  {t('profile.publicPosts')}
                 </AppText>
-                <PostList posts={posts} linkAuthor={false} empty={{ title: 'No public posts', description: 'Nothing shared publicly yet.' }} />
+                <PostList posts={posts} linkAuthor={false} empty={{ title: t('profile.publicEmptyTitle'), description: t('profile.publicEmptyDescription') }} />
               </>
             ) : (
-              <Notice icon="lock-closed">This profile is private.</Notice>
+              <Notice icon="lock-closed">{t('profile.private')}</Notice>
             )}
           </>
         ) : posts.error !== null ? (
-          <Notice tone="danger" action={{ label: 'Try again', onPress: () => void posts.refresh() }}>
+          <Notice tone="danger" action={{ label: t('common:actions.retry'), onPress: () => void posts.refresh() }}>
             {posts.error}
           </Notice>
         ) : (

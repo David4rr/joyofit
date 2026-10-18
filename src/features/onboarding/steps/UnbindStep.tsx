@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -13,30 +14,28 @@ import { spacing } from '@/theme';
 
 /** Release the watch from Huawei Health, and keep the old history: the two things that cannot be done once the watch is paired here. */
 export function UnbindStep() {
+  const { t } = useTranslation('onboarding');
   const [importing, setImporting] = useState(false);
   return (
     <>
-      <StepIntro icon="unlink" tint="heart" title="Release the watch from Huawei Health">
-        A Huawei or Honor watch talks to one app at a time. While Huawei Health holds it, the watch refuses JoyoFit.
+      <StepIntro icon="unlink" tint="heart" title={t('unbind.title')}>
+        {t('unbind.intro')}
       </StepIntro>
       <Card>
         <View style={styles.list}>
           <Bullet label="1">
-            Open Huawei Health and pull down on its first screen to sync once more. Anything that is only on the watch and not yet in your
-            Huawei account is lost when you unbind.
+            {t('unbind.step1')}
           </Bullet>
           <Bullet label="2">
-            Optional: keep your history. Huawei can send everything Huawei Health stored as a ZIP file, which JoyoFit imports on this phone.
-            It can take up to 7 days to arrive, so request it now and import it whenever it comes.
+            {t('unbind.step2')}
           </Bullet>
           <Bullet label="3">
-            In Huawei Health, open the watch under Devices and unbind (remove) it. If it is still connected to another phone, disconnect it
-            there too.
+            {t('unbind.step3')}
           </Bullet>
         </View>
       </Card>
       <Button
-        label={importing ? 'Hide the history import' : 'Request or import my Huawei Health history'}
+        label={importing ? t('unbind.hideImport') : t('unbind.showImport')}
         variant="secondary"
         icon={importing ? 'chevron-up' : 'cloud-download'}
         onPress={() => setImporting((v) => !v)}
@@ -48,8 +47,7 @@ export function UnbindStep() {
         </>
       ) : null}
       <AppText variant="caption" muted>
-        Not sure the unbind worked? Go on: pairing tells you if the watch still refuses. Importing later is always possible from Settings,
-        Import from Huawei Health.
+        {t('unbind.note')}
       </AppText>
       <GuideLink />
     </>

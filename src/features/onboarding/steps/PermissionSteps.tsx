@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,7 +15,7 @@ import { NotificationsSection } from '@/features/settings/NotificationsSection';
 import { WeatherSection } from '@/features/settings/WeatherSection';
 import { spacing, useColors } from '@/theme';
 
-const HEALTH_STORE = isIos ? 'Apple Health' : 'Health Connect';
+const HEALTH_STORE = isIos ? 'Apple Health' : 'Health Connect'; // i18n-ok: platform brand names
 
 /**
  * Android: notification access, forwarding and the morning summary, then the per-app list (a full-screen list, so it opens over the guide
@@ -22,24 +23,22 @@ const HEALTH_STORE = isIos ? 'Apple Health' : 'Health Connect';
  * and checks.
  */
 export function NotificationsStep() {
+  const { t } = useTranslation('onboarding');
   const [choosingApps, setChoosingApps] = useState(false);
   return (
     <>
-      <StepIntro icon="notifications" title="Notifications on the watch" badge="Optional">
-        {isIos
-          ? 'The watch shows your iPhone notifications itself, over Bluetooth. iOS only shares them once you allow it for the watch.'
-          : 'JoyoFit can show your phone notifications on the watch. Android asks you to grant notification access to JoyoFit first.'}
+      <StepIntro icon="notifications" title={t('notifications.title')} badge={t('badge.optional')}>
+        {isIos ? t('notifications.introIos') : t('notifications.introAndroid')}
       </StepIntro>
       {isIos ? (
         <Notice icon="information-circle">
-          On the iPhone open Settings, Bluetooth, tap the i next to your watch and turn on Show Notifications. Which apps appear is chosen in
-          iPhone Settings, Notifications.
+          {t('notifications.iosNotice')}
         </Notice>
       ) : null}
       <NotificationsSection />
       {isIos ? null : (
         <>
-          <Button label="Choose which apps are forwarded" variant="secondary" icon="apps" onPress={() => setChoosingApps(true)} />
+          <Button label={t('notifications.chooseApps')} variant="secondary" icon="apps" onPress={() => setChoosingApps(true)} />
           <AppsModal visible={choosingApps} onClose={() => setChoosingApps(false)} />
         </>
       )}
@@ -48,6 +47,7 @@ export function NotificationsStep() {
 }
 
 function AppsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { t } = useTranslation(['onboarding', 'common']);
   const colors = useColors();
   const insets = useSafeAreaInsets();
   return (
@@ -55,9 +55,9 @@ function AppsModal({ visible, onClose }: { visible: boolean; onClose: () => void
       <View style={[styles.modal, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.modalHeader}>
           <AppText variant="heading" style={styles.modalTitle} accessibilityRole="header">
-            Notification apps
+            {t('notifications.appsTitle')}
           </AppText>
-          <Button label="Done" variant="primary" onPress={onClose} />
+          <Button label={t('common:actions.done')} variant="primary" onPress={onClose} />
         </View>
         {visible ? <NotificationAppList /> : null}
       </View>
@@ -66,10 +66,11 @@ function AppsModal({ visible, onClose }: { visible: boolean; onClose: () => void
 }
 
 export function HealthStep() {
+  const { t } = useTranslation('onboarding');
   return (
     <>
-      <StepIntro icon="heart" tint="heart" title={`Share with ${HEALTH_STORE}`} badge="Optional">
-        {`JoyoFit can write your steps, heart rate, blood oxygen, sleep and workouts to ${HEALTH_STORE} after every sync, so other apps such as JoyoRogo can read them. Nothing is shared until you switch it on and allow it.`}
+      <StepIntro icon="heart" tint="heart" title={t('health.title', { store: HEALTH_STORE })} badge={t('badge.optional')}>
+        {t('health.intro', { store: HEALTH_STORE })}
       </StepIntro>
       <HealthConnectSection />
     </>
@@ -77,11 +78,11 @@ export function HealthStep() {
 }
 
 export function WeatherStep() {
+  const { t } = useTranslation('onboarding');
   return (
     <>
-      <StepIntro icon="partly-sunny" title="Weather on the watch" badge="Optional">
-        JoyoFit can send the forecast to the watch. It needs this phone&apos;s location, or you can pick a city and share no location at
-        all.
+      <StepIntro icon="partly-sunny" title={t('weather.title')} badge={t('badge.optional')}>
+        {t('weather.intro')}
       </StepIntro>
       <WeatherSection />
     </>
@@ -90,17 +91,17 @@ export function WeatherStep() {
 
 /** Android only. JoyoFit keeps the link up with a foreground service; some phone makers stop those, which the notice explains. */
 export function BackgroundStep() {
+  const { t } = useTranslation('onboarding');
   return (
     <>
-      <StepIntro icon="sync" tint="link" title="Stay connected in the background" badge="Optional">
-        With this on, JoyoFit keeps the watch connected and syncs on a timer while the app is closed, so Today is current when you open it.
+      <StepIntro icon="sync" tint="link" title={t('background.title')} badge={t('badge.optional')}>
+        {t('background.intro')}
       </StepIntro>
       <BackgroundSection />
       <Notice icon="battery-charging">
-        Some phones (Huawei, Honor, Xiaomi, Oppo, Vivo, Samsung and others) stop background apps to save battery. If the watch keeps
-        disconnecting while the screen is off, open JoyoFit&apos;s app settings, go to Battery and choose Unrestricted or No restrictions.
+        {t('background.notice')}
       </Notice>
-      <Button label="Open app settings" variant="secondary" icon="settings" onPress={() => void Linking.openSettings()} />
+      <Button label={t('background.openSettings')} variant="secondary" icon="settings" onPress={() => void Linking.openSettings()} />
     </>
   );
 }

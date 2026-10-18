@@ -5,9 +5,7 @@ import { Notice, Skeleton } from '@/components/States';
 import { ProUpsell } from '@/features/social/ProUpsell';
 import { useRogoQuery } from '@/features/social/useRogoQuery';
 import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/palette';
-import { BasicDetail, WorkoutAnalysisView, makeEnglishT } from '@/features/workouts/analysis/ui';
-
-const ANALYSIS_T = makeEnglishT();
+import { BasicDetail, WorkoutAnalysisView, useAnalysisT } from '@/features/workouts/analysis/ui';
 
 /**
  * The analysis of a watch post (`stats.hasDetail === 1`): map, charts, splits, zones and more; a legacy post that only has
@@ -17,6 +15,7 @@ const ANALYSIS_T = makeEnglishT();
 export function WorkoutDetailSection({ postId, onScrubActive }: { postId: string; onScrubActive?: (active: boolean) => void }) {
   const load = useCallback(() => rogo.social.workoutDetail(postId), [postId]);
   const { data, error } = useRogoQuery(load, true);
+  const analysisT = useAnalysisT();
   const palette = useAnalysisPalette();
   const mapTheme = useMapTheme();
   // BasicDetail reads a 0 as a gap.
@@ -27,10 +26,10 @@ export function WorkoutDetailSection({ postId, onScrubActive }: { postId: string
   }
   if (data.locked) return <ProUpsell />;
   if (data.analysis) {
-    return <WorkoutAnalysisView analysis={data.analysis} palette={palette} t={ANALYSIS_T} mapTheme={mapTheme} onScrubActive={onScrubActive} />;
+    return <WorkoutAnalysisView analysis={data.analysis} palette={palette} t={analysisT} mapTheme={mapTheme} onScrubActive={onScrubActive} />;
   }
   if (data.hr || data.route) {
-    return <BasicDetail hr={hr} route={data.route} palette={palette} t={ANALYSIS_T} mapTheme={mapTheme} />;
+    return <BasicDetail hr={hr} route={data.route} palette={palette} t={analysisT} mapTheme={mapTheme} />;
   }
   return null;
 }

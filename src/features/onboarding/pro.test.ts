@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
+import { applyLocale } from '@/i18n';
+
 import { fetchProConfig, formatIdr, parseProConfig, priceLine, proOffer, scansLine } from './pro';
 
 const LIVE = {
@@ -79,7 +81,7 @@ describe('wording from the config', () => {
 
   test('the price line carries monthly, yearly and the announced rise', () => {
     expect(priceLine(parseProConfig(LIVE))).toBe(
-      'Rp29.000 a month or Rp199.000 a year. The monthly price is an introductory one and rises to Rp49.000 once the intro places are taken.',
+      'Rp29.000 per bulan atau Rp199.000 per tahun. Harga bulanan itu harga perkenalan dan naik menjadi Rp49.000 setelah kuota perkenalan habis.',
     );
   });
 
@@ -89,12 +91,24 @@ describe('wording from the config', () => {
   });
 
   test('only one price is shown when only one is served', () => {
-    expect(priceLine(parseProConfig({ founderPriceIdr: 29000 }))).toBe('Rp29.000 a month.');
+    expect(priceLine(parseProConfig({ founderPriceIdr: 29000 }))).toBe('Rp29.000 per bulan.');
   });
 
   test('the scan line uses the served numbers and never invents them', () => {
-    expect(scansLine(parseProConfig(LIVE))).toBe('Up to 100 AI meal scans a day in JoyoRogo, instead of 3.');
-    expect(scansLine(parseProConfig({ founderDailyCap: 100 }))).toBe('Up to 100 AI meal scans a day in JoyoRogo.');
-    expect(scansLine(null)).toBe('A much higher daily limit of AI meal scans in JoyoRogo.');
+    expect(scansLine(parseProConfig(LIVE))).toBe('Sampai 100 pindai makanan AI per hari di JoyoRogo, bukan 3.');
+    expect(scansLine(parseProConfig({ founderDailyCap: 100 }))).toBe('Sampai 100 pindai makanan AI per hari di JoyoRogo.');
+    expect(scansLine(null)).toBe('Batas harian pindai makanan AI di JoyoRogo jauh lebih tinggi.');
+  });
+
+  test('the lines read in English too', async () => {
+    await applyLocale('en');
+    try {
+      expect(priceLine(parseProConfig(LIVE))).toBe(
+        'Rp29.000 a month or Rp199.000 a year. The monthly price is an introductory one and rises to Rp49.000 once the intro places are taken.',
+      );
+      expect(scansLine(parseProConfig(LIVE))).toBe('Up to 100 AI meal scans a day in JoyoRogo, instead of 3.');
+    } finally {
+      await applyLocale('id');
+    }
   });
 });

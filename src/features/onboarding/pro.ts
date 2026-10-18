@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import type { Platform } from '@/features/onboarding/flow';
 
 /**
@@ -76,21 +77,20 @@ export function formatIdr(amount: number): string {
 /** The price sentence for the `web` offer, from whatever the config gave; null when it gave no price. */
 export function priceLine(config: ProConfig | null): string | null {
   if (!config || (config.monthlyIdr === null && config.yearlyIdr === null)) return null;
-  const parts: string[] = [];
-  if (config.monthlyIdr !== null) parts.push(`${formatIdr(config.monthlyIdr)} a month`);
-  if (config.yearlyIdr !== null) parts.push(`${formatIdr(config.yearlyIdr)} a year`);
-  let line = parts.join(' or ');
+  const monthly = config.monthlyIdr !== null ? t('onboarding:pro.price.monthly', { price: formatIdr(config.monthlyIdr) }) : null;
+  const yearly = config.yearlyIdr !== null ? t('onboarding:pro.price.yearly', { price: formatIdr(config.yearlyIdr) }) : null;
+  const prices = monthly && yearly ? t('onboarding:pro.price.both', { monthly, yearly }) : (monthly ?? yearly ?? '');
   if (config.nextMonthlyIdr !== null && config.monthlyIdr !== null && config.nextMonthlyIdr > config.monthlyIdr) {
-    line += `. The monthly price is an introductory one and rises to ${formatIdr(config.nextMonthlyIdr)} once the intro places are taken`;
+    return t('onboarding:pro.price.lineWithRise', { prices, next: formatIdr(config.nextMonthlyIdr) });
   }
-  return `${line}.`;
+  return t('onboarding:pro.price.line', { prices });
 }
 
 /** The scan benefit line; the numbers come from the config, so it reads in general terms when they are not known. */
 export function scansLine(config: ProConfig | null): string {
   const pro = config?.proDailyScans;
   const free = config?.freeDailyScans;
-  if (pro && free) return `Up to ${pro} AI meal scans a day in JoyoRogo, instead of ${free}.`;
-  if (pro) return `Up to ${pro} AI meal scans a day in JoyoRogo.`;
-  return 'A much higher daily limit of AI meal scans in JoyoRogo.';
+  if (pro && free) return t('onboarding:pro.scans.both', { pro, free });
+  if (pro) return t('onboarding:pro.scans.pro', { pro });
+  return t('onboarding:pro.scans.generic');
 }

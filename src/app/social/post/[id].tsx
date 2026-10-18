@@ -1,5 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { rogo } from '@/cloud/rogo';
 import { Screen } from '@/components/Screen';
@@ -13,6 +14,7 @@ import { useRogoQuery } from '@/features/social/useRogoQuery';
 import { useCloud } from '@/state/CloudProvider';
 
 export default function PostScreen() {
+  const { t } = useTranslation('common');
   const { id } = useLocalSearchParams<{ id: string }>();
   const cloud = useCloud();
   const load = useCallback(() => rogo.social.post(id), [id]);
@@ -30,7 +32,7 @@ export default function PostScreen() {
             <CommentsSection postId={post.id} onAdded={() => void refresh()} />
           </>
         ) : error !== null ? (
-          <Notice tone="danger" action={{ label: 'Try again', onPress: () => void refresh() }}>
+          <Notice tone="danger" action={{ label: t('actions.retry'), onPress: () => void refresh() }}>
             {error}
           </Notice>
         ) : (

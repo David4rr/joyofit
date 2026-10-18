@@ -1,1 +1,124 @@
-{}
+{
+  "nav": {
+    "post": "Postingan",
+    "groups": "Grup",
+    "group": "Grup",
+    "myProfile": "Profil saya",
+    "profile": "Profil"
+  },
+  "feed": {
+    "title": "Sosial",
+    "caption": "Latihan, makanan, dan grup dari JoyoRogo",
+    "groups": "Grup",
+    "myProfile": "Profil saya",
+    "tabFollowing": "Diikuti",
+    "tabExplore": "Jelajah",
+    "emptyFollowingTitle": "Belum ada apa-apa",
+    "emptyFollowingDescription": "Postingan kamu, orang yang kamu ikuti, dan grupmu muncul di sini. Bagikan latihan dari layar latihannya untuk memulai.",
+    "emptyExploreTitle": "Belum ada postingan publik",
+    "emptyExploreDescription": "Postingan publik dari JoyoRogo muncul di sini."
+  },
+  "list": {
+    "loadMore": "Muat lebih banyak"
+  },
+  "gate": {
+    "title": "Masuk dengan JoyoRogo",
+    "description": "Feed, grup, dan membagikan latihan memakai akun JoyoRogo kamu, akun yang sama dengan catatan makan."
+  },
+  "post": {
+    "visibilityPublic": "Publik",
+    "visibilityGroup": "Hanya grup",
+    "openProfile": "Buka profil {{name}}",
+    "open": "Buka postingan: {{title}}",
+    "kudosGive": "Beri kudos",
+    "kudosRemove": "Batalkan kudos",
+    "kudosCount": "{{count}} kudos",
+    "comments_other": "{{count}} komentar",
+    "commentsOpen_other": "{{count}} komentar, buka postingan",
+    "figure": {
+      "time": "Waktu",
+      "distance": "Jarak",
+      "energy": "Energi",
+      "avgHr": "Detak rata-rata",
+      "maxHr": "Detak maks"
+    }
+  },
+  "comments": {
+    "title": "Komentar",
+    "empty": "Belum ada komentar.",
+    "loadMore": "Muat komentar lainnya",
+    "add": "Tulis komentar",
+    "send": "Kirim komentar"
+  },
+  "profile": {
+    "myPosts": "Postingan saya",
+    "myPostsEmptyTitle": "Belum ada postingan",
+    "myPostsEmptyDescription": "Bagikan latihan dari layar latihannya dan postingannya muncul di sini.",
+    "publicPosts": "Postingan publik",
+    "publicEmptyTitle": "Tidak ada postingan publik",
+    "publicEmptyDescription": "Belum ada yang dibagikan secara publik.",
+    "private": "Profil ini bersifat pribadi.",
+    "posts": "Postingan",
+    "followers": "Pengikut",
+    "following": "Mengikuti"
+  },
+  "groups": {
+    "memberCount_other": "{{count}} anggota",
+    "emptyTitle": "Belum ada grup",
+    "emptyDescription": "Gabung dengan kode undangan dari temanmu, atau buat grup di JoyoRogo.",
+    "joinTitle": "Gabung ke grup",
+    "inviteCode": "Kode undangan",
+    "join": "Gabung"
+  },
+  "group": {
+    "fallbackTitle": "Grup",
+    "members": "Anggota",
+    "inviteCode": "Kode undangan {{code}}",
+    "sharingTitle": "Berbagi dengan grup ini",
+    "shareFitness": "Bagikan skor JoyoFit",
+    "shareFitnessHint": "Pemulihan, strain, tidur, dan kesiapan hari ini, terlihat oleh anggota.",
+    "shareFood": "Bagikan nama makanan",
+    "shareFoodHint": "Anggota melihat apa yang kamu makan, bukan hanya kalorinya."
+  },
+  "member": {
+    "you": "{{name}} (kamu)",
+    "noScores": "Belum ada skor JoyoFit hari ini",
+    "notSharing": "Tidak membagikan skor JoyoFit",
+    "recovery": "Pemulihan",
+    "strain": "Strain",
+    "sleep": "Tidur",
+    "readiness": "Kesiapan",
+    "readinessValue": {
+      "Primed": "Prima",
+      "Balanced": "Seimbang",
+      "Strained": "Tertekan",
+      "Run down": "Lelah"
+    }
+  },
+  "upsell": {
+    "title": "Detak jantung dan rute khusus Pro",
+    "description": "Melihat grafik detak jantung dan rute latihan orang lain adalah bagian dari JoyoRogo Pro. Punyamu sendiri selalu bisa dilihat gratis, dan membagikannya juga gratis.",
+    "see": "Lihat JoyoRogo Pro",
+    "open": "Buka JoyoRogo",
+    "mention": "JoyoRogo Pro tersedia di JoyoRogo."
+  },
+  "share": {
+    "button": "Bagikan ke JoyoRogo",
+    "title": "Bagikan ke JoyoRogo",
+    "posted": "Terkirim ke JoyoRogo.",
+    "viewPost": "Lihat postingan",
+    "caption": "Keterangan",
+    "captionHint": "Opsional.",
+    "whoCanSee": "Siapa yang bisa melihat",
+    "visibilityGroup": "Grup",
+    "visibilityPublic": "Publik",
+    "hintGroup": "Hanya orang yang satu grup JoyoRogo denganmu.",
+    "hintPublic": "Siapa saja di JoyoRogo. Profil JoyoRogo kamu harus publik.",
+    "includeHr": "Data detak jantung",
+    "includeRoute": "Rute",
+    "includeRouteHint": "Menunjukkan di mana kamu mulai dan selesai.",
+    "includeComparison": "Perbandingan dengan latihan sebelumnya",
+    "note": "Semua yang kamu bagikan melihat ringkasannya. Analisis lengkap (peta, grafik, split, zona, best effort, dan lainnya) hanya terlihat oleh anggota JoyoRogo Pro dan kamu.",
+    "post": "Kirim"
+  }
+}

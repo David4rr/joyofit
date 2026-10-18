@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -22,44 +23,40 @@ import { spacing } from '@/theme';
  * "Continue": the list (and with it the permission prompt on Android and the first scan on iOS) only mounts after it.
  */
 export function PairStep() {
+  const { t } = useTranslation('onboarding');
   const { linkState } = useWatch();
   const [started, setStarted] = useState(false);
   const linked = isLinkUp(linkState);
 
   return (
     <>
-      <StepIntro icon="bluetooth" tint="link" title="Pair your watch">
-        Connect the watch to JoyoFit. The first time, the watch asks you to confirm on its own screen.
+      <StepIntro icon="bluetooth" tint="link" title={t('pair.title')}>
+        {t('pair.intro')}
       </StepIntro>
       {started || linked ? <PairingList /> : <PrePrompt onContinue={() => setStarted(true)} />}
-      {linked ? <Notice icon="checkmark-circle">Connected. Continue to read your history from the watch.</Notice> : null}
-      <Details title="The watch refuses to pair?">
-        {
-          'Check that it is unbound from Huawei Health and not connected to another phone or app, that it is awake and close, and try Connect again. If it still refuses after a restart of the watch, a reset of the watch from its own Settings is the last resort. A reset erases the data stored on the watch (workouts and days that were never synced), so sync first if you can, and do not start here.'
-        }
+      {linked ? <Notice icon="checkmark-circle">{t('pair.connected')}</Notice> : null}
+      <Details title={t('pair.helpTitle')}>
+        {t('pair.help')}
       </Details>
     </>
   );
 }
 
 function PrePrompt({ onContinue }: { onContinue: () => void }) {
+  const { t } = useTranslation('onboarding');
   return (
     <Card>
-      <AppText variant="heading">What happens next</AppText>
+      <AppText variant="heading">{t('pair.preTitle')}</AppText>
       <View style={styles.bullets}>
         <Bullet label="1">
-          {isIos
-            ? 'iOS asks whether JoyoFit may use Bluetooth. Allow it: that is how the watch is found.'
-            : 'Android asks whether JoyoFit may find and connect to nearby devices. Allow it: that is how the watch is found.'}
+          {isIos ? t('pair.pre1Ios') : t('pair.pre1Android')}
         </Bullet>
-        <Bullet label="2">{isIos ? 'Pick your watch in the list and tap Connect.' : 'Pick your watch in the list (or scan for it) and tap Connect.'}</Bullet>
+        <Bullet label="2">{isIos ? t('pair.pre2Ios') : t('pair.pre2Android')}</Bullet>
         <Bullet label="3">
-          {isIos
-            ? 'Confirm the pairing in JoyoFit, accept the prompt on the watch, then tap Pair when iOS shows its pairing request.'
-            : 'Confirm the pairing in JoyoFit, then accept the prompt on the watch.'}
+          {isIos ? t('pair.pre3Ios') : t('pair.pre3Android')}
         </Bullet>
       </View>
-      <Button label="Continue" variant="primary" icon="bluetooth" onPress={onContinue} />
+      <Button label={t('footer.continue')} variant="primary" icon="bluetooth" onPress={onContinue} />
     </Card>
   );
 }
@@ -80,13 +77,13 @@ function PairingList() {
 
 /** What to do right now, by link state: the accept on the watch is the step people miss. */
 function ConnectHint() {
+  const { t } = useTranslation('onboarding');
   const { linkState, bindRequest } = useWatch();
   if (bindRequest) return null;
   if (linkState === 'connecting' || linkState === 'authenticating' || linkState === 'initializing') {
     return (
       <Notice icon="watch">
-        Keep the watch awake. When its screen asks to pair, accept it on the watch
-        {isIos ? ', then tap Pair if iOS shows its pairing request' : ''}. This can take up to a minute.
+        {isIos ? t('pair.keepAwakeIos') : t('pair.keepAwake')}
       </Notice>
     );
   }

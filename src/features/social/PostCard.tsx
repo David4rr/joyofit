@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Animated, StyleSheet, View } from 'react-native';
 
 import { rogo, type RogoPost } from '@/cloud/rogo';
@@ -36,6 +37,7 @@ interface PostCardProps {
 
 /** One post: author, what was done, the numbers, the caption, and the kudos and comment counts. */
 export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCardProps) {
+  const { t } = useTranslation('social');
   const router = useRouter();
   const colors = useColors();
   const [busy, setBusy] = useState(false);
@@ -75,7 +77,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
         name={post.visibility === 'publik' ? 'globe-outline' : 'people-outline'}
         size={18}
         color={colors.mutedForeground}
-        accessibilityLabel={post.visibility === 'publik' ? 'Public' : 'Group only'}
+        accessibilityLabel={post.visibility === 'publik' ? t('post.visibilityPublic') : t('post.visibilityGroup')}
       />
     </View>
   );
@@ -103,7 +105,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
     <>
       <Ionicons name="chatbubble-outline" size={20} color={colors.mutedForeground} />
       <AppText variant="label" muted>
-        {post.commentCount} {post.commentCount === 1 ? 'comment' : 'comments'}
+        {t('post.comments', { count: post.commentCount })}
       </AppText>
     </>
   );
@@ -113,7 +115,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
       {linkAuthor && handle ? (
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={`Open the profile of ${post.author.name}`}
+          accessibilityLabel={t('post.openProfile', { name: post.author.name })}
           scaleTo={0.985}
           onPress={() => router.push({ pathname: '/social/u/[handle]', params: { handle } })}>
           {author}
@@ -122,7 +124,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
         author
       )}
       {onOpen ? (
-        <PressableScale accessibilityRole="button" accessibilityLabel={`Open post: ${post.title}`} scaleTo={0.985} onPress={onOpen}>
+        <PressableScale accessibilityRole="button" accessibilityLabel={t('post.open', { title: post.title })} scaleTo={0.985} onPress={onOpen}>
           {body}
         </PressableScale>
       ) : (
@@ -131,7 +133,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
       <View style={styles.footer}>
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={post.kudosByMe ? 'Remove kudos' : 'Give kudos'}
+          accessibilityLabel={post.kudosByMe ? t('post.kudosRemove') : t('post.kudosGive')}
           accessibilityState={{ selected: post.kudosByMe === true, busy }}
           disabled={busy}
           hitSlop={8}
@@ -145,11 +147,11 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true }: PostCard
             />
           </Animated.View>
           <AppText variant="label" color={post.kudosByMe ? colors.primary : undefined} muted={!post.kudosByMe}>
-            {post.kudosCount} kudos
+            {t('post.kudosCount', { count: post.kudosCount })}
           </AppText>
         </PressableScale>
         {onOpen ? (
-          <PressableScale accessibilityRole="button" accessibilityLabel={`${post.commentCount} comments, open post`} hitSlop={8} onPress={onOpen} style={styles.action}>
+          <PressableScale accessibilityRole="button" accessibilityLabel={t('post.commentsOpen', { count: post.commentCount })} hitSlop={8} onPress={onOpen} style={styles.action}>
             {comments}
           </PressableScale>
         ) : (

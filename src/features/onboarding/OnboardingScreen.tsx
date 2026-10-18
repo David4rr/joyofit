@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, type ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -41,6 +42,7 @@ const BODIES: Record<StepId, () => ReactElement> = {
  * is the same section Settings or the Watch tab shows; this screen only sequences them (see `flow.ts` for the order and the rules).
  */
 export function OnboardingScreen() {
+  const { t } = useTranslation('common');
   const guide = useOnboarding();
   const watch = useWatch();
   const cloud = useCloud();
@@ -84,7 +86,7 @@ export function OnboardingScreen() {
           ) : null}
           {footer.back || footer.skip ? (
             <View style={styles.secondary}>
-              {footer.back ? <Button label="Back" variant="ghost" icon="chevron-back" onPress={guide.back} style={styles.cell} /> : <View style={styles.cell} />}
+              {footer.back ? <Button label={t('actions.back')} variant="ghost" icon="chevron-back" onPress={guide.back} style={styles.cell} /> : <View style={styles.cell} />}
               {footer.skip ? (
                 <Button label={footer.skip} variant="ghost" onPress={step === 'welcome' ? guide.dismissGuide : guide.skipStep} style={styles.cell} />
               ) : (

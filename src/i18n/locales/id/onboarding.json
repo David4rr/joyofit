@@ -1,1 +1,199 @@
-{}
+{
+  "progress": {
+    "stepOf": "Langkah {{index}} dari {{total}}",
+    "label": "Kemajuan penyiapan"
+  },
+  "badge": {
+    "optional": "Opsional",
+    "optionalPaid": "Opsional, berbayar"
+  },
+  "footer": {
+    "getStarted": "Mulai",
+    "skipSetup": "Lewati penyiapan",
+    "continue": "Lanjut",
+    "finish": "Selesai",
+    "later": "Nanti",
+    "notNow": "Jangan sekarang",
+    "skip": "Lewati"
+  },
+  "welcome": {
+    "title": "Siapkan JoyoFit",
+    "intro": "JoyoFit terhubung langsung ke jam Huawei atau Honor kamu, tanpa Huawei Health. Panduan ini butuh beberapa menit dan setiap langkah boleh dilewati.",
+    "beforeTitle": "Sebelum mulai",
+    "before1": "Siapkan jam di dekatmu, sudah terisi daya, dan menyala.",
+    "before2Ios": "Bluetooth di iPhone ini menyala.",
+    "before2Android": "Bluetooth di HP ini menyala.",
+    "before3": "Tahu jam sedang terhubung ke HP atau aplikasi mana. Jam hanya menerima satu aplikasi dalam satu waktu, jadi harus dilepas dari sana dulu.",
+    "coversTitle": "Yang dibahas",
+    "covers1": "Melepas jam dari Huawei Health, sambil menyimpan riwayat lamamu.",
+    "covers2": "Memasangkan jam, lalu sinkron pertama.",
+    "covers3Ios": "Izin: notifikasi, Apple Health, cuaca.",
+    "covers3Android": "Izin: notifikasi, Health Connect, cuaca, tetap terhubung.",
+    "covers4": "Masuk dengan JoyoRogo, ini opsional.",
+    "reopen": "Kamu bisa membuka panduan ini lagi kapan saja dari Pengaturan, Panduan penyiapan."
+  },
+  "unbind": {
+    "title": "Lepas jam dari Huawei Health",
+    "intro": "Jam Huawei atau Honor hanya bicara dengan satu aplikasi. Selama Huawei Health memegangnya, jam menolak JoyoFit.",
+    "step1": "Buka Huawei Health dan tarik layar pertamanya ke bawah untuk sinkron sekali lagi. Data yang hanya ada di jam dan belum masuk ke akun Huawei hilang saat kamu melepas pasangan.",
+    "step2": "Opsional: simpan riwayatmu. Huawei bisa mengirim semua yang tersimpan di Huawei Health sebagai file ZIP, yang diimpor JoyoFit di HP ini. File itu bisa butuh sampai 7 hari, jadi minta sekarang dan impor kapan pun sudah datang.",
+    "step3": "Di Huawei Health, buka jam di bagian Perangkat lalu lepas (hapus) pasangannya. Kalau jam masih terhubung ke HP lain, putuskan di sana juga.",
+    "hideImport": "Sembunyikan impor riwayat",
+    "showImport": "Minta atau impor riwayat Huawei Health saya",
+    "note": "Tidak yakin pasangan sudah terlepas? Lanjut saja: saat dipasangkan akan ketahuan kalau jam masih menolak. Impor nanti tetap bisa dari Pengaturan, Impor dari Huawei Health."
+  },
+  "pair": {
+    "title": "Pasangkan jam kamu",
+    "intro": "Hubungkan jam ke JoyoFit. Pertama kali, jam meminta konfirmasi di layarnya sendiri.",
+    "connected": "Terhubung. Lanjut untuk membaca riwayat dari jam.",
+    "helpTitle": "Jam menolak dipasangkan?",
+    "help": "Pastikan pasangannya sudah dilepas dari Huawei Health dan jam tidak terhubung ke HP atau aplikasi lain, jam menyala dan dekat, lalu coba Hubungkan lagi. Kalau masih menolak setelah jam dihidupkan ulang, reset jam dari Pengaturan di jam adalah jalan terakhir. Reset menghapus data yang tersimpan di jam (latihan dan hari yang belum pernah disinkronkan), jadi sinkronkan dulu kalau bisa, dan jangan mulai dari sini.",
+    "preTitle": "Yang terjadi selanjutnya",
+    "pre1Ios": "iOS menanyakan apakah JoyoFit boleh memakai Bluetooth. Izinkan: begitulah jam ditemukan.",
+    "pre1Android": "Android menanyakan apakah JoyoFit boleh menemukan dan terhubung ke perangkat di sekitar. Izinkan: begitulah jam ditemukan.",
+    "pre2Ios": "Pilih jam kamu di daftar lalu ketuk Hubungkan.",
+    "pre2Android": "Pilih jam kamu di daftar (atau cari) lalu ketuk Hubungkan.",
+    "pre3Ios": "Konfirmasi pemasangan di JoyoFit, terima permintaan di jam, lalu ketuk Pasangkan saat iOS menampilkan permintaan pemasangannya.",
+    "pre3Android": "Konfirmasi pemasangan di JoyoFit, lalu terima permintaan di jam.",
+    "keepAwake": "Biarkan jam menyala. Saat layarnya meminta pemasangan, terima di jam. Ini bisa sampai satu menit.",
+    "keepAwakeIos": "Biarkan jam menyala. Saat layarnya meminta pemasangan, terima di jam, lalu ketuk Pasangkan kalau iOS menampilkan permintaan pemasangannya. Ini bisa sampai satu menit."
+  },
+  "sync": {
+    "title": "Baca riwayat dari jam",
+    "intro": "JoyoFit sekarang mengambil yang tersimpan di jam: langkah, detak jantung, tidur, dan latihan. Semuanya disimpan di HP ini.",
+    "notConnected": "Jam tidak terhubung. Kembali untuk menghubungkannya, atau pilih Nanti dan sinkron dari tab Jam kapan saja.",
+    "reading": "Membaca dari jam...",
+    "readingHint": "Sinkron pertama mengumpulkan semua yang masih tersimpan di jam, jadi bisa butuh beberapa menit. Biarkan jam tetap dekat dan menyala.",
+    "syncNow": "Sinkron sekarang",
+    "resultTitle": "Yang masuk",
+    "samples": "Sampel aktivitas",
+    "sleep": "Segmen tidur",
+    "workouts": "Latihan",
+    "stepsToday": "Langkah hari ini",
+    "caloriesToday": "Kalori hari ini",
+    "distanceToday": "Jarak hari ini",
+    "note1": "Langkah, detak jantung, dan tidur muncul di Hari ini. Latihan ada di tab Latihan.",
+    "note2": "Jam hanya menyimpan riwayat dalam rentang terbatas. Hari-hari yang lebih lama tidak ada di sana; impor Huawei Health dari langkah pertama adalah cara mengembalikannya.",
+    "note3": "Angka nol itu wajar di jam yang baru atau baru direset. Pakai jamnya dan sinkron lagi nanti."
+  },
+  "notifications": {
+    "title": "Notifikasi di jam",
+    "introIos": "Jam menampilkan notifikasi iPhone kamu sendiri lewat Bluetooth. iOS baru membagikannya setelah kamu mengizinkannya untuk jam.",
+    "introAndroid": "JoyoFit bisa menampilkan notifikasi HP kamu di jam. Android meminta kamu memberi akses notifikasi ke JoyoFit dulu.",
+    "iosNotice": "Di iPhone buka Pengaturan, Bluetooth, ketuk i di samping jam kamu, lalu nyalakan Tampilkan Notifikasi. Aplikasi mana yang muncul dipilih di Pengaturan iPhone, Notifikasi.",
+    "chooseApps": "Pilih aplikasi yang diteruskan",
+    "appsTitle": "Aplikasi notifikasi"
+  },
+  "health": {
+    "title": "Bagikan ke {{store}}",
+    "intro": "JoyoFit bisa menulis langkah, detak jantung, oksigen darah, tidur, dan latihan kamu ke {{store}} setiap selesai sinkron, supaya aplikasi lain seperti JoyoRogo bisa membacanya. Tidak ada yang dibagikan sampai kamu menyalakannya dan mengizinkannya."
+  },
+  "weather": {
+    "title": "Cuaca di jam",
+    "intro": "JoyoFit bisa mengirim prakiraan cuaca ke jam. Ini butuh lokasi HP ini, atau kamu bisa memilih kota tanpa membagikan lokasi sama sekali."
+  },
+  "background": {
+    "title": "Tetap terhubung di latar belakang",
+    "intro": "Kalau menyala, JoyoFit menjaga jam tetap terhubung dan sinkron berkala saat aplikasi ditutup, jadi Hari ini sudah terbaru saat kamu membukanya.",
+    "notice": "Beberapa HP (Huawei, Honor, Xiaomi, Oppo, Vivo, Samsung, dan lainnya) menghentikan aplikasi latar belakang untuk menghemat baterai. Kalau jam terus terputus saat layar mati, buka pengaturan aplikasi JoyoFit, masuk ke Baterai lalu pilih Tanpa batasan.",
+    "openSettings": "Buka pengaturan aplikasi"
+  },
+  "account": {
+    "title": "Masuk dengan JoyoRogo",
+    "intro": "JoyoRogo adalah catatan makan kami: foto makananmu dan kalorinya dihitung. Dengan masuk, kedua aplikasi saling terhubung. JoyoFit tetap berfungsi penuh tanpa akun.",
+    "givesTitle": "Yang kamu dapat",
+    "gives1": "Skor Pemulihan, Strain, dan Tidur harianmu muncul di samping yang kamu makan di catatan JoyoRogo, lengkap dengan saran makan singkat untuk hari seperti itu.",
+    "gives2": "Yang kamu catat di JoyoRogo bisa tampil di kartu kalori jam.",
+    "gives3": "Pilihan mencadangkan data jam ke cloud, yang termasuk JoyoRogo Pro (langkah berikutnya).",
+    "note": "Selama kamu masuk, JoyoFit mengirim skor harianmu ke JoyoRogo dan bertukar data makanan dan berat badan. Data jammu tetap di HP ini kecuali kamu menyalakan cadangan cloud Pro. Keluar kapan saja di Pengaturan, Kesehatan dan cloud.",
+    "signedIn": "Sudah masuk.",
+    "signedInAs": "Sudah masuk sebagai {{email}}."
+  },
+  "pro": {
+    "title": "JoyoRogo Pro",
+    "intro": "JoyoFit gratis dipakai penuh: memasangkan, sinkron, latihan, Strava, dan aplikasi kesehatan semuanya jalan di HP ini tanpa bayar. Pro adalah paket opsional di akun JoyoRogo kamu.",
+    "addsTitle": "Yang ditambah Pro",
+    "adds1": "Cadangan cloud data jam kamu (langkah, detak jantung, oksigen darah, tidur, dan latihan) ke akun JoyoRogo kamu sendiri. JoyoFit mengunggahnya sekarang; memulihkannya ke aplikasi belum tersedia.",
+    "adds2": "Saran makan di JoyoRogo yang disusun dari skor JoyoFit hari ini. Tanpa Pro, catatan makan menampilkan petunjuk singkat.",
+    "mention": "JoyoRogo Pro tersedia di JoyoRogo.",
+    "managed": "JoyoRogo Pro diatur di aplikasi JoyoRogo.",
+    "active": "Cadangan cloud menyala untuk akun ini.",
+    "locked": "Akun ini belum Pro, jadi tidak ada yang diunggah. Semua yang lain tetap jalan seperti biasa.",
+    "signInFirst": "Pro terikat ke akun JoyoRogo kamu. Masuk di langkah sebelumnya untuk memakainya.",
+    "see": "Lihat JoyoRogo Pro",
+    "getOnPlay": "Dapatkan JoyoRogo di Google Play",
+    "price": {
+      "monthly": "{{price}} per bulan",
+      "yearly": "{{price}} per tahun",
+      "both": "{{monthly}} atau {{yearly}}",
+      "line": "{{prices}}.",
+      "lineWithRise": "{{prices}}. Harga bulanan itu harga perkenalan dan naik menjadi {{next}} setelah kuota perkenalan habis."
+    },
+    "scans": {
+      "both": "Sampai {{pro}} pindai makanan AI per hari di JoyoRogo, bukan {{free}}.",
+      "pro": "Sampai {{pro}} pindai makanan AI per hari di JoyoRogo.",
+      "generic": "Batas harian pindai makanan AI di JoyoRogo jauh lebih tinggi."
+    }
+  },
+  "cloud": {
+    "title": "JoyoRogo Cloud",
+    "badge": "Opsional",
+    "intro": "Semua latihan dari jam dicadangkan ke akun JoyoRogo kamu, bisa dilihat di joyorogo.com/jam, dan ikut pindah ke HP baru. Kalau HP hilang, riwayatmu tidak ikut hilang.",
+    "whyTitle": "Kenapa tidak cukup Health Connect atau Apple Health?",
+    "whyIntro": "Health Connect dan Apple Health menyimpan catatan mentah di perangkat. Itu berguna, tapi JoyoRogo Cloud menyimpan lebih banyak:",
+    "why1": "Analisisnya ikut tersimpan: split per kilometer, zona detak jantung, best effort, training effect, VO2max, dan waktu pemulihan.",
+    "why2": "Ada tampilan web di joyorogo.com/jam, tanpa perlu membuka aplikasi.",
+    "why3": "Bisa dipulihkan di HP baru setelah masuk, dan ikut pindah antara Android dan iPhone.",
+    "backup": "Cadangkan latihan ke cloud",
+    "backupHint": "Latihan lama dan baru diunggah otomatis setelah sinkron jam.",
+    "wifiOnly": "Hanya Wi-Fi",
+    "wifiOnlyHint": "Unggahan menunggu Wi-Fi supaya tidak memakai kuota.",
+    "uploading": "Mengunggah {{done}} dari {{total}} latihan",
+    "backupOn": "Cadangan menyala. Latihan yang sudah ada di HP ini ikut diunggah di latar belakang; kamu tidak perlu menunggu di sini.",
+    "backupOff": "Cadangan mati. Latihan tetap di HP ini. Kamu bisa menyalakannya lagi di Pengaturan, Sinkron cloud.",
+    "checking": "Memeriksa akun JoyoRogo kamu...",
+    "free": "Cloud latihan adalah fitur JoyoRogo Pro. Akunmu belum Pro, jadi latihan tetap hanya di HP ini dan semuanya tetap jalan seperti biasa. Kalau nanti Pro, latihan yang sudah ada ikut diunggah.",
+    "managedIos": "JoyoRogo Pro diatur di dalam JoyoRogo.",
+    "managedStore": "JoyoRogo Pro diatur di aplikasi JoyoRogo.",
+    "openOnPlay": "Buka JoyoRogo di Google Play",
+    "see": "Lihat JoyoRogo Pro",
+    "signIn": "Masuk dengan akun JoyoRogo untuk memakai cloud, atau lewati. JoyoFit tetap jalan penuh tanpa akun.",
+    "signInButton": "Masuk dengan JoyoRogo",
+    "signInPrompt": "Masuk dengan"
+  },
+  "done": {
+    "title": "Semua sudah siap",
+    "intro": "JoyoFit sinkron sendiri mulai sekarang. Beberapa tempat yang perlu kamu tahu:",
+    "open": "Masih terbuka: {{list}}.",
+    "openItem": "{{name}} ({{where}})",
+    "reopen": "Buka panduan ini lagi dari Pengaturan, Panduan penyiapan.",
+    "healthSettings": "{{store}} dan cloud",
+    "tip": {
+      "today": { "title": "Hari ini", "text": "Langkah, detak jantung, tidur, dan skor Pemulihan, Strain, dan Kesiapan kamu. Tarik ke bawah untuk sinkron." },
+      "workouts": { "title": "Latihan", "text": "Semua latihan yang direkam di jam, lengkap dengan rutenya dan kartu untuk dibagikan." },
+      "strava": { "title": "Strava", "text": "Pengaturan, Strava: kirim latihan jam ke Strava, gratis." },
+      "findWatch": { "title": "Cari jam", "text": "Tab Jam: buat jam berbunyi saat hilang di dalam rumah." }
+    },
+    "where": {
+      "unbind": "Pengaturan, Impor dari Huawei Health",
+      "pair": "tab Jam",
+      "sync": "tab Jam, atau tarik ke bawah di Hari ini",
+      "notifications": "Pengaturan, Notifikasi dan panggilan",
+      "health": "Pengaturan, {{place}}",
+      "weather": "Pengaturan, Cuaca",
+      "background": "Pengaturan, Latar belakang dan sinkron",
+      "account": "Pengaturan, {{place}}",
+      "cloud": "Pengaturan, Sinkron cloud"
+    },
+    "name": {
+      "unbind": "Riwayat Huawei Health",
+      "pair": "Pemasangan",
+      "sync": "Sinkron pertama",
+      "notifications": "Notifikasi",
+      "weather": "Cuaca",
+      "background": "Koneksi latar belakang",
+      "account": "Masuk JoyoRogo",
+      "cloud": "JoyoRogo Cloud"
+    }
+  }
+}

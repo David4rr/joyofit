@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { rogo, type RogoComment } from "@/cloud/rogo";
@@ -20,6 +21,7 @@ import { spacing } from "@/theme";
 const COMMENT_MAX = 280;
 
 function CommentRow({ comment }: { comment: RogoComment }) {
+  const { t } = useTranslation('social');
   const router = useRouter();
   const handle = comment.author.handle;
   const ago = useAgo(comment.createdAt);
@@ -33,7 +35,7 @@ function CommentRow({ comment }: { comment: RogoComment }) {
       <View style={styles.commentBody}>
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={`Open the profile of ${comment.author.name}`}
+          accessibilityLabel={t('post.openProfile', { name: comment.author.name })}
           disabled={handle === null}
           onPress={() =>
             handle &&
@@ -62,6 +64,7 @@ export function CommentsSection({
   postId: string;
   onAdded: () => void;
 }) {
+  const { t } = useTranslation('social');
   const load = useCallback(() => rogo.social.comments(postId), [postId]);
   const { data, error, setData } = useRogoQuery(load, true);
   const [draft, setDraft] = useState("");
@@ -104,7 +107,7 @@ export function CommentsSection({
   };
 
   return (
-    <Section title="Comments" icon="chatbubbles" tint="link">
+    <Section title={t('comments.title')} icon="chatbubbles" tint="link">
       {data ? (
         data.items.length > 0 ? (
           data.items.map((comment, i) => (
@@ -120,7 +123,7 @@ export function CommentsSection({
           ))
         ) : (
           <AppText variant="caption" muted>
-            No comments yet.
+            {t('comments.empty')}
           </AppText>
         )
       ) : error !== null ? (
@@ -130,14 +133,14 @@ export function CommentsSection({
       )}
       {data && data.nextCursor !== null ? (
         <Button
-          label="Load more comments"
+          label={t('comments.loadMore')}
           loading={loadingMore}
           onPress={() => void loadMore()}
         />
       ) : null}
       <Input
-        accessibilityLabel="Add a comment"
-        placeholder="Add a comment"
+        accessibilityLabel={t('comments.add')}
+        placeholder={t('comments.add')}
         value={draft}
         onChangeText={setDraft}
         maxLength={COMMENT_MAX}
@@ -147,7 +150,7 @@ export function CommentsSection({
       />
       {problem ? <Notice tone="danger">{problem}</Notice> : null}
       <Button
-        label="Post comment"
+        label={t('comments.send')}
         variant="primary"
         icon="send"
         disabled={draft.trim().length === 0}

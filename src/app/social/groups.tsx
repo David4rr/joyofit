@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { rogo } from '@/cloud/rogo';
@@ -19,6 +20,7 @@ const MIN_CODE = 4;
 
 /** Your groups, and joining another with its invite code. Creating a group stays in JoyoRogo. */
 export default function GroupsScreen() {
+  const { t } = useTranslation(['social', 'common']);
   const router = useRouter();
   const theme = useTheme();
   const cloud = useCloud();
@@ -53,25 +55,25 @@ export default function GroupsScreen() {
                   icon="people"
                   tint="link"
                   title={group.name}
-                  subtitle={`${group.memberCount} ${group.memberCount === 1 ? 'member' : 'members'}`}
+                  subtitle={t('groups.memberCount', { count: group.memberCount })}
                   style={groupedRowStyle(theme, i, groups.length)}
                   onPress={() => router.push({ pathname: '/social/group/[id]', params: { id: group.id } })}
                 />
               ))}
             </View>
           ) : (
-            <EmptyState icon="people" title="No groups yet" description="Join one with an invite code from a friend, or create one in JoyoRogo." />
+            <EmptyState icon="people" title={t('groups.emptyTitle')} description={t('groups.emptyDescription')} />
           )
         ) : error !== null ? (
-          <Notice tone="danger" action={{ label: 'Try again', onPress: () => void refresh() }}>
+          <Notice tone="danger" action={{ label: t('common:actions.retry'), onPress: () => void refresh() }}>
             {error}
           </Notice>
         ) : (
           <Skeleton width="100%" height={128} radius="card" />
         )}
-        <Section title="Join a group" icon="enter" tint="link">
+        <Section title={t('groups.joinTitle')} icon="enter" tint="link">
           <Field
-            label="Invite code"
+            label={t('groups.inviteCode')}
             value={code}
             onChangeText={setCode}
             autoCapitalize="characters"
@@ -80,7 +82,7 @@ export default function GroupsScreen() {
             onSubmitEditing={() => code.trim().length >= MIN_CODE && !joining && void join()}
           />
           {joinError ? <Notice tone="danger">{joinError}</Notice> : null}
-          <Button label="Join" variant="primary" icon="enter" disabled={code.trim().length < MIN_CODE} loading={joining} onPress={() => void join()} />
+          <Button label={t('groups.join')} variant="primary" icon="enter" disabled={code.trim().length < MIN_CODE} loading={joining} onPress={() => void join()} />
         </Section>
       </SignInGate>
     </Screen>

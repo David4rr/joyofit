@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Fragment, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { authClient } from '@/cloud/auth';
 import { rogo, type RogoGroupMember } from '@/cloud/rogo';
@@ -17,6 +18,7 @@ type ShareField = 'shareFitness' | 'shareFood';
 
 /** A group: its members with the scores they share today, and your own sharing switches for it. */
 export default function GroupScreen() {
+  const { t } = useTranslation(['social', 'common']);
   const { id } = useLocalSearchParams<{ id: string }>();
   const cloud = useCloud();
   const me = authClient.useSession().data?.user.id;
@@ -41,11 +43,11 @@ export default function GroupScreen() {
 
   return (
     <Screen refresh={{ refreshing, onRefresh: () => void refresh(), enabled: cloud.signedIn }}>
-      <Stack.Screen options={{ title: detail?.group.name ?? 'Group' }} />
+      <Stack.Screen options={{ title: detail?.group.name ?? t('group.fallbackTitle') }} />
       <SignInGate>
         {detail ? (
           <>
-            <Section title="Members" icon="people" tint="link">
+            <Section title={t('group.members')} icon="people" tint="link">
               {detail.members.map((member, i) => (
                 <Fragment key={member.userId}>
                   {i > 0 ? <Divider /> : null}
@@ -53,20 +55,20 @@ export default function GroupScreen() {
                 </Fragment>
               ))}
               <AppText variant="caption" muted>
-                Invite code {detail.group.inviteCode}
+                {t('group.inviteCode', { code: detail.group.inviteCode })}
               </AppText>
             </Section>
             {mine ? (
-              <Section title="Sharing with this group" icon="share-social" tint="link">
+              <Section title={t('group.sharingTitle')} icon="share-social" tint="link">
                 <SwitchRow
-                  label="Share JoyoFit scores"
-                  hint="Today's recovery, strain, sleep and readiness, visible to the members."
+                  label={t('group.shareFitness')}
+                  hint={t('group.shareFitnessHint')}
                   value={mine.shareFitness}
                   onValueChange={(on) => void setShare('shareFitness', on)}
                 />
                 <SwitchRow
-                  label="Share food names"
-                  hint="Members see what you ate, not only the calories."
+                  label={t('group.shareFood')}
+                  hint={t('group.shareFoodHint')}
                   value={mine.shareFood}
                   onValueChange={(on) => void setShare('shareFood', on)}
                 />
@@ -75,7 +77,7 @@ export default function GroupScreen() {
             ) : null}
           </>
         ) : error !== null ? (
-          <Notice tone="danger" action={{ label: 'Try again', onPress: () => void refresh() }}>
+          <Notice tone="danger" action={{ label: t('common:actions.retry'), onPress: () => void refresh() }}>
             {error}
           </Notice>
         ) : (

@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
+import { applyLocale } from '@/i18n';
+
 import {
   advance,
   back,
@@ -267,19 +269,19 @@ describe('footer buttons', () => {
     }
   });
 
-  test('pairing offers Continue only once the watch is linked, Later until then', () => {
-    expect(footerFor('pair', idle)).toMatchObject({ primary: null, skip: 'Later', back: true });
-    expect(footerFor('pair', { linkState: 'connected', signedIn: false })).toMatchObject({ primary: 'Continue', skip: null });
+  test('pairing offers Continue only once the watch is linked, Nanti until then', () => {
+    expect(footerFor('pair', idle)).toMatchObject({ primary: null, skip: 'Nanti', back: true });
+    expect(footerFor('pair', { linkState: 'connected', signedIn: false })).toMatchObject({ primary: 'Lanjut', skip: null });
   });
 
   test('the sync step cannot be continued while it runs but can be left', () => {
-    expect(footerFor('sync', { linkState: 'syncing', signedIn: false })).toMatchObject({ primaryDisabled: true, skip: 'Later' });
+    expect(footerFor('sync', { linkState: 'syncing', signedIn: false })).toMatchObject({ primaryDisabled: true, skip: 'Nanti' });
     expect(footerFor('sync', { linkState: 'connected', signedIn: false }).primaryDisabled).toBe(false);
   });
 
   test('the account step continues only when signed in, otherwise Later', () => {
-    expect(footerFor('account', idle)).toMatchObject({ primary: null, skip: 'Later' });
-    expect(footerFor('account', { linkState: 'disconnected', signedIn: true })).toMatchObject({ primary: 'Continue', skip: null });
+    expect(footerFor('account', idle)).toMatchObject({ primary: null, skip: 'Nanti' });
+    expect(footerFor('account', { linkState: 'disconnected', signedIn: true })).toMatchObject({ primary: 'Lanjut', skip: null });
   });
 
   test('the cloud step is Lanjut or Lewati, and with nobody signed in only Lewati', () => {
@@ -288,13 +290,25 @@ describe('footer buttons', () => {
   });
 
   test('the first step can end the whole guide and the last one finishes it', () => {
-    expect(footerFor('welcome', idle)).toMatchObject({ primary: 'Get started', skip: 'Skip setup' });
-    expect(footerFor('done', idle)).toMatchObject({ primary: 'Finish', skip: null, back: true });
+    expect(footerFor('welcome', idle)).toMatchObject({ primary: 'Mulai', skip: 'Lewati penyiapan' });
+    expect(footerFor('done', idle)).toMatchObject({ primary: 'Selesai', skip: null, back: true });
   });
 
-  test('permission steps are skippable with Later', () => {
+  test('permission steps are skippable with Nanti', () => {
     for (const step of ['notifications', 'health', 'weather', 'background'] as const) {
-      expect(footerFor(step, idle)).toMatchObject({ primary: 'Continue', skip: 'Later' });
+      expect(footerFor(step, idle)).toMatchObject({ primary: 'Lanjut', skip: 'Nanti' });
+    }
+  });
+
+  test('labels follow the language', async () => {
+    await applyLocale('en');
+    try {
+      expect(footerFor('welcome', idle)).toMatchObject({ primary: 'Get started', skip: 'Skip setup' });
+      expect(footerFor('pair', idle)).toMatchObject({ skip: 'Later' });
+      expect(footerFor('cloud', { linkState: 'disconnected', signedIn: true })).toMatchObject({ primary: 'Continue', skip: 'Skip' });
+      expect(footerFor('done', idle).primary).toBe('Finish');
+    } finally {
+      await applyLocale('id');
     }
   });
 });

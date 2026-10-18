@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Animated, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -14,6 +15,7 @@ interface StepProgressProps {
 
 /** "Step 3 of 10" over a bar that fills as the guide goes on, sliding to each new step in 250 ms. */
 export function StepProgress({ index, total }: StepProgressProps) {
+  const { t } = useTranslation('onboarding');
   const colors = useColors();
   const reduced = useReducedMotion();
   const share = index / total;
@@ -30,11 +32,11 @@ export function StepProgress({ index, total }: StepProgressProps) {
   return (
     <View style={styles.wrap}>
       <AppText variant="label" muted>
-        Step {index} of {total}
+        {t('progress.stepOf', { index, total })}
       </AppText>
       <View
         accessibilityRole="progressbar"
-        accessibilityLabel="Setup progress"
+        accessibilityLabel={t('progress.label')}
         accessibilityValue={{ min: 1, max: total, now: index }}
         onLayout={(event) => setTrackWidth(event.nativeEvent.layout.width)}
         style={[styles.track, { backgroundColor: colors.muted }]}>

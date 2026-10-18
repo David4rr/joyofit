@@ -1,1 +1,199 @@
-{}
+{
+  "progress": {
+    "stepOf": "Step {{index}} of {{total}}",
+    "label": "Setup progress"
+  },
+  "badge": {
+    "optional": "Optional",
+    "optionalPaid": "Optional, paid"
+  },
+  "footer": {
+    "getStarted": "Get started",
+    "skipSetup": "Skip setup",
+    "continue": "Continue",
+    "finish": "Finish",
+    "later": "Later",
+    "notNow": "Not now",
+    "skip": "Skip"
+  },
+  "welcome": {
+    "title": "Set up JoyoFit",
+    "intro": "JoyoFit works with your Huawei or Honor watch directly, without Huawei Health. This guide takes a few minutes and you can skip any step.",
+    "beforeTitle": "Before you start",
+    "before1": "Have the watch next to you, charged and awake.",
+    "before2Ios": "Bluetooth on this iPhone.",
+    "before2Android": "Bluetooth on this phone.",
+    "before3": "Know which phone or app the watch is paired with now. A watch accepts one app at a time, so it has to be released there first.",
+    "coversTitle": "What this covers",
+    "covers1": "Releasing the watch from Huawei Health, and keeping your old history.",
+    "covers2": "Pairing, then the first sync.",
+    "covers3Ios": "Permissions: notifications, Apple Health, weather.",
+    "covers3Android": "Permissions: notifications, Health Connect, weather, staying connected.",
+    "covers4": "Signing in with JoyoRogo, which is optional.",
+    "reopen": "You can open this guide again any time from Settings, Setup guide."
+  },
+  "unbind": {
+    "title": "Release the watch from Huawei Health",
+    "intro": "A Huawei or Honor watch talks to one app at a time. While Huawei Health holds it, the watch refuses JoyoFit.",
+    "step1": "Open Huawei Health and pull down on its first screen to sync once more. Anything that is only on the watch and not yet in your Huawei account is lost when you unbind.",
+    "step2": "Optional: keep your history. Huawei can send everything Huawei Health stored as a ZIP file, which JoyoFit imports on this phone. It can take up to 7 days to arrive, so request it now and import it whenever it comes.",
+    "step3": "In Huawei Health, open the watch under Devices and unbind (remove) it. If it is still connected to another phone, disconnect it there too.",
+    "hideImport": "Hide the history import",
+    "showImport": "Request or import my Huawei Health history",
+    "note": "Not sure the unbind worked? Go on: pairing tells you if the watch still refuses. Importing later is always possible from Settings, Import from Huawei Health."
+  },
+  "pair": {
+    "title": "Pair your watch",
+    "intro": "Connect the watch to JoyoFit. The first time, the watch asks you to confirm on its own screen.",
+    "connected": "Connected. Continue to read your history from the watch.",
+    "helpTitle": "The watch refuses to pair?",
+    "help": "Check that it is unbound from Huawei Health and not connected to another phone or app, that it is awake and close, and try Connect again. If it still refuses after a restart of the watch, a reset of the watch from its own Settings is the last resort. A reset erases the data stored on the watch (workouts and days that were never synced), so sync first if you can, and do not start here.",
+    "preTitle": "What happens next",
+    "pre1Ios": "iOS asks whether JoyoFit may use Bluetooth. Allow it: that is how the watch is found.",
+    "pre1Android": "Android asks whether JoyoFit may find and connect to nearby devices. Allow it: that is how the watch is found.",
+    "pre2Ios": "Pick your watch in the list and tap Connect.",
+    "pre2Android": "Pick your watch in the list (or scan for it) and tap Connect.",
+    "pre3Ios": "Confirm the pairing in JoyoFit, accept the prompt on the watch, then tap Pair when iOS shows its pairing request.",
+    "pre3Android": "Confirm the pairing in JoyoFit, then accept the prompt on the watch.",
+    "keepAwake": "Keep the watch awake. When its screen asks to pair, accept it on the watch. This can take up to a minute.",
+    "keepAwakeIos": "Keep the watch awake. When its screen asks to pair, accept it on the watch, then tap Pair if iOS shows its pairing request. This can take up to a minute."
+  },
+  "sync": {
+    "title": "Read your history from the watch",
+    "intro": "JoyoFit now pulls what the watch has stored: steps, heart rate, sleep and workouts. It is saved on this phone.",
+    "notConnected": "The watch is not connected. Go back to connect it, or choose Later and sync from the Watch tab any time.",
+    "reading": "Reading from the watch...",
+    "readingHint": "The first sync collects everything the watch still holds, so it can take a few minutes. Keep the watch close and awake.",
+    "syncNow": "Sync now",
+    "resultTitle": "What came in",
+    "samples": "Activity samples",
+    "sleep": "Sleep segments",
+    "workouts": "Workouts",
+    "stepsToday": "Steps today",
+    "caloriesToday": "Calories today",
+    "distanceToday": "Distance today",
+    "note1": "Steps, heart rate and sleep appear on Today. Workouts are in the Workouts tab.",
+    "note2": "A watch only keeps a limited stretch of history. Older days are not on it; the Huawei Health import from the first step is how they come back.",
+    "note3": "Zeros are normal on a brand new or freshly reset watch. Wear it and sync again later."
+  },
+  "notifications": {
+    "title": "Notifications on the watch",
+    "introIos": "The watch shows your iPhone notifications itself, over Bluetooth. iOS only shares them once you allow it for the watch.",
+    "introAndroid": "JoyoFit can show your phone notifications on the watch. Android asks you to grant notification access to JoyoFit first.",
+    "iosNotice": "On the iPhone open Settings, Bluetooth, tap the i next to your watch and turn on Show Notifications. Which apps appear is chosen in iPhone Settings, Notifications.",
+    "chooseApps": "Choose which apps are forwarded",
+    "appsTitle": "Notification apps"
+  },
+  "health": {
+    "title": "Share with {{store}}",
+    "intro": "JoyoFit can write your steps, heart rate, blood oxygen, sleep and workouts to {{store}} after every sync, so other apps such as JoyoRogo can read them. Nothing is shared until you switch it on and allow it."
+  },
+  "weather": {
+    "title": "Weather on the watch",
+    "intro": "JoyoFit can send the forecast to the watch. It needs this phone's location, or you can pick a city and share no location at all."
+  },
+  "background": {
+    "title": "Stay connected in the background",
+    "intro": "With this on, JoyoFit keeps the watch connected and syncs on a timer while the app is closed, so Today is current when you open it.",
+    "notice": "Some phones (Huawei, Honor, Xiaomi, Oppo, Vivo, Samsung and others) stop background apps to save battery. If the watch keeps disconnecting while the screen is off, open JoyoFit's app settings, go to Battery and choose Unrestricted or No restrictions.",
+    "openSettings": "Open app settings"
+  },
+  "account": {
+    "title": "Sign in with JoyoRogo",
+    "intro": "JoyoRogo is our food diary: photograph a meal and it counts the calories. Signing in connects the two apps. JoyoFit works fully without an account.",
+    "givesTitle": "What it gives you",
+    "gives1": "Your daily Recovery, Strain and Sleep scores appear next to what you ate in the JoyoRogo diary, with a short food tip for a day like this.",
+    "gives2": "What you log in JoyoRogo can show on the watch's calorie card.",
+    "gives3": "The option of a cloud backup of your watch data, which is part of JoyoRogo Pro (the next step).",
+    "note": "While you are signed in, JoyoFit sends your daily scores to JoyoRogo and exchanges meals and weight with it. Your watch data stays on this phone unless you turn on the Pro cloud backup. Sign out any time in Settings, Health and cloud.",
+    "signedIn": "Signed in.",
+    "signedInAs": "Signed in as {{email}}."
+  },
+  "pro": {
+    "title": "JoyoRogo Pro",
+    "intro": "JoyoFit is free to use in full: pairing, sync, workouts, Strava and the health apps all work on this phone without paying. Pro is an optional plan on your JoyoRogo account.",
+    "addsTitle": "What Pro adds",
+    "adds1": "Cloud backup of your watch data (steps, heart rate, blood oxygen, sleep and workouts) to your own JoyoRogo account. JoyoFit uploads it today; restoring it into the app is not built yet.",
+    "adds2": "Meal suggestions in JoyoRogo built from today's JoyoFit scores. Without Pro the diary shows a short hint instead.",
+    "mention": "JoyoRogo Pro is available in JoyoRogo.",
+    "managed": "JoyoRogo Pro is managed in the JoyoRogo app.",
+    "active": "Cloud backup is on for this account.",
+    "locked": "This account is not on Pro, so nothing is uploaded. Everything else works as before.",
+    "signInFirst": "Pro belongs to your JoyoRogo account. Sign in in the previous step to use it.",
+    "see": "See JoyoRogo Pro",
+    "getOnPlay": "Get JoyoRogo on Google Play",
+    "price": {
+      "monthly": "{{price}} a month",
+      "yearly": "{{price}} a year",
+      "both": "{{monthly}} or {{yearly}}",
+      "line": "{{prices}}.",
+      "lineWithRise": "{{prices}}. The monthly price is an introductory one and rises to {{next}} once the intro places are taken."
+    },
+    "scans": {
+      "both": "Up to {{pro}} AI meal scans a day in JoyoRogo, instead of {{free}}.",
+      "pro": "Up to {{pro}} AI meal scans a day in JoyoRogo.",
+      "generic": "A much higher daily limit of AI meal scans in JoyoRogo."
+    }
+  },
+  "cloud": {
+    "title": "JoyoRogo Cloud",
+    "badge": "Optional",
+    "intro": "Every workout from the watch is backed up to your JoyoRogo account, viewable at joyorogo.com/jam, and moves with you to a new phone. If you lose your phone, your history is not lost.",
+    "whyTitle": "Why not just Health Connect or Apple Health?",
+    "whyIntro": "Health Connect and Apple Health keep raw records on the device. That is useful, but JoyoRogo Cloud keeps more:",
+    "why1": "The analysis is saved too: splits per kilometre, heart-rate zones, best efforts, training effect, VO2max and recovery time.",
+    "why2": "There is a web view at joyorogo.com/jam, with no need to open the app.",
+    "why3": "It restores onto a new phone after you sign in, including between Android and iPhone.",
+    "backup": "Back up workouts to the cloud",
+    "backupHint": "Old and new workouts upload automatically after a watch sync.",
+    "wifiOnly": "Wi-Fi only",
+    "wifiOnlyHint": "Uploads wait for Wi-Fi so they do not use mobile data.",
+    "uploading": "Uploading {{done}} of {{total}} workouts",
+    "backupOn": "Backup is on. Workouts already on this phone are uploaded in the background; you do not need to wait here.",
+    "backupOff": "Backup is off. Workouts stay on this phone. You can turn it back on in Settings, Cloud sync.",
+    "checking": "Checking your JoyoRogo account...",
+    "free": "Workout cloud is a JoyoRogo Pro feature. Your account is not on Pro, so workouts stay on this phone only and everything keeps working as usual. If you get Pro later, existing workouts are uploaded too.",
+    "managedIos": "JoyoRogo Pro is managed inside JoyoRogo.",
+    "managedStore": "JoyoRogo Pro is managed in the JoyoRogo app.",
+    "openOnPlay": "Open JoyoRogo on Google Play",
+    "see": "See JoyoRogo Pro",
+    "signIn": "Sign in with your JoyoRogo account to use the cloud, or skip. JoyoFit works fully without an account.",
+    "signInButton": "Sign in with JoyoRogo",
+    "signInPrompt": "Sign in with"
+  },
+  "done": {
+    "title": "You are set up",
+    "intro": "JoyoFit keeps syncing on its own from here. A few places worth knowing:",
+    "open": "Still open: {{list}}.",
+    "openItem": "{{name}} ({{where}})",
+    "reopen": "Open this guide again from Settings, Setup guide.",
+    "healthSettings": "{{store}} and cloud",
+    "tip": {
+      "today": { "title": "Today", "text": "Steps, heart rate, sleep and your Recovery, Strain and Readiness scores. Pull down to sync." },
+      "workouts": { "title": "Workouts", "text": "Every workout recorded on the watch, with its route and a card to share." },
+      "strava": { "title": "Strava", "text": "Settings, Strava: send watch workouts to Strava, free." },
+      "findWatch": { "title": "Find my watch", "text": "Watch tab: make the watch ring when it is lost in the house." }
+    },
+    "where": {
+      "unbind": "Settings, Import from Huawei Health",
+      "pair": "the Watch tab",
+      "sync": "the Watch tab, or pull down on Today",
+      "notifications": "Settings, Notifications and calls",
+      "health": "Settings, {{place}}",
+      "weather": "Settings, Weather",
+      "background": "Settings, Background and sync",
+      "account": "Settings, {{place}}",
+      "cloud": "Settings, Cloud sync"
+    },
+    "name": {
+      "unbind": "Huawei Health history",
+      "pair": "Pairing",
+      "sync": "First sync",
+      "notifications": "Notifications",
+      "weather": "Weather",
+      "background": "Background connection",
+      "account": "JoyoRogo sign-in",
+      "cloud": "JoyoRogo Cloud"
+    }
+  }
+}

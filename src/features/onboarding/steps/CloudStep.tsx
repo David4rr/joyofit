@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -28,6 +29,7 @@ const OFFER = proOffer(isIos ? 'ios' : 'android', HuaweiWear.distribution);
  * switch for Pro, an explanation and a store-compliant Pro pointer for Free (same rules as the Pro step), and sign-in. Never blocks.
  */
 export function CloudStep() {
+  const { t } = useTranslation('onboarding');
   const cloud = useCloud();
   const state = cloudStepState({ signedIn: cloud.signedIn, unlocked: cloud.cloudWorkouts?.unlocked ?? null, locked: cloud.locked });
 
@@ -42,43 +44,37 @@ export function CloudStep() {
 
   return (
     <>
-      <StepIntro icon="cloud-upload" tint="link" title="JoyoRogo Cloud" badge="Opsional / Optional">
-        Semua workout dari jam dicadangkan ke akun JoyoRogo kamu, bisa dilihat di joyorogo.com/jam, dan ikut pindah ke HP baru. Kalau HP
-        hilang, riwayatmu tidak ikut hilang.
+      <StepIntro icon="cloud-upload" tint="link" title={t('cloud.title')} badge={t('cloud.badge')}>
+        {t('cloud.intro')}
       </StepIntro>
       <Card>
-        <AppText variant="heading">Kenapa tidak cukup Health Connect atau Apple Health?</AppText>
+        <AppText variant="heading">{t('cloud.whyTitle')}</AppText>
         <AppText variant="body" muted>
-          Health Connect dan Apple Health menyimpan catatan mentah di perangkat. Itu berguna, tapi JoyoRogo Cloud menyimpan lebih banyak:
+          {t('cloud.whyIntro')}
         </AppText>
         <View style={styles.bullets}>
           <Bullet label={'\u2022'}>
-            Analisisnya ikut tersimpan: split per kilometer, zona detak jantung, best effort, training effect, VO2max, dan waktu pemulihan.
+            {t('cloud.why1')}
           </Bullet>
-          <Bullet label={'\u2022'}>Ada tampilan web di joyorogo.com/jam, tanpa perlu membuka aplikasi.</Bullet>
-          <Bullet label={'\u2022'}>Bisa dipulihkan di HP baru setelah masuk, dan ikut pindah antara Android dan iPhone.</Bullet>
+          <Bullet label={'\u2022'}>{t('cloud.why2')}</Bullet>
+          <Bullet label={'\u2022'}>{t('cloud.why3')}</Bullet>
         </View>
-        <AppText variant="caption" muted>
-          Health Connect and Apple Health keep raw records on the device. JoyoRogo Cloud also keeps the analysis (splits, zones, best
-          efforts, training effect, VO2max, recovery time), has a web view at joyorogo.com/jam, and restores onto a new phone, including
-          between Android and iPhone.
-        </AppText>
       </Card>
       {cloud.error ? <Notice tone="danger">{cloud.error}</Notice> : null}
       {state === 'pro' ? (
         <>
           <Card>
             <SwitchRow
-              label="Cadangkan workout ke cloud"
-              hint="Workout lama dan baru diunggah otomatis setelah sinkron jam."
+              label={t('cloud.backup')}
+              hint={t('cloud.backupHint')}
               icon="cloud-upload"
               value={cloud.autoSync}
               onValueChange={cloud.setAutoSync}
               disabled={cloud.wiping}
             />
             <SwitchRow
-              label="Wi-Fi saja"
-              hint="Unggahan menunggu Wi-Fi supaya tidak memakai kuota."
+              label={t('cloud.wifiOnly')}
+              hint={t('cloud.wifiOnlyHint')}
               icon="wifi"
               value={cloud.wifiOnly}
               onValueChange={cloud.setWifiOnly}
@@ -86,45 +82,44 @@ export function CloudStep() {
             />
           </Card>
           {cloud.progress ? (
-            <Notice icon="cloud-upload">{`Mengunggah ${cloud.progress.done} dari ${cloud.progress.total} workout`}</Notice>
+            <Notice icon="cloud-upload">{t('cloud.uploading', { done: cloud.progress.done, total: cloud.progress.total })}</Notice>
           ) : cloud.autoSync ? (
             <Notice icon="checkmark-circle">
-              Cadangan aktif. Workout yang sudah ada di HP ini ikut diunggah di latar belakang; kamu tidak perlu menunggu di sini.
+              {t('cloud.backupOn')}
             </Notice>
           ) : (
-            <Notice icon="information-circle">Cadangan mati. Workout tetap di HP ini. Kamu bisa menyalakannya lagi di Pengaturan, Sinkron cloud.</Notice>
+            <Notice icon="information-circle">{t('cloud.backupOff')}</Notice>
           )}
         </>
       ) : null}
-      {state === 'checking' ? <Notice icon="information-circle">Memeriksa akun JoyoRogo kamu...</Notice> : null}
+      {state === 'checking' ? <Notice icon="information-circle">{t('cloud.checking')}</Notice> : null}
       {state === 'free' ? (
         <>
           <Notice icon="lock-closed">
-            Cloud workout adalah fitur JoyoRogo Pro. Akunmu belum Pro, jadi workout tetap hanya di HP ini dan semuanya tetap jalan seperti
-            biasa. Kalau nanti Pro, workout yang sudah ada ikut diunggah.
+            {t('cloud.free')}
           </Notice>
           {OFFER === 'mention' ? (
             <AppText variant="caption" muted>
-              JoyoRogo Pro diatur di dalam JoyoRogo.
+              {t('cloud.managedIos')}
             </AppText>
           ) : null}
           {OFFER === 'store' ? (
             <>
               <AppText variant="caption" muted>
-                JoyoRogo Pro diatur di aplikasi JoyoRogo.
+                {t('cloud.managedStore')}
               </AppText>
-              <Button label="Buka JoyoRogo di Google Play" variant="secondary" icon="logo-google-playstore" onPress={() => void Linking.openURL(PLAY_URL)} />
+              <Button label={t('cloud.openOnPlay')} variant="secondary" icon="logo-google-playstore" onPress={() => void Linking.openURL(PLAY_URL)} />
             </>
           ) : null}
           {OFFER === 'web' ? (
-            <Button label="Lihat JoyoRogo Pro" variant="secondary" icon="open-outline" onPress={() => void Linking.openURL(PRO_URL)} />
+            <Button label={t('cloud.see')} variant="secondary" icon="open-outline" onPress={() => void Linking.openURL(PRO_URL)} />
           ) : null}
         </>
       ) : null}
       {state === 'signin' ? (
         <>
-          <Notice icon="information-circle">Masuk dengan akun JoyoRogo untuk memakai cloud, atau lewati. JoyoFit tetap jalan penuh tanpa akun.</Notice>
-          <SignInButtons label="Masuk dengan JoyoRogo" prompt="Masuk dengan" />
+          <Notice icon="information-circle">{t('cloud.signIn')}</Notice>
+          <SignInButtons label={t('cloud.signInButton')} prompt={t('cloud.signInPrompt')} />
         </>
       ) : null}
     </>

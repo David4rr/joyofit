@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -30,15 +31,6 @@ export interface ProUpsellCopy {
   mention: string;
 }
 
-const HEART_RATE_COPY: ProUpsellCopy = {
-  title: 'Heart rate and route are for Pro',
-  description:
-    "Seeing the heart-rate chart and the route of someone else's workout is part of JoyoRogo Pro. Your own are always free to see, and sharing them is free too.",
-  seeLabel: 'See JoyoRogo Pro',
-  openLabel: 'Open JoyoRogo',
-  mention: 'JoyoRogo Pro is available in JoyoRogo.',
-};
-
 interface ProUpsellProps {
   /** What the card says; defaults to the heart-rate and route text of the Social tab. */
   copy?: ProUpsellCopy;
@@ -47,7 +39,15 @@ interface ProUpsellProps {
 }
 
 /** Shown in place of a Pro-only view, e.g. another person's heart-rate chart and route when the viewer is not on JoyoRogo Pro. */
-export function ProUpsell({ copy = HEART_RATE_COPY, campaign = 'evergreen-social-detail' }: ProUpsellProps) {
+export function ProUpsell({ copy: given, campaign = 'evergreen-social-detail' }: ProUpsellProps) {
+  const { t } = useTranslation('social');
+  const copy: ProUpsellCopy = given ?? {
+    title: t('upsell.title'),
+    description: t('upsell.description'),
+    seeLabel: t('upsell.see'),
+    openLabel: t('upsell.open'),
+    mention: t('upsell.mention'),
+  };
   return (
     <Card>
       <View style={styles.head}>

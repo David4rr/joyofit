@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEventListener } from 'expo';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -11,7 +12,7 @@ import { LoadingState, Notice } from '@/components/States';
 import { isLinkUp } from '@/features/device/linkState';
 import { Bullet, StepIntro } from '@/features/onboarding/StepIntro';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
-import { formatCount, formatDistance } from '@/format';
+import { fmtDistance, fmtInt } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
 import { HuaweiWear, type SyncSummary } from '@/wear';
@@ -21,6 +22,7 @@ import { HuaweiWear, type SyncSummary } from '@/wear';
  * lists what came in. The native sync reports no percentage, so this says what it is doing instead of drawing a bar it cannot fill.
  */
 export function SyncStep() {
+  const { t } = useTranslation(['onboarding', 'common']);
   const watch = useWatch();
   const [summary, setSummary] = useState<SyncSummary | null>(null);
   const started = useRef(false);
@@ -39,36 +41,37 @@ export function SyncStep() {
 
   return (
     <>
-      <StepIntro icon="sync" tint="steps" title="Read your history from the watch">
-        JoyoFit now pulls what the watch has stored: steps, heart rate, sleep and workouts. It is saved on this phone.
+      <StepIntro icon="sync" tint="steps" title={t('sync.title')}>
+        {t('sync.intro')}
       </StepIntro>
       {!linked ? (
         <Notice tone="danger" icon="bluetooth">
-          The watch is not connected. Go back to connect it, or choose Later and sync from the Watch tab any time.
+          {t('sync.notConnected')}
         </Notice>
       ) : null}
       {syncing ? (
         <Card>
-          <LoadingState label="Reading from the watch..." />
+          <LoadingState label={t('sync.reading')} />
           <AppText variant="caption" muted>
-            The first sync collects everything the watch still holds, so it can take a few minutes. Keep the watch close and awake.
+            {t('sync.readingHint')}
           </AppText>
         </Card>
       ) : null}
       {watch.error ? (
-        <Notice tone="danger" action={linked ? { label: 'Try again', onPress: () => void watch.sync() } : undefined}>
+        <Notice tone="danger" action={linked ? { label: t('common:actions.retry'), onPress: () => void watch.sync() } : undefined}>
           {watch.error}
         </Notice>
       ) : null}
       {!syncing && summary ? <Result summary={summary} /> : null}
       {linked && !syncing && !summary && !watch.error ? (
-        <Button label="Sync now" variant="primary" icon="sync" onPress={() => void watch.sync()} />
+        <Button label={t('sync.syncNow')} variant="primary" icon="sync" onPress={() => void watch.sync()} />
       ) : null}
     </>
   );
 }
 
 function Result({ summary }: { summary: SyncSummary }) {
+  const { t } = useTranslation('onboarding');
   const colors = useColors();
   const { totals } = summary;
   return (
@@ -78,24 +81,23 @@ function Result({ summary }: { summary: SyncSummary }) {
           <PopIn>
             <Ionicons name="checkmark-circle" size={20} color={colors.link} />
           </PopIn>
-          <AppText variant="heading">What came in</AppText>
+          <AppText variant="heading">{t('sync.resultTitle')}</AppText>
         </View>
         <PairGrid>
-          <Pair label="Activity samples" value={formatCount(summary.samples)} />
-          <Pair label="Sleep segments" value={formatCount(summary.sleep)} />
-          <Pair label="Workouts" value={formatCount(summary.workouts)} />
-          <Pair label="Steps today" value={formatCount(totals.steps)} />
-          <Pair label="Calories today" value={`${formatCount(totals.calories)} kcal`} />
-          <Pair label="Distance today" value={formatDistance(totals.distance)} />
+          <Pair label={t('sync.samples')} value={fmtInt(summary.samples)} />
+          <Pair label={t('sync.sleep')} value={fmtInt(summary.sleep)} />
+          <Pair label={t('sync.workouts')} value={fmtInt(summary.workouts)} />
+          <Pair label={t('sync.stepsToday')} value={fmtInt(totals.steps)} />
+          <Pair label={t('sync.caloriesToday')} value={`${fmtInt(totals.calories)} kcal`} />
+          <Pair label={t('sync.distanceToday')} value={fmtDistance(totals.distance)} />
         </PairGrid>
       </Card>
       <View style={styles.notes}>
-        <Bullet label={'\u2022'}>Steps, heart rate and sleep appear on Today. Workouts are in the Workouts tab.</Bullet>
+        <Bullet label={'\u2022'}>{t('sync.note1')}</Bullet>
         <Bullet label={'\u2022'}>
-          A watch only keeps a limited stretch of history. Older days are not on it; the Huawei Health import from the first step is
-          how they come back.
+          {t('sync.note2')}
         </Bullet>
-        <Bullet label={'\u2022'}>Zeros are normal on a brand new or freshly reset watch. Wear it and sync again later.</Bullet>
+        <Bullet label={'\u2022'}>{t('sync.note3')}</Bullet>
       </View>
     </FadeIn>
   );

@@ -18,6 +18,8 @@
  * 9. `done`: tips.
  */
 
+import { t } from '@/i18n';
+
 export type Platform = 'ios' | 'android';
 
 export const STEP_IDS = [
@@ -183,34 +185,39 @@ export interface FooterFacts {
 /**
  * The buttons under each step. Back and a skip exist everywhere but mid-pairing (see `navigationLocked`). Two steps hold Continue back
  * until it means something: pairing until the watch is linked, and the account step until someone is signed in; until then "Later" is the
- * way on. The cloud step is in Indonesian (Lanjut, Lewati) and offers sign-in or skip when nobody is signed in.
+ * way on. The cloud step offers sign-in or skip when nobody is signed in. Labels are read in the current language at call time.
  */
 export function footerFor(step: StepId, facts: FooterFacts): Footer {
+  const label = {
+    continue: t('onboarding:footer.continue'),
+    later: t('onboarding:footer.later'),
+    skip: t('onboarding:footer.skip'),
+  };
   const linkUp = facts.linkState === 'connected' || facts.linkState === 'syncing';
   if (navigationLocked(step, facts.linkState)) return { primary: null, primaryDisabled: false, skip: null, back: false };
   switch (step) {
     case 'welcome':
-      return { primary: 'Get started', primaryDisabled: false, skip: 'Skip setup', back: false };
+      return { primary: t('onboarding:footer.getStarted'), primaryDisabled: false, skip: t('onboarding:footer.skipSetup'), back: false };
     case 'pair':
       return linkUp
-        ? { primary: 'Continue', primaryDisabled: false, skip: null, back: true }
-        : { primary: null, primaryDisabled: false, skip: 'Later', back: true };
+        ? { primary: label.continue, primaryDisabled: false, skip: null, back: true }
+        : { primary: null, primaryDisabled: false, skip: label.later, back: true };
     case 'sync':
-      return { primary: 'Continue', primaryDisabled: facts.linkState === 'syncing', skip: 'Later', back: true };
+      return { primary: label.continue, primaryDisabled: facts.linkState === 'syncing', skip: label.later, back: true };
     case 'account':
       return facts.signedIn
-        ? { primary: 'Continue', primaryDisabled: false, skip: null, back: true }
-        : { primary: null, primaryDisabled: false, skip: 'Later', back: true };
+        ? { primary: label.continue, primaryDisabled: false, skip: null, back: true }
+        : { primary: null, primaryDisabled: false, skip: label.later, back: true };
     case 'pro':
-      return { primary: 'Continue', primaryDisabled: false, skip: 'Not now', back: true };
+      return { primary: label.continue, primaryDisabled: false, skip: t('onboarding:footer.notNow'), back: true };
     case 'cloud':
       return facts.signedIn
-        ? { primary: 'Lanjut', primaryDisabled: false, skip: 'Lewati', back: true }
-        : { primary: null, primaryDisabled: false, skip: 'Lewati', back: true };
+        ? { primary: label.continue, primaryDisabled: false, skip: label.skip, back: true }
+        : { primary: null, primaryDisabled: false, skip: label.skip, back: true };
     case 'done':
-      return { primary: 'Finish', primaryDisabled: false, skip: null, back: true };
+      return { primary: t('onboarding:footer.finish'), primaryDisabled: false, skip: null, back: true };
     default:
-      return { primary: 'Continue', primaryDisabled: false, skip: 'Later', back: true };
+      return { primary: label.continue, primaryDisabled: false, skip: label.later, back: true };
   }
 }
 

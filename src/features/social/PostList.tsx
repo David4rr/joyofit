@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -17,8 +18,9 @@ interface PostListProps {
 
 /** The posts of a paged list with its loading, error and empty states and a "Load more" button. */
 export function PostList({ posts, empty, linkAuthor }: PostListProps) {
+  const { t } = useTranslation(['social', 'common']);
   const router = useRouter();
-  const retry = { label: 'Try again', onPress: () => void posts.refresh() };
+  const retry = { label: t('common:actions.retry'), onPress: () => void posts.refresh() };
 
   if (posts.items === null) {
     return posts.error !== null ? (
@@ -52,7 +54,7 @@ export function PostList({ posts, empty, linkAuthor }: PostListProps) {
           />
         </FadeIn>
       ))}
-      {posts.hasMore ? <Button label="Load more" loading={posts.loadingMore} onPress={() => void posts.loadMore()} /> : null}
+      {posts.hasMore ? <Button label={t('list.loadMore')} loading={posts.loadingMore} onPress={() => void posts.loadMore()} /> : null}
     </View>
   );
 }

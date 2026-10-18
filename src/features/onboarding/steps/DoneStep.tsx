@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -11,64 +12,46 @@ import { StepIntro } from '@/features/onboarding/StepIntro';
 import { useOnboarding } from '@/state/OnboardingProvider';
 import { spacing, type Tint } from '@/theme';
 
-const HEALTH_SETTINGS = isIos ? 'Apple Health and cloud' : 'Health Connect and cloud';
+const HEALTH_STORE = isIos ? 'Apple Health' : 'Health Connect'; // i18n-ok: platform brand names
 
-/** Where a step the person skipped lives afterwards. */
-const WHERE_TO_FINISH: Partial<Record<StepId, string>> = {
-  unbind: 'Settings, Import from Huawei Health',
-  pair: 'the Watch tab',
-  sync: 'the Watch tab, or pull down on Today',
-  notifications: 'Settings, Notifications and calls',
-  health: `Settings, ${HEALTH_SETTINGS}`,
-  weather: 'Settings, Weather',
-  background: 'Settings, Background and sync',
-  account: `Settings, ${HEALTH_SETTINGS}`,
-  cloud: 'Settings, Sinkron cloud',
-};
-
-const STEP_NAME: Partial<Record<StepId, string>> = {
-  unbind: 'Huawei Health history',
-  pair: 'Pairing',
-  sync: 'First sync',
-  notifications: 'Notifications',
-  health: HEALTH_SETTINGS.replace(' and cloud', ''),
-  weather: 'Weather',
-  background: 'Background connection',
-  account: 'JoyoRogo sign-in',
-  cloud: 'JoyoRogo Cloud',
-};
+const WHERE_IDS = ['unbind', 'pair', 'sync', 'notifications', 'health', 'weather', 'background', 'account', 'cloud'] as const;
+type WhereId = (typeof WHERE_IDS)[number];
+const isWhereId = (id: StepId): id is WhereId => (WHERE_IDS as readonly string[]).includes(id);
 
 interface Tip {
   icon: IconName;
   tint?: Tint | 'neutral';
-  title: string;
-  text: string;
+  id: 'today' | 'workouts' | 'strava' | 'findWatch';
 }
 
 const TIPS: readonly Tip[] = [
-  { icon: 'today', tint: 'steps', title: 'Today', text: 'Steps, heart rate, sleep and your Recovery, Strain and Readiness scores. Pull down to sync.' },
-  { icon: 'fitness', tint: 'workouts', title: 'Workouts', text: 'Every workout recorded on the watch, with its route and a card to share.' },
-  { icon: 'fitness', tint: 'workouts', title: 'Strava', text: 'Settings, Strava: send watch workouts to Strava, free.' },
-  { icon: 'watch', tint: 'link', title: 'Find my watch', text: 'Watch tab: make the watch ring when it is lost in the house.' },
+  { icon: 'today', tint: 'steps', id: 'today' },
+  { icon: 'fitness', tint: 'workouts', id: 'workouts' },
+  { icon: 'fitness', tint: 'workouts', id: 'strava' },
+  { icon: 'watch', tint: 'link', id: 'findWatch' },
 ];
 
 export function DoneStep() {
+  const { t } = useTranslation('onboarding');
   const { state, ctx } = useOnboarding();
-  const open = state ? openSteps(state, ctx).filter((id) => WHERE_TO_FINISH[id]) : [];
+  const open = state ? openSteps(state, ctx).filter(isWhereId) : [];
+  const place = t('done.healthSettings', { store: HEALTH_STORE });
+  const whereOf = (id: WhereId) => (id === 'health' || id === 'account' ? t(`done.where.${id}`, { place }) : t(`done.where.${id}`));
+  const nameOf = (id: WhereId) => (id === 'health' ? HEALTH_STORE : t(`done.name.${id}`));
   return (
     <>
-      <StepIntro icon="checkmark-circle" tint="link" title="You are set up">
-        JoyoFit keeps syncing on its own from here. A few places worth knowing:
+      <StepIntro icon="checkmark-circle" tint="link" title={t('done.title')}>
+        {t('done.intro')}
       </StepIntro>
       <Card>
         <View style={styles.tips}>
           {TIPS.map((tip, i) => (
-            <FadeIn key={tip.title} delay={120 + i * 50} distance={6} style={styles.tip}>
+            <FadeIn key={tip.id} delay={120 + i * 50} distance={6} style={styles.tip}>
               <IconChip icon={tip.icon} tint={tip.tint} size="sm" />
               <View style={styles.tipText}>
-                <AppText variant="bodyStrong">{tip.title}</AppText>
+                <AppText variant="bodyStrong">{t(`done.tip.${tip.id}.title`)}</AppText>
                 <AppText variant="caption" muted>
-                  {tip.text}
+                  {t(`done.tip.${tip.id}.text`)}
                 </AppText>
               </View>
             </FadeIn>
@@ -77,11 +60,11 @@ export function DoneStep() {
       </Card>
       {open.length > 0 ? (
         <Notice icon="list">
-          Still open: {open.map((id) => `${STEP_NAME[id]} (${WHERE_TO_FINISH[id]})`).join('; ')}.
+          {t('done.open', { list: open.map((id) => t('done.openItem', { name: nameOf(id), where: whereOf(id) })).join('; ') })}
         </Notice>
       ) : null}
       <AppText variant="caption" muted>
-        Open this guide again from Settings, Setup guide.
+        {t('done.reopen')}
       </AppText>
     </>
   );

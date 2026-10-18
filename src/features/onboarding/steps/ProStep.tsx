@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -27,6 +28,7 @@ const OFFER = proOffer(isIos ? 'ios' : 'android', HuaweiWear.distribution);
  * Prices and limits come from JoyoRogo's live config, never from this app's code.
  */
 export function ProStep() {
+  const { t } = useTranslation('onboarding');
   const cloud = useCloud();
   const [config, setConfig] = useState<ProConfig | null>(null);
 
@@ -43,42 +45,40 @@ export function ProStep() {
 
   return (
     <>
-      <StepIntro icon="cloud-upload" tint="link" title="JoyoRogo Pro" badge="Optional, paid">
-        JoyoFit is free to use in full: pairing, sync, workouts, Strava and the health apps all work on this phone without paying. Pro is an
-        optional plan on your JoyoRogo account.
+      <StepIntro icon="cloud-upload" tint="link" title={t('pro.title')} badge={t('badge.optionalPaid')}>
+        {t('pro.intro')}
       </StepIntro>
       <Card>
-        <AppText variant="heading">What Pro adds</AppText>
+        <AppText variant="heading">{t('pro.addsTitle')}</AppText>
         <View style={styles.bullets}>
           <Bullet label={'\u2022'}>
-            Cloud backup of your watch data (steps, heart rate, blood oxygen, sleep and workouts) to your own JoyoRogo account. JoyoFit
-            uploads it today; restoring it into the app is not built yet.
+            {t('pro.adds1')}
           </Bullet>
           <Bullet label={'\u2022'}>
-            Meal suggestions in JoyoRogo built from today&apos;s JoyoFit scores. Without Pro the diary shows a short hint instead.
+            {t('pro.adds2')}
           </Bullet>
           <Bullet label={'\u2022'}>{scansLine(config)}</Bullet>
         </View>
         {price ? <AppText variant="bodyStrong">{price}</AppText> : null}
         {OFFER === 'mention' ? (
           <AppText variant="caption" muted>
-            JoyoRogo Pro is available in JoyoRogo.
+            {t('pro.mention')}
           </AppText>
         ) : null}
         {OFFER === 'store' ? (
           <AppText variant="caption" muted>
-            JoyoRogo Pro is managed in the JoyoRogo app.
+            {t('pro.managed')}
           </AppText>
         ) : null}
       </Card>
-      {active ? <Notice icon="checkmark-circle">Cloud backup is on for this account.</Notice> : null}
+      {active ? <Notice icon="checkmark-circle">{t('pro.active')}</Notice> : null}
       {cloud.signedIn && cloud.locked ? (
-        <Notice icon="lock-closed">This account is not on Pro, so nothing is uploaded. Everything else works as before.</Notice>
+        <Notice icon="lock-closed">{t('pro.locked')}</Notice>
       ) : null}
-      {!cloud.signedIn ? <Notice icon="information-circle">Pro belongs to your JoyoRogo account. Sign in in the previous step to use it.</Notice> : null}
-      {OFFER === 'web' ? <Button label="See JoyoRogo Pro" variant="secondary" icon="open-outline" onPress={() => void Linking.openURL(PRO_URL)} /> : null}
+      {!cloud.signedIn ? <Notice icon="information-circle">{t('pro.signInFirst')}</Notice> : null}
+      {OFFER === 'web' ? <Button label={t('pro.see')} variant="secondary" icon="open-outline" onPress={() => void Linking.openURL(PRO_URL)} /> : null}
       {OFFER === 'store' ? (
-        <Button label="Get JoyoRogo on Google Play" variant="secondary" icon="logo-google-playstore" onPress={() => void Linking.openURL(PLAY_URL)} />
+        <Button label={t('pro.getOnPlay')} variant="secondary" icon="logo-google-playstore" onPress={() => void Linking.openURL(PLAY_URL)} />
       ) : null}
     </>
   );
