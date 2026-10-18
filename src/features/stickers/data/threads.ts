@@ -327,9 +327,28 @@ export interface ThreadsRunInput extends RunSubjectInput {
   context: ThreadsContext | null;
 }
 
-function series(values: readonly (number | null | undefined)[] | null | undefined): number[] | null {
+/** Seconds of the rolling mean that smooths the cadence and power charts (the pace series is smoothed by the analysis). */
+export const SENSOR_SMOOTH_SEC = 30;
+
+/** Centered moving mean over `window` samples; the ends average what is there. A window of 1 or less returns the values. */
+export function smoothSeries(values: readonly number[], window: number): number[] {
+  if (window <= 1) return [...values];
+  const half = Math.floor(window / 2);
+  return values.map((_, i) => {
+    const from = Math.max(0, i - half);
+    const to = Math.min(values.length - 1, i + half);
+    let sum = 0;
+    for (let j = from; j <= to; j++) sum += values[j]!;
+    return sum / (to - from + 1);
+  });
+}
+
+/** A chart series: gaps filled, optionally smoothed over `smoothSec` seconds of a grid with `stepSec` spacing, downsampled. */
+function series(values: readonly (number | null | undefined)[] | null | undefined, smooth?: { smoothSec: number; stepSec: number }): number[] | null {
   const filled = filledSeries(values);
-  return filled ? downsample(filled, CHART_POINTS).map(round1) : null;
+  if (!filled) return null;
+  const smoothed = smooth ? smoothSeries(filled, Math.round(smooth.smoothSec / smooth.stepSec)) : filled;
+  return downsample(smoothed, CHART_POINTS).map(round1);
 }
 
 function stats(values: readonly number[]): { min: number; max: number; avg: number } {
@@ -451,8 +470,10 @@ export function buildThreadsRun(input: ThreadsRunInput, locale: Locale): Sticker
       charts.altMax = Math.round(Math.max(...alt));
     }
     // Cadence and power go to their own slide.
-    const cad = series(grid.cad?.map((v) => (pos(v) ? v : null)));
-    const power = series(grid.power?.map((v) => (num(v) && v >= 0 ? v : null)));
+    // Smoothed for the chart; the average and the maximum below come from the raw data.
+    const smooth = { smoothSec: SENSOR_SMOOTH_SEC, stepSec: grid.stepSec };
+    const cad = series(grid.cad?.map((v) => (pos(v) ? v : null)), smooth);
+    const power = series(grid.power?.map((v) => (num(v) && v >= 0 ? v : null)), smooth);
     const sensors: JsonObject = {};
     if (cad && pos(run.cadence)) {
       sensors.cad = cad.map(Math.round);
@@ -610,7 +631,7 @@ export function buildThreadsStrength(input: ThreadsStrengthInput, locale: Locale
  * The data a slide is drawn with: the subject's data plus its position in the carousel (`th.n` of `th.total`) and the
  * person's choices. `showRoute` false drops the route (the summary slide then shows the numbers alone).
  */
-export function slideData(subject: StickerSubject, position: { n: number; total: number }, choices: { showRoute?: boolean; name?: string | null } = {}): JsonObject {
+export function slideData(subject: Pick<StickerSubject, 'data'>, position: { n: number; total: number }, choices: { showRoute?: boolean; name?: string | null } = {}): JsonObject {
   const data: JsonObject = { ...subject.data };
   data.th = { ...(subject.data.th as JsonObject), n: position.n, total: position.total };
   if (choices.showRoute === false && data.run) {

@@ -68,15 +68,15 @@ small native module (an intent with `setPackage('com.instagram.barcelona')` and 
 
 Seventeen slide templates, `threads.<slide>.portrait` (`templates/threads.ts`), all 1080 x 1350, one design: header (sport glyph, slide
 title, date, `n/total`), body, rule, footer (lockup + link). A slide is offered only when the data exists (`requires`), so a sparse
-workout gets a short carousel. The person can switch slides on and off and reorder them; the number is written at render time
-(`th.n`, `th.total`) from the slides that go out.
+workout gets a short carousel. The person can switch slides on and off and reorder them; the counter (`n/total`) is each slide's place
+among the slides that go out, written at render time by `slideSetData`, so it follows every toggle and reorder (tested).
 
 | Slide | For | Content |
 |---|---|---|
 | `summary` | run, walk, ride | route (privacy trim), distance, time, pace or speed, elevation, heart rate average and max, calories, cadence, power, steps, recording device |
 | `splits`, `splits2`, `splits3` | run, walk, ride | table: km, elapsed time, pace (or km/h), heart rate, cadence, power, climb; per km, per 5 km for rides; 12 rows per slide; a long workout (more than 36 rows) merges neighbouring rows; the best row is amber; a recap row of totals |
 | `charts` | with series | pace or speed, heart rate, elevation, each with min / average / max |
-| `sensors` | with sensors | cadence, power (average, max) |
+| `sensors` | with sensors | cadence, power (average, max); the charts use a 30 s rolling mean (cadence on a pinned axis), average and max come from the raw data |
 | `zones` | with HR zones or load | HR zones with share and time, strain, training effect (aerobic, anaerobic), recovery hours, load ratio with 7-day and weekly average, TRIMP, VO2max |
 | `power`, `powerzones` | ride with power | average power, NP, IF, TSS, VI, work, W/kg, max, power curve (5 s, 1, 5, 20, 60 min); the seven Coggan zones, FTP, pedal balance |
 | `climbs` | ride | up to five climbs: category, length, gain, grade, time, VAM, power, heart rate, plus the elevation profile |

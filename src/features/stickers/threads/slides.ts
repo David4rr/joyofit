@@ -5,7 +5,8 @@
 import { isOffered } from '../offer';
 import { TEMPLATES } from '../catalog';
 import type { Template } from '../core/schema';
-import type { StickerSubject } from '../subject';
+import { slideData } from '../data/threads';
+import type { JsonObject, StickerSubject } from '../subject';
 
 /** Threads: 4:5 portrait, 1080 x 1350 (docs/share-threads.md). */
 export const THREADS_WIDTH = 1080;
@@ -109,4 +110,12 @@ export function enabledSlides<T extends Pick<ThreadsSlideDef, 'id'>>(choices: re
     const slide = c.enabled ? offered.find((s) => s.id === c.id) : undefined;
     return slide ? [slide] : [];
   });
+}
+
+/**
+ * The data each slide of the set is drawn with: `th.n` is its place among the slides that go out and `th.total` their count, so
+ * the counter follows every toggle and reorder. One call for the preview, the export and the tests.
+ */
+export function slideSetData(subject: Pick<StickerSubject, 'data'>, count: number, choices: { showRoute?: boolean; name?: string | null } = {}): JsonObject[] {
+  return Array.from({ length: count }, (_, i) => slideData(subject, { n: i + 1, total: count }, choices));
 }

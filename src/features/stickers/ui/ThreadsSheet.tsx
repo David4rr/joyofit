@@ -35,7 +35,6 @@ import { HIT, overlay, spacing, useTheme } from '@/theme';
 import { isMissing, lookupPath } from '../core/expr';
 import type { StickerData } from '../core/resolve';
 import type { Scene } from '../core/scene';
-import { slideData } from '../data/threads';
 import { sceneFor, type Mode } from '../engine';
 import { ensureStickerFonts } from '../fontLoader';
 import { FIT_FONTS } from '../fonts';
@@ -49,6 +48,7 @@ import {
   THREADS_MAX_SLIDES,
   THREADS_WIDTH,
   enabledSlides,
+  slideSetData,
   initialChoices,
   moveChoice,
   offeredSlides,
@@ -165,17 +165,11 @@ export function ThreadsSheet({ subject, visible, onClose }: { subject: StickerSu
     () => ({ watermark: true, hideNumbers: false, showName: nameOn, privacy: { routeTrimMeters: routePrivacy ? 200 : 0 } }),
     [nameOn, routePrivacy],
   );
-  const scenes = useMemo(
-    () =>
-      slides.map((slide, i) =>
-        sceneFor(
-          slide.template,
-          slideData(subject, { n: i + 1, total: slides.length }, { ...(hasRoute ? { showRoute } : {}), name: nameOn ? firstName : null }),
-          { locale, mode, options, date: subject.date },
-        ),
-      ),
-    [slides, subject, hasRoute, showRoute, nameOn, firstName, locale, mode, options],
+  const datas = useMemo(
+    () => slideSetData(subject, slides.length, { ...(hasRoute ? { showRoute } : {}), name: nameOn ? firstName : null }),
+    [subject, slides.length, hasRoute, showRoute, nameOn, firstName],
   );
+  const scenes = useMemo(() => slides.map((slide, i) => sceneFor(slide.template, datas[i]!, { locale, mode, options, date: subject.date })), [slides, datas, subject.date, locale, mode, options]);
 
   const questions = useMemo(() => questionsFor(subject), [subject]);
   const question = questionPick === undefined ? (questions[0] ?? null) : questionPick !== null && questions.includes(questionPick) ? questionPick : null;

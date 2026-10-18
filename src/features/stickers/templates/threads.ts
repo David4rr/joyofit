@@ -361,7 +361,11 @@ function chartPanel(k: Kit, p: PanelSpec): LayerJson {
   );
 }
 
-const area = (bind: string, color: string, strokeWidth = 6) => (k: Kit) => k.chart({ w: 'fill', h: 'fill' }, { kind: 'area', series: { bind }, color, strokeWidth, barRadius: 18 });
+/** An area chart; `range` pins the axis where autoscaling would blow a few units of wobble up to the full height. */
+const area =
+  (bind: string, color: string, range: { min?: number; max?: number } = {}) =>
+  (k: Kit) =>
+    k.chart({ w: 'fill', h: 'fill' }, { kind: 'area', series: { bind }, color, strokeWidth: 6, barRadius: 18, ...range });
 
 function charts() {
   const k = kit('tc');
@@ -400,19 +404,19 @@ function sensors() {
     {
       title: tl('label.cadence'),
       stats: tl('threads.text.cadStats', { avg: '{th.sensors.cadAvg|int}', max: '{th.sensors.cadMax|int}' }),
-      chart: area('th.sensors.cad', '$good'),
+      chart: area('th.sensors.cad', '$good', { min: 60, max: 220 }),
       when: all(has('th.sensors.cad'), not(is('run.kind', 'ride'))),
     },
     {
       title: tl('label.cadence'),
       stats: tl('threads.text.cadStatsRide', { avg: '{th.sensors.cadAvg|int}', max: '{th.sensors.cadMax|int}' }),
-      chart: area('th.sensors.cad', '$good'),
+      chart: area('th.sensors.cad', '$good', { min: 0, max: 140 }),
       when: all(has('th.sensors.cad'), is('run.kind', 'ride')),
     },
     {
       title: tl('threads.label.power'),
       stats: tl('threads.text.powerStats', { avg: '{th.sensors.powerAvg|int}', max: '{th.sensors.powerMax|int}' }),
-      chart: area('th.sensors.power', '$warn'),
+      chart: area('th.sensors.power', '$warn', { min: 0 }),
       when: has('th.sensors.power'),
     },
   ];

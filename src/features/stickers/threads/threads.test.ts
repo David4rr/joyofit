@@ -2,11 +2,12 @@ import { afterEach, describe, expect, test } from 'bun:test';
 
 import { applyLocale } from '@/i18n';
 
-import { buildThreadsRun, mergeRows, slideData, weeklyContext, SPLIT_ROWS_MAX, type SplitRow } from '../data/threads';
+import { buildThreadsRun, mergeRows, slideData, smoothSeries, weeklyContext, SPLIT_ROWS_MAX, type SplitRow } from '../data/threads';
 import type { JsonObject } from '../subject';
+import { renderTemplate } from '../testing/render';
 import { RIDE_POWER, RUN_LONG, RUN_MARATHON, RUN_SPLITS, STRENGTH_FULLBODY, STRENGTH_PUSH, STRENGTH_SPARSE, WALK_SPARSE } from '../testing/threadsFixtures';
 import { buildCaption, questionsFor, THREADS_TEXT_MAX } from './caption';
-import { enabledSlides, initialChoices, moveChoice, offeredSlides, reconcileChoices, THREADS_DEFAULT_SLIDES, THREADS_MAX_SLIDES, toggleChoice, type SlideChoice } from './slides';
+import { enabledSlides, initialChoices, moveChoice, offeredSlides, reconcileChoices, slideSetData, THREADS_DEFAULT_SLIDES, THREADS_MAX_SLIDES, toggleChoice, type SlideChoice } from './slides';
 
 afterEach(() => applyLocale('id'));
 
@@ -237,6 +238,65 @@ describe('caption', () => {
     expect(questionsFor(RIDE_POWER())[0]).toBe('ridePower');
     expect(questionsFor(STRENGTH_PUSH())[0]).toBe('liftProgress');
     expect(questionsFor(WALK_SPARSE())).toEqual(['runPace', 'runPlan']);
+  });
+});
+
+describe('slide counter', () => {
+  /** The `n/total` text of each slide of the set as the sheet draws it. */
+  function counters(subject: ReturnType<typeof RUN_LONG>, slides: ReturnType<typeof offeredSlides>): string[] {
+    const datas = slideSetData(subject, slides.length);
+    return slides.map((slide, i) => {
+      const { scene } = renderTemplate(slide.template, datas[i]!, { locale: 'id', mode: 'dark' });
+      const texts = scene.nodes.flatMap((n) => (n.k === 'text' ? [n.text] : []));
+      return texts.find((t) => /^\d+\/\d+$/.test(t)) ?? 'missing';
+    });
+  }
+
+  test('every slide shows its place over the number of slides that go out', () => {
+    const subject = RUN_LONG();
+    const offered = offeredSlides(subject);
+    expect(offered).toHaveLength(8);
+    const choices = initialChoices(offered);
+    expect(counters(subject, enabledSlides(choices, offered))).toEqual(['1/8', '2/8', '3/8', '4/8', '5/8', '6/8', '7/8', '8/8']);
+  });
+
+  test('turning slides off renumbers the rest', () => {
+    const subject = RUN_LONG();
+    const offered = offeredSlides(subject);
+    const choices = toggleChoice(toggleChoice(initialChoices(offered), 'charts'), 'sensors');
+    const going = enabledSlides(choices, offered);
+    expect(going.map((s) => s.id)).toEqual(['summary', 'splits', 'splits2', 'splits3', 'zones', 'context']);
+    expect(counters(subject, going)).toEqual(['1/6', '2/6', '3/6', '4/6', '5/6', '6/6']);
+  });
+
+  test('reordering moves the numbers with the slides', () => {
+    const subject = RUN_LONG();
+    const offered = offeredSlides(subject);
+    const choices = moveChoice(initialChoices(offered), 7, 0);
+    const going = enabledSlides(choices, offered);
+    expect(going[0]!.id).toBe('context');
+    expect(counters(subject, going)).toEqual(['1/8', '2/8', '3/8', '4/8', '5/8', '6/8', '7/8', '8/8']);
+    const only = enabledSlides(toggleChoice(toggleChoice(initialChoices(offered), 'summary'), 'splits'), offered);
+    expect(counters(subject, only)[0]).toBe('1/6');
+  });
+});
+
+describe('sensor charts', () => {
+  test('smoothing flattens spikes, keeps the length, and a window of 1 changes nothing', () => {
+    const spiky = Array.from({ length: 12 }, (_, i) => (i % 2 === 0 ? 0 : 100));
+    const smooth = smoothSeries(spiky, 5);
+    expect(smooth).toHaveLength(12);
+    for (const v of smooth.slice(2, -2)) expect(Math.abs(v - 50)).toBeLessThanOrEqual(12);
+    expect(smoothSeries(spiky, 1)).toEqual(spiky);
+    expect(smoothSeries([5], 9)).toEqual([5]);
+  });
+
+  test('the cadence chart is smoothed but the maximum stays the raw one', () => {
+    const sensors = th(RUN_SPLITS().data).sensors as JsonObject;
+    const cad = sensors.cad as number[];
+    expect(Math.max(...cad)).toBeLessThanOrEqual(sensors.cadMax as number);
+    const steps = cad.slice(1).map((v, i) => Math.abs(v - cad[i]!));
+    expect(Math.max(...steps)).toBeLessThanOrEqual(3);
   });
 });
 
