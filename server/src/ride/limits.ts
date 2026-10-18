@@ -25,6 +25,9 @@ export const LIMIT_CREATE_PER_IP = { max: 10, windowMs: 10 * 60 * 1000 } as cons
 export const LIMIT_JOIN_PER_USER = { max: 10, windowMs: 5 * 60 * 1000 } as const;
 export const LIMIT_JOIN_PER_IP = { max: 30, windowMs: 5 * 60 * 1000 } as const;
 export const LIMIT_WS_PER_IP = { max: 120, windowMs: 10 * 60 * 1000 } as const;
+export const LIMIT_RESULT_PER_IP = { max: 20, windowMs: 10 * 60 * 1000 } as const;
+/** While a ride runs, the relay's sample count is written at most this often, so an evicted room keeps most of its evidence. */
+export const EVIDENCE_PERSIST_MS = 30_000;
 
 /** A fresh code that is already taken is drawn again this many times before the create call gives up with 503. */
 export const CODE_DRAWS = 8;

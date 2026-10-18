@@ -1,8 +1,11 @@
-import { Flag, RotateCcw, Route as RouteIcon, Trophy } from "lucide-react";
+import { Download, Flag, Medal as MedalIcon, RotateCcw, Route as RouteIcon, Timer, Trophy } from "lucide-react";
 
 import type { Game } from "../game.ts";
 import { formatKm, formatTime, formatTimeTenths } from "../format.ts";
 import { useT, type TKey } from "../i18n.ts";
+import { workoutDurationS } from "../modes.ts";
+import { downloadBlob, renderCard } from "../share-card.ts";
+import { Leaderboard } from "./Leaderboard.tsx";
 import { Profile } from "./Profile.tsx";
 import { useGame } from "./hooks.ts";
 
@@ -48,6 +51,31 @@ export function Summary({ game }: { game: Game }) {
             </p>
           )}
         </header>
+
+        {game.mode === "daily" && r.complete && (
+          <div className={`rd-medal ${game.medal ? `is-${game.medal}` : ""}`}>
+            <MedalIcon aria-hidden="true" />
+            <div>
+              <b>{game.medal ? t(`medal.${game.medal}` as TKey) : t("medal.none")}</b>
+              <span className="rd-muted">
+                {t("summary.target")} {formatTime(game.daily.targetS)}
+                {game.dailyBestS !== null ? ` · ${t("daily.best")} ${formatTime(Math.min(game.dailyBestS, r.timeS))}` : ""}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {game.interval && (
+          <div className="rd-medal">
+            <Timer aria-hidden="true" />
+            <div>
+              <b>
+                {t(`workout.${game.interval.workout.id}` as TKey)} · {t("summary.compliance")} {Math.round(game.interval.compliance * 100)}%
+              </b>
+              <span className="rd-muted">{t("workout.minutes", { min: Math.round(workoutDurationS(game.interval.workout) / 60) })}</span>
+            </div>
+          </div>
+        )}
 
         <div className="rd-sum-hero">
           <Stat label={t("summary.time")} value={formatTime(r.timeS)} />
@@ -147,6 +175,18 @@ export function Summary({ game }: { game: Game }) {
         <p className={`rd-delivery ${game.delivery === "sent" ? "is-ok" : ""}`} role="status">
           {game.delivery === "sent" ? t("summary.sent") : game.delivery === "pending" ? t("summary.notSent") : t("summary.notRoom")}
         </p>
+        {game.board.state !== "none" && (
+          <p className={`rd-delivery ${game.board.state === "ok" ? "is-ok" : ""}`} role="status">
+            {game.board.state === "ok"
+              ? t("board.submitted", { rank: game.board.rank })
+              : game.board.state === "pending"
+                ? t("board.loading")
+                : game.board.state === "ineligible"
+                  ? t("board.notEligible")
+                  : t("board.submitFailed")}
+          </p>
+        )}
+        {r.complete && <Leaderboard game={game} compact />}
 
         <div className="rd-actions">
           <button type="button" className="rd-btn rd-btn-primary rd-btn-lg" onClick={() => game.startRide()}>
@@ -156,6 +196,28 @@ export function Summary({ game }: { game: Game }) {
           <button type="button" className="rd-btn rd-btn-quiet" onClick={() => game.toRoutes()}>
             <RouteIcon aria-hidden="true" />
             {t("summary.otherRoute")}
+          </button>
+          <button
+            type="button"
+            className="rd-btn rd-btn-quiet"
+            onClick={() =>
+              void renderCard({
+                title: t("summary.shareTitle"),
+                route: game.route,
+                time: formatTime(r.timeS),
+                stats: [
+                  { label: t("summary.distance"), value: `${formatKm(r.distM)} km` },
+                  { label: t("summary.climb"), value: `${Math.round(r.elevM)} m` },
+                  { label: t("summary.avgSpeed"), value: `${r.avgSpeedKmh.toFixed(1)} ${t("summary.unit.kmh")}` },
+                  ...(r.avgCad !== null ? [{ label: t("summary.avgCad"), value: `${Math.round(r.avgCad)} rpm` }] : []),
+                ],
+                medal: game.mode === "daily" && game.medal ? { medal: game.medal, label: t(`medal.${game.medal}` as TKey) } : null,
+                footer: "fit.joyorogo.com/ride",
+              }).then((blob) => downloadBlob(blob, `joyofit-${game.route.id}.png`))
+            }
+          >
+            <Download aria-hidden="true" />
+            {t("summary.share")}
           </button>
         </div>
       </div>

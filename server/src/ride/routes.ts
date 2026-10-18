@@ -12,7 +12,8 @@ import {
 import { requireUser, sha256Hex } from "../auth";
 import { readJson } from "../body";
 import type { AppContext, AppEnv } from "../env";
-import { CODE_DRAWS, LIMIT_CREATE_PER_IP, LIMIT_JOIN_PER_IP, LIMIT_JOIN_PER_USER, LIMIT_WS_PER_IP } from "./limits";
+import { CODE_DRAWS, LIMIT_CREATE_PER_IP, LIMIT_JOIN_PER_IP, LIMIT_JOIN_PER_USER, LIMIT_RESULT_PER_IP, LIMIT_WS_PER_IP } from "./limits";
+import { ROUTE_LIMITS, publicName, readBoard, wibDay } from "./leaderboard";
 
 /**
  * "Ride on the web" relay routes (docs/ride.md). The phone is the sensor bridge, the web page is the game; a room is one Durable
@@ -29,6 +30,11 @@ ride.use(
   "/rooms",
   cors({ origin: "*", allowMethods: ["POST", "OPTIONS"], allowHeaders: ["content-type"], maxAge: 86_400 }),
 );
+ride.use(
+  "/rooms/:roomId/result",
+  cors({ origin: "*", allowMethods: ["POST", "OPTIONS"], allowHeaders: ["content-type"], maxAge: 86_400 }),
+);
+ride.use("/leaderboard", cors({ origin: "*", allowMethods: ["GET", "OPTIONS"], maxAge: 86_400 }));
 
 /** `cf-connecting-ip`, hashed: the limiter's key never holds an address. */
 function clientKey(ip: string | undefined): Promise<string> {
@@ -88,9 +94,47 @@ ride.post("/rooms/join", requireUser, async (c) => {
   } catch {
     return c.json({ error: "code_not_found" }, 404);
   }
-  const joined = await stub.joinPhone(user.id, now);
+  const joined = await stub.joinPhone(user.id, now, publicName(user.name));
   if (!joined.ok) return c.json({ error: joined.error === "taken" ? "room_taken" : "code_not_found" }, joined.error === "taken" ? 409 : 404);
   return c.json({ roomId, token: joined.token } satisfies JoinRoomResponse);
+});
+
+const resultSchema = z.object({
+  token: z.string().min(1).max(128),
+  routeId: z.string().max(20),
+  timeS: z.number().positive().max(6 * 3600),
+  distM: z.number().nonnegative().max(100_000),
+  avgCad: z.number().min(0).max(250),
+  anon: z.boolean().default(false),
+});
+
+/** The game submits a finished route for the leaderboard; the room decides (it saw the phone's samples). */
+ride.post("/rooms/:roomId/result", async (c) => {
+  const now = Date.now();
+  const limited = await overLimit(c.env, "result", await clientKey(c.req.header("cf-connecting-ip")), LIMIT_RESULT_PER_IP, now);
+  if (limited) return c.json({ error: "rate_limited" }, 429, { "retry-after": String(limited.retryAfterS) });
+  const parsed = resultSchema.safeParse(await readJson(c.req.raw, 1024));
+  if (!parsed.success) return c.json({ error: "invalid_result" }, 400);
+  let id: DurableObjectId;
+  try {
+    id = c.env.RIDE_ROOM.idFromString(c.req.param("roomId"));
+  } catch {
+    return c.json({ error: "room_not_found" }, 404);
+  }
+  const { token, ...input } = parsed.data;
+  const result = await c.env.RIDE_ROOM.get(id).submitResult(token, input, now);
+  if (result.ok) return c.json({ rank: result.rank });
+  return c.json({ error: result.error }, result.error === "invalid_token" ? 401 : 422);
+});
+
+/** `GET /ride/leaderboard?route=pantai&board=all|today`: each rider's best, public. */
+ride.get("/leaderboard", async (c) => {
+  const route = c.req.query("route") ?? "";
+  if (!ROUTE_LIMITS[route]) return c.json({ error: "unknown_route" }, 400);
+  const board = c.req.query("board") === "today" ? "today" : "all";
+  const day = board === "today" ? wibDay(Date.now()) : null;
+  const rows = await readBoard(c.env.DB, route, day, null);
+  return c.json({ route, board, day, rows }, 200, { "cache-control": "public, max-age=30" });
 });
 
 ride.get("/rooms/:roomId/ws", async (c) => {

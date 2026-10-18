@@ -16,6 +16,7 @@ import {
   type SumMsg,
 } from "../../../src/features/ride/protocol";
 import { sha256Hex } from "../auth";
+import { checkResult, emptyEvidence, insertResult, rankOf, type Rejection, type ResultInput, type RideEvidence } from "./leaderboard";
 import {
   ACTIVITY_PERSIST_MS,
   CLOSE_EXPIRED,
@@ -25,6 +26,7 @@ import {
   MAX_WEB_SOCKETS,
   STRIKES_BEFORE_CLOSE,
   STRIKE_FORGIVE_MS,
+  EVIDENCE_PERSIST_MS,
 } from "./limits";
 
 /** What a room remembers. Only hashes of the tokens are stored. */
@@ -34,6 +36,10 @@ interface RoomState {
   phoneTokenHash: string | null;
   /** The JoyoRogo user who joined as the phone; only they can join again. */
   phoneUserId: string | null;
+  /** The phone user's public name ("First L."), for the leaderboard. */
+  phoneName?: string | null;
+  /** What the relay saw of the ride in progress, for the leaderboard. Reset by the game's `ctl start`. */
+  evidence?: RideEvidence | null;
   /** The phone's last `hello`, handed to a web that connects later. */
   phoneHello: HelloMsg | null;
   /** A `sum` the phone has not confirmed yet; delivered again whenever the phone connects. */
@@ -42,6 +48,8 @@ interface RoomState {
 }
 
 export type JoinResult = { ok: true; token: string } | { ok: false; error: "gone" | "taken" };
+
+export type SubmitResult = { ok: true; rank: number } | { ok: false; error: "invalid_token" | "no_phone" | Rejection };
 
 interface Attachment {
   role: RideRole;
@@ -68,7 +76,8 @@ function randomToken(): string {
  * - WebSockets are hibernatable (`acceptWebSocket`): a room nobody is talking in costs nothing, and the exact `{"t":"ping"}` text is
  *   answered by the runtime without waking the object.
  * - The relay never reads a sample's content beyond validating it: it checks size, shape and who may send what, stamps `rt`, and
- *   forwards. It keeps only the phone's `hello`, the unconfirmed `sum`, and the last-activity time.
+ *   forwards. It keeps only the phone's `hello`, the unconfirmed `sum`, the last-activity time, and a count of the cadence
+ *   samples since the game's `ctl start` (the leaderboard's evidence, `leaderboard.ts`).
  * - Tokens: `open` mints the web token, `joinPhone` the phone token (a new one for the same user replaces the old one and closes
  *   the old socket). A room is closed 3 hours after its last frame (alarm).
  * - Every method that depends on time takes `now`, so tests move the clock.
@@ -78,6 +87,7 @@ export class RideRoom extends DurableObject<Env> {
   /** The last frame this instance relayed (ms); an alarm after a hibernation falls back to the stored value. */
   private trafficAt = 0;
   private persistedActivity = 0;
+  private evidenceSavedAt = 0;
   private readonly buckets = new WeakMap<WebSocket, Bucket>();
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -104,15 +114,32 @@ export class RideRoom extends DurableObject<Env> {
   }
 
   /** The phone joins (or joins again with a new token). Only one JoyoRogo user is the phone of a room. */
-  async joinPhone(userId: string, now: number): Promise<JoinResult> {
+  async joinPhone(userId: string, now: number, publicName: string | null = null): Promise<JoinResult> {
     const room = this.room;
     if (!room) return { ok: false, error: "gone" };
     if (room.phoneUserId !== null && room.phoneUserId !== userId) return { ok: false, error: "taken" };
     const token = randomToken();
     room.phoneTokenHash = await sha256Hex(token);
     room.phoneUserId = userId;
+    room.phoneName = publicName;
     await this.touch(now, true);
     return { ok: true, token };
+  }
+
+  /** The game submits a finished ride for the leaderboard; accepted only when the relay saw the phone's cadence for it. */
+  async submitResult(webToken: string, input: ResultInput, now: number): Promise<SubmitResult> {
+    const room = this.room;
+    if (!room || webToken.length === 0 || webToken.length > 128 || (await sha256Hex(webToken)) !== room.webTokenHash) {
+      return { ok: false, error: "invalid_token" };
+    }
+    if (!room.phoneUserId) return { ok: false, error: "no_phone" };
+    const evidence = room.evidence ?? null;
+    const rejection = checkResult(evidence, input, now);
+    if (rejection) return { ok: false, error: rejection };
+    evidence!.submitted = true;
+    await this.save();
+    await insertResult(this.env.DB, { userId: room.phoneUserId, name: room.phoneName ?? null, input, now });
+    return { ok: true, rank: await rankOf(this.env.DB, input.routeId, room.phoneUserId, input.timeS) };
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -183,6 +210,16 @@ export class RideRoom extends DurableObject<Env> {
     } else if (msg.t === "ack" && room.pendingSum) {
       room.pendingSum = null;
       dirty = true;
+    } else if (msg.t === "ctl" && msg.action === "start" && role === "web") {
+      room.evidence = emptyEvidence(now);
+      dirty = true;
+    } else if (msg.t === "s" && role === "phone" && msg.cad !== undefined && room.evidence && !room.evidence.submitted) {
+      room.evidence.cadSamples += 1;
+      room.evidence.cadSum += msg.cad;
+      if (now - this.evidenceSavedAt >= EVIDENCE_PERSIST_MS) {
+        this.evidenceSavedAt = now;
+        dirty = true;
+      }
     }
     await this.touch(now, dirty);
 

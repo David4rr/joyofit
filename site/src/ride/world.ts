@@ -228,7 +228,7 @@ export class World {
 
   private buildGround(): void {
     const grid = buildTerrain(this.track, this.theme);
-    const scenery = new Scenery(this.track, this.theme, this.quality.treeScale);
+    const scenery = new Scenery(this.track, this.theme, this.quality.treeScale, this.route.segments);
     this.disposables.push(scenery);
     const material = new MeshLambertMaterial({ vertexColors: true });
     this.disposables.push(material);

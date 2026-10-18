@@ -551,3 +551,78 @@ describe("expiry", () => {
     });
   });
 });
+
+describe("leaderboard", () => {
+  const submit = (roomId: string, body: object, ip = freshIp()) =>
+    call(`/ride/rooms/${roomId}/result`, { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json", "cf-connecting-ip": ip } });
+
+  /** Starts a ride the way the game does, streams cadence, then moves the relay's ride start back by [ageS]. */
+  async function riddenRoom(cads: number[], ageS: number) {
+    const r = await room();
+    r.web.send({ t: "ctl", v: 1, action: "start" });
+    await r.phone.ofType("ctl");
+    for (const cad of cads) r.phone.send(sample({ cad }));
+    await until(() => r.web.inbox.filter((f) => f.t === "s").length >= cads.length);
+    await runInDurableObject(r.stub(), async (instance: RideRoom) => {
+      const state = (instance as unknown as { room: { evidence: { startedAt: number } } }).room;
+      state.evidence.startedAt = Date.now() - ageS * 1000;
+    });
+    return r;
+  }
+
+  it("accepts a finish the relay saw cadence for, once, and lists it under a short public name", async () => {
+    const r = await riddenRoom(Array.from({ length: 30 }, () => 88), 30);
+    const body = { token: r.made.token, routeId: "kebun", timeS: 25, distM: 3000, avgCad: 87 };
+    // 3 km in 25 s is far faster than anyone rides.
+    expect(await (await submit(r.made.roomId, body)).json()).toEqual({ error: "too_fast" });
+    const ok = await submit(r.made.roomId, { ...body, timeS: 400 });
+    // The relay only knows about 30 s of riding.
+    expect(await ok.json()).toEqual({ error: "too_long" });
+
+    await runInDurableObject(r.stub(), async (instance: RideRoom) => {
+      const ev = (instance as unknown as { room: { evidence: { startedAt: number; cadSamples: number; cadSum: number } } }).room.evidence;
+      ev.startedAt = Date.now() - 420_000;
+      ev.cadSamples = 1600;
+      ev.cadSum = 1600 * 88;
+    });
+    const accepted = await submit(r.made.roomId, { ...body, timeS: 400 });
+    expect(accepted.status).toBe(200);
+    expect(await accepted.json()).toEqual({ rank: 1 });
+    const again = await submit(r.made.roomId, { ...body, timeS: 390 });
+    expect(await again.json()).toEqual({ error: "already_submitted" });
+
+    const board = (await (await call("/ride/leaderboard?route=kebun&board=all")).json()) as { rows: { rank: number; name: string | null; timeS: number }[] };
+    expect(board.rows[0]).toMatchObject({ rank: 1, name: "rider", timeS: 400 });
+  });
+
+  it("refuses a ride with too few phone samples, a cadence that disagrees, a stolen token, or no ride at all", async () => {
+    const thin = await riddenRoom([90, 90, 90], 500);
+    const base = { token: thin.made.token, routeId: "kebun", timeS: 450, distM: 3000, avgCad: 90 };
+    expect(await (await submit(thin.made.roomId, base)).json()).toEqual({ error: "no_sensor" });
+
+    await runInDurableObject(thin.stub(), async (instance: RideRoom) => {
+      const ev = (instance as unknown as { room: { evidence: { cadSamples: number; cadSum: number } } }).room.evidence;
+      ev.cadSamples = 2000;
+      ev.cadSum = 2000 * 60;
+    });
+    expect(await (await submit(thin.made.roomId, base)).json()).toEqual({ error: "cadence_mismatch" });
+    expect((await submit(thin.made.roomId, { ...base, token: "nope" })).status).toBe(401);
+
+    const idle = await room();
+    expect(await (await submit(idle.made.roomId, { ...base, token: idle.made.token })).json()).toEqual({ error: "no_ride" });
+  });
+
+  it("an anonymous finish is ranked without a name, and an unknown route is a 400", async () => {
+    const r = await riddenRoom([], 1600);
+    await runInDurableObject(r.stub(), async (instance: RideRoom) => {
+      const ev = (instance as unknown as { room: { evidence: { cadSamples: number; cadSum: number } } }).room.evidence;
+      ev.cadSamples = 4000;
+      ev.cadSum = 4000 * 70;
+    });
+    const res = await submit(r.made.roomId, { token: r.made.token, routeId: "bromo", timeS: 1500, distM: 8000, avgCad: 70, anon: true });
+    expect(res.status).toBe(200);
+    const board = (await (await call("/ride/leaderboard?route=bromo&board=today")).json()) as { rows: { name: string | null }[] };
+    expect(board.rows[0]!.name).toBeNull();
+    expect((await call("/ride/leaderboard?route=nowhere")).status).toBe(400);
+  });
+});

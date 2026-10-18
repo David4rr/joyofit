@@ -45,6 +45,24 @@ describe("flow", () => {
     expect(s.distM).toBeGreaterThan(distM);
   });
 
+  test("a loop ride restarts the route at the finish, keeps counting distance, and is never a route best", () => {
+    const kebun = ROUTES.find((r) => r.id === "kebun")!;
+    const s = new RideSession(kebun, new Track(kebun), { ghost: { routeId: "kebun", timeS: 1, trace: [0, 3000] }, segmentBests: {}, loop: true });
+    expect(s.ghost).toBeNull();
+    begin(s);
+    s.distM = kebun.lengthM - 5;
+    s.speedMs = 8;
+    ride(s, 2, { cad: 95, hr: 130 });
+    expect(s.phase).toBe("riding");
+    expect(s.loops).toBe(1);
+    expect(s.distM).toBeLessThan(50);
+    expect(s.totalDistM).toBeGreaterThan(kebun.lengthM);
+    s.stop();
+    expect(s.result!.complete).toBe(false);
+    expect(s.result!.newBest).toBe(false);
+    expect(s.result!.distM).toBeCloseTo(s.totalDistM);
+  });
+
   test("lap records splits and a final partial lap at stop", () => {
     const s = make();
     begin(s);

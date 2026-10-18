@@ -6,8 +6,30 @@ import { ROUTES, routeById, type RouteDef } from "./routes.ts";
 import { RideSession, hrZone, type RideEvent, type RideResult, type SegmentProgress } from "./session.ts";
 import { BleSource } from "./sources/ble.ts";
 import { DemoSource } from "./sources/demo.ts";
+import { submitResult } from "./sources/leaderboard-api.ts";
 import { RoomSource, type RoomCommand } from "./sources/room.ts";
-import { loadGhost, loadSegmentBests, saveGhost, saveSegmentBests } from "./storage.ts";
+import {
+  IntervalTracker,
+  dailyChallenge,
+  medalFor,
+  targetGapS,
+  workoutById,
+  type DailyChallenge,
+  type IntervalBlock,
+  type IntervalSnapshot,
+  type Medal,
+  type ModeId,
+} from "./modes.ts";
+import {
+  loadDailyBest,
+  loadGhost,
+  loadSegmentBests,
+  loadSettings,
+  saveDailyBest,
+  saveGhost,
+  saveSegmentBests,
+  saveSettings,
+} from "./storage.ts";
 import { Track } from "./track.ts";
 
 export type Screen = "pair" | "routes" | "ride" | "summary";
@@ -36,12 +58,18 @@ export interface Hud {
   segment: { id: string; kind: SegmentProgress["def"]["kind"]; elapsedS: number; bestS: number | null } | null;
   positionM: number;
   ghostPositionM: number | null;
+  interval: IntervalSnapshot | null;
+  /** Daily challenge: the target and the gap to an even pace towards it (negative = ahead). */
+  daily: { targetS: number; gapS: number } | null;
 }
+
+export const JERSEYS: readonly number[] = [0xe8e4d8, 0x0a6580, 0xd94a3d, 0xf2c230, 0x2f8f4e, 0x1d1d22, 0xe86aa6];
 
 export type Toast =
   | { id: number; kind: "segment-start"; segmentId: string; segKind: "sprint" | "kom"; bestS: number | null }
   | { id: number; kind: "segment-end"; segmentId: string; segKind: "sprint" | "kom"; timeS: number; pb: boolean }
-  | { id: number; kind: "lap"; index: number; sec: number };
+  | { id: number; kind: "lap"; index: number; sec: number }
+  | { id: number; kind: "block"; index: number; count: number; block: IntervalBlock };
 
 const HUD_MS = 100;
 const STATE_MS = 1000;
@@ -70,6 +98,8 @@ const EMPTY_HUD: Hud = {
   segment: null,
   positionM: 0,
   ghostPositionM: null,
+  interval: null,
+  daily: null,
 };
 
 /**
@@ -89,6 +119,19 @@ export class Game {
   /** Latest sensor reading, for the pair screen's live preview. */
   preview: LiveSample | null = null;
   bleError: string | null = null;
+  mode: ModeId = "free";
+  workoutId = "tempo";
+  daily: DailyChallenge = dailyChallenge(Date.now());
+  interval: IntervalTracker | null = null;
+  /** Medal from the daily challenge, set at the finish. */
+  medal: Medal | null = null;
+  /** The day's best before this ride, for the summary. */
+  dailyBestS: number | null = null;
+  jersey: number = loadSettings().jersey ?? JERSEYS[0]!;
+  /** Hide the rider's name on the leaderboard. */
+  anon: boolean = loadSettings().anon ?? false;
+  /** What happened to this ride's leaderboard entry. */
+  board: BoardSubmit = { state: "none" };
   version = 0;
 
   private engine: Engine | null = null;
@@ -131,6 +174,7 @@ export class Game {
     this.engine = engine;
     if (!engine) return;
     engine.cameraMode = this.cameraMode;
+    engine.setJersey(this.jersey);
     engine.onTick = (dt) => this.tick(dt);
     engine.loadRoute(this.route);
     engine.setSession(this.session);
@@ -227,9 +271,33 @@ export class Game {
 
   toRoutes(): void {
     this.session = null;
+    this.interval = null;
     this.engine?.setSession(null);
     this.hud = EMPTY_HUD;
+    this.daily = dailyChallenge(Date.now());
+    if (this.mode === "daily") this.selectRoute(this.daily.routeId);
     this.toScreen("routes");
+  }
+
+  selectMode(mode: ModeId): void {
+    this.mode = mode;
+    if (mode === "daily") {
+      this.daily = dailyChallenge(Date.now());
+      this.selectRoute(this.daily.routeId);
+    }
+    this.emit();
+  }
+
+  selectWorkout(id: string): void {
+    this.workoutId = workoutById(id).id;
+    this.emit();
+  }
+
+  setJersey(color: number): void {
+    this.jersey = color;
+    saveSettings({ jersey: color });
+    this.engine?.setJersey(color);
+    this.emit();
   }
 
   selectRoute(id: string): void {
@@ -251,16 +319,23 @@ export class Game {
   }
 
   startRide(): void {
+    if (this.mode === "daily" && this.route.id !== this.daily.routeId) this.selectRoute(this.daily.routeId);
     const route = this.route;
     this.bests = loadSegmentBests(route.id);
     const massKg = this.room?.massKg ?? DEFAULT_RIDER_KG;
+    const loop = this.mode === "interval";
     this.session = new RideSession(route, new Track(route), {
       massKg,
       ghost: loadGhost(route.id),
       segmentBests: this.bests,
+      loop,
     });
+    this.interval = loop ? new IntervalTracker(workoutById(this.workoutId)) : null;
+    this.medal = null;
+    this.dailyBestS = this.mode === "daily" ? loadDailyBest(this.daily.day) : null;
     this.result = null;
     this.delivery = "none";
+    this.board = { state: "none" };
     this.hudAcc = 0;
     this.stateAcc = STATE_MS;
     this.engine?.setSession(this.session);
@@ -350,6 +425,17 @@ export class Game {
     s.step(dt, { cad: live?.cad, hr: live?.hr, pwr: live?.pwr });
     if (!wasRiding && s.phase === "riding") this.room?.sendCtl("start");
     this.demo?.feed(s.powerW, s.grade);
+    const iv = this.interval;
+    if (iv && wasRiding && s.phase === "riding") {
+      iv.step(dt, live?.cad);
+      for (const ev of iv.drainEvents()) {
+        if (ev.type === "block") {
+          if (ev.index > 0) this.showToast({ kind: "block", index: ev.index, count: iv.workout.blocks.length, block: ev.block });
+        } else {
+          s.stop();
+        }
+      }
+    }
     for (const ev of s.drainEvents()) this.onEvent(ev);
 
     this.hudAcc += dt;
@@ -395,6 +481,11 @@ export class Game {
         : null,
       positionM: s.distM,
       ghostPositionM: s.ghostDistM,
+      interval: this.interval?.snapshot() ?? null,
+      daily:
+        this.mode === "daily"
+          ? { targetS: this.daily.targetS, gapS: targetGapS(s.timeS, s.distM, this.route.lengthM, this.daily.targetS) }
+          : null,
     };
   }
 
@@ -450,6 +541,11 @@ export class Game {
     }
     saveSegmentBests(this.route.id, bests);
 
+    if (this.mode === "daily" && result.complete && this.route.id === this.daily.routeId) {
+      this.medal = medalFor(result.timeS, this.daily.targetS);
+      if (this.dailyBestS === null || result.timeS < this.dailyBestS) saveDailyBest(this.daily.day, result.timeS);
+    }
+
     const room = this.room;
     const sum = s.summaryMessage();
     if (room && sum) {
@@ -460,11 +556,39 @@ export class Game {
     } else {
       this.delivery = "none";
     }
+    this.submitToBoard(result);
     this.updateHud();
     window.clearTimeout(this.toastTimer);
     this.toast = null;
     this.toScreen("summary");
   }
+
+  setAnon(anon: boolean): void {
+    this.anon = anon;
+    saveSettings({ anon });
+    this.emit();
+  }
+
+  /** Complete route rides through the phone go to the leaderboard; the relay checks it saw the cadence. */
+  private submitToBoard(result: RideResult): void {
+    if (!result.complete) return;
+    const info = this.room?.room;
+    if (!info || this.mode === "interval" || result.avgCad === null) {
+      this.board = { state: "ineligible" };
+      return;
+    }
+    this.board = { state: "pending" };
+    const routeId = this.route.id;
+    void submitResult(info, { routeId, timeS: result.timeS, distM: result.distM, avgCad: result.avgCad, anon: this.anon }).then((outcome) => {
+      this.board = outcome.ok ? { state: "ok", rank: outcome.rank, routeId } : { state: "failed", error: outcome.error };
+      this.emit();
+    });
+  }
 }
+
+export type BoardSubmit =
+  | { state: "none" | "pending" | "ineligible" }
+  | { state: "ok"; rank: number; routeId: string }
+  | { state: "failed"; error: string };
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;

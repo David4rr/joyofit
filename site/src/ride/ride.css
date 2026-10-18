@@ -424,6 +424,8 @@ button.rd-option:active {
 
 .rd-routes {
   justify-content: space-between;
+  gap: calc(var(--u) * 1);
+  overflow-y: auto;
 }
 
 .rd-routes-head {
@@ -462,7 +464,7 @@ button.rd-option:active {
 
 .rd-route-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 16), 1fr));
   gap: calc(var(--u) * 1.2);
   align-items: stretch;
 }
@@ -1213,4 +1215,347 @@ button.rd-option:active {
   text-shadow:
     0 0 2px oklch(0.1 0 0 / 0.9),
     0 1px 5px oklch(0.1 0 0 / 0.75);
+}
+
+/* Modes, daily challenge, jersey, leaderboard ------------------------------------------------------------- */
+
+.rd-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(var(--u) * 0.8);
+}
+
+.rd-mode {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: calc(var(--u) * 0.7);
+  align-items: center;
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 1);
+  border: 1px solid var(--rd-line);
+  border-radius: var(--rd-r-panel);
+  background: oklch(0.15 0.008 85 / 0.72);
+  text-align: left;
+  transition:
+    transform 160ms var(--rd-ease),
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.rd-mode:active {
+  transform: scale(0.985);
+}
+
+.rd-mode.is-on {
+  border-color: var(--rd-accent);
+  background: oklch(0.2 0.025 220 / 0.82);
+}
+
+.rd-mode svg {
+  width: calc(var(--u) * 1.4);
+  height: calc(var(--u) * 1.4);
+  color: var(--rd-accent);
+  grid-row: span 2;
+}
+
+.rd-mode-name {
+  font-size: calc(var(--u) * 1.1);
+  font-weight: 800;
+}
+
+.rd-mode-hint {
+  font-size: calc(var(--u) * 0.85);
+  line-height: 1.35;
+  color: var(--rd-muted);
+}
+
+.rd-workouts {
+  align-self: flex-start;
+}
+
+.rd-workouts button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: calc(var(--u) * 0.5);
+}
+
+.rd-workouts small {
+  font-weight: 600;
+  color: var(--rd-dim);
+}
+
+.rd-daily,
+.rd-medal {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1);
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 1.1);
+  border: 1px solid var(--rd-line);
+  border-radius: var(--rd-r-panel);
+  background: oklch(0.15 0.008 85 / 0.72);
+}
+
+.rd-daily > div,
+.rd-medal > div {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.2);
+}
+
+.rd-daily svg,
+.rd-medal svg {
+  flex: none;
+  width: calc(var(--u) * 2);
+  height: calc(var(--u) * 2);
+  color: var(--rd-accent);
+}
+
+.rd-medal.is-gold svg {
+  color: oklch(0.8 0.13 85);
+}
+
+.rd-medal.is-silver svg {
+  color: oklch(0.84 0.01 250);
+}
+
+.rd-medal.is-bronze svg {
+  color: oklch(0.66 0.11 55);
+}
+
+.rd-route:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.rd-routes-extra {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: calc(var(--u) * 1.4);
+  align-items: start;
+}
+
+.rd-jersey {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 0.5);
+  max-width: calc(var(--u) * 14);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rd-jersey legend {
+  margin-bottom: calc(var(--u) * 0.5);
+}
+
+.rd-swatch {
+  width: calc(var(--u) * 2.2);
+  height: calc(var(--u) * 2.2);
+  border: 2px solid oklch(1 0 0 / 0.25);
+  border-radius: 50%;
+  transition: transform 160ms var(--rd-ease);
+}
+
+.rd-swatch:active {
+  transform: scale(0.94);
+}
+
+.rd-swatch.is-on {
+  border-color: var(--rd-fg);
+  box-shadow: 0 0 0 3px var(--rd-accent);
+}
+
+.rd-board {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.6);
+  padding: calc(var(--u) * 1) calc(var(--u) * 1.2);
+  border: 1px solid var(--rd-line);
+  border-radius: var(--rd-r-panel);
+  background: oklch(0.15 0.008 85 / 0.72);
+}
+
+.rd-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--u) * 1);
+}
+
+.rd-board-head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.5);
+  margin: 0;
+}
+
+.rd-board-head svg {
+  width: calc(var(--u) * 1.1);
+  height: calc(var(--u) * 1.1);
+}
+
+.rd-seg-sm button {
+  min-height: calc(var(--u) * 1.9);
+  font-size: calc(var(--u) * 0.85);
+}
+
+.rd-board-list {
+  display: grid;
+  gap: calc(var(--u) * 0.25);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rd-board-list li {
+  display: grid;
+  grid-template-columns: calc(var(--u) * 1.8) calc(var(--u) * 1.8) 1fr auto;
+  align-items: center;
+  gap: calc(var(--u) * 0.6);
+  padding: calc(var(--u) * 0.3) calc(var(--u) * 0.5);
+  border-radius: calc(var(--u) * 0.5);
+  font-size: calc(var(--u) * 1);
+}
+
+.rd-board-list li.is-you {
+  background: oklch(0.767 0.105 216 / 0.18);
+}
+
+.rd-board-rank {
+  font-weight: 800;
+  color: var(--rd-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rd-board-avatar {
+  display: grid;
+  place-items: center;
+  width: calc(var(--u) * 1.8);
+  height: calc(var(--u) * 1.8);
+  border-radius: 50%;
+  background: var(--rd-accent);
+  color: var(--rd-accent-ink);
+  font-size: calc(var(--u) * 0.85);
+  font-weight: 800;
+}
+
+.rd-board-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-board-time {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rd-board-anon {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.5);
+  font-size: calc(var(--u) * 0.9);
+  color: var(--rd-muted);
+}
+
+.rd-board-rule {
+  margin: 0;
+  font-size: calc(var(--u) * 0.8);
+}
+
+/* Interval workout HUD ------------------------------------------------------------------------------------ */
+
+.rd-interval {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.4);
+  min-width: calc(var(--u) * 20);
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 1.1);
+  border-radius: var(--rd-r-panel);
+  background: var(--rd-panel);
+  text-shadow: none;
+}
+
+.rd-interval-hard,
+.rd-interval-sprint {
+  background: oklch(0.32 0.1 28 / 0.88);
+}
+
+.rd-interval-head,
+.rd-interval-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--u) * 1);
+  font-size: calc(var(--u) * 0.95);
+}
+
+.rd-interval-name {
+  font-weight: 800;
+  font-size: calc(var(--u) * 1.15);
+}
+
+.rd-interval-time {
+  font-size: calc(var(--u) * 2.6);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.rd-gauge {
+  position: relative;
+  height: calc(var(--u) * 0.9);
+  border-radius: 999px;
+  background: oklch(1 0 0 / 0.12);
+}
+
+.rd-gauge-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: oklch(0.767 0.105 216 / 0.55);
+}
+
+.rd-gauge-mark {
+  position: absolute;
+  top: calc(var(--u) * -0.3);
+  width: calc(var(--u) * 0.35);
+  height: calc(var(--u) * 1.5);
+  margin-left: calc(var(--u) * -0.175);
+  border-radius: 999px;
+  background: var(--rd-fg);
+  transition: left 200ms linear;
+}
+
+.rd-interval[data-status="in"] .rd-interval-foot b {
+  color: oklch(0.86 0.13 150);
+}
+
+.rd-interval[data-status="below"] .rd-interval-foot b,
+.rd-interval[data-status="above"] .rd-interval-foot b {
+  color: oklch(0.86 0.12 75);
+}
+
+.rd-interval-next {
+  font-size: calc(var(--u) * 0.85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-gauge-mark {
+    transition: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .rd-modes,
+  .rd-routes-extra {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rd-routes-foot {
+  position: sticky;
+  bottom: 0;
+  padding-top: calc(var(--u) * 0.6);
 }

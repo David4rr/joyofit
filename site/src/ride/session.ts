@@ -106,6 +106,10 @@ export class RideSession {
   cad: number | undefined;
   drafting = false;
   maxSpeedMs = 0;
+  /** Times the rider crossed the finish and started the route again (loop rides only). */
+  loops = 0;
+  /** Loop rides restart the route at the finish instead of ending; the ride ends on stop(). */
+  readonly loop: boolean;
   readonly laps: SumLap[] = [];
   readonly segments: SegmentProgress[];
   readonly trace: number[] = [0];
@@ -131,10 +135,12 @@ export class RideSession {
       massKg?: number;
       ghost: GhostRun | null;
       segmentBests: Record<string, number>;
+      loop?: boolean;
     },
   ) {
+    this.loop = options.loop ?? false;
     this.massKg = options.massKg ?? DEFAULT_RIDER_KG;
-    this.ghost = options.ghost;
+    this.ghost = this.loop ? null : options.ghost;
     this.prevElev = track.elevationAt(0);
     this.grade = track.gradeAt(0);
     this.segments = route.segments.map((def) => ({
@@ -173,6 +179,11 @@ export class RideSession {
     return Math.max(0, this.route.lengthM - this.distM);
   }
 
+  /** Distance ridden including whole loops. */
+  get totalDistM(): number {
+    return this.loops * this.route.lengthM + this.distM;
+  }
+
   drainEvents(): RideEvent[] {
     const out = this.events;
     this.events = [];
@@ -200,17 +211,17 @@ export class RideSession {
 
   lap(): void {
     if (this.phase !== "riding" || this.laps.length >= MAX_LAPS) return;
-    const lap = { sec: round1(this.timeS - this.lapStartS), distM: round1(this.distM - this.lapStartM) };
+    const lap = { sec: round1(this.timeS - this.lapStartS), distM: round1(this.totalDistM - this.lapStartM) };
     this.laps.push(lap);
     this.lapStartS = this.timeS;
-    this.lapStartM = this.distM;
+    this.lapStartM = this.totalDistM;
     this.events.push({ type: "lap", lap, index: this.laps.length });
   }
 
   /** Ends the ride where it is. A ride that did not reach the finish line is "incomplete" and never becomes the best. */
   stop(): void {
     if (this.phase === "finished" || this.phase === "idle") return;
-    this.finish(this.distM >= this.route.lengthM);
+    this.finish(!this.loop && this.distM >= this.route.lengthM);
   }
 
   step(dt: number, input: RideInput): void {
@@ -274,8 +285,15 @@ export class RideSession {
     this.updateSegments();
 
     if (this.distM >= this.route.lengthM) {
-      this.distM = this.route.lengthM;
-      this.finish(true);
+      if (this.loop) {
+        this.distM -= this.route.lengthM;
+        this.loops++;
+        this.prevElev = this.track.elevationAt(this.distM);
+        for (const seg of this.segments) if (seg.state !== "active") seg.state = "idle";
+      } else {
+        this.distM = this.route.lengthM;
+        this.finish(true);
+      }
     }
   }
 
@@ -299,8 +317,9 @@ export class RideSession {
 
   private finish(complete: boolean): void {
     this.phase = "finished";
-    if (this.distM - this.lapStartM > 1 && this.laps.length < MAX_LAPS) {
-      this.laps.push({ sec: round1(this.timeS - this.lapStartS), distM: round1(this.distM - this.lapStartM) });
+    const totalM = this.totalDistM;
+    if (totalM - this.lapStartM > 1 && this.laps.length < MAX_LAPS) {
+      this.laps.push({ sec: round1(this.timeS - this.lapStartS), distM: round1(totalM - this.lapStartM) });
     }
     for (const seg of this.segments) if (seg.state === "active") seg.state = "idle";
     const ghostTime = this.ghost?.timeS ?? null;
@@ -308,9 +327,9 @@ export class RideSession {
       routeId: this.route.id,
       complete,
       timeS: this.timeS,
-      distM: this.distM,
+      distM: totalM,
       elevM: this.elevGainM,
-      avgSpeedKmh: this.timeS > 0 ? (this.distM / this.timeS) * 3.6 : 0,
+      avgSpeedKmh: this.timeS > 0 ? (totalM / this.timeS) * 3.6 : 0,
       maxSpeedKmh: this.maxSpeedMs * 3.6,
       avgCad: this.cadN > 0 ? this.cadSum / this.cadN : null,
       avgHr: this.hrN > 0 ? this.hrSum / this.hrN : null,

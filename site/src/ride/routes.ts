@@ -3,7 +3,7 @@
  * track.ts interpolates smoothly, plus the segments (sprint and KOM) timed on them. Text lives in i18n.ts
  * under `route.<id>.*` and `segment.<id>`.
  */
-export type ThemeId = "pantai" | "bukit" | "kebun";
+export type ThemeId = "pantai" | "bukit" | "kebun" | "bromo";
 
 export type SegmentKind = "sprint" | "kom";
 
@@ -120,6 +120,41 @@ export const ROUTES: readonly RouteDef[] = [
     segments: [
       { id: "kebun-kom", kind: "kom", startM: 1050, endM: 1500 },
       { id: "kebun-sprint", kind: "sprint", startM: 2000, endM: 2500 },
+    ],
+  },
+  {
+    id: "bromo",
+    name: "Bromo",
+    lengthM: 8000,
+    elevation: [
+      [0, 1400],
+      [900, 1440],
+      [2000, 1535],
+      [3000, 1615],
+      [3800, 1690],
+      [4500, 1705],
+      [5500, 1790],
+      [6500, 1880],
+      [7300, 1935],
+      [8000, 1945],
+    ],
+    heading: [
+      [0, 0],
+      [700, 40],
+      [1500, -45],
+      [2300, 50],
+      [3100, -40],
+      [3900, 10],
+      [4600, -20],
+      [5400, 55],
+      [6100, -55],
+      [6800, 50],
+      [7500, -30],
+      [8000, 0],
+    ],
+    segments: [
+      { id: "bromo-sprint", kind: "sprint", startM: 3800, endM: 4400 },
+      { id: "bromo-kom", kind: "kom", startM: 5400, endM: 7300 },
     ],
   },
 ];

@@ -61,6 +61,7 @@ export class Engine {
   /** Runs once per frame before drawing, with the clamped frame time in seconds. */
   onTick: ((dt: number) => void) | null = null;
   cameraMode: CameraMode = "chase";
+  private jersey = 0xe8e4d8;
 
   private readonly renderer: WebGLRenderer;
   private readonly camera = new PerspectiveCamera(BASE_FOV, 1, 0.3, 3000);
@@ -127,12 +128,29 @@ export class Engine {
     const world = new World(route, this.quality);
     this.world = world;
     this.renderer.setClearColor(new Color(world.theme.fog));
-    this.rider = this.makeActor(0xe8e4d8, false);
+    this.rider = this.makeActor(this.jersey, false);
     this.ghost = this.makeActor(0x6fd3a2, true);
     this.ghost.root.visible = false;
     world.scene.add(this.rider.root, this.ghost.root);
     this.placeActor(this.rider, 0, RIDER_LAT, 0);
     this.cameraSnap();
+  }
+
+  /** Rebuilds the rider in a new jersey colour, keeping its place and pedal phase. */
+  setJersey(color: number): void {
+    this.jersey = color;
+    const world = this.world;
+    const old = this.rider;
+    if (!world || !old) return;
+    const next = this.makeActor(color, false);
+    next.root.position.copy(old.root.position);
+    next.root.rotation.copy(old.root.rotation);
+    next.crank = old.crank;
+    next.wheel = old.wheel;
+    world.scene.remove(old.root);
+    old.avatar.dispose();
+    world.scene.add(next.root);
+    this.rider = next;
   }
 
   private unloadRoute(): void {

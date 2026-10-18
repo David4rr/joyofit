@@ -4,6 +4,7 @@ import { GEAR_COUNT } from "../../../../src/features/ride/physics.ts";
 import type { Game, Toast } from "../game.ts";
 import { ZONE_COLORS, formatGrade, formatKm, formatTime, formatTimeTenths } from "../format.ts";
 import { useT, type TKey, type TFn } from "../i18n.ts";
+import type { IntervalSnapshot } from "../modes.ts";
 import { Profile } from "./Profile.tsx";
 import { useGame } from "./hooks.ts";
 
@@ -27,9 +28,58 @@ function GradeGlyph({ grade }: { grade: number }) {
   );
 }
 
+const GAUGE_MIN = 40;
+const GAUGE_MAX = 130;
+const gaugePct = (rpm: number) => Math.min(100, Math.max(0, ((rpm - GAUGE_MIN) / (GAUGE_MAX - GAUGE_MIN)) * 100));
+
+/** Interval block, countdown and a cadence gauge with the target band. */
+function IntervalPanel({ snap, cad, t }: { snap: IntervalSnapshot; cad: number | null; t: TFn }) {
+  const { block } = snap;
+  const status = snap.position === 0 ? "in" : snap.position === -1 ? "below" : snap.position === 1 ? "above" : "none";
+  const label =
+    status === "in" ? t("hud.inBand") : status === "below" ? t("hud.below") : status === "above" ? t("hud.above") : t("hud.target", { lo: block.cadLo, hi: block.cadHi });
+  return (
+    <div className={`rd-interval rd-interval-${block.kind}`} data-status={status}>
+      <div className="rd-interval-head">
+        <span className="rd-interval-name">{t(`block.${block.kind}` as TKey)}</span>
+        <span className="rd-dim">{t("hud.block", { n: snap.index + 1, count: snap.count })}</span>
+      </div>
+      <span className="rd-interval-time">{formatTime(snap.remainingS)}</span>
+      <div
+        className="rd-gauge"
+        role="meter"
+        aria-label={t("hud.target", { lo: block.cadLo, hi: block.cadHi })}
+        aria-valuemin={GAUGE_MIN}
+        aria-valuemax={GAUGE_MAX}
+        aria-valuenow={cad === null ? undefined : Math.round(cad)}
+      >
+        <span className="rd-gauge-band" style={{ left: `${gaugePct(block.cadLo)}%`, width: `${gaugePct(block.cadHi) - gaugePct(block.cadLo)}%` }} />
+        {cad !== null && <span className="rd-gauge-mark" style={{ left: `${gaugePct(cad)}%` }} />}
+      </div>
+      <div className="rd-interval-foot">
+        <b>{label}</b>
+        <span className="rd-dim">{t("hud.compliance", { pct: Math.round(snap.compliance * 100) })}</span>
+      </div>
+      {snap.next && (
+        <span className="rd-dim rd-interval-next">
+          {t("hud.next", { name: t(`block.${snap.next.kind}` as TKey) })} · {snap.next.cadLo}–{snap.next.cadHi} rpm
+        </span>
+      )}
+    </div>
+  );
+}
+
 function toastText(toast: Toast, t: TFn): { title: string; detail: string; tone: "sprint" | "kom" | "lap"; pb: boolean } {
   if (toast.kind === "lap") {
     return { title: t("hud.lapDone", { n: toast.index, time: formatTime(toast.sec) }), detail: "", tone: "lap", pb: false };
+  }
+  if (toast.kind === "block") {
+    return {
+      title: `${t(`block.${toast.block.kind}` as TKey)} · ${formatTime(toast.block.durS)}`,
+      detail: t("hud.target", { lo: toast.block.cadLo, hi: toast.block.cadHi }),
+      tone: toast.block.kind === "hard" || toast.block.kind === "sprint" ? "kom" : "lap",
+      pb: false,
+    };
   }
   const name = t(`segment.${toast.segmentId}` as TKey);
   const kind = t(toast.segKind === "kom" ? "segment.kom" : "segment.sprint");
@@ -93,6 +143,13 @@ export function Hud({ game }: { game: Game }) {
           <div key={toast.id} className={`rd-toast rd-toast-${toastView.tone} ${toastView.pb ? "is-pb" : ""}`}>
             <b>{toastView.title}</b>
             {toastView.detail && <span>{toastView.detail}</span>}
+          </div>
+        )}
+        {hud.interval && (riding || paused) && <IntervalPanel snap={hud.interval} cad={hud.cad} t={t} />}
+        {hud.daily && (riding || paused) && (
+          <div className={`rd-ghost-gap ${hud.daily.gapS <= 0 ? "is-ahead" : "is-behind"}`}>
+            {t("hud.dailyTarget", { time: formatTime(hud.daily.targetS) })} ·{" "}
+            {t(hud.daily.gapS <= 0 ? "hud.dailyAhead" : "hud.dailyBehind", { time: formatTime(Math.abs(hud.daily.gapS)) })}
           </div>
         )}
         {active && riding && (

@@ -4,12 +4,17 @@ import type { QualityId } from "./theme.ts";
 const GHOST_PREFIX = "joyofit-ride-ghost:";
 const SEGMENT_PREFIX = "joyofit-ride-segments:";
 const SETTINGS_KEY = "joyofit-ride-settings";
+const DAILY_PREFIX = "joyofit-ride-daily:";
 
 export type Lang = "id" | "en";
 
 export interface Settings {
   quality?: QualityId;
   lang?: Lang;
+  /** Jersey colour, 0xRRGGBB. */
+  jersey?: number;
+  /** Leaderboard: hide the name. */
+  anon?: boolean;
 }
 
 function read<T>(key: string): T | null {
@@ -45,6 +50,16 @@ export function loadSegmentBests(routeId: string): Record<string, number> {
 
 export function saveSegmentBests(routeId: string, bests: Record<string, number>): void {
   write(SEGMENT_PREFIX + routeId, bests);
+}
+
+/** Best complete time on the daily challenge of [day] (YYYY-MM-DD, WIB). */
+export function loadDailyBest(day: string): number | null {
+  const v = read<number>(DAILY_PREFIX + day);
+  return typeof v === "number" && v > 0 ? v : null;
+}
+
+export function saveDailyBest(day: string, timeS: number): void {
+  write(DAILY_PREFIX + day, timeS);
 }
 
 export function loadSettings(): Settings {
