@@ -60,6 +60,11 @@ import { useStrengthHistory } from '@/features/strength/history';
 import { getStrengthWorkoutByStart } from '@/features/strength/store';
 import type { StrengthWorkout } from '@/features/strength/types';
 import { StrengthDetailSection } from '@/features/strength/ui/StrengthDetailSection';
+import { EbikeRow } from '@/features/cycling/ui/EbikeRow';
+import { RideAnalysisView } from '@/features/cycling/ui/RideAnalysisView';
+import { useRideData } from '@/features/cycling/ui/useRideData';
+import { withRideStats } from '@/features/cycling/ui/withRideStats';
+import { sportKind } from '@/features/workouts/analysis/sport';
 import { errorMessage, formatClock, formatCount, formatDateTime } from '@/format';
 import { fmtDecimal, fmtInt, t as translate } from '@/i18n';
 import { spacing, useColors } from '@/theme';
@@ -207,6 +212,20 @@ export default function WorkoutDetailScreen() {
     () => (loaded ? { ...loaded.summary, elevationGain: elevation?.gainM, elevationLoss: elevation?.lossM } : {}),
     [loaded, elevation],
   );
+  const rideInput = useMemo(
+    () =>
+      loaded !== null && sportKind(loaded.workout.sportName, loaded.summary.kind) === 'ride'
+        ? { workout: loaded.workout, summary: loaded.summary, points: loaded.points }
+        : null,
+    [loaded],
+  );
+  const rideData = useRideData(db, rideInput);
+  // The consumers of the analysis (share to JoyoRogo, coach) get the ride's own power and speed figures, not the 600-step grid's.
+  const sharedAnalysis = useMemo(() => {
+    if (analysisState.status !== 'ready') return null;
+    return rideData.ride ? withRideStats(analysisState.analysis, rideData.ride) : analysisState.analysis;
+  }, [analysisState, rideData.ride]);
+  const avgRideSpeed = rideData.ride?.speed.avgMovingMs != null ? rideData.ride.speed.avgMovingMs * 3.6 : null;
   const colors = useColors();
 
   if (!loaded) {
@@ -272,6 +291,11 @@ export default function WorkoutDetailScreen() {
               <Metric value={distance} unit={distanceUnit} size="md" />
             </Figure>
           ) : null}
+          {avgRideSpeed !== null ? (
+            <Figure label={translate('cycling:header.avgSpeed')}>
+              <Metric value={fmtDecimal(avgRideSpeed, 1)} unit={translate('cycling:unit.kmh')} size="md" />
+            </Figure>
+          ) : null}
           {workout.calories > 0 ? (
             <Figure label={t('detail.figure.calories')}>
               <Metric value={formatCount(workout.calories)} unit={t('detail.unit.kcal')} size="md" />
@@ -293,13 +317,14 @@ export default function WorkoutDetailScreen() {
             </Figure>
           ) : null}
         </View>
+        {rideInput !== null ? <EbikeRow workoutStart={workout.start} /> : null}
         <ShareWorkoutButton workout={workout} summary={shareSummary} route={route} />
         {bare ? null : (
           <>
             <ShareToRogoButton
               workout={workout}
               points={loaded.points}
-              analysis={analysisState.status === 'ready' ? analysisState.analysis : null}
+              analysis={sharedAnalysis}
               analysisPending={analysisState.status === 'pending'}
             />
             <SaveWorkoutRouteButton workout={workout} points={loaded.points} />
@@ -311,14 +336,35 @@ export default function WorkoutDetailScreen() {
       {loaded.strength ? <StrengthDetailSection strength={loaded.strength} catalog={catalog} /> : null}
 
       {analysisState.status === 'ready' ? (
-        <WorkoutAnalysisView analysis={analysisState.analysis} palette={palette} t={analysisT} mapTheme={mapTheme} onScrubActive={setScrubbing} />
+        rideData.ride !== null ? (
+          <RideAnalysisView
+            analysis={analysisState.analysis}
+            ride={rideData.ride}
+            palette={palette}
+            t={analysisT}
+            mapTheme={mapTheme}
+            onScrubActive={setScrubbing}
+            ftp={rideData.ftp}
+            weightKg={rideData.weightKg}
+            allTime={rideData.allTime}
+            records={rideData.records}
+            onUseFtp={rideData.setFtpAndRefresh}
+          />
+        ) : rideInput !== null && rideData.error === null ? (
+          <Skeleton width="100%" height={320} radius="card" />
+        ) : (
+          <>
+            {rideData.error !== null ? <Notice tone="danger">{t('detail.errors.analysis', { message: rideData.error })}</Notice> : null}
+            <WorkoutAnalysisView analysis={analysisState.analysis} palette={palette} t={analysisT} mapTheme={mapTheme} onScrubActive={setScrubbing} />
+          </>
+        )
       ) : analysisState.status === 'error' ? (
         <Notice tone="danger">{t('detail.errors.analysis', { message: analysisState.message })}</Notice>
       ) : analysisState.status === 'none' ? null : (
         <Skeleton width="100%" height={320} radius="card" />
       )}
       {summary.gps === 'failed' ? <Notice icon="location-outline">{t('detail.gpsFailed')}</Notice> : null}
-      <CoachFeedbackSection workoutStart={workout.start} analysis={analysisState.status === 'ready' ? analysisState.analysis : null} />
+      <CoachFeedbackSection workoutStart={workout.start} analysis={sharedAnalysis} />
 
       {bare ? null : (
         <Section title={t('detail.strain.title')} icon="pulse" tint="workouts">
