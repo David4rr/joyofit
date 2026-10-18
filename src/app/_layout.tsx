@@ -25,6 +25,8 @@ import { ensureCyclingSchema } from '@/features/cycling/store';
 import { ensureSensorSchema } from '@/features/sensors/store';
 import { ensureCoachSchema } from '@/features/coach/store';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
+import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
+import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { CloudProvider } from '@/state/CloudProvider';
 import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
@@ -95,6 +97,11 @@ function RootNavigator() {
     return () => sub.remove();
   }, []);
 
+  // app.json allows rotation so the bike computer screen can use landscape; everything else stays portrait.
+  useEffect(() => {
+    void lockPortrait();
+  }, []);
+
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
@@ -109,6 +116,7 @@ function RootNavigator() {
             <StravaProvider>
               <SensorsProvider>
               <RecorderProvider>
+              <BikeRideProvider>
               <MealsProvider>
                 <LiveWorkoutProvider>
                   <OnboardingProvider>
@@ -208,6 +216,7 @@ function RootNavigator() {
                   </OnboardingProvider>
                 </LiveWorkoutProvider>
               </MealsProvider>
+              </BikeRideProvider>
               </RecorderProvider>
               </SensorsProvider>
             </StravaProvider>

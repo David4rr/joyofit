@@ -1,9 +1,11 @@
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Screen } from '@/components/Screen';
+import { BikeRideView } from '@/features/bikecomputer/ui/BikeRideView';
+import { useBikeSettings } from '@/features/bikecomputer/ui/useBikeSettings';
 import { holdScreenOn, releaseScreen } from '@/features/strength/keepAwake';
 import type { ManualSport } from '@/features/workouts/manual';
 import { errorMessage } from '@/format';
@@ -41,6 +43,9 @@ export function RecordScreen() {
   const [leaving, setLeaving] = useState(false);
 
   const { phase, status } = snapshot;
+  const bike = useBikeSettings();
+  // Bike computer mode takes the whole screen (no header, no scrolling page) while a ride is recording.
+  const bikeLive = bike.enabled && snapshot.sport === 'ride' && (phase === 'active' || phase === 'saving');
   const awake = phase === 'ready' || phase === 'active';
   useEffect(() => {
     if (!awake) return;
@@ -97,6 +102,16 @@ export function RecordScreen() {
 
   return (
     <>
+      {bikeLive ? <Stack.Screen options={{ headerShown: false }} /> : null}
+      {bikeLive && !leaving ? (
+        <BikeRideView
+          saving={phase === 'saving'}
+          saveError={saveError}
+          onFinish={askFinish}
+          onSaveAgain={() => void save()}
+          onDiscard={() => setDialog('discard')}
+        />
+      ) : (
       <Screen>
         {leaving ? null : phase === 'idle' ? (
           <SetupView sport={sport} onSport={setSport} notice={notice} />
@@ -112,6 +127,7 @@ export function RecordScreen() {
           />
         )}
       </Screen>
+      )}
       <FinishDialog
         visible={dialog === 'finish'}
         live={snapshot.live}

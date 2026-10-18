@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 
 import { applyLocale } from '@/i18n';
 import type { LiveStats } from '@/features/record/recorder';
@@ -66,6 +66,11 @@ const empty: FieldContext = {
 
 beforeAll(async () => {
   await applyLocale('en');
+});
+
+// Other test files run in Indonesian (bunfig preload); do not leak English into them.
+afterAll(async () => {
+  await applyLocale('id');
 });
 
 describe('fieldValue', () => {

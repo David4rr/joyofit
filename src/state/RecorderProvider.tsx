@@ -6,7 +6,7 @@ import { BleSensors } from '@/ble';
 import { cloudLog as log } from '@/cloud/log';
 import { fmtDecimal, t } from '@/i18n';
 import { afterRecordingSaved } from '@/features/record/afterSave';
-import { RecordingController, type FinishResult, type RecordingSnapshot } from '@/features/record/controller';
+import { RecordingController, type ControllerTick, type FinishResult, type RecordingSnapshot } from '@/features/record/controller';
 import type { EnergyProfile, Sex } from '@/features/record/energy';
 import type { LiveStats } from '@/features/record/recorder';
 import { sensorHub } from '@/features/sensors/instance';
@@ -41,6 +41,8 @@ export interface RecorderContextValue {
    */
   finish: (options: { strava: boolean }) => Promise<FinishResult | null>;
   discard: () => Promise<void>;
+  /** Calls `listener` every second while a recording is active (also paused); returns the unsubscribe. Bike mode runs its engines from it. */
+  observe: (listener: (tick: ControllerTick) => void) => () => void;
 }
 
 const RecorderContext = createContext<RecorderContextValue | null>(null);
@@ -137,6 +139,7 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
       lap: () => controller.lap(),
       finish,
       discard: () => controller.discard(),
+      observe: controller.observe,
     }),
     [controller, finish, snapshot, stopWarmUp, warmUp],
   );

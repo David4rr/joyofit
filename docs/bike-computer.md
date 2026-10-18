@@ -90,15 +90,28 @@ No API key and no cost that needs approval; works with no signal; region downloa
 - **Geofabrik:** extracts are free; they ask for reasonable use. We download each extract once per build.
 - Not legal advice. The attribution text is shown inside the map and on the region screen.
 
-### Region UX and sizes
+### Region UX and sizes (measured)
 
-Regions are Indonesian provinces or island groups, so one file is something a rider can fetch on mobile data (tens to a few hundred MB) rather than all of Java at once. Phase 1 targets **Bali** and **Jawa** (split into three: Jawa Barat + Banten + Jakarta, Jawa Tengah + DIY, Jawa Timur) in the catalog; the index can list any of them, but only files that were actually built are published.
+Regions are Indonesian provinces or island groups, so one file is something a rider can fetch on mobile data. Built on 2026-10-18 with Planetiler 0.10.2 (Temurin JDK 21, `--threads=3`, `-Xmx4g`, under `lowprio`) from Geofabrik extracts, zoom 0-14, layers landcover, landuse, park, water, waterway, aeroway, building, transportation, boundary (poi, housenumber, place labels, mountain peaks and name layers dropped: the style draws none of them). All pass `pmtiles verify` and decode with `src/features/map/decodeTile`.
 
-Sizes: **the measured numbers go into section 11 after the build run.** Before that, the only data point is the earlier OpenFreeMap sample of a 24 x 24 km box around Malang: 9.6 MiB for z6-14 uncompressed, with labels, POIs and buildings [REPO: watch-map research]. Scaling by land area and halving for gzip and excluded layers puts Java at roughly 1 GB and a province at 100-300 MB [INFERENCE]; the build output replaces this guess.
+| Region | Bytes | Size | Planetiler wall time | Peak RSS | sha256 (first 12) |
+| --- | --- | --- | --- | --- | --- |
+| `bali` | 25,485,846 | 24.3 MiB | 8 m 23 s (4 m 34 s of it the one-time 1.3 GB download of ocean polygons and Natural Earth) | 2.8 GB | d0a60d181d08 |
+| `jawa-barat` (Jawa Barat + Banten + Jakarta) | 183,491,356 | 175 MiB | 13 m 50 s | 3.6 GB | 3291df8e285a |
+| `jawa-tengah` (Jawa Tengah + DIY) | 160,051,624 | 153 MiB | 10 m 33 s | 3.6 GB | dce289ef73d2 |
+| `jawa-timur` | 129,769,675 | 124 MiB | 8 m 44 s | 3.1 GB | fa357611cd4d |
+
+All four together: 498.8 MB on the bucket. A calibration build of DIY alone (not published, it overlaps Jawa Tengah) was 33.8 MB at 10.8 KB per km2 of land, 2.5 times denser than Bali (4.4 KB/km2); the three Java regions came out at 3.9 to 4.4 KB/km2, so dense urban cores run well above the rural rate. z14 is 67 to 73 % of every file: a **z13 build** would be about 70 % smaller (Bali 6.8 MB, Jawa Barat about 50 MB) and lose detail past z13; decision (lead, 2026-10-18): **ship z14**, offer z13 later as a "Hemat ruang" option if storage complaints come.
+
+### Hosting (live)
+
+Bucket `joyofit-maps` on Cloudflare account b7e6f845 (the JoyoFit account: `joyofit-api`, `joyofit-imports`, zone `joyorogo.com`), public through the custom domain **https://maps.fit.joyorogo.com** (not r2.dev, which Cloudflare limits to development). Objects: `<region>-20261018.pmtiles` (cache-control `public, max-age=31536000, immutable`) and `index.json` (`max-age=300`, regions with bbox, bytes, version, sha256, url, attribution, licence). Verified from the public URL: `GET index.json` 200, a `Range: bytes=0-126` request answers 206 with `Content-Range: bytes 0-126/25485846` and the `PMTiles` magic, and the full download of `bali` has the sha256 the index lists. The owner approved hosting on the paid Workers plan (2026-10-18). `cf-cache-status` reads DYNAMIC (R2 custom domains are not edge-cached unless a Cache Rule says so): harmless for correctness, since egress is free; a Cache Rule on `maps.fit.joyorogo.com` would take load off R2 and is an owner-side dashboard step.
+
+Scripts (`scripts/maps/`): `regions.json` (catalog proposals and Geofabrik sources), `build-region.sh <id>` (JDK, Planetiler jar and `pmtiles` CLI cached under `/run/media/dzul/ioswork/tools`, scratch under `maps-work`, output `maps-out`), `publish-region.sh [--yes] <id>` (dry run by default; `wrangler r2 object put --remote`, index last; needs `CLOUDFLARE_ACCOUNT_ID=b7e6f845...` because wrangler is logged into three accounts). `wrangler r2 object put` caps at 300 MiB; all regions are under it. A single all-Java file (about 430 MB) would need a multipart S3 client and is not in the catalog.
 
 ### Cost
 
-R2 (verified 2026-10-18 on developers.cloudflare.com/r2/pricing): storage $0.015 per GB-month, 10 GB-month free, **egress free**, a whole-file download is one Class B operation ($0.36 per million, 10 million free). A catalog of a few GB sits inside the free tier; beyond it, 5 GB is about $0.075 a month and downloads cost no bandwidth. The only recurring cost is the owner's time to rebuild a region when OSM data should be refreshed (Planetiler runs on a laptop in minutes to an hour per region; the Java island on a 12-core machine is about an hour [INFERENCE]).
+R2 (verified 2026-10-18 on developers.cloudflare.com/r2/pricing): storage $0.015 per GB-month, 10 GB-month free, **egress free**, a whole-file download is one Class B operation ($0.36 per million, 10 million free). The four regions are 0.5 GB: inside the free tier, **$0 a month**; a download costs no bandwidth. The only recurring cost is the owner's time to rebuild a region when OSM data should be refreshed (9 to 14 minutes of Planetiler per Java region on this machine).
 
 ## 4. Navigation
 
@@ -121,7 +134,7 @@ A ride page is a grid of 1, 2, 4, 6 or 8 fields, or one of the special pages (ma
 
 Fields (id: meaning): speed, avgSpeed, maxSpeed, lapSpeed; cadence, avgCadence; hr, avgHr, hrZone (number + colour); power, power3s, power10s, avgPower, normPower, powerZone, estPower; distance, lapDistance, distanceToFinish, distanceToTurn; movingTime, elapsedTime, lapTime, timeOfDay, eta; altitude, ascent, descent, grade, climbRemaining; calories; battery (phone). Not offered: temperature (no sensor), gear (Later).
 
-Default layout: page 1 six fields (time, speed, distance, heart rate, cadence, power), page 2 four (avg speed, max speed, ascent, grade), page 3 map, page 4 climb, page 5 laps. The map and climb pages are dropped from the default when no route is set.
+Default layout: page 1 six fields (time, speed, distance, heart rate, cadence, power), page 2 four (avg speed, max speed, ascent, grade), page 3 map, page 4 climb, page 5 laps. The climb page is left out of the default when no route is set (the map page stays: it shows the position and the track).
 
 ## 6. Ride features
 
@@ -139,7 +152,9 @@ Default layout: page 1 six fields (time, speed, distance, heart rate, cadence, p
 
 Infra today [REPO]: `joyofit-api` is a Cloudflare Worker with D1 (`joyofit`), R2 (`joyofit-imports`), cron, an `EMAIL` send binding, JoyoRogo session auth, and Family push through the Expo push service. No Durable Object, no KV.
 
-Design: `POST /v1/live` (session user) creates `live_session(id, user_id, token_hash, started_at, last_at, ended_at)`; the phone posts a batch of 1 to 20 points every 20 s (`POST /v1/live/:id/points`, bearer = the session's write secret); `GET /v1/live/:token` is public and read-only (the unguessable 128-bit token is the capability) and returns the last position, speed, time and the track; `GET /live/:token` is a small HTML page that polls it. The link stops answering 12 h after the last point or when the rider ends the ride (the same rule Wahoo documents [DOC]); points are deleted after 24 h by the nightly purge cron that already exists. At 20 s a three-hour ride is 540 rows, so D1's free tier (100k row writes a day) holds about 180 such rides a day without a bill; a Durable Object would give push to the viewer but is a second moving part for a 20 s page poll.
+Built (code, tests and migration `server/migrations/0007_live_tracking.sql`; **not deployed**): `POST /v1/live` (session user; one active session per user, starting another ends the previous; at most 10 starts an hour) returns `{id, viewUrl, token, writeKey}` once; `POST /v1/live/:id/points` takes 1 to 30 points with the write key as Bearer (so a backgrounded phone with an expired cookie still posts), rate limited to 12 requests a minute per session; `POST /v1/live/:id/end`; `GET /v1/live/:token` is public and read-only (the unguessable 128-bit token is the capability, only SHA-256 hashes are stored) and answers `live`, `ended`, `expired` or 404; `GET /live/:token` is a small HTML page (inline CSS and JS, nonce CSP, `noindex`, no map tiles on purpose: an SVG track, speed, "diperbarui X menit lalu", and a link to OpenStreetMap) that polls every 15 s. The link stops answering 12 h after the last point or when the rider ends the ride (only the `live` state returns a position; an ended link returns only times); the existing nightly purge deletes sessions and points 24 h after, and account deletion removes them. The phone side is `live/tracker.ts` (one point per 5 s, batches every 20 s, backoff 5, 15, 45 s capped at 60 s, a 600-point buffer, resume after an app restart within 12 h).
+
+Cost, from Cloudflare's current D1 and Workers pricing pages (single-ride estimates from the local D1 meta, not a production measurement): a 3 h ride is about 2,160 points, about 543 Worker requests, about 3,250 rows written during the ride and 2,160 more when the purge deletes the points (about 5.4k per ride, about $0.005 on the paid plan at $1.00 per million rows written); the free plan's 100,000 rows written a day would hold about 18 rides a day. Each open viewer page adds about 720 requests and 40k rows read per 3 h. Sampling every 10 s instead of 5 s cuts the writes to about 3.2k per ride. Deploy steps for the lead: apply `0007_live_tracking.sql` to the remote D1 (before the Worker), `bun run deploy` in `server/`; no new secrets, no `wrangler.jsonc` change.
 
 Privacy: opt-in per ride with a one-line explanation and "Lanjut" before the first start, the link is only created when the rider turns "Bagikan lokasi" on, ending the ride or turning it off revokes it, and nothing is shared with the mode off. The Worker never logs coordinates beyond the D1 rows.
 
@@ -168,7 +183,7 @@ Phone-only version, **not built in Phase 1**:
 | GPS loss | The recorder already ignores fixes over 35 m and the snapshot reports fix age. Bike mode shows "GPS hilang" over the map after 10 s without a fix, keeps the last known position greyed, and navigation freezes (off-course is suppressed while the fix is stale). | Phase 1 |
 | Sunlight theme | White background, black text, saturated data colours, the heaviest weight of the app font, no thin strokes, no translucency; night theme: black, white text. Chosen by setting (auto follows the app's scheme). Contrast of every pair tested (>= 7:1 for the numerals, >= 4.5:1 for labels, data colours >= 3:1 on the background). | Phase 1 |
 | Gloves | Controls >= 64 dp, no interactive control inside a field cell (the cell is the swipe surface), lap / pause / finish only in the bottom bar, finishing needs the confirm dialog that exists. | Phase 1 |
-| Landscape and portrait | Layouts adapt to `useWindowDimensions` (the grid picks columns by aspect; the control bar moves to the side in landscape). The app is portrait-locked in `app.json`; unlocking just for the ride screen needs `expo-screen-orientation` (native, standard) and changes the iOS plist / Android manifest orientation entries, so **the landscape layout is built and tested; the rotation unlock ships with the store build** (flagged). | Phase 1 (layout), unlock needs the native build |
+| Landscape and portrait | Layouts adapt to `useWindowDimensions` (the grid picks columns by aspect; the control bar moves to the side in landscape). `app.json` now says `orientation: default` (so the iOS plist and the Android manifest allow rotation) plus the `expo-screen-orientation` plugin with initial orientation PORTRAIT; the root layout calls `lockPortrait()` at start so every other screen stays portrait, and the ride screen unlocks while it is open and locks again when it closes. **This needs the store build** (config + native module); in a binary without the module the calls do nothing and the app keeps its old portrait manifest. Not verified on a device. | Phase 1 (layout), unlock needs the native build |
 
 ## 9. Honest limits
 
@@ -184,7 +199,7 @@ Phone-only version, **not built in Phase 1**:
 | --- | --- | --- | --- |
 | MapLibre PMTiles map | **no** (library already installed and in `app.json` plugins) | n/a | map page, offline regions |
 | `expo-brightness` | yes, one standard Expo module | `package.json`, plugin none | screen dimming |
-| `expo-screen-orientation` | yes, one standard Expo module + `app.json` `orientation` change | `package.json`, `app.json` | landscape rotation on the ride screen |
+| `expo-screen-orientation` | yes, one standard Expo module + `app.json` (`orientation: default`, plugin `initialOrientation: PORTRAIT`) | `package.json`, `app.json`, `_layout.tsx` | landscape rotation on the ride screen |
 | Lock-screen Pause / Lap | yes, Kotlin in `modules/ble-sensors` (`RecordingService` actions + an event) | CI Android build + `testDebugUnitTest` | robustness; Later |
 | `gpsIntervalMs` | yes, Kotlin + Swift in `modules/ble-sensors` | CI | battery saver; Later |
 | `expo-sensors` | yes | CI | crash detection; Later |
@@ -192,9 +207,57 @@ Phone-only version, **not built in Phase 1**:
 
 All of it changes the OTA fingerprint, which the `sensors` branch already does, so it ships with the same store build as `multi-watch` and `sensors` and never over the air (docs/ota.md). The JS in `features/bikecomputer` degrades when a module is missing (lazy require + no-op), so a binary built before the modules still opens the app.
 
-## 11. Build status and measurements
+## 11. Build status, tests, decisions for the owner
 
-(Filled in as the work lands: commits, test counts, region sizes, screenshots.)
+### What is built (branch `bikecomp`)
+
+| Phase 1 item | Where | State |
+| --- | --- | --- |
+| 1. Ride screen, swipeable pages, field customisation, persisted | `ui/BikeRideView`, `RideFrame`, `FieldGrid`, `LayoutEditor`, `FieldPicker`; `fields/values.ts` (32 fields), `fields/layout.ts`, `settings.ts` | built; mounted in `RecordScreen` instead of `LiveView` when the mode is on and the sport is Ride |
+| 2. Sunlight theme, screen on with dimming, glove controls, landscape | `ui/ridePalette.ts` (day / night, contrast tested), `ui/useDim.ts` + `dimMachine.ts` + `brightness.ts`, `ControlBar` (>= 64 dp), `gridShape.ts`, `RideFrame` landscape column | built; dimming and rotation need the store build |
+| 3. Auto-lap, alerts with sound / vibration, auto-pause | `ride/autoLap.ts`, `ride/alerts.ts`, `ride/autoPause.ts`, `alertPresenter.ts`, `session.ts` | built |
+| 4. Map page, route following, off-course, offline regions | `map/` (BikeMap on MapLibre, `resolveMapStyle`, regions index, resumable download, storage, `OfflineMapsSection`, `pmtilesReader`), `nav/follower.ts`; 4 regions built and hosted | built; not run on a device |
+| 5. Turn cues and distance to turn | `nav/cues.ts`, fields `distanceToTurn` and the map page strip, `turn` alerts at 300, 100 and 30 m | built |
+| 6. Live tracking link | `server/src/live.ts` + `livePage.ts` + migration `0007`, `live/` client, `ShareSection` | built, **not deployed** |
+| 7. Battery estimate before the ride | `ride/batteryEstimate.ts`, `batteryHistory.ts`, `record/BikeReadyPanel.tsx`; saver `ride/saver.ts` | built |
+
+Also: climb page with the route's ClimbPro-style climbs (`nav/climbsAhead.ts`), laps page, route picker on the record picker (`record/BikeSetupPanel.tsx`, `RoutePickerSheet`), the settings screen (`src/app/settings/bikecomputer.tsx`, linked from Settings > Bersepeda), `BikeRideProvider` (builds the session per ride, feeds it from `RecordingController.observe`, presents alerts, records the ride's battery drain for the next estimate).
+
+Recorder changes (additive): `Recorder.samplesSince`, `instantSpeedMps`, `latestPosition`; `RecordingController.observe`; `RecorderProvider` exposes `observe`.
+
+### Tests
+
+`bun test ./src/` passes (2314 pass, 13 skip, 0 fail at the last full run; the bike computer folders alone hold about 600 tests). By area: field formatting `fields/values.test.ts`, page layout and persistence model `fields/layout.test.ts` (11) and `settingsModel.test.ts`, auto-pause (25), auto-lap (17), alerts (64), metrics (37), battery estimate (29) + history (5) + saver (5), off-course and route following `nav/follower.test.ts`, turn cues `nav/cues.test.ts`, climbs `nav/climbsAhead.test.ts`, route projection `nav/routeIndex.test.ts`, session wiring with a real `Recorder` `session.test.ts` (10: metrics, auto-pause, manual pause kept, auto-lap, route following, off-course once, low battery, restore), ride palette contrast and dimming `ui/*.test.ts` (81), map regions index, PMTiles reader, download state machine, storage, style resolution `map/*.test.ts` (113), live client and tracker (39), server `server/test/live.test.ts` (44; the whole server suite passes, 195 tests). `bunx tsc --noEmit`, `bun scripts/i18n-check.ts` (0 missing, 0 orphan, 0 literals) and `eslint src/features/bikecomputer` are clean.
+
+### Screenshots
+
+`docs/screenshots/bike-ride-day-portrait.png`, `bike-ride-night-landscape.png`, `bike-ride-alert-night.png`, `bike-ride-day-fours.png`, `bike-climb-day.png`, `bike-laps-night.png`, `bike-editor.png`, `bike-picker.png`, `bike-settings.png`: a web render of the real `RideFrame` / `FieldGrid` / editor components with sample data, not a phone. The map page is not in them (MapLibre is native).
+
+### What needs native, and CI
+
+See section 10: no native work for the map. New native dependencies: `expo-brightness`, `expo-screen-orientation` (and the `app.json` orientation change); both are lazy-required. CI should build the Android APK once with them. Later items (lock-screen actions, `gpsIntervalMs`, crash detection) are specified, not built.
+
+### Decisions and costs for the owner
+
+| Topic | State |
+| --- | --- |
+| Tile hosting | Done and approved: bucket `joyofit-maps` on the JoyoFit Cloudflare account, https://maps.fit.joyorogo.com, 4 regions, 0.5 GB, **$0 a month** (inside R2's free tier; egress free). Optional: a Cache Rule on the hostname. A refresh of OSM data is a rebuild with `scripts/maps/build-region.sh` (9 to 14 min per Java region) plus a new dated file and index. Licence: the files are an ODbL derived database; the index carries the attribution and licence URL and the app shows them. Decision for later: z13 "Hemat ruang" builds (-70 %). |
+| Live tracking | Code and migration done, tests pass; **deploy needs the lead**: apply `0007_live_tracking.sql` remote, then `bun run deploy` in `server/`. Cost about $0.005 a ride on the paid plan; free plan about 18 rides a day. Privacy: opt-in per ride, link revoked when the ride ends or after 12 h, data deleted after 24 h. |
+| Crash detection | **Not built.** Needs `expo-sensors` (native), threshold tuning on real rides, server-side emergency contacts with consent, and a decision on liability and store health-safety review (section 7). The automatic delivery is the live session's email or push, not SMS. |
+| Battery numbers | The model's constants are unmeasured defaults; each ride adds a measurement. A device run should compare the estimate with `dumpsys batterystats` over a real ride. |
+
+### Not verified (needs a device)
+
+Nothing here ran on hardware: MapLibre drawing a `pmtiles://file://` source, the download of a 124 to 175 MiB file over a mobile network, the foreground service with the bike screen, dimming through `expo-brightness`, rotation, vibration and the notification sound on a Xiaomi / Samsung, the live link from a phone to the deployed Worker. The PMTiles files were checked with `pmtiles verify`, decoded through the repo's MVT decoder and fetched back from the public URL (206 and sha256), not rendered by MapLibre.
+
+### Device test script (owner)
+
+1. Settings > Bersepeda > Komputer sepeda: switch the mode on. Settings > Peta offline: download Bali on Wi-Fi, then turn flight mode on.
+2. Workouts > Rekam latihan > Sepeda luar ruangan: the mode switch and route row show; pick an imported GPX route. Ready screen: battery estimate and route; Mulai.
+3. Ride 15 minutes: swipe the pages, open the map (offline in flight mode), leave the route by 100 m (off-course banner and vibration), stop at a light (auto-pause, resume), turn the phone sideways (needs the store build), wait 20 s (dim, touch wakes).
+4. Set an HR or cadence alert in Settings; confirm the vibration; set a drink reminder at 2 minutes.
+5. Lock the screen for 5 minutes (the notification keeps counting), kill the app, reopen: the ride comes back paused and still follows the route.
+6. With live tracking deployed: turn on Bagikan lokasi ("Lanjut"), open the link in a browser on another phone, confirm the dot moves; end the ride and confirm the link stops.
 
 ## 12. Sources
 

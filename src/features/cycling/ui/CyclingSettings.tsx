@@ -7,6 +7,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { KeyValue } from '@/components/KeyValue';
 import { Field } from '@/components/Input';
+import { NavRow } from '@/components/NavRow';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { WheelSection } from '@/features/sensors/ui/WheelSection';
@@ -20,6 +21,7 @@ import { zoneRangeKind } from './format';
 /** Settings > Bersepeda: FTP with the power zones it gives, the body weight W/kg uses, and the wheel size. */
 export function CyclingSettings() {
   const { t } = useTranslation('cycling');
+  const { t: tb } = useTranslation('bikecomp');
   const router = useRouter();
   const [ftp, setFtpState] = useState<number | null>(getFtp);
   const [text, setText] = useState(() => (getFtp() === null ? '' : String(getFtp())));
@@ -48,6 +50,10 @@ export function CyclingSettings() {
 
   return (
     <>
+      <Section title={tb('settings.link.title')} icon="bicycle">
+        <NavRow icon="speedometer" title={tb('settings.link.row')} subtitle={tb('settings.link.subtitle')} onPress={() => router.push('/settings/bikecomputer')} />
+      </Section>
+
       <Section title={t('settings.ftp.title')} icon="flash">
         <AppText variant="caption" muted>
           {t('settings.ftp.body')}

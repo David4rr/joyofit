@@ -10,6 +10,7 @@ export default function SettingsLayout() {
   const { t } = useTranslation('settings');
   const { t: tg } = useTranslation('gear');
   const { t: tc } = useTranslation('cycling');
+  const { t: tb } = useTranslation('bikecomp');
   return (
     <Stack screenOptions={useStackOptions()}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -30,6 +31,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="import-fit" options={{ title: t('screens.importFit') }} />
       <Stack.Screen name="profile" options={{ title: t('screens.profile') }} />
       <Stack.Screen name="cycling" options={{ title: tc('settings.title') }} />
+      <Stack.Screen name="bikecomputer" options={{ title: tb('settings.title') }} />
       <Stack.Screen name="meals" options={{ title: t('screens.meals') }} />
       <Stack.Screen name="goals" options={{ title: t('screens.goals') }} />
       <Stack.Screen name="cycle" options={{ title: t('screens.cycle') }} />

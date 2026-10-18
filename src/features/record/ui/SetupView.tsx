@@ -10,6 +10,7 @@ import { Divider, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { MANUAL_SPORTS, SPORT_ROWS, type ManualSport } from '@/features/workouts/manual';
+import { BikeSetupPanel } from '@/features/bikecomputer/record/BikeSetupPanel';
 import { errorMessage } from '@/format';
 import { useRecorder } from '@/state/RecorderProvider';
 import { useSensors } from '@/state/SensorsProvider';
@@ -77,6 +78,8 @@ export function SetupView({ sport, onSport, notice }: SetupViewProps) {
       </AppText>
       {warming ? <GpsLine fix={snapshot.fix} /> : null}
       {notice ? <Notice icon="information-circle">{notice}</Notice> : null}
+
+      {sport === 'ride' ? <BikeSetupPanel /> : null}
 
       <Section title={t('record.setup.sensors')} icon="bluetooth" tint="link">
         {autoSensors.length > 0 ? (

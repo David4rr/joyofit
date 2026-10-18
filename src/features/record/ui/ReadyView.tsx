@@ -6,6 +6,8 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Divider, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
+import { BikeReadyPanel } from '@/features/bikecomputer/record/BikeReadyPanel';
+import { useBikeSettings } from '@/features/bikecomputer/ui/useBikeSettings';
 import { SPORT_ROWS } from '@/features/workouts/manual';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { useRecorder } from '@/state/RecorderProvider';
@@ -21,6 +23,7 @@ export function ReadyView() {
   const { t } = useTranslation('workouts');
   const { snapshot, start, cancel } = useRecorder();
   const { saved, hub } = useSensors();
+  const bike = useBikeSettings();
   const sensors = snapshot.sensorIds.flatMap((id) => saved.find((s) => s.id === id) ?? []);
   const sensorError = snapshot.sensorError === null ? null : sensorErrorKind(snapshot.sensorError);
 
@@ -44,6 +47,8 @@ export function ReadyView() {
           {t('record.ready.hintNoGps')}
         </AppText>
       )}
+
+      {snapshot.sport === 'ride' && bike.enabled ? <BikeReadyPanel /> : null}
 
       {sensors.length > 0 ? (
         <Section title={t('record.setup.sensors')} icon="bluetooth" tint="link">

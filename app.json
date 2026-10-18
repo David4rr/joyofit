@@ -3,7 +3,7 @@
     "name": "JoyoFit",
     "slug": "joyofit",
     "version": "1.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "joyofit",
     "userInterfaceStyle": "automatic",
@@ -258,6 +258,12 @@
         }
       ],
       "expo-font",
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "PORTRAIT"
+        }
+      ],
       "@maplibre/maplibre-react-native",
       [
         "expo-image-picker",
