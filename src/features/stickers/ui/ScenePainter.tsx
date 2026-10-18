@@ -21,7 +21,7 @@ import { splitColor, type ImageNode, type LinearPaint, type Paint, type RadialPa
 export const DESIGN_WIDTH = 1080;
 export const EXPORT_CARD_WIDTH = DESIGN_WIDTH / PixelRatio.get();
 
-interface PaintDefs {
+export interface PaintDefs {
   /** `<Defs>` children, in order. */
   defs: ReactNode[];
   next(): string;
@@ -86,14 +86,14 @@ function fillProps(paint: Paint | undefined, defs: PaintDefs) {
   return p ? ({ fill: p.value, fillOpacity: p.opacity } as const) : ({ fill: 'none' } as const);
 }
 
-interface DrawEnv {
+export interface DrawEnv {
   defs: PaintDefs;
   fonts: FontMap;
   /** Image nodes drawn inside the SVG (the leading ones are RN `Image`s under it). */
   clipCounter: { n: number };
 }
 
-function drawNode(node: SceneNode, key: string, env: DrawEnv): ReactNode {
+export function drawNode(node: SceneNode, key: string, env: DrawEnv): ReactNode {
   switch (node.k) {
     case 'rect':
       return (
