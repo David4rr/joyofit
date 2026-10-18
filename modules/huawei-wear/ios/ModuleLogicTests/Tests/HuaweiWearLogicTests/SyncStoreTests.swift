@@ -40,7 +40,7 @@ final class SyncStoreTests: XCTestCase {
         let (store, url) = store()
         let user = try store.read { db in try db.userVersion }
         XCTAssertEqual(user, try SyncStore.sharedMigrations().count)
-        XCTAssertEqual(user, 11)
+        XCTAssertEqual(user, 12)
         let tables: [String] = try store.read { db in
             try db.query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") { $0.text(0)! }
         }
@@ -55,6 +55,11 @@ final class SyncStoreTests: XCTestCase {
         // Migration 11: what the Strava upload of the JS app records per workout.
         let strava: [String] = try store.read { db in try db.query("PRAGMA table_info(strava_upload)") { $0.text(1)! } }
         XCTAssertEqual(strava, ["workout_start", "status", "upload_id", "activity_id", "error", "attempts", "updated_at"])
+        // Migration 12: per-sample motion fields of a workout point.
+        let points: [String] = try store.read { db in try db.query("PRAGMA table_info(workout_points)") { $0.text(1)! } }
+        for column in ["speed", "cadence", "stride", "power"] {
+            XCTAssertTrue(points.contains(column), "workout_points has no \(column) column")
+        }
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
         // WAL, as JS sets it.
         let mode: String = try store.read { db in try db.query("PRAGMA journal_mode") { $0.text(0)! }.first! }
