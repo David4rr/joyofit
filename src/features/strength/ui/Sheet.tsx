@@ -15,16 +15,18 @@ interface BottomSheetProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
+  /** Runs once the sheet has fully left the screen (iOS only; Android has no such event). */
+  onDismiss?: () => void;
   children: ReactNode;
 }
 
 /** A card that slides up from the bottom over a dimmed screen. It lifts above the keyboard and scrolls when its content is tall. */
-export function BottomSheet({ visible, onClose, title, children }: BottomSheetProps) {
+export function BottomSheet({ visible, onClose, title, onDismiss, children }: BottomSheetProps) {
   const { colors, radius } = useTheme();
   const { t } = useTranslation('common');
   const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onDismiss={onDismiss} statusBarTranslucent navigationBarTranslucent>
       <KeyboardAvoidingView behavior="padding" style={styles.root}>
         <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={t('actions.close')} />
         <View

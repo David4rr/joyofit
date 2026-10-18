@@ -71,7 +71,6 @@
     }
   },
   "list": {
-    "start": "Mulai latihan",
     "history": "Riwayat dan kalender",
     "strengthLine_other": "{{count}} set, {{volume}}"
   },

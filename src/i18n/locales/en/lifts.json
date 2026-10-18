@@ -76,7 +76,6 @@
     }
   },
   "list": {
-    "start": "Start workout",
     "history": "History and calendar",
     "strengthLine_one": "{{count}} set, {{volume}}",
     "strengthLine_other": "{{count}} sets, {{volume}}"

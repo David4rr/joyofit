@@ -8,10 +8,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { showsWatchUi } from '@/features/device/presence';
-import { SyncButton } from '@/features/device/SyncButton';
-import { useWatchPresence } from '@/features/device/useWatchPresence';
+import { HeaderIconButton } from '@/components/HeaderIconButton';
 import { IconChip } from '@/components/IconChip';
+import { showsWatchUi } from '@/features/device/presence';
+import { SyncIconButton } from '@/features/device/SyncIconButton';
+import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { Metric } from '@/components/Metric';
 import { PressableScale } from '@/components/PressableScale';
 import { PageHeader, useContentPadding, useRefreshControl } from '@/components/Screen';
@@ -28,6 +29,7 @@ import { sportIcon } from '@/features/workouts/sportIcon';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { formatElapsed, workoutDistanceParts } from '@/features/workouts/summary';
 import { workoutTimes } from '@/features/workouts/times';
+import { StartWorkoutSheet } from '@/features/workouts/ui/StartWorkoutSheet';
 import { useWorkoutStrain } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatCount, formatDateTime } from '@/format';
 import { fmtDate, fmtDecimal, useLocale } from '@/i18n';
@@ -144,6 +146,7 @@ export default function WorkoutsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [pulling, setPulling] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
+  const [startOpen, setStartOpen] = useState(false);
   // Strength workouts by the `workouts.start` they are stored as (their own row, or the watch row they merged with).
   const { workouts: strengthWorkouts } = useStrengthHistory();
   const strengthByStart = useMemo(() => {
@@ -218,20 +221,16 @@ export default function WorkoutsScreen() {
           <View style={styles.header}>
             <PageHeader
               title={t('list.title')}
-              right={watchUi ? <SyncButton variant="primary" /> : undefined}
+              right={
+                <View style={styles.headerActions}>
+                  <HeaderIconButton icon="calendar-outline" label={lifts('list.history')} onPress={() => router.push('/strength/history')} />
+                  {watchUi ? <SyncIconButton /> : null}
+                </View>
+              }
             />
             <ActiveWorkoutBanner />
             <RecordingBanner />
-            {recording ? null : <Button label={t('record.title')} variant="primary" icon="radio-button-on" onPress={() => router.push('/workouts/record')} />}
-            <Button label={lifts('list.start')} variant="primary" icon="barbell" onPress={() => router.push('/strength')} />
-            <Button label={lifts('list.history')} variant="secondary" icon="calendar" onPress={() => router.push('/strength/history')} />
-            <Button label={t('list.logManual')} variant="secondary" icon="create-outline" onPress={() => router.push('/workouts/manual')} />
-            <Button
-              label={t('list.importFit')}
-              variant="secondary"
-              icon="bicycle"
-              onPress={() => void importFit()}
-            />
+            <Button label={t('list.start.button')} variant="primary" icon="add" onPress={() => setStartOpen(true)} />
             {pickError ? <Notice tone="danger">{t('list.pickError', { error: pickError })}</Notice> : null}
             {error ? <Notice tone="danger">{t('list.readError', { error })}</Notice> : null}
             {strengthOnlyCount > 0 ? (
@@ -239,7 +238,7 @@ export default function WorkoutsScreen() {
                 {t('list.strengthElsewhere', { count: strengthOnlyCount })}
               </Notice>
             ) : null}
-            {watchUi && !canSync && !syncing && workouts && workouts.some((w) => !w.imported) ? (
+            {watchUi && !canSync && !syncing && workouts && (workouts.length === 0 || workouts.some((w) => !w.imported)) ? (
               <Notice icon="watch-outline" action={connectAction}>
                 {t('list.connectToSync')}
               </Notice>
@@ -252,15 +251,6 @@ export default function WorkoutsScreen() {
               icon="fitness"
               title={t('list.empty.title')}
               description={watchUi ? t('list.empty.description') : t('list.empty.descriptionNoWatch')}
-              action={
-                !watchUi
-                  ? { label: t('record.title'), icon: 'radio-button-on', onPress: () => router.push('/workouts/record') }
-                  : canSync
-                    ? { label: t('list.empty.syncNow'), icon: 'sync', onPress: () => void sync() }
-                    : syncing
-                      ? undefined
-                      : connectAction
-              }
             />
           ) : error ? null : (
             <WorkoutSkeletons />
@@ -275,6 +265,15 @@ export default function WorkoutsScreen() {
         )}
         renderItem={({ item }) => <WorkoutCard workout={item} strength={strengthByStart.get(item.start)} />}
       />
+      <StartWorkoutSheet
+        visible={startOpen}
+        onClose={() => setStartOpen(false)}
+        recording={recording}
+        onRecord={() => router.push('/workouts/record')}
+        onStrength={() => router.push('/strength')}
+        onManual={() => router.push('/workouts/manual')}
+        onImportFit={() => void importFit()}
+      />
     </View>
   );
 }
@@ -286,6 +285,7 @@ function ItemGap() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { gap: spacing.sm, marginBottom: spacing.xs },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   sectionHeader: { paddingTop: spacing.sm, paddingBottom: spacing.xs },
   gap: { height: spacing.sm },
   card: { padding: spacing.md + 4, gap: spacing.sm },

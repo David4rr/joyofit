@@ -190,15 +190,33 @@
   },
   "list": {
     "title": "Latihan",
-    "importFit": "Impor file FIT",
+    "start": {
+      "button": "Mulai latihan",
+      "title": "Mulai latihan",
+      "record": {
+        "title": "Rekam di HP",
+        "subtitle": "Lari, jalan, sepeda, hiking, atau treadmill"
+      },
+      "strength": {
+        "title": "Latihan beban",
+        "subtitle": "Catat set atau mulai dari rutinitas"
+      },
+      "manual": {
+        "title": "Catat manual",
+        "subtitle": "Tambah latihan yang sudah kamu lakukan"
+      },
+      "fit": {
+        "title": "Impor file FIT",
+        "subtitle": "Dari bike computer atau aplikasi lain"
+      }
+    },
     "pickError": "Tidak bisa membuka pemilih file: {{error}}",
     "readError": "Tidak bisa membaca latihan tersimpan: {{error}}",
     "connectToSync": "Hubungkan jammu untuk sinkronisasi.",
     "connectWatch": "Hubungkan jammu",
     "empty": {
       "title": "Belum ada latihan",
-      "description": "Sesi dari jam muncul di sini setelah sinkronisasi.",
-      "syncNow": "Sinkronkan sekarang",
+      "description": "Mulai satu di atas. Sesi dari jammu juga muncul di sini setelah sinkronisasi.",
       "descriptionNoWatch": "Latihan yang kamu rekam di HP, catat, atau impor dari file FIT muncul di sini. Jam tidak diperlukan."
     },
     "partial": "Baru terunduh sebagian; sinkronisasi berikutnya mengambil sisanya.",
@@ -208,8 +226,7 @@
       "bpmAvg": "bpm rata-rata",
       "strain": "strain"
     },
-    "strengthElsewhere_other": "{{count}} latihan beban dari JoyoRogo ada di riwayat latihan beban, tidak di daftar ini.",
-    "logManual": "Catat latihan manual"
+    "strengthElsewhere_other": "{{count}} latihan beban dari JoyoRogo ada di riwayat latihan beban, tidak di daftar ini."
   },
   "detail": {
     "title": "Latihan",

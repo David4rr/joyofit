@@ -192,15 +192,33 @@
   },
   "list": {
     "title": "Workouts",
-    "importFit": "Import FIT file",
+    "start": {
+      "button": "Start workout",
+      "title": "Start a workout",
+      "record": {
+        "title": "Record on phone",
+        "subtitle": "Run, walk, ride, hike or treadmill"
+      },
+      "strength": {
+        "title": "Strength workout",
+        "subtitle": "Log sets or start a routine"
+      },
+      "manual": {
+        "title": "Log by hand",
+        "subtitle": "Add a workout you already did"
+      },
+      "fit": {
+        "title": "Import FIT file",
+        "subtitle": "From a bike computer or another app"
+      }
+    },
     "pickError": "Could not open the file picker: {{error}}",
     "readError": "Could not read stored workouts: {{error}}",
     "connectToSync": "Connect your watch to sync.",
     "connectWatch": "Connect your watch",
     "empty": {
       "title": "No workouts yet",
-      "description": "Watch sessions appear here after a sync.",
-      "syncNow": "Sync now",
+      "description": "Start one above. Watch sessions also appear here after a sync.",
       "descriptionNoWatch": "Workouts you record on the phone, log or import from a FIT file show up here. No watch needed."
     },
     "partial": "Partly downloaded; next sync fetches the rest.",
@@ -211,8 +229,7 @@
       "strain": "strain"
     },
     "strengthElsewhere_one": "{{count}} strength workout from JoyoRogo is in the strength history, not in this list.",
-    "strengthElsewhere_other": "{{count}} strength workouts from JoyoRogo are in the strength history, not in this list.",
-    "logManual": "Log a workout by hand"
+    "strengthElsewhere_other": "{{count}} strength workouts from JoyoRogo are in the strength history, not in this list."
   },
   "detail": {
     "title": "Workout",
