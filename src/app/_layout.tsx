@@ -13,9 +13,16 @@ import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppState, StyleSheet, Text, View, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
+import { AppState, StyleSheet, Text, useWindowDimensions, View, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
 
 import { TabIcon } from '@/components/TabIcon';
+import {
+  TAB_LABEL_LINE,
+  TAB_LABEL_MAX_SCALE,
+  TAB_LABEL_MIN_SHRINK,
+  TAB_LABEL_SIZE,
+  tabBarHeight,
+} from '@/components/tabBarMetrics';
 import { initLocale, refreshAutoLocale } from '@/i18n/native';
 import { migrate } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
@@ -75,26 +82,35 @@ function TabLabel({ name, color }: { name: 'today' | 'workouts' | 'social' | 'wa
   const { t } = useTranslation('common');
   const { fonts } = useTheme();
   return (
-    <Text numberOfLines={1} style={{ color, fontFamily: fonts.medium, fontSize: 12 }}>
+    <Text
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={TAB_LABEL_MIN_SHRINK}
+      maxFontSizeMultiplier={TAB_LABEL_MAX_SCALE}
+      style={{ color, fontFamily: fonts.medium, fontSize: TAB_LABEL_SIZE, lineHeight: TAB_LABEL_LINE }}>
       {t(`nav.${name}`)}
     </Text>
   );
 }
 
-/** The tab bar with the way back into a running recording on top of it (`LivePill`); the pill is not drawn where the tab bar is hidden. */
+/**
+ * The tab bar with the way back into a running recording on top of it (`LivePill`); the pill is not drawn where the tab bar is hidden.
+ * Its height is the content's (`tabBarMetrics`) plus the bottom inset, not the navigator's 49 + inset, which cut the labels.
+ */
 function TabBarWithLive(props: BottomTabBarProps) {
+  const { fontScale } = useWindowDimensions();
   const focused = props.state.routes[props.state.index];
   const hidden = StyleSheet.flatten(props.descriptors[focused.key].options.tabBarStyle as StyleProp<ViewStyle>)?.display === 'none';
   return (
     <View>
       <LivePill tabBarHidden={hidden} />
-      <BottomTabBar {...props} />
+      <BottomTabBar {...props} style={{ height: tabBarHeight(fontScale, props.insets.bottom) }} />
     </View>
   );
 }
 
 function RootNavigator() {
-  const { colors, fonts, scheme } = useTheme();
+  const { colors, scheme } = useTheme();
   const { t } = useTranslation('common');
   const [fontsReady, fontError] = useFonts({
     PlusJakartaSans_500Medium,
@@ -148,7 +164,6 @@ function RootNavigator() {
                       tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.hairline },
                       tabBarActiveTintColor: colors.primary,
                       tabBarInactiveTintColor: colors.mutedForeground,
-                      tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 12 },
                     }}>
                     <Tabs.Screen
                       name="index"

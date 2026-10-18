@@ -432,6 +432,10 @@ instructions are sent. The P2P push is native (`modules/huawei-wear`, `HuaweiWea
 - **Limits.** Only watches that list route support (`getRoutes().deliver`) take routes; the watch simplifies long routes to a few
   hundred points. Not verified on a watch yet. Tests: `src/features/routes/*.test.ts`, `src/features/sharedfile/`.
 
+## Tab bar
+
+The five tabs are drawn by the navigator's `BottomTabBar`, wrapped in `TabBarWithLive` (`src/app/_layout.tsx`). Its default height, 49 plus the bottom inset, only fits a 10 px label: with the 12 px label and a larger system font the label spilled into the inset area, under the 3-button bar or the gesture pill ("Hari ini" cut in half on a Samsung with 3-button navigation, touching the pill on a Xiaomi). `src/components/tabBarMetrics.ts` sizes the bar from what is drawn instead: 5 dp item padding, 28 dp icon box, a fixed 16 dp label line scaled by the system font size (capped at 1.3), 5 dp padding, then `insets.bottom` on top of that (gesture area, 3-button bar or the iOS home indicator). A label that is still too wide for its fifth of the screen (Pengaturan on a narrow phone) shrinks to at most 70 % rather than ending in an ellipsis. Tests: `src/components/tabBarMetrics.test.ts`.
+
 ## Deep links (`joyofit://`)
 
 Every URL that opens the app goes through `src/app/+native-intent.ts` before Expo Router matches it. `src/features/deeplink/mapDeepLink.ts` normalises `joyofit:` links only (https links, the dev client launcher and `content://`/`file://` files are handled elsewhere or left alone):
