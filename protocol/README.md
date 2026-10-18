@@ -109,8 +109,19 @@ After the frame-based sync, `SleepSync` follows GB's `downloadTruSleepData(start
    `HuaweiTrueSleepSequenceDataParser` into one-minute stages (watch stage 1 light, 2 REM,
    3 deep, 4 awake, 5 nap), merged into segments. GB does not fall back to the state/data files when this fails.
 3. Otherwise `sleep_state.bin` and `sleep_data.bin` (service `2C` if SettingRelated tag `02` bit 1 is set,
-   else `0A`). Each 16-byte record of the state file is a `(start, end)` sleep range, stored by GB as one
+   else `0A`). Each 16-byte record of the state file is a `(start, end)` range, stored by GB as one
    light-sleep span (raw kind `06`). GB does not interpret `sleep_data.bin`; the app only parses it for the log.
+   The 8 bytes after each range are not understood.
+
+   A range is the watch's TruSleep sensor window, not a verdict that you slept. From the Watch Fit 2 reports in
+   2026-10, a 1-minute stress or HRV check and a workout started on the watch each leave such ranges: a "nap" of four
+   fragments of 1 to 3 minutes, a night with a 32-minute block at the time of a morning run, tails of 1 to 5 minute
+   ranges with gaps of 1 to 13 minutes. The real night in the same data is one range of 3 h 59 min. No raw
+   `sleep_state.bin` from that watch has reached us, so what the 8 unknown bytes say is not known. JoyoFit therefore
+   stores the ranges as they come (without a stage) and cleans them whenever they are read
+   (`src/features/sleep/cleanSleep.ts`, `SleepCleaning` on Android and iOS): workouts, spot HRV measurements and
+   minutes with 15 or more steps are subtracted, runs with under 20 minutes of sleep are dropped, a workout or more
+   than an hour of nothing starts a new session. Segments with a stage are never touched.
 
 GB's P2P data-dictionary sync (`34`/`01`, module `hw.unitedevice.datadictionarysync`) carries skin
 temperature, HRV, emotion, sleep apnea and similar. It carries no sleep stages, steps, heart rate
