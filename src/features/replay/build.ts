@@ -388,8 +388,10 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
 
     const shift = f.p;
     const ridges: SceneNode[] = ridgeDefs.map((r) => ({ k: 'path', d: r.d, fill: r.fill, transform: { x: -shift * W * r.speed, y: 0, scale: 1 } }));
-    // The ridges melt into the sky as the camera flattens for the overview.
-    const ridgeAlpha = 1 - 0.6 * smoothstep(0, 1, f.outroP);
+    // The horizon clears as the camera flattens for the overview: the whole route must be readable.
+    const clear = smoothstep(0, 0.6, f.outroP);
+    const ridgeAlpha = 1 - clear;
+    const fogAlpha = 1 - 0.9 * clear;
 
     // Screen-space marks.
     const marks: SceneNode[] = [];
@@ -416,7 +418,7 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
     const nodes: ReplayNode[] = [
       bg,
       map,
-      fogTop,
+      group([fogTop], fogAlpha),
       group(ridges, ridgeAlpha),
       fogBottom,
       group(marks),
