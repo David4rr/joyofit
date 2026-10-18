@@ -15,7 +15,6 @@ interface StorageProfile {
   readonly totalMb: number;
   readonly maxSlots: number;
   readonly avgCustomFaceMb: number;
-  readonly label: string;
 }
 
 function resolveStorageProfile(width: number | null): StorageProfile {
@@ -26,7 +25,6 @@ function resolveStorageProfile(width: number | null): StorageProfile {
       totalMb: 32.0,
       maxSlots: 16,
       avgCustomFaceMb: 1.6,
-      label: 'Huawei Band (~32 MB flash)', // i18n-ok hardware profile name
     };
   }
   if (w <= 420) {
@@ -35,7 +33,6 @@ function resolveStorageProfile(width: number | null): StorageProfile {
       totalMb: 128.0,
       maxSlots: 32,
       avgCustomFaceMb: 3.5,
-      label: 'Huawei Watch Fit (~128 MB)', // i18n-ok hardware profile name
     };
   }
   // Round profile: Huawei Watch GT 2/3/4/5 (454x454, 466x466)
@@ -43,7 +40,6 @@ function resolveStorageProfile(width: number | null): StorageProfile {
     totalMb: 256.0,
     maxSlots: 50,
     avgCustomFaceMb: 4.8,
-      label: 'Huawei Watch GT (~256 MB)', // i18n-ok hardware profile name
   };
 }
 
@@ -74,7 +70,7 @@ export function WatchStorageCard({ list, library = [] }: WatchStorageCardProps) 
   let percent: number;
   let remainingSlots: number;
 
-  if (hasHardwareTelemetry && list.totalBytes && list.freeBytes) {
+  if (hasHardwareTelemetry && list.totalBytes != null && list.freeBytes != null) {
     totalMb = Math.round((list.totalBytes / (1024 * 1024)) * 10) / 10;
     freeMb = Math.round((list.freeBytes / (1024 * 1024)) * 10) / 10;
     usedMb = Math.max(0, Math.round((totalMb - freeMb) * 10) / 10);
@@ -111,7 +107,9 @@ export function WatchStorageCard({ list, library = [] }: WatchStorageCardProps) 
       <View style={styles.headerRow}>
         <View style={styles.titleGroup}>
           <Ionicons name="hardware-chip-outline" size={18} color={colors.primary} />
-          <AppText variant="bodyStrong">{t('faces.storageTitle')}</AppText>
+          <AppText variant="bodyStrong">
+            {hasHardwareTelemetry ? t('faces.storageTitle') : t('faces.storageEstimateTitle')}
+          </AppText>
           <View style={[styles.pill, { backgroundColor: colors.muted }]}>
             <AppText
               variant="label"
@@ -135,17 +133,17 @@ export function WatchStorageCard({ list, library = [] }: WatchStorageCardProps) 
 
       <View style={styles.footerRow}>
         <AppText variant="caption" muted>
-          ~{freeMb} MB free · ~{remainingSlots} slots left
+          {t('faces.storageRemaining', { freeMb, slots: remainingSlots })}
         </AppText>
         <AppText variant="caption" muted>
-          {customFaces.length} custom · {factoryFaces.length} factory
+          {t('faces.storageBreakdown', { custom: customFaces.length, factory: factoryFaces.length })}
         </AppText>
       </View>
 
       <AppText variant="caption" muted style={styles.footnote}>
         {hasHardwareTelemetry
-          ? 'Storage capacity reported directly by watch hardware.'
-          : 'Band models do not broadcast free storage over BLE. Metrics are estimated from known flash limits.'}
+          ? t('faces.storageTelemetryFootnote')
+          : t('faces.storageEstimateFootnote')}
       </AppText>
     </Card>
   );

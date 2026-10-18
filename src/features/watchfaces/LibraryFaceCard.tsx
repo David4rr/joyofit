@@ -164,10 +164,14 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
             )}
           </View>
           <AppText variant="caption" muted>
-            by {face.author}
+            {t('watch:faces.byAuthor', { author: face.author })}
           </AppText>
           <AppText variant="caption" muted>
-            {face.width}x{face.height} px · {face.sizeLabel}
+            {face.width > 0 && face.height > 0
+              ? `${face.width}×${face.height} px`
+              : t('watch:faces.unknownResolution')}
+            {' · '}
+            {face.sizeLabel}
           </AppText>
         </View>
       </Pressable>

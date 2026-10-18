@@ -63,18 +63,6 @@ class WatchfaceTest {
       assertTrue("Preview bytes should not be empty for ${f.name}", preview!!.first.isNotEmpty())
     }
   }
-  @Test
-  fun testDownloadsHwtPreviews() {
-    for (name in listOf("AlienWatchEN.hwt", "AE1200GREY.hwt")) {
-      val f = java.io.File("/Users/mac/Downloads/$name")
-      if (!f.exists()) continue
-      val preview = WatchfacePackages.extractPreview(f.readBytes(), targetW = 194, targetH = 368)
-      assertNotNull("Preview should exist for $name", preview)
-      val (bytes, mime) = preview!!
-      println("TEST $name: mime=$mime, bytes=${bytes.size}")
-      java.io.File("/tmp/test_${name}.bmp").writeBytes(bytes)
-    }
-  }
   private fun hwt(screen: String = "HWHD13", nested: Boolean = true, root: String = "HwTheme", bom: Boolean = false): ByteArray {
     val inner = if (nested) zip("watchface.bin" to binary, "other.txt" to byteArrayOf(1)) else binary
     val entry = if (root == "HnTheme") "com.honor.watchface" else "com.huawei.watchface"

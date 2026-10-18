@@ -1,5 +1,4 @@
 import { NativeModule, requireNativeModule } from 'expo';
-import { Platform } from 'react-native';
 import type {
   BackgroundStatus,
   BondedDevice,
@@ -428,18 +427,4 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   pushRoute(route: WatchRoute): Promise<RoutePushResult>;
 }
 
-let nativeModule: HuaweiWearModule;
-try {
-  nativeModule = requireNativeModule<HuaweiWearModule>('HuaweiWear');
-} catch {
-  nativeModule = new Proxy({} as HuaweiWearModule, {
-    get(_, prop) {
-      if (prop === 'addListener' || prop === 'removeListener' || prop === 'removeAllListeners') {
-        return () => {};
-      }
-      return () => Promise.reject(new Error(`HuaweiWear.${String(prop)} is not available on ${Platform.OS}`));
-    },
-  });
-}
-
-export default nativeModule;
+export default requireNativeModule<HuaweiWearModule>('HuaweiWear');

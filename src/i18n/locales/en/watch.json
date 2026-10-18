@@ -233,8 +233,13 @@
     "onWatchTab": "On watch",
     "library": "My watch",
     "storageTitle": "Watch Storage",
+    "storageEstimateTitle": "Estimated Storage",
     "storageTelemetry": "Hardware Telemetry",
-    "storagePredicted": "Predicted",
+    "storagePredicted": "Estimated",
+    "storageRemaining": "~{{freeMb}} MB free · ~{{slots}} slots left",
+    "storageBreakdown": "{{custom}} custom · {{factory}} preinstalled",
+    "storageTelemetryFootnote": "Storage capacity reported directly by watch hardware.",
+    "storageEstimateFootnote": "Band models do not broadcast free storage over BLE. Metrics are estimated from known flash limits.",
     "installRejected": "Install Rejected",
     "installRejectedHint": "The watch rejected \"{{name}}\". The watch memory may be full, or the file is incompatible with your screen size.",
     "deleteFromStorage": "Delete from Storage",
@@ -267,7 +272,12 @@
     "incompatibleResolution": "Incompatible ({{width}}×{{height}})",
     "installAction": "Install",
     "missingFile": "Missing file",
-    "noDescription": "No description provided."
+    "noDescription": "No description provided.",
+    "byAuthor": "by {{author}}",
+    "customImport": "Custom Import",
+    "customSize": "Custom size",
+    "unknownResolution": "Unknown resolution",
+    "savedUnknownHint": "\"{{title}}\" has been saved to your My watch collection.\n\nNote: This watch face has an unknown screen resolution and cannot be installed to this watch ({{watchW}}×{{watchH}})."
   },
   "faceEdit": {
     "reported": "The watch reported new options for this face.",

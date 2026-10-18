@@ -169,14 +169,40 @@ internal object WatchfacePackages {
         }
       },
     )
+    if (description.screen.isEmpty()) bad("description.xml names no screen (theme version).")
     return description
   }
 
   /**
    * GB `GBZipFile.getFileFromZip`, null instead of an exception when the entry is missing, is a
-   * directory, or [zip] is no zip at all. Flexible slash- and case-insensitive matching.
+   * directory, or [zip] is no zip at all.
    */
   fun entry(zip: ByteArray, name: String): ByteArray? {
+    try {
+      ZipInputStream(ByteArrayInputStream(zip)).use { stream ->
+        while (true) {
+          val entry = stream.nextEntry ?: return null
+          if (entry.name != name) continue
+          if (entry.isDirectory) return null
+          val out = ByteArrayOutputStream()
+          val buffer = ByteArray(16384)
+          while (true) {
+            val n = stream.read(buffer)
+            if (n < 0) break
+            out.write(buffer, 0, n)
+          }
+          return out.toByteArray()
+        }
+      }
+    } catch (_: ZipException) {
+      return null
+    } catch (_: IOException) {
+      return null
+    }
+  }
+
+  /** Flexible case- and slash-insensitive matcher for preview extraction and nested archives. */
+  private fun entryFlexible(zip: ByteArray, name: String): ByteArray? {
     val target = name.replace('\\', '/').trim().lowercase(Locale.ROOT)
     try {
       ZipInputStream(ByteArrayInputStream(zip)).use { stream ->
@@ -207,8 +233,8 @@ internal object WatchfacePackages {
    */
   fun extractPreview(bytes: ByteArray, targetW: Int = 194, targetH: Int = 368): Pair<ByteArray, String>? {
     return extractPreviewFromZip(bytes) ?: run {
-      val innerZip = entry(bytes, "com.huawei.watchface")
-        ?: entry(bytes, "com.honor.watchface")
+      val innerZip = entryFlexible(bytes, "com.huawei.watchface")
+        ?: entryFlexible(bytes, "com.honor.watchface")
       if (innerZip != null && innerZip.isNotEmpty()) {
         extractPreviewFromZip(innerZip) ?: WatchfaceBitmapDecoder.extractPreviewFromBinary(innerZip, targetW, targetH)
       } else null

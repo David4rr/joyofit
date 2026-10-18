@@ -45,9 +45,9 @@ internal object WatchfaceBitmapDecoder {
       }
 
       // 2. Secondary: scan the binary for the best full-screen or preview thumbnail bitmap
-      class Candidate(val offset: Int, val w: Int, val h: Int, val score: Int, val bmp: ByteArray)
+      var bestOffset = -1
+      var bestScore = -1
 
-      val candidates = ArrayList<Candidate>()
       var i = 0
       val limit = data.size - 8
       while (i <= limit) {
@@ -60,14 +60,14 @@ internal object WatchfaceBitmapDecoder {
             val isPreviewThumb = (w in 120..260 && h in 200..320)
             val isAcceptable = (w in 120..600 && h in 160..800)
             if (isExact || isPreviewThumb || isAcceptable) {
-              val bmp = decodeBlobToBmp(data, i, data.size - i)
-              if (bmp != null) {
-                val score = when {
-                  isExact -> 10_000_000 + w * h
-                  isPreviewThumb -> 5_000_000 + w * h
-                  else -> w * h
-                }
-                candidates.add(Candidate(i, w, h, score, bmp))
+              val score = when {
+                isExact -> 10_000_000 + w * h
+                isPreviewThumb -> 5_000_000 + w * h
+                else -> w * h
+              }
+              if (score > bestScore) {
+                bestScore = score
+                bestOffset = i
               }
             }
           }
@@ -77,8 +77,9 @@ internal object WatchfaceBitmapDecoder {
         }
       }
 
-      val best = candidates.maxByOrNull { it.score } ?: return null
-      return best.bmp to "image/bmp"
+      if (bestOffset < 0) return null
+      val bmp = decodeBlobToBmp(data, bestOffset, data.size - bestOffset) ?: return null
+      return bmp to "image/bmp"
     } catch (_: Exception) {
       return null
     }

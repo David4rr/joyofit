@@ -233,8 +233,13 @@
     "onWatchTab": "Di jam",
     "library": "Koleksi jam",
     "storageTitle": "Penyimpanan Jam",
+    "storageEstimateTitle": "Estimasi Penyimpanan",
     "storageTelemetry": "Telemetri Perangkat",
     "storagePredicted": "Estimasi",
+    "storageRemaining": "Tersisa ~{{freeMb}} MB · ~{{slots}} slot",
+    "storageBreakdown": "{{custom}} kustom · {{factory}} bawaan",
+    "storageTelemetryFootnote": "Kapasitas penyimpanan dilaporkan langsung oleh perangkat jam.",
+    "storageEstimateFootnote": "Model Band tidak menyiarkan sisa penyimpanan lewat BLE. Metrik diperkirakan dari batas flash.",
     "installRejected": "Pemasangan Ditolak",
     "installRejectedHint": "Jam menolak \"{{name}}\". Memori jam mungkin penuh, atau file tidak sesuai dengan ukuran layar.",
     "deleteFromStorage": "Hapus dari Penyimpanan",
@@ -267,7 +272,12 @@
     "incompatibleResolution": "Tidak cocok ({{width}}×{{height}})",
     "installAction": "Pasang",
     "missingFile": "File tidak ada",
-    "noDescription": "Tidak ada deskripsi."
+    "noDescription": "Tidak ada deskripsi.",
+    "byAuthor": "oleh {{author}}",
+    "customImport": "Impor Kustom",
+    "customSize": "Ukuran kustom",
+    "unknownResolution": "Resolusi tidak diketahui",
+    "savedUnknownHint": "\"{{title}}\" telah disimpan ke koleksi My watch Anda.\n\nCatatan: Tampilan jam ini memiliki resolusi layar yang tidak diketahui dan tidak dapat dipasang ke jam ini ({{watchW}}×{{watchH}})."
   },
   "faceEdit": {
     "reported": "Jam melaporkan opsi baru untuk tampilan ini.",

@@ -519,17 +519,22 @@ internal class WatchfaceController(
 
     val (height, width) = if (screen.isNotBlank()) {
       val res = WatchfaceResolutions.screenByThemeVersion(screen)
-      val parts = res.split('*')
-      val h = parts.getOrNull(0)?.toIntOrNull()?.takeIf { it > 0 } ?: 368
-      val w = parts.getOrNull(1)?.toIntOrNull()?.takeIf { it > 0 } ?: 194
+      val delimiter = if (res.contains('*')) '*' else 'x'
+      val parts = res.split(delimiter)
+      val h = parts.getOrNull(0)?.toIntOrNull()?.takeIf { it > 0 } ?: 0
+      val w = parts.getOrNull(1)?.toIntOrNull()?.takeIf { it > 0 } ?: 0
       h to w
     } else {
-      368 to 194
+      0 to 0
     }
 
     // 2. Extract preview targeting the exact screen resolution (or best available texture)
     var previewUri: String? = null
-    val previewPair = WatchfacePackages.extractPreview(bytes, targetW = width, targetH = height)
+    val previewPair = WatchfacePackages.extractPreview(
+      bytes,
+      targetW = if (width > 0) width else 194,
+      targetH = if (height > 0) height else 368,
+    )
     if (previewPair != null && previewPair.first.isNotEmpty()) {
       val (previewBytes, mime) = previewPair
       try {
@@ -619,10 +624,9 @@ internal class WatchfaceController(
     link.handle() ?: throw notConnected()
     val bytes = withContext(Dispatchers.IO) { readUri(uri) }
     val pkg = WatchfacePackages.parse(bytes)
-    val name = if (fileName != null && fileName.indexOf('_') > 0) {
-      fileName
-    } else {
-      WatchfacePackages.randomName(version = pkg.description.version)
+    val name = fileName ?: WatchfacePackages.randomName(version = pkg.description.version)
+    if (fileName != null && fileName.indexOf('_') <= 0) {
+      throw WearException(ErrorCodes.INVALID_ARGUMENT, "The install name must be `<id>_<version>`, got '$fileName'")
     }
     var lastEmit = 0L
     val progress = { done: Int, total: Int ->

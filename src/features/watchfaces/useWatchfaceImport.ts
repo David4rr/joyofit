@@ -25,20 +25,32 @@ export function useWatchfaceImport({
     (savedFace: DownloadedFace) => {
       const targetW = list?.width ?? 194;
       const targetH = list?.height ?? 368;
-      const isCompatible = savedFace.width === targetW && savedFace.height === targetH;
+      const isCompatible =
+        savedFace.width > 0 &&
+        savedFace.height > 0 &&
+        savedFace.width === targetW &&
+        savedFace.height === targetH;
 
       if (!isCompatible) {
+        const message =
+          savedFace.width > 0 && savedFace.height > 0
+            ? t('watch:faces.savedIncompatibleHint', {
+                title: savedFace.title,
+                faceW: savedFace.width,
+                faceH: savedFace.height,
+                watchW: targetW,
+                watchH: targetH,
+              })
+            : t('watch:faces.savedUnknownHint', {
+                title: savedFace.title,
+                watchW: targetW,
+                watchH: targetH,
+              });
         setDialog({
           visible: true,
           icon: 'alert-circle-outline',
           title: t('watch:faces.savedToMyWatch'),
-          message: t('watch:faces.savedIncompatibleHint', {
-            title: savedFace.title,
-            faceW: savedFace.width,
-            faceH: savedFace.height,
-            watchW: targetW,
-            watchH: targetH,
-          }),
+          message,
           confirmLabel: t('common:actions.ok'),
           confirmVariant: 'primary',
           onConfirm: () => setDialog(null),
@@ -101,16 +113,16 @@ export function useWatchfaceImport({
       }
 
       const title = parsed.title || asset.name.replace(/\.hwt$/i, '');
-      const author = parsed.author || 'Custom Import'; // i18n-ok default author metadata
-      const width = parsed.width || list?.width || 194;
-      const height = parsed.height || list?.height || 368;
+      const author = parsed.author || t('watch:faces.customImport');
+      const width = parsed.width || 0;
+      const height = parsed.height || 0;
       const previewUrl = parsed.previewUri || undefined;
       const downloadPath = parsed.localUri || asset.uri;
       const description =
         parsed.description && parsed.description.trim() !== '{}' && parsed.description.trim() !== '[]'
           ? parsed.description
           : t('watch:faces.noDescription');
-      const sizeLabel = asset.size ? `${Math.round(asset.size / 1024)} KB` : 'Custom size'; // i18n-ok size fallback
+      const sizeLabel = asset.size ? `${Math.round(asset.size / 1024)} KB` : t('watch:faces.customSize');
 
       const newFace: DownloadedFace = {
         id: `local_${Date.now()}`,

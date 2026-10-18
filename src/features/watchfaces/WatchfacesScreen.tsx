@@ -179,15 +179,17 @@ export function WatchfacesScreen() {
           <AppText variant="caption">
             {t('watch:faces.personalLibraryHint')}
           </AppText>
-          <View style={styles.actionRow}>
-            <Button
-              label={t('watch:faces.importHwt')}
-              variant="primary"
-              icon="document-attach-outline"
-              style={{ flex: 1 }}
-              onPress={() => void handleImportToMyWatch()}
-            />
-          </View>
+          {Platform.OS !== 'ios' ? (
+            <View style={styles.actionRow}>
+              <Button
+                label={t('watch:faces.importHwt')}
+                variant="primary"
+                icon="document-attach-outline"
+                style={{ flex: 1 }}
+                onPress={() => void handleImportToMyWatch()}
+              />
+            </View>
+          ) : null}
         </Section>
       )}
 
@@ -275,11 +277,15 @@ export function WatchfacesScreen() {
         icon="folder"
         title={t('watch:faces.noSaved')}
         description={t('watch:faces.noSavedHint')}
-        action={{
-          label: t('watch:faces.importHwt'),
-          icon: 'document-attach-outline',
-          onPress: () => void handleImportToMyWatch(),
-        }}
+        action={
+          Platform.OS !== 'ios'
+            ? {
+                label: t('watch:faces.importHwt'),
+                icon: 'document-attach-outline',
+                onPress: () => void handleImportToMyWatch(),
+              }
+            : undefined
+        }
       />
     </Card>
   );
