@@ -46,7 +46,8 @@
     "intervals": "Interval",
     "walkrun": "Jalan-lari",
     "race": "Lari {{distance}}",
-    "strength": "Latihan kekuatan"
+    "strength": "Latihan kekuatan",
+    "strengthFocus": "Full body {{focus}}"
   },
   "headline": {
     "rest": "Hari ini istirahat dulu",
@@ -176,7 +177,11 @@
       },
       "runRoutine": {
         "title": "Lari rutin 3x seminggu",
-        "hint": "Tanpa lomba, cukup teratur dan makin kuat."
+        "hint": "Tanpa lomba. Teratur dan makin kuat."
+      },
+      "strengthFull": {
+        "title": "Kekuatan full body",
+        "hint": "Seluruh tubuh, 2 atau 3 kali seminggu."
       }
     },
     "level": {
@@ -198,7 +203,19 @@
     "summary": "{{weeks}} minggu, mulai minggu ini, {{days}} sesi seminggu.",
     "start": "Mulai rencana",
     "starting": "Menyimpan...",
-    "error": "Rencana belum tersimpan: {{message}}"
+    "error": "Rencana belum tersimpan: {{message}}",
+    "setting": {
+      "title": "Di mana latihannya",
+      "home": "Di rumah",
+      "homeHint": "Tanpa alat. Gerakan menarik pakai karet band atau dumbbell ringan.",
+      "gym": "Di gym",
+      "gymHint": "Pakai mesin, dumbbell, dan barbel."
+    },
+    "levelStrength": {
+      "beginner": "Baru mulai atau lama tidak latihan beban.",
+      "intermediate": "Sudah latihan beban beberapa bulan dan paham tekniknya.",
+      "advanced": "Latihan beban rutin lebih dari setahun."
+    }
   },
   "session": {
     "title": "Detail sesi",
@@ -234,7 +251,17 @@
       "upcoming": "Belum waktunya.",
       "today": "Jadwal hari ini."
     },
-    "openWorkout": "Buka latihan"
+    "openWorkout": "Buka latihan",
+    "strength": {
+      "title": "Gerakan",
+      "warmup": "Pemanasan 5 menit: jalan di tempat, putar bahu dan pinggul.",
+      "line": "{{sets}} set x {{reps}} ulangan, istirahat {{rest}}",
+      "lineTimed": "{{sets}} set x {{seconds}}, istirahat {{rest}}",
+      "start": "Mulai latihan",
+      "scaled": "Hari ini set dikurangi jadi {{pct}}% dari rencana.",
+      "reps": "Jam Huawei tidak melaporkan jumlah ulangan dari latihan kekuatan, jadi ulangan dan beban dicatat manual di pencatat latihan.",
+      "openExercise": "Lihat cara melakukannya"
+    }
   },
   "feedback": {
     "title": "Dibanding rencana",
@@ -281,7 +308,30 @@
     }
   },
   "library": {
-    "credits": "Gambar latihan dari wger.de, lisensi Creative Commons (CC BY-SA); pembuat dan lisensi tiap gambar ada di fit.joyorogo.com/exercises/ATTRIBUTION.txt. Data otot dan tingkat dari free-exercise-db (domain publik)."
+    "credits": "Gambar latihan dari wger.de, lisensi Creative Commons (CC BY-SA); pembuat dan lisensi tiap gambar ada di fit.joyorogo.com/exercises/ATTRIBUTION.txt. Data otot dan tingkat dari free-exercise-db (domain publik).",
+    "title": "Perpustakaan latihan",
+    "search": "Cari gerakan",
+    "setting": {
+      "all": "Semua",
+      "home": "Rumah",
+      "gym": "Gym"
+    },
+    "empty": "Tidak ada gerakan yang cocok.",
+    "count": "{{n}} gerakan",
+    "detail": {
+      "steps": "Langkah",
+      "mistakes": "Kesalahan umum",
+      "muscles": "Otot",
+      "primary": "Utama",
+      "secondary": "Pendukung",
+      "info": "Info",
+      "equipment": "Alat",
+      "level": "Level",
+      "pattern": "Jenis gerakan",
+      "timed": "Dihitung dalam detik",
+      "noImage": "Belum ada gambar untuk gerakan ini.",
+      "notFound": "Gerakan ini tidak ditemukan."
+    }
   },
   "muscle": {
     "abs": "Perut",
@@ -332,5 +382,11 @@
     "beginner": "Pemula",
     "intermediate": "Menengah",
     "advanced": "Mahir"
+  },
+  "home": {
+    "library": {
+      "title": "Perpustakaan latihan",
+      "subtitle": "{{n}} gerakan dengan langkah dan kesalahan umum"
+    }
   }
 }

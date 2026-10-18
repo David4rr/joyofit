@@ -14,6 +14,8 @@ export default function CoachLayout() {
       <Stack.Screen name="index" options={{ title: t('title'), headerLeft: () => <HeaderBackButton /> }} />
       <Stack.Screen name="setup" options={{ title: t('setup.title') }} />
       <Stack.Screen name="session/[key]" options={{ title: t('session.title') }} />
+      <Stack.Screen name="library/index" options={{ title: t('library.title') }} />
+      <Stack.Screen name="library/[id]" options={{ title: t('library.title') }} />
     </Stack>
   );
 }

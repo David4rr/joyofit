@@ -215,10 +215,10 @@ export function suggest(input: SuggestionInput): Suggestion {
     if (band === 'ok') {
       const scalePct = 85;
       const effective: Effective | null =
-        session.kind === 'run' ? { type: session.type, minutes: roundTo5((session.minutes * scalePct) / 100), zone: session.run?.zone ?? 2 } : null;
+        { type: session.type, minutes: roundTo5((session.minutes * scalePct) / 100), zone: session.run?.zone ?? null };
       return { ...none, kind: 'sessionScaled', session, effective, scalePct, reasons: sorted(base) };
     }
-    const effective: Effective | null = session.kind === 'run' ? { type: session.type, minutes: session.minutes, zone: session.run?.zone ?? 2 } : null;
+    const effective: Effective | null = { type: session.type, minutes: session.minutes, zone: session.run?.zone ?? null };
     return { ...none, kind: 'session', session, effective, scalePct: 100, reasons: sorted(base) };
   }
 
@@ -230,7 +230,7 @@ export function suggest(input: SuggestionInput): Suggestion {
     // A rest day of the plan. A missed session may be caught up on a day when you are fresh and yesterday was not hard.
     if (input.missed && band === 'fresh' && !yesterdayHard) {
       const session = input.missed;
-      const effective: Effective | null = session.kind === 'run' ? { type: session.type, minutes: session.minutes, zone: session.run?.zone ?? 2 } : null;
+      const effective: Effective | null = { type: session.type, minutes: session.minutes, zone: session.run?.zone ?? null };
       return { ...none, kind: 'catchUp', session, effective, scalePct: 100, reasons: withNote({ code: 'catchUp', points: 0, values: {} }) };
     }
     return { ...none, kind: 'planRestDay', reasons: withNote({ code: 'planRestDay', points: 0, values: {} }) };

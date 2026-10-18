@@ -426,3 +426,63 @@ describe('document merge and sync', () => {
     expect(calls).toBe(2);
   });
 });
+
+describe('strength plans', () => {
+  const strengthChoice = (setting: 'home' | 'gym', level: PlanLevel, days: number): PlanChoice => ({
+    kind: 'strength',
+    goal: 'strengthFull',
+    level,
+    daysPerWeek: days,
+    setting,
+    weekdays: defaultWeekdays(days),
+  });
+  const planFor = (setting: 'home' | 'gym', level: PlanLevel, days: number) => buildPlan(strengthChoice(setting, level, days), dayStartSec(MONDAY) * 1000 + 6 * 3600_000);
+
+  test('every setting, level and weekly count builds 8 weeks of full-body sessions from real library exercises', async () => {
+    const { exerciseById } = await import('./exercises');
+    for (const setting of ['home', 'gym'] as const) {
+      for (const level of ['beginner', 'intermediate', 'advanced'] as PlanLevel[]) {
+        for (const days of [2, 3]) {
+          const weeks = generatePlan(planFor(setting, level, days));
+          expect(weeks.length).toBe(8);
+          for (const week of weeks) {
+            expect(week.sessions.length).toBe(days);
+            for (const s of week.sessions) {
+              expect(s.kind).toBe('strength');
+              const list = s.strength!.exercises;
+              expect(list.length).toBeGreaterThanOrEqual(4);
+              expect(new Set(list.map((e) => e.exerciseId)).size).toBe(list.length);
+              for (const e of list) {
+                const def = exerciseById(e.exerciseId);
+                expect(def).toBeDefined();
+                expect(def![setting]).toBe(true);
+                expect(e.sets).toBeGreaterThanOrEqual(1);
+                expect(def!.timed ? e.seconds! > 0 : e.reps > 0).toBe(true);
+              }
+              expect(s.minutes).toBeGreaterThanOrEqual(15);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  test('home sessions use bodyweight where the library has it; sessions of one week differ; week 4 is lighter', async () => {
+    const { exerciseById } = await import('./exercises');
+    const weeks = generatePlan(planFor('home', 'beginner', 3));
+    const a = weeks[0]!.sessions[0]!.strength!.exercises.map((e) => e.exerciseId);
+    const b = weeks[0]!.sessions[1]!.strength!.exercises.map((e) => e.exerciseId);
+    expect(a).not.toEqual(b);
+    expect(exerciseById(a[0]!)!.equipment).toBe('bodyweight');
+    expect(weeks[3]!.phase).toBe('cutback');
+    const sets = (w: number) => weeks[w]!.sessions[0]!.strength!.exercises[0]!.sets;
+    expect(sets(3)).toBeLessThan(sets(2));
+    expect(sets(2)).toBeGreaterThan(sets(0));
+  });
+
+  test('the weekly scale cuts the sets', () => {
+    const plan = planFor('gym', 'advanced', 3);
+    const scaled = generatePlan({ ...plan, adjust: { '1': { scalePct: 75, reason: 'overreaching', at: 0 } } });
+    expect(scaled[1]!.sessions[0]!.strength!.exercises[0]!.sets).toBeLessThan(generatePlan(plan)[1]!.sessions[0]!.strength!.exercises[0]!.sets);
+  });
+});

@@ -31,5 +31,5 @@ export function ChoiceCard({ title, hint, selected, onPress }: { title: string; 
 
 const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderWidth: 2 },
-  text: { flex: 1, gap: 2 },
+  text: { flex: 1, flexShrink: 1, gap: 2 },
 });

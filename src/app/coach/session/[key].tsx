@@ -9,6 +9,7 @@ import { Button } from '@/components/Button';
 import { Card, Screen, Section } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
 import { markSession } from '@/features/coach/actions';
+import { StrengthSessionSection } from '@/features/coach/ui/StrengthSessionSection';
 import { liveDone } from '@/features/coach/doc';
 import { sessionTitle, spanText, whatText, zoneBpm } from '@/features/coach/format';
 import { paceTarget } from '@/features/coach/pace';
@@ -107,6 +108,7 @@ function SessionDetail({ session, coach }: { session: PlannedSession; coach: Coa
         </AppText>
       </Card>
 
+      {session.kind === 'run' ? (
       <Section title={t('session.steps.title')} icon="list" tint="workouts">
         <View style={styles.list}>
           {steps.map((line, index) => (
@@ -119,6 +121,13 @@ function SessionDetail({ session, coach }: { session: PlannedSession; coach: Coa
           {t('session.total', { minutes: fmtInt(session.minutes) })}
         </AppText>
       </Section>
+      ) : (
+        <StrengthSessionSection
+          session={session}
+          todayScalePct={coach.suggestion.session?.key === session.key && coach.suggestion.kind === 'sessionScaled' ? coach.suggestion.scalePct : 100}
+          canStart={status !== 'done' && status !== 'skipped' && status !== 'beforeStart'}
+        />
+      )}
 
       {zone && range ? (
         <Section title={t('session.zone', { zone: fmtInt(zone) })} icon="heart" tint="heart">

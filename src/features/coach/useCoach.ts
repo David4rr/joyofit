@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { useFitnessData, type FitnessData } from '@/features/fitness/useFitnessData';
 import type { NightHrvAvailability } from '@/features/today/nightHrv';
 import { reconcileCoach } from './actions';
+import { strengthLinks } from './links';
 import type { CoachDoc } from './doc';
 import { planProgress, type PlanProgress } from './progress';
 import { computeSignals, type CoachSignals } from './signals';
@@ -69,8 +70,12 @@ export function useCoach(dataVersion: number, availability: NightHrvAvailability
       sportName: workout.sportName,
       summaryKind: summary.kind,
     }));
-    void reconcileCoach(db, workouts, { load: signals.load, hrv: signals.hrv?.state ?? null, readiness: signals.readiness, sleepDebtMin: signals.sleepDebtMin }).catch(() => {});
-  }, [db, data, signals, planId]);
+    const signalsNow = { load: signals.load, hrv: signals.hrv?.state ?? null, readiness: signals.readiness, sleepDebtMin: signals.sleepDebtMin };
+    const plan = doc?.plan;
+    void (plan ? strengthLinks(db, plan).catch(() => ({})) : Promise.resolve({}))
+      .then((links) => reconcileCoach(db, workouts, signalsNow, links))
+      .catch(() => {});
+  }, [db, data, signals, planId, doc?.plan]);
 
   return useMemo(() => {
     if (!doc || !data || !signals) return null;

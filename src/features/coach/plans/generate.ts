@@ -2,6 +2,7 @@ import type { CoachPlan } from '../doc';
 import { sessionKey } from '../doc';
 import { addDays, daysBetween, localDay } from '../time';
 import { recipeFor, runSession, weekPhase } from './run';
+import { strengthPhase, strengthSession } from './strength';
 import type { PlannedSession, PlannedWeek } from './types';
 
 /** Scale of a week: the weekly adaptation, 100 % when none was decided. */
@@ -15,8 +16,8 @@ export function weekScalePct(plan: Pick<CoachPlan, 'adjust'>, week: number): num
  * (it shows greyed) but flagged `beforeStart`, so the first week is never already behind.
  */
 export function generatePlan(plan: CoachPlan): PlannedWeek[] {
-  if (plan.kind !== 'run') return [];
-  const raceGoal = recipeFor(plan.goal, plan.level).raceM !== null;
+  const run = plan.kind === 'run';
+  const raceGoal = run && recipeFor(plan.goal, plan.level).raceM !== null;
   const createdDay = localDay(Math.floor(plan.createdAt / 1000));
   const weeks: PlannedWeek[] = [];
   for (let week = 0; week < plan.weeks; week++) {
@@ -24,24 +25,16 @@ export function generatePlan(plan: CoachPlan): PlannedWeek[] {
     const scalePct = weekScalePct(plan, week);
     const sessions: PlannedSession[] = plan.weekdays.slice(0, plan.daysPerWeek).map((weekday, slot) => {
       const day = addDays(startDay, weekday);
+      const base = { key: sessionKey(plan.id, week, slot), week, slot, day, weekday, scalePct, beforeStart: daysBetween(createdDay, day) < 0 };
+      if (!run) {
+        const built = strengthSession(plan, week, slot, scalePct / 100);
+        return { ...base, kind: 'strength', type: 'strength', minutes: built.minutes, hard: true, run: null, strength: built.spec };
+      }
       const built = runSession(plan, week, slot, scalePct / 100);
-      return {
-        key: sessionKey(plan.id, week, slot),
-        week,
-        slot,
-        day,
-        weekday,
-        kind: plan.kind,
-        type: built.type,
-        minutes: built.minutes,
-        hard: built.hard,
-        run: built.run,
-        strength: null,
-        scalePct,
-        beforeStart: daysBetween(createdDay, day) < 0,
-      };
+      return { ...base, kind: 'run', type: built.type, minutes: built.minutes, hard: built.hard, run: built.run, strength: null };
     });
-    weeks.push({ index: week, startDay, phase: weekPhase(week, plan.weeks, raceGoal), scalePct, sessions });
+    const phase = run ? weekPhase(week, plan.weeks, raceGoal) : strengthPhase(week);
+    weeks.push({ index: week, startDay, phase, scalePct, sessions });
   }
   return weeks;
 }

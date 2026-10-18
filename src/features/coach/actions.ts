@@ -1,14 +1,16 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import type { CoachDoc, CoachPlan, PlanGoal, PlanKind, PlanLevel, StrengthSetting } from './doc';
+import { liveDone, type CoachDoc, type CoachPlan, type DoneEntry, type PlanGoal, type PlanKind, type PlanLevel, type StrengthSetting } from './doc';
 import { decideWeeks, type AdaptSignals } from './plans/adapt';
 import { sessionsOf } from './plans/adapt';
 import { runWeeks } from './plans/run';
+import { STRENGTH_WEEKS } from './plans/strength';
 import { matchWorkouts, type MatchWorkout } from './match';
 import { updateCoachDoc } from './store';
 import { localDay, mondayOf } from './time';
 
-export const STRENGTH_WEEKS = 8;
+/** A session the strength logger finished for a plan session (`StrengthWorkout.planKey`): plan session key to the workout's start, unix seconds. */
+export type SessionLinks = Readonly<Record<string, number>>;
 
 export interface PlanChoice {
   kind: PlanKind;
@@ -88,6 +90,7 @@ export function reconcileCoach(
   db: SQLiteDatabase,
   workouts: readonly MatchWorkout[],
   signals: AdaptSignals,
+  links: SessionLinks = {},
   nowMs = Date.now(),
 ): Promise<CoachDoc> {
   return updateCoachDoc(db, (doc) => {
@@ -96,7 +99,16 @@ export function reconcileCoach(
     const today = localDay(Math.floor(nowMs / 1000));
     let next: CoachDoc = doc;
 
-    const matched = matchWorkouts(sessionsOf(plan), doc.done, workouts, nowMs);
+    const sessions = sessionsOf(plan);
+    // Sessions the strength logger ran for a plan key are done by that link, not by guessing from the sport.
+    const linked: Record<string, DoneEntry> = {};
+    for (const session of sessions) {
+      const start = links[session.key];
+      if (start !== undefined && !liveDone(doc.done)[session.key]) linked[session.key] = { workoutStart: start, at: nowMs, manual: false, skipped: false };
+    }
+    if (Object.keys(linked).length > 0) next = { ...next, done: { ...next.done, ...linked } };
+
+    const matched = matchWorkouts(sessions, next.done, workouts, nowMs);
     if (Object.keys(matched).length > 0) next = { ...next, done: { ...next.done, ...matched } };
 
     const adjust = decideWeeks(plan, next.done, today, signals, nowMs);

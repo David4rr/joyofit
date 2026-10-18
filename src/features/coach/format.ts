@@ -1,6 +1,6 @@
 import { t, fmtDecimal, fmtDistance, fmtDuration, fmtInt } from '@/i18n';
 import { zoneThresholds } from '@/features/today/strain';
-import type { PlannedSession, SessionType } from './plans/types';
+import type { PlannedExercise, PlannedSession, SessionType } from './plans/types';
 import type { Effective, Reason, Suggestion } from './suggest';
 
 /** "90 dtk" below two minutes that are not whole, else "3 mnt". */
@@ -55,6 +55,7 @@ export function whatText(effective: Effective, session: PlannedSession | null): 
 export function sessionTitle(session: PlannedSession): string {
   const type: SessionType = session.type;
   if (type === 'race') return t('coach:type.race', { distance: fmtDistance(session.run?.distanceM ?? 5000) });
+  if (type === 'strength' && session.strength) return t('coach:type.strengthFocus', { focus: session.strength.focus });
   return t(`coach:type.${type}`);
 }
 
@@ -115,4 +116,11 @@ export function bodyText(suggestion: Suggestion): string | null {
     case 'free':
       return null;
   }
+}
+
+/** "3 set x 12 ulangan, istirahat 1,5 mnt" for a planned exercise; `sets` overrides the planned sets (today's scaling). */
+export function exerciseLine(exercise: PlannedExercise, sets = exercise.sets): string {
+  const rest = spanText(exercise.restSec);
+  if (exercise.seconds !== null) return t('coach:session.strength.lineTimed', { sets: fmtInt(sets), seconds: spanText(exercise.seconds), rest });
+  return t('coach:session.strength.line', { sets: fmtInt(sets), reps: fmtInt(exercise.reps), rest });
 }

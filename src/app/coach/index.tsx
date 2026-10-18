@@ -9,6 +9,8 @@ import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Details } from '@/components/Details';
 import { Card, Screen, Section } from '@/components/Screen';
+import { NavRow } from '@/components/NavRow';
+import { EXERCISES } from '@/features/coach/exercises';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { endPlan } from '@/features/coach/actions';
 import { sessionStatus } from '@/features/coach/progress';
@@ -144,12 +146,23 @@ function CoachBody() {
   );
 }
 
+function LibraryRow() {
+  const { t } = useTranslation('coach');
+  const router = useRouter();
+  return (
+    <Card>
+      <NavRow icon="barbell" tint="workouts" title={t('home.library.title')} subtitle={t('home.library.subtitle', { n: fmtInt(EXERCISES.length) })} onPress={() => router.push('/coach/library')} />
+    </Card>
+  );
+}
+
 export default function CoachScreen() {
   return (
     <Screen>
       <CoachGate campaign="evergreen-coach-screen">
         <CoachBody />
       </CoachGate>
+      <LibraryRow />
     </Screen>
   );
 }

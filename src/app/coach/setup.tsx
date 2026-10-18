@@ -11,7 +11,7 @@ import { Screen, Section } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { Notice } from '@/components/States';
 import { buildPlan, defaultWeekdays, planWeeks, startPlan, type PlanChoice } from '@/features/coach/actions';
-import type { PlanLevel, RunGoal } from '@/features/coach/doc';
+import type { PlanGoal, PlanLevel, StrengthSetting } from '@/features/coach/doc';
 import { ChoiceCard } from '@/features/coach/ui/ChoiceCard';
 import { CoachGate } from '@/features/coach/ui/CoachGate';
 import { errorMessage } from '@/format';
@@ -19,12 +19,12 @@ import { fmtDay, fmtInt, useLocale } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
 import { spacing } from '@/theme';
 
-const RUN_GOALS: readonly RunGoal[] = ['run5k', 'run10k', 'runHalf', 'runRoutine'];
+const GOALS: readonly PlanGoal[] = ['run5k', 'run10k', 'runHalf', 'runRoutine', 'strengthFull'];
 const LEVELS: readonly PlanLevel[] = ['beginner', 'intermediate', 'advanced'];
-/** A Monday to take the short weekday names from. */
-const SOME_MONDAY = '2026-10-12';
+const SETTINGS: readonly StrengthSetting[] = ['home', 'gym'];
 
-function dayChoices(goal: RunGoal): number[] {
+function dayChoices(goal: PlanGoal): number[] {
+  if (goal === 'strengthFull') return [2, 3];
   return goal === 'runRoutine' ? [3] : [3, 4, 5];
 }
 
@@ -34,18 +34,22 @@ function SetupForm() {
   const router = useRouter();
   const db = useSQLiteContext();
   const cloud = useCloud();
-  const [goal, setGoal] = useState<RunGoal>('run5k');
+  const [goal, setGoal] = useState<PlanGoal>('run5k');
   const [level, setLevel] = useState<PlanLevel>('beginner');
+  const [setting, setSetting] = useState<StrengthSetting>('home');
   const [days, setDays] = useState(3);
   const [weekdays, setWeekdays] = useState<number[]>(defaultWeekdays(3));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const strength = goal === 'strengthFull';
 
-  const chooseGoal = (next: RunGoal) => {
+  const chooseGoal = (next: PlanGoal) => {
     setGoal(next);
-    if (!dayChoices(next).includes(days)) {
-      setDays(3);
-      setWeekdays(defaultWeekdays(3));
+    const options = dayChoices(next);
+    if (!options.includes(days)) {
+      const first = options[0] ?? 3;
+      setDays(first);
+      setWeekdays(defaultWeekdays(first));
     }
   };
   const chooseDays = (next: number) => {
@@ -55,7 +59,7 @@ function SetupForm() {
   const toggleDay = (day: number) =>
     setWeekdays((current) => (current.includes(day) ? current.filter((d) => d !== day) : current.length >= days ? current : [...current, day].sort((a, b) => a - b)));
 
-  const choice: PlanChoice = { kind: 'run', goal, level, daysPerWeek: days, setting: null, weekdays };
+  const choice: PlanChoice = { kind: strength ? 'strength' : 'run', goal, level, daysPerWeek: days, setting: strength ? setting : null, weekdays };
   const ready = weekdays.length === days;
 
   const start = async () => {
@@ -75,7 +79,7 @@ function SetupForm() {
     <>
       <Section title={t('setup.goal.title')} icon="flag" tint="workouts">
         <View style={styles.stack} accessibilityRole="radiogroup">
-          {RUN_GOALS.map((g) => (
+          {GOALS.map((g) => (
             <ChoiceCard key={g} title={t(`setup.goal.${g}.title`)} hint={t(`setup.goal.${g}.hint`)} selected={goal === g} onPress={() => chooseGoal(g)} />
           ))}
         </View>
@@ -84,10 +88,20 @@ function SetupForm() {
       <Section title={t('setup.level.title')} icon="speedometer" tint="workouts">
         <View style={styles.stack} accessibilityRole="radiogroup">
           {LEVELS.map((l) => (
-            <ChoiceCard key={l} title={t(`level.${l}`)} hint={t(`setup.level.${l}`)} selected={level === l} onPress={() => setLevel(l)} />
+            <ChoiceCard key={l} title={t(`level.${l}`)} hint={t(strength ? `setup.levelStrength.${l}` : `setup.level.${l}`)} selected={level === l} onPress={() => setLevel(l)} />
           ))}
         </View>
       </Section>
+
+      {strength ? (
+        <Section title={t('setup.setting.title')} icon="home" tint="workouts">
+          <View style={styles.stack} accessibilityRole="radiogroup">
+            {SETTINGS.map((s) => (
+              <ChoiceCard key={s} title={t(`setup.setting.${s}`)} hint={t(`setup.setting.${s}Hint`)} selected={setting === s} onPress={() => setSetting(s)} />
+            ))}
+          </View>
+        </Section>
+      ) : null}
 
       <Section title={t('setup.days.title')} icon="calendar" tint="workouts">
         <Segmented options={dayChoices(goal).map((d) => ({ value: d, label: fmtInt(d) }))} value={days} onChange={chooseDays} />

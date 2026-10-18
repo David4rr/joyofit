@@ -46,7 +46,8 @@
     "intervals": "Intervals",
     "walkrun": "Walk/run",
     "race": "Run {{distance}}",
-    "strength": "Strength session"
+    "strength": "Strength session",
+    "strengthFocus": "Full body {{focus}}"
   },
   "headline": {
     "rest": "Rest today",
@@ -176,7 +177,11 @@
       },
       "runRoutine": {
         "title": "Regular running, 3x a week",
-        "hint": "No race, just steady and getting stronger."
+        "hint": "No race. Steady, and getting stronger."
+      },
+      "strengthFull": {
+        "title": "Full-body strength",
+        "hint": "The whole body, 2 or 3 times a week."
       }
     },
     "level": {
@@ -198,7 +203,19 @@
     "summary": "{{weeks}} weeks, starting this week, {{days}} sessions a week.",
     "start": "Start plan",
     "starting": "Saving...",
-    "error": "The plan was not saved: {{message}}"
+    "error": "The plan was not saved: {{message}}",
+    "setting": {
+      "title": "Where you train",
+      "home": "At home",
+      "homeHint": "No equipment. Pulling moves use a resistance band or light dumbbells.",
+      "gym": "At the gym",
+      "gymHint": "With machines, dumbbells and barbells."
+    },
+    "levelStrength": {
+      "beginner": "Just starting, or a long break from lifting.",
+      "intermediate": "Lifting for a few months and know the technique.",
+      "advanced": "Lifting regularly for over a year."
+    }
   },
   "session": {
     "title": "Session details",
@@ -234,7 +251,17 @@
       "upcoming": "Not yet.",
       "today": "Scheduled today."
     },
-    "openWorkout": "Open workout"
+    "openWorkout": "Open workout",
+    "strength": {
+      "title": "Exercises",
+      "warmup": "Warm-up 5 minutes: march in place, circle your shoulders and hips.",
+      "line": "{{sets}} sets x {{reps}} reps, rest {{rest}}",
+      "lineTimed": "{{sets}} sets x {{seconds}}, rest {{rest}}",
+      "start": "Start workout",
+      "scaled": "Today the sets are cut to {{pct}}% of the plan.",
+      "reps": "A Huawei watch does not report repetitions from strength workouts, so reps and loads are logged by hand in the workout logger.",
+      "openExercise": "See how to do it"
+    }
   },
   "feedback": {
     "title": "Against the plan",
@@ -281,7 +308,30 @@
     }
   },
   "library": {
-    "credits": "Exercise images from wger.de under Creative Commons licences (CC BY-SA); author and licence of every image are listed at fit.joyorogo.com/exercises/ATTRIBUTION.txt. Muscle and level data from free-exercise-db (public domain)."
+    "credits": "Exercise images from wger.de under Creative Commons licences (CC BY-SA); author and licence of every image are listed at fit.joyorogo.com/exercises/ATTRIBUTION.txt. Muscle and level data from free-exercise-db (public domain).",
+    "title": "Exercise library",
+    "search": "Search exercises",
+    "setting": {
+      "all": "All",
+      "home": "Home",
+      "gym": "Gym"
+    },
+    "empty": "No exercise matches.",
+    "count": "{{n}} exercises",
+    "detail": {
+      "steps": "Steps",
+      "mistakes": "Common mistakes",
+      "muscles": "Muscles",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "info": "Info",
+      "equipment": "Equipment",
+      "level": "Level",
+      "pattern": "Movement",
+      "timed": "Counted in seconds",
+      "noImage": "No image for this exercise yet.",
+      "notFound": "This exercise was not found."
+    }
   },
   "muscle": {
     "abs": "Abs",
@@ -332,5 +382,11 @@
     "beginner": "Beginner",
     "intermediate": "Intermediate",
     "advanced": "Advanced"
+  },
+  "home": {
+    "library": {
+      "title": "Exercise library",
+      "subtitle": "{{n}} exercises with steps and common mistakes"
+    }
   }
 }
