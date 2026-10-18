@@ -14,7 +14,7 @@ Yes. The bond that matters is the app-level one, and it is already per watch:
 - The watch keeps one credential (for this phone). That is why a first bind needs the user's consent (`BindConsent`, `BindConfirmDialog`): it replaces the *watch's* current phone pairing, not another watch's.
 - The system Bluetooth bond list (`bondedDevices()`) already lists every bonded Huawei/Honor watch.
 
-So pairing a second watch cannot damage the first one's keys: the Seiya-B29F pairing survives. Tests: `SettingsAndIdentityTests` (Swift, two watches in one `MemorySecretStore`), `DeviceStoreTest` (Kotlin, per-address preference names).
+So pairing a second watch cannot damage the first one's keys: the Seiya-B29F pairing survives. Tests: `MultiWatchTests` (Swift, two watches in one `MemorySecretStore`: binding B leaves A's key, `forget(A)` leaves B), `DeviceIdentityIndependenceTest` (Kotlin, per-address preference files with the same checks).
 
 ### Can the app hold two links at once?
 
@@ -25,7 +25,7 @@ JoyoFit's architecture does not: `WearRuntime` owns **one** `WearLink` (`current
 **Recommendation (implemented): one active link at a time, quick switching, merge by rule.**
 
 - Switching = disconnect the current link, connect the other (`WatchProvider.switchTo`). Works on every binary, because the keys are per watch.
-- Background sync of the watch that is not active: Android only, opt-in per watch (`device.bg_sync`). After the active watch's own sync cycle the foreground service **visits** a due watch: it leaves the active link, connects, syncs, disconnects and goes back to the active watch. A visit never changes which watch background mode follows, is skipped while a workout or live heart rate is running, and a failed visit (watch out of reach) is retried only after the next interval. iOS has no visit: iOS suspends the app, and CoreBluetooth restoration is wired for one peripheral (`BleCentral.restoreIdentifier`); iOS syncs the watch you switch to.
+- Background sync of the watch that is not active: Android only, opt-in per watch (`device.bg_sync`). After the active watch's own sync cycle the foreground service **visits** a due watch: it leaves the active link, connects, syncs, disconnects and goes back to the active watch. A visit never changes which watch background mode follows (`connect(..., remember = false)`), never starts a first bind, is skipped while a workout, live heart rate, an HRV measurement or any operation on the link is running, and a connect from the app ends it. A watch is due when it neither synced nor was tried for `max(4 x sync interval, 120 min)`; a failed visit (watch out of reach) is retried only after that. While a visit runs, the link events report the visited watch as connected for the length of the visit (some tens of seconds), so the Watch tab shows it as the linked watch until the active watch reconnects. iOS has no visit: iOS suspends the app, and CoreBluetooth restoration is wired for one peripheral (`BleCentral.restoreIdentifier`); iOS syncs the watch you switch to.
 - Everything else (watch faces, alarms, notifications, find watch, battery) acts on the active watch, as today.
 
 ### Where the single-watch assumption sat in storage
@@ -79,11 +79,18 @@ Consequences, by design:
 | Piece | Files |
 | --- | --- |
 | Migration | `modules/huawei-wear/schema/joyofit-db-migrations.json` (14th entry), `ios/WearMigrations.swift` (generated), `src/db/migrations.test.ts`, `src/db/multiWatch.test.ts` (the merge rules run on the shipped schema) |
-| Android writers | `SyncStore.kt` (`upsertDevice`, `save`), `WorkoutStore.kt`, `HealthMetricsStore.kt`, `NightHrv.kt`, `HrvSpot.kt`, `WearLink.kt`, `BackgroundController.kt` (visits) |
-| iOS writers | the Swift twins: `SyncStore.swift`, `WorkoutStore.swift`, `HealthMetricsStore.swift`, `HrvSpot.swift`, night HRV |
-| JS | `src/features/device/watches.ts` (device list queries), `src/state/WatchProvider.tsx` (`watches`, `switchTo`), the "Your watches" section of the Watch tab, workout detail shows the watch |
-| Tests | `bun test ./src/`; Android `cd android && ../lowprio ./gradlew :huawei-wear:testDebugUnitTest`; iOS `modules/huawei-wear/ios/ModuleLogicTests` (`swift test`) |
+| Android writers | `WatchSql.kt` (every statement), `WatchDb.kt`, `SyncStore.kt` (`upsertDevice`, `save`), `WorkoutStore.kt` + `WorkoutDuplicates.kt`, `HealthMetricsStore.kt`, `NightHrv.kt`, `HrvSpot.kt`, `WearLink.kt` (`tracks_health` gate, `connect(remember)`), `BackgroundController.kt` + `WatchVisit.kt` (visits) |
+| iOS writers | the Swift twins: `SyncStore.swift`, `WorkoutStore.swift`, `HealthMetricsStore.swift`, `HrvSpot.swift`, `WearLink.swift` (`tracks_health` gate). The iOS link has no night-HRV phase, so only the schema rule applies there |
+| JS | `src/features/device/watches.ts` (device list queries), `useWatchList.ts`, `src/state/WatchProvider.tsx` (`watches`, `switchTo`, `removeWatch`), `WatchesSection.tsx` ("Your watches" in the Watch tab), `BondedRow.tsx` (Connect becomes "Switch here" while another watch is connected), `useWorkoutSource.ts` (workout detail shows the watch) |
+| Tests | `bun test ./src/` (migration, merge rules, watch list); Android `cd android && lowprio ./gradlew :huawei-wear:testDebugUnitTest` (`MultiWatchSqlTest` runs every store statement against the shipped schema through `org.xerial:sqlite-jdbc`, a test-only dependency; `WatchVisitTest`, `WorkoutDuplicatesTest`, `DeviceIdentityIndependenceTest`); iOS `cd modules/huawei-wear/ios/ModuleLogicTests && swift test` (`MultiWatchTests`) |
 
 ## 5. Next store build
 
 Native and schema, so: Play and App Store builds only. After installing, an existing phone migrates on first start (JS and native both run the 14th entry; whichever opens the database first applies it).
+
+## 6. Not verified
+
+- The UI was type-checked, linted and covered by the data-layer tests, but not run on a phone or an emulator (the owner's phone was busy with another test, no emulators here).
+- The Android store statements ran on `sqlite-jdbc`, not on Android's own SQLite; the background visit, `connect(remember = false)` and the `tracks_health` gate are compiled and unit-tested only for their decision logic, they need a phone with two watches. The Swift `tracks_health` gate is tested at the store function, not through a connected `WearLink`.
+- How Huawei Health itself treats two watches on one phone is not documented in anything we could read (section 1).
+- Not done: separate people. A family member's band can be paired and used for faces, alarms and battery with `tracks_health` off, but JoyoFit has one profile; per-person data would be a different feature.

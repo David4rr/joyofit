@@ -789,6 +789,8 @@ as an Android asset that the native side migrates from, so JS and native cannot 
 upserts the same rows the JS queries used to, and advances `device.last_sync` in the same transaction.
 The profile, background and notification settings are in native SharedPreferences (`joyofit_settings`).
 
+Several watches: from migration 14 the rows of `step_samples`, `sleep_segments`, `sleep_scores`, `workouts`, `health_metrics` and `hrv_readings` carry a `device` column (the `device.address` that recorded them), `device` has `alias`, `is_primary`, `tracks_health` and `bg_sync`, and triggers keep one merged timeline (the primary watch owns a minute or a night, other watches fill gaps, workouts from any watch are stored once). One link is open at a time. Design, rules and what is native: [`docs/multi-watch.md`](docs/multi-watch.md).
+
 Workouts are two more tables from migration 3: `workouts` (one row per session: watch workout number,
 start/end, Huawei sport type and GB's name for it, duration, distance, calories, average/max heart
 rate, steps, `summary_json` with everything else, `complete`) and `workout_points` (`workout_id`, `ts`,
