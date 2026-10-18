@@ -30,6 +30,8 @@ import {
   type UploadProgress,
 } from '@/cloud/workoutSync';
 import { releaseFamilyDevice } from '@/features/family/device';
+import { cloudLog } from '@/cloud/log';
+import { syncGear } from '@/features/gear/sync';
 import { forgetCloudWorkouts, resetCloudCursors, setCloudState } from '@/db/cloud';
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
@@ -198,6 +200,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           if (!account) return;
           await bindAccount(db, account.id, account.email);
           await pullWorkouts(db);
+          // Gear is small and a free account only reads it; a failure here must not fail the workouts' sync.
+          await syncGear(db).catch((e) => cloudLog(`gear sync failed: ${errorMessage(e)}`, 'error'));
           const pushed = await pushWorkouts(db, setProgress);
           await runUpload(db);
           if (pushed.quota) setError(pushed.quota);

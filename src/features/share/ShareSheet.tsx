@@ -68,6 +68,8 @@ export interface ShareSubject {
   caption: string;
   /** One line under the preview for the dark card without a route. */
   cardHint: string;
+  /** A line on the card above the wordmark (a workout's gear), when there is one. */
+  extraLine?: string | null;
 }
 
 /** Dark checkerboard: the sticker is light text on nothing, so it needs a dark stage to be seen. */
@@ -318,6 +320,7 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
                       route={route}
                       photoUri={photoUri}
                       onPhotoStatus={setPhotoStatus}
+                      extraLine={subject.extraLine}
                     />
                   </View>
                 </View>

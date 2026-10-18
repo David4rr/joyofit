@@ -36,6 +36,8 @@ export interface StravaSettings {
   athleteId: number | null;
   /** Put `fit.joyorogo.com` in the description of uploaded activities. Off by default. */
   addLink: boolean;
+  /** The grant has `profile:read_all` (the athlete agreed to let JoyoFit list their Strava shoes and bikes). */
+  gearScope: boolean;
 }
 
 export async function getStravaSettings(db: SQLiteDatabase): Promise<StravaSettings> {
@@ -47,6 +49,7 @@ export async function getStravaSettings(db: SQLiteDatabase): Promise<StravaSetti
     connectedAt: Number.isFinite(connectedAt) && connectedAt > 0 ? connectedAt : null,
     athleteId: Number.isFinite(athleteId) && athleteId > 0 ? athleteId : null,
     addLink: map.get('strava_add_link') === '1',
+    gearScope: map.get('strava_gear_scope') === '1',
   };
 }
 
@@ -60,18 +63,26 @@ export function setStravaAddLink(db: SQLiteDatabase, on: boolean): Promise<void>
  */
 export async function applyStravaConnection(
   db: SQLiteDatabase,
-  status: { connected: boolean; athleteId?: number; connectedAt?: number },
+  status: { connected: boolean; athleteId?: number; connectedAt?: number; gearScope?: boolean },
 ): Promise<void> {
   const before = await getStravaSettings(db);
   if (!status.connected || status.connectedAt === undefined || status.athleteId === undefined) {
     if (before.connectedAt !== null) {
-      await setCloudState(db, { strava_connected_at: null, strava_athlete_id: null });
+      await setCloudState(db, { strava_connected_at: null, strava_athlete_id: null, strava_gear_scope: null });
       await db.runAsync('DELETE FROM strava_upload');
+      await db.runAsync('DELETE FROM strava_gear_sent');
     }
     return;
   }
-  if (before.athleteId !== null && before.athleteId !== status.athleteId) await db.runAsync('DELETE FROM strava_upload');
-  await setCloudState(db, { strava_connected_at: String(status.connectedAt), strava_athlete_id: String(status.athleteId) });
+  if (before.athleteId !== null && before.athleteId !== status.athleteId) {
+    await db.runAsync('DELETE FROM strava_upload');
+    await db.runAsync('DELETE FROM strava_gear_sent');
+  }
+  await setCloudState(db, {
+    strava_connected_at: String(status.connectedAt),
+    strava_athlete_id: String(status.athleteId),
+    strava_gear_scope: status.gearScope ? '1' : null,
+  });
 }
 
 const UPLOAD_COLUMNS = `workout_start AS workoutStart, status, upload_id AS uploadId, activity_id AS activityId, error,

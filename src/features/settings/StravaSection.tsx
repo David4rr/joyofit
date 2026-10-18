@@ -28,6 +28,7 @@ const LOGO_SIZE = { width: (437 / 37) * LOGO_HEIGHT, height: LOGO_HEIGHT } as co
  */
 export function StravaSection() {
   const { t } = useTranslation('settings');
+  const { t: tg } = useTranslation('gear');
   const strava = useStrava();
   const cloud = useCloud();
   const connected = strava.settings.connectedAt !== null;
@@ -86,6 +87,19 @@ export function StravaSection() {
             value={strava.settings.addLink}
             onValueChange={(on) => void strava.setAddLink(on)}
           />
+          <AppText variant="label">{tg('strava.gearAccess.title')}</AppText>
+          <AppText variant="caption" muted>
+            {strava.settings.gearScope ? tg('strava.gearAccess.on') : tg('strava.gearAccess.off')}
+          </AppText>
+          {!strava.settings.gearScope ? (
+            <Button
+              label={tg('strava.gearAccess.grant')}
+              icon="key-outline"
+              onPress={() => void strava.connect({ gear: true })}
+              disabled={strava.busy || !strava.signedIn}
+              loading={strava.busy}
+            />
+          ) : null}
           <Button
             label={t('strava.disconnect')}
             variant="destructive"

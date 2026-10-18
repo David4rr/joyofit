@@ -18,6 +18,7 @@ import { TabIcon } from '@/components/TabIcon';
 import { initLocale, refreshAutoLocale } from '@/i18n/native';
 import { migrate } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
+import { ensureGearSchema } from '@/features/gear/store';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { CloudProvider } from '@/state/CloudProvider';
@@ -36,6 +37,7 @@ const DATABASE_NAME = 'joyofit.db';
 /** Schema first, then one query at a time on the shared handle (see `serialize.ts`). */
 async function initDatabase(db: SQLiteDatabase): Promise<void> {
   await migrate(db);
+  await ensureGearSchema(db);
   serializeQueries(db);
 }
 

@@ -24,6 +24,7 @@ import {
 import { BurnFigure, FuelBar } from '@/features/live/FuelBar';
 import { startOfLocalDay } from '@/features/today/stats';
 import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/strain';
+import { GearWorkoutSection } from '@/features/gear/ui/GearWorkoutSection';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
 import { ShareWorkoutButton } from '@/features/share/ShareWorkoutSheet';
 import { ShareToRogoButton } from '@/features/social/ShareToRogo';
@@ -378,6 +379,7 @@ export default function WorkoutDetailScreen() {
         </Section>
       ) : null}
 
+      <GearWorkoutSection workout={workout} />
       <StravaWorkoutSection workout={workout} />
 
       <Section title={t('detail.more.title')} icon="list">

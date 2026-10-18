@@ -7,6 +7,7 @@ export const unstable_settings = { initialRouteName: 'index' };
 
 export default function SettingsLayout() {
   const { t } = useTranslation('settings');
+  const { t: tg } = useTranslation('gear');
   return (
     <Stack screenOptions={useStackOptions()}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -17,6 +18,8 @@ export default function SettingsLayout() {
       <Stack.Screen name="safety" options={{ title: t('screens.safety') }} />
       <Stack.Screen name="health" options={{ title: t('screens.health') }} />
       <Stack.Screen name="strava" options={{ title: t('screens.strava') }} />
+      <Stack.Screen name="gear" options={{ title: tg('title') }} />
+      <Stack.Screen name="gear-edit" options={{ title: tg('edit.newTitle') }} />
       <Stack.Screen name="import-huawei" options={{ title: t('screens.importHuawei') }} />
       <Stack.Screen name="import-apple-health" options={{ title: t('screens.importAppleHealth') }} />
       <Stack.Screen name="import-fit" options={{ title: t('screens.importFit') }} />

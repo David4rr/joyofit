@@ -10,7 +10,7 @@ import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { PageHeader, useContentPadding } from '@/components/Screen';
 import { useFamily } from '@/features/family/FamilyProvider';
 import { familySettingsSubtitle } from '@/features/family/format';
-import type { TFunction } from '@/i18n';
+import { t as tGear, type TFunction } from '@/i18n';
 import { useOnboarding } from '@/state/OnboardingProvider';
 import { spacing, useTheme, type Tint } from '@/theme';
 
@@ -97,6 +97,13 @@ function buildGroups(t: TFunction<'settings'>): readonly SettingsGroup[] {
           icon: 'fitness',
           tint: 'workouts',
           href: '/settings/strava',
+        },
+        {
+          title: tGear('gear:title'),
+          subtitle: tGear('gear:rowSubtitle'),
+          icon: 'footsteps',
+          tint: 'workouts',
+          href: '/settings/gear',
         },
         {
           title: t('index.rows.importHuawei.title'),

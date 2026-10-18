@@ -536,7 +536,9 @@ are in [`docs/strava.md`](docs/strava.md) section 1.
   total), timer start and stop events, one lap and one session with the watch's elapsed
   time, **active time** (`total_timer_time`), distance, calories, average and maximum heart rate, elevation gain and
   loss, average and maximum speed, and, for running, walking and hiking, the step count as strides plus the average
-  cadence over the active time, then a mapped FIT sport/sub-sport and `sport_type`. The watch gives no per-sample speed or
+  cadence over the active time, then a mapped FIT sport/sub-sport and `sport_type`. The file names the recording watch (`file_id` and a creator
+  `device_info`: Huawei watches as manufacturer 348, the model name, the firmware) and JoyoFit as the writing software; Strava does not show
+  a device line for it until Strava adds the model to its device list (docs/strava.md 3a). The watch gives no per-sample speed or
   cadence and no list of pauses: when its elapsed time exceeds its active time by 30 s or more, the pause is written as a
   timer stop and start (`elapsed - active` long, centred on the longest gap between GPS fixes, else between samples),
   because Strava takes a run's moving time from the file's timer events and otherwise recomputes it from the distance
@@ -551,10 +553,37 @@ are in [`docs/strava.md`](docs/strava.md) section 1.
   locks the session's keychain item while the phone is locked); the connect page is an `ASWebAuthenticationSession`.
 - **Description.** Off by default: **Add fit.joyorogo.com to the description** puts that text (plain, never the title)
   in the activity description.
-- **Strava's API Agreement.** Strava data is never read back, stored, or used for analytics or AI by JoyoFit; JoyoRogo's
+- **Strava's API Agreement.** The only Strava data JoyoFit reads is the status of its own upload and, once the athlete allows `profile:read_all`, their list of shoes and bikes to link gear; that list is shown only to its owner, and only the linked gear's id (and its name on the phone) is kept. Nothing is used for analytics or AI; JoyoRogo's
   database holds only the athlete id and tokens on its behalf. A workout uploaded here is not imported again by JoyoRogo's Strava
   sync (its `external_id` starts with `joyofit-`); JoyoRogo gets it through Health Connect / Apple Health. Owner setup and
   the Strava review checklist: [`docs/strava.md`](docs/strava.md).
+
+## Gear (Settings → Gear, workout screen, free; cloud copy is a JoyoRogo Pro benefit)
+
+Shoes, bikes and other gear with a lifetime distance and time, a retirement distance and a Strava link, like Garmin Connect's gear.
+
+- **Gear.** Name, brand, model, optional photo (picked with `expo-image-picker`, copied into the app's files; it stays on the phone),
+  the distance already done, a retire-at distance. A gear is retired by hand (it is then no longer offered or defaulted) or deleted.
+- **Defaults.** Per sport: running → shoes, walking and hiking → shoes, cycling → bike (`gearSport` in `src/features/gear/model.ts`
+  groups the Huawei sport types). A default applies to workouts that **start after it was set**, once, when the workout has no choice yet
+  (`reconcile` runs when the gear screens open, after a sync and before an upload); changing a default never rewrites older workouts.
+- **Per workout.** The workout screen has a Gear row with the choices that fit the sport (shoes for foot sports, bikes for rides, other for any), or "no gear",
+  which is final (the default is not applied again).
+- **Lifetime.** Starting distance plus the watch's distance of every workout done with it, and their moving time (`workouts.distance`,
+  `workoutTimes`, the same figures as the workout screen). Retirement reminders: from 90 % of the retire-at distance and again at 100 %, a
+  card on the gear screen and on the workout ("Sepatu kamu sudah 650 km, ..."); **Nanti saja** hides that level (`gear.notified`) until the next one, and
+  changing the retire-at distance re-arms it. They are in-app on purpose: an OS notification would be a new use of the notification permission,
+  which docs/ota.md keeps out of over-the-air updates.
+- **Where it is stored.** Three tables in `joyofit.db` (`gear`, `gear_default`, `workout_gear`, plus `strava_gear_sent`), created by
+  `ensureGearSchema` from JS at startup, **not** through `joyofit-db-migrations.json`: that file is shipped inside the native module (the
+  Android asset and the OTA fingerprint), so a new entry would need a new binary, and a binary that sees `user_version` above its own list
+  refuses the database. The native side never touches these tables. Fold them into the migration list at the next native build.
+- **Cloud (Pro).** The Worker keeps one JSON document per JoyoRogo user (`gear_doc`, `GET`/`PUT /v1/gear`, optimistic `rev`, see
+  `server/README.md`). The phone merges per record by `updatedAt` (deletions are tombstones) after each cloud sync and when gear changes; a 402
+  stops the upload (reads stay open, so a free account restores gear on a new phone). The photo and the Strava gear name stay on the phone.
+- **Strava.** Each gear can be linked to one of the athlete's Strava shoes or bikes; the upload then sets `gear_id` on the activity, and a later change
+  of a workout's gear is sent too. Needs `profile:read_all` for the picker (a second consent) and `activity:write` for `gear_id`: [`docs/strava.md`](docs/strava.md) 3b.
+- **Share card and workout screen** show "Sepatu: Nike Pegasus 41 · 312 km": the gear's name and its lifetime distance now.
 
 ## Import from Huawei Health (Settings → Import from Huawei Health, Android, free)
 

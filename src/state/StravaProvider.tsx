@@ -33,14 +33,15 @@ export interface StravaContextValue {
   serverReady: boolean | null;
   busy: boolean;
   error: string | null;
-  connect: () => Promise<void>;
+  /** `gear` also asks for `profile:read_all` (a second consent) so the athlete's shoes and bikes can be linked to JoyoFit's gear. */
+  connect: (options?: { gear?: boolean }) => Promise<void>;
   disconnect: () => Promise<void>;
   setAddLink: (on: boolean) => Promise<void>;
   /** Re-reads the connection from the Worker (after returning from Strava or the app coming to the foreground). */
   refresh: () => Promise<void>;
 }
 
-const EMPTY: StravaSettings = { connectedAt: null, athleteId: null, addLink: false };
+const EMPTY: StravaSettings = { connectedAt: null, athleteId: null, addLink: false, gearScope: false };
 
 const StravaContext = createContext<StravaContextValue | null>(null);
 
@@ -124,11 +125,11 @@ export function StravaProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [db, signedIn, settings.connectedAt, dataVersion, foreground, reload]);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async ({ gear = false }: { gear?: boolean } = {}) => {
     setError(null);
     setBusy(true);
     try {
-      const url = await fetchStravaAuthorizeUrl();
+      const url = await fetchStravaAuthorizeUrl({ gear });
       const result = await WebBrowser.openAuthSessionAsync(url, RETURN_URL);
       if (result.type === 'success') {
         const { reason } = Linking.parse(result.url).queryParams ?? {};

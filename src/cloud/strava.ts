@@ -10,8 +10,12 @@ import {
   saveStravaUpload,
   type StravaUploadRow,
 } from '@/db/strava';
+import { listDevices } from '@/db/cloud';
 import { getWorkout, listWorkoutPoints } from '@/db/queries';
+import { gearSport, stravaGearFits } from '@/features/gear/model';
+import { gearOfWorkout, getStravaGearSent, reconcileDefaults, setStravaGearSent } from '@/features/gear/store';
 import { buildFit, buildUploadForm, duplicateOf } from '@/features/strava/activityFile';
+import { stravaDevice } from '@/features/strava/device';
 import { workoutElevation } from '@/features/workouts/analysis/elevation';
 import { parseSummary } from '@/features/workouts/summary';
 import { errorMessage } from '@/format';
@@ -38,6 +42,8 @@ export interface StravaStatus {
   athleteId?: number;
   /** Unix seconds. */
   connectedAt?: number;
+  /** The grant also has `profile:read_all`, which listing the athlete's gear needs. */
+  gearScope?: boolean;
 }
 
 /** The Worker has no Strava connection for this account (never connected, revoked, or deauthorized on strava.com). */
@@ -52,9 +58,12 @@ const log = (message: string, direction: 'info' | 'error' = 'info') =>
 
 export const fetchStravaStatus = () => cloudRequest<StravaStatus>('GET', '/v1/strava');
 
-/** The Strava OAuth page to open in a browser; its redirect lands on the Worker, which sends the user back to the app. */
-export async function fetchStravaAuthorizeUrl(): Promise<string> {
-  return (await cloudRequest<{ url: string }>('GET', '/v1/strava/authorize')).url;
+/**
+ * The Strava OAuth page to open in a browser; its redirect lands on the Worker, which sends the user back to the app.
+ * `gear` also asks for `profile:read_all`, so the athlete's shoes and bikes can be listed.
+ */
+export async function fetchStravaAuthorizeUrl({ gear = false }: { gear?: boolean } = {}): Promise<string> {
+  return (await cloudRequest<{ url: string }>('GET', gear ? '/v1/strava/authorize?gear=1' : '/v1/strava/authorize')).url;
 }
 
 /** Revokes the grant at Strava (through the Worker) and forgets everything local. */
@@ -105,10 +114,10 @@ interface UploadStatus {
   status: string;
 }
 
-async function stravaFetch(
+async function stravaFetch<T = UploadStatus>(
   path: string,
-  init: { method: 'GET' | 'POST'; headers?: Record<string, string>; body?: Uint8Array<ArrayBuffer> },
-): Promise<UploadStatus> {
+  init: { method: 'GET' | 'POST' | 'PUT'; headers?: Record<string, string>; body?: Uint8Array<ArrayBuffer> | string },
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -117,7 +126,7 @@ async function stravaFetch(
       headers: { ...init.headers, Authorization: `Bearer ${await accessToken()}`, Accept: 'application/json' },
       signal: controller.signal,
     });
-    if (response.ok) return (await response.json()) as UploadStatus;
+    if (response.ok) return (await response.json()) as T;
     const text = await response.text().catch(() => '');
     // Strava answers a duplicate external_id with 400 and the existing upload's error text (parsed by the caller).
     if (response.status === 400 || response.status === 413 || response.status === 422) {
@@ -158,7 +167,13 @@ const inFlight = new Map<number, Promise<StravaUploadRow>>();
 export function sendWorkoutToStrava(db: SQLiteDatabase, workoutId: number): Promise<StravaUploadRow> {
   const running = inFlight.get(workoutId);
   if (running) return running;
-  const run = doSend(db, workoutId).finally(() => inFlight.delete(workoutId));
+  const run = (async () => {
+    // The default gear is applied before the upload, so the activity gets its gear in the same pass.
+    await reconcileDefaults(db).catch(() => 0);
+    const row = await doSend(db, workoutId);
+    if (row.status === 'done') await syncActivityGear(db, row.workoutStart).catch((e) => log(`gear of workout ${row.workoutStart}: ${errorMessage(e)}`, 'error'));
+    return row;
+  })().finally(() => inFlight.delete(workoutId));
   inFlight.set(workoutId, run);
   return run;
 }
@@ -181,9 +196,13 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
       const summary = parseSummary(summaryJson);
       // The ascent and descent the app shows (smoothed, see `elevation.ts`), not the barometer's raw sum.
       const elevation = workoutElevation(workout, summary, points);
+      // The watch that recorded it: the one that synced last. A workout imported from a file or an export says nothing about it.
+      const watches = workout.imported ? [] : await listDevices(db);
+      const watch = watches.sort((a, b) => (b.lastSync ?? 0) - (a.lastSync ?? 0))[0];
       const fit = buildFit(
         { ...workout, elevationGain: elevation?.gainM, elevationLoss: elevation?.lossM, maxSpeed: summary.maxSpeed },
         points,
+        { device: stravaDevice(watch) },
       );
       const form = buildUploadForm(workout, fit.bytes, { addLink });
       try {
@@ -222,6 +241,91 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
   }
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Gear
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** A shoe or bike of the athlete's Strava account, as `GET /athlete` lists it. */
+export interface StravaGearItem {
+  /** `g12345` (shoes) or `b12345` (bike). */
+  id: string;
+  name: string;
+  kind: 'shoes' | 'bike';
+  primary: boolean;
+}
+
+/** The grant lacks `profile:read_all`: `GET /athlete` then leaves out the athlete's shoes and bikes. */
+export class StravaGearScopeError extends Error {
+  constructor() {
+    super(t('gear:strava.gearAccess.off'));
+  }
+}
+
+interface AthleteGear {
+  id: string;
+  name?: string;
+  nickname?: string;
+  primary?: boolean;
+  retired?: boolean;
+}
+
+/**
+ * The athlete's shoes and bikes (`GET /athlete`, scope `profile:read_all`), for linking JoyoFit's gear. Read for the picker
+ * only and shown to its owner; nothing of it is stored except the id and name of the gear they link, on their phone.
+ */
+export async function fetchStravaGear(): Promise<StravaGearItem[]> {
+  const athlete = await stravaFetch<{ shoes?: AthleteGear[]; bikes?: AthleteGear[] }>('/athlete', { method: 'GET' });
+  if (athlete.shoes === undefined && athlete.bikes === undefined) throw new StravaGearScopeError();
+  const items = (list: AthleteGear[] | undefined, kind: 'shoes' | 'bike'): StravaGearItem[] =>
+    (list ?? [])
+      .filter((g) => !g.retired)
+      .map((g) => ({ id: g.id, name: g.name ?? g.nickname ?? g.id, kind, primary: g.primary === true }));
+  return [...items(athlete.shoes, 'shoes'), ...items(athlete.bikes, 'bike')];
+}
+
+/** Puts an existing Strava gear on an activity, or none (`PUT /activities/{id}`, `gear_id`; scope `activity:write`). */
+async function setActivityGear(activityId: number, stravaGearId: string | null): Promise<void> {
+  await stravaFetch(`/activities/${activityId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gear_id: stravaGearId ?? 'none' }),
+  });
+}
+
+/**
+ * Makes the Strava activity of an uploaded workout carry the gear JoyoFit has for it. Sends nothing when Strava already
+ * has that gear (`strava_gear_sent`), when the workout has no Strava gear and none was sent before (Strava's own default
+ * stays), or when the linked gear does not fit the sport (Strava keeps bikes on rides and shoes on foot sports).
+ * Returns whether a call was made. Throws on a failed call, so the caller can log it; the next pass tries again.
+ */
+export async function syncActivityGear(db: SQLiteDatabase, workoutStart: number): Promise<boolean> {
+  const upload = await getStravaUpload(db, workoutStart);
+  if (upload?.status !== 'done' || upload.activityId === null) return false;
+  const row = await db.getFirstAsync<{ sportType: number }>('SELECT sport_type AS sportType FROM workouts WHERE start = ?', workoutStart);
+  if (!row) return false;
+  const linked = (await gearOfWorkout(db, workoutStart))?.stravaGearId ?? null;
+  const target = linked !== null && stravaGearFits(linked, gearSport(row.sportType)) ? linked : null;
+  const sent = await getStravaGearSent(db, workoutStart);
+  if (sent === null ? target === null : sent.stravaGearId === target) return false;
+  await setActivityGear(upload.activityId, target);
+  await setStravaGearSent(db, workoutStart, target);
+  log(`activity ${upload.activityId} gear ${target ?? 'none'}`);
+  return true;
+}
+
+/** Uploaded workouts whose linked gear Strava does not have yet (the gear was linked or defaulted after the upload), a few per pass. */
+async function syncPendingActivityGear(db: SQLiteDatabase): Promise<void> {
+  const rows = await db.getAllAsync<{ workoutStart: number }>(
+    `SELECT u.workout_start AS workoutStart FROM strava_upload u
+     JOIN workout_gear wg ON wg.workout_start = u.workout_start
+     JOIN gear g ON g.id = wg.gear_id AND g.deleted_at IS NULL AND g.strava_gear_id IS NOT NULL
+     WHERE u.status = 'done' AND u.activity_id IS NOT NULL
+       AND (SELECT s.strava_gear_id FROM strava_gear_sent s WHERE s.workout_start = u.workout_start) IS NOT g.strava_gear_id
+     ORDER BY u.workout_start DESC LIMIT 20`,
+  );
+  for (const { workoutStart } of rows) await syncActivityGear(db, workoutStart);
+}
+
 let autoRunning: Promise<number> | null = null;
 
 /**
@@ -244,6 +348,7 @@ export function autoUploadNewWorkouts(db: SQLiteDatabase): Promise<number> {
         break;
       }
     }
+    await reconcileDefaults(db).then(() => syncPendingActivityGear(db)).catch((e) => log(`gear pass: ${errorMessage(e)}`, 'error'));
     return settled;
   })().finally(() => {
     autoRunning = null;

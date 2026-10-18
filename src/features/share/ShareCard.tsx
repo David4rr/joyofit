@@ -138,6 +138,8 @@ interface ShareCardProps {
   route: readonly RoutePoint[];
   photoUri: string | null;
   onPhotoStatus: (status: PhotoStatus) => void;
+  /** One line above the wordmark, e.g. the gear the workout was done with. */
+  extraLine?: string | null;
 }
 
 /**
@@ -155,6 +157,7 @@ export function ShareCard({
   route,
   photoUri,
   onPhotoStatus,
+  extraLine,
 }: ShareCardProps) {
   const { colors, fonts } = useTheme();
   const m = METRICS[format];
@@ -310,6 +313,12 @@ export function ShareCard({
               </View>
             ))}
           </View>
+        ) : null}
+
+        {extraLine ? (
+          <Text numberOfLines={1} style={text(m.label, fonts.medium, soft)}>
+            {extraLine}
+          </Text>
         ) : null}
 
         <View style={[styles.row, styles.footer]}>
