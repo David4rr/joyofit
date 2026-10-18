@@ -4,6 +4,7 @@
 #   scripts/ota.sh "Fix the workout list header on small phones"     production, android + ios
 #   scripts/ota.sh --platform ios "Copy fix"                         one platform only
 #   scripts/ota.sh --channel preview "Try the new notice"            preview channel (needs a binary built for it)
+#   scripts/ota.sh --runtime                                         print the runtimeVersion of this commit, publish nothing
 #
 # Steps: typecheck + unit tests, then a release `expo export` (bundle sanity checks), then `eas update` with that
 # bundle. Prints the update group id. Nothing is uploaded to a store.
@@ -20,13 +21,14 @@ cd "$(dirname "$0")/.."
 ROOT=$PWD
 EAS=(bunx "eas-cli@${EAS_CLI_VERSION:-25.1.1}")
 
-usage() { sed -n '2,8p' "$0" >&2; exit 2; }
+usage() { sed -n '2,9p' "$0" >&2; exit 2; }
 
-channel=production platform=all message=
+channel=production platform=all message= runtime_only=0
 while [ $# -gt 0 ]; do
   case $1 in
     --channel) channel=${2:?--channel needs production or preview}; shift ;;
     --platform) platform=${2:?--platform needs android, ios or all}; shift ;;
+    --runtime) runtime_only=1 ;;
     -h|--help) usage ;;
     --) shift; message=${message:+$message }$*; break ;;
     -*) echo "unknown option: $1" >&2; usage ;;
@@ -34,13 +36,21 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-[ -n "$message" ] || { echo "an update message is required" >&2; usage; }
+[ "$runtime_only" = 1 ] || [ -n "$message" ] || { echo "an update message is required" >&2; usage; }
 case $channel in production|preview) ;; *) echo "channel must be production or preview" >&2; exit 2 ;; esac
 case $platform in android|ios|all) ;; *) echo "platform must be android, ios or all" >&2; exit 2 ;; esac
 command -v jq > /dev/null || { echo "jq is required" >&2; exit 1; }
 
 step() { printf '\n== %s ==\n' "$*"; }
 fail() { echo "ota: $*" >&2; exit 1; }
+
+if [ "$runtime_only" = 1 ]; then
+  for p in android ios; do
+    [ "$platform" = all ] || [ "$platform" = "$p" ] || continue
+    echo "$p  $(bunx expo-updates runtimeversion:resolve --platform "$p" | tail -n 1 | jq -r .runtimeVersion)"
+  done
+  exit 0
+fi
 
 step "1. checks"
 bunx tsc --noEmit
@@ -91,4 +101,4 @@ fi
 step "published"
 printf '%s\n' "${RESULTS[@]}"
 echo "view:     bunx eas-cli update:view <group>   (dashboard: https://expo.dev/accounts/dzulfikar08/projects/joyofit/updates)"
-echo "rollback: bunx eas-cli update:rollback --channel $channel   (docs/ota.md)"
+echo "rollback: bunx eas-cli update:rollback <group> --non-interactive   (the group must be the latest of its runtimeVersion; docs/ota.md)"

@@ -1,0 +1,119 @@
+# Over-the-air JS updates (EAS Update)
+
+Written 2026-10-18. JS and asset fixes (screens, copy, logic) reach installed apps in minutes instead of waiting for a store build and review. The native binaries are still built by our own scripts (`scripts/build-release.sh`, `scripts/build-ios-mac.sh`, the `Release *` workflows). Only the update hosting is EAS: **EAS Update works with self-built binaries**, no EAS Build is involved.
+
+| | |
+| --- | --- |
+| Library | `expo-updates` |
+| EAS project | `@dzulfikar08/joyofit`, id `6175ba14-6962-4cbe-bc80-a5bb46be7fcb` (`app.json`: `extra.eas.projectId`, `updates.url`, `owner`) |
+| runtimeVersion | `{ "policy": "fingerprint" }` |
+| Channels | `production` (App Store, TestFlight, Play and sideloaded APK builds: `updates.requestHeaders["expo-channel-name"]` in `app.json`). `preview` exists on EAS but no build listens to it yet |
+| Publish | `scripts/ota.sh "<message>"` or the **OTA update** workflow |
+| Signing | none: EAS Update code signing needs a paid EAS plan (see Signing) |
+
+## What may ship over the air (store policy)
+
+Only **JS and asset bug fixes and improvements** that leave the app doing what it was submitted to do: syncing and showing data from the user's own watch.
+
+- Apple: interpreted code may be downloaded as long as it does not change the app's primary purpose or add features inconsistent with what was reviewed (guidelines 3.3.1 and 4.7; the same rule sits in the Developer Program License Agreement). The code runs in React Native's own JS engine, not a downloaded native binary.
+- Google Play: the Device and Network Abuse policy forbids an app from modifying or replacing itself by any method other than Play's update mechanism, with an exception for code that runs in an interpreter or VM that only reaches Android APIs indirectly. Hermes JS is that case. Native code never ships over the air.
+
+Fine over the air: layout, copy, spacing, logic fixes, calculations, new screens built from what the app already does, image assets.
+
+**Not** over the air, ship a reviewed build:
+
+- a new primary purpose, or a feature the store listing and review notes do not describe;
+- new permissions or a new use of an existing one (Bluetooth, location, Health, notifications), new data collection or sharing (Play Data safety, App Store privacy labels), new SDKs or trackers, new cloud endpoints for data the policies list;
+- anything that opens a store of other code, or bypasses OS signing or sandboxing;
+- native code (`modules/huawei-wear`, `plugins/`), `app.json` native settings, native dependencies (they cannot ship over the air anyway, see below).
+
+Wording above is our reading of the policies; read the current Apple and Google text before a gray-area change.
+
+## How a build and an update find each other: runtimeVersion
+
+`runtimeVersion` policy `fingerprint`: every binary embeds a hash of its native side, and the update server only offers an update published for **that** hash. An update can therefore never land on a binary with incompatible native code. A mismatch is silent and safe: the app keeps running what it has (the server answers 204).
+
+What goes into the hash (checked with `expo-updates runtimeversion:resolve`, whole list in its `fingerprintSources`):
+
+- the whole resolved Expo config of `app.json`, **including `version`, `ios.buildNumber`, `extra` (API and cloud URLs, Facebook app id), name, scheme, permissions, plugin list and `updates`**;
+- the source of local config plugins (`plugins/*.js`), icon and splash images;
+- every autolinked native package and the local module `modules/huawei-wear` (directory contents, so a native dependency bump, add, or a Swift/Kotlin edit);
+- `scripts` in `package.json`, and `.gitignore`.
+
+Not in the hash: JS and TS source, JS-only dependencies, the generated `android/` and `ios/` folders (gitignored, expo-updates ignores them so a prebuild changes nothing), `versionCode` (set at build time by `plugins/with-version-code.js`), `JOYOFIT_DISTRIBUTION` (Gradle only; Play and sideload builds share one runtimeVersion and one JS bundle).
+
+Consequences:
+
+- Bumping `version` or `ios.buildNumber` in `app.json`, changing an `extra` URL, or touching any native-relevant line creates a **new runtimeVersion**. Updates published afterwards only reach binaries built from that state. Commits that only change JS leave it alone.
+- Check what a commit resolves to: `scripts/ota.sh --runtime`. The About screen "Quick updates" block shows the first 8 characters of the runtime a device runs; they must match what `ota.sh` prints for the update to reach it.
+
+## Behaviour in the app
+
+- `updates.checkAutomatically: ON_LOAD`, `fallbackToCacheTimeout: 0`: on cold start the app launches immediately with the newest bundle it already has (embedded or a downloaded update), checks the server in the background and downloads a newer update. It is applied on the **next cold start**.
+- `src/features/updates/useOtaUpdate.ts` (`expo-updates` `useUpdates`) drives the UI. When an update is downloaded, the in-app update banner (`UpdateBanner`) shows "Update ready to install / Restart to update"; **Restart to update** reloads into it, **Later** keeps going until the next cold start. An OTA banner beats the Play prompt.
+- Settings, About, **Quick updates** (`OtaSection.tsx`): status (up to date, checking, downloading with percent, ready, error), channel, which bundle runs (built into the app, or update `<id>` from `<date>`), runtime, **Check for updates** and **Restart to update**.
+- On returning to the foreground the app re-checks, at most every 6 hours (`CHECK_THROTTLE_MS`), so a phone that is never cold-started still gets fixes.
+- Off in dev clients and Expo Go (`Updates.isEnabled` false): the section and checks do not exist there.
+- **Failure falls back to the embedded bundle.** A failed check or download changes nothing. A downloaded update that crashes on start is dropped by expo-updates' launch error recovery and the app runs the previous or embedded bundle. (Not exercised on a device in this session: do the test below after the first OTA-enabled build.)
+
+## Publish
+
+```
+scripts/ota.sh "Fix the workout list header on small phones"     # production, android + ios
+scripts/ota.sh --platform ios "Copy fix"                         # one platform
+scripts/ota.sh --runtime                                         # runtimeVersion only
+```
+
+It runs `bunx tsc --noEmit` and `bun test ./src/`, then per platform a release `expo export` (fails when the bundle holds no app code), then `eas update --channel production --skip-bundler` with that bundle, and prints one line per platform:
+
+```
+android  channel=production  runtimeVersion=<hash>  group=<update group id>
+```
+
+Android and iOS are two update groups (different runtimeVersion). Nothing goes to a store.
+
+The same from GitHub: Actions, **OTA update**, Run workflow (`message`, `channel`, `platform`). The job is bound to the `release` environment (owner approval, default branch only) and uses its `EXPO_TOKEN` secret. The group ids land in the job summary.
+
+## Roll back
+
+Instant, no store involved. Devices pick it up at their next check (next cold start or foreground re-check).
+
+```
+bunx eas-cli update:rollback <group id> --non-interactive
+```
+
+The group must be the **latest** one of its branch and runtimeVersion (the id `ota.sh` just printed). It republishes the update group published before it, or a "roll back to embedded" directive when there is none. Other options:
+
+```
+bunx eas-cli update:roll-back-to-embedded --channel production --runtime-version <hash> --platform android
+bunx eas-cli update:republish --group <older group id>        # re-publish a specific earlier update
+bunx eas-cli update:list --branch production                  # find group ids
+```
+
+Or just publish a corrected fix with `scripts/ota.sh`. Roll Android and iOS back separately (two groups).
+
+## When OTA is not enough
+
+Anything that changes the runtimeVersion, or is on the "not over the air" list above, needs a new binary: build through `scripts/build-release.sh` / `scripts/build-ios-mac.sh` / the `Release *` workflows, and from that commit on updates target the new runtime. To keep fixing an older binary over the air, publish from a checkout of the commit that binary was built from.
+
+Binaries built before expo-updates was added have no OTA and never will.
+
+`scripts/build-ios-linux.sh` refuses to run: the Xcode-free pipeline does not embed the expo-updates resources (`app.manifest`, runtime in `Expo.plist`) [inference: a binary without them would start with updates on and nothing embedded]. Build iOS on the Mac or in the `Release iOS` workflow. `JOYO_ALLOW_IOS_LINUX_WITHOUT_UPDATES=1` overrides.
+
+## Signing
+
+EAS Update code signing (`codeSigningCertificate`, `eas update --private-key-path`) is **not enabled**: publishing with a key fails with "EAS Update code signing requires a subscription to the EAS Production or Enterprise plan" on the free account `dzulfikar08` (seen on 2026-10-18). A binary that embeds a certificate rejects unsigned updates, so config and plan must change together. Without it, trust rests on TLS to `u.expo.dev` plus control of the Expo account and the `EXPO_TOKEN` secret: keep 2FA on the Expo account.
+
+To turn it on after upgrading the plan: `bunx expo-updates codesigning:generate --key-output-directory ~/.config/joyofit/ota --certificate-output-directory code-signing --certificate-validity-duration-years 10 --certificate-common-name joyofit`, add `updates.codeSigningCertificate` and `codeSigningMetadata` (`keyid: main`, `alg: rsa-v1_5-sha256`) to `app.json`, commit the certificate (`.gitignore` ignores `*.pem`: add `!/code-signing/certificate.pem`), pass `--private-key-path` in `scripts/ota.sh`, put the private key in an `OTA_PRIVATE_KEY` secret of the `release` environment and write it to a temp file in `ota.yml`. Then **every** binary built after that expects signed updates.
+
+## Accounts and secrets
+
+- Expo account `dzulfikar08`; project `joyofit` already existed; channels created with `eas channel:create production|preview`.
+- `EXPO_TOKEN`: personal access token "github-actions-ota" (expo.dev, Account settings, Access tokens), stored as the `release` environment secret of `dzulfikar08/joyofit` and in `~/.config/joyofit/expo-token` (mode 600). Revoke it on that page if it leaks; local runs use the `eas login` session instead.
+
+## Testing after the first OTA-enabled build
+
+1. Install the build. Settings, About, Quick updates: "Built into the app", channel `production` and the 8-character runtime. `scripts/ota.sh --runtime` must print the same prefix for the platform.
+2. Publish a visible JS change: `scripts/ota.sh --platform <p> "test"`. Cold start the app twice: the first start downloads (the banner "Update ready to install" appears when it finishes), the second runs it; the section shows "Update <id> (<date>)".
+3. `bunx eas-cli update:rollback <group> --non-interactive`, cold start twice: back to "Built into the app".
+4. Airplane mode, cold start: the app starts normally.
