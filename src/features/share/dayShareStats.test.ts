@@ -49,7 +49,7 @@ describe('buildDayShareStats', () => {
     expect(stats[1].value).toBe('7j 00mnt');
     expect(stats[2]).toMatchObject({ value: '72', unit: '%' });
     expect(stats[3]).toMatchObject({ value: '12,4', unit: '/ 21' });
-    expect(stats[4].value).toBe('Primed');
+    expect(stats[4].value).toBe('Prima');
   });
 
   test('unstaged sleep counts in full', () => {

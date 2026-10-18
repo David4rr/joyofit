@@ -1,4 +1,4 @@
-import type { Readiness } from '@/features/today/readiness';
+import { headlineLabel, type Readiness } from '@/features/today/readiness';
 import type { SleepSummary } from '@/features/today/stats';
 import { STRAIN_MAX, type DayStrain } from '@/features/today/strain';
 import { fmtDate, fmtDecimal, fmtInt, t } from '@/i18n';
@@ -37,7 +37,7 @@ export function buildDayShareStats({ steps, sleep, readiness, strain }: DayShare
     stats.push({ key: 'strain', label: t('sharing:share.stats.strain'), value: fmtDecimal(strain.strain, 1), unit: t('sharing:share.units.strainMax', { max: STRAIN_MAX }) });
   }
   if (readiness.headline) {
-    stats.push({ key: 'readiness', label: t('sharing:share.stats.readiness'), value: readiness.headline });
+    stats.push({ key: 'readiness', label: t('sharing:share.stats.readiness'), value: headlineLabel(readiness.headline) });
   }
   return stats;
 }
