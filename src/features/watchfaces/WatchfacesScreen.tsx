@@ -158,7 +158,7 @@ export function WatchfacesScreen() {
   const listMeta = list
     ? [
         list.width && list.height ? t('watch:faces.screenSize', { width: list.width, height: list.height }) : null,
-        list.faces ? `${list.faces.length} on watch` : null,
+        list.faces ? t('watch:faces.onWatchCount', { count: list.faces.length }) : null,
       ]
         .filter(Boolean)
         .join(' · ')

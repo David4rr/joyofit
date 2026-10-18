@@ -469,7 +469,7 @@ internal class WatchfaceController(
   suspend fun delete(id: String): Map<String, Any?> = withWatch { ops -> ops.delete(id).toJs() }
 
   /** Parses a .hwt package locally without requiring an active watch connection. */
-  suspend fun parsePackage(uri: String): Map<String, Any?> = withContext(Dispatchers.IO) {
+  suspend fun parsePackage(uri: String, persist: Boolean = false): Map<String, Any?> = withContext(Dispatchers.IO) {
     val bytes = readUri(uri)
 
     if (bytes.size < 64) {
@@ -574,13 +574,17 @@ internal class WatchfaceController(
       "No description provided by creator."
     }
 
-    val localUri: String? = try {
-      val dir = java.io.File(context.filesDir, "watchfaces").apply { mkdirs() }
-      val fileName = "${System.currentTimeMillis()}_${WatchfacePackages.randomName(version = version)}.hwt"
-      val dest = java.io.File(dir, fileName)
-      dest.writeBytes(bytes)
-      android.net.Uri.fromFile(dest).toString()
-    } catch (_: Exception) {
+    val localUri: String? = if (persist) {
+      try {
+        val dir = java.io.File(context.filesDir, "watchfaces").apply { mkdirs() }
+        val fileName = "${System.currentTimeMillis()}_${WatchfacePackages.randomName(version = version)}.hwt"
+        val dest = java.io.File(dir, fileName)
+        dest.writeBytes(bytes)
+        android.net.Uri.fromFile(dest).toString()
+      } catch (_: Exception) {
+        null
+      }
+    } else {
       null
     }
 

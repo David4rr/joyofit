@@ -277,7 +277,8 @@
     "customImport": "Impor Kustom",
     "customSize": "Ukuran kustom",
     "unknownResolution": "Resolusi tidak diketahui",
-    "savedUnknownHint": "\"{{title}}\" telah disimpan ke koleksi My watch Anda.\n\nCatatan: Tampilan jam ini memiliki resolusi layar yang tidak diketahui dan tidak dapat dipasang ke jam ini ({{watchW}}×{{watchH}})."
+    "savedUnknownHint": "\"{{title}}\" telah disimpan ke koleksi My watch Anda.\n\nCatatan: Tampilan jam ini memiliki resolusi layar yang tidak diketahui dan tidak dapat dipasang ke jam ini ({{watchW}}×{{watchH}}).",
+    "onWatchCount_other": "{{count}} di jam"
   },
   "faceEdit": {
     "reported": "Jam melaporkan opsi baru untuk tampilan ini.",

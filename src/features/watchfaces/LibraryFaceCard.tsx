@@ -53,9 +53,9 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
     typeof busy === 'object' && busy !== null && matchedWatchFace && busy.id === matchedWatchFace.id;
   const action = typeof busy === 'object' && busy !== null ? busy.action : null;
 
-  const targetW = screenWidth ?? 194;
-  const targetH = screenHeight ?? 368;
-  const isWrongResolution = face.width !== targetW || face.height !== targetH;
+  const hasWatchScreen = Boolean(screenWidth && screenHeight);
+  const isWrongResolution =
+    hasWatchScreen && (face.width !== screenWidth || face.height !== screenHeight);
 
   const renderActionButton = () => {
     if (onWatch) {
@@ -149,7 +149,7 @@ export const LibraryFaceCard = memo(function LibraryFaceCard({
                   {t('watch:faces.installedOnWatch')}
                 </AppText>
               </View>
-            ) : isWrongResolution ? (
+            ) : !hasWatchScreen ? null : isWrongResolution ? (
               <View style={[styles.pill, { backgroundColor: colors.muted }]}>
                 <AppText variant="label" color={colors.destructive}>
                   {t('watch:faces.incompatible')}

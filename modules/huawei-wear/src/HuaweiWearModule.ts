@@ -295,8 +295,8 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   setActiveWatchface(id: string): Promise<WatchfaceList>;
   /** Deletes the face with this id; resolves with the list read afterwards, rejects if the face is still there. */
   deleteWatchface(id: string): Promise<WatchfaceList>;
-  /** Parses metadata, description, and preview image from a local .hwt file. */
-  parseWatchfacePackage(uri: string): Promise<ParsedWatchfacePackage>;
+  /** Parses metadata, description, and preview image from a local .hwt file. Set persist=true to keep an internal copy in app storage. */
+  parseWatchfacePackage(uri: string, persist?: boolean): Promise<ParsedWatchfacePackage>;
   /** Deletes an imported watchface binary from the phone's local storage. */
   deleteLocalWatchfaceFile(filePath: string): Promise<boolean>;
   /**

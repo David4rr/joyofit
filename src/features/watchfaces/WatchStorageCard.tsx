@@ -52,7 +52,10 @@ export function WatchStorageCard({ list, library = [] }: WatchStorageCardProps) 
   const { t } = useTranslation('watch');
   const colors = useColors();
 
-  // Check if watch hardware provided real storage telemetry
+  // Check if watch hardware provided real storage telemetry.
+  // Note: Current Band and Fit BLE firmware commands (0x27) return installed face records without
+  // partition capacity bytes. The hardware telemetry branch is wired and ready for future devices/firmware
+  // that broadcast partition TLVs; current models safely run on the flash partition prediction branch below.
   const hasHardwareTelemetry =
     list.totalBytes != null &&
     list.freeBytes != null &&

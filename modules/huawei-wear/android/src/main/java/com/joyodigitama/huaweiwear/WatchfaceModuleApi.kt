@@ -24,8 +24,8 @@ internal fun ModuleDefinitionBuilder.watchfaceApi(runtime: () -> WearRuntime) {
     runtime().watchfaces.delete(id)
   }
 
-  AsyncFunction("parseWatchfacePackage") Coroutine { uri: String ->
-    runtime().watchfaces.parsePackage(uri)
+  AsyncFunction("parseWatchfacePackage") Coroutine { uri: String, persist: Boolean? ->
+    runtime().watchfaces.parsePackage(uri, persist ?: false)
   }
 
   AsyncFunction("deleteLocalWatchfaceFile") { uri: String ->

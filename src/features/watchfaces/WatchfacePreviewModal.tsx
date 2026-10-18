@@ -47,9 +47,10 @@ export function WatchfacePreviewModal({
   const isFit =
     previewFace.category.startsWith('Fit') || previewFace.width === 408 || previewFace.width === 336;
 
-  const targetW = list?.width ?? 194;
-  const targetH = list?.height ?? 368;
-  const isWrongResolution = previewFace.width !== targetW || previewFace.height !== targetH;
+  const targetW = list?.width;
+  const targetH = list?.height;
+  const isWrongResolution =
+    Boolean(targetW && targetH) && (previewFace.width !== targetW || previewFace.height !== targetH);
   const isModalInstalling = installing && installingUrl === previewFace.downloadUrl;
 
   const renderActionButton = () => {

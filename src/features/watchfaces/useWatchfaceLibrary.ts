@@ -34,7 +34,7 @@ export function useWatchfaceLibrary() {
       setLibrary(items);
       for (const item of items) {
         if (item.downloadUrl && !item.previewUrl) {
-          void HuaweiWear.parseWatchfacePackage(item.downloadUrl)
+          void HuaweiWear.parseWatchfacePackage(item.downloadUrl, false)
             .then((parsed) => {
               if (parsed.previewUri) {
                 const repaired: DownloadedFace = {

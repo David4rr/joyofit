@@ -1,7 +1,7 @@
 import { useEventListener } from 'expo';
 import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
@@ -93,6 +93,12 @@ export function useWatchfaces() {
   }, [installFromUri]);
 
   const initialFetchDone = useRef(false);
+
+  useEffect(() => {
+    if (!connected) {
+      initialFetchDone.current = false;
+    }
+  }, [connected]);
 
   useFocusEffect(
     useCallback(() => {

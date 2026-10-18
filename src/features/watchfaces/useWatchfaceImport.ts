@@ -23,9 +23,11 @@ export function useWatchfaceImport({
   const { t } = useTranslation(['watch', 'common']);
   const promptInstallAfterSave = useCallback(
     (savedFace: DownloadedFace) => {
-      const targetW = list?.width ?? 194;
-      const targetH = list?.height ?? 368;
+      const hasWatchScreen = Boolean(list?.width && list?.height);
+      const targetW = list?.width ?? 0;
+      const targetH = list?.height ?? 0;
       const isCompatible =
+        hasWatchScreen &&
         savedFace.width > 0 &&
         savedFace.height > 0 &&
         savedFace.width === targetW &&
@@ -33,7 +35,7 @@ export function useWatchfaceImport({
 
       if (!isCompatible) {
         const message =
-          savedFace.width > 0 && savedFace.height > 0
+          hasWatchScreen && savedFace.width > 0 && savedFace.height > 0
             ? t('watch:faces.savedIncompatibleHint', {
                 title: savedFace.title,
                 faceW: savedFace.width,
@@ -43,8 +45,8 @@ export function useWatchfaceImport({
               })
             : t('watch:faces.savedUnknownHint', {
                 title: savedFace.title,
-                watchW: targetW,
-                watchH: targetH,
+                watchW: targetW || '—',
+                watchH: targetH || '—',
               });
         setDialog({
           visible: true,
@@ -97,7 +99,7 @@ export function useWatchfaceImport({
 
       let parsed;
       try {
-        parsed = await HuaweiWear.parseWatchfacePackage(asset.uri);
+        parsed = await HuaweiWear.parseWatchfacePackage(asset.uri, true);
       } catch (err) {
         const msg = err instanceof Error ? err.message : t('watch:faces.invalidPackage');
         setDialog({

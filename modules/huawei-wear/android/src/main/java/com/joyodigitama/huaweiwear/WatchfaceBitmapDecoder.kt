@@ -156,7 +156,8 @@ internal object WatchfaceBitmapDecoder {
             streamIdx += 12
 
             for (c in 0 until pairs) {
-              if (px < totalPixels) write565ToBgra(p1, rawPixels, px++)
+              if (px >= totalPixels) break
+              write565ToBgra(p1, rawPixels, px++)
               if (px < totalPixels) write565ToBgra(p2, rawPixels, px++)
             }
           } else {

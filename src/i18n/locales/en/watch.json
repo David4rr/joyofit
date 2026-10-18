@@ -277,7 +277,9 @@
     "customImport": "Custom Import",
     "customSize": "Custom size",
     "unknownResolution": "Unknown resolution",
-    "savedUnknownHint": "\"{{title}}\" has been saved to your My watch collection.\n\nNote: This watch face has an unknown screen resolution and cannot be installed to this watch ({{watchW}}×{{watchH}})."
+    "savedUnknownHint": "\"{{title}}\" has been saved to your My watch collection.\n\nNote: This watch face has an unknown screen resolution and cannot be installed to this watch ({{watchW}}×{{watchH}}).",
+    "onWatchCount_one": "{{count}} on watch",
+    "onWatchCount_other": "{{count}} on watch"
   },
   "faceEdit": {
     "reported": "The watch reported new options for this face.",
