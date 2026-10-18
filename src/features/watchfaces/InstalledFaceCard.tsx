@@ -8,7 +8,7 @@ import {
   FactoryThumbnail,
   WatchThumbnail,
 } from '@/features/watchfaces/WatchThumbnail';
-import { resolveCategory, type WatchfaceItem } from '@/features/watchfaces/communityCatalog';
+import { resolveCategory, type WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
 import type { WatchfaceBusy } from '@/features/watchfaces/useWatchfaces';
 import { spacing } from '@/theme';
 import type { WatchfaceInfo } from '@/wear';

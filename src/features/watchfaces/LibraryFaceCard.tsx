@@ -4,7 +4,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Screen';
 import { ActivePill, WatchThumbnail } from '@/features/watchfaces/WatchThumbnail';
-import type { WatchfaceItem } from '@/features/watchfaces/communityCatalog';
+import type { WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
 import type { DownloadedFace } from '@/features/watchfaces/useWatchfaceLibrary';
 import type { WatchfaceBusy } from '@/features/watchfaces/useWatchfaces';
 import { radius, spacing, useColors } from '@/theme';

@@ -15,11 +15,7 @@ import { ThemedDialog, type CustomDialogState } from '@/features/watchfaces/Them
 import { WatchfacePreviewModal } from '@/features/watchfaces/WatchfacePreviewModal';
 import { WatchStorageCard } from '@/features/watchfaces/WatchStorageCard';
 import { FaceSkeleton } from '@/features/watchfaces/WatchThumbnail';
-import {
-  COMMUNITY_WATCHFACES,
-  resolveCategory,
-  type WatchfaceItem,
-} from '@/features/watchfaces/communityCatalog';
+import { resolveCategory, type WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
 import { useWatchfaceLibrary, type DownloadedFace } from '@/features/watchfaces/useWatchfaceLibrary';
 import { useWatchfaces } from '@/features/watchfaces/useWatchfaces';
 import { radius, spacing, useColors } from '@/theme';
@@ -34,30 +30,19 @@ const TAB_OPTIONS = [
 
 const SKELETON_ROWS = [0, 1, 2];
 
-/** Matches an installed watch hardware face to a library or catalog entry. */
+/** Matches an installed watch hardware face to a downloaded library entry. */
 export function findFaceMatch(
   face: WatchfaceInfo,
   library: readonly DownloadedFace[],
-  catalog: readonly WatchfaceItem[] = [],
 ): WatchfaceItem | undefined {
   const normFaceName = face.name.toLowerCase().trim();
-  const libMatch = library.find(
+  return library.find(
     (l) =>
       l.hardwareId === face.id ||
       l.id === face.id ||
       l.title.toLowerCase().trim() === normFaceName ||
       normFaceName.includes(l.title.toLowerCase().trim()) ||
       l.title.toLowerCase().trim().includes(normFaceName),
-  );
-  if (libMatch) return libMatch;
-
-  return catalog.find(
-    (c) =>
-      c.id === face.id ||
-      c.title.toLowerCase().trim() === normFaceName ||
-      normFaceName.includes(c.title.toLowerCase().trim()) ||
-      c.title.toLowerCase().trim().includes(normFaceName) ||
-      normFaceName.includes(c.id.toLowerCase()),
   );
 }
 
@@ -132,6 +117,7 @@ export function WatchfacesScreen() {
   };
 
   const handleInstall = async (face: WatchfaceItem) => {
+    if (!face.downloadUrl) return;
     setInstallingUrl(face.downloadUrl);
     const outcome = await installFromUri(face.downloadUrl);
     if (outcome) {
@@ -411,7 +397,7 @@ export function WatchfacesScreen() {
           renderItem={({ item: face }) => (
             <InstalledFaceCard
               face={face}
-              match={findFaceMatch(face, library, COMMUNITY_WATCHFACES)}
+              match={findFaceMatch(face, library)}
               screenWidth={list?.width}
               screenHeight={list?.height}
               busy={busy}

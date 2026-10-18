@@ -4,7 +4,7 @@ import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { IconChip } from '@/components/IconChip';
-import type { WatchfaceItem } from '@/features/watchfaces/communityCatalog';
+import type { WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
 import { radius, spacing, useColors } from '@/theme';
 import type { WatchfaceInfo, WatchfaceList } from '@/wear';
 

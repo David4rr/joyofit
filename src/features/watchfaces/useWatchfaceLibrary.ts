@@ -1,7 +1,6 @@
 import { openDatabaseSync } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
-
-import type { WatchCategory, WatchfaceItem } from '@/features/watchfaces/communityCatalog';
+import type { WatchCategory, WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
 import { HuaweiWear } from '@/wear';
 
 export interface DownloadedFace extends WatchfaceItem {

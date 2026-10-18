@@ -5,7 +5,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Screen';
 import { Skeleton } from '@/components/States';
-import type { WatchfaceItem } from '@/features/watchfaces/communityCatalog';
+import type { WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
 import { radius, spacing, tintColors, useColors } from '@/theme';
 import type { WatchfaceInfo } from '@/wear';
 
