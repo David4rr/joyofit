@@ -387,6 +387,29 @@ export class Recorder {
     return this.samples.length;
   }
 
+  /** Samples from index `from` on, read-only (bike mode feeds its metrics from them; the journal uses `drainNew`). */
+  samplesSince(from: number): readonly RecordedSample[] {
+    return from <= 0 ? this.samples : this.samples.slice(from);
+  }
+
+  /**
+   * Ground speed right now in m/s whatever the status (a paused recorder takes no samples, auto-pause still needs to see the bike move):
+   * the wheel sensor when it reports, else a fresh GPS fix; null when neither is current.
+   */
+  instantSpeedMps(nowMs: number): number | null {
+    const wheel = this.tracker.read(nowMs).speedMps;
+    if (wheel !== undefined) return wheel;
+    const fix = this.latestFix;
+    if (this.config.gps && fix && nowMs - fix.ts <= FIX_FRESH_MS && fix.speed !== null && fix.speed >= 0) return fix.speed;
+    return null;
+  }
+
+  /** The newest GPS fix with its age, null before the first one. */
+  latestPosition(nowMs: number): { lat: number; lon: number; accuracy: number | null; ts: number; ageMs: number } | null {
+    const fix = this.latestFix;
+    return fix ? { lat: fix.lat, lon: fix.lon, accuracy: fix.accuracy, ts: fix.ts, ageMs: Math.max(0, nowMs - fix.ts) } : null;
+  }
+
   /** Plain-JSON state besides the samples; `Recorder.restore(meta, samples)` rebuilds the recorder from it. */
   meta(): RecorderMeta {
     return {

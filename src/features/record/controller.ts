@@ -54,6 +54,12 @@ export interface RecordingSnapshot {
   sensorError: string | null;
 }
 
+/** What an observer of the running recording gets each second. */
+export interface ControllerTick {
+  recorder: Recorder;
+  now: number;
+}
+
 export interface FinishResult {
   workoutId: number;
 }
@@ -115,6 +121,8 @@ export class RecordingController {
   private off: (() => void)[] = [];
   /** Journal writes run one after the other, never two statements at once. */
   private io: Promise<unknown> = Promise.resolve();
+  /** Called once a second while a recording is active (also paused), after the recorder took its samples. */
+  private readonly observers = new Set<(tick: ControllerTick) => void>();
   /** What the picker asks for: the outdoor sport to warm the GPS up for, or null for no warm-up. */
   private wantWarm: { sport: ManualSport; title: string } | null = null;
   /** The sport of the running warm-up session, null while there is none. */
@@ -129,6 +137,12 @@ export class RecordingController {
   private lastFixAt: number | null = null;
 
   constructor(private readonly deps: RecordingDeps) {}
+
+  /** Bike mode and other add-ons watch the recording here; the listener must not throw and returns nothing. */
+  observe = (listener: (tick: ControllerTick) => void): (() => void) => {
+    this.observers.add(listener);
+    return () => this.observers.delete(listener);
+  };
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -376,6 +390,13 @@ export class RecordingController {
     if (!recorder || this.snap.phase !== 'active') return;
     const now = this.deps.now();
     recorder.tick(now);
+    for (const observer of this.observers) {
+      try {
+        observer({ recorder, now });
+      } catch (error) {
+        this.deps.log?.(`recording observer failed: ${String(error)}`);
+      }
+    }
     this.ticks += 1;
     if (this.ticks % JOURNAL_EVERY_S === 0) this.persist();
     if (this.ticks % NOTIFICATION_EVERY_S === 0 && recorder.status === 'recording') {
