@@ -24,7 +24,7 @@ internal object WorkoutSession {
   private const val WAKE_LOCK_TAG = "joyofit:recording"
   private const val START_TIMEOUT_MS = 10_000L
 
-  class Snapshot(val title: String, val text: String, val gps: Boolean)
+  class Snapshot(val title: String, val text: String, val gps: Boolean, val openUrl: String?)
 
   private val lock = Any()
 
@@ -34,6 +34,7 @@ internal object WorkoutSession {
   private var title = ""
   private var text = ""
   private var gps = false
+  private var openUrl: String? = null
   private var wakeLock: PowerManager.WakeLock? = null
   private var location: WorkoutLocation? = null
 
@@ -43,13 +44,13 @@ internal object WorkoutSession {
   /** The service is in the foreground right now; only then is there a notification to update and a service whose end ends the session. */
   @Volatile private var serviceUp = false
 
-  fun snapshot(): Snapshot = synchronized(lock) { Snapshot(title, text, gps) }
+  fun snapshot(): Snapshot = synchronized(lock) { Snapshot(title, text, gps, openUrl) }
 
   /**
    * Starts the session, or updates the options of a running one. Returns when the service is in the foreground and GPS runs. When Android
    * refuses the service, GPS and the wake lock start anyway and the call then throws ERR_SERVICE_NOT_ALLOWED.
    */
-  suspend fun start(context: Context, title: String, text: String, gps: Boolean) {
+  suspend fun start(context: Context, title: String, text: String, gps: Boolean, openUrl: String?) {
     if (gps && !hasFineLocation(context)) {
       throw SensorException(ErrorCodes.LOCATION_PERMISSION, "Precise location permission is not granted")
     }
@@ -60,6 +61,7 @@ internal object WorkoutSession {
       this.title = title
       this.text = text
       this.gps = gps
+      this.openUrl = openUrl
       pending = ready
       isActive.also {
         isActive = true
@@ -107,12 +109,12 @@ internal object WorkoutSession {
   }
 
   fun update(context: Context, text: String) {
-    val current = synchronized(lock) {
+    val (current, url) = synchronized(lock) {
       this.text = text
       if (!isActive || !serviceUp) return
-      title
+      title to openUrl
     }
-    context.getSystemService(NotificationManager::class.java)?.notify(RecordingNotification.ID, RecordingNotification.build(context, current, text))
+    context.getSystemService(NotificationManager::class.java)?.notify(RecordingNotification.ID, RecordingNotification.build(context, current, text, url))
   }
 
   /** Stops GPS, the service and the wake lock. Idempotent. */

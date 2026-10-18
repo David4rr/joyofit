@@ -88,6 +88,7 @@ public final class BleSensorsModule: Module {
             await location.requestPermission()
         }
 
+        // `options` is WorkoutSessionOptions: title, text, gps and `openUrl` (the Android notification's link). Only `gps` matters here: iOS has no notification.
         AsyncFunction("startWorkoutSession") { (options: [String: Any]) async throws -> Void in
             let gps = options["gps"] as? Bool ?? false
             if gps {

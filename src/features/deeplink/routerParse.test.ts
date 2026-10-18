@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
 
 import { appKeys } from './appKeys';
 import { mapDeepLink, routePatterns } from './mapDeepLink';
+import { LIVE_URL } from '../record/liveRoute';
 
 mock.module('react-native', () => ({
   Platform: { OS: 'ios', select: (o: Record<string, unknown>) => o.ios ?? o.default },
@@ -93,6 +94,8 @@ for (const impl of ['bun URL', 'whatwg-url-minimum (what the phone runs)'] as co
       expect(open('joyofit://family/accept?code=ABCD2345').params).toMatchObject({ code: 'ABCD2345' });
       expect(open('joyofit://strength/summary/abc').screen).toBe('__root/strength/summary/[id]');
       expect(open('joyofit://workout-live').screen).toBe('__root/workout-live');
+      expect(open(LIVE_URL).screen).toBe('__root/workouts/record');
+      expect(open('joyofit:///workouts/record').screen).toBe('__root/workouts/record');
     });
 
     test('an unknown link is Today, never +not-found', async () => {

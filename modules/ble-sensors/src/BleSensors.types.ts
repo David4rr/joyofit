@@ -96,6 +96,11 @@ export interface WorkoutSessionOptions {
   text: string;
   /** Record GPS: starts location updates and, on Android, the location foreground type. */
   gps: boolean;
+  /**
+   * Android: the link (`joyofit://...`) tapping the notification opens, so it lands on the recording screen whatever screen was open last.
+   * Without it, or when it is not a link of the app, the tap resumes the app where it was. iOS has no notification: ignored.
+   */
+  openUrl?: string;
 }
 
 export type BleSensorsModuleEvents = {

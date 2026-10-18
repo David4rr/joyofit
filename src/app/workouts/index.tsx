@@ -19,6 +19,7 @@ import { PageHeader, useContentPadding, useRefreshControl } from '@/components/S
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { listWorkouts, type WorkoutRow } from '@/db/queries';
 import { pickFitFile } from '@/features/fitimport/useFitImport';
+import { hasLive, LIVE_ROUTE, OPEN_LIVE } from '@/features/record/liveRoute';
 import { RecordingBanner } from '@/features/record/ui/RecordingBanner';
 import { useStrengthHistory } from '@/features/strength/history';
 import { workoutTotals } from '@/features/strength/calc';
@@ -138,7 +139,8 @@ export default function WorkoutsScreen() {
   // The status-bar inset is applied outside the list so sticky month headers stop below it.
   const padding = useContentPadding(false);
   const { linkState, device, dataVersion, sync } = useWatch();
-  const recording = useRecorder().snapshot.phase !== 'idle';
+  const { snapshot } = useRecorder();
+  const recording = snapshot.phase !== 'idle';
   const presence = useWatchPresence();
   // A phone that never had a watch gets no Sync button and no "connect your watch" nagging; the strength logger is the point of this tab.
   const watchUi = presence !== null && showsWatchUi(presence);
@@ -206,6 +208,12 @@ export default function WorkoutsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      {/* Outside the list so it stays in view while the workouts scroll; the same page padding as the list. */}
+      {hasLive(snapshot.phase, snapshot.sport) ? (
+        <View style={[styles.pinned, { paddingHorizontal: padding.paddingHorizontal, paddingTop: padding.paddingTop }]}>
+          <RecordingBanner />
+        </View>
+      ) : null}
       <SectionList
         sections={sections}
         keyExtractor={(w) => String(w.id)}
@@ -229,7 +237,6 @@ export default function WorkoutsScreen() {
               }
             />
             <ActiveWorkoutBanner />
-            <RecordingBanner />
             <Button label={t('list.start.button')} variant="primary" icon="add" onPress={() => setStartOpen(true)} />
             {pickError ? <Notice tone="danger">{t('list.pickError', { error: pickError })}</Notice> : null}
             {error ? <Notice tone="danger">{t('list.readError', { error })}</Notice> : null}
@@ -269,7 +276,7 @@ export default function WorkoutsScreen() {
         visible={startOpen}
         onClose={() => setStartOpen(false)}
         recording={recording}
-        onRecord={() => router.push('/workouts/record')}
+        onRecord={() => router.navigate(LIVE_ROUTE, OPEN_LIVE)}
         onStrength={() => router.push('/strength')}
         onManual={() => router.push('/workouts/manual')}
         onImportFit={() => void importFit()}
@@ -284,6 +291,7 @@ function ItemGap() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  pinned: { paddingBottom: spacing.xs },
   header: { gap: spacing.sm, marginBottom: spacing.xs },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   sectionHeader: { paddingTop: spacing.sm, paddingBottom: spacing.xs },

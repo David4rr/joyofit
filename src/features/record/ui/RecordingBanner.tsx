@@ -13,25 +13,21 @@ import { fmtDistance } from '@/i18n';
 import { useRecorder } from '@/state/RecorderProvider';
 import { spacing, useTheme } from '@/theme';
 
-/** "Sedang merekam, Lari 23:14 2,4 km": a card that opens the recording. Renders nothing while no recording is prepared or running. */
+import { isLive, liveState, LIVE_ROUTE, OPEN_LIVE } from '../liveRoute';
+
+/** "Sedang merekam, Lari 23:14 2,4 km": a card that opens the recording. Renders nothing while no recording is prepared or running. Pinned above the Workouts list. */
 export function RecordingBanner(): ReactElement | null {
   const { t } = useTranslation('workouts');
   const router = useRouter();
   const { colors, radius } = useTheme();
   const { snapshot } = useRecorder();
-  if (snapshot.phase === 'idle' || snapshot.sport === null) return null;
+  if (!isLive(snapshot.phase) || snapshot.sport === null) return null;
 
   const { live, status } = snapshot;
+  const state = liveState(snapshot.phase, status);
   const sport = sportLabel(SPORT_ROWS[snapshot.sport].name);
-  const title =
-    snapshot.phase === 'ready'
-      ? t('record.banner.ready')
-      : status === 'finished' && snapshot.phase === 'active'
-        ? t('record.banner.unsaved')
-        : status === 'paused'
-          ? t('record.banner.paused')
-          : t('record.banner.recording');
-  const icon = snapshot.phase === 'ready' ? 'locate' : status === 'paused' ? 'pause-circle' : 'radio-button-on';
+  const title = t(`record.banner.${state}`);
+  const icon = state === 'ready' ? 'locate' : state === 'paused' ? 'pause-circle' : 'radio-button-on';
   const detail = live
     ? t('record.banner.progress', { sport, time: formatElapsed(live.movingSec), distance: fmtDistance(live.distanceM) })
     : sport;
@@ -40,7 +36,7 @@ export function RecordingBanner(): ReactElement | null {
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={t('record.banner.a11y', { title, detail })}
-      onPress={() => router.push('/workouts/record')}
+      onPress={() => router.navigate(LIVE_ROUTE, OPEN_LIVE)}
       scaleTo={0.985}
       style={[styles.card, { backgroundColor: colors.hero, borderRadius: radius.card }]}>
       <Ionicons name={icon} size={24} color={colors.heroAccent} />

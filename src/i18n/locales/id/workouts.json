@@ -321,6 +321,9 @@
       "removedWatch": "Jam yang sudah dihapus",
       "phone": "HP",
       "sensor": "Sensor",
+      "sensorSilent": "tidak ada data masuk",
+      "sensorNoDataNotice": "{{name}} tidak mengirim data selama latihan ini. Sensor sepeda tidur sampai pedal diputar, jadi putar pedal sebentar sebelum mulai dan lihat statusnya di layar rekam.",
+      "sensorSpeedNotice": "{{name}} dalam mode kecepatan, jadi latihan ini tidak punya data kadence. Kalau dipasang di engkol, ganti ke mode kadence di aplikasi sensornya.",
       "kcalHr": "Kalori dihitung dari detak jantung.",
       "kcalMet": "Kalori perkiraan (MET). Pasang strap detak jantung untuk hitungan yang lebih akurat."
     },
@@ -566,6 +569,7 @@
       "calories": "Kalori",
       "zone": "Zona {{zone}}: {{label}}",
       "pausedBanner": "Rekaman dijeda. Waktu dan jarak berhenti sampai kamu lanjutkan.",
+      "sensors": "Sensor",
       "pause": "Jeda",
       "resume": "Lanjut",
       "lap": "Lap",
@@ -602,5 +606,13 @@
       "progress": "{{sport}} · {{time}} · {{distance}}",
       "a11y": "{{title}}. {{detail}}. Buka rekaman."
     }
+  },
+  "liveEntry": {
+    "ready": "Siap merekam",
+    "recording": "Merekam",
+    "paused": "Dijeda",
+    "unsaved": "Belum tersimpan",
+    "detail": "{{sport}} · {{time}}",
+    "a11y": "{{status}}. {{detail}}. Buka rekaman."
   }
 }

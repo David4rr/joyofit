@@ -1,4 +1,5 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useNavigation, useRouter } from 'expo-router';
+import { CommonActions } from 'expo-router/react-navigation';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -12,6 +13,7 @@ import { errorMessage } from '@/format';
 import { useRecorder } from '@/state/RecorderProvider';
 import { useStrava } from '@/state/StravaProvider';
 
+import { anchorLiveStack, WORKOUTS_ROUTE, WORKOUTS_STACK } from '../liveRoute';
 import { FinishDialog } from './FinishDialog';
 import { LiveView } from './LiveView';
 import { ReadyView } from './ReadyView';
@@ -25,11 +27,12 @@ type Dialog = 'finish' | 'discard' | null;
 /**
  * Recording a workout on the phone. The recording itself lives in `RecorderProvider`, so leaving this screen (back button, gesture, the
  * Workouts tab) leaves it running; only "Buang" ends it without saving. The screen follows the recorder's phase: setup, ready (GPS and
- * sensors connecting), live numbers.
+ * sensors connecting), live numbers. While a recording is live, back lands on the Workouts list (see `liveRoute.ts`).
  */
 export function RecordScreen() {
   const { t } = useTranslation('workouts');
   const router = useRouter();
+  const navigation = useNavigation();
   const { snapshot, pause, resume, finish, discard } = useRecorder();
   const { settings } = useStrava();
   const stravaAvailable = settings.connectedAt !== null;
@@ -46,6 +49,16 @@ export function RecordScreen() {
   const bike = useBikeSettings();
   // Bike computer mode takes the whole screen (no header, no scrolling page) while a ride is recording.
   const bikeLive = bike.enabled && snapshot.sport === 'ride' && (phase === 'active' || phase === 'saving');
+
+  // Opened from another tab, from Manual entry or from the notification, the live screen can sit on its own or on a screen it has nothing
+  // to do with. Putting the Workouts list under it makes back (hardware, header, iOS swipe) a plain pop onto the list with the live card.
+  useEffect(() => {
+    const state = navigation.getState();
+    if (!state) return;
+    const routes: { name: string; key?: string }[] = state.routes;
+    const next = anchorLiveStack(routes, phase, () => ({ name: WORKOUTS_STACK.list }));
+    if (next) navigation.dispatch(CommonActions.reset({ index: next.length - 1 - (routes.length - 1 - state.index), routes: next }));
+  }, [navigation, phase]);
   const awake = phase === 'ready' || phase === 'active';
   useEffect(() => {
     if (!awake) return;
@@ -91,7 +104,7 @@ export function RecordScreen() {
       setDialog(null);
       setSaveError(null);
       if (router.canGoBack()) router.back();
-      else router.replace('/workouts');
+      else router.replace(WORKOUTS_ROUTE);
     } catch {
       // The recording is still there (the phase did not change): the dialog closes and "Buang" can be tried again.
       setDialog(null);

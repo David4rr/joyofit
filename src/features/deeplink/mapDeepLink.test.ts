@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { appKeys } from './appKeys';
+import { LIVE_ROUTE, LIVE_URL } from '../record/liveRoute';
 import { mapDeepLink, routePatterns } from './mapDeepLink';
 
 const patterns = routePatterns([
@@ -49,6 +50,9 @@ describe('mapDeepLink', () => {
     expect(mapDeepLink('joyofit://family/accept?code=ABCD2345', patterns)).toBe('/family/accept?code=ABCD2345');
     expect(mapDeepLink('joyofit://settings/strava?x=1&y=2', patterns)).toBe('/settings/strava?x=1&y=2');
     expect(mapDeepLink('joyofit://docs/a/b/c', patterns)).toBe('/docs/a/b/c');
+  });
+  test('the link of the recording notification is the live recording screen of the real app tree', () => {
+    expect(mapDeepLink(LIVE_URL, routePatterns(appKeys()))).toBe(LIVE_ROUTE);
   });
   test('the app link and the launcher root are the home screen', () => {
     for (const url of ['joyofit://', 'joyofit:///', 'joyofit:', 'joyofit://?', 'joyofit://#x']) {

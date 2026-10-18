@@ -15,6 +15,7 @@ class WorkoutSessionOptionsRecord : Record {
   @Field var title: String = ""
   @Field var text: String = ""
   @Field var gps: Boolean = false
+  @Field var openUrl: String? = null
 }
 
 /**
@@ -61,7 +62,7 @@ class BleSensorsModule : Module() {
     }
 
     AsyncFunction("startWorkoutSession") Coroutine { options: WorkoutSessionOptionsRecord ->
-      WorkoutSession.start(context(), options.title, options.text, options.gps)
+      WorkoutSession.start(context(), options.title, options.text, options.gps, options.openUrl)
     }
 
     AsyncFunction("updateWorkoutSession") { text: String -> WorkoutSession.update(context(), text) }

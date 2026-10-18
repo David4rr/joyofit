@@ -7,12 +7,13 @@ import {
   useFonts,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { Tabs } from 'expo-router';
+import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
 import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppState, Text, View, type ColorValue } from 'react-native';
+import { AppState, StyleSheet, Text, View, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
 
 import { TabIcon } from '@/components/TabIcon';
 import { initLocale, refreshAutoLocale } from '@/i18n/native';
@@ -27,6 +28,7 @@ import { ensureCoachSchema } from '@/features/coach/store';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
+import { LivePill } from '@/features/record/ui/LivePill';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { CloudProvider } from '@/state/CloudProvider';
 import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
@@ -77,6 +79,18 @@ function TabLabel({ name, color }: { name: 'today' | 'workouts' | 'social' | 'wa
   );
 }
 
+/** The tab bar with the way back into a running recording on top of it (`LivePill`); the pill is not drawn where the tab bar is hidden. */
+function TabBarWithLive(props: BottomTabBarProps) {
+  const focused = props.state.routes[props.state.index];
+  const hidden = StyleSheet.flatten(props.descriptors[focused.key].options.tabBarStyle as StyleProp<ViewStyle>)?.display === 'none';
+  return (
+    <View>
+      <LivePill tabBarHidden={hidden} />
+      <BottomTabBar {...props} />
+    </View>
+  );
+}
+
 function RootNavigator() {
   const { colors, fonts, scheme } = useTheme();
   const { t } = useTranslation('common');
@@ -124,6 +138,7 @@ function RootNavigator() {
                   <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
                   <View style={{ flex: 1 }}>
                   <Tabs
+                    tabBar={(props) => <TabBarWithLive {...props} />}
                     screenOptions={{
                       headerShown: false,
                       sceneStyle: { backgroundColor: colors.background },

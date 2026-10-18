@@ -325,6 +325,9 @@
       "removedWatch": "A removed watch",
       "phone": "Phone",
       "sensor": "Sensor",
+      "sensorSilent": "no data received",
+      "sensorNoDataNotice": "{{name}} sent no data during this workout. A bike sensor sleeps until the pedals turn, so turn them for a moment before you start and check its status on the recording screen.",
+      "sensorSpeedNotice": "{{name}} was in speed mode, so this workout has no cadence data. If it sits on the crank, switch it to cadence mode in the sensor's app.",
       "kcalHr": "Calories are calculated from heart rate.",
       "kcalMet": "Calories are an estimate (MET). Wear a heart rate strap for a more accurate count."
     },
@@ -571,6 +574,7 @@
       "calories": "Calories",
       "zone": "Zone {{zone}}: {{label}}",
       "pausedBanner": "Recording paused. Time and distance stop until you resume.",
+      "sensors": "Sensors",
       "pause": "Pause",
       "resume": "Resume",
       "lap": "Lap",
@@ -607,5 +611,13 @@
       "progress": "{{sport}} · {{time}} · {{distance}}",
       "a11y": "{{title}}. {{detail}}. Open the recording."
     }
+  },
+  "liveEntry": {
+    "ready": "Ready to record",
+    "recording": "Recording",
+    "paused": "Paused",
+    "unsaved": "Not saved",
+    "detail": "{{sport}} · {{time}}",
+    "a11y": "{{status}}. {{detail}}. Open the recording."
   }
 }

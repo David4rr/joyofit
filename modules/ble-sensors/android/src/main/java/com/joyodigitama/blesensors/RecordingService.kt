@@ -9,6 +9,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 
@@ -21,7 +22,7 @@ class RecordingService : Service() {
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     val session = WorkoutSession.snapshot()
-    val notification = RecordingNotification.build(this, session.title, session.text)
+    val notification = RecordingNotification.build(this, session.title, session.text, session.openUrl)
     val types = ForegroundTypes.compute(
       Build.VERSION.SDK_INT,
       session.gps,
@@ -55,7 +56,7 @@ internal object RecordingNotification {
   private const val CHANNEL_ID = "workout_recording"
   private const val CHANNEL_NAME = "Workout recording"
 
-  fun build(context: Context, title: String, text: String): Notification {
+  fun build(context: Context, title: String, text: String, openUrl: String?): Notification {
     val manager = context.getSystemService(NotificationManager::class.java)
     manager?.createNotificationChannel(
       NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW).apply {
@@ -71,10 +72,22 @@ internal object RecordingNotification {
       .setOnlyAlertOnce(true)
       .setCategory(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Notification.CATEGORY_WORKOUT else Notification.CATEGORY_SERVICE)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-    context.packageManager.getLaunchIntentForPackage(context.packageName)?.let { launch ->
-      builder.setContentIntent(PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
+    contentIntent(context, openUrl)?.let { open ->
+      builder.setContentIntent(PendingIntent.getActivity(context, 0, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
     }
     return builder.build()
+  }
+
+  /**
+   * What a tap opens: the app's own link (`openUrl`, see [NotificationTarget]) so it lands on the live screen whatever screen was last open,
+   * else the launcher activity, which resumes the last screen. The link needs an activity of this app that handles it; without one the launcher is used.
+   */
+  private fun contentIntent(context: Context, openUrl: String?): Intent? {
+    NotificationTarget.viewUrl(openUrl)?.let { url ->
+      val view = Intent(Intent.ACTION_VIEW, Uri.parse(url)).setPackage(context.packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      if (context.packageManager.resolveActivity(view, 0) != null) return view
+    }
+    return context.packageManager.getLaunchIntentForPackage(context.packageName)
   }
 
   /** The status bar icon lives in another module (huawei-wear's `ic_stat_joyofit`); the app icon is the fallback. */

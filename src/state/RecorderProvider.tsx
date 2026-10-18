@@ -9,6 +9,7 @@ import { afterRecordingSaved } from '@/features/record/afterSave';
 import { RecordingController, type ControllerTick, type FinishResult, type RecordingSnapshot } from '@/features/record/controller';
 import type { EnergyProfile, Sex } from '@/features/record/energy';
 import type { LiveStats } from '@/features/record/recorder';
+import { LIVE_URL } from '@/features/record/liveRoute';
 import { sensorHub } from '@/features/sensors/instance';
 import { getWheelMm } from '@/features/sensors/settings';
 import { userWeightKg } from '@/features/strength/profile';
@@ -86,7 +87,8 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
       new RecordingController({
         hub: sensorHub,
         session: {
-          start: (options) => BleSensors.startWorkoutSession(options),
+          // The notification opens the live screen, the same place back leads to (see `liveRoute.ts`).
+          start: (options) => BleSensors.startWorkoutSession({ ...options, openUrl: LIVE_URL }),
           update: (text) => BleSensors.updateWorkoutSession(text),
           end: () => BleSensors.endWorkoutSession(),
         },
