@@ -179,7 +179,8 @@
     "cycleSync": "Sinkron data siklus",
     "cycleSyncHint": "Data siklus adalah data kesehatan dan hanya sinkron untuk Pro. Kalau dimatikan, salinannya di cloud dihapus.",
     "firstSignInHint": "Data yang sudah ada di HP ini ikut ke akun pertama yang kamu masuki.",
-    "signInAgainHint": "Data di HP ini milik {{email}}. Kalau kamu masuk dengan akun lain, kamu ditanya dulu mau diapakan data itu."
+    "signInAgainHint": "Data di HP ini milik {{email}}. Kalau kamu masuk dengan akun lain, kamu ditanya dulu mau diapakan data itu.",
+    "recordsFull": "Penyimpanan cloud akunmu penuh (50 MB untuk pengaturan, rute, template, dan data kesehatan). Beberapa perubahan baru tetap di HP ini; hapus rute atau template yang tidak dipakai lalu sinkron lagi."
   },
   "goals": {
     "errors": {

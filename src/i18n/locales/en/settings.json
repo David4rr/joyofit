@@ -182,7 +182,8 @@
     "cycleSync": "Sync cycle data",
     "cycleSyncHint": "Cycle data is health data and only syncs for Pro. Turning it off deletes the copy in the cloud.",
     "firstSignInHint": "The data already on this phone goes to the first account you sign in to.",
-    "signInAgainHint": "The data on this phone belongs to {{email}}. If you sign in with another account, you are asked what to do with it first."
+    "signInAgainHint": "The data on this phone belongs to {{email}}. If you sign in with another account, you are asked what to do with it first.",
+    "recordsFull": "Your cloud storage is full (50 MB for settings, routes, templates and health data). Some new changes stay on this phone; delete routes or templates you do not use and sync again."
   },
   "goals": {
     "errors": {

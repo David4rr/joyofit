@@ -304,7 +304,11 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           // Strength history: read by every signed-in account, written by Pro; after the workouts pull so a logged workout finds its watch row.
           await syncStrength(db).catch((e) => cloudLog(`strength sync failed: ${errorMessage(e)}`, 'error'));
           // Preferences, templates, routes and health records; reading is open to every account, writing is Pro.
-          await syncRecords(db).catch((e) => cloudLog(`record sync failed: ${errorMessage(e)}`, 'error'));
+          const records = await syncRecords(db).catch((e) => {
+            cloudLog(`record sync failed: ${errorMessage(e)}`, 'error');
+            return 'local-only' as const;
+          });
+          if (records !== 'local-only' && (records.quota || records.full)) setError(t('settings:cloud.recordsFull'));
           restoreIfFirst(account.id);
           const pushed = await pushWorkouts(db, setProgress);
           await runUpload(db);
