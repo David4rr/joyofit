@@ -8,6 +8,7 @@
     "health": "Health Connect",
     "strava": "Strava",
     "koneksi": "AI connections",
+    "joyorogo": "JoyoRogo",
     "importHuawei": "Import from Huawei Health",
     "importAppleHealth": "Import from Apple Health",
     "importFit": "Import a FIT file",
@@ -591,6 +592,27 @@
     "signInToDisconnect": "Sign in with JoyoRogo to disconnect or send.",
     "compatible": "Compatible with Strava",
     "legal": "Compatible with Strava. JoyoFit is not made, sponsored or endorsed by Strava. What you send follows your Strava privacy settings; you can remove JoyoFit any time in Strava under Settings, My Apps."
+  },
+  "joyorogo": {
+    "title": "Exercise energy to JoyoRogo",
+    "intro": "The energy of workouts from the watch, phone recordings and strength training goes to JoyoRogo's diary as burned calories. A workout JoyoRogo also reads from Health Connect or Apple Health is not counted twice.",
+    "signedOut": "Sign in with your JoyoRogo account (Settings, account) so your exercise energy reaches JoyoRogo.",
+    "labels": {
+      "lastSent": "Last sent",
+      "sent": "Sent so far",
+      "waiting": "Waiting to be sent",
+      "error": "Last error"
+    },
+    "never": "None yet",
+    "sent_one": "{{n}} workout",
+    "sent_other": "{{n}} workouts",
+    "waiting_one": "{{n}} workout",
+    "waiting_other": "{{n}} workouts",
+    "nothingWaiting": "None",
+    "errorValue": "{{message}} ({{when}})",
+    "waitingHint": "Sent at the next sync. The last 30 days of workouts go; those JoyoRogo already has are not duplicated.",
+    "autoSyncOff": "Automatic sync is off. Tap Send now to send.",
+    "sendNow": "Send now"
   },
   "weather": {
     "conditions": {

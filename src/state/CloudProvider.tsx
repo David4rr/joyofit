@@ -25,6 +25,7 @@ import { isSyncPaused, pauseSync, resumeSync } from '@/cloud/syncGate';
 import { onUnmeteredNetwork, readSyncSettings, writeAutoSync, writeWifiOnly, type SyncSettings } from '@/cloud/syncSettings';
 import { syncStrength } from '@/cloud/strengthSync';
 import { runUpload } from '@/cloud/uploader';
+import { pushWatchKcal } from '@/cloud/watchKcal';
 import {
   bindAccount,
   fetchCloudWorkoutStatus,
@@ -296,6 +297,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           // Before anything is bound or sent: another account's phone data is never adopted without asking.
           if (await reviewAccount(account.id)) return;
           await bindAccount(db, account.id, account.email);
+          // A manual sync or one that follows an account choice: the watch workouts' energy for JoyoRogo's diary (idempotent, never throws).
+          await pushWatchKcal(db, account.id);
           await pullWorkouts(db);
           // Gear is small and a free account only reads it; a failure here must not fail the workouts' sync.
           await syncGear(db).catch((e) => cloudLog(`gear sync failed: ${errorMessage(e)}`, 'error'));
@@ -354,6 +357,33 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     });
     return () => subscription.remove();
   }, [signedIn, autoSyncNow]);
+
+  /**
+   * The energy of the watch's workouts goes to JoyoRogo's diary on its own track, not only inside `syncNow`: that run is skipped
+   * for an account without the Pro cloud (`locked`) and stops at the first failure of an earlier step, and neither may keep a
+   * workout out of the diary. Same settings as the other automatic sync: off with "Automatic sync" off, and on mobile data with
+   * "Wi-Fi only" on. Never throws; what it sent or failed to send is shown in Settings, Koneksi, JoyoRogo.
+   */
+  const pushDiary = useCallback(async () => {
+    const { autoSync, wifiOnly } = settingsRef.current;
+    const account = userRef.current;
+    if (!account || !autoSync || (wifiOnly && !(await onUnmeteredNetwork()))) return;
+    await pushWatchKcal(db, account.id);
+  }, [db]);
+
+  useEffect(() => {
+    if (!signedIn) return;
+    const timer = setTimeout(() => void pushDiary(), UPLOAD_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [signedIn, dataVersion, pushDiary]);
+
+  useEffect(() => {
+    if (!signedIn) return;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void pushDiary();
+    });
+    return () => subscription.remove();
+  }, [signedIn, pushDiary]);
 
   const changeSettings = useCallback((next: SyncSettings) => {
     settingsRef.current = next;

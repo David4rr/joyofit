@@ -1,10 +1,10 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import { cloudLog as log } from '@/cloud/log';
-import { errorMessage } from '@/format';
+import { isSyncPaused } from '@/cloud/syncGate';
 import { parseSummary } from '@/features/workouts/summary';
 import { sportLabel } from '@/features/workouts/sportLabel';
 
+import { noteDiaryError, noteDiarySent } from './diaryNotes';
 import { needsPhoneKcalSend, phoneKcalPayload, type PhoneKcalSent } from './phoneKcalPlan';
 import { isQuietCloudError, strengthCall } from './strengthHttp';
 
@@ -18,7 +18,7 @@ const SCHEMA = `CREATE TABLE IF NOT EXISTS phone_kcal_sent (
 
 const ready = new WeakSet<SQLiteDatabase>();
 
-async function ensureSchema(db: SQLiteDatabase): Promise<void> {
+export async function ensurePhoneKcalSchema(db: SQLiteDatabase): Promise<void> {
   if (ready.has(db)) return;
   await db.execAsync(SCHEMA);
   ready.add(db);
@@ -63,18 +63,20 @@ async function sendOne(db: SQLiteDatabase, row: Row): Promise<boolean> {
     payload.kcal,
     Date.now(),
   );
+  await noteDiarySent(db);
   return true;
 }
 
 /** Right after a phone recording was saved. Quiet when nobody is signed in; any other failure is logged and left for the retry. Never throws. */
 export function pushPhoneKcal(db: SQLiteDatabase, workoutId: number): Promise<void> {
   return serial(async () => {
+    if (isSyncPaused()) return;
     try {
-      await ensureSchema(db);
+      await ensurePhoneKcalSchema(db);
       const row = await db.getFirstAsync<Row>(`SELECT ${COLUMNS} FROM workouts WHERE id = ?`, workoutId);
       if (row) await sendOne(db, row);
     } catch (error) {
-      if (!isQuietCloudError(error)) log(`phone workout energy of ${workoutId} not sent: ${errorMessage(error)}`, 'error');
+      if (!isQuietCloudError(error)) await noteDiaryError(db, `phone workout energy of ${workoutId}`, error);
     }
   });
 }
@@ -85,8 +87,9 @@ const MAX_PER_PASS = 20;
 /** The catch-up pass of the sync: phone recordings of the last 30 days that JoyoRogo has not got. Never throws. */
 export function retryPhoneKcal(db: SQLiteDatabase): Promise<void> {
   return serial(async () => {
+    if (isSyncPaused()) return;
     try {
-      await ensureSchema(db);
+      await ensurePhoneKcalSchema(db);
       const rows = await db.getAllAsync<Row>(
         `SELECT ${COLUMNS} FROM workouts WHERE imported = 1 AND complete = 1 AND start >= ? AND summary_json LIKE '%"source":"phone"%' ORDER BY start DESC`,
         Math.floor(Date.now() / 1000) - RETRY_WINDOW_S,
@@ -97,19 +100,18 @@ export function retryPhoneKcal(db: SQLiteDatabase): Promise<void> {
         try {
           if (await sendOne(db, row)) requests += 1;
         } catch (error) {
-          if (isQuietCloudError(error)) return;
-          log(`phone workout energy of ${row.start} not sent: ${errorMessage(error)}`, 'error');
+          if (!isQuietCloudError(error)) await noteDiaryError(db, `phone workout energy of ${row.start}`, error);
           return;
         }
       }
     } catch (error) {
-      if (!isQuietCloudError(error)) log(`phone workout energy retry failed: ${errorMessage(error)}`, 'error');
+      if (!isQuietCloudError(error)) await noteDiaryError(db, 'phone workout energy retry', error);
     }
   });
 }
 
 /** A different JoyoRogo account: it was told nothing, so every phone recording is sent to it again. */
 export async function forgetPhoneKcal(db: SQLiteDatabase): Promise<void> {
-  await ensureSchema(db);
+  await ensurePhoneKcalSchema(db);
   await db.runAsync('DELETE FROM phone_kcal_sent');
 }

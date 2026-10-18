@@ -105,6 +105,7 @@ export default function SettingsScreen() {
             },
           ]
         : []),
+      { key: 'joyorogo', title: t('screens.joyorogo'), icon: 'restaurant', tint: 'link', onPress: go('/settings/joyorogo') },
       { key: 'koneksi', title: t('screens.koneksi'), icon: 'sparkles', tint: 'link', onPress: go('/settings/koneksi') },
       { key: 'family', title: tOther('family:title.family'), icon: 'people', tint: 'link', onPress: go('/family') },
       { key: 'import', title: t('screens.importAll'), icon: 'cloud-download', tint: 'heart', onPress: go('/settings/import') },

@@ -1,14 +1,13 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { CloudHttpError } from '@/cloud/api';
-import { cloudLog as log } from '@/cloud/log';
 import { isSyncPaused } from '@/cloud/syncGate';
 import { getDetachedAt } from '@/db/cloud';
-import { errorMessage } from '@/format';
 import { t } from '@/i18n';
 import { getStrengthWorkout } from '@/features/strength/store';
 import type { StrengthWorkout } from '@/features/strength/types';
 
+import { noteDiaryError, noteDiarySent } from './diaryNotes';
 import { isQuietCloudError, strengthCall } from './strengthHttp';
 import { desiredKcal, planKcal, type KcalAction, type KcalSentRow } from './strengthKcalPlan';
 
@@ -70,6 +69,7 @@ async function perform(db: SQLiteDatabase, workoutId: string, action: KcalAction
       action.payload.kcal,
       Date.now(),
     );
+    await noteDiarySent(db);
   } else if (action.type === 'remove') {
     await strengthCall('exercise/removeJoyofit', { externalId: action.externalId });
     await db.runAsync('DELETE FROM strength_kcal_sent WHERE workout_id = ?', workoutId);
@@ -95,7 +95,7 @@ export function pushStrengthKcal(db: SQLiteDatabase, workout: StrengthWorkout, c
       await ensureKcalSchema(db);
       await reconcile(db, workout.id, workout, change === 'deleted');
     } catch (error) {
-      if (!isQuietCloudError(error)) log(`strength energy of ${workout.id} not sent: ${errorMessage(error)}`, 'error');
+      if (!isQuietCloudError(error)) await noteDiaryError(db, `strength energy of ${workout.id}`, error);
     }
   });
 }
@@ -126,14 +126,14 @@ export function retryStrengthKcal(db: SQLiteDatabase): Promise<void> {
           if (await reconcile(db, workoutId, await getStrengthWorkout(db, workoutId), false)) requests += 1;
         } catch (error) {
           if (isQuietCloudError(error)) return;
-          log(`strength energy of ${workoutId} not sent: ${errorMessage(error)}`, 'error');
+          await noteDiaryError(db, `strength energy of ${workoutId}`, error);
           // The server answered about this workout (a refusal): the next one may still go. No answer at all: stop.
           if (!(error instanceof CloudHttpError) || error.status >= 500) return;
           requests += 1;
         }
       }
     } catch (error) {
-      if (!isQuietCloudError(error)) log(`strength energy retry failed: ${errorMessage(error)}`, 'error');
+      if (!isQuietCloudError(error)) await noteDiaryError(db, 'strength energy retry', error);
     }
   });
 }

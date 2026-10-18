@@ -63,6 +63,10 @@ model the watch reported). Switching the export off keeps what was written; dele
 Connect. Types you do not allow are skipped, and the last error and counts are shown in Settings.
 The export needs Health Connect: built into Android 14+, a Play Store app on Android 10 to 13.
 
+JoyoFit also sends the energy of each watch workout straight to JoyoRogo's diary (`exercise.upsertJoyofit`, external id `watch:<start>`,
+see [strength-cloud.md](strength-cloud.md)), so burned calories reach JoyoRogo even when JoyoRogo has no read access to Health Connect;
+JoyoRogo's server stores a workout that arrives both ways once. Status and "Kirim sekarang": Settings → Koneksi → JoyoRogo.
+
 ## Cloud sync
 
 Settings → Health & cloud → **Cloud sync** signs in with your **JoyoRogo account**. Steps and sleep go to a separate

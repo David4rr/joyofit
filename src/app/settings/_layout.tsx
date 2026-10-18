@@ -24,6 +24,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="health" options={{ title: isIos ? t('screens.healthIos') : t('screens.health') }} />
       <Stack.Screen name="strava" options={{ title: t('screens.strava') }} />
       <Stack.Screen name="koneksi" options={{ title: t('screens.koneksi') }} />
+      <Stack.Screen name="joyorogo" options={{ title: t('screens.joyorogo') }} />
       <Stack.Screen name="gear" options={{ title: t('screens.gear') }} />
       <Stack.Screen name="gear-edit" options={{ title: tg('edit.newTitle') }} />
       <Stack.Screen name="import-huawei" options={{ title: t('screens.importHuawei') }} />

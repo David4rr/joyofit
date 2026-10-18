@@ -8,6 +8,7 @@
     "health": "Health Connect",
     "strava": "Strava",
     "koneksi": "Koneksi AI",
+    "joyorogo": "JoyoRogo",
     "importHuawei": "Impor dari Huawei Health",
     "importAppleHealth": "Impor dari Apple Health",
     "importFit": "Impor file FIT",
@@ -582,6 +583,25 @@
     "signInToDisconnect": "Masuk dengan JoyoRogo untuk memutuskan atau mengirim.",
     "compatible": "Kompatibel dengan Strava",
     "legal": "Kompatibel dengan Strava. JoyoFit tidak dibuat, disponsori, atau didukung oleh Strava. Yang kamu kirim mengikuti pengaturan privasi Strava kamu; kamu bisa menghapus JoyoFit kapan saja di Strava lewat Settings, My Apps."
+  },
+  "joyorogo": {
+    "title": "Kalori olahraga ke JoyoRogo",
+    "intro": "Kalori latihan dari jam, rekaman ponsel, dan angkat beban dikirim ke buku harian JoyoRogo sebagai kalori terbakar. Latihan yang sama yang JoyoRogo baca dari Health Connect atau Apple Health tidak dihitung dua kali.",
+    "signedOut": "Masuk dengan akun JoyoRogo (Pengaturan, akun) agar kalori olahragamu terkirim ke JoyoRogo.",
+    "labels": {
+      "lastSent": "Terakhir terkirim",
+      "sent": "Sudah terkirim",
+      "waiting": "Menunggu dikirim",
+      "error": "Kesalahan terakhir"
+    },
+    "never": "Belum ada",
+    "sent_other": "{{n}} latihan",
+    "waiting_other": "{{n}} latihan",
+    "nothingWaiting": "Tidak ada",
+    "errorValue": "{{message}} ({{when}})",
+    "waitingHint": "Dikirim saat sinkron berikutnya. Latihan 30 hari terakhir ikut terkirim; yang sudah ada di JoyoRogo tidak digandakan.",
+    "autoSyncOff": "Sinkron otomatis mati. Tekan Kirim sekarang untuk mengirim.",
+    "sendNow": "Kirim sekarang"
   },
   "weather": {
     "conditions": {

@@ -86,6 +86,33 @@ A strength workout's energy reaches JoyoRogo's `exercise_log` as one row: `sourc
   end of every `syncStrength`: it re-checks every workout in `strength_kcal_sent` and every workout changed in the last 30 days,
   at most 40 requests per pass. Offline or signed out is quiet and retried at the next sync. Not Pro gated (same as Health Connect rows).
 
+## Watch workouts in JoyoRogo's diary (`src/cloud/watchKcal.ts`, `watchKcalPass.ts`, `watchKcalPlan.ts`)
+
+A workout the watch recorded (`workouts.imported = 0`, `complete = 1`, started in the last 30 days) is sent with the same procedure:
+`source = 'joyofit'`, `external_id = 'watch:<start, unix seconds>'`, type from the sport (`lari`, `jalan_cepat`, `sepeda`, `berenang`,
+`yoga`, `angkat_beban`, `badminton`, `futsal`, else `latihan`), duration `end - start` (the length of the Health Connect session),
+kcal = the watch's energy. Without energy nothing is sent. This is independent of Health Connect: before, a watch workout reached
+JoyoRogo only through Health Connect / Apple Health, so a JoyoRogo that could not read it (read permission lost after a reinstall; the
+auto-sync of JoyoRogo skips silently without it) showed "Bakar 0".
+
+- `watch_kcal_sent (workout_start, account_id, external_id, date, kcal, sent_at)` (created from JS by `ensureWatchKcalSchema`) says what
+  JoyoRogo was told and for which account. A workout is sent once per account, again when kcal or day change; a repeat is harmless
+  (`watch:<start>` upsert). A deleted workout stays in the diary (like a Health Connect record).
+- Gates (`runWatchKcalPass`, tested in `watchKcalPass.test.ts`): the sync is not paused (`isSyncPaused`: an account question is open), the
+  phone's data is bound to the signed-in account (`cloud_state.user_id`, after an account switch only once "Gabung" or "Simpan terpisah"
+  was chosen), the workout is not marked `detached` ("Simpan terpisah": never sent to the later account), recent, complete, not an import.
+  Not Pro gated. Quiet when signed out or when JoyoRogo has no such procedure (404).
+- Triggers: after every data change and when the app comes to the foreground (`pushDiary` in `CloudProvider`, under "Automatic sync" and
+  "Wi-Fi only"), and inside every `syncNow` (manual too). It does not depend on the Pro cloud sync or on the success of its steps.
+  Backfill is the same pass: everything of the last 30 days that was never sent goes at the next trigger, at most 40 requests per pass.
+- No double count: JoyoRogo's server (`import-dedupe.ts` `absorbingRow`, used by `exercise.upsertJoyofit` for `watch:` ids and by
+  `exercise.add` for `health_connect` / `apple_health`) stores one row for a watch row and a Health Connect / Apple Health import of the same
+  day, workout class (Walk = jalan_cepat, Run = lari, Ride = sepeda ...) and length within 2 minutes, in either order. Rows that already
+  stand for each other are paired off first.
+- Status: Settings, Koneksi, JoyoRogo (`JoyoRogoDiarySection`): last sent, workouts sent, waiting, last error (`cloud_state` keys
+  `diary_last_sent_at`, `diary_last_error`, `diary_last_error_at`, written by `diaryNotes.ts` for the strength, phone and watch pushes) and
+  "Kirim sekarang".
+
 ## What a `joyofit` row does in JoyoRogo's numbers (read, not changed)
 
 Checked in `packages/api/src` of the joyorogo repo:
