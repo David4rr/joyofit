@@ -17,6 +17,11 @@ export const PULL_MAX_LIMIT = 1_000;
 /** Workouts carry their GPS track, so a pull page holds fewer of them. */
 export const PULL_MAX_WORKOUTS = 25;
 
+export const RESTORE_DEFAULT_LIMIT = 2_000;
+export const RESTORE_MAX_LIMIT = 5_000;
+/** GET /v1/restore refuses a window starting further back than this, to bound the cost of one restore. */
+export const RESTORE_MAX_AGE_DAYS = 400;
+
 /** How long a verified session is reused before JoyoRogo is asked again. */
 export const AUTH_CACHE_TTL_MS = 60_000;
 export const AUTH_CACHE_MAX_ENTRIES = 500;
