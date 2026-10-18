@@ -55,6 +55,7 @@ function Indonesian() {
             "Tidak ada iklan, tidak ada SDK iklan, analitik, atau pelaporan crash, dan datamu tidak dijual. Firebase Cloud Messaging dipakai hanya untuk mengantar notifikasi push Keluarga.",
             "Semua yang dikirim aplikasi lewat internet memakai HTTPS (TLS).",
             "Postingan, komentar, dan foto di tab Social ada di JoyoRogo dan hanya muncul bila kamu sendiri yang memostingnya.",
+            "Koneksi AI itu opsional (khusus Pro): hanya bila kamu menyambungkan Claude, ChatGPT, atau aplikasi MCP lain, aplikasi itu bisa membaca datamu, dan hanya saat kamu bertanya di sana. Bisa kamu putuskan kapan saja di Pengaturan, Koneksi AI.",
             "Kode sumbernya terbuka (AGPL-3.0), jadi semua yang ditulis di sini bisa kamu periksa sendiri.",
           ]}
         />
@@ -137,7 +138,9 @@ function Indonesian() {
           Selama kamu masuk, JoyoFit juga bicara dengan server JoyoRogo (<Code>api.joyorogo.com</Code>): membaca
           makanan hari ini, profil, dan berat terakhirmu dari JoyoRogo untuk ditampilkan di jam, menulis makanan
           yang kamu catat cepat dari jam, dan mengirim skor harian (pemulihan, beban, tidur, kesiapan) tiga hari
-          terakhir ke JoyoRogo. Aturan privasi JoyoRogo berlaku untuk data itu: <a
+          terakhir ke JoyoRogo. Untuk hari ini, ikut terkirim ukuran tubuh yang sudah dihitung JoyoFit: jam tidur
+          semalam, detak jantung istirahat, HRV semalam dan statusnya, VO2max, status latihan dan rasio bebannya, serta sisa waktu pemulihan.
+          Ukuran yang belum bisa dihitung tidak dikirim. Aturan privasi JoyoRogo berlaku untuk data itu: <a
             href="https://joyorogo.com/privasi"
             className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
           >
@@ -207,6 +210,28 @@ function Indonesian() {
             "Putuskan Strava di aplikasi, dan JoyoFit berhenti memakai sambunganmu; token dihapus dan izin dicabut di Strava saat JoyoRogo juga tidak memakainya. Cabut aplikasi di strava.com (Pengaturan, Aplikasi Saya), dan token untuk JoyoFit dan JoyoRogo langsung dihapus. Aktivitas yang sudah ada di Strava tetap milikmu dan diatur di Strava.",
           ]}
         />
+      </Block>
+
+      <Block id="koneksi-ai" title="Koneksi AI (opsional, Pro)">
+        <p>
+          Dengan koneksi AI opsional, kamu bisa menyambungkan Claude, ChatGPT, atau aplikasi MCP lain ke akun
+          JoyoRogo-mu. Koneksinya dibuat di aplikasi AI itu, lewat halaman izin di joyorogo.com. Sesudah kamu setuju, data
+          JoyoRogo dan JoyoFit-mu dikirim ke penyedia AI yang kamu pilih:
+        </p>
+        <List
+          items={[
+            "Yang bisa dibaca, sesuai izin yang kamu setujui: catatan makan, berat badan, olahraga dari jam, metrik tidur dan pemulihan (tidur, detak jantung istirahat, HRV, VO2max, status latihan, waktu pemulihan), dan profil serta targetmu.",
+            "Dikirim hanya saat kamu mengajukan pertanyaan di akunmu sendiri di aplikasi AI itu. Aksesnya hanya-baca: aplikasi AI tidak bisa mengubah atau menghapus apa pun, dan hanya akun Pro yang bisa memakainya.",
+            "Kamu bisa memutuskan koneksi kapan saja di Pengaturan, Koneksi AI (atau di joyorogo.com). Putus berlaku seketika: aplikasi itu langsung tidak bisa membaca apa pun lagi.",
+            "JoyoRogo menyimpan catatan audit tentang apa yang dibaca (nama alat dan rentang tanggalnya, bukan isi datanya) selama 90 hari, dan kamu bisa melihatnya di layar Koneksi AI.",
+            "Rute GPS dan data Strava tidak pernah dibagikan lewat koneksi ini.",
+            "Setelah data sampai ke penyedia AI, aturan privasi penyedia itu yang berlaku, bukan aturan JoyoFit atau JoyoRogo. Baca aturannya sebelum menyambungkan.",
+          ]}
+        />
+        <p>
+          Jawaban AI bukan saran medis. Untuk keputusan kesehatan, tanyakan ke tenaga kesehatan. Tanpa koneksi AI,
+          tidak ada data yang dikirim ke penyedia AI.
+        </p>
       </Block>
 
       <Block id="social" title="Social: postingan, komentar, dan foto">
@@ -404,6 +429,7 @@ function Indonesian() {
             "Expo, Google (Firebase Cloud Messaging) dan Apple (APNs): mengantar notifikasi push Keluarga (bagian Notifikasi push).",
             "Apple: Apple Health (menulis, dan membaca satu kali saat impor), Masuk dengan Apple, dan geocoding nama tempat di iPhone.",
             "Strava: tujuan unggahan olahraga bila kamu menyambungkannya (bagian Strava).",
+            "Penyedia AI pilihanmu (misalnya Anthropic untuk Claude, OpenAI untuk ChatGPT): menerima data yang dibaca saat kamu bertanya, hanya bila kamu menyambungkan koneksi AI (bagian Koneksi AI).",
             "RevKlik: statistik pengunjung situs ini (bagian Statistik situs).",
           ]}
         />
@@ -471,6 +497,7 @@ function English() {
             "No ads, no advertising, analytics or crash-reporting SDKs, and your data is not sold. Firebase Cloud Messaging is used only to deliver Keluarga push notifications.",
             "Everything the app sends over the internet uses HTTPS (TLS).",
             "Posts, comments and photos in the Social tab live on JoyoRogo and only appear when you post them yourself.",
+            "The AI connection is optional (Pro only): only if you connect Claude, ChatGPT or another MCP app can it read your data, and only when you ask a question there. You can disconnect any time in Settings, Koneksi AI.",
             "The source code is open (AGPL-3.0), so you can check everything stated here.",
           ]}
         />
@@ -535,8 +562,10 @@ function English() {
         <p>
           While signed in, JoyoFit also talks to JoyoRogo (<Code>api.joyorogo.com</Code>): it reads today&apos;s
           meals, your profile and latest weight to show calories on the watch, writes meals you quick-log on the
-          watch, and sends the last three days of daily scores (recovery, strain, sleep, readiness). JoyoRogo&apos;s
-          policy covers that data:{" "}
+          watch, and sends the last three days of daily scores (recovery, strain, sleep, readiness). For today it also
+          sends the body metrics JoyoFit has computed: hours slept last night, resting heart rate, overnight HRV and
+          its status, VO2max, training status and load ratio, and the recovery time left; a metric that cannot be computed yet
+          is not sent. JoyoRogo&apos;s policy covers that data:{" "}
           <a
             href="https://joyorogo.com/privasi"
             className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
@@ -603,6 +632,28 @@ function English() {
           JoyoFit stops using your connection; the tokens are deleted and the access revoked on Strava once JoyoRogo
           is not using it either. Revoke the app on strava.com (Settings, My Apps) and the tokens for both JoyoFit and
           JoyoRogo are deleted immediately; activities already on Strava stay yours and are managed on Strava.
+        </p>
+      </Block>
+
+      <Block id="koneksi-ai-en" title="AI connection (optional, Pro)">
+        <p>
+          With the optional AI connection you can connect Claude, ChatGPT or another MCP app to your JoyoRogo
+          account. The connection is made in that AI app, through a consent page on joyorogo.com. Once you agree,
+          your JoyoRogo and JoyoFit data is sent to the AI provider you chose:
+        </p>
+        <List
+          items={[
+            "What can be read, per the permissions you agree to: your food diary, weight, workouts from the watch, sleep and recovery metrics (sleep, resting heart rate, HRV, VO2max, training status, recovery time), and your profile and targets.",
+            "It is sent only when you ask a question in your own account in that AI app. Access is read-only: the AI app cannot change or delete anything, and only a Pro account can use it.",
+            "You can disconnect at any time in Settings, Koneksi AI (or on joyorogo.com). Disconnecting is immediate: that app cannot read anything any more.",
+            "JoyoRogo keeps an audit log of what was read (the tool name and the date range, not the data itself) for 90 days, and you can see it in the Koneksi AI screen.",
+            "GPS routes and Strava data are never shared through this connection.",
+            "Once the data reaches the AI provider, the provider's own privacy terms apply, not JoyoFit's or JoyoRogo's. Read them before you connect.",
+          ]}
+        />
+        <p>
+          What the AI answers is not medical advice. For health decisions, ask a health professional. Without the AI
+          connection, no data is sent to an AI provider.
         </p>
       </Block>
 
@@ -770,7 +821,7 @@ function English() {
       <Block title="Third parties">
         <p>
           Open-Meteo (weather), Broadcom (satellite-assist data), Cloudflare (hosting of the cloud and this
-          site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
+          site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling. Everything the app and this site send over the internet uses HTTPS (TLS).
         </p>

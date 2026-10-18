@@ -170,6 +170,7 @@ Yang bisa dilakukan:
 Privasi:
 • Data jam disimpan di HP. Tidak ada iklan, tidak ada analitik, data tidak dijual.
 • Cloud JoyoFit bersifat opsional dan baru aktif setelah kamu masuk dengan akun JoyoRogo. Data cloud bisa dihapus lewat permintaan email.
+• Koneksi AI (opsional, Pro): hanya bila kamu menyambungkan Claude, ChatGPT, atau aplikasi MCP lain, datamu dibaca (hanya-baca) saat kamu bertanya di sana. Bisa diputus kapan saja di Pengaturan, Koneksi AI. Rute GPS dan data Strava tidak pernah dibagikan.
 • Kebijakan privasi: https://fit.joyorogo.com/privasi
 
 Catatan:
@@ -212,6 +213,7 @@ What it does:
 Privacy:
 • Watch data is stored on your phone. No ads, no analytics, your data is not sold.
 • The JoyoFit cloud is optional and only starts after you sign in with a JoyoRogo account. Cloud data can be deleted by email request.
+• AI connection (optional, Pro): only if you connect Claude, ChatGPT or another MCP app is your data read (read-only), when you ask a question there. Disconnect any time in Settings, Koneksi AI. GPS routes and Strava data are never shared.
 • Privacy policy: https://fit.joyorogo.com/privasi
 
 Notes:
@@ -268,12 +270,13 @@ JoyoFit keeps watch data on the device by default. Google counts data as *collec
 | Data type | Collected | Shared | Purpose | Optional | Encrypted in transit | Deletion |
 |---|---|---|---|---|---|---|
 | Health info: heart rate, SpO2, sleep | Yes (JoyoFit cloud) | No | App functionality (backup) | Yes: only after signing in to the cloud | Yes (HTTPS) | Yes, on request by email |
-| Fitness info: steps, distance, calories, workouts, daily scores | Yes (JoyoFit cloud; scores also to JoyoRogo) | No | App functionality | Yes | Yes | Yes, on request |
+| Fitness info: steps, distance, calories, workouts, daily scores and body metrics (sleep hours, resting heart rate, HRV, VO2max, training status, recovery time) | Yes (JoyoFit cloud; scores and body metrics also to JoyoRogo) | No | App functionality | Yes | Yes | Yes, on request |
 | Precise location: workout GPS tracks | Yes (JoyoFit cloud, full-precision track points) | No | App functionality | Yes | Yes | Yes, on request |
 | Approximate location: weather position rounded to ~1 km | Yes (sent to Open-Meteo) | **Yes**, with Open-Meteo (weather provider) | App functionality | Yes: weather is off by default | Yes | Not stored by us; Open-Meteo's own policy applies |
 | Name, Email address, User IDs | Yes (JoyoRogo sign-in; the cloud keys rows by the user id) | No | Account management, app functionality | Yes | Yes | Yes, on request |
 | Device or other IDs: the watch's Bluetooth address | Yes (JoyoFit cloud) | No | App functionality | Yes | Yes | Yes, on request |
 | Food and meals (JoyoRogo link: calories logged on the watch) | Yes, to JoyoRogo while signed in | No | App functionality | Yes | Yes | Yes, via JoyoRogo's deletion |
+| Health and fitness info, food, weight (optional AI connection, JoyoRogo Pro) | Read from JoyoRogo's server by the AI app the user connects (Claude, ChatGPT or another MCP app), only when the user asks a question there; read-only; GPS routes and Strava data excluded | **Yes**, with the AI provider the user chose, started by the user | App functionality (user-initiated) | Yes: off until the user connects an app, revocable at once in Settings, Koneksi AI | Yes | JoyoRogo keeps a 90-day audit log (tool and dates, not the data); the provider's own terms apply to what it received. Whether Play classifies this user-initiated transfer as sharing: confirm in the Console [INFERENCE: not checked] |
 
 Answers to the other questions:
 

@@ -99,6 +99,13 @@ function buildGroups(t: TFunction<'settings'>): readonly SettingsGroup[] {
           href: '/settings/strava',
         },
         {
+          title: t('index.rows.koneksi.title'),
+          subtitle: t('index.rows.koneksi.subtitle'),
+          icon: 'sparkles',
+          tint: 'link',
+          href: '/settings/koneksi',
+        },
+        {
           title: tGear('gear:title'),
           subtitle: tGear('gear:rowSubtitle'),
           icon: 'footsteps',

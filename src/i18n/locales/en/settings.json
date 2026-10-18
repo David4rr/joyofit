@@ -7,6 +7,7 @@
     "safety": "Safety",
     "health": "Health & cloud",
     "strava": "Strava",
+    "koneksi": "AI connections",
     "importHuawei": "Import from Huawei Health",
     "importAppleHealth": "Import from Apple Health",
     "importFit": "Import a FIT file",
@@ -67,6 +68,10 @@
       "strava": {
         "title": "Strava",
         "subtitle": "Send watch workouts to Strava, free"
+      },
+      "koneksi": {
+        "title": "AI connections",
+        "subtitle": "Claude, ChatGPT and other AI apps allowed to read your data"
       },
       "importHuawei": {
         "title": "Import from Huawei Health",
@@ -563,7 +568,7 @@
     "unsynced_one": "{{count}} meal logged on the watch will be written to JoyoRogo the next time the app reads it.",
     "unsynced_other": "{{count}} meals logged on the watch will be written to JoyoRogo the next time the app reads it.",
     "pushNow": "Push now",
-    "details": "Your JoyoRogo food diary and calorie target feed the calorie card on the watch. JoyoFit reads them when it opens, after each sync and when the watch connects, and sends them again when the watch asks or logs a meal itself. While the app is closed the background service answers from the last day it stored; it cannot read JoyoRogo then, because the sign-in is kept for the app only. Untested on the Fit 4 Pro so far. While signed in, the app also sends your daily Recovery, Strain and Sleep to the JoyoRogo diary so they sit next to your food."
+    "details": "Your JoyoRogo food diary and calorie target feed the calorie card on the watch. JoyoFit reads them when it opens, after each sync and when the watch connects, and sends them again when the watch asks or logs a meal itself. While the app is closed the background service answers from the last day it stored; it cannot read JoyoRogo then, because the sign-in is kept for the app only. Untested on the Fit 4 Pro so far. While signed in, the app also sends your daily Recovery, Strain and Sleep to the JoyoRogo diary so they sit next to your food, plus today's body metrics once computed (hours slept, resting heart rate, HRV, VO2max, training status, recovery time). Whatever cannot be computed yet is not sent."
   },
   "signIn": {
     "label": "Sign in with JoyoRogo",

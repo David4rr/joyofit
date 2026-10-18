@@ -105,7 +105,7 @@
     "gives1": "Skor Pemulihan, Strain, dan Tidur harianmu muncul di samping yang kamu makan di catatan JoyoRogo, lengkap dengan saran makan singkat untuk hari seperti itu.",
     "gives2": "Yang kamu catat di JoyoRogo bisa tampil di kartu kalori jam.",
     "gives3": "Pilihan mencadangkan data jam ke cloud, yang termasuk JoyoRogo Pro (langkah berikutnya).",
-    "note": "Selama kamu masuk, JoyoFit mengirim skor harianmu ke JoyoRogo dan bertukar data makanan dan berat badan. Data jammu tetap di HP ini kecuali kamu menyalakan cadangan cloud Pro. Keluar kapan saja di Pengaturan, Kesehatan dan cloud.",
+    "note": "Selama kamu masuk, JoyoFit mengirim skor dan ukuran tubuh harianmu (tidur, detak istirahat, HRV, VO2max) ke JoyoRogo dan bertukar data makanan dan berat badan. Data jammu tetap di HP ini kecuali kamu menyalakan cadangan cloud Pro. Keluar kapan saja di Pengaturan, Kesehatan dan cloud.",
     "signedIn": "Sudah masuk.",
     "signedInAs": "Sudah masuk sebagai {{email}}."
   },

@@ -117,11 +117,40 @@ export interface RogoWeightEntry {
 /** JoyoFit's readiness word, as `fitness.upsertScores` accepts it. */
 export type RogoReadiness = 'Primed' | 'Balanced' | 'Strained' | 'Run down';
 
+/** Values of the `hrvStatus` field of `fitness.upsertScores` (JoyoFit's HRV status against the personal range). */
+export type RogoHrvStatus = 'balanced' | 'unbalanced' | 'low';
+
+/** Values of the `trainingStatus` field of `fitness.upsertScores` (JoyoFit's acute : chronic load status). */
+export type RogoTrainingStatus = 'productive' | 'maintaining' | 'recovery' | 'overreaching' | 'detraining';
+
+/**
+ * The daily body metrics of `fitness.upsertScores`, every one optional: a metric JoyoFit has not computed is left out (never
+ * zero), and JoyoRogo keeps what it stored for it. Only today's entry carries them.
+ *  - sleepHours 0..24: hours asleep of the night that ended that day (naps left out).
+ *  - restingHr integer bpm 25..220: the watch's resting heart rate of the day.
+ *  - hrvMs 1..500: average overnight RMSSD of the night that ended that day.
+ *  - hrvStatus: the last 7 nights against the personal range.
+ *  - vo2max 10..90 ml/kg/min: the watch's value or JoyoFit's estimate.
+ *  - trainingStatus and loadRatio 0..10: the 7-day : 28-day load ratio and its band.
+ *  - recoveryHours integer 0..240: recovery time still left.
+ */
+export interface RogoScoreMetrics {
+  sleepHours?: number;
+  restingHr?: number;
+  hrvMs?: number;
+  hrvStatus?: RogoHrvStatus;
+  vo2max?: number;
+  trainingStatus?: RogoTrainingStatus;
+  loadRatio?: number;
+  recoveryHours?: number;
+}
+
 /**
  * One day of scores for `fitness.upsertScores`. `date` is `YYYY-MM-DD`; a score that is left out keeps what JoyoRogo has
- * stored for that day. Ranges: recoveryPct 0..100, strain 0..21, sleepPct 0..300.
+ * stored for that day. Ranges: recoveryPct 0..100, strain 0..21, sleepPct 0..300. Past days carry strain only; today's
+ * entry also carries the {@link RogoScoreMetrics} JoyoFit has computed for it.
  */
-export interface RogoScoreDay {
+export interface RogoScoreDay extends RogoScoreMetrics {
   date: string;
   recoveryPct?: number;
   strain?: number;
@@ -279,6 +308,41 @@ export interface RogoGroupDetail {
   members: RogoGroupMember[];
 }
 
+/** `mcpConnection.info`: the AI connector's address and whether the account is Pro (an AI app can only read data once it is). */
+export interface RogoMcpInfo {
+  url: string;
+  unlocked: boolean;
+}
+
+/** An AI app connected to the account (`mcpConnection.list`), newest first. `name` is what the app calls itself, so `redirectHosts` say where it really is. */
+export interface RogoMcpConnection {
+  clientId: string;
+  name: string;
+  redirectHosts: string[];
+  /** Data scopes the person agreed to: `profile:read`, `food:read`, `weight:read`, `workouts:read`, `recovery:read`. */
+  scopes: string[];
+  /** Epoch milliseconds. */
+  connectedAt: number;
+  /** Epoch milliseconds; null when the app never read anything. */
+  lastUsedAt: number | null;
+  calls30d: number;
+}
+
+export type RogoMcpOutcome = 'ok' | 'error' | 'not_pro' | 'rate_limited' | 'scope';
+
+/** One read an AI app made (`mcpConnection.activity`), newest first. `args` is JSON text with the date range or id, never data. */
+export interface RogoMcpActivity {
+  id: string;
+  clientId: string;
+  clientName: string | null;
+  tool: string;
+  args: string | null;
+  outcome: RogoMcpOutcome;
+  ms: number;
+  /** Epoch milliseconds. */
+  createdAt: number;
+}
+
 /** Procedures JoyoFit calls. */
 export const rogo = {
   foodDay: (date: string) => rogoCall<RogoFoodDay>('food/listByDate', { date }),
@@ -291,8 +355,15 @@ export const rogo = {
   /** Writes one item to the diary (a meal the watch quick-logged). */
   addFood: (input: { date: string; meal: RogoMeal; name: string; kcal: number }) =>
     rogoCall<RogoFoodItem>('food/add', { ...input, source: 'manual' }),
-  /** Stores the day's Recovery / Strain / Sleep for JoyoRogo's diary. JoyoRogo answers 404 until it is deployed with the `fitness` router. */
+  /** Stores the day's Recovery / Strain / Sleep and body metrics (sleep hours, resting HR, HRV, VO2max, training status, recovery time) for JoyoRogo's diary and its AI connector. JoyoRogo answers 404 until it is deployed with the `fitness` router. */
   pushScores: (days: RogoScoreDay[]) => rogoCall<{ saved: number }>('fitness/upsertScores', { days }),
+  mcp: {
+    info: () => rogoCall<RogoMcpInfo>('mcpConnection/info', {}),
+    list: () => rogoCall<RogoMcpConnection[]>('mcpConnection/list', {}),
+    /** Cuts the app off at once. */
+    revoke: (clientId: string) => rogoCall<{ revoked: boolean }>('mcpConnection/revoke', { clientId }),
+    activity: (limit = 20) => rogoCall<RogoMcpActivity[]>('mcpConnection/activity', { limit }),
+  },
   group: {
     list: () => rogoCall<RogoGroup[]>('group/list', {}),
     join: (code: string) => rogoCall<{ groupId: string }>('group/join', { code }),

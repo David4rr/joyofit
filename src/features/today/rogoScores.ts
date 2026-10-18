@@ -1,17 +1,25 @@
-import type { RogoScoreDay } from '@/cloud/rogo';
+import type { RogoScoreDay, RogoScoreMetrics } from '@/cloud/rogo';
+import { computeDailyFitness, computeFitnessOverview } from '@/features/fitness/compute';
+import type { FitnessData } from '@/features/fitness/useFitnessData';
 import { localDate } from '@/features/meals/mealMap';
+import { buildNights } from '@/features/sleep/nights';
 import type { Scores } from '@/features/today/scores';
 
 /** Today and the days before it that are sent, so a day whose strain grew after the last push is corrected. */
 export const ROGO_SCORE_DAYS = 3;
+/** JoyoRogo's limit of days per `fitness.upsertScores` call. */
+export const ROGO_MAX_DAYS_PER_CALL = 14;
 
 /**
- * The scores JoyoRogo gets, oldest first. Earlier days carry strain only: recovery, sleep and the readiness word are
- * computed for today and are not recomputed for past days, and JoyoRogo keeps what it already stored for them. Days are
- * the phone's calendar days, the same key the meals sync uses; for Indonesian time zones that is JoyoRogo's WIB day.
- * Values are rounded as the Today card shows them. Empty when there is nothing to send.
+ * The scores JoyoRogo gets, oldest first. Earlier days carry strain only: recovery, sleep, the readiness word and the
+ * body metrics are computed for today and are not recomputed for past days, and JoyoRogo keeps what it already stored for
+ * them. Days are the phone's calendar days, the same key the meals sync uses; for Indonesian time zones that is JoyoRogo's
+ * WIB day. Values are rounded as the Today card shows them. Empty when there is nothing to send.
+ *
+ * `metrics` are today's body metrics from {@link rogoDailyMetrics}; they are sent as given, so a metric that is missing
+ * there is missing here (JoyoRogo keeps its stored value instead of getting a zero).
  */
-export function rogoScoreDays(scores: Scores, dayStart: number): RogoScoreDay[] {
+export function rogoScoreDays(scores: Scores, dayStart: number, metrics: RogoScoreMetrics = {}): RogoScoreDay[] {
   const days: RogoScoreDay[] = [];
   for (const entry of scores.strain) {
     if (entry.day >= dayStart || entry.day <= dayStart - ROGO_SCORE_DAYS * 86400) continue;
@@ -24,9 +32,72 @@ export function rogoScoreDays(scores: Scores, dayStart: number): RogoScoreDay[] 
   if (scores.readiness.recovery) today.recoveryPct = scores.readiness.recovery.percent;
   if (sleep) today.sleepPct = Math.min(300, Math.max(0, Math.round(sleep.amount * 100)));
   if (scores.readiness.headline) today.readiness = scores.readiness.headline;
+  Object.assign(today, cleanMetrics(metrics));
   if (Object.keys(today).length > 1) days.push(today);
 
-  return days.sort((a, b) => (a.date < b.date ? -1 : 1));
+  return days.sort((a, b) => (a.date < b.date ? -1 : 1)).slice(-ROGO_MAX_DAYS_PER_CALL);
+}
+
+/**
+ * Today's body metrics from what the Kebugaran screen works from (`computeDailyFitness`, `computeFitnessOverview`), for
+ * JoyoRogo. Empty for data read for another day (the clock passed midnight between two reads), so yesterday's resting
+ * heart rate never lands on today.
+ */
+export function rogoDailyMetrics(data: FitnessData, dayStart: number): RogoScoreMetrics {
+  if (data.dayStart !== dayStart) return {};
+  const daily = computeDailyFitness(data);
+  const overview = computeFitnessOverview(data, []);
+
+  // The night that ended today (newest first; a nap is not the night) and its overnight HRV, the newest night reading that ended today.
+  const night = buildNights(data.sleep, []).find((n) => !n.nap && n.end >= dayStart && n.end <= data.nowSec) ?? null;
+  const nightHrv = data.hrv.filter((r) => r.source === 'night' && r.rmssd > 0 && r.end >= dayStart && r.end <= data.nowSec).at(-1);
+
+  return cleanMetrics({
+    sleepHours: night ? night.asleepSeconds / 3600 : undefined,
+    restingHr: data.resting.get(dayStart),
+    hrvMs: nightHrv?.rmssd,
+    hrvStatus: 'status' in overview.hrv ? overview.hrv.status.state : undefined,
+    vo2max: overview.vo2?.value,
+    trainingStatus: overview.load.kind === 'ok' ? overview.load.status : undefined,
+    loadRatio: overview.load.kind === 'ok' ? overview.load.ratio : undefined,
+    recoveryHours: daily.recovery?.hoursLeft,
+  });
+}
+
+const HRV_STATUSES = ['balanced', 'unbalanced', 'low'] as const;
+const TRAINING_STATUSES = ['productive', 'maintaining', 'recovery', 'overreaching', 'detraining'] as const;
+
+/**
+ * Rounds every metric the way JoyoRogo stores it and leaves out what it would reject: a missing or non-finite value, a
+ * heart rate, HRV or VO2max outside the range a person can have (a wrong reading is dropped, not bent into range), an
+ * unknown status. Hours and the load ratio past their ends are pinned to them.
+ */
+export function cleanMetrics(m: RogoScoreMetrics): RogoScoreMetrics {
+  const out: RogoScoreMetrics = {};
+  const sleepHours = finite(m.sleepHours);
+  if (sleepHours !== null && sleepHours >= 0) out.sleepHours = Math.min(24, round(sleepHours, 1));
+  const restingHr = finite(m.restingHr);
+  if (restingHr !== null && Math.round(restingHr) >= 25 && Math.round(restingHr) <= 220) out.restingHr = Math.round(restingHr);
+  const hrvMs = finite(m.hrvMs);
+  if (hrvMs !== null && round(hrvMs, 1) >= 1 && round(hrvMs, 1) <= 500) out.hrvMs = round(hrvMs, 1);
+  if (m.hrvStatus && (HRV_STATUSES as readonly string[]).includes(m.hrvStatus)) out.hrvStatus = m.hrvStatus;
+  const vo2max = finite(m.vo2max);
+  if (vo2max !== null && round(vo2max, 1) >= 10 && round(vo2max, 1) <= 90) out.vo2max = round(vo2max, 1);
+  if (m.trainingStatus && (TRAINING_STATUSES as readonly string[]).includes(m.trainingStatus)) out.trainingStatus = m.trainingStatus;
+  const loadRatio = finite(m.loadRatio);
+  if (loadRatio !== null && loadRatio >= 0) out.loadRatio = Math.min(10, round(loadRatio, 2));
+  const recoveryHours = finite(m.recoveryHours);
+  if (recoveryHours !== null && recoveryHours >= 0) out.recoveryHours = Math.min(240, Math.round(recoveryHours));
+  return out;
+}
+
+function finite(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function round(value: number, decimals: number): number {
+  const f = 10 ** decimals;
+  return Math.round(value * f) / f;
 }
 
 function roundStrain(strain: number): number {

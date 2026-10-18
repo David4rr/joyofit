@@ -36,6 +36,8 @@ import { CoachTodayCard } from '@/features/coach/ui/CoachTodayCard';
 import { FamilyCard } from '@/features/today/FamilyCard';
 import { ScoresCard } from '@/features/today/ScoresCard';
 import { useRogoScoresPush } from '@/features/today/useRogoScoresPush';
+import { rogoDailyMetrics } from '@/features/today/rogoScores';
+import { useFitnessData } from '@/features/fitness/useFitnessData';
 import { ShareTodayButton } from '@/features/share/ShareTodayButton';
 import { formatElapsed } from '@/features/workouts/summary';
 import { formatClock, formatCount, formatDistance } from '@/format';
@@ -88,7 +90,10 @@ export default function TodayScreen() {
     };
   }, [data, totals, nightHrv, locale]);
 
-  useRogoScoresPush(view?.scores ?? null, data?.dayStart ?? null);
+  // One read of the fitness inputs for the cards below and for the body metrics JoyoRogo gets.
+  const { data: fitness } = useFitnessData(dataVersion, 'full');
+  const rogoMetrics = useMemo(() => (fitness && data ? rogoDailyMetrics(fitness, data.dayStart) : undefined), [fitness, data]);
+  useRogoScoresPush(view?.scores ?? null, data?.dayStart ?? null, rogoMetrics);
 
   const canSync = linkState === 'connected' && device !== null;
   const syncing = linkState === 'syncing';
@@ -152,7 +157,7 @@ export default function TodayScreen() {
 
       <CoachTodayCard dataVersion={dataVersion} availability={nightHrv} />
 
-      <FitnessTodayCards dataVersion={dataVersion} availability={nightHrv} />
+      <FitnessTodayCards data={fitness} availability={nightHrv} />
 
       <FamilyCard />
 

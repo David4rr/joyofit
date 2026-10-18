@@ -7,6 +7,7 @@
     "safety": "Keselamatan",
     "health": "Kesehatan & cloud",
     "strava": "Strava",
+    "koneksi": "Koneksi AI",
     "importHuawei": "Impor dari Huawei Health",
     "importAppleHealth": "Impor dari Apple Health",
     "importFit": "Impor file FIT",
@@ -67,6 +68,10 @@
       "strava": {
         "title": "Strava",
         "subtitle": "Kirim latihan dari jam ke Strava, gratis"
+      },
+      "koneksi": {
+        "title": "Koneksi AI",
+        "subtitle": "Claude, ChatGPT, dan aplikasi AI lain yang boleh membaca datamu"
       },
       "importHuawei": {
         "title": "Impor dari Huawei Health",
@@ -554,7 +559,7 @@
     "nothing": "tidak ada",
     "unsynced_other": "{{count}} makanan yang dicatat di jam akan ditulis ke JoyoRogo saat aplikasi membacanya berikutnya.",
     "pushNow": "Kirim sekarang",
-    "details": "Catatan makan JoyoRogo dan target kalori kamu mengisi kartu kalori di jam. JoyoFit membacanya saat dibuka, setelah tiap sinkron, dan saat jam tersambung, lalu mengirimnya lagi saat jam meminta atau mencatat makanan sendiri. Saat aplikasi ditutup, layanan latar belakang menjawab dari hari terakhir yang tersimpan; ia tidak bisa membaca JoyoRogo saat itu karena sesi masuk hanya disimpan untuk aplikasi. Sejauh ini belum diuji di Fit 4 Pro. Selama kamu masuk, aplikasi juga mengirim Recovery, Strain, dan Tidur harianmu ke catatan JoyoRogo supaya berdampingan dengan makananmu."
+    "details": "Catatan makan JoyoRogo dan target kalori kamu mengisi kartu kalori di jam. JoyoFit membacanya saat dibuka, setelah tiap sinkron, dan saat jam tersambung, lalu mengirimnya lagi saat jam meminta atau mencatat makanan sendiri. Saat aplikasi ditutup, layanan latar belakang menjawab dari hari terakhir yang tersimpan; ia tidak bisa membaca JoyoRogo saat itu karena sesi masuk hanya disimpan untuk aplikasi. Sejauh ini belum diuji di Fit 4 Pro. Selama kamu masuk, aplikasi juga mengirim Recovery, Strain, dan Tidur harianmu ke catatan JoyoRogo supaya berdampingan dengan makananmu, plus ukuran tubuh hari ini yang sudah dihitung (jam tidur, detak jantung istirahat, HRV, VO2max, status latihan, waktu pemulihan). Yang belum bisa dihitung tidak dikirim."
   },
   "signIn": {
     "label": "Masuk dengan JoyoRogo",

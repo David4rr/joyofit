@@ -105,7 +105,7 @@
     "gives1": "Your daily Recovery, Strain and Sleep scores appear next to what you ate in the JoyoRogo diary, with a short food tip for a day like this.",
     "gives2": "What you log in JoyoRogo can show on the watch's calorie card.",
     "gives3": "The option of a cloud backup of your watch data, which is part of JoyoRogo Pro (the next step).",
-    "note": "While you are signed in, JoyoFit sends your daily scores to JoyoRogo and exchanges meals and weight with it. Your watch data stays on this phone unless you turn on the Pro cloud backup. Sign out any time in Settings, Health and cloud.",
+    "note": "While you are signed in, JoyoFit sends your daily scores and body metrics (sleep, resting heart rate, HRV, VO2max) to JoyoRogo and exchanges meals and weight with it. Your watch data stays on this phone unless you turn on the Pro cloud backup. Sign out any time in Settings, Health and cloud.",
     "signedIn": "Signed in.",
     "signedInAs": "Signed in as {{email}}."
   },

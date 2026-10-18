@@ -18,6 +18,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="safety" options={{ title: t('screens.safety') }} />
       <Stack.Screen name="health" options={{ title: t('screens.health') }} />
       <Stack.Screen name="strava" options={{ title: t('screens.strava') }} />
+      <Stack.Screen name="koneksi" options={{ title: t('screens.koneksi') }} />
       <Stack.Screen name="gear" options={{ title: tg('title') }} />
       <Stack.Screen name="gear-edit" options={{ title: tg('edit.newTitle') }} />
       <Stack.Screen name="import-huawei" options={{ title: t('screens.importHuawei') }} />
