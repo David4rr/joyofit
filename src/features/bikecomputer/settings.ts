@@ -4,6 +4,8 @@
  */
 import Storage from 'expo-sqlite/kv-store';
 
+import { notePrefChanged } from '@/cloud/prefsSync';
+
 import { normalizeLayout } from './fields/layout';
 import { DEFAULT_BIKE_SETTINGS, mergeSettings, sanitizeSettings } from './settingsModel';
 import type { BikeLayout, BikeSettings } from './types';
@@ -36,6 +38,10 @@ let layout: BikeLayout | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
+/** The key-value entries behind the synced preferences `bike.settings` and `bike.layout` (src/cloud/syncInventory.ts). */
+export const BIKE_SETTINGS_KEY = SETTINGS_KEY;
+export const BIKE_LAYOUT_KEY = LAYOUT_KEY;
+
 export const bikeSettingsStore = {
   get(): BikeSettings {
     settings ??= sanitizeSettings(readJson(SETTINGS_KEY) ?? DEFAULT_BIKE_SETTINGS);
@@ -45,6 +51,23 @@ export const bikeSettingsStore = {
     settings = mergeSettings(this.get(), patch);
     writeJson(SETTINGS_KEY, settings);
     emit();
+    void notePrefChanged('bike.settings');
+  },
+  /** Stores settings pulled from another phone (any shape: repaired). Not an edit, so nothing is stamped. */
+  replace(raw: unknown): void {
+    settings = sanitizeSettings(raw);
+    writeJson(SETTINGS_KEY, settings);
+    emit();
+  },
+  /** Back to the defaults (another phone reset them). */
+  clear(): void {
+    settings = null;
+    try {
+      Storage.removeItemSync(SETTINGS_KEY);
+    } catch {
+      // the defaults apply from memory
+    }
+    emit();
   },
   getLayout(hasRoute = false): BikeLayout {
     layout ??= normalizeLayout(readJson(LAYOUT_KEY), hasRoute);
@@ -53,6 +76,22 @@ export const bikeSettingsStore = {
   setLayout(next: BikeLayout): void {
     layout = normalizeLayout(next, false);
     writeJson(LAYOUT_KEY, layout);
+    emit();
+    void notePrefChanged('bike.layout');
+  },
+  /** Stores a layout pulled from another phone (repaired). Not an edit. */
+  replaceLayout(raw: unknown): void {
+    layout = normalizeLayout(raw, false);
+    writeJson(LAYOUT_KEY, layout);
+    emit();
+  },
+  clearLayout(): void {
+    layout = null;
+    try {
+      Storage.removeItemSync(LAYOUT_KEY);
+    } catch {
+      // the default layout applies from memory
+    }
     emit();
   },
   subscribe(listener: () => void): () => void {

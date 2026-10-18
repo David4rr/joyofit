@@ -225,6 +225,10 @@ Also: climb page with the route's ClimbPro-style climbs (`nav/climbsAhead.ts`), 
 
 Recorder changes (additive): `Recorder.samplesSince`, `instantSpeedMps`, `latestPosition`; `RecordingController.observe`; `RecorderProvider` exposes `observe`.
 
+### Multi-device sync
+
+Four preferences follow the account through `registerSyncedPref` in `src/cloud/syncInventory.ts` (docs/multi-device.md): `ftp`, `wheel`, `bike.settings` (mode, theme, dimming, auto-pause, auto-lap, alerts, off-course distance, live share switch) and `bike.layout` (the pages). Never synced: the live tracking consent, downloaded regions, the battery history, the chosen route and the per-ride e-bike mark. The setters call `notePrefChanged`; a pulled value goes through `replace` and is repaired by `sanitizeSettings` / `normalizeLayout`.
+
 ### Tests
 
 `bun test ./src/` passes (2314 pass, 13 skip, 0 fail at the last full run; the bike computer folders alone hold about 600 tests). By area: field formatting `fields/values.test.ts`, page layout and persistence model `fields/layout.test.ts` (11) and `settingsModel.test.ts`, auto-pause (25), auto-lap (17), alerts (64), metrics (37), battery estimate (29) + history (5) + saver (5), off-course and route following `nav/follower.test.ts`, turn cues `nav/cues.test.ts`, climbs `nav/climbsAhead.test.ts`, route projection `nav/routeIndex.test.ts`, session wiring with a real `Recorder` `session.test.ts` (10: metrics, auto-pause, manual pause kept, auto-lap, route following, off-course once, low battery, restore), ride palette contrast and dimming `ui/*.test.ts` (81), map regions index, PMTiles reader, download state machine, storage, style resolution `map/*.test.ts` (113), live client and tracker (39), server `server/test/live.test.ts` (44; the whole server suite passes, 195 tests). `bunx tsc --noEmit`, `bun scripts/i18n-check.ts` (0 missing, 0 orphan, 0 literals) and `eslint src/features/bikecomputer` are clean.

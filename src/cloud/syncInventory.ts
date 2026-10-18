@@ -6,6 +6,10 @@ import { stableStringify } from '@/cloud/syncSnapshot';
 import { errorMessage } from '@/format';
 import { isLocale } from '@/i18n';
 import { getLocalePref, setLocalePref } from '@/i18n/native';
+import { defaultLayout } from '@/features/bikecomputer/fields/layout';
+import { getFtp, setFtp } from '@/features/cycling/settings';
+import { bikeSettingsStore, DEFAULT_BIKE_SETTINGS } from '@/features/bikecomputer/settings';
+import { getWheelMm, setWheelMm } from '@/features/sensors/settings';
 import { THEME_KEY } from '@/theme/ThemeProvider';
 import { THEMES } from '@/theme/themes';
 import { HuaweiWear, type CycleSwitches, type UserSex } from '@/wear';
@@ -244,4 +248,54 @@ registerSyncedPref({
     await Storage.setItem(CYCLE_SYNC_KEY, value ? '1' : '0');
   },
   clear: async () => void (await Storage.removeItem(CYCLE_SYNC_KEY)),
+});
+
+// Bike computer mode (docs/bike-computer.md). Never synced: live tracking consent, downloaded offline maps, the battery history and the
+// chosen route (they belong to this phone), and the e-bike mark per ride.
+registerSyncedPref({
+  key: 'ftp',
+  read: async () => getFtp() ?? undefined,
+  write: async (value) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error('not a number');
+    setFtp(value);
+  },
+  clear: async () => setFtp(null),
+});
+
+const WHEEL_KEY = 'joyofit.wheelMm';
+
+registerSyncedPref({
+  key: 'wheel',
+  read: async () => ((await Storage.getItem(WHEEL_KEY)) === null ? undefined : getWheelMm()),
+  write: async (value) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error('not a number');
+    setWheelMm(value);
+  },
+  clear: async () => void (await Storage.removeItem(WHEEL_KEY)),
+});
+
+registerSyncedPref({
+  key: 'bike.settings',
+  read: async () => {
+    const settings = bikeSettingsStore.get();
+    return stableStringify(settings) === stableStringify(DEFAULT_BIKE_SETTINGS) ? undefined : settings;
+  },
+  write: async (value) => {
+    object(value);
+    bikeSettingsStore.replace(value);
+  },
+  clear: async () => bikeSettingsStore.clear(),
+});
+
+registerSyncedPref({
+  key: 'bike.layout',
+  read: async () => {
+    const layout = bikeSettingsStore.getLayout();
+    return stableStringify(layout) === stableStringify(defaultLayout(false)) ? undefined : layout;
+  },
+  write: async (value) => {
+    object(value);
+    bikeSettingsStore.replaceLayout(value);
+  },
+  clear: async () => bikeSettingsStore.clearLayout(),
 });

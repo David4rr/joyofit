@@ -1,5 +1,7 @@
 import Storage from 'expo-sqlite/kv-store';
 
+import { notePrefChanged } from '@/cloud/prefsSync';
+
 import { userEnergyProfile } from '@/features/strength/profile';
 import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
 
@@ -21,6 +23,7 @@ export function getFtp(): number | null {
 export function setFtp(watts: number | null): void {
   if (watts === null) Storage.removeItemSync(FTP_KEY);
   else Storage.setItemSync(FTP_KEY, String(Math.round(Math.min(FTP_MAX_W, Math.max(FTP_MIN_W, watts)))));
+  void notePrefChanged('ftp');
 }
 
 /**
