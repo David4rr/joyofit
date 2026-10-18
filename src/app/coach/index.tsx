@@ -67,7 +67,7 @@ function CoachBody() {
       <Card>
         <AppText variant="heading">{t(`plan.name.${plan.goal}`)}</AppText>
         <AppText variant="caption" muted>
-          {t('plan.summary', { name: t(`plan.name.${plan.goal}`), level: t(`plan.levelName.${plan.level}`), days: fmtInt(plan.daysPerWeek) })}
+          {t('plan.summary', { name: t(`plan.name.${plan.goal}`), level: t(`level.${plan.level}`), days: fmtInt(plan.daysPerWeek) })}
         </AppText>
         <AppText variant="bodyStrong">
           {progress.state === 'finished'

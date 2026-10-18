@@ -112,12 +112,7 @@
       "runRoutine": "Lari rutin 3x seminggu",
       "strengthFull": "Kekuatan full body"
     },
-    "levelName": {
-      "beginner": "pemula",
-      "intermediate": "menengah",
-      "advanced": "mahir"
-    },
-    "summary": "{{name}}, level {{level}}, {{days}}x seminggu",
+    "summary": "{{name}} · {{level}} · {{days}}x seminggu",
     "weekOf": "Minggu {{week}} dari {{weeks}}",
     "notStarted": "Mulai {{date}}",
     "finished": "Selesai",
@@ -167,10 +162,22 @@
     "title": "Rencana baru",
     "goal": {
       "title": "Tujuanmu",
-      "run5k": { "title": "Lari 5K", "hint": "Dari nol sampai 5 km, atau lebih cepat." },
-      "run10k": { "title": "Lari 10K", "hint": "Naik bertahap sampai 10 km." },
-      "runHalf": { "title": "Half marathon", "hint": "21 km dengan lari panjang tiap minggu." },
-      "runRoutine": { "title": "Lari rutin 3x seminggu", "hint": "Tanpa lomba, cukup teratur dan makin kuat." }
+      "run5k": {
+        "title": "Lari 5K",
+        "hint": "Dari nol sampai 5 km, atau lebih cepat."
+      },
+      "run10k": {
+        "title": "Lari 10K",
+        "hint": "Naik bertahap sampai 10 km."
+      },
+      "runHalf": {
+        "title": "Half marathon",
+        "hint": "21 km dengan lari panjang tiap minggu."
+      },
+      "runRoutine": {
+        "title": "Lari rutin 3x seminggu",
+        "hint": "Tanpa lomba, cukup teratur dan makin kuat."
+      }
     },
     "level": {
       "title": "Levelmu",
@@ -324,6 +331,6 @@
   "level": {
     "beginner": "Pemula",
     "intermediate": "Menengah",
-    "advanced": "Lanjutan"
+    "advanced": "Mahir"
   }
 }

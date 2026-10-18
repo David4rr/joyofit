@@ -84,7 +84,7 @@ function SetupForm() {
       <Section title={t('setup.level.title')} icon="speedometer" tint="workouts">
         <View style={styles.stack} accessibilityRole="radiogroup">
           {LEVELS.map((l) => (
-            <ChoiceCard key={l} title={t(`plan.levelName.${l}`)} hint={t(`setup.level.${l}`)} selected={level === l} onPress={() => setLevel(l)} />
+            <ChoiceCard key={l} title={t(`level.${l}`)} hint={t(`setup.level.${l}`)} selected={level === l} onPress={() => setLevel(l)} />
           ))}
         </View>
       </Section>

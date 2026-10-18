@@ -112,12 +112,7 @@
       "runRoutine": "Regular running, 3x a week",
       "strengthFull": "Full-body strength"
     },
-    "levelName": {
-      "beginner": "beginner",
-      "intermediate": "intermediate",
-      "advanced": "advanced"
-    },
-    "summary": "{{name}}, {{level}} level, {{days}}x a week",
+    "summary": "{{name}} · {{level}} · {{days}}x a week",
     "weekOf": "Week {{week}} of {{weeks}}",
     "notStarted": "Starts {{date}}",
     "finished": "Finished",
@@ -167,10 +162,22 @@
     "title": "New plan",
     "goal": {
       "title": "Your goal",
-      "run5k": { "title": "5K run", "hint": "From zero to 5 km, or faster." },
-      "run10k": { "title": "10K run", "hint": "Build up step by step to 10 km." },
-      "runHalf": { "title": "Half marathon", "hint": "21 km with a long run each week." },
-      "runRoutine": { "title": "Regular running, 3x a week", "hint": "No race, just steady and getting stronger." }
+      "run5k": {
+        "title": "5K run",
+        "hint": "From zero to 5 km, or faster."
+      },
+      "run10k": {
+        "title": "10K run",
+        "hint": "Build up step by step to 10 km."
+      },
+      "runHalf": {
+        "title": "Half marathon",
+        "hint": "21 km with a long run each week."
+      },
+      "runRoutine": {
+        "title": "Regular running, 3x a week",
+        "hint": "No race, just steady and getting stronger."
+      }
     },
     "level": {
       "title": "Your level",

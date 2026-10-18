@@ -15,7 +15,7 @@ export function ChoiceCard({ title, hint, selected, onPress }: { title: string; 
       accessibilityState={{ selected }}
       onPress={onPress}
       scaleTo={0.985}
-      style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.card, borderColor: selected ? colors.primary : colors.hairline }]}>
+      style={[styles.card, { backgroundColor: selected ? colors.muted : colors.card, borderRadius: radius.card, borderColor: selected ? colors.primary : colors.hairline }]}>
       <View style={styles.text}>
         <AppText variant="bodyStrong">{title}</AppText>
         {hint ? (
