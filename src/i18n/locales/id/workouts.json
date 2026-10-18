@@ -212,8 +212,8 @@
     },
     "pickError": "Tidak bisa membuka pemilih file: {{error}}",
     "readError": "Tidak bisa membaca latihan tersimpan: {{error}}",
-    "connectToSync": "Hubungkan jammu untuk sinkronisasi.",
-    "connectWatch": "Hubungkan jammu",
+    "connectToSync": "Hubungkan jam-mu untuk sinkronisasi.",
+    "connectWatch": "Hubungkan jam-mu",
     "empty": {
       "title": "Belum ada latihan",
       "description": "Mulai satu di atas. Sesi dari jam-mu juga muncul di sini setelah sinkronisasi.",

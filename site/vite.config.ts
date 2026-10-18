@@ -21,6 +21,5 @@ function devSeoHead(): Plugin {
 }
 
 export default defineConfig({
-  resolve: { tsconfigPaths: true },
   plugins: [tailwindcss(), react(), devSeoHead()],
 });

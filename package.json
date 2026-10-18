@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@better-auth/expo": "1.7.3",
+    "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/vector-icons": "^15.0.2",
     "@garmin/fitsdk": "^21.218.0",
@@ -47,7 +48,8 @@
     "react-native-share": "^12.3.1",
     "react-native-svg": "15.15.4",
     "react-native-view-shot": "5.1.0",
-    "sp-react-native-in-app-updates": "2.0.0"
+    "sp-react-native-in-app-updates": "2.0.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

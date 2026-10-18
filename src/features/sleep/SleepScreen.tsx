@@ -25,6 +25,7 @@ import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatClock, formatDuration } from '@/format';
 import { fmtDate, fmtDecimal, fmtInt, useTranslation } from '@/i18n';
 import { Paragraphs } from '@/features/fitness/Paragraphs';
+import { ShareSleepButton } from '@/features/stickers/ui/ShareSleepButton';
 import { useWatch } from '@/state/WatchProvider';
 import { HIT, radius, spacing, useColors, useTheme } from '@/theme';
 
@@ -72,6 +73,17 @@ export function SleepScreen() {
   const night = nights?.[index] ?? null;
   const hours = useMemo(() => (night ? hourlyStages(night) : []), [night]);
   const need = useNightNeed(night && !night.nap ? night.start : null);
+  // Asleep seconds of the (up to) 14 nights before the selected one, for the sticker's "vs your average".
+  const recentAsleepSec = useMemo(
+    () =>
+      night && nights
+        ? nights
+            .filter((n) => !n.nap && n.start < night.start)
+            .slice(0, HISTORY_ROWS)
+            .map((n) => n.asleepSeconds)
+        : [],
+    [nights, night],
+  );
 
   const select = (next: Night) => {
     setSelected(next.start);
@@ -136,6 +148,8 @@ export function SleepScreen() {
         </View>
         <StepButton icon="chevron-forward" label={t('sleep.laterNight')} disabled={index === 0} onPress={() => select(nights[index - 1])} />
       </View>
+
+      <ShareSleepButton night={night} recentAsleepSec={recentAsleepSec} />
 
       <Section title={night.nap ? t('sleep.sectionNap') : t('sleep.sectionNight')} icon="moon" tint="sleep">
         <View style={styles.headlineRow}>

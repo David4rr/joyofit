@@ -19,6 +19,7 @@ import { CoachGate } from '@/features/coach/ui/CoachGate';
 import { SessionRow } from '@/features/coach/ui/SessionRow';
 import { FeelPicker } from '@/features/coach/ui/FeelPicker';
 import { SuggestionBlock } from '@/features/coach/ui/SuggestionBlock';
+import { SharePlanButton } from '@/features/stickers/ui/SharePlanButton';
 import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
 import { fmtDay, fmtInt, useLocale } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
@@ -85,6 +86,7 @@ function CoachBody() {
             {`${t('plan.doneOfPlanned', { done: fmtInt(progress.doneThisWeek), planned: fmtInt(progress.plannedThisWeek) })} \u00b7 ${t(`plan.phase.${week.phase}`)}`}
           </AppText>
         ) : null}
+        <SharePlanButton progress={progress} done={doc.done} />
       </Card>
 
       <Section title={t('card.title')} icon="flash" tint="workouts">
