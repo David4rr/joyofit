@@ -40,11 +40,11 @@ final class SyncStoreTests: XCTestCase {
         let (store, url) = store()
         let user = try store.read { db in try db.userVersion }
         XCTAssertEqual(user, try SyncStore.sharedMigrations().count)
-        XCTAssertEqual(user, 12)
+        XCTAssertEqual(user, 13)
         let tables: [String] = try store.read { db in
             try db.query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") { $0.text(0)! }
         }
-        for expected in ["step_samples", "sleep_segments", "sleep_scores", "device", "workouts", "workout_points", "cloud_cursor", "hrv_readings", "rri_samples", "diet_day", "cycle_periods", "strava_upload"] {
+        for expected in ["step_samples", "sleep_segments", "sleep_scores", "device", "workouts", "workout_points", "cloud_cursor", "hrv_readings", "rri_samples", "diet_day", "cycle_periods", "strava_upload", "cloud_workout"] {
             XCTAssertTrue(tables.contains(expected), "missing table \(expected)")
         }
         // Migration 10: rows the Huawei export importer writes (Android) are marked; the native writer's rows never are.
@@ -60,6 +60,9 @@ final class SyncStoreTests: XCTestCase {
         for column in ["speed", "cadence", "stride", "power"] {
             XCTAssertTrue(points.contains(column), "workout_points has no \(column) column")
         }
+        // Migration 13: what the JS app recorded per workout it uploaded to or restored from JoyoRogo.
+        let cloudWorkout: [String] = try store.read { db in try db.query("PRAGMA table_info(cloud_workout)") { $0.text(1)! } }
+        XCTAssertEqual(cloudWorkout, ["start", "rev", "engine_rev", "version", "hash", "bytes", "uploaded_at"])
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
         // WAL, as JS sets it.
         let mode: String = try store.read { db in try db.query("PRAGMA journal_mode") { $0.text(0)! }.first! }

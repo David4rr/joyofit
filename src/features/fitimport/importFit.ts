@@ -2,9 +2,10 @@
  * Stores a ride or run from a FIT file as a workout, with the semantics of the Huawei Health export import
  * (`HuaweiImportStore.kt`):
  *
- * - **Imported rows stay on the phone.** The workout is inserted with `imported = 1`, so the automatic Strava upload,
- *   the cloud upload and the Health Connect / Apple Health export (all read `imported = 0` only) never send it. The
- *   per-workout "Send to Strava" button stays the user's choice.
+ * - **Imported rows stay out of the watch-only exports.** The workout is inserted with `imported = 1`, so the automatic
+ *   Strava upload, the step and sleep upload to the JoyoFit cloud and the Health Connect / Apple Health export (all read
+ *   `imported = 0` only) never send it. The per-workout "Send to Strava" button stays the user's choice. The JoyoRogo
+ *   cloud sync (`src/cloud/workoutSync.ts`) is the exception: it keeps every workout, imported ones included.
  * - **Watch data wins.** A file whose time span overlaps a stored workout by more than half of the file's own span is
  *   not imported and says which workout it collided with: the watch's version is the one with the watch's own heart
  *   rate, so the watch workout is kept, the file is skipped. A smaller overlap (a short watch workout inside a long

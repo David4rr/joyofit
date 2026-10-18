@@ -1,13 +1,15 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 /**
- * Cloud upload bookkeeping. Migration 4 gives `step_samples`, `sleep_segments` and `workouts` a `rev`
- * column that triggers set to the table's next `cloud_cursor.seq` on every insert and update (JS and
- * native writers alike), so "everything not uploaded yet" is `rev > cloud_cursor.uploaded`.
+ * Cloud upload bookkeeping. Migration 4 gives `step_samples` and `sleep_segments` a `rev` column that triggers set to the
+ * table's next `cloud_cursor.seq` on every insert and update (JS and native writers alike), so "everything not uploaded
+ * yet" is `rev > cloud_cursor.uploaded`. Workouts go to JoyoRogo one document each (`src/cloud/workoutSync.ts`) and are
+ * tracked per workout in `cloud_workout` (migration 13); `workouts.rev` still moves on every write and is compared with
+ * the `rev` recorded there.
  */
-export type CloudTable = 'step_samples' | 'sleep_segments' | 'workouts';
+export type CloudTable = 'step_samples' | 'sleep_segments';
 
-export const CLOUD_TABLES: readonly CloudTable[] = ['step_samples', 'sleep_segments', 'workouts'];
+export const CLOUD_TABLES: readonly CloudTable[] = ['step_samples', 'sleep_segments'];
 
 export interface CloudState {
   userId: string | null;
@@ -58,16 +60,43 @@ export async function resetCloudCursors(db: SQLiteDatabase): Promise<void> {
   await db.runAsync('UPDATE cloud_cursor SET uploaded = 0');
 }
 
+/** `cloud_state` keys of the workout sync (`src/cloud/workoutSync.ts`). */
+export const WORKOUT_PULL_CURSOR_KEY = 'workout_pull_cursor';
+export const WORKOUT_FAILED_KEY = 'workout_failed';
+
+export async function getCloudValue(db: Pick<SQLiteDatabase, 'getFirstAsync'>, key: string): Promise<string | null> {
+  const row = await db.getFirstAsync<{ value: string }>('SELECT value FROM cloud_state WHERE key = ?', key);
+  return row?.value ?? null;
+}
+
+/** The cloud has none of the workouts any more (wiped, or the account is gone): forget what was uploaded and where the pull stood. */
+export async function forgetCloudWorkouts(db: SQLiteDatabase): Promise<void> {
+  await clearCloudWorkouts(db);
+  await setCloudState(db, { [WORKOUT_PULL_CURSOR_KEY]: null, [WORKOUT_FAILED_KEY]: null });
+}
+
 /**
- * Rows written locally that the cloud does not have yet, across all synced tables. Rows imported from a Huawei
- * export (`imported = 1`) stay on the phone and are never pending.
+ * Remembers which JoyoRogo account the cloud bookkeeping belongs to. A different account has none of the rows and none of
+ * the workouts, so everything is sent to it again and its changes are pulled from the start. True when the account changed.
  */
-export async function countPending(db: SQLiteDatabase): Promise<number> {
+export async function adoptAccount(db: SQLiteDatabase, userId: string, email: string): Promise<boolean> {
+  const state = await getCloudState(db);
+  if (state.userId === userId) {
+    if (state.email !== email) await setCloudState(db, { email });
+    return false;
+  }
+  await resetCloudCursors(db);
+  await forgetCloudWorkouts(db);
+  await setCloudState(db, { user_id: userId, email });
+  return state.userId !== null;
+}
+
+/** Step samples and sleep segments written locally that the cloud does not have yet. Rows imported from a Huawei export (`imported = 1`) stay on the phone and are never pending. */
+export async function countPendingRows(db: SQLiteDatabase): Promise<number> {
   const row = await db.getFirstAsync<{ n: number }>(
     `SELECT
        (SELECT COUNT(*) FROM step_samples WHERE imported = 0 AND rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'step_samples')) +
-       (SELECT COUNT(*) FROM sleep_segments WHERE imported = 0 AND rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'sleep_segments')) +
-       (SELECT COUNT(*) FROM workouts WHERE imported = 0 AND rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'workouts')) AS n`,
+       (SELECT COUNT(*) FROM sleep_segments WHERE imported = 0 AND rev > (SELECT uploaded FROM cloud_cursor WHERE tbl = 'sleep_segments')) AS n`,
   );
   return row?.n ?? 0;
 }
@@ -109,49 +138,109 @@ export function listSleepAfter(db: SQLiteDatabase, rev: number, limit: number): 
   );
 }
 
-export interface PendingWorkout {
-  rev: number;
-  id: number;
-  workoutNumber: number;
+/** A workout that was uploaded to JoyoRogo, or restored from it: what the cloud copy was made from (migration 13). */
+export interface CloudWorkoutRow {
   start: number;
-  end: number;
-  sportType: number;
-  sportName: string;
-  duration: number;
-  distance: number;
-  calories: number;
-  avgHr: number | null;
-  maxHr: number | null;
-  steps: number;
-  summaryJson: string;
-  complete: boolean;
+  /** `workouts.rev` the document was built from. A higher local `rev` means the workout changed since. */
+  rev: number;
+  /** `ANALYSIS_ENGINE_REV` of the analysis inside the document. */
+  engineRev: number;
+  /** The server's version of the document. */
+  version: number;
+  /** SHA-256 of the gzip bytes. */
+  hash: string;
+  /** Gzip bytes stored in the cloud. */
+  bytes: number;
+  /** Unix seconds. */
+  uploadedAt: number;
 }
 
-export async function listWorkoutsAfter(db: SQLiteDatabase, rev: number, limit: number): Promise<PendingWorkout[]> {
-  const rows = await db.getAllAsync<Omit<PendingWorkout, 'complete'> & { complete: number }>(
-    `SELECT rev, id, workout_number AS workoutNumber, start, end, sport_type AS sportType,
-            sport_name AS sportName, duration, distance, calories, avg_hr AS avgHr, max_hr AS maxHr,
-            steps, summary_json AS summaryJson, complete
-     FROM workouts WHERE imported = 0 AND rev > ? ORDER BY rev LIMIT ?`,
-    rev,
-    limit,
+const CLOUD_WORKOUT_COLUMNS = 'start, rev, engine_rev AS engineRev, version, hash, bytes, uploaded_at AS uploadedAt';
+
+export function getCloudWorkout(db: Pick<SQLiteDatabase, 'getFirstAsync'>, start: number): Promise<CloudWorkoutRow | null> {
+  return db.getFirstAsync<CloudWorkoutRow>(`SELECT ${CLOUD_WORKOUT_COLUMNS} FROM cloud_workout WHERE start = ?`, start);
+}
+
+export async function upsertCloudWorkout(db: Pick<SQLiteDatabase, 'runAsync'>, row: CloudWorkoutRow): Promise<void> {
+  await db.runAsync(
+    `INSERT INTO cloud_workout (start, rev, engine_rev, version, hash, bytes, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(start) DO UPDATE SET rev = excluded.rev, engine_rev = excluded.engine_rev, version = excluded.version,
+       hash = excluded.hash, bytes = excluded.bytes, uploaded_at = excluded.uploaded_at`,
+    row.start,
+    row.rev,
+    row.engineRev,
+    row.version,
+    row.hash,
+    row.bytes,
+    row.uploadedAt,
   );
-  return rows.map((row) => ({ ...row, complete: row.complete !== 0 }));
 }
 
-export interface PendingWorkoutPoint {
-  ts: number;
-  lat: number | null;
-  lon: number | null;
-  alt: number | null;
-  hr: number | null;
+/** A different account signed in, or the cloud copy was wiped: nothing is in the cloud any more. */
+export async function clearCloudWorkouts(db: Pick<SQLiteDatabase, 'runAsync'>): Promise<void> {
+  await db.runAsync('DELETE FROM cloud_workout');
 }
 
-export function listWorkoutPointsOf(db: SQLiteDatabase, workoutId: number): Promise<PendingWorkoutPoint[]> {
-  return db.getAllAsync<PendingWorkoutPoint>(
-    'SELECT ts, lat, lon, alt, hr FROM workout_points WHERE workout_id = ? ORDER BY ts, rowid',
-    workoutId,
+/** A workout still to send. `points` is its stored point count, for the size estimate. */
+export interface PendingWorkout {
+  id: number;
+  start: number;
+  rev: number;
+  points: number;
+}
+
+/**
+ * Workouts the cloud does not have in their current form, newest first: no `cloud_workout` row, a `rev` that moved
+ * since the upload, or an analysis made by an older engine than `engineRev`. Every workout counts: recorded by the watch,
+ * imported from a FIT file or a Huawei export, complete or not.
+ */
+export function listPendingWorkouts(db: Pick<SQLiteDatabase, 'getAllAsync'>, engineRev: number): Promise<PendingWorkout[]> {
+  return db.getAllAsync<PendingWorkout>(
+    `SELECT w.id, w.start, w.rev, (SELECT COUNT(*) FROM workout_points p WHERE p.workout_id = w.id) AS points
+     FROM workouts w LEFT JOIN cloud_workout c ON c.start = w.start
+     WHERE c.start IS NULL OR w.rev > c.rev OR c.engine_rev < ?
+     ORDER BY w.start DESC`,
+    engineRev,
   );
+}
+
+/** The id and current `rev` of the workout that started at `start`; null when it is no longer stored. */
+export function getWorkoutIdentity(
+  db: Pick<SQLiteDatabase, 'getFirstAsync'>,
+  start: number,
+): Promise<{ id: number; rev: number } | null> {
+  return db.getFirstAsync<{ id: number; rev: number }>('SELECT id, rev FROM workouts WHERE start = ?', start);
+}
+
+/** One workout against the cloud copy of it: the stored point count, its `rev`, and the `cloud_workout` row (null: not uploaded). */
+export async function getWorkoutCloudInfo(
+  db: Pick<SQLiteDatabase, 'getFirstAsync'>,
+  start: number,
+): Promise<{ rev: number; points: number; cloud: CloudWorkoutRow | null } | null> {
+  const local = await db.getFirstAsync<{ id: number; rev: number }>('SELECT id, rev FROM workouts WHERE start = ?', start);
+  if (!local) return null;
+  const points = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM workout_points WHERE workout_id = ?', local.id);
+  return { rev: local.rev, points: points?.n ?? 0, cloud: await getCloudWorkout(db, start) };
+}
+
+/** What the cloud copies already weigh, to estimate what the rest will. */
+export interface UploadedStats {
+  workouts: number;
+  /** Gzip bytes of their documents. */
+  bytes: number;
+  /** Stored points of the same workouts. */
+  points: number;
+}
+
+export async function getUploadedStats(db: Pick<SQLiteDatabase, 'getFirstAsync'>): Promise<UploadedStats> {
+  const sums = await db.getFirstAsync<{ workouts: number; bytes: number }>(
+    'SELECT COUNT(*) AS workouts, COALESCE(SUM(bytes), 0) AS bytes FROM cloud_workout',
+  );
+  const points = await db.getFirstAsync<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM workout_points
+     WHERE workout_id IN (SELECT w.id FROM workouts w JOIN cloud_workout c ON c.start = w.start)`,
+  );
+  return { workouts: sums?.workouts ?? 0, bytes: sums?.bytes ?? 0, points: points?.n ?? 0 };
 }
 
 export interface DeviceRow {

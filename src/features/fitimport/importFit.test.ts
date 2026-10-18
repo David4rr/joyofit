@@ -253,11 +253,10 @@ describe('importFit', () => {
     expect(one('SELECT steps, heart_rate, imported FROM step_samples WHERE timestamp = ?', minute + 120)).toEqual({ steps: 30, heart_rate: 99, imported: 0 });
   });
 
-  it('keeps the file out of every upload: only imported = 1, the column the cloud, Health Connect and Strava queries exclude', async () => {
+  it('keeps the file out of the watch-only uploads: only imported = 1, the column the step and sleep upload, Health Connect and Strava queries exclude', async () => {
     const { db, one } = openDb();
     await importFit(db, ride());
-    // The very conditions of `listWorkoutsAfter` (cloud) and `listAutoUploadCandidates` (Strava).
-    expect(one<{ n: number }>('SELECT COUNT(*) AS n FROM workouts WHERE imported = 0 AND rev > 0').n).toBe(0);
+    // The very condition of `listAutoUploadCandidates` (Strava); the JoyoRogo workout sync keeps imported workouts on purpose.
     expect(one<{ n: number }>('SELECT COUNT(*) AS n FROM workouts WHERE complete != 0 AND imported = 0').n).toBe(0);
     expect(one<{ n: number }>('SELECT COUNT(*) AS n FROM step_samples WHERE imported = 0').n).toBe(0);
   });

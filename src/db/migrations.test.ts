@@ -73,3 +73,27 @@ describe('migration 12: per-sample columns of workout_points', () => {
     ]);
   });
 });
+
+describe('migration 13: cloud_workout', () => {
+  it('only creates the table that records what was uploaded or restored per workout', () => {
+    expect(migrationsJson[12] as string[]).toEqual([
+      'CREATE TABLE cloud_workout (start INTEGER PRIMARY KEY NOT NULL, rev INTEGER NOT NULL, engine_rev INTEGER NOT NULL, version INTEGER NOT NULL, hash TEXT NOT NULL, bytes INTEGER NOT NULL, uploaded_at INTEGER NOT NULL)',
+    ]);
+  });
+
+  it('applies on top of a phone at version 12 and keeps its workouts', async () => {
+    const raw = new Database(':memory:');
+    for (const statements of migrationsJson.slice(0, 12)) raw.exec(statements.join(';\n'));
+    raw.exec('PRAGMA user_version = 12');
+    raw.exec(
+      `INSERT INTO workouts (workout_number, start, end, sport_type, sport_name, duration, distance, calories, steps, summary_json, complete)
+       VALUES (1, 1700000000, 1700000600, 1, 'Running', 600, 5000, 321, 100, '{}', 1)`,
+    );
+
+    await migrate(wrap(raw));
+
+    expect(raw.query<{ user_version: number }, []>('PRAGMA user_version').get()?.user_version).toBe(13);
+    expect(columns(raw, 'cloud_workout')).toEqual(['start', 'rev', 'engine_rev', 'version', 'hash', 'bytes', 'uploaded_at']);
+    expect(raw.query('SELECT COUNT(*) AS n FROM workouts').get()).toEqual({ n: 1 });
+  });
+});

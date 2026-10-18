@@ -92,23 +92,31 @@ async function requestOnce<T>(method: string, path: string, body: unknown): Prom
 }
 
 /**
- * Calls the JoyoFit cloud Worker with the JoyoRogo session. Network errors, timeouts, 408/425/429 and 5xx
- * are retried with exponential backoff (1 s, 2 s, 4 s, honouring Retry-After); other errors surface at once.
- * `retry: false` makes the first answer final, for a 429 the person has to see now (a throttled "Tanya kabar").
+ * Runs `request` again after a transient failure (network error, timeout, 408/425/429, 5xx) with exponential backoff
+ * (1 s, 2 s, 4 s, honouring Retry-After); other errors surface at once. `retry: false` makes the first answer final.
  */
-export async function cloudRequest<T>(
-  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
-  path: string,
-  body?: unknown,
-  { retry = true }: { retry?: boolean } = {},
-): Promise<T> {
+export async function withRetry<T>(request: () => Promise<T>, retry = true): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await requestOnce<T>(method, path, body);
+      return await request();
     } catch (error) {
       if (!retry || attempt >= MAX_ATTEMPTS || !isTransient(error)) throw error;
       const hinted = error instanceof CloudHttpError ? error.retryAfterMs : null;
       await sleep(Math.min(MAX_DELAY_MS, hinted ?? BASE_DELAY_MS * 2 ** (attempt - 1)) + Math.random() * 250);
     }
   }
+}
+
+/**
+ * Calls the JoyoFit cloud Worker with the JoyoRogo session. Network errors, timeouts, 408/425/429 and 5xx
+ * are retried with exponential backoff (see {@link withRetry}).
+ * `retry: false` makes the first answer final, for a 429 the person has to see now (a throttled "Tanya kabar").
+ */
+export function cloudRequest<T>(
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  path: string,
+  body?: unknown,
+  { retry = true }: { retry?: boolean } = {},
+): Promise<T> {
+  return withRetry(() => requestOnce<T>(method, path, body), retry);
 }

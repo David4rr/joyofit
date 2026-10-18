@@ -3,10 +3,14 @@ import { useState } from 'react';
 
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { isIos } from '@/components/IosUnavailable';
+import { SwitchRow } from '@/components/SwitchRow';
+import { formatSize } from '@/cloud/estimate';
+import { onUnmeteredNetwork } from '@/cloud/syncSettings';
 import { formatCount, formatDateTime } from '@/format';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { SignInButtons } from '@/features/settings/SignInButtons';
@@ -21,18 +25,37 @@ const FOUNDER_URL = 'https://joyorogo.com/pro?from=joyofit&utm_source=joyofit&ut
  */
 const CAN_LINK_TO_FOUNDER = HuaweiWear.distribution !== 'play';
 
+const workoutsText = (count: number) => `${formatCount(count)} ${count === 1 ? 'workout' : 'workouts'}`;
+
+/** What is waiting to go up: the workouts with the size they will take, and the step and sleep rows. */
+function waitingText(workouts: number, bytes: number, rows: number): string {
+  const parts: string[] = [];
+  if (workouts > 0) parts.push(`${workoutsText(workouts)}, about ${formatSize(bytes)}`);
+  if (rows > 0) parts.push(`${formatCount(rows)} step and sleep ${rows === 1 ? 'row' : 'rows'}`);
+  return parts.length > 0 ? parts.join(' and ') : 'Nothing';
+}
+
 /**
- * Sign in with the JoyoRogo account and upload the local data to the JoyoFit cloud, a JoyoRogo Founder benefit.
- * Uploads run on their own after each sync; "Sync now" is for forcing one. Nothing is downloaded back into the
- * app yet. Without Founder the section says so and uploads stay off.
+ * Sign in with the JoyoRogo account and sync with the cloud. With a Pro account every workout (GPS, heart rate, speed,
+ * cadence, power and the analysis) goes up as a compressed file, steps and sleep go to the JoyoFit cloud, and a new
+ * phone restores its workouts after sign-in. Syncs run on their own after each watch sync; "Sync now" forces one, and
+ * "Wi-Fi only" keeps the automatic ones off mobile data. Without Pro nothing is uploaded and the workouts stay on the phone.
  */
 export function CloudSection() {
   const cloud = useCloud();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingWipe, setConfirmingWipe] = useState(false);
+  const [confirmingMobile, setConfirmingMobile] = useState(false);
   const withApple = isIos && cloud.appleAvailable;
+  const busy = cloud.uploading || cloud.deleting || cloud.wiping;
+
+  const syncNow = async () => {
+    if (cloud.wifiOnly && !(await onUnmeteredNetwork())) setConfirmingMobile(true);
+    else await cloud.syncNow();
+  };
 
   return (
-    <Section title="Cloud" icon="cloud-upload">
+    <Section title="Cloud sync" icon="cloud-upload">
       {!cloud.configured ? (
         <Notice tone="danger">
           No cloud server URL in this build. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.
@@ -47,17 +70,43 @@ export function CloudSection() {
               : undefined
           }>
           {CAN_LINK_TO_FOUNDER
-            ? 'Not a Pro account, so nothing is uploaded. Your data stays on this phone; what is already in the cloud stays readable.'
-            : 'Not a Pro account (get Pro in JoyoRogo), so nothing is uploaded. Your data stays on this phone; what is already in the cloud stays readable.'}
+            ? 'Your workouts stay on this phone. Cloud sync is a JoyoRogo Pro benefit. What is already in your cloud stays readable and restores onto a new phone.'
+            : 'Your workouts stay on this phone. Cloud sync is a JoyoRogo Pro benefit (get Pro in JoyoRogo). What is already in your cloud stays readable and restores onto a new phone.'}
         </Notice>
       ) : null}
       {cloud.error ? <Notice tone="danger">{cloud.error}</Notice> : null}
+      {cloud.progress ? (
+        <Notice icon="cloud-upload">{`Uploading ${formatCount(cloud.progress.done)} of ${formatCount(cloud.progress.total)}`}</Notice>
+      ) : null}
+      {cloud.refusedWorkouts > 0 ? (
+        <Notice tone="danger">
+          {`${workoutsText(cloud.refusedWorkouts)} could not be uploaded. They are tried again after the next app update.${cloud.refusedError ? ` Last error: ${cloud.refusedError}` : ''}`}
+        </Notice>
+      ) : null}
       <PairGrid>
         <Pair label="Account" value={cloud.signedIn ? cloud.email : null} wide />
         {cloud.signedIn ? (
           <>
-            <Pair label="Last cloud sync" value={cloud.lastSyncAt ? formatDateTime(cloud.lastSyncAt) : null} />
-            <Pair label="Waiting to upload" value={cloud.pending == null ? null : `${formatCount(cloud.pending)} rows`} />
+            <Pair label="Last sync" value={cloud.lastSyncAt ? formatDateTime(cloud.lastSyncAt) : null} />
+            <Pair
+              label="In the cloud"
+              value={
+                cloud.cloudWorkouts
+                  ? `${workoutsText(cloud.cloudWorkouts.count)}, ${formatSize(cloud.cloudWorkouts.bytes)} of ${formatSize(cloud.cloudWorkouts.quotaBytes)}`
+                  : null
+              }
+            />
+            {cloud.locked ? null : (
+              <Pair
+                label="Waiting to upload"
+                value={
+                  cloud.pendingWorkouts == null || cloud.pendingRows == null || cloud.pendingBytes == null
+                    ? null
+                    : waitingText(cloud.pendingWorkouts, cloud.pendingBytes, cloud.pendingRows)
+                }
+                wide
+              />
+            )}
           </>
         ) : null}
       </PairGrid>
@@ -68,8 +117,8 @@ export function CloudSection() {
               label="Sync now"
               variant="primary"
               icon="sync"
-              onPress={() => void cloud.syncNow()}
-              disabled={!cloud.configured}
+              onPress={() => void syncNow()}
+              disabled={!cloud.configured || cloud.deleting || cloud.wiping}
               loading={cloud.uploading}
             />
             <Button
@@ -77,9 +126,32 @@ export function CloudSection() {
               variant="secondary"
               icon="log-out-outline"
               onPress={() => void cloud.signOut()}
-              disabled={cloud.uploading || cloud.deleting}
+              disabled={busy}
             />
           </ButtonRow>
+          <SwitchRow
+            label="Wi-Fi only"
+            hint="Automatic sync waits for Wi-Fi or Ethernet, so workouts do not use mobile data."
+            icon="wifi"
+            value={cloud.wifiOnly}
+            onValueChange={cloud.setWifiOnly}
+          />
+          <SwitchRow
+            label="Automatic sync"
+            hint="Sync after each watch sync and when you open the app."
+            icon="sync"
+            value={cloud.autoSync}
+            onValueChange={cloud.setAutoSync}
+            disabled={cloud.wiping}
+          />
+          <Button
+            label="Delete cloud data"
+            variant="destructive"
+            icon="cloud-offline-outline"
+            loading={cloud.wiping}
+            disabled={busy}
+            onPress={() => setConfirmingWipe(true)}
+          />
           {confirmingDelete ? (
             <Notice tone="danger" icon="trash">
               Deletes your JoyoRogo account (the one JoyoRogo uses) and everything it holds in the cloud: your JoyoRogo
@@ -108,7 +180,7 @@ export function CloudSection() {
               label="Delete JoyoRogo account"
               variant="destructive"
               icon="trash-outline"
-              disabled={cloud.uploading || cloud.deleting}
+              disabled={busy}
               onPress={() => setConfirmingDelete(true)}
             />
           )}
@@ -116,13 +188,38 @@ export function CloudSection() {
       ) : (
         <SignInButtons />
       )}
+      <ConfirmDialog
+        visible={confirmingMobile}
+        title="Sync on mobile data?"
+        message="Wi-Fi only is on and this phone is not on Wi-Fi. Syncing now can use a lot of mobile data when workouts are waiting."
+        confirmLabel="Sync now"
+        onConfirm={() => {
+          setConfirmingMobile(false);
+          void cloud.syncNow();
+        }}
+        onCancel={() => setConfirmingMobile(false)}
+      />
+      <ConfirmDialog
+        visible={confirmingWipe}
+        title="Delete cloud data?"
+        message="Removes your workouts, steps and sleep from the cloud. This phone's data and your account stay, and automatic sync is turned off so nothing is uploaded again until you turn it back on."
+        confirmLabel="Delete cloud data"
+        onConfirm={() => {
+          setConfirmingWipe(false);
+          void cloud.wipeCloud();
+        }}
+        onCancel={() => setConfirmingWipe(false)}
+      />
       <Details>
-        Cloud backup is part of JoyoRogo Pro. It backs up your steps, heart rate, SpO2, sleep and workouts, including GPS
-        tracks and the watch&apos;s Bluetooth address, to the JoyoFit cloud with your JoyoRogo account. Off until you
-        sign in with a Pro account; after that it uploads on its own, starting with your whole history. While signed
-        in, JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. To delete your account and its cloud
-        data, sign in and use Delete JoyoRogo account (details at fit.joyorogo.com/privasi). The app never reads from
-        the cloud yet.
+        Cloud sync is part of JoyoRogo Pro. With a Pro account every workout is uploaded to your JoyoRogo account as one
+        compressed file: its GPS track, heart rate, speed, cadence and power, and the analysis the app shows, so it
+        survives a lost phone, shows on the JoyoRogo web and restores onto a new phone after you sign in. Steps, heart
+        rate, SpO2, sleep and the watch&apos;s Bluetooth address go to the JoyoFit cloud with the same account. Without
+        Pro nothing is uploaded and your workouts stay on this phone. While you are signed in the app also reads from the
+        cloud: it downloads workouts this phone does not have, and removes the ones you deleted from the cloud
+        elsewhere. JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. Delete cloud data removes your
+        workouts, steps and sleep from the cloud and keeps this phone&apos;s data and your account; Delete JoyoRogo account
+        removes the account and everything else (details at fit.joyorogo.com/privasi).
       </Details>
     </Section>
   );

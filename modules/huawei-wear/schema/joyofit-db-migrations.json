@@ -66,5 +66,8 @@
     "ALTER TABLE workout_points ADD COLUMN cadence INTEGER",
     "ALTER TABLE workout_points ADD COLUMN stride REAL",
     "ALTER TABLE workout_points ADD COLUMN power INTEGER"
+  ],
+  [
+    "CREATE TABLE cloud_workout (start INTEGER PRIMARY KEY NOT NULL, rev INTEGER NOT NULL, engine_rev INTEGER NOT NULL, version INTEGER NOT NULL, hash TEXT NOT NULL, bytes INTEGER NOT NULL, uploaded_at INTEGER NOT NULL)"
   ]
 ]

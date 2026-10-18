@@ -4,7 +4,7 @@ Website: <https://fit.joyorogo.com> (source in [`site/`](site/)).
 
 JoyoFit is an Android companion app for Huawei and Honor watches. It was built for, and is tested only on, the **Huawei Watch Fit 4 Pro**; other models are experimental (see [Supported watches](#supported-watches)). It has no Huawei
 Health install and no account needed: data goes from the watch to the phone into a local SQLite
-database. Optionally, signing in with a JoyoRogo account uploads it to your own Cloudflare backend
+database. Optionally, signing in with a JoyoRogo account syncs it with your own Cloudflare backend and JoyoRogo
 (see [Cloud sync](#cloud-sync)); nothing leaves the phone before you do.
 
 The app has two parts:
@@ -442,10 +442,11 @@ The export needs Health Connect: built into Android 14+, a Play Store app on And
 
 ## Cloud sync
 
-Settings → Health & cloud → **Cloud** signs in with your **JoyoRogo account** and uploads the local database to a
-separate Cloudflare Worker you deploy yourself ([`server/`](server/README.md): Hono, D1, R2). Upload only: the
-app does not read from the cloud yet. The Huawei history import (below) runs on the phone and does not use the server's
-`POST /v1/imports` endpoint; imported rows are never uploaded.
+Settings → Health & cloud → **Cloud sync** signs in with your **JoyoRogo account**. Steps and sleep go to a separate
+Cloudflare Worker you deploy yourself ([`server/`](server/README.md): Hono, D1, R2); workouts go to JoyoRogo and come
+back onto a new phone after sign-in. The Huawei history import (below) runs on the phone and does not use the server's
+`POST /v1/imports` endpoint; imported workouts are kept in the JoyoRogo cloud with the rest, imported steps and sleep
+rows are never uploaded.
 
 Uploading is a **JoyoRogo Pro** benefit. The Worker asks JoyoRogo (`fitness.cloudAccess`, with your session) and
 answers `402` with `paywall: true` to accounts that are not Pro; JoyoRogo servers without a paywall (self-host)
@@ -458,8 +459,9 @@ does.
 flowchart LR
   APP[JoyoFit app<br/>src/cloud · CloudProvider] -- "sign in (better-auth + expo)" --> JR[JoyoRogo api.joyorogo.com<br/>/api/auth]
   APP -- "POST /v1/sync · Cookie: session" --> W[JoyoFit Worker<br/>server/]
+  APP -- "PUT /api/watch-workouts · rpc watchWorkout" --> JR
   W -- "GET /api/auth/get-session" --> JR
-  W --> D1[(D1: step_samples, sleep_segments,<br/>workouts, workout_points, device)]
+  W --> D1[(D1: step_samples, sleep_segments, device)]
   W --> R2[(R2: raw imports)]
 ```
 
@@ -471,23 +473,44 @@ flowchart LR
   [`server/JOYOROGO_PATCH.md`](server/JOYOROGO_PATCH.md).
 - **Server URL.** Deploy `server/` and build the app with `EXPO_PUBLIC_JOYOFIT_CLOUD_URL=https://…` (or
   `expo.extra.cloudUrl` in `app.json`). Without it the Cloud section says so and nothing is uploaded.
-- **What is uploaded, and when.** Step samples, sleep segments, workouts with their points, and the device
-  row. An upload runs 2 s after every sync the app sees, when the app returns to the foreground, and on
-  **Sync now**; rows the background service stored while the app was closed go up at the next of those.
-  Settings shows the account, the last cloud sync and the rows still waiting.
-- **Incremental by cursor.** Migration 4 adds a `rev` column to `step_samples`, `sleep_segments` and `workouts`
-  and triggers that stamp every insert or update (from JS or native) with the table's next `cloud_cursor.seq`.
-  `cloud_cursor.uploaded` is the last `rev` the server accepted; an upload sends `rev > uploaded` in batches
-  (2 000 samples, 500 sleep segments, up to 5 workouts / 15 000 points) and moves the cursor only after each
-  batch succeeded. `cloud_state` keeps the account, the last sync time and the last error. Signing in as another
-  JoyoRogo account resets the cursors so that account gets everything.
+- **What is uploaded, and when.** Step samples, sleep segments and the device row go to the Worker. **Workouts go to
+  JoyoRogo instead**, one gzip document per workout (see below), and only for Pro accounts. A sync runs 2 s after
+  every sync the app sees, when the app returns to the foreground, and on **Sync now**; rows the background service
+  stored while the app was closed go up at the next of those. Settings → Cloud sync shows the account, the last sync,
+  the workouts in the cloud with their size, what is waiting (an estimate in MB) and the progress of a backfill.
+  **Wi-Fi only** (off by default) keeps the automatic runs off mobile data; **Sync now** then asks before using it.
+  **Automatic sync** (on by default) turns the automatic runs off. Both live in the app's key-value store.
+- **Incremental by cursor (steps and sleep).** Migration 4 adds a `rev` column to `step_samples`, `sleep_segments` and
+  `workouts` and triggers that stamp every insert or update (from JS or native) with the table's next
+  `cloud_cursor.seq`. `cloud_cursor.uploaded` is the last `rev` the server accepted; an upload sends `rev > uploaded`
+  in batches (2 000 samples, 500 sleep segments) and moves the cursor only after each batch succeeded. `cloud_state`
+  keeps the account, the last sync time and the last error. Signing in as another JoyoRogo account resets the cursors,
+  forgets `cloud_workout` and the workout pull cursor, so that account gets everything.
+- **Workouts (JoyoRogo Pro).** The contract is `docs/watch-workout-cloud.md` in the joyorogo repo. Each workout, whatever
+  its source (watch, FIT file, Huawei export, complete or not), is one gzip JSON document: the `workouts` row, every
+  `workout_points` column (GPS, heart rate, altitude, speed, cadence, stride, power, delta coded) and the analysis the
+  workout screen computes (`src/cloud/workoutDoc.ts`, `workoutAnalysis.ts`). Migration 13 adds `cloud_workout`, one row
+  per uploaded or restored workout (`rev` and `engine_rev` it was built from, server `version`, `hash`, `bytes`). A
+  workout is pending when it has no row, its `workouts.rev` moved, or its `engine_rev` is below `ANALYSIS_ENGINE_REV`
+  (`src/features/workouts/analysis/engineRev.ts`, bumped when the analysis numbers change). `src/cloud/workoutSync.ts`
+  uploads the pending ones newest first, one at a time (`PUT /api/watch-workouts/<start>` with the session cookie) and
+  records each in `cloud_workout` before the next, so the backfill of an existing history resumes after any
+  interruption. `402` means not Pro (stops, shows the benefit); `410` means the workout was deleted from the cloud, so it
+  is deleted here; `400` counts the workout as refused (shown with the last error, retried after the next app update);
+  `413 quota` stops with the server's message.
+- **Restore.** Before each upload the app pulls `watchWorkout.changes` from the cursor in `cloud_state`
+  (`workout_pull_cursor`). A workout the phone does not have is downloaded and inserted (`INSERT OR IGNORE` on `start`,
+  never over a local row) with its points and a `cloud_workout` row, so it is not uploaded again; a tombstone deletes the
+  local copy. Reading is not locked, so an account without Pro restores too.
+- **Delete cloud data.** Calls `watchWorkout.wipe` and the Worker's `DELETE /v1/data`, clears `cloud_workout` and the
+  cursors, and turns automatic sync off. The phone's data and the account stay.
 - **Retries.** Network errors, timeouts, 408/425/429 and 5xx are retried 3 times with backoff (1 s, 2 s, 4 s,
-  or the server's `Retry-After`); a failed run leaves the cursors where they were. A row the server rejects as
-  invalid (400) is isolated by halving the batch and skipped so it cannot block the rest.
-- **Idempotent.** The server upserts on `(user, key)` and ignores identical rows, so replays and the 1 h
-  overlap of each watch sync cost nothing. A workout is replaced as a whole with its points; a track over
-  30 000 points is thinned evenly before upload.
-- **Not synced:** deletions, the profile, alarms and settings.
+  or the server's `Retry-After`); a failed run leaves the cursors where they were. A step or sleep row the server
+  rejects as invalid (400) is isolated by halving the batch and skipped so it cannot block the rest.
+- **Idempotent.** The Worker upserts steps and sleep on `(user, key)` and ignores identical rows, so replays and the 1 h
+  overlap of each watch sync cost nothing. JoyoRogo keeps one document per `(user, start)` and answers `unchanged` for
+  the same bytes (the gzip header carries no clock, so the same workout always compresses to the same bytes).
+- **Not synced:** deletions made on the phone, the profile, alarms and settings.
 
 ## Strava
 
