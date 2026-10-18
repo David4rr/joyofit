@@ -231,7 +231,9 @@
     "routineName": "Nama rutinitas",
     "routineSaved": "Rutinitas tersimpan",
     "deleteTitle": "Hapus latihan ini?",
-    "deleteMessage": "Latihan ini dihapus dari riwayat dan dari daftar latihan di jam."
+    "deleteMessage": "Latihan ini dihapus dari riwayat dan dari daftar latihan di jam.",
+    "kcalWeightHint": "Kalori dihitung dari berat {{kg}} kg karena beratmu belum diisi. Isi di Profil supaya perkiraannya lebih pas.",
+    "kcalWeightAction": "Isi berat badan"
   },
   "settings": {
     "title": "Pengaturan latihan beban",

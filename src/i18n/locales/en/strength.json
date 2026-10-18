@@ -235,7 +235,9 @@
     "routineName": "Routine name",
     "routineSaved": "Routine saved",
     "deleteTitle": "Delete this workout?",
-    "deleteMessage": "This workout is removed from your history and from the workout list."
+    "deleteMessage": "This workout is removed from your history and from the workout list.",
+    "kcalWeightHint": "Calories were estimated with a body weight of {{kg}} kg because yours is not set. Add it in Profile for a closer estimate.",
+    "kcalWeightAction": "Set body weight"
   },
   "settings": {
     "title": "Strength settings",

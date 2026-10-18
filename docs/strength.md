@@ -54,6 +54,12 @@ kcal = MET x 3.5 x weight(kg) x minutes / 200
 
 3.5 and 6.0 are the Compendium of Physical Activities values for light-to-moderate and vigorous resistance training; 12 and 30 sets per hour are a slow session with long rests and a circuit. It is the formula JoyoRogo uses for its own quick entries (kcal per minute = MET x 3.5 x kg / 200), so the numbers agree. An estimate, never a measurement; weight comes from Settings > Profile (70 kg when empty).
 
+## Without a watch
+
+The logger never needed one: a phone with no watch (`useWatchPresence()` is `none`, see `src/features/device/presence.ts`) gets the logger's own `workouts` row (`imported = 1`), a MET energy estimate, history, charts, Strava and the JoyoRogo energy push. The logger's row is not watch data, so logging workouts does not turn the watch UI on. Today then shows `TodayNoWatch` (the logger, Coach, library, history, one "Sambungkan jam" row, the JoyoRogo link) instead of the watch's cards; the Workouts tab drops its Sync button and the "connect your watch" notice. A hand-typed run, walk or ride (`/workouts/manual`, `features/workouts/manual.ts`) lands in the same table with a MET estimate and no heart rate or route. When no weight was saved, the summary says the estimate ran on 70 kg and links to Profile.
+
+The first-run guide has a no-watch route (`flow.ts`, `route: 'none'`): welcome, phone, account, pro, cloud, done. The supported watches and the way to request one are in `features/device/watchFamilies.ts` (short list; the full one is fit.joyorogo.com/jam).
+
 ## Routes
 
 `/strength` home (start, routines, recent), `/strength/active` the logger (params `routineId`, `planKey`, `planned`, `name`, `repeatWorkoutId`, `editWorkoutId`), `/strength/summary/<id>`, `/strength/routine/<id|new>`, `/strength/history` (list and calendar with the watch workouts), `/strength/exercises`, `/strength/exercise/<id>` (charts, records), `/strength/muscles` (weekly heat map), `/strength/settings`.

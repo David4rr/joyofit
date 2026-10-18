@@ -200,7 +200,8 @@
     "empty": {
       "title": "No workouts yet",
       "description": "Watch sessions appear here after a sync.",
-      "syncNow": "Sync now"
+      "syncNow": "Sync now",
+      "descriptionNoWatch": "Workouts you log or import from a FIT file show up here. No watch needed."
     },
     "partial": "Partly downloaded; next sync fetches the rest.",
     "cardA11y": "{{sport}}, {{date}}",
@@ -208,7 +209,10 @@
       "kcal": "kcal",
       "bpmAvg": "bpm avg",
       "strain": "strain"
-    }
+    },
+    "strengthElsewhere_one": "{{count}} strength workout from JoyoRogo is in the strength history, not in this list.",
+    "strengthElsewhere_other": "{{count}} strength workouts from JoyoRogo are in the strength history, not in this list.",
+    "logManual": "Log a workout by hand"
   },
   "detail": {
     "title": "Workout",
@@ -437,5 +441,29 @@
     "outdoor_run": "Outdoor Run",
     "unknownType": "Workout (type {{type}})",
     "withBrand": "{{sport}} ({{brand}})"
+  },
+  "manual": {
+    "title": "Log a workout",
+    "intro": "For a run, walk or ride no watch recorded. There is no heart rate or route, and calories are estimated.",
+    "day": "Day",
+    "days": {
+      "0": "Today",
+      "1": "Yesterday",
+      "2": "2 days ago"
+    },
+    "start": "Start (hh:mm)",
+    "minutes": "Duration (min)",
+    "km": "Distance (km)",
+    "kcal": "Calories",
+    "optional": "Optional",
+    "estimate": "Calories estimated at {{kcal}} kcal with a weight of {{kg}} kg. Fill in Calories to use your own figure.",
+    "save": "Save workout",
+    "errors": {
+      "clock": "Enter a start time like 07:30.",
+      "minutes": "Enter a duration between 1 and 1440 minutes.",
+      "km": "Distance must be between 0.01 and 500 km, or leave it empty.",
+      "kcal": "Calories must be a number above 0, or leave it empty.",
+      "future": "That start time has not happened yet."
+    }
   }
 }

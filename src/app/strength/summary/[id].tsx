@@ -30,6 +30,7 @@ import {
 import { buildCatalog, type Catalog } from '@/features/strength/catalog';
 import { routineExercisesOf } from '@/features/strength/draft';
 import { detachWorkoutRow } from '@/features/strength/link';
+import { DEFAULT_WEIGHT_KG, hasUserWeight } from '@/features/strength/profile';
 import { prValueText, previousLabel, rpeText, SET_BADGE } from '@/features/strength/logFormat';
 import { nextSortOrder } from '@/features/strength/routineEdit';
 import { startStrengthWorkout } from '@/features/strength/start';
@@ -215,6 +216,12 @@ export default function StrengthSummaryScreen() {
             )}
           </View>
         </View>
+
+        {workout.kcal !== null && workout.kcalSource !== 'watch' && !hasUserWeight() ? (
+          <Notice icon="scale-outline" action={{ label: t('strength:summary.kcalWeightAction'), onPress: () => router.push('/settings/profile') }}>
+            {t('strength:summary.kcalWeightHint', { kg: DEFAULT_WEIGHT_KG })}
+          </Notice>
+        ) : null}
 
         {watch ? <WatchTiles watch={watch} /> : null}
 

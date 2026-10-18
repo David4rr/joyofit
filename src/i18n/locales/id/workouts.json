@@ -198,7 +198,8 @@
     "empty": {
       "title": "Belum ada latihan",
       "description": "Sesi dari jam muncul di sini setelah sinkronisasi.",
-      "syncNow": "Sinkronkan sekarang"
+      "syncNow": "Sinkronkan sekarang",
+      "descriptionNoWatch": "Latihan yang kamu catat atau impor dari file FIT muncul di sini. Jam tidak diperlukan."
     },
     "partial": "Baru terunduh sebagian; sinkronisasi berikutnya mengambil sisanya.",
     "cardA11y": "{{sport}}, {{date}}",
@@ -206,7 +207,9 @@
       "kcal": "kcal",
       "bpmAvg": "bpm rata-rata",
       "strain": "strain"
-    }
+    },
+    "strengthElsewhere_other": "{{count}} latihan beban dari JoyoRogo ada di riwayat latihan beban, tidak di daftar ini.",
+    "logManual": "Catat latihan manual"
   },
   "detail": {
     "title": "Latihan",
@@ -433,5 +436,29 @@
     "outdoor_run": "Lari luar ruangan",
     "unknownType": "Latihan (tipe {{type}})",
     "withBrand": "{{sport}} ({{brand}})"
+  },
+  "manual": {
+    "title": "Catat latihan",
+    "intro": "Untuk lari, jalan, atau sepeda yang tidak direkam jam. Detak jantung dan rute tidak ada, kalori diperkirakan.",
+    "day": "Hari",
+    "days": {
+      "0": "Hari ini",
+      "1": "Kemarin",
+      "2": "2 hari lalu"
+    },
+    "start": "Mulai (jam:menit)",
+    "minutes": "Lama (menit)",
+    "km": "Jarak (km)",
+    "kcal": "Kalori",
+    "optional": "Opsional",
+    "estimate": "Kalori diperkirakan {{kcal}} kcal dengan berat {{kg}} kg. Isi kolom Kalori untuk memakai angkamu sendiri.",
+    "save": "Simpan latihan",
+    "errors": {
+      "clock": "Isi jam mulai seperti 07:30.",
+      "minutes": "Isi lama latihan antara 1 dan 1440 menit.",
+      "km": "Jarak harus antara 0,01 dan 500 km, atau kosongkan.",
+      "kcal": "Kalori harus berupa angka lebih dari 0, atau kosongkan.",
+      "future": "Waktu mulai belum terjadi."
+    }
   }
 }

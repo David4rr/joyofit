@@ -44,6 +44,9 @@ import { formatClock, formatCount, formatDistance } from '@/format';
 import { useNow } from '@/hooks/useNow';
 import { getLocale, INTL_TAG, useLocale } from '@/i18n';
 import { useLiveWorkout } from '@/state/LiveWorkoutProvider';
+import { useWatchPresence } from '@/features/device/useWatchPresence';
+import { showsWatchUi } from '@/features/device/presence';
+import { TodayNoWatch } from '@/features/today/TodayNoWatch';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
 import { sportLabel } from '@/features/workouts/sportLabel';
@@ -59,7 +62,7 @@ const WEEKDAY_FORMAT: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'nume
 /** How often the hero re-checks whether the live reading is stale and re-words "5 min ago". */
 const HERO_TICK_MS = 5_000;
 
-export default function TodayScreen() {
+function WatchToday() {
   const router = useRouter();
   const colors = useColors();
   const { t } = useTranslation(['today', 'common']);
@@ -230,6 +233,18 @@ export default function TodayScreen() {
       </Details>
     </Screen>
   );
+}
+
+/**
+ * Today. With a watch (or data from one) it is the watch's day: ring, scores, sleep, heart rate. A phone that has never had a watch
+ * gets `TodayNoWatch`, built around the strength logger and Coach, instead of a screen of empty cards. The first moment, before the
+ * database says which one applies, shows only the title.
+ */
+export default function TodayScreen() {
+  const { t } = useTranslation('common');
+  const presence = useWatchPresence();
+  if (presence === null) return <Screen title={t('nav.today')}>{null}</Screen>;
+  return showsWatchUi(presence) ? <WatchToday /> : <TodayNoWatch />;
 }
 
 const styles = StyleSheet.create({

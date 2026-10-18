@@ -8,7 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { showsWatchUi } from '@/features/device/presence';
 import { SyncButton } from '@/features/device/SyncButton';
+import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { IconChip } from '@/components/IconChip';
 import { Metric } from '@/components/Metric';
 import { PressableScale } from '@/components/PressableScale';
@@ -17,6 +19,7 @@ import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { listWorkouts, type WorkoutRow } from '@/db/queries';
 import { pickFitFile } from '@/features/fitimport/useFitImport';
 import { useStrengthHistory } from '@/features/strength/history';
+import { startStrengthWorkout } from '@/features/strength/start';
 import { workoutTotals } from '@/features/strength/calc';
 import type { StrengthWorkout } from '@/features/strength/types';
 import { ActiveWorkoutBanner } from '@/features/strength/ui/ActiveWorkoutBanner';
@@ -132,6 +135,9 @@ export default function WorkoutsScreen() {
   // The status-bar inset is applied outside the list so sticky month headers stop below it.
   const padding = useContentPadding(false);
   const { linkState, device, dataVersion, sync } = useWatch();
+  const presence = useWatchPresence();
+  // A phone that never had a watch gets no Sync button and no "connect your watch" nagging; the strength logger is the point of this tab.
+  const watchUi = presence !== null && showsWatchUi(presence);
   const [workouts, setWorkouts] = useState<WorkoutRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pulling, setPulling] = useState(false);
@@ -179,6 +185,8 @@ export default function WorkoutsScreen() {
   });
 
   const connectAction = { label: t('list.connectWatch'), onPress: () => router.push('/watch') };
+  // Strength workouts that have no row in this list (imported from JoyoRogo): they live in the strength history.
+  const strengthOnlyCount = useMemo(() => strengthWorkouts.filter((w) => w.workoutStart === null).length, [strengthWorkouts]);
 
   /** The picker here, the import and its result on the FIT import screen. */
   const importFit = async () => {
@@ -208,13 +216,12 @@ export default function WorkoutsScreen() {
           <View style={styles.header}>
             <PageHeader
               title={t('list.title')}
-              right={
-                <SyncButton variant="primary" />
-              }
+              right={watchUi ? <SyncButton variant="primary" /> : undefined}
             />
             <ActiveWorkoutBanner />
             <Button label={lifts('list.start')} variant="primary" icon="barbell" onPress={() => router.push('/strength')} />
             <Button label={lifts('list.history')} variant="secondary" icon="calendar" onPress={() => router.push('/strength/history')} />
+            <Button label={t('list.logManual')} variant="secondary" icon="create-outline" onPress={() => router.push('/workouts/manual')} />
             <Button
               label={t('list.importFit')}
               variant="secondary"
@@ -223,7 +230,12 @@ export default function WorkoutsScreen() {
             />
             {pickError ? <Notice tone="danger">{t('list.pickError', { error: pickError })}</Notice> : null}
             {error ? <Notice tone="danger">{t('list.readError', { error })}</Notice> : null}
-            {!canSync && !syncing && workouts && workouts.length > 0 ? (
+            {strengthOnlyCount > 0 ? (
+              <Notice icon="barbell-outline" action={{ label: lifts('list.history'), onPress: () => router.push('/strength/history') }}>
+                {t('list.strengthElsewhere', { count: strengthOnlyCount })}
+              </Notice>
+            ) : null}
+            {watchUi && !canSync && !syncing && workouts && workouts.some((w) => !w.imported) ? (
               <Notice icon="watch-outline" action={connectAction}>
                 {t('list.connectToSync')}
               </Notice>
@@ -235,13 +247,15 @@ export default function WorkoutsScreen() {
             <EmptyState
               icon="fitness"
               title={t('list.empty.title')}
-              description={t('list.empty.description')}
+              description={watchUi ? t('list.empty.description') : t('list.empty.descriptionNoWatch')}
               action={
-                canSync
-                  ? { label: t('list.empty.syncNow'), icon: 'sync', onPress: () => void sync() }
-                  : syncing
-                    ? undefined
-                    : connectAction
+                !watchUi
+                  ? { label: lifts('list.start'), icon: 'barbell', onPress: () => startStrengthWorkout() }
+                  : canSync
+                    ? { label: t('list.empty.syncNow'), icon: 'sync', onPress: () => void sync() }
+                    : syncing
+                      ? undefined
+                      : connectAction
               }
             />
           ) : error ? null : (

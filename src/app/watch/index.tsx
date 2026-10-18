@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
@@ -15,6 +16,9 @@ import { GuideLink } from '@/features/device/GuideLink';
 import { supportLabel } from '@/features/device/modelSupport';
 import { SilentWatchHelp } from '@/features/device/SilentWatchHelp';
 import { SupportReportSection } from '@/features/device/SupportReportSection';
+import { SupportedWatches } from '@/features/device/SupportedWatches';
+import { WatchIntro } from '@/features/device/WatchIntro';
+import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { WatchStatusCard } from '@/features/device/WatchStatusCard';
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
 import { useBondedDevices } from '@/features/device/useBondedDevices';
@@ -50,7 +54,7 @@ function ConnectSteps() {
   );
 }
 
-export default function WatchScreen() {
+function WatchHub() {
   const router = useRouter();
   const { t } = useTranslation(['watch', 'routes']);
   const watch = useWatch();
@@ -150,9 +154,23 @@ export default function WatchScreen() {
         </>
       )}
       {device ? <ConnectSteps /> : null}
+      {device ? null : <SupportedWatches />}
       <BindConfirmDialog />
     </Screen>
   );
+}
+
+/**
+ * The Watch tab. A phone that never had a watch first sees a short intro (what a watch adds, which ones work, how to ask for yours)
+ * and only "Lanjut" opens the pairing screen, which is what asks for Bluetooth permission. Everyone else goes straight to it.
+ */
+export default function WatchScreen() {
+  const { t } = useTranslation('watch');
+  const presence = useWatchPresence();
+  const [open, setOpen] = useState(false);
+  if (presence === null) return <Screen title={t('title')}>{null}</Screen>;
+  if (presence === 'none' && !open) return <WatchIntro onContinue={() => setOpen(true)} />;
+  return <WatchHub />;
 }
 
 function Pair({ label, value }: { label: string; value: string | null }) {
