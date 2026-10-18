@@ -15,8 +15,8 @@
   --rd-muted: oklch(0.76 0.012 85);
   --rd-dim: oklch(0.62 0.012 85);
   --rd-line: oklch(1 0 0 / 0.13);
-  --rd-accent: oklch(0.72 0.15 152);
-  --rd-accent-ink: oklch(0.18 0.03 152);
+  --rd-accent: oklch(0.767 0.105 216);
+  --rd-accent-ink: oklch(0.235 0.039 221);
   --rd-kom: oklch(0.64 0.19 28);
   --rd-sprint: oklch(0.74 0.12 195);
   --rd-ease: cubic-bezier(0.23, 1, 0.32, 1);
@@ -245,7 +245,7 @@ button:disabled {
     background: oklch(1 0 0 / 0.14);
   }
   .rd-btn-primary:hover:not(:disabled) {
-    background: oklch(0.77 0.15 152);
+    background: oklch(0.81 0.1 216);
   }
 }
 
@@ -488,7 +488,7 @@ button.rd-option:active {
 
 .rd-route.is-on {
   border-color: var(--rd-accent);
-  background: oklch(0.2 0.02 152 / 0.82);
+  background: oklch(0.2 0.025 220 / 0.82);
 }
 
 .rd-route-top {
@@ -561,7 +561,7 @@ button.rd-option:active {
 }
 
 .rd-prof-done {
-  fill: oklch(0.72 0.15 152 / 0.38);
+  fill: oklch(0.767 0.105 216 / 0.38);
 }
 
 .rd-prof-line {
@@ -764,7 +764,7 @@ button.rd-option:active {
 }
 
 .rd-ghost-gap.is-ahead {
-  color: oklch(0.85 0.12 152);
+  color: oklch(0.85 0.1 216);
 }
 
 .rd-ghost-gap.is-behind {
@@ -1168,7 +1168,7 @@ button.rd-option:active {
 }
 
 .rd-delivery.is-ok {
-  color: oklch(0.82 0.12 152);
+  color: oklch(0.82 0.1 216);
 }
 
 @media (max-width: 900px) {
