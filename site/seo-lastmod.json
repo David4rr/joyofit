@@ -1,74 +1,78 @@
 {
   "/": {
-    "hash": "aedbd096e44ad910",
+    "hash": "c900f3272c91617d",
     "lastmod": "2026-10-18"
   },
   "/panduan": {
-    "hash": "a37e36ee5f1eda89",
+    "hash": "9a24d206ccb09c9c",
     "lastmod": "2026-10-18"
   },
   "/strava": {
-    "hash": "f9f6b17935042c4e",
+    "hash": "610d1084093b487f",
     "lastmod": "2026-10-18"
   },
   "/iphone": {
-    "hash": "00e1a2afd57b4cb5",
+    "hash": "1af67e6114c22fe9",
     "lastmod": "2026-10-18"
   },
   "/jam": {
-    "hash": "2e90f227f0ce9edf",
+    "hash": "c9967845ffae2751",
     "lastmod": "2026-10-18"
   },
   "/dukung-jam": {
-    "hash": "3dc776fcfefbf179",
+    "hash": "23243da5fdebb627",
     "lastmod": "2026-10-18"
   },
   "/self-host": {
-    "hash": "7ad6b72d8db08209",
+    "hash": "4d9576643a8f73be",
     "lastmod": "2026-10-18"
   },
   "/privasi": {
-    "hash": "9e4d3c43dfb34c47",
+    "hash": "8242cd97d8aba130",
     "lastmod": "2026-10-18"
   },
   "/keluarga": {
-    "hash": "d80581320f5cd604",
+    "hash": "96b62149b5082233",
     "lastmod": "2026-10-18"
   },
   "/blog": {
-    "hash": "96cd9505750d2444",
+    "hash": "b7e9a221e5ee8595",
+    "lastmod": "2026-10-18"
+  },
+  "/blog/coach": {
+    "hash": "25ce32e4f9af1701",
     "lastmod": "2026-10-18"
   },
   "/blog/social-joyofit": {
-    "hash": "abf814fb6a5841ec",
+    "hash": "340e59a163841cec",
     "lastmod": "2026-10-18"
   },
   "/blog/bagikan-latihan-ke-joyorogo": {
-    "hash": "9f2740ff549c1e16",
+    "hash": "e7b492d5b20fcfda",
     "lastmod": "2026-10-18"
   },
   "/blog/panduan-awal": {
-    "hash": "0adfacdec54a1437",
+    "hash": "05e8d496d7654fc8",
     "lastmod": "2026-10-18"
   },
   "/blog/strava-file-fit": {
-    "hash": "e450662d184f4f6d",
+    "hash": "2c0d8e16f8b76f9e",
     "lastmod": "2026-10-18"
   },
   "/blog/kartu-bagikan": {
-    "hash": "c4a60d703c430575",
+    "hash": "ed40f2052f3e73b9",
     "lastmod": "2026-10-18"
   },
   "/blog/tidur-hrv-cuaca": {
-    "hash": "3b0184194e706732",
+    "hash": "d4cc8a72045691e0",
     "lastmod": "2026-10-18"
   },
   "/blog/pembaruan-di-aplikasi": {
-    "hash": "f9f0cf036259c900",
+    "hash": "6f86629d4321cc4e",
     "lastmod": "2026-10-18"
   },
   "/404": {
-    "hash": "d0724970a379e290",
+    "hash": "e4e5cd1c92594477",
     "lastmod": "2026-10-18"
   }
 }
