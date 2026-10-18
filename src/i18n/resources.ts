@@ -10,6 +10,11 @@ import idSocial from './locales/id/social.json';
 import idOnboarding from './locales/id/onboarding.json';
 import idSettings from './locales/id/settings.json';
 import idGear from './locales/id/gear.json';
+import idStrength from './locales/id/strength.json';
+import idRoutines from './locales/id/routines.json';
+import idLifts from './locales/id/lifts.json';
+import idStrengthShare from './locales/id/strengthshare.json';
+import idStrengthCloud from './locales/id/strengthcloud.json';
 import enCommon from './locales/en/common.json';
 import enToday from './locales/en/today.json';
 import enHealth from './locales/en/health.json';
@@ -22,15 +27,20 @@ import enSocial from './locales/en/social.json';
 import enOnboarding from './locales/en/onboarding.json';
 import enSettings from './locales/en/settings.json';
 import enGear from './locales/en/gear.json';
+import enStrength from './locales/en/strength.json';
+import enRoutines from './locales/en/routines.json';
+import enLifts from './locales/en/lifts.json';
+import enStrengthShare from './locales/en/strengthshare.json';
+import enStrengthCloud from './locales/en/strengthcloud.json';
 
 /** Indonesian is the source: its JSON shapes the key types. */
-const id = {common: idCommon, today: idToday, health: idHealth, workouts: idWorkouts, sharing: idSharing, watch: idWatch, routes: idRoutes, family: idFamily, social: idSocial, onboarding: idOnboarding, settings: idSettings, gear: idGear};
+const id = {common: idCommon, today: idToday, health: idHealth, workouts: idWorkouts, sharing: idSharing, watch: idWatch, routes: idRoutes, family: idFamily, social: idSocial, onboarding: idOnboarding, settings: idSettings, gear: idGear, strength: idStrength, routines: idRoutines, lifts: idLifts, strengthshare: idStrengthShare, strengthcloud: idStrengthCloud};
 
 /** English is typed as `typeof id`: tsc fails on a missing or extra key. */
-const en: typeof id = {common: enCommon, today: enToday, health: enHealth, workouts: enWorkouts, sharing: enSharing, watch: enWatch, routes: enRoutes, family: enFamily, social: enSocial, onboarding: enOnboarding, settings: enSettings, gear: enGear};
+const en: typeof id = {common: enCommon, today: enToday, health: enHealth, workouts: enWorkouts, sharing: enSharing, watch: enWatch, routes: enRoutes, family: enFamily, social: enSocial, onboarding: enOnboarding, settings: enSettings, gear: enGear, strength: enStrength, routines: enRoutines, lifts: enLifts, strengthshare: enStrengthShare, strengthcloud: enStrengthCloud};
 
 export const resources = { id, en };
 export type Resources = typeof id;
-export const NAMESPACES = ['common', 'today', 'health', 'workouts', 'sharing', 'watch', 'routes', 'family', 'social', 'onboarding', 'settings', 'gear'] as const;
+export const NAMESPACES = ['common', 'today', 'health', 'workouts', 'sharing', 'watch', 'routes', 'family', 'social', 'onboarding', 'settings', 'gear', 'strength', 'routines', 'lifts', 'strengthshare', 'strengthcloud'] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 export const DEFAULT_NAMESPACE = 'common' as const;

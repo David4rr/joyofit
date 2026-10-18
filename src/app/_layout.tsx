@@ -19,6 +19,7 @@ import { initLocale, refreshAutoLocale } from '@/i18n/native';
 import { migrate } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
 import { ensureGearSchema } from '@/features/gear/store';
+import { ensureStrengthSchema } from '@/features/strength/store';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { CloudProvider } from '@/state/CloudProvider';
@@ -38,6 +39,7 @@ const DATABASE_NAME = 'joyofit.db';
 async function initDatabase(db: SQLiteDatabase): Promise<void> {
   await migrate(db);
   await ensureGearSchema(db);
+  await ensureStrengthSchema(db);
   serializeQueries(db);
 }
 
@@ -178,6 +180,8 @@ function RootNavigator() {
                     <Tabs.Screen name="family" options={{ href: null }} />
                     {/* Watch routes: opened from the Watch tab and by shared GPX/TCX files; its stack draws its own headers. */}
                     <Tabs.Screen name="routes" options={{ href: null }} />
+                    {/* Strength logger (workout, routines, history); its stack draws its own headers. */}
+                    <Tabs.Screen name="strength" options={{ href: null }} />
                     {/* The setup guide: opened by OnboardingProvider on a first run and from Settings; full screen, no tab bar. */}
                     <Tabs.Screen name="onboarding" options={{ href: null, tabBarStyle: { display: 'none' } }} />
                   </Tabs>
