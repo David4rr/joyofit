@@ -9,6 +9,7 @@ import { userWeightKg } from '@/features/strength/profile';
 import { applyRemote, getStrengthMeta, listDirty, markAllDirty, markUploaded, setStrengthMeta } from '@/features/strength/store';
 
 import { strengthCall } from './strengthHttp';
+import { forgetPhoneKcal, retryPhoneKcal } from './phoneKcal';
 import { forgetStrengthKcal, retryStrengthKcal } from './strengthKcal';
 import {
   META,
@@ -33,7 +34,10 @@ function ioFor(db: SQLiteDatabase): StrengthSyncIo {
     getMeta: (key) => getStrengthMeta(db, key),
     setMeta: (key, value) => setStrengthMeta(db, key, value),
     markAllDirty: () => markAllDirty(db),
-    onAccountChanged: () => forgetStrengthKcal(db),
+    onAccountChanged: async () => {
+      await forgetStrengthKcal(db);
+      await forgetPhoneKcal(db);
+    },
     pull: async (since): Promise<PullPage> => {
       const page = await strengthCall<{ records: PullPage['records']; cursor: number; hasMore: boolean }>('strength/pull', { since, limit: PAGE });
       // A record of a kind this app does not know (a newer app wrote it) is left alone.
@@ -63,6 +67,7 @@ async function run(db: SQLiteDatabase): Promise<StrengthSyncResult> {
     if (result !== 'unchanged') log(`strength ${result}`);
     // Workouts the pull brought in or linked to a watch workout may need their energy sent, or taken back.
     await retryStrengthKcal(db).catch((e) => log(`strength energy retry failed: ${errorMessage(e)}`, 'error'));
+    await retryPhoneKcal(db).catch((e) => log(`phone workout energy retry failed: ${errorMessage(e)}`, 'error'));
     return result;
   } catch (error) {
     if (error instanceof NotSignedInError || error instanceof CloudNotConfiguredError) return 'local-only';

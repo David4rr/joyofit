@@ -52,6 +52,12 @@ export interface WorkoutSummary {
   maxCadence?: number;
   /** Set on workouts imported from a FIT file: the device brand, or `FIT file` when the file does not say. */
   importedFrom?: string;
+  /** `phone`: recorded by this phone (GPS and any paired sensors), see `features/record`. */
+  source?: 'phone';
+  /** The sensors a phone recording used, as named when it was recorded. */
+  sensors?: SummarySensor[];
+  /** Where a phone recording's energy came from: the heart rate strap or the MET estimate. */
+  kcalSource?: 'hr' | 'met';
   swim?: {
     style?: string;
     strokes?: number;
@@ -66,6 +72,13 @@ export interface WorkoutSummary {
   paceSlowestSecPerKm?: number;
   /** Watch laps, unix seconds; absent for workouts stored before laps were kept. */
   laps?: SummaryLap[];
+}
+
+/** One sensor of `summary_json.sensors`; `kinds` are `SensorKind` values (`hr`, `csc`, `power`, `rsc`). */
+export interface SummarySensor {
+  id: string;
+  name: string;
+  kinds: string[];
 }
 
 /** One lap of `summary_json.laps`. */

@@ -203,9 +203,24 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
       // A strength workout from the logger sends its sets, its own name and a summary of the lifts.
       const strength = await strengthUploadExtras(db, workout.start);
       const fit = buildFit(
-        { ...workout, elevationGain: elevation?.gainM, elevationLoss: elevation?.lossM, maxSpeed: summary.maxSpeed },
+        {
+          ...workout,
+          elevationGain: elevation?.gainM,
+          elevationLoss: elevation?.lossM,
+          maxSpeed: summary.maxSpeed,
+          avgPower: summary.avgPower,
+          maxPower: summary.maxPower,
+          normalizedPower: summary.normalizedPower,
+          avgCadence: summary.avgCadence,
+          maxCadence: summary.maxCadence,
+        },
         points,
-        { device: stravaDevice(watch), ...(strength ? { sets: strength.sets } : {}) },
+        {
+          device: stravaDevice(watch),
+          ...(strength ? { sets: strength.sets } : {}),
+          // The laps the person pressed on the phone; a watch's own laps keep going out as one lap, as before.
+          ...(summary.source === 'phone' && summary.laps ? { laps: summary.laps } : {}),
+        },
       );
       const form = buildUploadForm(workout, fit.bytes, {
         addLink,

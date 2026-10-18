@@ -7,7 +7,8 @@ type KeepAwake = {
   deactivateKeepAwake: (tag?: string) => Promise<void>;
 };
 
-const TAG = 'strength';
+/** One tag per screen that holds the screen on, so two of them do not release each other's hold. */
+const DEFAULT_TAG = 'strength';
 
 function load(): KeepAwake | null {
   try {
@@ -17,17 +18,17 @@ function load(): KeepAwake | null {
   }
 }
 
-export async function holdScreenOn(): Promise<void> {
+export async function holdScreenOn(tag: string = DEFAULT_TAG): Promise<void> {
   try {
-    await load()?.activateKeepAwakeAsync(TAG);
+    await load()?.activateKeepAwakeAsync(tag);
   } catch {
     // a binary without the native module: the screen just follows the system timeout
   }
 }
 
-export async function releaseScreen(): Promise<void> {
+export async function releaseScreen(tag: string = DEFAULT_TAG): Promise<void> {
   try {
-    await load()?.deactivateKeepAwake(TAG);
+    await load()?.deactivateKeepAwake(tag);
   } catch {
     // see holdScreenOn
   }

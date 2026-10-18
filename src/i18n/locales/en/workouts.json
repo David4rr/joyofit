@@ -467,5 +467,12 @@
       "kcal": "Calories must be a number above 0, or leave it empty.",
       "future": "That start time has not happened yet."
     }
+  },
+  "record": {
+    "notification": {
+      "timeDistance": "{{time}} · {{distance}}",
+      "timeHr": "{{time}} · {{hr}} bpm",
+      "timeDistanceHr": "{{time}} · {{distance}} · {{hr}} bpm"
+    }
   }
 }

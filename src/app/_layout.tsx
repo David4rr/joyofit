@@ -20,6 +20,8 @@ import { migrate } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
 import { ensureGearSchema } from '@/features/gear/store';
 import { ensureStrengthSchema } from '@/features/strength/store';
+import { ensureRecordingSchema } from '@/features/record/journal';
+import { ensureSensorSchema } from '@/features/sensors/store';
 import { ensureCoachSchema } from '@/features/coach/store';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
@@ -27,6 +29,8 @@ import { CloudProvider } from '@/state/CloudProvider';
 import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
 import { OnboardingProvider } from '@/state/OnboardingProvider';
 import { MealsProvider } from '@/state/MealsProvider';
+import { RecorderProvider } from '@/state/RecorderProvider';
+import { SensorsProvider } from '@/state/SensorsProvider';
 import { StravaProvider } from '@/state/StravaProvider';
 import { WatchProvider } from '@/state/WatchProvider';
 import { ThemeProvider, useTheme } from '@/theme';
@@ -42,6 +46,8 @@ async function initDatabase(db: SQLiteDatabase): Promise<void> {
   await ensureGearSchema(db);
   await ensureStrengthSchema(db);
   await ensureCoachSchema(db);
+  await ensureSensorSchema(db);
+  await ensureRecordingSchema(db);
   serializeQueries(db);
 }
 
@@ -99,6 +105,8 @@ function RootNavigator() {
         <WatchProvider>
           <CloudProvider>
             <StravaProvider>
+              <SensorsProvider>
+              <RecorderProvider>
               <MealsProvider>
                 <LiveWorkoutProvider>
                   <OnboardingProvider>
@@ -196,6 +204,8 @@ function RootNavigator() {
                   </OnboardingProvider>
                 </LiveWorkoutProvider>
               </MealsProvider>
+              </RecorderProvider>
+              </SensorsProvider>
             </StravaProvider>
           </CloudProvider>
         </WatchProvider>

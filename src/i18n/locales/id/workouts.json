@@ -462,5 +462,12 @@
       "kcal": "Kalori harus berupa angka lebih dari 0, atau kosongkan.",
       "future": "Waktu mulai belum terjadi."
     }
+  },
+  "record": {
+    "notification": {
+      "timeDistance": "{{time}} · {{distance}}",
+      "timeHr": "{{time}} · {{hr}} bpm",
+      "timeDistanceHr": "{{time}} · {{distance}} · {{hr}} bpm"
+    }
   }
 }

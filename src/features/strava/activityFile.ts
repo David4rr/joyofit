@@ -35,6 +35,13 @@ export interface StravaWorkout {
   elevationLoss?: number | null;
   /** Metres per second, from the watch's summary. */
   maxSpeed?: number | null;
+  /** Watts, from `summary_json` (a power meter's recording or an imported file). */
+  avgPower?: number | null;
+  maxPower?: number | null;
+  normalizedPower?: number | null;
+  /** Steps per minute on foot, rpm on a bike, from `summary_json`; a foot sport without `steps` takes its cadence from here. */
+  avgCadence?: number | null;
+  maxCadence?: number | null;
 }
 
 export interface StravaPoint {
@@ -43,6 +50,21 @@ export interface StravaPoint {
   lon: number | null;
   alt: number | null;
   hr: number | null;
+  /** Metres per second. */
+  speed?: number | null;
+  /** Steps per minute on foot, rpm on a bike (as `workout_points.cadence`). */
+  cadence?: number | null;
+  power?: number | null;
+}
+
+/** One lap of a workout with several (a `summary_json.laps` entry); a workout with fewer than two laps is written as one lap. */
+export interface StravaLap {
+  startTs: number;
+  endTs: number;
+  distanceM: number | null;
+  avgHr: number | null;
+  maxHr: number | null;
+  avgCadence: number | null;
 }
 
 export interface StravaSport {
@@ -160,6 +182,9 @@ interface Sample {
   lon: number | null;
   alt: number | null;
   hr: number | null;
+  speed: number | null;
+  cadence: number | null;
+  power: number | null;
   /** Cumulative metres, filled in by `withDistance`. */
   distance: number;
 }
@@ -189,7 +214,7 @@ function collectSamples(workout: StravaWorkout, points: readonly StravaPoint[]):
   const at = (ts: number): Sample => {
     let sample = bySecond.get(ts);
     if (!sample) {
-      sample = { ts, lat: null, lon: null, alt: null, hr: null, distance: 0 };
+      sample = { ts, lat: null, lon: null, alt: null, hr: null, speed: null, cadence: null, power: null, distance: 0 };
       bySecond.set(ts, sample);
     }
     return sample;
@@ -203,6 +228,9 @@ function collectSamples(workout: StravaWorkout, points: readonly StravaPoint[]):
     }
     if (p.alt !== null && Number.isFinite(p.alt)) sample.alt = p.alt;
     if (p.hr !== null && p.hr > 0 && p.hr < 255) sample.hr = Math.round(p.hr);
+    if (p.speed !== null && p.speed !== undefined && Number.isFinite(p.speed) && p.speed >= 0 && p.speed < 100) sample.speed = p.speed;
+    if (p.cadence !== null && p.cadence !== undefined && Number.isFinite(p.cadence) && p.cadence >= 0 && p.cadence < 500) sample.cadence = Math.round(p.cadence);
+    if (p.power !== null && p.power !== undefined && Number.isFinite(p.power) && p.power >= 0 && p.power < 4000) sample.power = Math.round(p.power);
   }
   at(workout.start);
   at(end);
@@ -246,6 +274,27 @@ function findPause(workout: StravaWorkout, samples: readonly Sample[]): Pause | 
 }
 
 /**
+ * Cumulative distance from the per-sample speed (m/s), scaled so the last sample is `total`. False (nothing written) when fewer than
+ * half of the samples carry a speed or they are all zero. A gap of more than 5 s between samples (a pause) adds nothing.
+ */
+function speedDistance(samples: Sample[], total: number): boolean {
+  const withSpeed = samples.filter((s) => s.speed !== null).length;
+  if (withSpeed * 2 < samples.length) return false;
+  const cumulative: number[] = [0];
+  for (let i = 1; i < samples.length; i++) {
+    const s = samples[i] as Sample;
+    const dt = s.ts - (samples[i - 1] as Sample).ts;
+    cumulative.push((cumulative[i - 1] as number) + (dt <= 5 ? (s.speed ?? 0) * dt : 0));
+  }
+  const sum = cumulative[cumulative.length - 1] as number;
+  if (!(sum > 0)) return false;
+  samples.forEach((s, i) => {
+    s.distance = ((cumulative[i] as number) * total) / sum;
+  });
+  return true;
+}
+
+/**
  * Fills `distance` on every sample. Distance is spread over the *active* time (the workout without its pause), so the
  * stream reads as moving the whole time the watch was running and as stopped exactly while it was paused:
  * - GPS fixes get the haversine path length scaled so the last fix is at the watch's total; the stretch before the first
@@ -274,8 +323,9 @@ function withDistance(samples: Sample[], total: number, pause: Pause | null): vo
   }
   const gpsTotal = cumulative[cumulative.length - 1] as number;
   if (fixes.length < 2 || !(gpsTotal > 0) || !(activeTotal > 0)) {
-    // No path to scale (no fixes, one fix, or all fixes on one spot): fall back to time.
-    for (const s of samples) s.distance = linear(s);
+    // No path to scale (no fixes, one fix, or all fixes on one spot): the samples' own speed if most have one (a bike trainer or
+    // a treadmill pod), else time.
+    if (!speedDistance(samples, total)) for (const s of samples) s.distance = linear(s);
     last.distance = total;
     return;
   }
@@ -321,6 +371,7 @@ const FIT = {
   eventTypeStart: 0,
   eventTypeStop: 1,
   eventTypeStopAll: 4,
+  lapTriggerManual: 0,
   lapTriggerSessionEnd: 7,
   sessionTriggerActivityEnd: 0,
   intensityActive: 0,
@@ -383,7 +434,7 @@ export interface BuiltFit {
 export function buildFit(
   workout: StravaWorkout,
   points: readonly StravaPoint[],
-  options: { utcOffsetSeconds?: number; device?: StravaDevice | null; sets?: readonly FitSet[] } = {},
+  options: { utcOffsetSeconds?: number; device?: StravaDevice | null; sets?: readonly FitSet[]; laps?: readonly StravaLap[] } = {},
 ): BuiltFit {
   const samples = collectSamples(workout, points);
   const total = workout.distance > 0 ? workout.distance : 0;
@@ -404,7 +455,11 @@ export function buildFit(
   const maxSpeed = workout.maxSpeed && workout.maxSpeed > 0 ? Math.max(workout.maxSpeed, avgSpeed ?? 0) : null;
   const foot = sport.fitSport === FIT_SPORT.running || sport.fitSport === FIT_SPORT.walking || sport.fitSport === FIT_SPORT.hiking;
   const strides = foot && workout.steps && workout.steps > 0 ? Math.round(workout.steps / 2) : null;
-  const avgCadence = strides !== null && timer > 0 ? Math.round(strides / (timer / 60)) : null;
+  /** FIT counts running and walking cadence per leg (strides per minute); the app keeps steps per minute on foot, rpm on a bike. */
+  const fitCadence = (c: number | null | undefined): number | null => (c === null || c === undefined || c < 0 ? null : Math.min(254, Math.round(foot ? c / 2 : c)));
+  const cadenceOf = (c: number | null | undefined): number | null => (c !== null && c !== undefined && c > 0 ? fitCadence(c) : null);
+  const avgCadence = strides !== null && timer > 0 ? Math.round(strides / (timer / 60)) : cadenceOf(workout.avgCadence);
+  const maxCadence = cadenceOf(workout.maxCadence);
   const ascent = workout.elevationGain !== null && workout.elevationGain !== undefined && workout.elevationGain >= 0 ? Math.round(workout.elevationGain) : null;
   const descent = workout.elevationLoss !== null && workout.elevationLoss !== undefined && workout.elevationLoss >= 0 ? Math.round(workout.elevationLoss) : null;
 
@@ -472,6 +527,13 @@ export function buildFit(
   if (total > 0) recordFields.push({ num: 5, type: 'uint32' });
   if (hasAlt) recordFields.push({ num: 2, type: 'uint16' }, { num: 78, type: 'uint32' });
   if (hasHr) recordFields.push({ num: 3, type: 'uint8' });
+  const hasCadence = samples.some((s) => s.cadence !== null);
+  const hasSpeed = samples.some((s) => s.speed !== null);
+  const hasPower = samples.some((s) => s.power !== null);
+  if (hasCadence) recordFields.push({ num: 4, type: 'uint8' });
+  // Speed is metres per second x 1000 in both the 16-bit and the enhanced 32-bit field.
+  if (hasSpeed) recordFields.push({ num: 6, type: 'uint16' }, { num: 73, type: 'uint32' });
+  if (hasPower) recordFields.push({ num: 7, type: 'uint16' });
   const record = fit.define(3, MESG.record, recordFields);
   // The watch's pause, if any, as a timer stop after the last record at or before its start and a timer start before the
   // first record at or after its end; Strava takes the moving time of a run from these events when a file has any.
@@ -493,6 +555,9 @@ export function buildFit(
     // Altitude is `(metres + 500) * 5` in both the 16-bit and the enhanced 32-bit field.
     if (hasAlt) values.push(s.alt === null ? null : (s.alt + 500) * 5, s.alt === null ? null : (s.alt + 500) * 5);
     if (hasHr) values.push(s.hr);
+    if (hasCadence) values.push(fitCadence(s.cadence));
+    if (hasSpeed) values.push(s.speed === null ? null : s.speed * 1000, s.speed === null ? null : s.speed * 1000);
+    if (hasPower) values.push(s.power);
     fit.write(record, values);
   }
 
@@ -534,34 +599,97 @@ export function buildFit(
     [long, 'sint32', fix && fix.lon !== null ? toSemicircles(fix.lon) : null],
   ];
   const calories = positive(workout.calories);
+  const laps = options.laps && options.laps.length >= 2 ? options.laps : null;
+  /** Average and peak of a channel over some samples; whole numbers, null when the stretch has no reading. */
+  const stats = (inLap: readonly Sample[], pick: (s: Sample) => number | null): { avg: number | null; max: number | null } => {
+    const values = inLap.map(pick).filter((v): v is number => v !== null);
+    return values.length === 0 ? { avg: null, max: null } : { avg: Math.round(values.reduce((a, b) => a + b, 0) / values.length), max: Math.max(...values) };
+  };
+  const power = stats(samples, (s) => s.power);
+  const sessionPower = {
+    avg: positive(workout.avgPower) ?? positive(power.avg),
+    max: positive(workout.maxPower) ?? positive(power.max),
+    normalized: positive(workout.normalizedPower),
+  };
 
-  message(4, MESG.lap, [
-    [253, 'uint32', toFitTime(end)],
-    [2, 'uint32', toFitTime(start)],
-    ...position(firstFix, 3, 4),
-    ...position(lastFix, 5, 6),
-    [7, 'uint32', elapsed * 1000],
-    [8, 'uint32', timer * 1000],
-    [9, 'uint32', total > 0 ? total * 100 : null],
-    [10, 'uint32', strides],
-    [11, 'uint16', calories],
-    [13, 'uint16', avgSpeed === null ? null : avgSpeed * 1000],
-    [14, 'uint16', maxSpeed === null ? null : maxSpeed * 1000],
-    [15, 'uint8', positive(workout.avgHr)],
-    [16, 'uint8', positive(workout.maxHr)],
-    [17, 'uint8', avgCadence],
-    [21, 'uint16', ascent],
-    [22, 'uint16', descent],
-    [0, 'enum', FIT.eventLap],
-    [1, 'enum', FIT.eventTypeStop],
-    [23, 'enum', FIT.intensityActive],
-    [24, 'enum', FIT.lapTriggerSessionEnd],
-    [25, 'enum', sport.fitSport],
-    [39, 'enum', sport.fitSubSport],
-    [110, 'uint32', avgSpeed === null ? null : avgSpeed * 1000],
-    [111, 'uint32', maxSpeed === null ? null : maxSpeed * 1000],
-    [254, 'uint16', 0],
-  ]);
+  if (laps) {
+    laps.forEach((lap, index) => {
+      const last = index === laps.length - 1;
+      const lapStart = index === 0 ? start : Math.min(Math.max(lap.startTs, start), end);
+      const lapEnd = last ? end : Math.min(Math.max(lap.endTs, lapStart), end);
+      const inLap = samples.filter((s) => s.ts >= lapStart && s.ts <= lapEnd);
+      const lapFixes = inLap.filter((s) => s.lat !== null && s.lon !== null);
+      const lapElapsed = lapEnd - lapStart;
+      const lapPause = pause ? Math.max(0, Math.min(lapEnd, pause.end) - Math.max(lapStart, pause.start)) : 0;
+      const lapTimer = Math.max(0, lapElapsed - lapPause);
+      const firstSample = inLap[0];
+      const lastSample = inLap[inLap.length - 1];
+      const lapDistance =
+        lap.distanceM !== null && lap.distanceM > 0
+          ? lap.distanceM
+          : firstSample && lastSample && total > 0
+            ? lastSample.distance - firstSample.distance
+            : 0;
+      const lapSpeed = lapDistance > 0 && lapTimer > 0 ? lapDistance / lapTimer : null;
+      const lapSpeedMax = stats(inLap, (s) => s.speed).max;
+      const lapPower = stats(inLap, (s) => s.power);
+      message(4, MESG.lap, [
+        [253, 'uint32', toFitTime(lapEnd)],
+        [2, 'uint32', toFitTime(lapStart)],
+        ...position(lapFixes[0], 3, 4),
+        ...position(lapFixes[lapFixes.length - 1], 5, 6),
+        [7, 'uint32', lapElapsed * 1000],
+        [8, 'uint32', lapTimer * 1000],
+        [9, 'uint32', lapDistance > 0 ? lapDistance * 100 : null],
+        [13, 'uint16', lapSpeed === null ? null : lapSpeed * 1000],
+        [14, 'uint16', lapSpeedMax === null ? null : Math.max(lapSpeedMax, lapSpeed ?? 0) * 1000],
+        [15, 'uint8', positive(lap.avgHr)],
+        [16, 'uint8', positive(lap.maxHr)],
+        [17, 'uint8', cadenceOf(lap.avgCadence)],
+        [19, 'uint16', positive(lapPower.avg)],
+        [20, 'uint16', positive(lapPower.max)],
+        [0, 'enum', FIT.eventLap],
+        [1, 'enum', FIT.eventTypeStop],
+        [23, 'enum', FIT.intensityActive],
+        [24, 'enum', last ? FIT.lapTriggerSessionEnd : FIT.lapTriggerManual],
+        [25, 'enum', sport.fitSport],
+        [39, 'enum', sport.fitSubSport],
+        [110, 'uint32', lapSpeed === null ? null : lapSpeed * 1000],
+        [254, 'uint16', index],
+      ]);
+    });
+  } else {
+    message(4, MESG.lap, [
+      [253, 'uint32', toFitTime(end)],
+      [2, 'uint32', toFitTime(start)],
+      ...position(firstFix, 3, 4),
+      ...position(lastFix, 5, 6),
+      [7, 'uint32', elapsed * 1000],
+      [8, 'uint32', timer * 1000],
+      [9, 'uint32', total > 0 ? total * 100 : null],
+      [10, 'uint32', strides],
+      [11, 'uint16', calories],
+      [13, 'uint16', avgSpeed === null ? null : avgSpeed * 1000],
+      [14, 'uint16', maxSpeed === null ? null : maxSpeed * 1000],
+      [15, 'uint8', positive(workout.avgHr)],
+      [16, 'uint8', positive(workout.maxHr)],
+      [17, 'uint8', avgCadence],
+      [18, 'uint8', maxCadence],
+      [19, 'uint16', sessionPower.avg],
+      [20, 'uint16', sessionPower.max],
+      [21, 'uint16', ascent],
+      [22, 'uint16', descent],
+      [0, 'enum', FIT.eventLap],
+      [1, 'enum', FIT.eventTypeStop],
+      [23, 'enum', FIT.intensityActive],
+      [24, 'enum', FIT.lapTriggerSessionEnd],
+      [25, 'enum', sport.fitSport],
+      [39, 'enum', sport.fitSubSport],
+      [110, 'uint32', avgSpeed === null ? null : avgSpeed * 1000],
+      [111, 'uint32', maxSpeed === null ? null : maxSpeed * 1000],
+      [254, 'uint16', 0],
+    ]);
+  }
 
   message(5, MESG.session, [
     [253, 'uint32', toFitTime(end)],
@@ -579,11 +707,15 @@ export function buildFit(
     [16, 'uint8', positive(workout.avgHr)],
     [17, 'uint8', positive(workout.maxHr)],
     [18, 'uint8', avgCadence],
+    [19, 'uint8', maxCadence],
+    [20, 'uint16', sessionPower.avg],
+    [21, 'uint16', sessionPower.max],
     [22, 'uint16', ascent],
     [23, 'uint16', descent],
     [25, 'uint16', 0],
-    [26, 'uint16', 1],
+    [26, 'uint16', laps ? laps.length : 1],
     [28, 'enum', FIT.sessionTriggerActivityEnd],
+    [34, 'uint16', sessionPower.normalized],
     [0, 'enum', FIT.eventSession],
     [1, 'enum', FIT.eventTypeStop],
     [124, 'uint32', avgSpeed === null ? null : avgSpeed * 1000],
