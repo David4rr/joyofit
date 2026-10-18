@@ -4,11 +4,12 @@
 // the README is stale.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 type Group = { id: 'doing' | 'next' | 'later'; title: string; items: string[] };
 type Roadmap = { product: string; updated: string; groups: Group[] };
 
-const ROOT = join(import.meta.dir, '..');
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const README = join(ROOT, 'README.md');
 const START = '<!-- roadmap:start -->';
 const END = '<!-- roadmap:end -->';
