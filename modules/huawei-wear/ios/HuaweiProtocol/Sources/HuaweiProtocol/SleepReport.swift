@@ -80,7 +80,8 @@ public enum SleepReport {
         return kept
     }
 
-    /// The latest session of `segments`, chained with gaps up to `sessionGapSec` (`lastSleepSession` in `stats.ts`).
+    /// The latest session of `segments`, chained with gaps up to `sessionGapSec` and cut where a segment is `breakBefore`
+    /// (`lastSleepSession` in `stats.ts`).
     public static func lastNight(_ segments: [SleepSegment]) -> SleepNight? {
         if segments.isEmpty { return nil }
         // Stable by start, like Kotlin's sortedBy.
@@ -90,7 +91,7 @@ public enum SleepReport {
         guard !sorted.isEmpty else { return nil }
         var first = sorted.count - 1
         var earliest = sorted[first].start
-        while first > 0 && earliest - sorted[first - 1].end <= sessionGapSec {
+        while first > 0 && !sorted[first].breakBefore && earliest - sorted[first - 1].end <= sessionGapSec {
             first -= 1
             earliest = min(earliest, sorted[first].start)
         }

@@ -35,9 +35,7 @@ public enum HealthModelData {
         let newest = scalar(db, "SELECT MAX(timestamp) FROM step_samples WHERE timestamp >= ? AND timestamp < ?", from, to)
         let exerciseSeconds = scalar(db, "SELECT COALESCE(SUM(duration), 0) FROM workouts WHERE start >= ? AND start < ?", from, to) ?? 0
         // A night counts on the day it ends; awake spans are not sleep.
-        let sleepSeconds = scalar(
-            db, "SELECT COALESCE(SUM(end - start), 0) FROM sleep_segments WHERE end > ? AND end <= ? AND (stage IS NULL OR stage != 'awake')", from, to
-        ).flatMap { $0 > 0 ? $0 : nil }
+        let sleepSeconds = cleanedSleepSeconds(db, from, to)
         let stress = scalar(db, "SELECT COUNT(*) FROM health_metrics WHERE type = 'emotion' AND ts >= ? AND ts < ?", from, to) ?? 0
         let bp = scalar(db, "SELECT COUNT(*) FROM health_metrics WHERE type = 'blood_pressure' AND ts >= ? AND ts < ?", from, to) ?? 0
         let dateText = String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
@@ -70,6 +68,13 @@ public enum HealthModelData {
             }
         }
         return sum
+    }
+
+    /// Seconds of cleaned sleep (`SleepStore`) in the segments that end in (`from`, `to`]; nil when there is none or the table is not there yet.
+    private static func cleanedSleepSeconds(_ db: SQLiteDatabase, _ from: Int64, _ to: Int64) -> Int64? {
+        guard let segments = try? SleepStore.load(db, endFromSec: from + 1, endBeforeSec: to + 1, importedOnly: false) else { return nil }
+        let total = segments.reduce(Int64(0)) { $0 + ($1.stage == "awake" ? 0 : max(0, $1.end - $1.start)) }
+        return total > 0 ? total : nil
     }
 
     private static func scalar(_ db: SQLiteDatabase, _ sql: String, _ args: Int64...) -> Int64? {

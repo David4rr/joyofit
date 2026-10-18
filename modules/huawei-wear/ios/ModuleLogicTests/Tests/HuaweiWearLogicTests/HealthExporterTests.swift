@@ -220,29 +220,99 @@ final class HealthExporterTests: XCTestCase {
         XCTAssertFalse(exporter.exporting)
     }
 
-    func testSleepIsWrittenAsSessionsWithTheRangeToReplace() async throws {
+    private func insertSleep(_ rows: [(Int64, Int64, Int, String?)]) throws {
         try store.read { db in
-            for (start, end, type, stage) in [(1_000, 2_000, 6, "light"), (2_000, 2_600, 7, "deep"), (50_000, 51_000, 1, nil as String?)] {
-                try db.run("INSERT INTO sleep_segments (start, end, type, stage) VALUES (?, ?, ?, ?)", [.int(Int64(start)), .int(Int64(end)), .int(Int64(type)), .string(stage)])
+            for (start, end, type, stage) in rows {
+                try db.run("INSERT INTO sleep_segments (start, end, type, stage) VALUES (?, ?, ?, ?)", [.int(start), .int(end), .int(Int64(type)), .string(stage)])
             }
         }
+    }
+
+    private func insertWorkout(start: Int64, end: Int64) throws {
+        try store.read { db in
+            try db.run(
+                """
+                INSERT INTO workouts (workout_number, start, end, sport_type, sport_name, distance, calories, duration, steps, summary_json, complete)
+                VALUES (1, ?, ?, 1, 'Run', 0, 0, ?, 0, '{}', 1)
+                """,
+                [.int(start), .int(end), .int(end - start)]
+            )
+        }
+    }
+
+    private func syncSummary(from: Int64) -> SyncSummary {
+        SyncSummary(from: from, to: from + 1_000, samples: 0, sleep: 0, totalSteps: 0, totalCalories: 0, totalDistance: 0)
+    }
+
+    func testSleepIsWrittenAsSessionsAndEverySleepSampleOfOursFromTheStartIsReplaced() async throws {
+        // The last span has no stage and is over 20 minutes: a nap, kept by the cleaning.
+        try insertSleep([(1_000, 2_000, 6, "light"), (2_000, 2_600, 7, "deep"), (50_000, 51_300, 1, nil)])
         let counts = try await exporter.backfill()
         XCTAssertEqual(counts.sleep, 3)
         let sleep = writer.sleeps()
         XCTAssertEqual(sleep.count, 1)
         XCTAssertEqual(sleep[0].sessions.map(\.id), ["joyofit:sleep:1000", "joyofit:sleep:50000"])
-        XCTAssertEqual(sleep[0].from, 1_000)
-        XCTAssertEqual(sleep[0].to, 51_000)
+        XCTAssertEqual(sleep[0].from, 0)
+        XCTAssertEqual(sleep[0].to, HealthKitPlan.sleepReplaceEndSec, "open-ended: a stale session after the last planned one goes too")
+        XCTAssertEqual(settings.sleepRulesVersion, SleepCleaning.rulesVersion)
     }
 
     func testASyncWindowReachesBackForTheNightThatStraddlesIt() async throws {
-        try store.read { db in
-            try db.run("INSERT INTO sleep_segments (start, end, type, stage) VALUES (?, ?, 6, 'light')", [.int(1_000_000 - 5 * 3600), .int(1_000_000 - 3600)])
-        }
+        try insertSleep([(1_000_000 - 5 * 3600, 1_000_000 - 3600, 6, "light")])
         settings.enabled = true
-        exporter.onSyncComplete(SyncSummary(from: 1_000_000, to: 1_001_000, samples: 0, sleep: 0, totalSteps: 0, totalCalories: 0, totalDistance: 0))
+        settings.sleepRulesVersion = SleepCleaning.rulesVersion
+        exporter.onSyncComplete(syncSummary(from: 1_000_000))
         await eventually("the sleep export") { !writer.sleeps().isEmpty }
         XCTAssertEqual(writer.sleeps().first?.sessions.count, 1, "36 h of sleep lookback plus the day before: the whole night is seen")
+        XCTAssertEqual(writer.sleeps().first?.from, 1_000_000 - HealthExporter.sleepLookbackSec)
+    }
+
+    func testFragmentsThatWereExportedAsANapAreReplacedByNothing() async throws {
+        // Three stress-check fragments of 1 to 3 minutes: written as a 7 minute "nap" by the earlier rules.
+        try insertSleep([(1_000_000, 1_000_060, 6, nil), (1_000_300, 1_000_420, 6, nil), (1_001_000, 1_001_180, 6, nil)])
+        settings.enabled = true
+        exporter.onSyncComplete(syncSummary(from: 1_000_000))
+        await eventually("the sleep export") { !writer.sleeps().isEmpty }
+        let sleep = writer.sleeps()
+        XCTAssertEqual(sleep.count, 1)
+        XCTAssertEqual(sleep[0].sessions, [], "no session is planned any more")
+        XCTAssertEqual(sleep[0].from, 0, "but the range is cleared, which removes the old nap")
+        XCTAssertEqual(sleep[0].to, HealthKitPlan.sleepReplaceEndSec)
+        await eventually("the rules version") { settings.sleepRulesVersion == SleepCleaning.rulesVersion }
+    }
+
+    func testTheWholeHistoryIsRewrittenOnceAfterTheRulesChangeAndAWindowAfterThat() async throws {
+        let oldNight: Int64 = 100_000
+        let recent: Int64 = 5_000_000
+        try insertSleep([(oldNight, oldNight + 20_000, 6, "light"), (recent, recent + 20_000, 6, "light")])
+        settings.enabled = true
+        exporter.onSyncComplete(syncSummary(from: recent))
+        await eventually("the repair export") { !writer.sleeps().isEmpty }
+        XCTAssertEqual(writer.sleeps()[0].sessions.map(\.startSec), [oldNight, recent], "the first export after the update plans every stored night")
+        XCTAssertEqual(writer.sleeps()[0].from, 0)
+        await eventually("the rules version") { settings.sleepRulesVersion == SleepCleaning.rulesVersion }
+
+        exporter.onSyncComplete(syncSummary(from: recent))
+        await eventually("the second export") { writer.sleeps().count == 2 }
+        XCTAssertEqual(writer.sleeps()[1].sessions.map(\.startSec), [recent], "later exports only cover their window")
+        XCTAssertEqual(writer.sleeps()[1].from, recent - HealthExporter.sleepLookbackSec)
+    }
+
+    func testWithoutSleepPermissionTheRepairWaits() async throws {
+        try insertSleep([(1_000, 2_000, 6, "light")])
+        writer.allowed = [.steps]
+        _ = try await exporter.backfill()
+        XCTAssertTrue(writer.sleeps().isEmpty)
+        XCTAssertEqual(settings.sleepRulesVersion, 0, "not marked: it runs when the permission is granted")
+    }
+
+    func testAWorkoutBetweenTwoStageLessRunsSplitsTheNightIntoTwoSessions() async throws {
+        let before: (Int64, Int64) = (100_000, 100_000 + 5 * 3600 + 1_800)
+        let after: (Int64, Int64) = (before.1 + 3_600, before.1 + 3_600 + 9_000)
+        try insertSleep([(before.0, before.1, 6, nil), (after.0, after.1, 6, nil)])
+        try insertWorkout(start: before.1 + 600, end: before.1 + 3_000)
+        _ = try await exporter.backfill()
+        XCTAssertEqual(writer.sleeps()[0].sessions.map { [$0.startSec, $0.endSec] }, [[before.0, before.1], [after.0, after.1]])
     }
 
     func testWorkoutsAreWrittenOnceAndAgainOnlyWhenChangedOrBackfilled() async throws {

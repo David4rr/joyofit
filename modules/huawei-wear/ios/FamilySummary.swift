@@ -158,10 +158,7 @@ public enum FamilySummary {
                 }
             }
             if scopes.sleep, let first = windows.first, let last = windows.last {
-                let segments = try db.query(
-                    "SELECT start, end, type, stage FROM sleep_segments WHERE imported = 0 AND end >= ? AND end < ? ORDER BY start",
-                    [.int(first.nightFromSec - sleepContextSec), .int(last.nightToSec)]
-                ) { SleepSegment(start: $0.int64(0), end: $0.int64(1), type: $0.int(2), stage: $0.text(3)) }
+                let segments = try SleepStore.load(db, endFromSec: first.nightFromSec - sleepContextSec, endBeforeSec: last.nightToSec, importedOnly: true)
                 for (i, w) in windows.enumerated() {
                     rows[i].sleepMin = sleepMinutes(segments, fromSec: w.nightFromSec, toSec: w.nightToSec)
                 }

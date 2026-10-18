@@ -64,9 +64,7 @@ public final class SleepReportFeature: DataSyncFeature, @unchecked Sendable {
     /// The newest night with stages, from the stored segments of the last 36 hours.
     private func latestNight(nowSec: Int64) throws -> SleepNight? {
         let segments = try syncStore.read { db in
-            try db.query("SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start", [.int(nowSec - Self.lookbackSec)]) {
-                SleepSegment(start: $0.int64(0), end: $0.int64(1), type: $0.int(2), stage: $0.isNull(3) ? nil : $0.text(3))
-            }
+            try SleepStore.load(db, endFromSec: nowSec - Self.lookbackSec, importedOnly: false)
         }
         return SleepReport.lastNight(segments)
     }

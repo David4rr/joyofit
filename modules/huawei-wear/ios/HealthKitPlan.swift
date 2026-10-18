@@ -229,7 +229,24 @@ public enum HealthKitPlan {
         return kept
     }
 
-    /// Groups sleep spans into sessions (a gap over `sleepSessionGapSec` starts a new one) and turns each into ordered, non-overlapping stages.
+    /// The end of the time range whose sleep samples are replaced: open-ended (year 2100), so a stale session written by an earlier rule set
+    /// after the last planned one goes too.
+    public static let sleepReplaceEndSec: Int64 = 4_102_444_800
+
+    /// Where a sleep export reads from: the sync window's start, or the very beginning once after the sleep rules changed (`storedRulesVersion`
+    /// is the version of the rules that wrote the Health samples, 0 for none), so the sessions an earlier version wrote are rewritten too.
+    public static func sleepExportFrom(windowFromSec: Int64, storedRulesVersion: Int) -> Int64 {
+        storedRulesVersion < SleepCleaning.rulesVersion ? 0 : windowFromSec
+    }
+
+    /// The range of this app's own sleep samples to delete before `sessions` are saved: from the export's start (or the first session, if a
+    /// night that began earlier reaches into it) to the end of time. Deleting only [first session, last session) would leave behind the old
+    /// sessions the cleaning no longer plans, such as a "nap" made of HRV checks; with no session left the whole window is cleared.
+    public static func sleepReplaceRange(sessions: [SleepPlan], fromSec: Int64) -> (fromSec: Int64, toSec: Int64) {
+        (min(fromSec, sessions.map(\.startSec).min() ?? fromSec), sleepReplaceEndSec)
+    }
+
+    /// Groups sleep spans into sessions (a gap over `sleepSessionGapSec`, or a segment marked `breakBefore` by `SleepCleaning`, starts a new one) and turns each into ordered, non-overlapping stages.
     /// Where spans overlap, the earlier-starting one keeps the time. Sessions that end before `fromSec` are left out, so a window can reach back
     /// far enough to see a whole night without rewriting older ones.
     public static func sleepSessions(_ segments: [SleepSegment], fromSec: Int64) -> [SleepPlan] {
@@ -246,7 +263,7 @@ public enum HealthKitPlan {
         let sorted = withoutBlips(withoutStrayUnstaged(segments))
         for s in sorted {
             if s.end <= s.start { continue }
-            if !stages.isEmpty && s.start - cursor > sleepSessionGapSec { close() }
+            if !stages.isEmpty && (s.breakBefore || s.start - cursor > sleepSessionGapSec) { close() }
             let start = stages.isEmpty ? s.start : max(s.start, cursor)
             if s.end <= start { continue }
             let kind = stageKind(s.stage)

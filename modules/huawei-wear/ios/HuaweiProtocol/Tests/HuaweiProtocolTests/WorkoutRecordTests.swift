@@ -324,7 +324,7 @@ final class WorkoutRecordTests: XCTestCase {
     func testSamplePointsKeepSpeedCadenceStrideAndPowerInSiUnits() throws {
         let parts = WorkoutParts(totals: try totalsResponse { $0.put(0x14, byte: 1) })
         parts.samples = [
-            sample(hr: 150, speed: 31, cadence: 172, stepLength: 105, power: 240, timestamp: 1_700_000_000),
+            sample(hr: Int8(truncatingIfNeeded: 150), speed: 31, cadence: 172, stepLength: 105, power: 240, timestamp: 1_700_000_000),
             // Zero and -1 are "no reading"; a sample with nothing else is dropped.
             sample(speed: 0, cadence: 0, stepLength: 0, power: 0, timestamp: 1_700_000_005),
             sample(timestamp: 1_700_000_010),

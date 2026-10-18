@@ -68,6 +68,7 @@ public final class HealthExportSettings: @unchecked Sendable {
         static let lastError = "last_error"
         static let workouts = "exported_workouts"
         static let counts = "last_counts"
+        static let sleepRules = "sleep_rules_version"
     }
 
     public init(defaults: UserDefaults? = nil) {
@@ -94,6 +95,13 @@ public final class HealthExportSettings: @unchecked Sendable {
     public var exportedWorkouts: Set<String> {
         get { Set(defaults.stringArray(forKey: Key.workouts) ?? []) }
         set { defaults.set(Array(newValue).sorted(), forKey: Key.workouts) }
+    }
+
+    /// `SleepCleaning.rulesVersion` of the rules the Health sleep samples were last rewritten under, 0 before the first export. Lower than the
+    /// current version, the next sleep export rewrites the whole history once.
+    public var sleepRulesVersion: Int {
+        get { defaults.integer(forKey: Key.sleepRules) }
+        set { defaults.set(newValue, forKey: Key.sleepRules) }
     }
 
     public var lastCounts: String? {
@@ -350,15 +358,21 @@ public final class HealthExporter: @unchecked Sendable {
         _ granted: Set<HealthRecordType>, _ version: Int64, _ device: HealthDevice, fromSec: Int64, _ counts: inout HealthExportCounts
     ) async throws {
         guard granted.contains(.sleepSession) else { return }
+        // After a change of the sleep rules the whole history is planned and replaced once, so no session of the old rules stays next to the
+        // corrected ones.
+        let fromSec = HealthKitPlan.sleepExportFrom(windowFromSec: fromSec, storedRulesVersion: settings.sleepRulesVersion)
         // Read a day before the window so a night that began before it is seen whole.
-        let segments: [SleepSegment] = try syncStore.read { db in
-            try db.query("SELECT start, end, type, stage FROM sleep_segments WHERE imported = 0 AND end >= ? ORDER BY start", [.int(fromSec - 24 * 3600)]) { s in
-                SleepSegment(start: s.int64(0), end: s.int64(1), type: s.int(2), stage: s.text(3))
-            }
+        let (stored, segments): (Int, [SleepSegment]) = try syncStore.read { db in
+            let stored = try db.query("SELECT COUNT(*) FROM sleep_segments WHERE imported = 0 AND end >= ?", [.int(fromSec - 24 * 3600)]) { $0.int(0) }.first ?? 0
+            return (stored, try SleepStore.load(db, endFromSec: fromSec - 24 * 3600, importedOnly: true))
         }
-        let sessions = HealthKitPlan.sleepSessions(segments, fromSec: fromSec)
-        guard let first = sessions.map(\.startSec).min(), let last = sessions.map(\.endSec).max() else { return }
-        counts.sleep += try await writer.write(.sleep(sessions, replaceFromSec: first, replaceToSec: last), device: device, version: version)
+        // Stored rows that the cleaning drops entirely still clear the range: an earlier version may have exported them as a session.
+        if stored > 0 {
+            let sessions = HealthKitPlan.sleepSessions(segments, fromSec: fromSec)
+            let range = HealthKitPlan.sleepReplaceRange(sessions: sessions, fromSec: fromSec)
+            counts.sleep += try await writer.write(.sleep(sessions, replaceFromSec: range.fromSec, replaceToSec: range.toSec), device: device, version: version)
+        }
+        settings.sleepRulesVersion = SleepCleaning.rulesVersion
     }
 
     /// Completed workouts not written yet (or changed since: the signature covers the end, energy, distance and the number of stored heart-rate
