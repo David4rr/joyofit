@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { Chip } from '@/components/Chip';
+import { ChipRow } from '@/components/ChipRow';
 import { Input } from '@/components/Input';
 import { Screen } from '@/components/Screen';
 import { EmptyState } from '@/components/States';
@@ -34,16 +34,10 @@ export default function LibraryScreen() {
   return (
     <Screen>
       <Input icon="search" value={query} onChangeText={setQuery} placeholder={t('library.search')} autoCorrect={false} autoCapitalize="none" />
-      <View style={styles.chips}>
-        {SETTINGS.map((s) => (
-          <Chip key={s} label={t(`library.setting.${s}`)} selected={setting === s} onPress={() => setSetting(s)} />
-        ))}
-      </View>
-      <View style={styles.chips}>
-        {PATTERNS.map((p) => (
-          <Chip key={p} label={t(`pattern.${p}`)} selected={pattern === p} onPress={() => setPattern(pattern === p ? null : p)} />
-        ))}
-      </View>
+      <ChipRow items={SETTINGS.map((s) => ({ key: s, label: t(`library.setting.${s}`), selected: setting === s, onPress: () => setSetting(s) }))} />
+      <ChipRow
+        items={PATTERNS.map((p) => ({ key: p, label: t(`pattern.${p}`), selected: pattern === p, onPress: () => setPattern(pattern === p ? null : p) }))}
+      />
       <AppText variant="caption" muted>
         {t('library.count', { n: fmtInt(results.length) })}
       </AppText>
@@ -70,6 +64,5 @@ export default function LibraryScreen() {
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   list: { gap: spacing.xs },
 });

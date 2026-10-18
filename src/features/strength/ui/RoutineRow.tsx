@@ -40,7 +40,7 @@ export const RoutineRow = memo(function RoutineRow({ routine, catalog, onOpen, o
         onPress={() => onOpen(routine)}
         scaleTo={0.985}
         style={styles.main}>
-        <AppText variant="bodyStrong" numberOfLines={1}>
+        <AppText variant="bodyStrong" numberOfLines={2}>
           {routine.name}
         </AppText>
         {summary.length > 0 ? (

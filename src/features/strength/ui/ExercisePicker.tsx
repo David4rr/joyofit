@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Image, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { ChipRow } from '@/components/ChipRow';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { IconChip } from '@/components/IconChip';
 import { Field, Input } from '@/components/Input';
@@ -16,7 +17,7 @@ import { EmptyState } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
 import { exerciseImageUrl, muscleList } from '@/features/coach/exercises';
 import { useLocale, type Locale } from '@/i18n';
-import { HIT, spacing, useColors, useTheme } from '@/theme';
+import { HIT, spacing, useColors } from '@/theme';
 
 import { exercisesUsed } from '../calc';
 import type { Catalog, CatalogExercise } from '../catalog';
@@ -160,17 +161,17 @@ export function ExercisePicker({ visible, onClose, onPick, selected = [], multi 
         </View>
 
         <View style={styles.filters}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.chips}>
-            <Chip label={t('strength:picker.mine')} selected={customOnly} role="checkbox" onPress={() => setCustomOnly((v) => !v)} />
-            {muscleList.map((m) => (
-              <Chip key={m} label={t(`coach:muscle.${m}`)} selected={muscle === m} onPress={() => setMuscle(muscle === m ? null : m)} />
-            ))}
-          </ScrollView>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.chips}>
-            {EQUIPMENT.map((e) => (
-              <Chip key={e} label={t(`coach:equipment.${e}`)} selected={equipment === e} onPress={() => setEquipment(equipment === e ? null : e)} />
-            ))}
-          </ScrollView>
+          <ChipRow
+            bleed={false}
+            items={[
+              { key: 'mine', label: t('strength:picker.mine'), selected: customOnly, role: 'checkbox', onPress: () => setCustomOnly((v) => !v) },
+              ...muscleList.map((m) => ({ key: m, label: t(`coach:muscle.${m}`), selected: muscle === m, onPress: () => setMuscle(muscle === m ? null : m) })),
+            ]}
+          />
+          <ChipRow
+            bleed={false}
+            items={EQUIPMENT.map((e) => ({ key: e, label: t(`coach:equipment.${e}`), selected: equipment === e, onPress: () => setEquipment(equipment === e ? null : e) }))}
+          />
         </View>
 
         <FlatList
@@ -424,7 +425,6 @@ const styles = StyleSheet.create({
   iconButton: { width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' },
   search: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   filters: { gap: 2, paddingBottom: spacing.xs },
-  chips: { gap: spacing.sm, paddingHorizontal: spacing.lg, alignItems: 'center' },
   list: { flex: 1 },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
   sectionHeader: { height: HEADER_HEIGHT, justifyContent: 'flex-end', paddingBottom: 4 },

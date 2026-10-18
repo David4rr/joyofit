@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { Chip } from '@/components/Chip';
+import { ChipRow } from '@/components/ChipRow';
 import { IconChip } from '@/components/IconChip';
 import { KeyValue } from '@/components/KeyValue';
 import { PressableScale } from '@/components/PressableScale';
@@ -149,11 +149,12 @@ export default function StrengthExerciseScreen() {
       ) : (
         <>
           <Section title={t('exercise.progress')} icon="trending-up" tint="workouts">
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              {metrics.map((m) => (
-                <Chip key={m} label={metricLabel(m)} selected={m === metric} role="radio" onPress={() => setMetricPick(m)} />
-              ))}
-            </ScrollView>
+            <ChipRow
+              bleed={false}
+              inset={0}
+              fadeColor={colors.card}
+              items={metrics.map((m) => ({ key: m, label: metricLabel(m), selected: m === metric, role: 'radio' as const, onPress: () => setMetricPick(m) }))}
+            />
             <Segmented options={rangeOptions} value={range} onChange={setRangePick} />
             {metric ? (
               LINE_METRICS.includes(metric) ? (
@@ -343,7 +344,6 @@ const styles = StyleSheet.create({
   thumb: { width: 72, height: 72, borderRadius: 12 },
   none: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   centered: { textAlign: 'center' },
-  chips: { gap: spacing.sm, paddingRight: spacing.sm },
   record: { minHeight: 40, justifyContent: 'center' },
   tableHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   tableRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 40 },

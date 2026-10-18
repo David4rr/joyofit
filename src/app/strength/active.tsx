@@ -138,6 +138,7 @@ export default function ActiveWorkoutScreen() {
   const [permission, setPermission] = useState<RestPermission>('blocked');
   const [restOver, setRestOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
 
   const [picker, setPicker] = useState<Picker>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
@@ -574,19 +575,8 @@ export default function ActiveWorkoutScreen() {
           <Ionicons name={editing ? 'close' : 'chevron-down'} size={26} color={colors.foreground} />
         </PressableScale>
         <View style={styles.headerText}>
-          <TextInput
-            accessibilityLabel={t('strength:active.nameLabel')}
-            value={draft.name}
-            onChangeText={(name) => update((d) => ({ ...d, name }))}
-            placeholder={editing ? original?.name : defaultWorkoutName(draft.startedAt)}
-            placeholderTextColor={colors.mutedForeground}
-            selectTextOnFocus
-            maxLength={60}
-            returnKeyType="done"
-            style={[styles.nameInput, { color: colors.foreground, fontFamily: fonts.bold }]}
-          />
           {editing ? (
-            <AppText variant="caption" muted>
+            <AppText variant="caption" muted numberOfLines={1}>
               {t('strength:active.editing', { done: progress.doneSets })}
             </AppText>
           ) : (
@@ -612,6 +602,25 @@ export default function ActiveWorkoutScreen() {
         <PressableScale accessibilityRole="button" accessibilityLabel={t('strength:active.more')} onPress={() => setOverflow(true)} style={styles.iconButton}>
           <Ionicons name="ellipsis-vertical" size={22} color={colors.foreground} />
         </PressableScale>
+      </View>
+      {/* The name gets its own full-width row. On the same row as four buttons the field was only a little wider than a short name, and
+          Android scrolled the text under the left edge once the cursor sat at its end ("Iome, dumbbells"). */}
+      <View style={styles.nameRow}>
+        <TextInput
+          accessibilityLabel={t('strength:active.nameLabel')}
+          value={draft.name}
+          onChangeText={(name) => update((d) => ({ ...d, name }))}
+          onFocus={() => setNameFocused(true)}
+          onBlur={() => setNameFocused(false)}
+          // At rest the caret is parked at the start, so a long name shows its beginning instead of staying scrolled to its end.
+          selection={nameFocused ? undefined : { start: 0, end: 0 }}
+          placeholder={editing ? original?.name : defaultWorkoutName(draft.startedAt)}
+          placeholderTextColor={colors.mutedForeground}
+          selectTextOnFocus
+          maxLength={60}
+          returnKeyType="done"
+          style={[styles.nameInput, { color: colors.foreground, fontFamily: fonts.bold }]}
+        />
       </View>
 
       <ScrollView
@@ -904,8 +913,9 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, minHeight: 60 },
   iconButton: { width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' },
-  headerText: { flex: 1, minWidth: 0 },
-  nameInput: { fontSize: fontSize.lg, padding: 0, minHeight: 28 },
+  headerText: { flex: 1, minWidth: 0, paddingLeft: spacing.xs },
+  nameRow: { paddingHorizontal: spacing.md, paddingBottom: spacing.xs },
+  nameInput: { fontSize: fontSize.lg, paddingVertical: 0, paddingHorizontal: 0, minHeight: 32 },
   finish: { minHeight: 40, paddingHorizontal: spacing.md },
   scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xxl, gap: spacing.md },
