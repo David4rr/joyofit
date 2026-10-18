@@ -36,14 +36,16 @@ class RecordingService : Service() {
       if (!WorkoutSession.isActive) stopSelf()
     } catch (e: RuntimeException) {
       // SecurityException (missing permission for the type), ForegroundServiceStartNotAllowedException, IllegalStateException.
+      // The session carries on without this service (GPS, wake lock), so only the service stops, not the session.
       WorkoutSession.serviceFailed(e)
+      stopSelf()
     }
     // A session cannot survive the process: the JS state it belongs to is gone with it.
     return START_NOT_STICKY
   }
 
   override fun onDestroy() {
-    WorkoutSession.end(this)
+    WorkoutSession.serviceDestroyed(this)
     super.onDestroy()
   }
 }

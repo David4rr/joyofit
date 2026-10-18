@@ -54,7 +54,8 @@ declare class BleSensorsModule extends NativeModule<BleSensorsModuleEvents> {
    *   `bluetooth-central` background mode.
    * With `gps` it also starts GPS fixes, delivered as `onLocation` about once a second. Calling it while a session runs only updates
    * the options. Rejects with ERR_LOCATION_PERMISSION (`gps` without precise location), ERR_SERVICE_NOT_ALLOWED (Android refused
-   * the foreground service; the caller continues without it and warns the user).
+   * the foreground service: GPS fixes and the wake lock run anyway and the promise rejects only after they started, so the caller
+   * continues and warns that the recording may stop with the screen locked).
    */
   startWorkoutSession(options: WorkoutSessionOptions): Promise<void>;
   /** Android: replaces the notification text. iOS: no-op. */

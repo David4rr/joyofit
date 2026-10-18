@@ -16,7 +16,8 @@ import kotlinx.coroutines.withTimeout
 
 /**
  * The phone side of a recorded workout: the [RecordingService] that keeps the process alive, a partial wake lock, and the GPS
- * fixes. Process-wide like [SensorHub], because the service and the recording outlive the JS runtime.
+ * fixes. Process-wide like [SensorHub], because the service and the recording outlive the JS runtime. Android may refuse the
+ * service (see [SessionPolicy]); the fixes and the wake lock then run without it and `start` reports ERR_SERVICE_NOT_ALLOWED once they do.
  */
 internal object WorkoutSession {
   private const val TAG = "BleSensors"
@@ -39,17 +40,20 @@ internal object WorkoutSession {
   /** Completed by the service once `startForeground` succeeded or was refused. */
   @Volatile private var pending: CompletableDeferred<Unit>? = null
 
+  /** The service is in the foreground right now; only then is there a notification to update and a service whose end ends the session. */
+  @Volatile private var serviceUp = false
+
   fun snapshot(): Snapshot = synchronized(lock) { Snapshot(title, text, gps) }
 
-  /** Starts the session, or updates the options of a running one. Returns when the service is in the foreground and GPS runs. */
+  /**
+   * Starts the session, or updates the options of a running one. Returns when the service is in the foreground and GPS runs. When Android
+   * refuses the service, GPS and the wake lock start anyway and the call then throws ERR_SERVICE_NOT_ALLOWED.
+   */
   suspend fun start(context: Context, title: String, text: String, gps: Boolean) {
     if (gps && !hasFineLocation(context)) {
       throw SensorException(ErrorCodes.LOCATION_PERMISSION, "Precise location permission is not granted")
     }
     val types = ForegroundTypes.compute(Build.VERSION.SDK_INT, gps, hasFineLocation(context), hasBluetoothConnect(context))
-    if (types == 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-      throw SensorException(ErrorCodes.SERVICE_NOT_ALLOWED, "No foreground service type applies: the workout has no GPS and BLUETOOTH_CONNECT is not granted")
-    }
 
     val ready = CompletableDeferred<Unit>()
     val wasActive = synchronized(lock) {
@@ -62,44 +66,50 @@ internal object WorkoutSession {
         acquireWakeLock(context)
       }
     }
-    try {
-      // startForegroundService itself throws when Android 12+ does not allow a start from the background.
-      context.startForegroundService(Intent(context, RecordingService::class.java))
-      withTimeout(START_TIMEOUT_MS) { ready.await() }
-    } catch (e: TimeoutCancellationException) {
-      abort(context, wasActive)
-      throw SensorException(ErrorCodes.SERVICE_NOT_ALLOWED, "The recording service did not start in time", e)
-    } catch (e: CancellationException) {
-      abort(context, wasActive)
-      throw e
-    } catch (e: SensorException) {
-      abort(context, wasActive)
-      throw e
-    } catch (e: RuntimeException) {
-      // SecurityException, ForegroundServiceStartNotAllowedException and IllegalStateException all end here.
-      abort(context, wasActive)
-      throw SensorException(ErrorCodes.SERVICE_NOT_ALLOWED, "Android refused the recording service: ${e.message}", e)
+    var serviceError: SensorException? = null
+    if (types == 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+      serviceError = SensorException(ErrorCodes.SERVICE_NOT_ALLOWED, "No foreground service type applies: the workout has no GPS and BLUETOOTH_CONNECT is not granted")
+    } else {
+      try {
+        // startForegroundService itself throws when Android 12+ does not allow a start from the background.
+        context.startForegroundService(Intent(context, RecordingService::class.java))
+        withTimeout(START_TIMEOUT_MS) { ready.await() }
+      } catch (e: TimeoutCancellationException) {
+        serviceError = SensorException(ErrorCodes.SERVICE_NOT_ALLOWED, "The recording service did not start in time", e)
+      } catch (e: CancellationException) {
+        abort(context, wasActive)
+        throw e
+      } catch (e: SensorException) {
+        serviceError = e
+      } catch (e: RuntimeException) {
+        // SecurityException, ForegroundServiceStartNotAllowedException and IllegalStateException all end here.
+        serviceError = SensorException(ErrorCodes.SERVICE_NOT_ALLOWED, "Android refused the recording service: ${e.message}", e)
+      }
     }
+    if (serviceError != null) Log.w(TAG, "running without the foreground service: ${serviceError.message}")
+    val plan = SessionPolicy.afterServiceStart(gps, serviceError == null)
 
     val hub = SensorHub.get(context)
     try {
       synchronized(lock) {
-        if (gps) {
+        if (plan.gps) {
           (location ?: WorkoutLocation(context, hub).also { location = it }).start()
         } else {
           location?.stop()
         }
+        if (!plan.wakeLock) releaseWakeLock()
       }
     } catch (e: SensorException) {
       abort(context, wasActive)
       throw e
     }
+    if (plan.reportNoService) serviceError?.let { throw it }
   }
 
   fun update(context: Context, text: String) {
     val current = synchronized(lock) {
       this.text = text
-      if (!isActive) return
+      if (!isActive || !serviceUp) return
       title
     }
     context.getSystemService(NotificationManager::class.java)?.notify(RecordingNotification.ID, RecordingNotification.build(context, current, text))
@@ -109,6 +119,7 @@ internal object WorkoutSession {
   fun end(context: Context) {
     synchronized(lock) {
       isActive = false
+      serviceUp = false
       location?.stop()
       location = null
       releaseWakeLock()
@@ -117,12 +128,19 @@ internal object WorkoutSession {
   }
 
   fun serviceStarted() {
+    serviceUp = true
     pending?.complete(Unit)
   }
 
   fun serviceFailed(error: RuntimeException) {
     Log.w(TAG, "startForeground failed: ${error.message}")
+    serviceUp = false
     pending?.completeExceptionally(SensorException(ErrorCodes.SERVICE_NOT_ALLOWED, "Android refused the foreground service: ${error.message}", error))
+  }
+
+  /** The service went away. When it was the one keeping the session in the foreground the session ends with it; a refused one leaves GPS and the wake lock running. */
+  fun serviceDestroyed(context: Context) {
+    if (serviceUp) end(context)
   }
 
   /** A failed update must not take a healthy running session down with it. */

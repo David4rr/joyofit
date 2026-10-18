@@ -53,6 +53,8 @@ Looked at both existing stacks and chose **a new small module, `modules/ble-sens
 | iOS outdoor | `UIBackgroundModes` gains `location` (it already had `bluetooth-central`); `CLLocationManager.allowsBackgroundLocationUpdates` with the blue status-bar pill. When-in-use authorization is enough for a session started in the foreground; no "Always" prompt. |
 | iOS indoor / strength | `bluetooth-central` only: iOS wakes the app for every notification of a connected peripheral. JS may not run between wakes, so the sampler fills the seconds by timestamp (`Recorder.tick`). **Not verified on a device**, see section 6. |
 
+When Android refuses the foreground service (`ERR_SERVICE_NOT_ALLOWED`: a start from the background, a missing type permission, no start within 10 s), `WorkoutSession.start` no longer gives up: the GPS fixes and the wake lock start anyway (`SessionPolicy`, unit-tested in `SessionPolicyTest`), `RecordingService` stops itself without ending the session, no notification is posted, and the call rejects only afterwards. The controller treats that as `noService` and the Ready and Live screens show "Layar mati bisa menghentikan rekaman ..." instead of silently recording without GPS, which is what it did before.
+
 `app.json` also reworded `NSBluetoothAlwaysUsageDescription`, `NSBluetoothPeripheralUsageDescription` and `NSLocationWhenInUseUsageDescription` (they spoke of the watch only). docs/app-store.md and docs/play-store.md carry the review notes.
 
 ## 2. Data
