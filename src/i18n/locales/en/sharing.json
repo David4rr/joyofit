@@ -1,1 +1,186 @@
-{}
+{
+  "share": {
+    "caption": "Tracked with JoyoFit · https://fit.joyorogo.com",
+    "workout": {
+      "heading": "Share workout",
+      "hint": "Your numbers on a dark JoyoFit card. This workout has no GPS route."
+    },
+    "today": {
+      "heading": "Share today",
+      "title": "Today",
+      "hint": "Your steps, sleep and scores on a dark JoyoFit card."
+    },
+    "stats": {
+      "distance": "Distance",
+      "time": "Time",
+      "avgPace": "Avg pace",
+      "avgSpeed": "Avg speed",
+      "avgHr": "Avg HR",
+      "calories": "Calories",
+      "elevation": "Elevation",
+      "steps": "Steps",
+      "sleep": "Sleep",
+      "recovery": "Recovery",
+      "strain": "Strain",
+      "readiness": "Readiness"
+    },
+    "units": {
+      "steps": "steps",
+      "per100m": "/100 m",
+      "perKm": "/km",
+      "strainMax": "/ {{max}}"
+    },
+    "sleepShort": {
+      "hm": "{{h}}h {{m}}m",
+      "m": "{{m}}m"
+    },
+    "backgrounds": {
+      "route": "Route",
+      "card": "Card",
+      "photo": "Photo",
+      "sticker": "Sticker"
+    },
+    "formats": {
+      "story": "Story 9:16",
+      "square": "Square 1:1"
+    },
+    "hints": {
+      "route": "Your route and numbers on a dark JoyoFit card.",
+      "photo": "Your photo with the numbers on top.",
+      "sticker": "A transparent PNG. Send it to an Instagram Story as a sticker, or copy it and paste it over your own photo."
+    },
+    "photoPlaceholder": "Pick a photo from your gallery or take one.",
+    "photoChoose": "Choose photo",
+    "photoChange": "Change photo",
+    "photoTake": "Take photo",
+    "photoFailed": "That photo could not be loaded. Pick another one.",
+    "targets": {
+      "instagram": "Instagram",
+      "copy": "Copy",
+      "save": "Save",
+      "more": "More"
+    },
+    "toasts": {
+      "copied": "Copied",
+      "saved": "Saved to your photos"
+    },
+    "errors": {
+      "photoTake": "Could not take the photo: {{error}}",
+      "photoLoad": "Could not load the photo: {{error}}",
+      "copy": "Could not copy the image: {{error}}",
+      "save": "Could not save the image: {{error}}",
+      "share": "Could not share the image: {{error}}",
+      "photosDenied": "Photos access is off for JoyoFit. Turn it on in Settings.",
+      "openSettings": "Open Settings"
+    },
+    "photosDialog": {
+      "title": "Photos access",
+      "instagram": "Instagram opens an image from your photo library, so JoyoFit saves this one there first. Your phone asks for permission next.",
+      "save": "JoyoFit adds this image to your photos. It does not read the photos you already have. Your phone asks for permission next.",
+      "confirm": "Continue",
+      "cancel": "Not now"
+    }
+  },
+  "strava": {
+    "title": "Strava",
+    "viewOn": "View on Strava",
+    "connectHint": "Connect Strava to send this workout with its distance, calories, heart rate and route.",
+    "setUp": "Set up Strava",
+    "status": "Status",
+    "notSent": "Not sent",
+    "statuses": {
+      "processing": "Strava is still processing it",
+      "done": "Sent to Strava",
+      "failed": "Could not be sent, try again",
+      "rejected": "Strava refused the file"
+    },
+    "downloading": "Still downloading from the watch. Send after the next sync.",
+    "check": "Check Strava",
+    "send": "Send to Strava",
+    "signIn": "Sign in with JoyoRogo (Settings, Health and cloud) to send."
+  },
+  "fitImport": {
+    "sports": {
+      "RUNNING": "Run",
+      "WALKING": "Walk",
+      "CYCLING": "Ride",
+      "INDOOR_RUNNING": "Treadmill run",
+      "INDOOR_CYCLING": "Indoor ride",
+      "TRAIL_RUN": "Trail run",
+      "INDOOR_WALKING": "Indoor walk",
+      "HIKING": "Hike",
+      "EXERCISE": "Workout"
+    },
+    "done": "Imported {{sport}} {{distance}}, {{duration}}",
+    "doneNoDistance": "Imported {{sport}}, {{duration}}",
+    "duplicate": "Already imported: {{sport}} on {{when}} is in your workouts, so nothing was added.",
+    "overlap": "Your watch already recorded this workout ({{sport}}, {{when}}), so the file was not imported. The watch's workout is kept.",
+    "unfinished": "The import did not finish.",
+    "tooLarge": "This file is too large to be a FIT activity.",
+    "cannotOpen": "Could not open the file: {{error}}",
+    "errors": {
+      "notFit": "This is not a FIT file. Pick the .fit file your bike computer recorded.",
+      "checksum": "This FIT file is damaged or was cut short (its checksum does not match).",
+      "unreadable": "This FIT file could not be read; it looks damaged.",
+      "notActivity": "This is a FIT {{type}} file, not an activity file. Pick the file of a recorded ride or run.",
+      "noSession": "This FIT file has no activity session (no totals for a ride or run), so there is nothing to import.",
+      "noStart": "This FIT file has no real start time (the device had no clock set), so it cannot be placed in your history.",
+      "noDuration": "This FIT file has no duration, so there is nothing to import."
+    }
+  },
+  "live": {
+    "title": "Live workout",
+    "emptyTitle": "No workout running",
+    "emptyDescription": "Outdoor walks, runs and rides started on the watch open here. Indoors, start on the watch, then tap Start.",
+    "start": "Start",
+    "finish": "Finish",
+    "workout": "Workout",
+    "status": {
+      "preparing": "Starting",
+      "running": "Live",
+      "paused": "Paused",
+      "ended": "Finished"
+    },
+    "timeA11y": "Time {{value}}",
+    "zone": "Zone {{zone}} · {{label}}",
+    "zones": {
+      "warmup": "Warm-up",
+      "fatBurning": "Fat burning",
+      "aerobic": "Aerobic",
+      "anaerobic": "Anaerobic",
+      "extreme": "Extreme"
+    },
+    "tiles": {
+      "distance": "Distance",
+      "speed": "Speed",
+      "pace": "Pace"
+    },
+    "burned": {
+      "title": "Burned so far",
+      "fat": "Fat",
+      "carbs": "Carbs",
+      "calories": "Calories",
+      "figureA11y": "{{label}} {{value}} grams",
+      "fuel": "Right now {{fat}}% from fat, {{carbs}}% from carbs"
+    },
+    "calc": {
+      "title": "How is this calculated?",
+      "watch": "An estimate by JoyoFit, the watch does not measure it: each calorie is split by your heart rate at that moment, with a maximum of {{max}} bpm (220 minus your age from the profile). Easier effort burns a larger share of fat.",
+      "phone": "An estimate by JoyoFit, the watch does not measure it: each calorie is split by your heart rate at that moment, with a maximum of {{max}} bpm (220 minus your age from the profile). Easier effort burns a larger share of fat. The watch sends no live calories to JoyoFit, so they too come from its live heart rate, your weight, age and sex (Keytel 2005); the watch screen may differ."
+    },
+    "more": {
+      "title": "More",
+      "steps": "Steps",
+      "cadence": "Cadence",
+      "stepRate": "{{value}} steps/min",
+      "speed": "Speed",
+      "altitude": "Altitude",
+      "climb": "Climb",
+      "descent": "Descent",
+      "aerobicEffect": "Aerobic effect",
+      "anaerobicEffect": "Anaerobic effect",
+      "waiting": "Waiting for the first numbers from the watch.",
+      "ended": "The full record (route, splits, heart-rate chart) arrives with the next sync and appears under Workouts."
+    }
+  }
+}

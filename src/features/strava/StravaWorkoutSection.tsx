@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { StravaNotConnectedError, sendWorkoutToStrava } from '@/cloud/strava';
 import { Button } from '@/components/Button';
@@ -14,18 +15,12 @@ import { ViewOnStrava } from '@/features/strava/StravaLink';
 import { errorMessage } from '@/format';
 import { useStrava } from '@/state/StravaProvider';
 
-const STATUS_LABEL: Record<StravaUploadRow['status'], string> = {
-  processing: 'Strava is still processing it',
-  done: 'Sent to Strava',
-  failed: 'Could not be sent, try again',
-  rejected: 'Strava refused the file',
-};
-
 /**
  * "Send to Strava" for one workout, and where it ended up. Sending is also allowed for workouts that ended before
  * the account connected (and for imported ones): only the automatic upload is limited to new workouts.
  */
 export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
+  const { t } = useTranslation('sharing');
   const db = useSQLiteContext();
   const router = useRouter();
   const strava = useStrava();
@@ -65,26 +60,26 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
   const done = row?.status === 'done' && row.activityId !== null;
 
   return (
-    <Section title="Strava" icon="share-social" tint="workouts">
+    <Section title={t('strava.title')} icon="share-social" tint="workouts">
       {!connected ? (
         <>
           <AppText variant="caption" muted>
-            Connect Strava to send this workout with its distance, calories, heart rate and route.
+            {t('strava.connectHint')}
           </AppText>
-          <Button label="Set up Strava" variant="secondary" icon="link" onPress={() => router.push('/settings/strava')} />
+          <Button label={t('strava.setUp')} variant="secondary" icon="link" onPress={() => router.push('/settings/strava')} />
         </>
       ) : (
         <>
-          <KeyValue icon="cloud-upload-outline" label="Status" value={row ? STATUS_LABEL[row.status] : 'Not sent'} />
+          <KeyValue icon="cloud-upload-outline" label={t('strava.status')} value={row ? t(`strava.statuses.${row.status}`) : t('strava.notSent')} />
           {done ? <ViewOnStrava activityId={row.activityId as number} /> : null}
           {row && row.status !== 'done' && row.error ? <Notice tone="danger">{row.error}</Notice> : null}
           {error ? <Notice tone="danger">{error}</Notice> : null}
           {!workout.complete ? (
-            <Notice>Still downloading from the watch. Send after the next sync.</Notice>
+            <Notice>{t('strava.downloading')}</Notice>
           ) : null}
           {!done ? (
             <Button
-              label={row?.status === 'processing' ? 'Check Strava' : 'Send to Strava'}
+              label={row?.status === 'processing' ? t('strava.check') : t('strava.send')}
               variant="primary"
               icon="cloud-upload"
               onPress={() => void send()}
@@ -94,7 +89,7 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
           ) : null}
           {!strava.signedIn ? (
             <AppText variant="caption" muted>
-              Sign in with JoyoRogo (Settings, Health and cloud) to send.
+              {t('strava.signIn')}
             </AppText>
           ) : null}
         </>

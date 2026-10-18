@@ -11,6 +11,8 @@
  */
 import { Decoder, type FitMessages, Stream } from '@garmin/fitsdk';
 
+import { t } from '@/i18n';
+
 import { FIT_EPOCH_OFFSET } from '../strava/fitEncoder';
 
 /** Why a file is not imported. `unreadable` (the phone could not open it), `duplicate` and `overlap` come from the callers of `parseFitActivity`. */
@@ -36,10 +38,21 @@ export const SPORT = {
   other: 255,
 } as const;
 
+export type FitSportKind =
+  | 'RUNNING'
+  | 'WALKING'
+  | 'CYCLING'
+  | 'INDOOR_RUNNING'
+  | 'INDOOR_CYCLING'
+  | 'TRAIL_RUN'
+  | 'INDOOR_WALKING'
+  | 'HIKING'
+  | 'EXERCISE';
+
 interface SportInfo {
   type: number;
   /** Gadgetbridge `ActivityKind` name, as the watch rows carry in `summary_json.kind`. */
-  kind: string;
+  kind: FitSportKind;
   /** Short name; the file's manufacturer is added in parentheses. */
   name: string;
   /** Pace (min/km) is the natural figure, not speed. */
@@ -304,25 +317,25 @@ export function parseFitActivity(bytes: Uint8Array): FitActivity | FitImportErro
   try {
     // A copy, so the SDK reads exactly these bytes whatever buffer the caller's view sits in.
     const decoder = new Decoder(Stream.fromArrayBuffer(bytes.slice().buffer));
-    if (!decoder.isFIT()) return failure('not-fit', 'This is not a FIT file. Pick the .fit file your bike computer recorded.');
-    if (!decoder.checkIntegrity()) return failure('corrupt', 'This FIT file is damaged or was cut short (its checksum does not match).');
+    if (!decoder.isFIT()) return failure('not-fit', t('sharing:fitImport.errors.notFit'));
+    if (!decoder.checkIntegrity()) return failure('corrupt', t('sharing:fitImport.errors.checksum'));
     messages = decoder.read({ convertDateTimesToDates: false }).messages;
   } catch {
-    return failure('corrupt', 'This FIT file could not be read; it looks damaged.');
+    return failure('corrupt', t('sharing:fitImport.errors.unreadable'));
   }
 
   const fileType = messages.fileIdMesgs?.[0]?.type;
   if (fileType !== undefined && String(fileType) !== 'activity') {
-    return failure('not-activity', `This is a FIT ${String(fileType)} file, not an activity file. Pick the file of a recorded ride or run.`);
+    return failure('not-activity', t('sharing:fitImport.errors.notActivity', { type: String(fileType) }));
   }
 
   const sessions = (messages.sessionMesgs ?? [])
     .filter((s) => seconds(s.startTime) !== null)
     .sort((a, b) => (seconds(a.startTime) ?? 0) - (seconds(b.startTime) ?? 0));
-  if (sessions.length === 0) return failure('no-session', 'This FIT file has no activity session (no totals for a ride or run), so there is nothing to import.');
+  if (sessions.length === 0) return failure('no-session', t('sharing:fitImport.errors.noSession'));
 
   const startFit = Math.min(...sessions.map((s) => seconds(s.startTime) as number));
-  if (startFit < MIN_UTC_FIT_TIME) return failure('no-session', 'This FIT file has no real start time (the device had no clock set), so it cannot be placed in your history.');
+  if (startFit < MIN_UTC_FIT_TIME) return failure('no-session', t('sharing:fitImport.errors.noStart'));
   const start = startFit + FIT_EPOCH_OFFSET;
 
   const longest = sessions.reduce((a, b) => ((positive(b.totalTimerTime) ?? 0) > (positive(a.totalTimerTime) ?? 0) ? b : a));
@@ -340,7 +353,7 @@ export function parseFitActivity(bytes: Uint8Array): FitActivity | FitImportErro
   let end = Math.max(...sessions.map((s) => (seconds(s.startTime) as number) + (elapsedOf(s) ?? 0))) + FIT_EPOCH_OFFSET;
   const lastPoint = points[points.length - 1];
   if (end <= start && lastPoint) end = lastPoint.ts;
-  if (end <= start) return failure('no-session', 'This FIT file has no duration, so there is nothing to import.');
+  if (end <= start) return failure('no-session', t('sharing:fitImport.errors.noDuration'));
 
   const timer = Math.round(sumOf(sessions, (s) => positive(s.totalTimerTime)) ?? end - start);
   const lastRecord = messages.recordMesgs?.[messages.recordMesgs.length - 1];

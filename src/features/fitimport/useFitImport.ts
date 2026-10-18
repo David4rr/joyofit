@@ -4,6 +4,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 
 import { importFit, type FitImportResult } from './importFit';
@@ -16,10 +17,10 @@ export async function importFitFromUri(db: Parameters<typeof importFit>[0], uri:
   let bytes: Uint8Array;
   try {
     const file = new File(uri);
-    if (file.size > MAX_FILE_BYTES) return { ok: false, reason: 'not-fit', message: 'This file is too large to be a FIT activity.' };
+    if (file.size > MAX_FILE_BYTES) return { ok: false, reason: 'not-fit', message: t('sharing:fitImport.tooLarge') };
     bytes = new Uint8Array(await file.arrayBuffer());
   } catch (e) {
-    return { ok: false, reason: 'unreadable', message: `Could not open the file: ${errorMessage(e)}` };
+    return { ok: false, reason: 'unreadable', message: t('sharing:fitImport.cannotOpen', { error: errorMessage(e) }) };
   }
   return importFit(db, bytes);
 }

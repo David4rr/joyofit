@@ -6,6 +6,7 @@ import Share, { Social } from 'react-native-share';
 import { captureRef } from 'react-native-view-shot';
 
 import type { ShareBackground } from '@/features/share/ShareCard';
+import { t } from '@/i18n';
 import { instagramRoute, resolveFacebookAppId, type InstagramRoute } from '@/features/share/shareTargets';
 
 /** Resolves after the next frame, so a just-loaded photo has been drawn once. */
@@ -77,7 +78,7 @@ export async function instagramInstalled(): Promise<boolean> {
 /** Photos access is off and cannot be asked for again; only the system Settings can turn it on. */
 export class PhotosDeniedError extends Error {
   constructor() {
-    super('Photos access is off for JoyoFit. Turn it on in Settings.');
+    super(t('sharing:share.errors.photosDenied'));
   }
 }
 

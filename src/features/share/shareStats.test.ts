@@ -1,7 +1,10 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 
 import type { WorkoutRow } from '@/db/queries';
-import { buildShareStats, effortKind, effortStat } from '@/features/share/shareStats';
+import { buildShareStats, effortKind, effortStat, formatShareDate } from '@/features/share/shareStats';
+import { applyLocale } from '@/i18n';
+
+afterEach(() => applyLocale('id'));
 
 function workout(over: Partial<WorkoutRow> = {}): WorkoutRow {
   return {
@@ -40,7 +43,7 @@ describe('effortStat', () => {
     // 1800 s over 5 km is 360 s per km; the watch's own 5:32 is not used.
     expect(effortStat(workout(), { avgPaceSecPerKm: 332 })).toEqual({
       key: 'pace',
-      label: 'Avg pace',
+      label: 'Pace rata-rata',
       value: '6:00',
       unit: '/km',
     });
@@ -61,8 +64,8 @@ describe('effortStat', () => {
 
   test('cycling is km/h, derived or from avgSpeed in m/s without a distance', () => {
     const ride = workout({ sportName: 'Outdoor cycling', distance: 20_000, duration: 3600, end: 1_760_003_600 });
-    expect(effortStat(ride, { avgSpeed: 6 })).toMatchObject({ key: 'speed', value: '20.0', unit: 'km/h' });
-    expect(effortStat({ ...ride, distance: 0 }, { avgSpeed: 6 })?.value).toBe('21.6');
+    expect(effortStat(ride, { avgSpeed: 6 })).toMatchObject({ key: 'speed', value: '20,0', unit: 'km/h' });
+    expect(effortStat({ ...ride, distance: 0 }, { avgSpeed: 6 })?.value).toBe('21,6');
   });
 
   test('no figure when there is nothing to average over', () => {
@@ -78,7 +81,7 @@ describe('effortStat', () => {
   test('a 3 s difference between the watch timer and the end time is not a pause: pace and time of the owner\'s walk', () => {
     const walk = workout({ sportName: 'Outdoor walk', end: 1_760_001_526, duration: 1523, distance: 2010 });
     expect(effortStat(walk, { avgPaceSecPerKm: 758 })?.value).toBe('12:39');
-    expect(buildShareStats(walk, {})[1]).toEqual({ key: 'time', label: 'Time', value: '25:26' });
+    expect(buildShareStats(walk, {})[1]).toEqual({ key: 'time', label: 'Waktu', value: '25:26' });
   });
 });
 
@@ -86,7 +89,7 @@ describe('buildShareStats', () => {
   test('a GPS run leads with distance and keeps the display order', () => {
     const stats = buildShareStats(workout(), { avgPaceSecPerKm: 332, elevationGain: 48.6 });
     expect(stats.map((s) => s.key)).toEqual(['distance', 'time', 'pace', 'hr', 'calories', 'elevation']);
-    expect(stats[0]).toEqual({ key: 'distance', label: 'Distance', value: '5.00', unit: 'km' });
+    expect(stats[0]).toEqual({ key: 'distance', label: 'Jarak', value: '5,00', unit: 'km' });
     expect(stats[1].value).toBe('30:00');
     expect(stats[3]).toMatchObject({ value: '152', unit: 'bpm' });
     expect(stats[5]).toMatchObject({ value: '49', unit: 'm' });
@@ -112,5 +115,22 @@ describe('buildShareStats', () => {
   test('flat or missing elevation is left out', () => {
     expect(buildShareStats(workout(), { elevationGain: 0 }).some((s) => s.key === 'elevation')).toBe(false);
     expect(buildShareStats(workout(), {}).some((s) => s.key === 'elevation')).toBe(false);
+  });
+});
+
+describe('share text language', () => {
+  test('labels and numbers follow the app language', async () => {
+    await applyLocale('en');
+    const stats = buildShareStats(workout(), { avgPaceSecPerKm: 332 });
+    expect(stats[0]).toEqual({ key: 'distance', label: 'Distance', value: '5.00', unit: 'km' });
+    expect(stats[2]).toMatchObject({ label: 'Avg pace', unit: '/km' });
+    expect(effortStat(workout({ sportName: 'Outdoor cycling', distance: 20_000, duration: 3600, end: 1_760_003_600 }), { avgSpeed: 6 })).toMatchObject({
+      label: 'Avg speed',
+      value: '20.0',
+    });
+  });
+
+  test('the date line is date, dot, clock', () => {
+    expect(formatShareDate(1_760_000_000)).toContain(' · ');
   });
 });

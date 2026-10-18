@@ -22,6 +22,8 @@
  */
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { fmtClock, fmtDate, fmtDecimal, t } from '@/i18n';
+
 import { formatElapsed } from '../workouts/summary';
 import { type FitActivity, type FitImportError, parseFitActivity } from './parseFit';
 
@@ -93,8 +95,7 @@ function minuteHeartRates(a: FitActivity): [minute: number, bpm: number][] {
   return [...sums].map(([minute, { total, n }]) => [minute, Math.round(total / n)] as [number, number]).sort((x, y) => x[0] - y[0]);
 }
 
-const clock = (unixSeconds: number): string =>
-  new Date(unixSeconds * 1000).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const clock = (unixSeconds: number): string => `${fmtDate(unixSeconds, 'short')}, ${fmtClock(unixSeconds)}`;
 
 /**
  * A stored workout that makes `a` a duplicate, as the message for the screen; null when there is none. Same start
@@ -113,13 +114,13 @@ async function collision(db: Pick<SQLiteDatabase, 'getAllAsync'>, a: FitActivity
       return {
         ok: false,
         reason: 'duplicate',
-        message: `Already imported: ${row.sportName} on ${clock(row.start)} is in your workouts, so nothing was added.`,
+        message: t('sharing:fitImport.duplicate', { sport: row.sportName, when: clock(row.start) }),
       };
     }
     return {
       ok: false,
       reason: 'overlap',
-      message: `Your watch already recorded this workout (${row.sportName}, ${clock(row.start)}), so the file was not imported. The watch's workout is kept.`,
+      message: t('sharing:fitImport.overlap', { sport: row.sportName, when: clock(row.start) }),
     };
   }
   return null;
@@ -152,10 +153,13 @@ async function insertAll(txn: Pick<SQLiteDatabase, 'runAsync'>, a: FitActivity):
   return id;
 }
 
-/** `Imported Ride 42.1 km, 1:35:20`. */
+/** `Berhasil mengimpor bersepeda 42,1 km, 1:35:20` / `Imported Ride 42.1 km, 1:35:20`. */
 function doneMessage(a: FitActivity): string {
-  const km = a.distance > 0 ? ` ${(a.distance / 1000).toFixed(1)} km,` : ',';
-  return `Imported ${a.sport.name}${km} ${formatElapsed(a.timerSeconds)}`;
+  const sport = t(`sharing:fitImport.sports.${a.sport.kind}`);
+  const duration = formatElapsed(a.timerSeconds);
+  return a.distance > 0
+    ? t('sharing:fitImport.done', { sport, distance: `${fmtDecimal(a.distance / 1000, 1)} km`, duration })
+    : t('sharing:fitImport.doneNoDistance', { sport, duration });
 }
 
 /** Imports the FIT file `bytes`; see the module notes for what is stored and when a file is skipped. */
@@ -183,5 +187,5 @@ export async function importFit(db: FitImportDb, bytes: Uint8Array): Promise<Fit
       message: doneMessage(activity),
     };
   });
-  return result ?? { ok: false, reason: 'corrupt', message: 'The import did not finish.' };
+  return result ?? { ok: false, reason: 'corrupt', message: t('sharing:fitImport.unfinished') };
 }

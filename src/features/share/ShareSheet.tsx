@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Linking, Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
@@ -45,11 +46,6 @@ const PHOTO_MAX_SIDE = 2400;
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1 };
 /** Android 11 (API 30) is the first release where saving to Pictures needs no storage permission. */
 const SAVE_AVAILABLE = canSaveToLibrary(Platform.OS === 'ios' ? 'ios' : 'android', Platform.OS === 'android' ? Number(Platform.Version) : 0);
-
-const FORMATS = [
-  { value: 'story', label: 'Story 9:16' },
-  { value: 'square', label: 'Square 1:1' },
-] as const;
 
 type Target = 'instagram' | 'copy' | 'save' | 'more';
 
@@ -137,6 +133,7 @@ interface PhotosRequest {
 /** Full-screen composer: template and format pickers, the live card, and the Instagram, Copy, Save and More targets. */
 export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubject; visible: boolean; onClose: () => void }) {
   const { colors, radius } = useTheme();
+  const { t } = useTranslation(['sharing', 'common']);
   const insets = useSafeAreaInsets();
   const screen = useWindowDimensions();
   const { toast, show } = useToast();
@@ -159,9 +156,13 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
   const { route } = subject;
   const hasRoute = route.length >= 2;
   const backgrounds: { value: ShareBackground; label: string }[] = [
-    { value: 'route', label: hasRoute ? 'Route' : 'Card' },
-    { value: 'photo', label: 'Photo' },
-    { value: 'sticker', label: 'Sticker' },
+    { value: 'route', label: hasRoute ? t('sharing:share.backgrounds.route') : t('sharing:share.backgrounds.card') },
+    { value: 'photo', label: t('sharing:share.backgrounds.photo') },
+    { value: 'sticker', label: t('sharing:share.backgrounds.sticker') },
+  ];
+  const formats: { value: ShareFormat; label: string }[] = [
+    { value: 'story', label: t('sharing:share.formats.story') },
+    { value: 'square', label: t('sharing:share.formats.square') },
   ];
 
   // The live card keeps its real size and is shrunk from its top-left corner to fill the frame.
@@ -206,7 +207,7 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
     } catch (e) {
       setFeedback({
         tone: 'danger',
-        text: `Could not ${source === 'camera' ? 'take' : 'load'} the photo: ${errorMessage(e)}`,
+        text: t(source === 'camera' ? 'sharing:share.errors.photoTake' : 'sharing:share.errors.photoLoad', { error: errorMessage(e) }),
       });
     } finally {
       setBusy(null);
@@ -233,13 +234,13 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
     try {
       if (target === 'copy') {
         await copyCardImage(card);
-        show('Copied');
+        show(t('sharing:share.toasts.copied'));
         flashCopied();
       } else if (target === 'more') {
         await shareCardImage(await captureToFile(card), subject.caption);
       } else if (target === 'save') {
         if (await saveCardImage(await captureToFile(card), askPhotos)) {
-          show('Saved to your photos');
+          show(t('sharing:share.toasts.saved'));
           flashSaved();
         }
       } else {
@@ -247,10 +248,10 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
       }
     } catch (e) {
       if (e instanceof PhotosDeniedError) {
-        setFeedback({ tone: 'danger', text: e.message, action: { label: 'Open Settings', onPress: () => void Linking.openSettings() } });
+        setFeedback({ tone: 'danger', text: e.message, action: { label: t('sharing:share.errors.openSettings'), onPress: () => void Linking.openSettings() } });
       } else {
-        const verb = target === 'copy' ? 'copy' : target === 'save' ? 'save' : 'share';
-        setFeedback({ tone: 'danger', text: `Could not ${verb} the image: ${errorMessage(e)}` });
+        const key = target === 'copy' ? 'copy' : target === 'save' ? 'save' : 'share';
+        setFeedback({ tone: 'danger', text: t(`sharing:share.errors.${key}`, { error: errorMessage(e) }) });
       }
     } finally {
       setBusy(null);
@@ -260,11 +261,11 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
   const hint =
     background === 'route'
       ? hasRoute
-        ? 'Your route and numbers on a dark JoyoFit card.'
+        ? t('sharing:share.hints.route')
         : subject.cardHint
       : background === 'photo'
-        ? 'Your photo with the numbers on top.'
-        : 'A transparent PNG. Send it to an Instagram Story as a sticker, or copy it and paste it over your own photo.';
+        ? t('sharing:share.hints.photo')
+        : t('sharing:share.hints.sticker');
 
   const idle = ready && busy === null;
 
@@ -275,14 +276,14 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
           <AppText variant="heading" accessibilityRole="header" style={styles.headerTitle}>
             {subject.heading}
           </AppText>
-          <PressableScale accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.close}>
+          <PressableScale accessibilityRole="button" accessibilityLabel={t('common:actions.close')} onPress={onClose} style={styles.close}>
             <Ionicons name="close" size={24} color={colors.foreground} />
           </PressableScale>
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Segmented options={backgrounds} value={background} onChange={pickBackground} />
-          <Segmented options={FORMATS} value={format} onChange={setFormat} />
+          <Segmented options={formats} value={format} onChange={setFormat} />
 
           <View style={[styles.stage, { backgroundColor: colors.muted, borderRadius: radius.card }]}>
             <View style={{ width: frameWidth, height: frameHeight, borderRadius: radius.input, overflow: 'hidden' }}>
@@ -291,7 +292,7 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
                 <View style={[StyleSheet.absoluteFill, styles.placeholder, { backgroundColor: colors.card }]}>
                   <Ionicons name="image-outline" size={40} color={colors.mutedForeground} />
                   <AppText variant="caption" muted style={styles.centered}>
-                    Pick a photo from your gallery or take one.
+                    {t('sharing:share.photoPlaceholder')}
                   </AppText>
                 </View>
               ) : (
@@ -331,17 +332,17 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
           {needsPhoto ? (
             <View style={styles.row}>
               <Button
-                label={photoUri ? 'Change photo' : 'Choose photo'}
+                label={photoUri ? t('sharing:share.photoChange') : t('sharing:share.photoChoose')}
                 icon="images-outline"
                 loading={busy === 'photo'}
                 onPress={() => void addPhoto('library')}
                 style={styles.flex}
               />
-              <Button label="Take photo" icon="camera-outline" disabled={busy !== null} onPress={() => void addPhoto('camera')} style={styles.flex} />
+              <Button label={t('sharing:share.photoTake')} icon="camera-outline" disabled={busy !== null} onPress={() => void addPhoto('camera')} style={styles.flex} />
             </View>
           ) : null}
 
-          {photoFailed ? <Notice tone="danger">That photo could not be loaded. Pick another one.</Notice> : null}
+          {photoFailed ? <Notice tone="danger">{t('sharing:share.photoFailed')}</Notice> : null}
           {feedback ? (
             <Notice tone={feedback.tone} action={feedback.action}>
               {feedback.text}
@@ -351,13 +352,13 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md), borderTopColor: colors.hairline }]}>
           {installed ? (
-            <TargetButton label="Instagram" icon={<InstagramGlyph size={24} color={colors.foreground} />} loading={busy === 'instagram'} disabled={!idle} onPress={() => void run('instagram')} />
+            <TargetButton label={t('sharing:share.targets.instagram')} icon={<InstagramGlyph size={24} color={colors.foreground} />} loading={busy === 'instagram'} disabled={!idle} onPress={() => void run('instagram')} />
           ) : null}
-          <TargetButton label="Copy" icon={<Ionicons name="copy-outline" size={24} color={colors.foreground} />} loading={busy === 'copy'} done={copied} disabled={!idle} onPress={() => void run('copy')} />
+          <TargetButton label={t('sharing:share.targets.copy')} icon={<Ionicons name="copy-outline" size={24} color={colors.foreground} />} loading={busy === 'copy'} done={copied} disabled={!idle} onPress={() => void run('copy')} />
           {SAVE_AVAILABLE ? (
-            <TargetButton label="Save" icon={<Ionicons name="download-outline" size={24} color={colors.foreground} />} loading={busy === 'save'} done={saved} disabled={!idle} onPress={() => void run('save')} />
+            <TargetButton label={t('sharing:share.targets.save')} icon={<Ionicons name="download-outline" size={24} color={colors.foreground} />} loading={busy === 'save'} done={saved} disabled={!idle} onPress={() => void run('save')} />
           ) : null}
-          <TargetButton label="More" icon={<Ionicons name="share-outline" size={24} color={colors.foreground} />} loading={busy === 'more'} disabled={!idle} onPress={() => void run('more')} />
+          <TargetButton label={t('sharing:share.targets.more')} icon={<Ionicons name="share-outline" size={24} color={colors.foreground} />} loading={busy === 'more'} disabled={!idle} onPress={() => void run('more')} />
         </View>
 
         {toast}
@@ -365,14 +366,14 @@ export function ShareSheet({ subject, visible, onClose }: { subject: ShareSubjec
 
       <ConfirmDialog
         visible={photosRequest !== null}
-        title="Photos access"
+        title={t('sharing:share.photosDialog.title')}
         message={
           photosRequest?.purpose === 'instagram'
-            ? 'Instagram opens an image from your photo library, so JoyoFit saves this one there first. Your phone asks for permission next.'
-            : 'JoyoFit adds this image to your photos. It does not read the photos you already have. Your phone asks for permission next.'
+            ? t('sharing:share.photosDialog.instagram')
+            : t('sharing:share.photosDialog.save')
         }
-        confirmLabel="Continue"
-        cancelLabel="Not now"
+        confirmLabel={t('sharing:share.photosDialog.confirm')}
+        cancelLabel={t('sharing:share.photosDialog.cancel')}
         onConfirm={() => answerPhotos(true)}
         onCancel={() => answerPhotos(false)}
       />

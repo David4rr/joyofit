@@ -1,10 +1,11 @@
 import { Database } from 'bun:sqlite';
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it } from 'bun:test';
 
 import { Encoder, Profile } from '@garmin/fitsdk';
 
 import migrations from '../../../modules/huawei-wear/schema/joyofit-db-migrations.json';
 import { buildActivityFile } from './fitFixture';
+import { applyLocale } from '@/i18n';
 import { importFit, type FitImportDb } from './importFit';
 import { parseFitActivity, sportFor } from './parseFit';
 
@@ -202,7 +203,17 @@ describe('sportFor', () => {
   });
 });
 
+afterEach(() => applyLocale('id'));
+
 describe('importFit', () => {
+  it('words the result in English when the app is in English', async () => {
+    await applyLocale('en');
+    const { db } = openDb();
+    const result = await importFit(db, ride());
+    expect(result.ok && result.message).toBe('Imported Ride 42.1 km, 1:35:20');
+    expect(await importFit(db, ride())).toMatchObject({ ok: false, reason: 'duplicate' });
+  });
+
   const ride = () => buildActivityFile({ start: START, elapsed: 5720, step: 20, distance: 42_100, calories: 1010 });
 
   it('stores a cycling file with GPS, heart rate and power as an imported workout', async () => {
@@ -210,7 +221,7 @@ describe('importFit', () => {
     const result = await importFit(db, ride());
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.message).toBe('Imported Ride 42.1 km, 1:35:20');
+    expect(result.message).toBe('Berhasil mengimpor bersepeda 42,1 km, 1:35:20');
     expect(result.name).toBe('Ride (iGPSPORT)');
 
     const w = one<Record<string, number | string | null>>('SELECT * FROM workouts');
@@ -281,7 +292,7 @@ describe('importFit', () => {
     watchWorkout(raw, START + 1000, START + 5000);
     const result = await importFit(db, ride());
     expect(result).toMatchObject({ ok: false, reason: 'overlap' });
-    if (!result.ok) expect(result.message).toContain('Your watch already recorded this workout');
+    if (!result.ok) expect(result.message).toContain('Jam kamu sudah merekam latihan ini');
     expect(one<{ n: number }>('SELECT COUNT(*) AS n FROM workouts').n).toBe(1);
     expect(one<{ n: number }>('SELECT COUNT(*) AS n FROM workout_points').n).toBe(0);
     expect(one<{ imported: number; sport_name: string }>('SELECT imported, sport_name FROM workouts')).toEqual({ imported: 0, sport_name: 'Biking' });
@@ -311,7 +322,7 @@ describe('importFit', () => {
   it('imports a run with GPS and gives it a pace', async () => {
     const { db, one } = openDb();
     const result = await importFit(db, buildActivityFile({ start: START, elapsed: 1800, distance: 5000, sport: 1, manufacturer: 1, calories: 350 }));
-    expect(result.ok && result.message).toBe('Imported Run 5.0 km, 30:00');
+    expect(result.ok && result.message).toBe('Berhasil mengimpor lari 5,0 km, 30:00');
     const w = one<{ sport_type: number; sport_name: string; summary_json: string }>('SELECT sport_type, sport_name, summary_json FROM workouts');
     expect(w).toMatchObject({ sport_type: 1, sport_name: 'Run (Garmin)' });
     expect(JSON.parse(w.summary_json).avgPaceSecPerKm).toBeCloseTo(360, 0);

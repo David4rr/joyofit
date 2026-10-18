@@ -1,1 +1,186 @@
-{}
+{
+  "share": {
+    "caption": "Dicatat dengan JoyoFit · https://fit.joyorogo.com",
+    "workout": {
+      "heading": "Bagikan latihan",
+      "hint": "Angka kamu di kartu JoyoFit gelap. Latihan ini tidak punya rute GPS."
+    },
+    "today": {
+      "heading": "Bagikan hari ini",
+      "title": "Hari ini",
+      "hint": "Langkah, tidur, dan skor kamu di kartu JoyoFit gelap."
+    },
+    "stats": {
+      "distance": "Jarak",
+      "time": "Waktu",
+      "avgPace": "Pace rata-rata",
+      "avgSpeed": "Kecepatan rata-rata",
+      "avgHr": "Detak jantung rata-rata",
+      "calories": "Kalori",
+      "elevation": "Elevasi",
+      "steps": "Langkah",
+      "sleep": "Tidur",
+      "recovery": "Pemulihan",
+      "strain": "Beban",
+      "readiness": "Kesiapan"
+    },
+    "units": {
+      "steps": "langkah",
+      "per100m": "/100 m",
+      "perKm": "/km",
+      "strainMax": "/ {{max}}"
+    },
+    "sleepShort": {
+      "hm": "{{h}}j {{m}}mnt",
+      "m": "{{m}}mnt"
+    },
+    "backgrounds": {
+      "route": "Rute",
+      "card": "Kartu",
+      "photo": "Foto",
+      "sticker": "Stiker"
+    },
+    "formats": {
+      "story": "Story 9:16",
+      "square": "Persegi 1:1"
+    },
+    "hints": {
+      "route": "Rute dan angka kamu di kartu JoyoFit gelap.",
+      "photo": "Fotomu dengan angka di atasnya.",
+      "sticker": "PNG transparan. Kirim ke Story Instagram sebagai stiker, atau salin lalu tempel di atas fotomu sendiri."
+    },
+    "photoPlaceholder": "Pilih foto dari galeri atau ambil foto baru.",
+    "photoChoose": "Pilih foto",
+    "photoChange": "Ganti foto",
+    "photoTake": "Ambil foto",
+    "photoFailed": "Foto itu tidak bisa dimuat. Pilih foto lain.",
+    "targets": {
+      "instagram": "Instagram",
+      "copy": "Salin",
+      "save": "Simpan",
+      "more": "Lainnya"
+    },
+    "toasts": {
+      "copied": "Tersalin",
+      "saved": "Tersimpan di foto kamu"
+    },
+    "errors": {
+      "photoTake": "Tidak bisa mengambil foto: {{error}}",
+      "photoLoad": "Tidak bisa memuat foto: {{error}}",
+      "copy": "Tidak bisa menyalin gambar: {{error}}",
+      "save": "Tidak bisa menyimpan gambar: {{error}}",
+      "share": "Tidak bisa membagikan gambar: {{error}}",
+      "photosDenied": "Akses foto untuk JoyoFit sedang mati. Nyalakan di Pengaturan.",
+      "openSettings": "Buka Pengaturan"
+    },
+    "photosDialog": {
+      "title": "Akses foto",
+      "instagram": "Instagram membuka gambar dari galeri foto kamu, jadi JoyoFit menyimpan gambar ini di sana dulu. Setelah ini HP kamu akan meminta izin.",
+      "save": "JoyoFit menambahkan gambar ini ke foto kamu. Foto yang sudah ada tidak dibaca. Setelah ini HP kamu akan meminta izin.",
+      "confirm": "Lanjut",
+      "cancel": "Nanti saja"
+    }
+  },
+  "strava": {
+    "title": "Strava",
+    "viewOn": "View on Strava",
+    "connectHint": "Hubungkan Strava untuk mengirim latihan ini lengkap dengan jarak, kalori, detak jantung, dan rute.",
+    "setUp": "Atur Strava",
+    "status": "Status",
+    "notSent": "Belum terkirim",
+    "statuses": {
+      "processing": "Strava masih memprosesnya",
+      "done": "Terkirim ke Strava",
+      "failed": "Gagal terkirim, coba lagi",
+      "rejected": "Strava menolak filenya"
+    },
+    "downloading": "Masih mengunduh dari jam. Kirim setelah sinkronisasi berikutnya.",
+    "check": "Cek Strava",
+    "send": "Kirim ke Strava",
+    "signIn": "Masuk dengan JoyoRogo (Pengaturan, Kesehatan dan cloud) untuk mengirim."
+  },
+  "fitImport": {
+    "sports": {
+      "RUNNING": "lari",
+      "WALKING": "jalan",
+      "CYCLING": "bersepeda",
+      "INDOOR_RUNNING": "lari treadmill",
+      "INDOOR_CYCLING": "sepeda statis",
+      "TRAIL_RUN": "lari trail",
+      "INDOOR_WALKING": "jalan di dalam ruangan",
+      "HIKING": "hiking",
+      "EXERCISE": "latihan"
+    },
+    "done": "Berhasil mengimpor {{sport}} {{distance}}, {{duration}}",
+    "doneNoDistance": "Berhasil mengimpor {{sport}}, {{duration}}",
+    "duplicate": "Sudah diimpor: {{sport}} pada {{when}} sudah ada di latihan kamu, jadi tidak ada yang ditambahkan.",
+    "overlap": "Jam kamu sudah merekam latihan ini ({{sport}}, {{when}}), jadi file tidak diimpor. Latihan dari jam tetap dipakai.",
+    "unfinished": "Impor belum selesai.",
+    "tooLarge": "File ini terlalu besar untuk jadi aktivitas FIT.",
+    "cannotOpen": "Tidak bisa membuka file: {{error}}",
+    "errors": {
+      "notFit": "Ini bukan file FIT. Pilih file .fit yang direkam bike computer kamu.",
+      "checksum": "File FIT ini rusak atau terpotong (checksum tidak cocok).",
+      "unreadable": "File FIT ini tidak bisa dibaca; sepertinya rusak.",
+      "notActivity": "Ini file FIT {{type}}, bukan file aktivitas. Pilih file dari lari atau gowes yang direkam.",
+      "noSession": "File FIT ini tidak punya sesi aktivitas (tidak ada total untuk gowes atau lari), jadi tidak ada yang bisa diimpor.",
+      "noStart": "File FIT ini tidak punya waktu mulai yang valid (jam perangkat belum diatur), jadi tidak bisa ditaruh di riwayat kamu.",
+      "noDuration": "File FIT ini tidak punya durasi, jadi tidak ada yang bisa diimpor."
+    }
+  },
+  "live": {
+    "title": "Latihan langsung",
+    "emptyTitle": "Tidak ada latihan berjalan",
+    "emptyDescription": "Jalan, lari, dan gowes di luar ruangan yang dimulai dari jam akan terbuka di sini. Di dalam ruangan, mulai dari jam, lalu ketuk Mulai.",
+    "start": "Mulai",
+    "finish": "Selesai",
+    "workout": "Latihan",
+    "status": {
+      "preparing": "Memulai",
+      "running": "Langsung",
+      "paused": "Dijeda",
+      "ended": "Selesai"
+    },
+    "timeA11y": "Waktu {{value}}",
+    "zone": "Zona {{zone}} · {{label}}",
+    "zones": {
+      "warmup": "Pemanasan",
+      "fatBurning": "Pembakaran lemak",
+      "aerobic": "Aerobik",
+      "anaerobic": "Anaerobik",
+      "extreme": "Ekstrem"
+    },
+    "tiles": {
+      "distance": "Jarak",
+      "speed": "Kecepatan",
+      "pace": "Pace"
+    },
+    "burned": {
+      "title": "Terbakar sejauh ini",
+      "fat": "Lemak",
+      "carbs": "Karbohidrat",
+      "calories": "Kalori",
+      "figureA11y": "{{label}} {{value}} gram",
+      "fuel": "Saat ini {{fat}}% dari lemak, {{carbs}}% dari karbohidrat"
+    },
+    "calc": {
+      "title": "Bagaimana ini dihitung?",
+      "watch": "Perkiraan dari JoyoFit, jam tidak mengukurnya: setiap kalori dibagi berdasarkan detak jantung kamu saat itu, dengan maksimum {{max}} bpm (220 dikurangi usiamu dari profil). Usaha yang lebih ringan membakar porsi lemak lebih besar.",
+      "phone": "Perkiraan dari JoyoFit, jam tidak mengukurnya: setiap kalori dibagi berdasarkan detak jantung kamu saat itu, dengan maksimum {{max}} bpm (220 dikurangi usiamu dari profil). Usaha yang lebih ringan membakar porsi lemak lebih besar. Jam tidak mengirim kalori langsung ke JoyoFit, jadi kalori juga dihitung dari detak jantung langsung, berat badan, usia, dan jenis kelamin kamu (Keytel 2005); layar jam bisa berbeda."
+    },
+    "more": {
+      "title": "Lainnya",
+      "steps": "Langkah",
+      "cadence": "Kadensi",
+      "stepRate": "{{value}} spm",
+      "speed": "Kecepatan",
+      "altitude": "Ketinggian",
+      "climb": "Tanjakan",
+      "descent": "Turunan",
+      "aerobicEffect": "Efek aerobik",
+      "anaerobicEffect": "Efek anaerobik",
+      "waiting": "Menunggu angka pertama dari jam.",
+      "ended": "Catatan lengkap (rute, split, grafik detak jantung) tiba pada sinkronisasi berikutnya dan muncul di Latihan."
+    }
+  }
+}

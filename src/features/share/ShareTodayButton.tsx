@@ -1,35 +1,36 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { PressableScale } from '@/components/PressableScale';
 import { buildDayShareStats, formatShareDay, type DayShareInput } from '@/features/share/dayShareStats';
 import { ShareSheet, type ShareSubject } from '@/features/share/ShareSheet';
 import { HIT, useColors } from '@/theme';
 
-const CAPTION = 'Tracked with JoyoFit · https://fit.joyorogo.com';
-
 /** Icon button for the Today header: opens the share sheet with steps, sleep and the day's scores. */
 export function ShareTodayButton({ day, nowMs }: { day: DayShareInput; nowMs: number }) {
   const colors = useColors();
+  const { t, i18n } = useTranslation('sharing');
   const [open, setOpen] = useState(false);
   const subject = useMemo<ShareSubject>(
     () => ({
-      heading: 'Share today',
-      title: 'Today',
+      heading: t('share.today.heading'),
+      title: t('share.today.title'),
       subtitle: formatShareDay(nowMs),
       icon: 'sunny',
       stats: buildDayShareStats(day),
       route: [],
-      caption: CAPTION,
-      cardHint: 'Your steps, sleep and scores on a dark JoyoFit card.',
+      caption: t('share.caption'),
+      cardHint: t('share.today.hint'),
     }),
-    [day, nowMs],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `t` follows the language
+    [day, nowMs, i18n.language],
   );
   return (
     <>
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel="Share today"
+        accessibilityLabel={t('share.today.heading')}
         onPress={() => setOpen(true)}
         style={{ width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name="share-outline" size={24} color={colors.foreground} />

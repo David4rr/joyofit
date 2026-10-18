@@ -1,10 +1,6 @@
 import type { WorkoutRow } from '@/db/queries';
-import { formatCount } from '@/format';
-import {
-  formatElapsed,
-  formatWorkoutDistance,
-  type WorkoutSummary,
-} from '@/features/workouts/summary';
+import { fmtClock, fmtDate, fmtDecimal, fmtInt, t } from '@/i18n';
+import { formatElapsed, type WorkoutSummary } from '@/features/workouts/summary';
 import { averagePaceSec, averageSpeedMs, workoutTimes } from '@/features/workouts/times';
 
 export type ShareStatKey =
@@ -55,13 +51,13 @@ export function effortStat(workout: WorkoutRow, summary: WorkoutSummary): ShareS
   if (kind === 'speed') {
     const metersPerSecond = (derivable ? averageSpeedMs(workout.distance, movingSec) : null) ?? summary.avgSpeed;
     if (metersPerSecond === undefined || metersPerSecond === null || !(metersPerSecond > 0)) return null;
-    return { key: 'speed', label: 'Avg speed', value: (metersPerSecond * 3.6).toFixed(1), unit: 'km/h' };
+    return { key: 'speed', label: t('sharing:share.stats.avgSpeed'), value: fmtDecimal(metersPerSecond * 3.6, 1), unit: 'km/h' };
   }
   const per100 = kind === 'pace100m';
   const watchPace = per100 ? summary.avgPaceSecPer100m : summary.avgPaceSecPerKm;
   const pace = (derivable ? averagePaceSec(workout.distance, movingSec, per100 ? 100 : 1000) : null) ?? watchPace;
   if (pace === undefined || pace === null || !(pace > 0) || pace > MAX_PACE_SEC) return null;
-  return { key: 'pace', label: 'Avg pace', value: formatElapsed(pace), unit: per100 ? '/100 m' : '/km' };
+  return { key: 'pace', label: t('sharing:share.stats.avgPace'), value: formatElapsed(pace), unit: per100 ? t('sharing:share.units.per100m') : t('sharing:share.units.perKm') };
 }
 
 /**
@@ -71,31 +67,33 @@ export function effortStat(workout: WorkoutRow, summary: WorkoutSummary): ShareS
 export function buildShareStats(workout: WorkoutRow, summary: WorkoutSummary): ShareStat[] {
   const stats: ShareStat[] = [];
   if (workout.distance > 0) {
-    const [value, unit] = formatWorkoutDistance(workout.distance).split(' ');
-    stats.push({ key: 'distance', label: 'Distance', value, unit });
+    const km = workout.distance >= 1000;
+    stats.push({
+      key: 'distance',
+      label: t('sharing:share.stats.distance'),
+      value: km ? fmtDecimal(workout.distance / 1000, 2) : fmtInt(workout.distance),
+      unit: km ? 'km' : 'm',
+    });
   }
   const { movingSec } = workoutTimes(workout);
   if (movingSec > 0) {
-    stats.push({ key: 'time', label: 'Time', value: formatElapsed(movingSec) });
+    stats.push({ key: 'time', label: t('sharing:share.stats.time'), value: formatElapsed(movingSec) });
   }
   const effort = effortStat(workout, summary);
   if (effort) stats.push(effort);
   if (workout.avgHr !== null && workout.avgHr > 0) {
-    stats.push({ key: 'hr', label: 'Avg HR', value: String(workout.avgHr), unit: 'bpm' });
+    stats.push({ key: 'hr', label: t('sharing:share.stats.avgHr'), value: fmtInt(workout.avgHr), unit: 'bpm' });
   }
   if (workout.calories > 0) {
-    stats.push({ key: 'calories', label: 'Calories', value: formatCount(workout.calories), unit: 'kcal' });
+    stats.push({ key: 'calories', label: t('sharing:share.stats.calories'), value: fmtInt(workout.calories), unit: 'kcal' });
   }
   if (summary.elevationGain !== undefined && summary.elevationGain >= 1) {
-    stats.push({ key: 'elevation', label: 'Elevation', value: formatCount(summary.elevationGain), unit: 'm' });
+    stats.push({ key: 'elevation', label: t('sharing:share.stats.elevation'), value: fmtInt(summary.elevationGain), unit: 'm' });
   }
   return stats;
 }
 
-/** `Oct 12, 2026 · 07:30`, in the phone's locale. Unix seconds, local time. */
+/** `12 Okt 2026 · 07.30` / `Oct 12, 2026 · 7:30 AM`, in the app language. Unix seconds, local time. */
 export function formatShareDate(sec: number): string {
-  const date = new Date(sec * 1000);
-  const day = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  const time = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
-  return `${day} · ${time}`;
+  return `${fmtDate(sec, 'medium')} · ${fmtClock(sec)}`;
 }

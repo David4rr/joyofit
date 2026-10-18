@@ -22,6 +22,9 @@ export const CARD_WIDTH = DESIGN_WIDTH / PixelRatio.get();
 const UNIT = CARD_WIDTH / DESIGN_WIDTH;
 const px = (design: number) => design * UNIT;
 
+const WORDMARK = 'JoyoFit'; // i18n-ok: brand
+const SITE = 'fit.joyorogo.com'; // i18n-ok: URL
+
 interface Metrics {
   /** Card height in design pixels. */
   height: number;
@@ -310,8 +313,8 @@ export function ShareCard({
         ) : null}
 
         <View style={[styles.row, styles.footer]}>
-          <Text style={text(m.wordmark, fonts.heavy, ink, { letterSpacing: -px(1) })}>JoyoFit</Text>
-          <Text style={text(m.wordmark * 0.62, fonts.medium, soft)}>fit.joyorogo.com</Text>
+          <Text style={text(m.wordmark, fonts.heavy, ink, { letterSpacing: -px(1) })}>{WORDMARK}</Text>
+          <Text style={text(m.wordmark * 0.62, fonts.medium, soft)}>{SITE}</Text>
         </View>
       </View>
     </View>
