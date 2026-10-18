@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -7,26 +8,30 @@ import { Ring } from '@/components/Ring';
 import { Section } from '@/components/Screen';
 import { STRAIN_MAX, type DayStrain } from '@/features/today/strain';
 import { STRAIN_DAYS } from '@/features/today/useTodayData';
+import { fmtDecimal, fmtInt, INTL_TAG, getLocale, t as translate } from '@/i18n';
 import { radius, spacing, useColors } from '@/theme';
 
 const BAR_HEIGHT = 56;
-const WEEKDAY: Intl.DateTimeFormatOptions = { weekday: 'narrow' };
-
 function formatStrain(strain: number): string {
-  return strain.toFixed(1);
+  return fmtDecimal(strain, 1);
 }
 
 /** Words for where a day's strain sits; the cut points split the 0..21 curve at roughly rest, walk, run, hard. */
 export function strainWord(strain: number): string {
-  if (strain < 5) return 'Light';
-  if (strain < 10) return 'Moderate';
-  if (strain < 14) return 'High';
-  return 'All out';
+  if (strain < 5) return translate('today:strain.light');
+  if (strain < 10) return translate('today:strain.moderate');
+  if (strain < 14) return translate('today:strain.high');
+  return translate('today:strain.allOut');
+}
+
+function weekdayNarrow(day: number): string {
+  return new Date(day * 1000).toLocaleDateString(INTL_TAG[getLocale()], { weekday: 'narrow' });
 }
 
 /** Today's strain as a ring, minutes per zone, and the last seven days as bars. */
 export function StrainSection({ days, dayStart, maxHr }: { days: readonly DayStrain[]; dayStart: number; maxHr: number }) {
   const colors = useColors();
+  const { t } = useTranslation('today');
   const byDay = new Map(days.map((d) => [d.day, d]));
   const week = Array.from({ length: STRAIN_DAYS }, (_, i) => {
     // Local midnights: step back a day at noon so a DST shift cannot land on the wrong date.
@@ -41,7 +46,7 @@ export function StrainSection({ days, dayStart, maxHr }: { days: readonly DayStr
   const easy = today ? Math.round(today.zoneMinutes[0] + today.zoneMinutes[1]) : 0;
 
   return (
-    <Section title="Strain" icon="flash" tint="workouts">
+    <Section title={t('strain.title')} icon="flash" tint="workouts">
       <View style={styles.row}>
         <Ring
           size={80}
@@ -50,30 +55,30 @@ export function StrainSection({ days, dayStart, maxHr }: { days: readonly DayStr
           max={STRAIN_MAX}
           color={colors.workouts}
           track={colors.workoutsSoft}
-          accessibilityLabel={today ? `Strain ${formatStrain(today.strain)} of ${STRAIN_MAX}` : 'No strain yet today'}>
+          accessibilityLabel={today ? t('strain.ringA11y', { value: formatStrain(today.strain), max: STRAIN_MAX }) : t('strain.ringNoneA11y')}>
           <View style={styles.center}>
             <CountUpText
               variant="heading"
               color={colors.workoutsText}
-              value={today ? Number(formatStrain(today.strain)) : null}
+              value={today ? Number(today.strain.toFixed(1)) : null}
               decimals={1}
               style={styles.value}
             />
             <AppText variant="caption" muted style={styles.small}>
-              of {STRAIN_MAX}
+              {t('strain.ofMax', { max: STRAIN_MAX })}
             </AppText>
           </View>
         </Ring>
         <View style={styles.text}>
-          <AppText variant="bodyStrong">{today ? strainWord(today.strain) : 'No heart rate yet today'}</AppText>
+          <AppText variant="bodyStrong">{today ? strainWord(today.strain) : t('strain.none')}</AppText>
           {today ? (
             <AppText variant="caption" muted>
-              {hard} min above 70 % of max heart rate, {easy} min at 50 to 70 %.
+              {t('strain.zones', { hard: fmtInt(hard), easy: fmtInt(easy) })}
             </AppText>
           ) : null}
         </View>
       </View>
-      <View style={styles.bars} accessibilityLabel="Strain over the last seven days">
+      <View style={styles.bars} accessibilityLabel={t('strain.weekA11y')}>
         {week.map(({ day, strain }) => (
           <View key={day} style={styles.barCol}>
             <View style={[styles.barTrack, { backgroundColor: colors.workoutsSoft }]}>
@@ -90,12 +95,12 @@ export function StrainSection({ days, dayStart, maxHr }: { days: readonly DayStr
               {strain !== null ? formatStrain(strain) : '-'}
             </AppText>
             <AppText variant="caption" muted style={styles.small}>
-              {new Date(day * 1000).toLocaleDateString(undefined, WEEKDAY)}
+              {weekdayNarrow(day)}
             </AppText>
           </View>
         ))}
       </View>
-      <Details>From the heart rate the watch stored (max {maxHr} bpm). Sync to update.</Details>
+      <Details>{t('strain.details', { maxHr })}</Details>
     </Section>
   );
 }

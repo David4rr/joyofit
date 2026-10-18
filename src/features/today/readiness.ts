@@ -3,6 +3,7 @@ import type { Recovery, RecoveryState } from '@/features/today/recovery';
 import { type SleepSummary } from '@/features/today/stats';
 import type { DayStrain } from '@/features/today/strain';
 import { loadBalance, MIN_LOAD_DAYS } from '@/features/fitness/trainingLoad';
+import { fmtDecimal, fmtDuration, fmtInt, fmtPercent, t } from '@/i18n';
 
 /**
  * "Should you push today?" from your own history. Each signal is shown with its numbers, and a signal without enough
@@ -74,9 +75,20 @@ export function sleepDebtSec(asleepSecondsPerNight: readonly number[]): number |
   return asleepSecondsPerNight.reduce((sum, s) => sum + Math.max(0, BASE_SLEEP_NEED_SEC - s), 0);
 }
 
-function hm(sec: number): string {
-  const min = Math.round(sec / 60);
-  return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
+const HEADLINE_KEY = { Primed: 'primed', Balanced: 'balanced', Strained: 'strained', 'Run down': 'runDown' } as const;
+
+/** The headline word in the UI language; the `ReadinessHeadline` value itself is the stable identifier JoyoRogo receives. */
+export function headlineLabel(headline: ReadinessHeadline): string {
+  return t(`today:readiness.headline.${HEADLINE_KEY[headline]}`);
+}
+
+export function headlineHint(headline: ReadinessHeadline): string {
+  return t(`today:readiness.hint.${HEADLINE_KEY[headline]}`);
+}
+
+/** `+1,5` / `-0,5` with one decimal. */
+function signed(n: number): string {
+  return `${n >= 0 ? '+' : ''}${fmtDecimal(n, 1)}`;
 }
 
 export function readiness(input: {
@@ -97,9 +109,13 @@ export function readiness(input: {
     const r = hrv.recovery;
     signals.push({
       key: 'hrv',
-      title: r.source === 'night' ? 'HRV last night' : 'HRV (1-minute reading)',
-      value: `${Math.round(r.rmssd)} ms`,
-      detail: `${r.z >= 0 ? '+' : ''}${r.z.toFixed(1)} SD against your usual ${Math.round(r.baselineRmssd)} ms (${r.baselineCount} ${r.source === 'night' ? 'nights' : 'readings'})`,
+      title: t(r.source === 'night' ? 'today:readiness.signal.hrvNightTitle' : 'today:readiness.signal.hrvSpotTitle'),
+      value: `${fmtInt(r.rmssd)} ms`,
+      detail: t(r.source === 'night' ? 'today:readiness.signal.hrvNightDetail' : 'today:readiness.signal.hrvSpotDetail', {
+        z: signed(r.z),
+        baseline: fmtInt(r.baselineRmssd),
+        count: r.baselineCount,
+      }),
       tone: r.z >= 0.5 ? 'good' : r.z <= -1 ? 'bad' : 'neutral',
       amount: r.z,
     });
@@ -110,17 +126,17 @@ export function readiness(input: {
   const today = resting.get(dayStart);
   const history = [...resting.entries()].filter(([day]) => day < dayStart && day >= dayStart - 30 * 86400).map(([, v]) => v);
   if (today === undefined) {
-    missing.push('Resting heart rate: the watch has not reported one today.');
+    missing.push(t('today:readiness.missing.rhrNone'));
   } else if (history.length < MIN_BASELINE_DAYS) {
-    missing.push(`Resting heart rate: ${history.length} of ${MIN_BASELINE_DAYS} days of history so far.`);
+    missing.push(t('today:readiness.missing.rhrShort', { have: history.length, need: MIN_BASELINE_DAYS }));
   } else {
     const baseline = mean(history);
     const delta = today - baseline;
     signals.push({
       key: 'rhr',
-      title: 'Resting heart rate',
-      value: `${today} bpm`,
-      detail: `${delta >= 0 ? '+' : ''}${delta.toFixed(1)} against your ${history.length}-day average of ${baseline.toFixed(0)}`,
+      title: t('today:readiness.signal.rhrTitle'),
+      value: `${fmtInt(today)} bpm`,
+      detail: t('today:readiness.signal.rhrDetail', { delta: signed(delta), count: history.length, baseline: fmtInt(baseline) }),
       tone: delta >= 5 ? 'bad' : delta <= -2 ? 'good' : 'neutral',
       amount: delta,
     });
@@ -128,7 +144,7 @@ export function readiness(input: {
 
   const yesterday = strain.find((d) => d.day < dayStart && d.day >= dayStart - 26 * 3600)?.strain ?? null;
   if (!sleep) {
-    missing.push('Sleep: nothing stored for last night.');
+    missing.push(t('today:readiness.missing.sleepNone'));
   } else {
     const awake = sleep.byStage.find((s) => s.stage === 'awake')?.seconds ?? 0;
     const slept = sleep.byStage.length > 0 ? sleep.totalSeconds - awake : sleep.totalSeconds;
@@ -136,9 +152,12 @@ export function readiness(input: {
     const share = slept / need;
     signals.push({
       key: 'sleep',
-      title: 'Sleep',
-      value: `${Math.round(share * 100)} %`,
-      detail: `${hm(slept)} of the ${hm(need)} you needed${yesterday !== null ? ` after strain ${yesterday.toFixed(1)}` : ''}`,
+      title: t('today:readiness.signal.sleepTitle'),
+      value: fmtPercent(share * 100),
+      detail:
+        yesterday !== null
+          ? t('today:readiness.signal.sleepDetailStrain', { slept: fmtDuration(slept), need: fmtDuration(need), strain: fmtDecimal(yesterday, 1) })
+          : t('today:readiness.signal.sleepDetail', { slept: fmtDuration(slept), need: fmtDuration(need) }),
       tone: share >= 0.9 ? 'good' : share >= 0.75 ? 'neutral' : 'bad',
       amount: share,
     });
@@ -146,16 +165,19 @@ export function readiness(input: {
 
   const load = loadBalance(strain, dayStart);
   if (load.kind === 'short') {
-    missing.push(`Training load: ${load.daysWithData} of ${MIN_LOAD_DAYS} days with heart rate so far.`);
+    missing.push(t('today:readiness.missing.loadShort', { have: load.daysWithData, need: MIN_LOAD_DAYS }));
   } else if (load.kind === 'none') {
-    missing.push('Training load: no strain in the last 28 days.');
+    missing.push(t('today:readiness.missing.loadNone'));
   } else {
     const { acute, chronic, ratio } = load;
     signals.push({
       key: 'load',
-      title: 'Training load',
-      value: ratio.toFixed(2),
-      detail: `last 7 days average ${Math.round(acute)} TRIMP a day against 28 days ${Math.round(chronic)}${ratio > 1.5 ? ', a sharp rise' : ratio < 0.8 ? ', lighter than usual' : ''}`,
+      title: t('today:readiness.signal.loadTitle'),
+      value: fmtDecimal(ratio, 2),
+      detail: t(
+        ratio > 1.5 ? 'today:readiness.signal.loadDetailRise' : ratio < 0.8 ? 'today:readiness.signal.loadDetailLight' : 'today:readiness.signal.loadDetail',
+        { acute: fmtInt(acute), chronic: fmtInt(chronic) },
+      ),
       tone: ratio > 1.5 ? 'bad' : ratio < 0.8 ? 'neutral' : 'good',
       amount: ratio,
     });
@@ -178,9 +200,9 @@ export function hrvNote(hrv: RecoveryState, availability: NightHrvAvailability |
   const why = availability && availability.state !== 'available' ? availability.message : null;
   if ('recovery' in hrv) {
     if (hrv.recovery.source === 'night') return null;
-    return `HRV here is a 1-minute reading standing in for night HRV${why ? `: ${why}` : ''}.`;
+    return why ? t('today:readiness.note.spotWhy', { why }) : t('today:readiness.note.spot');
   }
-  return why ? `Readiness here uses sleep, resting heart rate and training load, no night HRV: ${why}.` : null;
+  return why ? t('today:readiness.note.noNight', { why }) : null;
 }
 
 function headline(signals: readonly Signal[]): ReadinessHeadline | null {

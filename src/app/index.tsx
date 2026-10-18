@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -38,6 +39,7 @@ import { ShareTodayButton } from '@/features/share/ShareTodayButton';
 import { formatElapsed } from '@/features/workouts/summary';
 import { formatClock, formatCount, formatDistance } from '@/format';
 import { useNow } from '@/hooks/useNow';
+import { getLocale, INTL_TAG, useLocale } from '@/i18n';
 import { useLiveWorkout } from '@/state/LiveWorkoutProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
@@ -56,6 +58,8 @@ const HERO_TICK_MS = 5_000;
 export default function TodayScreen() {
   const router = useRouter();
   const colors = useColors();
+  const { t } = useTranslation(['today', 'common']);
+  const locale = useLocale();
   const { linkState, device, battery, lastSync, totals, error, dataVersion, sync } = useWatch();
   const { data, error: loadError } = useTodayData(dataVersion);
   const nightHrv = useNightHrvAvailability(dataVersion);
@@ -80,7 +84,7 @@ export default function TodayScreen() {
       hasSamples: data.samples.length > 0,
       scores,
     };
-  }, [data, totals, nightHrv]);
+  }, [data, totals, nightHrv, locale]);
 
   useRogoScoresPush(view?.scores ?? null, data?.dayStart ?? null);
 
@@ -93,8 +97,8 @@ export default function TodayScreen() {
 
   return (
     <Screen
-      title="Today"
-      caption={new Date().toLocaleDateString(undefined, WEEKDAY_FORMAT)}
+      title={t('common:nav.today')}
+      caption={new Date().toLocaleDateString(INTL_TAG[getLocale()], WEEKDAY_FORMAT)}
       right={
         data && view ? (
           <ShareTodayButton day={view.share} nowMs={data.nowSec * 1000} />
@@ -116,7 +120,7 @@ export default function TodayScreen() {
             canSync || syncing ? (
               <SyncButton variant="inverse" />
             ) : linkState === 'disconnected' ? (
-              <Button label="Connect watch" variant="inverse" icon="bluetooth" onPress={() => router.push('/watch')} />
+              <Button label={t('home.connectWatch')} variant="inverse" icon="bluetooth" onPress={() => router.push('/watch')} />
             ) : null
           }
         />
@@ -125,14 +129,21 @@ export default function TodayScreen() {
             <NavRow
               icon="pulse"
               tint="workouts"
-              title={`${liveWorkout.sportName ?? 'Workout'} ${liveWorkout.status === 'paused' ? 'paused' : 'in progress'}`}
-              subtitle={`${formatElapsed(elapsedSec(liveWorkout, nowMs))}${liveWorkout.heartRate !== null ? ` · ${liveWorkout.heartRate} bpm` : ''} · fat ${formatGrams(liveWorkout.fatGrams)} g, carbs ${formatGrams(liveWorkout.carbGrams)} g`}
+              title={t(liveWorkout.status === 'paused' ? 'home.workoutPaused' : 'home.workoutInProgress', {
+                sport: liveWorkout.sportName ?? t('home.workoutDefault'),
+              })}
+              subtitle={t(liveWorkout.heartRate !== null ? 'home.workoutSubtitleHr' : 'home.workoutSubtitle', {
+                elapsed: formatElapsed(elapsedSec(liveWorkout, nowMs)),
+                bpm: liveWorkout.heartRate,
+                fat: formatGrams(liveWorkout.fatGrams),
+                carbs: formatGrams(liveWorkout.carbGrams),
+              })}
               onPress={() => router.push('/workout-live')}
             />
           </Card>
         ) : null}
         {error ? <Notice tone="danger">{error}</Notice> : null}
-        {loadError ? <Notice tone="danger">Could not read stored data: {loadError}</Notice> : null}
+        {loadError ? <Notice tone="danger">{t('home.loadError', { error: loadError })}</Notice> : null}
       </View>
 
       {view ? <ScoresCard readiness={view.scores.readiness} today={view.scores.today} onPress={() => router.push('/readiness')} /> : null}
@@ -152,30 +163,30 @@ export default function TodayScreen() {
         </View>
       ) : (
         <View style={styles.tiles}>
-          <StatTile icon="flame" tint="workouts" label="Calories" value={formatCount(view?.totals.calories ?? 0)} unit="kcal" />
-          <StatTile icon="trail-sign" tint="steps" label="Distance" value={distance.value} unit={distance.unit} />
+          <StatTile icon="flame" tint="workouts" label={t('home.calories')} value={formatCount(view?.totals.calories ?? 0)} unit={t('home.kcal')} />
+          <StatTile icon="trail-sign" tint="steps" label={t('home.distance')} value={distance.value} unit={distance.unit} />
         </View>
       )}
 
-      <Section title="Heart rate" icon="heart" tint="heart">
+      <Section title={t('home.heartTitle')} icon="heart" tint="heart">
         {view?.heart ? (
           <View style={styles.heartRow}>
             <View style={styles.heartCol}>
               <Metric value={String(view.heart.latest.bpm)} unit="bpm" size="md" color={colors.heartText} unitColor={colors.mutedForeground} />
               <AppText variant="caption" muted>
-                Latest {formatClock(view.heart.latest.timestamp)}
+                {t('home.latest', { time: formatClock(view.heart.latest.timestamp) })}
               </AppText>
             </View>
             <View style={styles.heartCol}>
               <Metric value={String(view.heart.min)} unit="bpm" size="md" />
               <AppText variant="caption" muted>
-                Low
+                {t('home.low')}
               </AppText>
             </View>
             <View style={styles.heartCol}>
               <Metric value={String(view.heart.max)} unit="bpm" size="md" />
               <AppText variant="caption" muted>
-                High
+                {t('home.high')}
               </AppText>
             </View>
           </View>
@@ -183,16 +194,16 @@ export default function TodayScreen() {
           <Skeleton width="60%" height={38} />
         ) : (
           <AppText variant="caption" muted>
-            No heart rate stored today.
+            {t('home.noHeart')}
           </AppText>
         )}
       </Section>
 
-      <Section title="Steps per hour" icon="footsteps" tint="steps">
+      <Section title={t('home.stepsTitle')} icon="footsteps" tint="steps">
         <HourlyBars steps={view?.hourly ?? new Array<number>(24).fill(0)} />
       </Section>
 
-      <Section title="Last night's sleep" icon="moon" tint="sleep" onPress={() => router.push('/sleep')}>
+      <Section title={t('home.sleepTitle')} icon="moon" tint="sleep" onPress={() => router.push('/sleep')}>
         {loading ? <Skeleton width="50%" height={38} /> : <SleepSummaryView summary={view?.sleep ?? null} score={view?.sleepScore ?? null} />}
       </Section>
 
@@ -200,19 +211,13 @@ export default function TodayScreen() {
         <NavRow
           icon="pulse"
           tint="heart"
-          title="Health metrics"
-          subtitle="Skin temp, HRV, stress and more"
+          title={t('home.healthTitle')}
+          subtitle={t('home.healthSubtitle')}
           onPress={() => router.push('/health')}
         />
       </Card>
-      <Details title="About these numbers">
-        {`${
-          view?.totalsFromWatch
-            ? 'Calories and distance are as reported by the watch at the last sync.'
-            : view?.hasSamples
-              ? 'Calories and distance are added up from stored one-minute samples.'
-              : 'Nothing stored for today yet. Sync to pull today from the watch.'
-        } Pull down to sync.`}
+      <Details title={t('home.aboutTitle')}>
+        {t(view?.totalsFromWatch ? 'home.aboutWatch' : view?.hasSamples ? 'home.aboutSamples' : 'home.aboutNone')}
       </Details>
     </Screen>
   );

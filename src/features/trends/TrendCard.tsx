@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Screen';
 import { TrendChart } from '@/features/trends/TrendChart';
 import { summarize, type DaySeries } from '@/features/trends/series';
+import { t as translate } from '@/i18n';
 import { spacing, tintColors, useColors, type Tint } from '@/theme';
 
 interface TrendCardProps {
@@ -22,14 +24,15 @@ interface TrendCardProps {
 }
 
 function ago(days: number): string {
-  if (days === 0) return 'today';
-  if (days === 1) return 'yesterday';
-  return `${days} days ago`;
+  if (days === 0) return translate('today:trends.today');
+  if (days === 1) return translate('today:trends.yesterday');
+  return translate('today:trends.daysAgo', { count: days });
 }
 
 /** One metric over the range: latest value, the range average, a chart, and an empty state that says what is missing. */
 export function TrendCard({ title, tint, values, kind, format, firstDay, domain, reference, empty }: TrendCardProps) {
   const colors = useColors();
+  const { t } = useTranslation('today');
   const tinted = tintColors(colors, tint);
   const summary = summarize(values);
 
@@ -40,7 +43,7 @@ export function TrendCard({ title, tint, values, kind, format, firstDay, domain,
           <AppText variant="bodyStrong">{title}</AppText>
           {summary ? (
             <AppText variant="caption" muted>
-              Avg {format(summary.average)}, {summary.count} of {values.length} days
+              {t('trends.summary', { average: format(summary.average), count: summary.count, total: values.length })}
             </AppText>
           ) : null}
         </View>
@@ -65,7 +68,13 @@ export function TrendCard({ title, tint, values, kind, format, firstDay, domain,
             domain={domain}
             reference={reference}
             average={summary.average}
-            label={`${title}, last ${values.length} days. Latest ${format(summary.latest)} ${ago(summary.daysAgo)}, average ${format(summary.average)}.`}
+            label={t('trends.chartA11y', {
+              title,
+              count: values.length,
+              latest: format(summary.latest),
+              when: ago(summary.daysAgo),
+              average: format(summary.average),
+            })}
           />
         </>
       ) : (

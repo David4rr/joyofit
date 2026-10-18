@@ -1,11 +1,17 @@
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { countNightHrvSince, listSleepSince } from '@/db/queries';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
-import { countNightsSince, nightHrvAvailability, type NightHrvAvailability } from '@/features/today/nightHrv';
+import {
+  countNightsSince,
+  nightHrvAvailability,
+  type NightHrvAvailability,
+  type NightHrvInput,
+} from '@/features/today/nightHrv';
 import { HISTORY_DAYS } from '@/features/today/useTodayData';
+import { useLocale } from '@/i18n';
 import { HuaweiWear } from '@/wear';
 
 /** A night that ends just after the calibration started before it. */
@@ -18,7 +24,9 @@ const NIGHT_LOOKBACK_SEC = 12 * 3600;
  */
 export function useNightHrvAvailability(dataVersion: number): NightHrvAvailability | null {
   const db = useSQLiteContext();
-  const [availability, setAvailability] = useState<NightHrvAvailability | null>(null);
+  // The inputs, not the result: the result holds translated text, so it is derived on render and follows a language switch.
+  const [input, setInput] = useState<NightHrvInput | null>(null);
+  const locale = useLocale();
   const latest = useRef(0);
 
   const refresh = useCallback(() => {
@@ -34,21 +42,19 @@ export function useNightHrvAvailability(dataVersion: number): NightHrvAvailabili
     ]).then(
       ([inWindow, sinceSetup, sleep]) => {
         if (request !== latest.current) return;
-        setAvailability(
-          nightHrvAvailability({
-            platform: Platform.OS === 'ios' ? 'ios' : 'android',
-            knownSupported: status.knownSupported,
-            enabled: status.enabled,
-            calibratedAt: status.lastCalibratedAt,
-            nightsSinceSetup: countNightsSince(sleep, [], status.lastCalibratedAt ?? windowStart),
-            nightRowsSinceSetup: sinceSetup,
-            anyNightRowInHistory: inWindow > 0,
-          }),
-        );
+        setInput({
+          platform: Platform.OS === 'ios' ? 'ios' : 'android',
+          knownSupported: status.knownSupported,
+          enabled: status.enabled,
+          calibratedAt: status.lastCalibratedAt,
+          nightsSinceSetup: countNightsSince(sleep, [], status.lastCalibratedAt ?? windowStart),
+          nightRowsSinceSetup: sinceSetup,
+          anyNightRowInHistory: inWindow > 0,
+        });
       },
       // Without the counts the old text is shown, which is what happened before this hook existed.
       () => {
-        if (request === latest.current) setAvailability(null);
+        if (request === latest.current) setInput(null);
       },
     );
   }, [db]);
@@ -58,5 +64,6 @@ export function useNightHrvAvailability(dataVersion: number): NightHrvAvailabili
     refresh();
   }, [refresh, dataVersion]);
 
-  return availability;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => (input ? nightHrvAvailability(input) : null), [input, locale]);
 }

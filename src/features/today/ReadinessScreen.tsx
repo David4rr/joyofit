@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { FadeIn } from '@/components/motion';
@@ -12,23 +13,26 @@ import { computeScores } from '@/features/today/scores';
 import { StrainSection } from '@/features/today/StrainSection';
 import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
 import { useTodayData } from '@/features/today/useTodayData';
+import { useLocale } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { useTheme } from '@/theme';
 
 /** What the three rings on Today stand for, with every signal and the strain week behind them. */
 export function ReadinessScreen() {
   const router = useRouter();
+  const { t } = useTranslation('today');
+  const locale = useLocale();
   const theme = useTheme();
   const { linkState, device, dataVersion, sync } = useWatch();
   const { data, error } = useTodayData(dataVersion);
   const nightHrv = useNightHrvAvailability(dataVersion);
-  const scores = useMemo(() => (data ? computeScores(data, nightHrv) : null), [data, nightHrv]);
+  const scores = useMemo(() => (data ? computeScores(data, nightHrv) : null), [data, nightHrv, locale]);
   const canSync = linkState === 'connected' && device !== null;
 
   return (
     <Screen refresh={{ refreshing: linkState === 'syncing', onRefresh: () => void sync(), enabled: canSync }}>
-      <HiddenTabHeader title="Readiness" />
-      {error ? <Notice tone="danger">Could not read stored data: {error}</Notice> : null}
+      <HiddenTabHeader title={t('readiness.screenTitle')} />
+      {error ? <Notice tone="danger">{t('readiness.loadError', { error })}</Notice> : null}
       {scores && data ? (
         <>
           <FadeIn>
@@ -40,8 +44,8 @@ export function ReadinessScreen() {
           <NavRow
             icon="stats-chart"
             tint="link"
-            title="Trends"
-            subtitle="Recovery, strain, sleep, HRV and resting heart rate over 30 or 90 days"
+            title={t('readiness.trendsTitle')}
+            subtitle={t('readiness.trendsSubtitle')}
             onPress={() => router.push('/trends')}
             style={groupedRowStyle(theme, 0, 1)}
           />

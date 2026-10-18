@@ -1,5 +1,6 @@
 import type { HrvReadingRow } from '@/db/queries';
 import type { NightHrvAvailability } from '@/features/today/nightHrv';
+import { t } from '@/i18n';
 
 /**
  * Recovery from HRV against your own baseline, after Plews and Buchheit: work on ln(RMSSD), compare today's value with
@@ -41,12 +42,10 @@ export function bandOf(percent: number): RecoveryBand {
 function missingText(readings: readonly HrvReadingRow[], availability: NightHrvAvailability | null | undefined): string {
   if (availability && availability.state !== 'available') {
     return availability.state === 'off' || availability.state === 'waiting'
-      ? `${availability.message}. ${availability.detail}`
-      : `${availability.message}. Measure HRV for a minute to get a recovery score.`;
+      ? t('today:recovery.offWaiting', { message: availability.message, detail: availability.detail })
+      : t('today:recovery.unavailable', { message: availability.message });
   }
-  return readings.length === 0
-    ? 'HRV: no readings yet. Measure HRV for a minute, or sync after a night with the watch on.'
-    : 'HRV: no reading from last night or today yet.';
+  return readings.length === 0 ? t('today:recovery.noReadings') : t('today:recovery.noRecent');
 }
 
 /** Mean and sample standard deviation (n - 1) of `values`; the SD is 0 for a single value. The one baseline arithmetic of `recovery` and `hrvStatus`. */
@@ -71,7 +70,10 @@ export function recovery(
   );
   if (history.length < MIN_BASELINE_READINGS) {
     return {
-      missing: `HRV: ${history.length} of ${MIN_BASELINE_READINGS} earlier ${today.source === 'night' ? 'nights' : 'readings'} needed for your baseline.`,
+      missing: t(today.source === 'night' ? 'today:recovery.baselineNights' : 'today:recovery.baselineReadings', {
+        have: history.length,
+        count: MIN_BASELINE_READINGS,
+      }),
     };
   }
   const { mean, sd } = meanSd(history.map((r) => Math.log(r.rmssd)));

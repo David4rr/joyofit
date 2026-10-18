@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -21,32 +22,31 @@ const ABOUT_URL =
  * offers the same JoyoRogo sign-in Settings uses.
  */
 export function JoyoRogoCard() {
+  const { t } = useTranslation('today');
   const cloud = useCloud();
   if (cloud.sessionPending) return null;
 
   return (
     <Card>
       <View style={styles.body}>
-        <AppText variant="bodyStrong">{"Eat for today's strain"}</AppText>
+        <AppText variant="bodyStrong">{t('rogoCard.title')}</AppText>
         {cloud.signedIn ? (
           <>
             <AppText variant="caption" muted>
-              {"Today's Recovery, Strain and Sleep are in your JoyoRogo food diary, with a short food tip for a day like this."}
+              {t('rogoCard.signedIn')}
             </AppText>
             <View style={styles.actions}>
-              <Button label="Open JoyoRogo diary" icon="restaurant" onPress={() => void Linking.openURL(DIARY_URL)} />
+              <Button label={t('rogoCard.openDiary')} icon="restaurant" onPress={() => void Linking.openURL(DIARY_URL)} />
             </View>
           </>
         ) : (
           <>
             <AppText variant="caption" muted>
-              {
-                "JoyoRogo is our food diary: snap a photo of your meal and it counts the calories. Sign in and these scores appear next to what you ate, with a tip on what to eat after a hard or easy day. Your intake also shows on the watch's calorie card."
-              }
+              {t('rogoCard.signedOut')}
             </AppText>
             <View style={styles.actions}>
-              <Button label="Sign in with JoyoRogo" icon="log-in" onPress={() => void cloud.signIn()} />
-              <Button label="What's JoyoRogo?" variant="ghost" onPress={() => void Linking.openURL(ABOUT_URL)} />
+              <Button label={t('rogoCard.signIn')} icon="log-in" onPress={() => void cloud.signIn()} />
+              <Button label={t('rogoCard.whatIs')} variant="ghost" onPress={() => void Linking.openURL(ABOUT_URL)} />
             </View>
             {cloud.error ? (
               <AppText variant="caption" muted>

@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -17,24 +18,25 @@ import { spacing } from '@/theme';
  */
 export function FamilyCard() {
   const router = useRouter();
+  const { t } = useTranslation('today');
   const { available, loading, error, watching, limits } = useFamily();
   if (!available || loading || (error !== null && limits === null)) return null;
 
   if (watching.length === 0) {
     return (
       <Card>
-        <NavRow icon="people" tint="link" title="Pantau kabar keluarga" onPress={() => router.push('/family')} />
+        <NavRow icon="people" tint="link" title={t('family.start')} onPress={() => router.push('/family')} />
       </Card>
     );
   }
 
   const worst = worstChip(watching);
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel="Keluarga" onPress={() => router.push('/family')} scaleTo={0.985}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={t('family.title')} onPress={() => router.push('/family')} scaleTo={0.985}>
       <Card style={styles.card}>
         <IconChip icon="people" tint="link" />
         <View style={styles.text}>
-          <AppText variant="bodyStrong">Keluarga</AppText>
+          <AppText variant="bodyStrong">{t('family.title')}</AppText>
           <AppText variant="caption" muted numberOfLines={1}>
             {familyCardLine(watching)}
           </AppText>

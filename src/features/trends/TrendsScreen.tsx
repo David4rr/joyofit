@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -22,23 +23,21 @@ import {
 } from '@/features/trends/series';
 import { TrendCard } from '@/features/trends/TrendCard';
 import { useTrendsData } from '@/features/trends/useTrendsData';
+import { fmtDecimal, fmtDuration, fmtInt, fmtPercent, useLocale } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing } from '@/theme';
 
-const RANGE_OPTIONS = TREND_RANGES.map((value) => ({ value, label: `${value} days` }));
-
-function hoursMinutes(hours: number): string {
-  const minutes = Math.round(hours * 60);
-  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`;
-}
 
 /** Recovery, strain, sleep, HRV and resting heart rate per day over 30 or 90 days, from the stored history. */
 export function TrendsScreen() {
+  const { t } = useTranslation('today');
+  const locale = useLocale();
   const { linkState, device, dataVersion, sync } = useWatch();
   const [range, setRange] = useState<TrendRange>(30);
   const { data, error } = useTrendsData(range, dataVersion);
   const nightHrv = useNightHrvAvailability(dataVersion);
   const canSync = linkState === 'connected' && device !== null;
+  const rangeOptions = TREND_RANGES.map((value) => ({ value, label: t('trends.range', { count: value }) }));
 
   const trends = useMemo(() => {
     if (!data) return null;
@@ -57,83 +56,83 @@ export function TrendsScreen() {
 
   return (
     <Screen refresh={{ refreshing: linkState === 'syncing', onRefresh: () => void sync(), enabled: canSync }}>
-      <HiddenTabHeader title="Trends" />
-      <Segmented options={RANGE_OPTIONS} value={range} onChange={setRange} />
-      {error ? <Notice tone="danger">Could not read stored data: {error}</Notice> : null}
+      <HiddenTabHeader title={t('trends.title')} />
+      <Segmented options={rangeOptions} value={range} onChange={setRange} />
+      {error ? <Notice tone="danger">{t('trends.loadError', { error })}</Notice> : null}
       {trends ? (
         <View style={styles.cards}>
           <TrendCard
-            title="Recovery"
+            title={t('trends.recovery')}
             tint="link"
             kind="line"
             values={trends.recovery}
             firstDay={trends.days[0]}
             domain={[0, 100]}
-            format={(v) => `${Math.round(v)}%`}
+            format={(v) => fmtPercent(v)}
             empty={recoveryTrendEmpty(nightHrv)}
           />
           <TrendCard
-            title="Strain"
+            title={t('trends.strain')}
             tint="workouts"
             kind="bar"
             values={trends.strain}
             firstDay={trends.days[0]}
             domain={[0, STRAIN_MAX]}
-            format={(v) => v.toFixed(1)}
-            empty="No heart rate stored in this range. Wear the watch and sync."
+            format={(v) => fmtDecimal(v, 1)}
+            empty={t('trends.emptyStrain')}
           />
           <TrendCard
-            title="Sleep"
+            title={t('trends.sleep')}
             tint="sleep"
             kind="bar"
             values={trends.sleep.hours}
             firstDay={trends.days[0]}
             reference={trends.sleep.need}
-            format={hoursMinutes}
-            empty="No nights stored in this range. Wear the watch to bed and sync."
+            format={(v) => fmtDuration(v * 3600)}
+            empty={t('trends.emptySleep')}
           />
           <TrendCard
-            title="HRV, nights"
+            title={t('trends.hrvNights')}
             tint="sleep"
             kind="line"
             values={trends.hrvNight}
             firstDay={trends.days[0]}
-            format={(v) => `${Math.round(v)} ms`}
+            format={(v) => `${fmtInt(v)} ms`}
             empty={nightHrvTrendEmpty(nightHrv)}
           />
           <TrendCard
-            title="HRV, 1-minute readings"
+            title={t('trends.hrvSpot')}
             tint="steps"
             kind="line"
             values={trends.hrvSpot}
             firstDay={trends.days[0]}
-            format={(v) => `${Math.round(v)} ms`}
-            empty="No 1-minute readings yet. Measure HRV for a minute to add one."
+            format={(v) => `${fmtInt(v)} ms`}
+            empty={t('trends.emptySpot')}
           />
           <TrendCard
-            title="Resting heart rate"
+            title={t('trends.resting')}
             tint="heart"
             kind="line"
             values={trends.resting}
             firstDay={trends.days[0]}
-            format={(v) => `${Math.round(v)} bpm`}
-            empty="No resting heart rate stored in this range. Wear the watch day and night and sync."
+            format={(v) => `${fmtInt(v)} bpm`}
+            empty={t('trends.emptyResting')}
           />
-          <Details title="How are these calculated?">
+          <Details title={t('trends.howTitle')}>
             <AppText variant="caption" muted>
-              {'Recovery: your HRV against your own 30-day baseline, 50% is your usual. An estimate, not medical advice.'}
+              {t('trends.howRecovery')}
             </AppText>
             <AppText variant="caption" muted>
-              {`Strain: worked out from the heart rate the watch stored (max ${trends.maxHr} bpm). A day with little stored heart rate reads low.`}
+              {t('trends.howStrain', { maxHr: trends.maxHr })}
             </AppText>
             <AppText variant="caption" muted>
-              Sleep: time asleep, naps under 3 h left out. Dashed line: the sleep you needed, 7 h 30 min plus up to 1 h after a hard day.
+              {t('trends.howSleep')}
             </AppText>
             <AppText variant="caption" muted>
-              HRV: RMSSD. Nights are averaged over sleep from the watch&apos;s records; 1-minute readings are ones you took yourself and run at a different level, so they are kept apart.
+              {t('trends.howHrv')}
             </AppText>
             <AppText variant="caption" muted>
-              Resting heart rate: the lowest resting value the watch reported each day. On line charts the dashed line is your average. Days without data are left empty, not filled in.
+              {t('trends.howResting')}
             </AppText>
           </Details>
         </View>

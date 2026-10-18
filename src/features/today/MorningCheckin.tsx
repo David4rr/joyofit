@@ -1,5 +1,6 @@
 import Storage from 'expo-sqlite/kv-store';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -33,6 +34,7 @@ interface MorningCheckinProps {
 
 /** One small prompt under the scores: shown in the morning while the watch is connected and today has no spot HRV. */
 export function MorningCheckin({ hrv, dayStart, nowMs, connected, onMeasure }: MorningCheckinProps) {
+  const { t } = useTranslation('today');
   const today = localDayKey(nowMs);
   // undefined until the stored value is read, so the card does not flash for a day already dismissed.
   const [dismissedDay, setDismissedDay] = useState<string | null | undefined>(undefined);
@@ -64,13 +66,13 @@ export function MorningCheckin({ hrv, dayStart, nowMs, connected, onMeasure }: M
   return (
     <Card>
       <View style={styles.body}>
-        <AppText variant="bodyStrong">Morning check-in</AppText>
+        <AppText variant="bodyStrong">{t('checkin.title')}</AppText>
         <AppText variant="caption" muted>
-          1 minute adds today&apos;s HRV.
+          {t('checkin.body')}
         </AppText>
         <View style={styles.actions}>
-          <Button label="Measure HRV" icon="pulse" onPress={onMeasure} />
-          <Button label="Not today" variant="ghost" onPress={dismiss} />
+          <Button label={t('checkin.measure')} icon="pulse" onPress={onMeasure} />
+          <Button label={t('checkin.notToday')} variant="ghost" onPress={dismiss} />
         </View>
       </View>
     </Card>
