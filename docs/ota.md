@@ -129,6 +129,17 @@ Read from the binaries of the store build cut from master `8461444` (2026-10-18)
 
 Publish for the embedded values: `scripts/ota.sh --platform <p> --runtime-version <hash> "message"`.
 
+### Runtimes of the 2026-10-18 store build (master `375f052`)
+
+Read from the binaries of the Release Android run 39135259956 (AAB versionCode 1471097, Play internal + alpha) and the Release iOS run 39135263189 (TestFlight 1.0 build 202610181417, Internal + Publik):
+
+| Platform | Build | Runtime embedded in the binary |
+| --- | --- | --- |
+| Android | AAB versionCode 1471097 (`assets/fingerprint`); the sideload APK of the same commit carries the same value | `81a992248b4f15cc3f439a19323d19ae4e6c9252` |
+| iOS | TestFlight 1.0 (202610181417) (`EXUpdates.bundle/fingerprint`) | `60ae9d289f32d564fee79956251795a11e147d56` |
+
+**Master OTAs target these new hashes.** Older lines stay for stragglers: `ota/1.0` for Android `e542e6f1...` and iOS `43df410f...`, `ota/tf-938` for iOS `62b33b49...`, `ota/test-c6a262a2` for the sideload build 1470978.
+
 ## When OTA is not enough
 
 Anything that changes the runtimeVersion, or is on the "not over the air" list above, needs a new binary: build through `scripts/build-release.sh` / `scripts/build-ios-mac.sh` / the `Release *` workflows, and from that commit on updates target the new runtime. Binaries that stay on an older runtime keep getting updates from their own branch, see "Which branch publishes to which runtime" (`ota/1.0` for the pre-sensors builds).
