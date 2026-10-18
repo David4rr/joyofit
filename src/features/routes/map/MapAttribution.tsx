@@ -1,7 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { mapCopy } from '@/features/routes/map/copy';
 import { MAP_INK } from '@/features/routes/map/mapConfig';
 
 interface MapAttributionProps {
@@ -16,9 +16,10 @@ interface MapAttributionProps {
  * map's own "i" button opens the same credits from the native side. It never takes touches.
  */
 export function MapAttribution({ extra = [], style }: MapAttributionProps) {
+  const { t } = useTranslation('routes');
   return (
     <View pointerEvents="none" style={[styles.anchor, style]}>
-      {[mapCopy.attribution, ...extra].map((line) => (
+      {[t('map.attribution'), ...extra].map((line) => (
         <AppText key={line} variant="caption" color={MAP_INK.chipText} style={styles.text}>
           {line}
         </AppText>

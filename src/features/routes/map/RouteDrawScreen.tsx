@@ -1,6 +1,7 @@
 import type { CameraRef } from '@maplibre/maplibre-react-native';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,7 +10,6 @@ import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Segmented } from '@/components/Segmented';
 import { LoadingState, Notice } from '@/components/States';
-import { mapCopy } from '@/features/routes/map/copy';
 import {
   addVerdict,
   drawReducer,
@@ -39,15 +39,9 @@ import { saveRoute } from '@/features/routes/routeStore';
 import { errorMessage } from '@/format';
 import { spacing, useTheme } from '@/theme';
 
-const copy = mapCopy.draw;
-
 type DrawProfile = 'foot' | 'bike' | 'straight';
 
-const PROFILES: readonly { value: DrawProfile; label: string }[] = [
-  { value: 'foot', label: copy.profiles.foot },
-  { value: 'bike', label: copy.profiles.bike },
-  { value: 'straight', label: copy.profiles.straight },
-];
+const PROFILE_VALUES: readonly DrawProfile[] = ['foot', 'bike', 'straight'];
 
 /** How long a message about one leg stays on the map. */
 const NOTICE_MS = 6000;
@@ -61,11 +55,12 @@ type Sheet = 'controls' | 'name' | 'search';
 
 /** The drawing screen: tap the map to add waypoints, each leg follows roads or paths (or a straight line), then save. */
 export function RouteDrawScreen() {
+  const { t } = useTranslation('routes');
   const maplibre = loadMapLibre();
   if (!maplibre) {
     return (
       <View style={styles.unavailable}>
-        <Notice icon="map-outline">{mapCopy.unavailable}</Notice>
+        <Notice icon="map-outline">{t('map.unavailable')}</Notice>
       </View>
     );
   }
@@ -73,6 +68,8 @@ export function RouteDrawScreen() {
 }
 
 function DrawMap({ maplibre }: { maplibre: MapLibre }) {
+  const { t } = useTranslation('routes', { keyPrefix: 'map.draw' });
+  const { t: tRoot } = useTranslation('routes');
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -139,7 +136,7 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
         (error: unknown) => {
           if (isAborted(error)) return;
           commit(drawReducer(drawRef.current, { type: 'fail', legId: leg.id }));
-          setMessage({ text: copy.routeFailed, tone: 'info' });
+          setMessage({ text: t('routeFailed'), tone: 'info' });
         },
       )
       .finally(() => requests.current.delete(leg.id));
@@ -149,7 +146,7 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
     if (sheet !== 'controls') return;
     const verdict = addVerdict(drawRef.current, point);
     if (verdict === 'full') {
-      setMessage({ text: copy.pointLimit(MAX_WAYPOINTS), tone: 'info' });
+      setMessage({ text: t('pointLimit', { max: MAX_WAYPOINTS }), tone: 'info' });
       return;
     }
     if (verdict === 'duplicate') return;
@@ -179,7 +176,7 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
     const here = await deviceLocation(maplibre);
     setLocating(false);
     if (!here) {
-      setMessage({ text: copy.locateFailed, tone: 'info' });
+      setMessage({ text: t('locateFailed'), tone: 'info' });
       return;
     }
     cameraRef.current?.flyTo({ center: [here.lon, here.lat], zoom: PLACE_ZOOM, duration: 800 });
@@ -222,7 +219,7 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
       const saved = await saveRoute({ name, source: 'drawn', points });
       router.replace({ pathname: '/routes/[id]', params: { id: saved.id } });
     } catch (e) {
-      setSaveError(copy.saveFailed(errorMessage(e)));
+      setSaveError(t('saveFailed', { message: errorMessage(e) }));
       setSaving(null);
     }
   };
@@ -230,10 +227,11 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
   const summary =
     waypoints.length < 2
       ? waypoints.length === 0
-        ? copy.hintEmpty
-        : copy.hintMore
-      : `${formatRouteDistance(distanceM)} \u00B7 ${copy.points(waypoints.length)}`;
-  const credits = usedRouting(draw) ? [mapCopy.routingCredit] : [];
+        ? t('hintEmpty')
+        : t('hintMore')
+      : [formatRouteDistance(distanceM), t('points', { count: waypoints.length })].join(' \u00B7 ');
+  const credits = usedRouting(draw) ? [tRoot('map.routingCredit')] : [];
+  const profileOptions = PROFILE_VALUES.map((value) => ({ value, label: t(`profiles.${value}`) }));
 
   return (
     <View
@@ -271,21 +269,21 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
           />
         </MapView>
       ) : (
-        <View style={styles.fill} accessibilityLabel={copy.mapLabel}>
-          <LoadingState label={copy.preparing} />
+        <View style={styles.fill} accessibilityLabel={t('mapLabel')}>
+          <LoadingState label={t('preparing')} />
         </View>
       )}
 
       <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
         <View pointerEvents="box-none" style={styles.top}>
-          {mapFailed ? <Notice tone="danger">{copy.mapFailed}</Notice> : null}
+          {mapFailed ? <Notice tone="danger">{t('mapFailed')}</Notice> : null}
           {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
         </View>
 
         <View pointerEvents="box-none" style={styles.side}>
-          <MapButton icon="search" label={copy.search} surface="floating" onPress={() => setSheet('search')} />
+          <MapButton icon="search" label={t('search')} surface="floating" onPress={() => setSheet('search')} />
           {canLocate ? (
-            <MapButton icon="locate" label={copy.locate} surface="floating" loading={locating} onPress={locate} />
+            <MapButton icon="locate" label={t('locate')} surface="floating" loading={locating} onPress={locate} />
           ) : null}
         </View>
 
@@ -317,23 +315,23 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
                   {pending > 0 ? <ActivityIndicator size="small" color={colors.primary} /> : null}
                   {pending > 0 ? (
                     <AppText variant="caption" muted>
-                      {copy.findingRoute}
+                      {t('findingRoute')}
                     </AppText>
                   ) : null}
                 </View>
-                <Segmented options={PROFILES} value={profile} onChange={setProfile} />
+                <Segmented options={profileOptions} value={profile} onChange={setProfile} />
                 <View style={styles.actions}>
-                  <MapButton icon="arrow-undo" label={copy.undo} disabled={waypoints.length === 0} onPress={undo} />
+                  <MapButton icon="arrow-undo" label={t('undo')} disabled={waypoints.length === 0} onPress={undo} />
                   <MapButton
                     icon="trash-outline"
-                    label={copy.clear}
+                    label={t('clear')}
                     danger
                     disabled={waypoints.length === 0}
                     onPress={() => setConfirmClear(true)}
                   />
                   <View style={styles.grow}>
                     <Button
-                      label={copy.save}
+                      label={t('save')}
                       variant="primary"
                       icon="checkmark"
                       disabled={waypoints.length < 2 || pending > 0}
@@ -346,7 +344,7 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
                 </View>
                 {pending > 0 && waypoints.length >= 2 ? (
                   <AppText variant="caption" muted>
-                    {copy.waitForRoute}
+                    {t('waitForRoute')}
                   </AppText>
                 ) : null}
               </SheetCard>
@@ -357,10 +355,10 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
 
       <ConfirmDialog
         visible={confirmClear}
-        title={copy.clearTitle}
-        message={copy.clearMessage}
-        confirmLabel={copy.clearConfirm}
-        cancelLabel={copy.cancel}
+        title={t('clearTitle')}
+        message={t('clearMessage')}
+        confirmLabel={t('clearConfirm')}
+        cancelLabel={t('cancel')}
         onConfirm={clear}
         onCancel={() => setConfirmClear(false)}
       />

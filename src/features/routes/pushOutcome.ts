@@ -1,9 +1,8 @@
-/** What a `pushRoute` result or error means for the person, as Indonesian copy. Pure; native types are imported as types only. */
+/** What a `pushRoute` result or error means for the person, as localized copy. Pure; native types are imported as types only. */
 import { errorCode } from '@/features/device/connectFailure';
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import type { RoutePushResult } from '@/wear';
-
-import { copy } from './copy';
 
 export type PushOutcome =
   /** The route is on the watch. `confirmed`: the watch also sent its final "saved" answer. */
@@ -21,11 +20,16 @@ const HANDSHAKE_NAME_TOO_LONG = 5;
 export function outcomeFromResult(result: RoutePushResult, totalPoints: number): PushOutcome {
   if (result.alreadyOnWatch) return { kind: 'already' };
   if (!result.ok) {
-    if (result.handshakeCode === HANDSHAKE_FULL) return { kind: 'failed', message: copy.push.errors.ERR_ROUTE_FULL, canRename: false };
+    if (result.handshakeCode === HANDSHAKE_FULL) return { kind: 'failed', message: t('routes:push.errors.ERR_ROUTE_FULL'), canRename: false };
     if (result.handshakeCode === HANDSHAKE_NAME_TOO_LONG) {
-      return { kind: 'failed', message: copy.push.errors.ERR_ROUTE_NAME, canRename: true };
+      return { kind: 'failed', message: t('routes:push.errors.ERR_ROUTE_NAME'), canRename: true };
     }
-    return { kind: 'failed', message: copy.push.notAccepted(result.answerCode ?? result.handshakeCode), canRename: false };
+    const answer = result.answerCode ?? result.handshakeCode;
+    return {
+      kind: 'failed',
+      message: answer === null ? t('routes:push.notAccepted') : t('routes:push.notAcceptedCode', { code: answer }),
+      canRename: false,
+    };
   }
   return { kind: 'sent', sentPoints: result.sentPoints, totalPoints, confirmed: result.answerCode === 1 };
 }
@@ -41,14 +45,18 @@ export function outcomeFromError(e: unknown): PushOutcome {
     case 'ERR_TIMEOUT':
     case 'ERR_BUSY':
     case 'ERR_DISCONNECTED':
-      return { kind: 'failed', message: copy.push.errors[code], canRename: false };
+      return { kind: 'failed', message: t(`routes:push.errors.${code}`), canRename: false };
     case 'ERR_ROUTE_NAME':
-      return { kind: 'failed', message: copy.push.errors[code], canRename: true };
+      return { kind: 'failed', message: t('routes:push.errors.ERR_ROUTE_NAME'), canRename: true };
     case 'ERR_INVALID_ARGUMENT':
-      return { kind: 'failed', message: copy.push.errors[code](message), canRename: false };
+      return { kind: 'failed', message: t('routes:push.errors.ERR_INVALID_ARGUMENT', { message }), canRename: false };
     case 'ERR_UPLOAD_REJECTED':
-      return { kind: 'failed', message: copy.push.errors[code](message), canRename: false };
+      return { kind: 'failed', message: t('routes:push.errors.ERR_UPLOAD_REJECTED', { message }), canRename: false };
     default:
-      return { kind: 'failed', message: copy.push.failedUnknown(message, code), canRename: false };
+      return {
+        kind: 'failed',
+        message: code && !message.includes(code) ? t('routes:push.failedUnknownCode', { message, code }) : t('routes:push.failedUnknown', { message }),
+        canRename: false,
+      };
   }
 }

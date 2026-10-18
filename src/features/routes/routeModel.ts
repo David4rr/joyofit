@@ -3,6 +3,8 @@
  * so everything here runs under `bun test`.
  */
 
+import { fmtDecimal, fmtInt, t } from '@/i18n';
+
 export interface RoutePoint {
   lat: number;
   lon: number;
@@ -139,19 +141,19 @@ export function routeStats(points: readonly RoutePoint[]): RouteStats {
   return { distanceM, ascentM: Math.round(ascent), descentM: Math.round(descent), hasAltitude: true };
 }
 
-/** `850 m` below a kilometre, `12,4 km` above (a comma, as Indonesian writes it). */
+/** `850 m` below a kilometre, `12,4 km` / `12.4 km` above (decimal mark of the language). */
 export function formatRouteDistance(m: number): string {
   const metres = Math.round(m);
-  if (metres < 1000) return `${Math.max(0, metres)} m`;
-  return `${(m / 1000).toFixed(1).replace('.', ',')} km`;
+  if (metres < 1000) return t('common:units.m', { value: fmtInt(Math.max(0, metres)) });
+  return t('common:units.km', { value: fmtDecimal(m / 1000, 1) });
 }
 
 /** `+320 m` for a climb, `-80 m` for a drop (pass a negative number), `0 m`, and `-` when unknown. */
 export function formatElevation(m: number | null): string {
   if (m === null || !Number.isFinite(m)) return '-';
   const rounded = Math.round(m);
-  if (rounded === 0) return '0 m';
-  return `${rounded > 0 ? '+' : '-'}${Math.abs(rounded)} m`;
+  if (rounded === 0) return t('common:units.m', { value: '0' });
+  return t('common:units.m', { value: `${rounded > 0 ? '+' : '-'}${fmtInt(Math.abs(rounded))}` });
 }
 
 interface Segment {

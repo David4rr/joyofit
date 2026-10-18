@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { mapCopy } from '@/features/routes/map/copy';
 import { boundsOf, lineCollection, pointCollection } from '@/features/routes/map/geometry';
 import { FIT_PADDING, MAP_STYLE_URL } from '@/features/routes/map/mapConfig';
 import { MapAttribution } from '@/features/routes/map/MapAttribution';
@@ -24,6 +24,7 @@ interface RouteMapProps {
  * the plain SVG line takes its place with a short note.
  */
 export function RouteMap({ points, height = 260 }: RouteMapProps) {
+  const { t } = useTranslation('routes');
   const { colors, radius } = useTheme();
   const maplibre = loadMapLibre();
   const [loadFailed, setLoadFailed] = useState(false);
@@ -36,7 +37,7 @@ export function RouteMap({ points, height = 260 }: RouteMapProps) {
       line: lineCollection([points]),
       start: pointCollection([points[0]]),
       end: pointCollection([points[points.length - 1]]),
-      label: mapCopy.mapLabel(formatRouteDistance(routeStats(points).distanceM)),
+      distanceM: routeStats(points).distanceM,
     };
   }, [points]);
 
@@ -46,7 +47,7 @@ export function RouteMap({ points, height = 260 }: RouteMapProps) {
         <RouteView route={points} />
         {shape ? (
           <AppText variant="caption" muted>
-            {maplibre ? mapCopy.loadFailedCaption : mapCopy.unavailableCaption}
+            {maplibre ? t('map.loadFailedCaption') : t('map.unavailableCaption')}
           </AppText>
         ) : null}
       </View>
@@ -57,7 +58,7 @@ export function RouteMap({ points, height = 260 }: RouteMapProps) {
   return (
     <View
       accessible
-      accessibilityLabel={shape.label}
+      accessibilityLabel={t('map.mapLabel', { distance: formatRouteDistance(shape.distanceM) })}
       style={[styles.frame, { height, borderRadius: radius.tile, backgroundColor: colors.muted }]}>
       {/* A new route is a new map: the camera only fits the box it starts with. */}
       <MapView

@@ -18,7 +18,6 @@
 export type MapTheme = 'light' | 'dark';
 
 export const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
-export const ATTRIBUTION_TEXT = '© OpenFreeMap © OpenMapTiles Data from OpenStreetMap';
 export const ATTRIBUTION_URL = 'https://openfreemap.org';
 
 export type RoadGroup =

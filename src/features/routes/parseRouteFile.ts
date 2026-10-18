@@ -1,4 +1,5 @@
-import { copy } from './copy';
+import { t } from '@/i18n';
+
 import { parseGpx } from './gpx';
 import type { RoutePoint, RouteSource } from './routeModel';
 import { cleanRouteName } from './routeStorage';
@@ -41,12 +42,14 @@ export function sniffRouteFormat(text: string): RouteFileFormat | null {
 
 /** Reads the line out of GPX or TCX text. */
 export function parseRouteText(text: string): ParseRouteResult {
-  if (text.trim() === '') return { ok: false, reason: 'empty', message: copy.parse.empty };
+  if (text.trim() === '') return { ok: false, reason: 'empty', message: t('routes:parse.empty') };
   const format = sniffRouteFormat(text);
-  if (format === null) return { ok: false, reason: 'unrecognized', message: copy.parse.unrecognized };
+  if (format === null) return { ok: false, reason: 'unrecognized', message: t('routes:parse.unrecognized') };
   const raw = format === 'gpx' ? parseGpx(text) : parseTcx(text);
   if (raw.points.length < 2) {
-    return { ok: false, reason: 'too-few-points', message: copy.parse.tooFewPoints(raw.points.length) };
+    const found = raw.points.length;
+    const message = found === 0 ? t('routes:parse.noPoints') : t('routes:parse.tooFewPoints', { count: found });
+    return { ok: false, reason: 'too-few-points', message };
   }
   const name = raw.name === null ? '' : cleanRouteName(raw.name);
   return { ok: true, route: { format, name: name === '' ? null : name, points: raw.points } };
@@ -54,6 +57,6 @@ export function parseRouteText(text: string): ParseRouteResult {
 
 /** Reads the line out of the bytes of a GPX or TCX file. */
 export function parseRouteFile(bytes: Uint8Array): ParseRouteResult {
-  if (bytes.length === 0) return { ok: false, reason: 'empty', message: copy.parse.empty };
+  if (bytes.length === 0) return { ok: false, reason: 'empty', message: t('routes:parse.empty') };
   return parseRouteText(decodeUtf8(bytes));
 }

@@ -1,8 +1,9 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { listWorkoutPoints, listWorkouts, type WorkoutRow } from '@/db/queries';
+import { t } from '@/i18n';
 
-import { copy } from './copy';
+import { formatRouteDate } from './copy';
 import type { SavedRoute } from './routeModel';
 import { saveRoute } from './routeStore';
 import { workoutRouteDraft } from './workoutRoute';
@@ -33,7 +34,8 @@ export async function saveWorkoutAsRoute(
   workout: Pick<WorkoutRow, 'id' | 'sportName' | 'start'>,
 ): Promise<SavedRoute> {
   const rows = await listWorkoutPoints(db, workout.id);
-  const draft = workoutRouteDraft(copy.workoutPicker.defaultName(workout.sportName, workout.start), rows);
-  if (draft === null) throw new Error(copy.workoutPicker.noGps);
+  const name = t('routes:workoutPicker.defaultName', { sport: workout.sportName, date: formatRouteDate(workout.start * 1000) });
+  const draft = workoutRouteDraft(name, rows);
+  if (draft === null) throw new Error(t('routes:workoutPicker.noGps'));
   return saveRoute(draft);
 }

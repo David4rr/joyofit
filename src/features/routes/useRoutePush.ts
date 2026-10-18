@@ -3,10 +3,10 @@ import { useCallback, useRef, useState } from 'react';
 
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type RoutesStatus, type UploadProgressEvent } from '@/wear';
 
-import { copy } from './copy';
 import { outcomeFromError, outcomeFromResult, type PushOutcome } from './pushOutcome';
 import type { RoutePoint, SavedRoute } from './routeModel';
 import { markRouteSent } from './routeStore';
@@ -92,10 +92,10 @@ export function useRoutePush({ route, points, rename, onSent }: RoutePushOptions
         let current = route;
         if (newName !== undefined) {
           const renamed = await rename(newName);
-          if (renamed === null) throw new Error(copy.detail.notFound);
+          if (renamed === null) throw new Error(t('routes:detail.notFound'));
           current = renamed;
         }
-        if (!nativeRoutesAvailable) throw new Error(copy.push.appOutdated);
+        if (!nativeRoutesAvailable) throw new Error(t('routes:push.appOutdated'));
         const result = await HuaweiWear.pushRoute(buildWatchRoute(current.name, points));
         const next = outcomeFromResult(result, points.length);
         if (next.kind === 'sent') {
@@ -103,7 +103,7 @@ export function useRoutePush({ route, points, rename, onSent }: RoutePushOptions
           try {
             marked = await markRouteSent(current.id);
           } catch (e) {
-            setRecordError(copy.push.recordFailed(errorMessage(e)));
+            setRecordError(t('routes:push.recordFailed', { message: errorMessage(e) }));
           }
           onSent(marked ?? current);
         }

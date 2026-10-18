@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -9,26 +10,20 @@ import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { spacing, useTheme } from '@/theme';
 
-import { copy } from './copy';
 import type { PushOutcome } from './pushOutcome';
 import type { PushPhase, RoutePush } from './useRoutePush';
 import { alternativeName } from './watchRoute';
 
 type Push = RoutePush;
 
-const PHASE_LABEL: Record<Exclude<PushPhase, 'idle'>, string> = {
-  preparing: copy.push.preparing,
-  sending: copy.push.sending,
-  waiting: copy.push.waiting,
-};
-
 /** A determinate bar: 0 while preparing, the share of bytes acknowledged while sending, full while waiting for the watch. */
 function ProgressBar({ phase, percent }: { phase: Exclude<PushPhase, 'idle'>; percent: number }) {
+  const { t } = useTranslation('routes');
   const { colors } = useTheme();
   const shown = phase === 'waiting' ? 100 : phase === 'preparing' ? 0 : percent;
-  const label = phase === 'sending' ? copy.push.sendingPercent(shown) : PHASE_LABEL[phase];
+  const label = phase === 'sending' ? t('push.sendingPercent', { pct: shown }) : t(`push.${phase}`);
   return (
-    <View style={styles.progress} accessible accessibilityRole="progressbar" accessibilityLabel={copy.push.progressLabel} accessibilityValue={{ min: 0, max: 100, now: shown, text: label }}>
+    <View style={styles.progress} accessible accessibilityRole="progressbar" accessibilityLabel={t('push.progressLabel')} accessibilityValue={{ min: 0, max: 100, now: shown, text: label }}>
       <View style={[styles.track, { backgroundColor: colors.muted }]}>
         <View style={[styles.fill, { width: `${shown}%`, backgroundColor: colors.primary }]} />
       </View>
@@ -41,34 +36,38 @@ function ProgressBar({ phase, percent }: { phase: Exclude<PushPhase, 'idle'>; pe
 
 /** The watch already has a route of this name, or refuses the name: pick another one and send again. */
 function RenameAndSend({ name, disabled, onSend }: { name: string; disabled: boolean; onSend: (name: string) => void }) {
+  const { t } = useTranslation('routes');
   const [value, setValue] = useState(() => alternativeName(name));
   const trimmed = value.trim();
   const empty = trimmed === '';
   return (
     <View style={styles.rename}>
       <Field
-        label={copy.push.renameLabel}
+        label={t('push.renameLabel')}
         value={value}
         onChangeText={setValue}
         icon="pricetag"
         autoCapitalize="sentences"
-        hint={empty ? copy.push.renameEmpty : undefined}
+        hint={empty ? t('push.renameEmpty') : undefined}
         maxLength={100}
       />
-      <Button label={copy.push.renameAndSend} icon="send" variant="primary" disabled={disabled || empty} onPress={() => onSend(trimmed)} />
+      <Button label={t('push.renameAndSend')} icon="send" variant="primary" disabled={disabled || empty} onPress={() => onSend(trimmed)} />
     </View>
   );
 }
 
 function OutcomeView({ outcome, push, routeName }: { outcome: PushOutcome; push: Push; routeName: string }) {
+  const { t } = useTranslation('routes');
   if (outcome.kind === 'sent') {
     return (
       <View style={styles.outcome}>
-        <Notice icon="checkmark-circle">{copy.push.sent}</Notice>
+        <Notice icon="checkmark-circle">{t('push.sent')}</Notice>
         <AppText variant="caption" muted>
-          {copy.push.sentPoints(outcome.sentPoints, outcome.totalPoints)}
+          {outcome.sentPoints < outcome.totalPoints
+            ? t('push.sentPointsPartial', { sent: outcome.sentPoints, total: outcome.totalPoints })
+            : t('push.sentPointsAll', { count: outcome.sentPoints })}
         </AppText>
-        {!outcome.confirmed ? <Notice>{copy.push.noFinalAnswer}</Notice> : null}
+        {!outcome.confirmed ? <Notice>{t('push.noFinalAnswer')}</Notice> : null}
         {push.recordError !== null ? <Notice tone="danger">{push.recordError}</Notice> : null}
       </View>
     );
@@ -76,9 +75,9 @@ function OutcomeView({ outcome, push, routeName }: { outcome: PushOutcome; push:
   if (outcome.kind === 'already') {
     return (
       <View style={styles.outcome}>
-        <Notice icon="alert-circle">{copy.push.already}</Notice>
+        <Notice icon="alert-circle">{t('push.already')}</Notice>
         <AppText variant="caption" muted>
-          {copy.push.alreadyHint}
+          {t('push.alreadyHint')}
         </AppText>
         <RenameAndSend name={routeName} disabled={push.sending} onSend={(name) => void push.send(name)} />
       </View>
@@ -92,25 +91,26 @@ function OutcomeView({ outcome, push, routeName }: { outcome: PushOutcome; push:
   );
 }
 
-/** "Kirim ke jam": the send button, its progress and what came of it. `push` is `useRoutePush`'s result for the open route. */
+/** "Kirim ke jam" / "Send to watch": the send button, its progress and what came of it. `push` is `useRoutePush`'s result for the open route. */
 export function RoutePushSection({ push, routeName }: { push: Push; routeName: string }) {
+  const { t } = useTranslation('routes');
   const router = useRouter();
   const { connected, status, appOutdated, phase, percent, outcome, sending } = push;
   const unsupported = connected && !status.deliver;
   return (
-    <Section title={copy.push.title} icon="send" tint="link">
+    <Section title={t('push.title')} icon="send" tint="link">
       <AppText variant="caption" muted>
-        {copy.push.explainer}
+        {t('push.explainer')}
       </AppText>
       {!connected ? (
-        <Notice icon="bluetooth" action={{ label: copy.push.openWatch, onPress: () => router.navigate('/watch') }}>
-          {copy.push.needConnect}
+        <Notice icon="bluetooth" action={{ label: t('push.openWatch'), onPress: () => router.navigate('/watch') }}>
+          {t('push.needConnect')}
         </Notice>
       ) : null}
-      {unsupported && !appOutdated ? <Notice>{copy.push.unsupported}</Notice> : null}
-      {appOutdated ? <Notice tone="danger">{copy.push.appOutdated}</Notice> : null}
+      {unsupported && !appOutdated ? <Notice>{t('push.unsupported')}</Notice> : null}
+      {appOutdated ? <Notice tone="danger">{t('push.appOutdated')}</Notice> : null}
       <Button
-        label={copy.push.send}
+        label={t('push.send')}
         icon="send"
         variant="primary"
         loading={sending}

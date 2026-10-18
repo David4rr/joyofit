@@ -7,7 +7,9 @@
  */
 import { Directory, File, Paths } from 'expo-file-system';
 
-import { copy, untitledRouteName } from './copy';
+import { t } from '@/i18n';
+
+import { untitledRouteName } from './copy';
 import type { RouteDraft, RoutePoint, SavedRoute } from './routeModel';
 import {
   buildRoute,
@@ -88,7 +90,7 @@ export async function loadRoute(id: string): Promise<{ route: SavedRoute; points
  */
 export async function saveRoute(draft: RouteDraft): Promise<SavedRoute> {
   const now = Date.now();
-  const { meta, points } = buildRoute(draft, newRouteId(now), now, copy.parse.tooFewForSave, untitledRouteName(now));
+  const { meta, points } = buildRoute(draft, newRouteId(now), now, t('routes:parse.tooFewForSave'), untitledRouteName(now));
   const stored: StoredPoints = { v: 1, pts: encodePoints(points) };
   pointsFile(meta.route.id).write(JSON.stringify(stored));
   writeMeta(meta);

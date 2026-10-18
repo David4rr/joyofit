@@ -1,6 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
+
+import { fmtInt } from '@/i18n';
 
 import { Button } from '@/components/Button';
 import { AppText } from '@/components/AppText';
@@ -12,7 +15,7 @@ import { errorMessage } from '@/format';
 import { baseNameOf } from '@/features/sharedfile/routeSharedFile';
 import { spacing } from '@/theme';
 
-import { copy, SOURCE_LABEL, untitledRouteName } from './copy';
+import { sourceLabel, untitledRouteName } from './copy';
 import type { ParsedRouteFile } from './parseRouteFile';
 import { pickRouteFile, readRouteFromUri } from './readRouteFile';
 import { formatElevation, formatRouteDistance, routeStats, simplifyRoute } from './routeModel';
@@ -31,6 +34,7 @@ type State =
  * a route. A file opened from outside arrives with only its address; the picker also passes the file's `name`.
  */
 export function RouteImportScreen() {
+  const { t } = useTranslation('routes');
   const router = useRouter();
   const { uri, name: pickedName } = useLocalSearchParams<{ uri?: string; name?: string }>();
   const [state, setState] = useState<State>(uri ? { kind: 'reading' } : { kind: 'idle' });
@@ -52,9 +56,9 @@ export function RouteImportScreen() {
       setName(result.route.name ?? baseNameOf(fileName ?? address) ?? untitledRouteName(Date.now()));
       setState({ kind: 'ready', route: result.route });
     } catch (e) {
-      setState({ kind: 'failed', message: copy.import.unreadable(errorMessage(e)) });
+      setState({ kind: 'failed', message: t('import.unreadable', { message: errorMessage(e) }) });
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!uri || handled.current === uri) return;
@@ -69,7 +73,7 @@ export function RouteImportScreen() {
       handled.current = picked.uri;
       await load(picked.uri, picked.name);
     } catch (e) {
-      setState({ kind: 'failed', message: copy.library.pickFailed(errorMessage(e)) });
+      setState({ kind: 'failed', message: t('library.pickFailed', { message: errorMessage(e) }) });
     }
   };
 
@@ -85,7 +89,7 @@ export function RouteImportScreen() {
       const saved = await saveRoute({ name, source: route.format, points: route.points });
       router.replace({ pathname: '/routes/[id]', params: { id: saved.id } });
     } catch (e) {
-      setSaveError(copy.import.saveFailed(errorMessage(e)));
+      setSaveError(t('import.saveFailed', { message: errorMessage(e) }));
       setSaving(false);
     }
   };
@@ -93,50 +97,50 @@ export function RouteImportScreen() {
   return (
     <Screen>
       {state.kind === 'idle' ? (
-        <Section title={copy.titles.import} icon="document-attach" tint="workouts">
+        <Section title={t('titles.import')} icon="document-attach" tint="workouts">
           <AppText variant="caption" muted>
-            {copy.import.pickPrompt}
+            {t('import.pickPrompt')}
           </AppText>
-          <Button label={copy.import.pick} icon="folder-open" variant="primary" onPress={() => void pick()} />
+          <Button label={t('import.pick')} icon="folder-open" variant="primary" onPress={() => void pick()} />
         </Section>
       ) : null}
 
-      {state.kind === 'reading' ? <LoadingState label={copy.import.reading} /> : null}
+      {state.kind === 'reading' ? <LoadingState label={t('import.reading')} /> : null}
 
       {state.kind === 'failed' ? (
         <>
           <Notice tone="danger">{state.message}</Notice>
-          <Button label={copy.import.pickAnother} icon="folder-open" onPress={() => void pick()} />
+          <Button label={t('import.pickAnother')} icon="folder-open" onPress={() => void pick()} />
         </>
       ) : null}
 
       {route !== null && stats !== null ? (
         <>
-          <Section title={copy.import.previewTitle} icon="trail-sign" tint="workouts">
+          <Section title={t('import.previewTitle')} icon="trail-sign" tint="workouts">
             <View style={styles.preview}>
               <RouteThumbnail points={thumb} size={120} />
               <View style={styles.numbers}>
-                <KeyValue icon="navigate" label={copy.detail.distance} value={formatRouteDistance(stats.distanceM)} />
-                <KeyValue icon="trending-up" label={copy.detail.ascent} value={formatElevation(stats.ascentM)} />
-                <KeyValue icon="trending-down" label={copy.detail.descent} value={formatElevation(stats.descentM === null ? null : -stats.descentM)} />
-                <KeyValue icon="git-commit" label={copy.detail.points} value={String(route.points.length)} />
-                <KeyValue icon="document" label={copy.detail.source} value={SOURCE_LABEL[route.format]} />
+                <KeyValue icon="navigate" label={t('detail.distance')} value={formatRouteDistance(stats.distanceM)} />
+                <KeyValue icon="trending-up" label={t('detail.ascent')} value={formatElevation(stats.ascentM)} />
+                <KeyValue icon="trending-down" label={t('detail.descent')} value={formatElevation(stats.descentM === null ? null : -stats.descentM)} />
+                <KeyValue icon="git-commit" label={t('detail.points')} value={fmtInt(route.points.length)} />
+                <KeyValue icon="document" label={t('detail.source')} value={sourceLabel(route.format)} />
               </View>
             </View>
-            {!stats.hasAltitude ? <Notice>{copy.detail.noAltitudeNote}</Notice> : null}
+            {!stats.hasAltitude ? <Notice>{t('detail.noAltitudeNote')}</Notice> : null}
           </Section>
-          <Section title={copy.detail.nameTitle} icon="pricetag" tint="workouts">
+          <Section title={t('detail.nameTitle')} icon="pricetag" tint="workouts">
             <Field
-              label={copy.import.nameLabel}
+              label={t('import.nameLabel')}
               value={name}
               onChangeText={setName}
               maxLength={MAX_NAME_LENGTH}
-              hint={copy.import.nameHint}
+              hint={t('import.nameHint')}
               returnKeyType="done"
             />
             {saveError !== null ? <Notice tone="danger">{saveError}</Notice> : null}
-            <Button label={saving ? copy.import.saving : copy.import.save} icon="save" variant="primary" loading={saving} onPress={() => void save()} />
-            <Button label={copy.import.pickAnother} icon="folder-open" disabled={saving} onPress={() => void pick()} />
+            <Button label={saving ? t('import.saving') : t('import.save')} icon="save" variant="primary" loading={saving} onPress={() => void save()} />
+            <Button label={t('import.pickAnother')} icon="folder-open" disabled={saving} onPress={() => void pick()} />
           </Section>
         </>
       ) : null}

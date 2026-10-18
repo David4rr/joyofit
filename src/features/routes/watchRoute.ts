@@ -1,7 +1,7 @@
 /** What a saved route becomes before it crosses the bridge to the watch. Pure; the native types are imported as types only. */
+import { t } from '@/i18n';
 import type { WatchRoute } from '@/wear';
 
-import { copy } from './copy';
 import { simplifyRoute, type RoutePoint } from './routeModel';
 
 /** Most points handed to the native side; it simplifies further to what the watch holds. */
@@ -39,7 +39,7 @@ export function truncateUtf8(text: string, maxBytes: number): string {
 
 /** The name the watch lists the route under. */
 export function watchRouteName(name: string): string {
-  return truncateUtf8(name.trim(), MAX_WATCH_NAME_BYTES) || copy.push.watchFallbackName;
+  return truncateUtf8(name.trim(), MAX_WATCH_NAME_BYTES) || t('routes:push.watchFallbackName');
 }
 
 /**
@@ -47,7 +47,7 @@ export function watchRouteName(name: string): string {
  * `lat, lon, alt` triples (altitude 0 when unknown), `hasAltitude` only when every point of the route has one.
  */
 export function buildWatchRoute(name: string, points: readonly RoutePoint[]): WatchRoute {
-  if (points.length < 2) throw new Error(copy.parse.tooFewForSave);
+  if (points.length < 2) throw new Error(t('routes:parse.tooFewForSave'));
   const hasAltitude = points.every((p) => p.alt !== null && Number.isFinite(p.alt));
   const flat: number[] = [];
   for (const p of simplifyRoute(points, MAX_WATCH_POINTS)) flat.push(p.lat, p.lon, hasAltitude ? (p.alt as number) : 0);

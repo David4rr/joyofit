@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
+import { applyLocale } from '@/i18n';
+
 import { parseGpx } from './gpx';
 import { decodeUtf8, parseRouteFile, parseRouteText, sniffRouteFormat } from './parseRouteFile';
 import { routeStats } from './routeModel';
@@ -152,6 +154,15 @@ describe('errors', () => {
     const result = parseRouteText(SINGLE_POINT_GPX);
     expect(result).toMatchObject({ ok: false, reason: 'too-few-points' });
     expect(result.ok ? '' : result.message).toContain('1 titik');
+  });
+  test('the single-point message is singular in English', async () => {
+    await applyLocale('en');
+    try {
+      const result = parseRouteText(SINGLE_POINT_GPX);
+      expect(result.ok ? '' : result.message).toContain('only 1 valid route point.');
+    } finally {
+      await applyLocale('id');
+    }
   });
   test('a track of points without a fix', () => {
     const result = parseRouteText('<gpx><trk><trkseg><trkpt lat="0" lon="0"/><trkpt lat="x" lon="y"/><trkpt lon="3"/></trkseg></trk></gpx>');

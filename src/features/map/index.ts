@@ -1,7 +1,6 @@
 export { TileMap } from './TileMap';
 export type { MapMarker, TileMapColors, TileMapProps } from './TileMap';
 export {
-  ATTRIBUTION_TEXT,
   ATTRIBUTION_URL,
   darkPalette,
   lightPalette,

@@ -42,10 +42,10 @@ import {
   type LayoutChangeEvent,
   type NativeTouchEvent,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 
 import {
-  ATTRIBUTION_TEXT,
   ATTRIBUTION_URL,
   layerPaint,
   paletteFor,
@@ -232,6 +232,7 @@ export function TileMap({
   onInteract,
   a11yLabel,
 }: TileMapProps) {
+  const { t } = useTranslation('routes', { keyPrefix: 'tileMap' });
   const palette = paletteFor(theme);
   const [width, setWidth] = useState(0);
   const [view, setView] = useState<MapView>({ lat: 0, lon: 0, zoom: 2 });
@@ -772,21 +773,21 @@ export function TileMap({
           onTouchCancel={stop}>
           <MapButton
             icon="add"
-            label="Zoom in"
+            label={t('zoomIn')}
             colors={colors}
             border={border}
             onPress={() => animateZoom(1)}
           />
           <MapButton
             icon="remove"
-            label="Zoom out"
+            label={t('zoomOut')}
             colors={colors}
             border={border}
             onPress={() => animateZoom(-1)}
           />
           <MapButton
             icon="locate"
-            label="Recenter on route"
+            label={t('recenter')}
             colors={colors}
             border={border}
             onPress={recenter}
@@ -797,10 +798,10 @@ export function TileMap({
       <View style={styles.attribution} onTouchStart={stop} onTouchEnd={stop}>
         <Pressable
           accessibilityRole="link"
-          accessibilityLabel="Map data sources, opens openfreemap.org"
+          accessibilityLabel={t('attributionLabel')}
           hitSlop={6}
           onPress={() => void Linking.openURL(ATTRIBUTION_URL).catch(() => undefined)}>
-          <Text style={[styles.attributionText, { color: colors.text }]}>{ATTRIBUTION_TEXT}</Text>
+          <Text style={[styles.attributionText, { color: colors.text }]}>{t('attribution')}</Text>
         </Pressable>
       </View>
     </View>

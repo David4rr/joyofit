@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -8,7 +9,7 @@ import type { WorkoutPointRow, WorkoutRow } from '@/db/queries';
 import { errorMessage } from '@/format';
 import { spacing } from '@/theme';
 
-import { copy } from './copy';
+import { formatRouteDate } from './copy';
 import type { SavedRoute } from './routeModel';
 import { saveRoute } from './routeStore';
 import { workoutRouteDraft } from './workoutRoute';
@@ -19,12 +20,13 @@ interface SaveWorkoutRouteButtonProps {
   points: readonly WorkoutPointRow[];
 }
 
-/** "Simpan sebagai rute" for the Route section of a workout: saves its GPS track as a route. Renders nothing when the workout has no usable track. */
+/** "Simpan sebagai rute" / "Save as route" for the Route section of a workout: saves its GPS track as a route. Renders nothing when the workout has no usable track. */
 export function SaveWorkoutRouteButton({ workout, points }: SaveWorkoutRouteButtonProps) {
+  const { t } = useTranslation('routes');
   const router = useRouter();
   const draft = useMemo(
-    () => workoutRouteDraft(copy.workoutPicker.defaultName(workout.sportName, workout.start), points),
-    [workout.sportName, workout.start, points],
+    () => workoutRouteDraft(t('workoutPicker.defaultName', { sport: workout.sportName, date: formatRouteDate(workout.start * 1000) }), points),
+    [workout.sportName, workout.start, points, t],
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<SavedRoute | null>(null);
@@ -38,7 +40,7 @@ export function SaveWorkoutRouteButton({ workout, points }: SaveWorkoutRouteButt
     try {
       setSaved(await saveRoute(draft));
     } catch (e) {
-      setError(copy.workoutPicker.saveFailed(errorMessage(e)));
+      setError(t('workoutPicker.saveFailed', { message: errorMessage(e) }));
     } finally {
       setSaving(false);
     }
@@ -46,12 +48,12 @@ export function SaveWorkoutRouteButton({ workout, points }: SaveWorkoutRouteButt
 
   return (
     <View style={styles.box}>
-      <Button label={saving ? copy.workout.saving : copy.workout.save} icon="trail-sign" loading={saving} disabled={saved !== null} onPress={() => void save()} />
+      <Button label={saving ? t('workout.saving') : t('workout.save')} icon="trail-sign" loading={saving} disabled={saved !== null} onPress={() => void save()} />
       {saved !== null ? (
         <Notice
           icon="checkmark-circle"
-          action={{ label: copy.workout.open, onPress: () => router.push({ pathname: '/routes/[id]', params: { id: saved.id } }) }}>
-          {copy.workout.saved(saved.name)}
+          action={{ label: t('workout.open'), onPress: () => router.push({ pathname: '/routes/[id]', params: { id: saved.id } }) }}>
+          {t('workout.saved', { name: saved.name })}
         </Notice>
       ) : null}
       {error !== null ? <Notice tone="danger">{error}</Notice> : null}

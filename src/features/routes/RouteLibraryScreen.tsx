@@ -1,5 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -12,7 +13,7 @@ import { IconAction } from '@/features/courses/IconAction';
 import { errorMessage } from '@/format';
 import { radius, spacing, useTheme } from '@/theme';
 
-import { copy, SOURCE_LABEL } from './copy';
+import { formatRouteDateTime, sourceLabel } from './copy';
 import { NumberedSteps } from './NumberedSteps';
 import { pickRouteFile } from './readRouteFile';
 import { formatElevation, formatRouteDistance, type SavedRoute } from './routeModel';
@@ -20,18 +21,21 @@ import { RouteThumbnail } from './RouteThumbnail';
 import { deleteRoute, listRouteCards, type RouteCard } from './routeStore';
 import { WorkoutPickerSheet } from './WorkoutPickerSheet';
 
+const WAY_KEYS = ['w1', 'w2', 'w3', 'w4'] as const;
+
 function SourceTag({ source }: { source: SavedRoute['source'] }) {
   const { colors } = useTheme();
   return (
     <View style={[styles.tag, { backgroundColor: colors.workoutsSoft }]}>
       <AppText variant="label" color={colors.workoutsText}>
-        {SOURCE_LABEL[source]}
+        {sourceLabel(source)}
       </AppText>
     </View>
   );
 }
 
 function RouteRow({ card, onOpen, onDelete }: { card: RouteCard; onOpen: () => void; onDelete: () => void }) {
+  const { t } = useTranslation('routes');
   const { route } = card;
   const elevation =
     route.ascentM !== null && route.descentM !== null ? ` \u00B7 ${formatElevation(route.ascentM)} \u00B7 ${formatElevation(-route.descentM)}` : '';
@@ -39,7 +43,7 @@ function RouteRow({ card, onOpen, onDelete }: { card: RouteCard; onOpen: () => v
     <Card style={styles.row}>
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel={copy.library.openRoute(route.name)}
+        accessibilityLabel={t('library.openRoute', { name: route.name })}
         onPress={onOpen}
         scaleTo={0.985}
         style={styles.main}>
@@ -52,18 +56,19 @@ function RouteRow({ card, onOpen, onDelete }: { card: RouteCard; onOpen: () => v
             {`${formatRouteDistance(route.distanceM)}${elevation}`}
           </AppText>
           <AppText variant="caption" muted numberOfLines={1}>
-            {route.lastSentAt === null ? copy.library.neverSent : copy.library.lastSent(route.lastSentAt)}
+            {route.lastSentAt === null ? t('library.neverSent') : t('library.lastSent', { date: formatRouteDateTime(route.lastSentAt) })}
           </AppText>
           <SourceTag source={route.source} />
         </View>
       </PressableScale>
-      <IconAction icon="trash-outline" label={copy.library.deleteRoute(route.name)} danger onPress={onDelete} />
+      <IconAction icon="trash-outline" label={t('library.deleteRoute', { name: route.name })} danger onPress={onDelete} />
     </Card>
   );
 }
 
 /** `/routes`: the saved routes, and the ways to add one: a GPX or TCX file, a drawing on the map, a past workout. */
 export function RouteLibraryScreen() {
+  const { t } = useTranslation('routes');
   const router = useRouter();
   const [cards, setCards] = useState<RouteCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,10 +81,10 @@ export function RouteLibraryScreen() {
       setCards(await listRouteCards());
       setError(null);
     } catch (e) {
-      setError(copy.library.loadFailed(errorMessage(e)));
+      setError(t('library.loadFailed', { message: errorMessage(e) }));
       setCards((current) => current ?? []);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -94,7 +99,7 @@ export function RouteLibraryScreen() {
       const picked = await pickRouteFile();
       if (picked) router.push({ pathname: '/routes/import', params: { uri: picked.uri, name: picked.name } });
     } catch (e) {
-      setError(copy.library.pickFailed(errorMessage(e)));
+      setError(t('library.pickFailed', { message: errorMessage(e) }));
     }
   };
 
@@ -106,7 +111,7 @@ export function RouteLibraryScreen() {
       await deleteRoute(route.id);
       await load();
     } catch (e) {
-      setError(copy.library.deleteFailed(errorMessage(e)));
+      setError(t('library.deleteFailed', { message: errorMessage(e) }));
     }
   };
 
@@ -119,30 +124,30 @@ export function RouteLibraryScreen() {
           void load().finally(() => setRefreshing(false));
         },
       }}>
-      <Section title={copy.library.addTitle} icon="add-circle" tint="workouts">
-        <Button label={copy.library.importFile} icon="document-attach" variant="primary" onPress={() => void pickFile()} />
-        <Button label={copy.library.drawOnMap} icon="create" onPress={() => router.push('/routes/draw')} />
-        <Button label={copy.library.fromWorkout} icon="fitness" onPress={() => setPickerOpen(true)} />
+      <Section title={t('library.addTitle')} icon="add-circle" tint="workouts">
+        <Button label={t('library.importFile')} icon="document-attach" variant="primary" onPress={() => void pickFile()} />
+        <Button label={t('library.drawOnMap')} icon="create" onPress={() => router.push('/routes/draw')} />
+        <Button label={t('library.fromWorkout')} icon="fitness" onPress={() => setPickerOpen(true)} />
       </Section>
 
       {error !== null ? <Notice tone="danger">{error}</Notice> : null}
 
-      {cards === null ? <LoadingState label={copy.library.loading} /> : null}
+      {cards === null ? <LoadingState label={t('library.loading')} /> : null}
 
       {cards !== null && cards.length === 0 ? (
-        <Section title={copy.library.emptyTitle} icon="trail-sign" tint="workouts">
+        <Section title={t('library.emptyTitle')} icon="trail-sign" tint="workouts">
           <AppText variant="caption" muted>
-            {copy.library.emptyDescription}
+            {t('library.emptyDescription')}
           </AppText>
           <Divider />
-          <NumberedSteps steps={copy.library.ways} />
+          <NumberedSteps steps={WAY_KEYS.map((key) => t(`library.ways.${key}`))} />
         </Section>
       ) : null}
 
       {cards !== null && cards.length > 0 ? (
         <View style={styles.list}>
           <AppText variant="heading" accessibilityRole="header">
-            {copy.library.listTitle}
+            {t('library.listTitle')}
           </AppText>
           {cards.map((card) => (
             <RouteRow key={card.route.id} card={card} onOpen={() => open(card.route.id)} onDelete={() => setPendingDelete(card.route)} />
@@ -160,10 +165,10 @@ export function RouteLibraryScreen() {
       />
       <ConfirmDialog
         visible={pendingDelete !== null}
-        title={copy.library.deleteTitle}
-        message={pendingDelete ? copy.library.deleteMessage(pendingDelete.name) : ''}
-        confirmLabel={copy.library.deleteConfirm}
-        cancelLabel={copy.library.cancel}
+        title={t('library.deleteTitle')}
+        message={pendingDelete ? t('library.deleteMessage', { name: pendingDelete.name }) : ''}
+        confirmLabel={t('library.deleteConfirm')}
+        cancelLabel={t('library.cancel')}
         onConfirm={() => void confirmDelete()}
         onCancel={() => setPendingDelete(null)}
       />

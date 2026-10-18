@@ -1,5 +1,6 @@
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -11,7 +12,7 @@ import { errorMessage } from '@/format';
 import { overlay, spacing, useTheme } from '@/theme';
 
 import { IconAction } from '@/features/courses/IconAction';
-import { copy, formatRouteDateTime } from './copy';
+import { formatRouteDateTime } from './copy';
 import { formatRouteDistance, type SavedRoute } from './routeModel';
 import { listWorkoutsWithGps, saveWorkoutAsRoute, type WorkoutWithGps } from './saveWorkoutRoute';
 
@@ -24,6 +25,7 @@ interface WorkoutPickerSheetProps {
 
 /** A bottom sheet of the workouts that have a GPS track; tapping one saves its track as a route. */
 export function WorkoutPickerSheet({ visible, onClose, onSaved }: WorkoutPickerSheetProps) {
+  const { t } = useTranslation('routes');
   const db = useSQLiteContext();
   const { colors, radius } = useTheme();
   const [items, setItems] = useState<WorkoutWithGps[] | null>(null);
@@ -38,7 +40,7 @@ export function WorkoutPickerSheet({ visible, onClose, onSaved }: WorkoutPickerS
         if (!cancelled) setItems(list);
       },
       (e: unknown) => {
-        if (!cancelled) setError(copy.workoutPicker.loadFailed(errorMessage(e)));
+        if (!cancelled) setError(t('workoutPicker.loadFailed', { message: errorMessage(e) }));
       },
     );
     return () => {
@@ -46,7 +48,7 @@ export function WorkoutPickerSheet({ visible, onClose, onSaved }: WorkoutPickerS
       setItems(null);
       setError(null);
     };
-  }, [visible, db]);
+  }, [visible, db, t]);
 
   const pick = useCallback(
     async (item: WorkoutWithGps) => {
@@ -56,35 +58,35 @@ export function WorkoutPickerSheet({ visible, onClose, onSaved }: WorkoutPickerS
       try {
         onSaved(await saveWorkoutAsRoute(db, item.workout));
       } catch (e) {
-        setError(copy.workoutPicker.saveFailed(errorMessage(e)));
+        setError(t('workoutPicker.saveFailed', { message: errorMessage(e) }));
       } finally {
         setSavingId(null);
       }
     },
-    [db, onSaved, savingId],
+    [db, onSaved, savingId, t],
   );
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.root}>
-        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={copy.workoutPicker.close} />
+        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={t('workoutPicker.close')} />
         <View style={[styles.sheet, { backgroundColor: colors.card, borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card }]} accessibilityViewIsModal>
           <View style={styles.header}>
             <View style={styles.headerText}>
               <AppText variant="heading" accessibilityRole="header">
-                {copy.workoutPicker.title}
+                {t('workoutPicker.title')}
               </AppText>
               <AppText variant="caption" muted>
-                {copy.workoutPicker.caption}
+                {t('workoutPicker.caption')}
               </AppText>
             </View>
-            <IconAction icon="close" label={copy.workoutPicker.close} onPress={onClose} />
+            <IconAction icon="close" label={t('workoutPicker.close')} onPress={onClose} />
           </View>
           {error !== null ? <Notice tone="danger">{error}</Notice> : null}
-          {items === null && error === null ? <LoadingState label={copy.workoutPicker.loading} /> : null}
+          {items === null && error === null ? <LoadingState label={t('workoutPicker.loading')} /> : null}
           {items !== null && items.length === 0 ? (
             <AppText variant="caption" muted style={styles.empty}>
-              {copy.workoutPicker.empty}
+              {t('workoutPicker.empty')}
             </AppText>
           ) : null}
           {items !== null ? (
@@ -96,11 +98,12 @@ export function WorkoutPickerSheet({ visible, onClose, onSaved }: WorkoutPickerS
               contentContainerStyle={styles.list}
               renderItem={({ item }) => {
                 const { workout } = item;
-                const label = `${workout.sportName}, ${formatRouteDateTime(workout.start * 1000)}`;
+                const when = formatRouteDateTime(workout.start * 1000);
+                const label = t('workoutPicker.rowLabel', { sport: workout.sportName, date: when });
                 return (
                   <PressableScale
                     accessibilityRole="button"
-                    accessibilityLabel={copy.workoutPicker.pick(label)}
+                    accessibilityLabel={t('workoutPicker.pick', { label })}
                     accessibilityState={{ disabled: savingId !== null, busy: savingId === workout.id }}
                     disabled={savingId !== null}
                     onPress={() => void pick(item)}
@@ -112,12 +115,14 @@ export function WorkoutPickerSheet({ visible, onClose, onSaved }: WorkoutPickerS
                         {workout.sportName}
                       </AppText>
                       <AppText variant="caption" muted numberOfLines={1}>
-                        {`${formatRouteDateTime(workout.start * 1000)} \u00B7 ${workout.distance > 0 ? `${formatRouteDistance(workout.distance)} \u00B7 ` : ''}${copy.workoutPicker.gpsPoints(item.gpsPoints)}`}
+                        {[when, workout.distance > 0 ? formatRouteDistance(workout.distance) : null, t('workoutPicker.gpsPoints', { count: item.gpsPoints })]
+                          .filter(Boolean)
+                          .join(' \u00B7 ')}
                       </AppText>
                     </View>
                     {savingId === workout.id ? (
                       <AppText variant="caption" muted>
-                        {copy.workoutPicker.saving}
+                        {t('workoutPicker.saving')}
                       </AppText>
                     ) : null}
                   </PressableScale>

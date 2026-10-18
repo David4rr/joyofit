@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
+import { applyLocale, t } from '@/i18n';
 import type { RoutePushResult } from '@/wear';
 
 import { outcomeFromError, outcomeFromResult } from './pushOutcome';
-import { copy } from './copy';
 import type { RoutePoint } from './routeModel';
 import { alternativeName, buildWatchRoute, MAX_WATCH_NAME_BYTES, MAX_WATCH_POINTS, truncateUtf8, utf8Length, watchRouteName } from './watchRoute';
 import { workoutRouteDraft } from './workoutRoute';
@@ -34,7 +34,7 @@ describe('watchRouteName', () => {
     expect(name).toBe('\u00e9'.repeat(50));
   });
   test('a blank name gets the fallback', () => {
-    expect(watchRouteName('   ')).toBe(copy.push.watchFallbackName);
+    expect(watchRouteName('   ')).toBe(t('routes:push.watchFallbackName'));
   });
 });
 
@@ -81,12 +81,21 @@ function coded(code: string, message: string): Error {
 
 describe('outcomeFromError', () => {
   test('every documented code has its own Indonesian copy', () => {
-    expect(outcomeFromError(coded('ERR_NOT_CONNECTED', 'x'))).toEqual({ kind: 'failed', message: copy.push.errors.ERR_NOT_CONNECTED, canRename: false });
-    expect(outcomeFromError(coded('ERR_UNSUPPORTED', 'x'))).toMatchObject({ kind: 'failed', message: copy.push.errors.ERR_UNSUPPORTED });
-    expect(outcomeFromError(coded('ERR_ROUTE_FULL', 'x'))).toMatchObject({ message: copy.push.errors.ERR_ROUTE_FULL });
-    expect(outcomeFromError(coded('ERR_TIMEOUT', 'x'))).toMatchObject({ message: copy.push.errors.ERR_TIMEOUT });
-    expect(outcomeFromError(coded('ERR_BUSY', 'x'))).toMatchObject({ message: copy.push.errors.ERR_BUSY });
-    expect(outcomeFromError(coded('ERR_DISCONNECTED', 'x'))).toMatchObject({ message: copy.push.errors.ERR_DISCONNECTED });
+    expect(outcomeFromError(coded('ERR_NOT_CONNECTED', 'x'))).toEqual({ kind: 'failed', message: t('routes:push.errors.ERR_NOT_CONNECTED'), canRename: false });
+    expect(outcomeFromError(coded('ERR_UNSUPPORTED', 'x'))).toMatchObject({ kind: 'failed', message: t('routes:push.errors.ERR_UNSUPPORTED') });
+    expect(outcomeFromError(coded('ERR_ROUTE_FULL', 'x'))).toMatchObject({ message: t('routes:push.errors.ERR_ROUTE_FULL') });
+    expect(outcomeFromError(coded('ERR_TIMEOUT', 'x'))).toMatchObject({ message: t('routes:push.errors.ERR_TIMEOUT') });
+    expect(outcomeFromError(coded('ERR_BUSY', 'x'))).toMatchObject({ message: t('routes:push.errors.ERR_BUSY') });
+    expect(outcomeFromError(coded('ERR_DISCONNECTED', 'x'))).toMatchObject({ message: t('routes:push.errors.ERR_DISCONNECTED') });
+  });
+  test('the same code answers in English after a language switch', async () => {
+    await applyLocale('en');
+    try {
+      const outcome = outcomeFromError(coded('ERR_ROUTE_FULL', 'x'));
+      expect(outcome.kind === 'failed' && outcome.message).toContain('route list on the watch is full');
+    } finally {
+      await applyLocale('id');
+    }
   });
   test('a full list says to delete a route on the watch', () => {
     const outcome = outcomeFromError(coded('ERR_ROUTE_FULL', 'x'));
@@ -103,7 +112,7 @@ describe('outcomeFromError', () => {
     expect(invalid.kind === 'failed' && invalid.message).toContain('route has 1 point');
   });
   test('an unknown error shows its message and code, a plain error its message', () => {
-    expect(outcomeFromError(coded('ERR_SOMETHING', 'boom'))).toEqual({ kind: 'failed', message: copy.push.failedUnknown('boom', 'ERR_SOMETHING'), canRename: false });
+    expect(outcomeFromError(coded('ERR_SOMETHING', 'boom'))).toEqual({ kind: 'failed', message: t('routes:push.failedUnknownCode', { message: 'boom', code: 'ERR_SOMETHING' }), canRename: false });
     const plain = outcomeFromError(new Error('boom'));
     expect(plain.kind === 'failed' && plain.message).toContain('boom');
     const text = outcomeFromError('just a string');
@@ -135,8 +144,8 @@ describe('outcomeFromResult', () => {
     expect(outcomeFromResult(result({ alreadyOnWatch: true, handshakeCode: 3, version: 0, sentPoints: 0, answerCode: null }), 10)).toEqual({ kind: 'already' });
   });
   test('refused', () => {
-    expect(outcomeFromResult(result({ ok: false, answerCode: 9 }), 10)).toEqual({ kind: 'failed', message: copy.push.notAccepted(9), canRename: false });
-    expect(outcomeFromResult(result({ ok: false, handshakeCode: 2 }), 10)).toMatchObject({ message: copy.push.errors.ERR_ROUTE_FULL });
+    expect(outcomeFromResult(result({ ok: false, answerCode: 9 }), 10)).toEqual({ kind: 'failed', message: t('routes:push.notAcceptedCode', { code: 9 }), canRename: false });
+    expect(outcomeFromResult(result({ ok: false, handshakeCode: 2 }), 10)).toMatchObject({ message: t('routes:push.errors.ERR_ROUTE_FULL') });
     expect(outcomeFromResult(result({ ok: false, handshakeCode: 5 }), 10)).toMatchObject({ canRename: true });
   });
 });

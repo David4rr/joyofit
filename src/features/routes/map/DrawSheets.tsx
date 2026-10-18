@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -7,14 +8,11 @@ import { Button } from '@/components/Button';
 import { Field, Input } from '@/components/Input';
 import { PressableScale } from '@/components/PressableScale';
 import { Notice } from '@/components/States';
-import { mapCopy } from '@/features/routes/map/copy';
 import { normalizeQuery, type Place } from '@/features/routes/map/geocodeClient';
 import { isAborted } from '@/features/routes/map/http';
 import { MapButton } from '@/features/routes/map/MapButton';
 import { geocoder } from '@/features/routes/map/services';
 import { HIT, spacing, useTheme } from '@/theme';
-
-const copy = mapCopy.draw;
 
 /** The rounded card the drawing screen's sheets share. */
 export function SheetCard({ children }: { children: ReactNode }) {
@@ -38,15 +36,16 @@ interface NameSheetProps {
 
 /** Asks for the route's name, then hands it to the screen, which fetches the altitude and saves. */
 export function NameSheet({ initialName, busy, error, onSave, onCancel }: NameSheetProps) {
+  const { t } = useTranslation('routes', { keyPrefix: 'map.draw' });
   const [name, setName] = useState(initialName);
   const trimmed = name.trim();
   return (
     <SheetCard>
       <AppText variant="heading" accessibilityRole="header">
-        {copy.nameTitle}
+        {t('nameTitle')}
       </AppText>
       <Field
-        label={copy.nameLabel}
+        label={t('nameLabel')}
         value={name}
         onChangeText={setName}
         maxLength={60}
@@ -54,16 +53,16 @@ export function NameSheet({ initialName, busy, error, onSave, onCancel }: NameSh
         editable={busy === null}
         returnKeyType="done"
         onSubmitEditing={() => trimmed !== '' && busy === null && onSave(trimmed)}
-        hint={copy.nameElevationHint}
+        hint={t('nameElevationHint')}
       />
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <View style={styles.actions}>
         <View style={styles.grow}>
-          <Button label={copy.cancel} onPress={onCancel} disabled={busy !== null} />
+          <Button label={t('cancel')} onPress={onCancel} disabled={busy !== null} />
         </View>
         <View style={styles.grow}>
           <Button
-            label={busy === 'elevation' ? copy.fetchingElevation : busy === 'saving' ? copy.saving : copy.save}
+            label={busy === 'elevation' ? t('fetchingElevation') : busy === 'saving' ? t('saving') : t('save')}
             variant="primary"
             icon="checkmark"
             loading={busy !== null}
@@ -92,6 +91,8 @@ interface SearchSheetProps {
  * sees one request per submit (its policy forbids autocomplete).
  */
 export function SearchSheet({ onPick, onClose }: SearchSheetProps) {
+  const { t } = useTranslation('routes', { keyPrefix: 'map.draw' });
+  const { t: tRoot } = useTranslation('routes');
   const [text, setText] = useState('');
   const [state, setState] = useState<SearchState>({ kind: 'idle' });
   const pending = useRef<AbortController | null>(null);
@@ -101,7 +102,7 @@ export function SearchSheet({ onPick, onClose }: SearchSheetProps) {
   const submit = async () => {
     if (state.kind === 'loading') return;
     if (!normalizeQuery(text)) {
-      setState({ kind: 'error', message: copy.searchTooShort });
+      setState({ kind: 'error', message: t('searchTooShort') });
       return;
     }
     const controller = new AbortController();
@@ -111,7 +112,7 @@ export function SearchSheet({ onPick, onClose }: SearchSheetProps) {
       const places = await geocoder.search(text, controller.signal);
       setState({ kind: 'done', places });
     } catch (e) {
-      if (!isAborted(e)) setState({ kind: 'error', message: copy.searchFailed });
+      if (!isAborted(e)) setState({ kind: 'error', message: t('searchFailed') });
     }
   };
 
@@ -119,25 +120,25 @@ export function SearchSheet({ onPick, onClose }: SearchSheetProps) {
     <SheetCard>
       <View style={styles.header}>
         <AppText variant="heading" accessibilityRole="header" style={styles.grow}>
-          {copy.search}
+          {t('search')}
         </AppText>
-        <MapButton icon="close" label={copy.searchClose} onPress={onClose} />
+        <MapButton icon="close" label={t('searchClose')} onPress={onClose} />
       </View>
       <Input
         icon="search"
         value={text}
         onChangeText={setText}
-        placeholder={copy.searchPlaceholder}
-        accessibilityLabel={copy.search}
+        placeholder={t('searchPlaceholder')}
+        accessibilityLabel={t('search')}
         autoFocus
         autoCorrect={false}
         maxLength={100}
         returnKeyType="search"
         onSubmitEditing={submit}
       />
-      <Button label={copy.searchSubmit} variant="primary" icon="search" loading={state.kind === 'loading'} onPress={submit} />
+      <Button label={t('searchSubmit')} variant="primary" icon="search" loading={state.kind === 'loading'} onPress={submit} />
       {state.kind === 'error' ? <Notice tone="danger">{state.message}</Notice> : null}
-      {state.kind === 'done' && state.places.length === 0 ? <Notice>{copy.searchEmpty}</Notice> : null}
+      {state.kind === 'done' && state.places.length === 0 ? <Notice>{t('searchEmpty')}</Notice> : null}
       {state.kind === 'done' && state.places.length > 0 ? (
         <ScrollView style={styles.results} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
           {state.places.map((place, index) => (
@@ -146,18 +147,19 @@ export function SearchSheet({ onPick, onClose }: SearchSheetProps) {
         </ScrollView>
       ) : null}
       <AppText variant="caption" muted>
-        {copy.searchHint} {mapCopy.searchCredit}
+        {t('searchHint')} {tRoot('map.searchCredit')}
       </AppText>
     </SheetCard>
   );
 }
 
 function PlaceRow({ place, onPress }: { place: Place; onPress: () => void }) {
+  const { t } = useTranslation('routes', { keyPrefix: 'map.draw' });
   const { colors, radius } = useTheme();
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={copy.pickPlace(place.name)}
+      accessibilityLabel={t('pickPlace', { name: place.name })}
       onPress={onPress}
       style={[styles.place, { backgroundColor: colors.muted, borderRadius: radius.input }]}>
       <Ionicons name="location-outline" size={20} color={colors.mutedForeground} />
