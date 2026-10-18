@@ -12,7 +12,7 @@ import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppState, View } from 'react-native';
+import { AppState, Text, View, type ColorValue } from 'react-native';
 
 import { TabIcon } from '@/components/TabIcon';
 import { initLocale, refreshAutoLocale } from '@/i18n/native';
@@ -49,6 +49,17 @@ export default function RootLayout() {
     <ThemeProvider>
       <RootNavigator />
     </ThemeProvider>
+  );
+}
+
+/** A tab's label. It reads the language itself: the navigator keeps the options it first got, so a label built from `t` in them would stay in the old language after a switch in Settings. */
+function TabLabel({ name, color }: { name: 'today' | 'workouts' | 'social' | 'watch' | 'settings'; color: ColorValue }) {
+  const { t } = useTranslation('common');
+  const { fonts } = useTheme();
+  return (
+    <Text numberOfLines={1} style={{ color, fontFamily: fonts.medium, fontSize: 12 }}>
+      {t(`nav.${name}`)}
+    </Text>
   );
 }
 
@@ -103,6 +114,7 @@ function RootNavigator() {
                       name="index"
                       options={{
                         title: t('nav.today'),
+                        tabBarLabel: ({ color }) => <TabLabel name="today" color={color} />,
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="today" off="today-outline" focused={focused} size={size} color={color} />
                         ),
@@ -112,6 +124,7 @@ function RootNavigator() {
                       name="workouts"
                       options={{
                         title: t('nav.workouts'),
+                        tabBarLabel: ({ color }) => <TabLabel name="workouts" color={color} />,
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="fitness" off="fitness-outline" focused={focused} size={size} color={color} />
                         ),
@@ -121,6 +134,7 @@ function RootNavigator() {
                       name="social"
                       options={{
                         title: t('nav.social'),
+                        tabBarLabel: ({ color }) => <TabLabel name="social" color={color} />,
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="people" off="people-outline" focused={focused} size={size} color={color} />
                         ),
@@ -130,6 +144,7 @@ function RootNavigator() {
                       name="watch"
                       options={{
                         title: t('nav.watch'),
+                        tabBarLabel: ({ color }) => <TabLabel name="watch" color={color} />,
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="watch" off="watch-outline" focused={focused} size={size} color={color} />
                         ),
@@ -139,6 +154,7 @@ function RootNavigator() {
                       name="settings"
                       options={{
                         title: t('nav.settings'),
+                        tabBarLabel: ({ color }) => <TabLabel name="settings" color={color} />,
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="settings" off="settings-outline" focused={focused} size={size} color={color} />
                         ),
