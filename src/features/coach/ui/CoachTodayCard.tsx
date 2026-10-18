@@ -12,6 +12,7 @@ import { spacing } from '@/theme';
 import { useCoach } from '../useCoach';
 import { useCoachAccess } from '../useCoachAccess';
 import { CoachSignIn, CoachUpsell } from './CoachGate';
+import { FeelPicker } from './FeelPicker';
 import { SuggestionBlock } from './SuggestionBlock';
 
 function ProCard({ dataVersion, availability }: { dataVersion: number; availability: NightHrvAvailability | null }) {
@@ -26,6 +27,7 @@ function ProCard({ dataVersion, availability }: { dataVersion: number; availabil
         <PressableScale accessibilityRole="button" accessibilityLabel={t('card.details')} onPress={() => router.push('/coach')} scaleTo={0.99}>
           <SuggestionBlock suggestion={coach.suggestion} maxReasons={2} />
         </PressableScale>
+        {coach.needsFeel ? <FeelPicker feel={coach.feel} onChange={coach.setFeel} /> : null}
         <View style={styles.actions}>
           <Button label={t('card.details')} variant="secondary" icon="chevron-forward" onPress={() => router.push('/coach')} style={styles.action} />
           {hasPlan ? null : <Button label={t('card.createPlan')} variant="primary" icon="add" onPress={() => router.push('/coach/setup')} style={styles.action} />}

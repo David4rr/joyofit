@@ -17,6 +17,7 @@ import { sessionStatus } from '@/features/coach/progress';
 import { useCoach } from '@/features/coach/useCoach';
 import { CoachGate } from '@/features/coach/ui/CoachGate';
 import { SessionRow } from '@/features/coach/ui/SessionRow';
+import { FeelPicker } from '@/features/coach/ui/FeelPicker';
 import { SuggestionBlock } from '@/features/coach/ui/SuggestionBlock';
 import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
 import { fmtDay, fmtInt, useLocale } from '@/i18n';
@@ -48,6 +49,7 @@ function CoachBody() {
       <>
         <Card>
           <SuggestionBlock suggestion={suggestion} />
+          {coach.needsFeel ? <FeelPicker feel={coach.feel} onChange={coach.setFeel} /> : null}
         </Card>
         <EmptyState
           icon="calendar"
@@ -87,6 +89,7 @@ function CoachBody() {
 
       <Section title={t('card.title')} icon="flash" tint="workouts">
         <SuggestionBlock suggestion={suggestion} />
+        {coach.needsFeel ? <FeelPicker feel={coach.feel} onChange={coach.setFeel} /> : null}
         <Details title={t('rules.title')}>{t('rules.body')}</Details>
       </Section>
 

@@ -115,6 +115,7 @@ describe('run plans', () => {
 
 const BASE_INPUT: SuggestionInput = {
   readiness: 'Balanced',
+  feel: null,
   load: { status: 'maintaining', ratio: 1 },
   hrv: 'balanced',
   lastNightMin: 450,
@@ -200,6 +201,40 @@ describe('daily suggestion', () => {
       recoveryHoursLeft: null,
       usualSport: null,
     });
+    expect(s.reasons.map((r) => r.code)).toEqual(['noSignal']);
+  });
+});
+
+describe('how you feel, without a watch reading', () => {
+  const NO_WATCH = { ...BASE_INPUT, readiness: null, load: null, hrv: null, lastNightMin: null, sleepDebtMin: null, strainYesterday: null, strainDayBefore: null, recoveryHoursLeft: null };
+
+  const plannedRun = generatePlan(planOf('run10k', 'intermediate', 3))[0]!.sessions[1]!;
+
+  test('a tired answer scales the plan like a low readiness would', () => {
+    const s = suggest({ ...NO_WATCH, feel: 'tired', planState: 'active', planned: plannedRun });
+    expect(s.reasons.map((r) => r.code)).toContain('feelTired');
+    expect(s.band).toBe('ok');
+  });
+
+  test('wrecked turns a hard run into an easy one', () => {
+    const s = suggest({ ...NO_WATCH, feel: 'wrecked', planState: 'active', planned: plannedRun });
+    expect(s.band).toBe('tired');
+    expect(s.kind).toBe('sessionEasier');
+  });
+
+  test('great is a small credit and never blocks a session', () => {
+    const s = suggest({ ...NO_WATCH, feel: 'great', planState: 'active', planned: plannedRun });
+    expect(s.kind).toBe('session');
+  });
+
+  test('the watch readiness wins over the answer', () => {
+    const s = suggest({ ...NO_WATCH, readiness: 'Primed', feel: 'wrecked' });
+    expect(s.reasons.map((r) => r.code)).not.toContain('feelWrecked');
+  });
+
+  test('a lifter with no data at all gets a strength suggestion, not a run', () => {
+    const s = suggest({ ...NO_WATCH, usualSport: 'strength' });
+    expect(s.effective?.type).toBe('strength');
     expect(s.reasons.map((r) => r.code)).toEqual(['noSignal']);
   });
 });

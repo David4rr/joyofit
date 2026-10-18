@@ -98,11 +98,14 @@
     "planDone": "The plan and its session are done.",
     "trainedToday": "Today's workout is already recorded.",
     "catchUp": "A session this week has not been done yet.",
-    "noSignal": "Not enough recovery data yet, so this is a general suggestion."
+    "noSignal": "No recovery data yet, so this is a general suggestion. Answer the question below or connect a watch for a better fit.",
+    "feelWrecked": "You said your body is very worn out today.",
+    "feelTired": "You said you feel tired today.",
+    "feelGreat": "You said you feel fresh today."
   },
   "rules": {
     "title": "How this suggestion is made",
-    "body": "Coach adds up fatigue points from the signals it has: readiness, HRV, the 7-day against 28-day training load, last night's sleep and sleep debt, yesterday's strain, the recovery time left on your watch, and days active in a row. A signal that is missing counts for nothing.\n\n0 to 1 points: fresh, the plan goes ahead as written.\n2 to 3: fair, the plan is cut to 85%.\n4 to 5: tired, the session becomes an easy one or active rest.\n6 or more: very tired, rest.\n\nA hard session is never placed the day after a hard day. With no plan, Coach gives a general suggestion from the state of your body alone. There is no AI here, only the rules above."
+    "body": "Coach adds up fatigue points from the signals it has: readiness (from your watch, or how you say you feel), HRV, the 7-day against 28-day training load, last night's sleep and sleep debt, yesterday's strain, the recovery time left on your watch, and days active in a row. A signal that is missing counts for nothing.\n\n0 to 1 points: fresh, the plan goes ahead as written.\n2 to 3: fair, the plan is cut to 85%.\n4 to 5: tired, the session becomes an easy one or active rest.\n6 or more: very tired, rest.\n\nA hard session is never placed the day after a hard day. With no plan, Coach gives a general suggestion from the state of your body alone. There is no AI here, only the rules above."
   },
   "plan": {
     "title": "Training plan",
@@ -410,5 +413,14 @@
     "error": "The message was not sent: {{message}}",
     "flagged": "If the pain or symptoms continue, stop training and see a doctor or physiotherapist.",
     "privacy": "Your message and a summary of your data go to JoyoRogo's AI to be answered, and are not stored on the server. The chat is kept only on your phone."
+  },
+  "feel": {
+    "title": "How does your body feel today?",
+    "hint": "With no watch data, your answer stands in for it. It counts for today only.",
+    "great": "Fresh",
+    "good": "Normal",
+    "tired": "Tired",
+    "wrecked": "Worn out",
+    "change": "Change answer"
   }
 }

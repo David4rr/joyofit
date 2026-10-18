@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { useFitnessData, type FitnessData } from '@/features/fitness/useFitnessData';
 import type { NightHrvAvailability } from '@/features/today/nightHrv';
 import { reconcileCoach } from './actions';
+import type { Feel } from './feel';
 import { strengthLinks } from './links';
 import type { CoachDoc } from './doc';
 import { planProgress, type PlanProgress } from './progress';
@@ -11,6 +12,7 @@ import { computeSignals, type CoachSignals } from './signals';
 import { loadCoachDoc, useCoachDoc } from './store';
 import { suggest, type Suggestion, type SuggestionInput } from './suggest';
 import { localDay } from './time';
+import { useFeel } from './useFeel';
 
 export interface CoachState {
   /** Everything below is null until the stored document and the body data are both read. */
@@ -20,13 +22,18 @@ export interface CoachState {
   progress: PlanProgress | null;
   suggestion: Suggestion;
   today: string;
+  /** The watch gave no readiness today, so the suggestion leans on how the person says they feel (`feel`, null until they answer). */
+  needsFeel: boolean;
+  feel: Feel | null;
+  setFeel: (feel: Feel | null) => void;
 }
 
 /** What `suggest` reads, from the body signals and the plan. */
-export function suggestionInput(signals: CoachSignals, progress: PlanProgress | null): SuggestionInput {
+export function suggestionInput(signals: CoachSignals, progress: PlanProgress | null, feel: Feel | null): SuggestionInput {
   const planned = progress?.today && !progress.todayDone && progress.state === 'active' ? progress.today : null;
   return {
     readiness: signals.readiness,
+    feel,
     load: signals.load ? { status: signals.load.status, ratio: signals.load.ratio } : null,
     hrv: signals.hrv?.state ?? null,
     lastNightMin: signals.lastNightMin,
@@ -53,6 +60,7 @@ export function useCoach(dataVersion: number, availability: NightHrvAvailability
   const db = useSQLiteContext();
   const doc = useCoachDoc();
   const { data } = useFitnessData(dataVersion, 'full');
+  const { feel, setFeel } = useFeel();
 
   useEffect(() => {
     void loadCoachDoc(db).catch(() => {});
@@ -81,6 +89,7 @@ export function useCoach(dataVersion: number, availability: NightHrvAvailability
     if (!doc || !data || !signals) return null;
     const today = localDay(data.nowSec);
     const progress = doc.plan ? planProgress(doc.plan, doc.done, today) : null;
-    return { doc, data, signals, progress, suggestion: suggest(suggestionInput(signals, progress)), today };
-  }, [doc, data, signals]);
+    const suggestion = suggest(suggestionInput(signals, progress, feel));
+    return { doc, data, signals, progress, suggestion, today, needsFeel: signals.readiness === null, feel, setFeel };
+  }, [doc, data, signals, feel, setFeel]);
 }

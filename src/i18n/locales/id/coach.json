@@ -98,11 +98,14 @@
     "planDone": "Rencana dan sesinya sudah selesai.",
     "trainedToday": "Latihan hari ini sudah tercatat.",
     "catchUp": "Ada sesi minggu ini yang belum dikerjakan.",
-    "noSignal": "Data pemulihanmu belum cukup, jadi ini saran umum."
+    "noSignal": "Belum ada data pemulihan, jadi ini saran umum. Jawab pertanyaan di bawah atau sambungkan jam supaya saran lebih pas.",
+    "feelWrecked": "Kamu bilang badanmu sangat lelah hari ini.",
+    "feelTired": "Kamu bilang badanmu capek hari ini.",
+    "feelGreat": "Kamu bilang badanmu segar hari ini."
   },
   "rules": {
     "title": "Cara saran ini dibuat",
-    "body": "Coach menjumlah poin lelah dari sinyal yang ada: kesiapan, HRV, beban latihan 7 hari lawan 28 hari, tidur semalam dan utang tidur, beban kemarin, sisa waktu pemulihan di jam, dan hari aktif berturut-turut. Sinyal yang tidak ada tidak dihitung.\n\n0 sampai 1 poin: segar, rencana jalan seperti tertulis.\n2 sampai 3: cukup, rencana dikurangi jadi 85%.\n4 sampai 5: lelah, sesi diganti yang ringan atau istirahat aktif.\n6 atau lebih: sangat lelah, istirahat.\n\nSesi berat tidak pernah ditaruh sehari setelah hari berat. Tanpa rencana, Coach memberi saran umum dari kondisi badanmu saja. Tidak ada AI di sini, hanya aturan di atas."
+    "body": "Coach menjumlah poin lelah dari sinyal yang ada: kesiapan (dari jam, atau jawabanmu soal badanmu), HRV, beban latihan 7 hari lawan 28 hari, tidur semalam dan utang tidur, beban kemarin, sisa waktu pemulihan di jam, dan hari aktif berturut-turut. Sinyal yang tidak ada tidak dihitung.\n\n0 sampai 1 poin: segar, rencana jalan seperti tertulis.\n2 sampai 3: cukup, rencana dikurangi jadi 85%.\n4 sampai 5: lelah, sesi diganti yang ringan atau istirahat aktif.\n6 atau lebih: sangat lelah, istirahat.\n\nSesi berat tidak pernah ditaruh sehari setelah hari berat. Tanpa rencana, Coach memberi saran umum dari kondisi badanmu saja. Tidak ada AI di sini, hanya aturan di atas."
   },
   "plan": {
     "title": "Rencana latihan",
@@ -410,5 +413,14 @@
     "error": "Pesan belum terkirim: {{message}}",
     "flagged": "Kalau nyeri atau keluhanmu berlanjut, hentikan latihan dan periksakan ke dokter atau fisioterapis.",
     "privacy": "Pesanmu dan ringkasan datamu dikirim ke AI JoyoRogo untuk dijawab, lalu tidak disimpan di server. Obrolan hanya tersimpan di ponselmu."
+  },
+  "feel": {
+    "title": "Gimana badanmu hari ini?",
+    "hint": "Tanpa data dari jam, jawabanmu dipakai sebagai gantinya. Berlaku untuk hari ini saja.",
+    "great": "Segar",
+    "good": "Biasa",
+    "tired": "Capek",
+    "wrecked": "Lemas",
+    "change": "Ubah jawaban"
   }
 }

@@ -1,5 +1,6 @@
 import type { CoachState } from '../useCoach';
 import { liveDone } from '../doc';
+import { feelReadiness } from '../feel';
 import { headlineText, reasonText, sessionTitle } from '../format';
 
 /**
@@ -46,7 +47,7 @@ export function buildSnapshot(coach: CoachState): CoachSnapshot {
   return {
     generatedAt: data.nowSec,
     today: coach.today,
-    readiness: signals.readiness ? { headline: signals.readiness } : null,
+    readiness: { headline: signals.readiness ?? (coach.feel ? feelReadiness(coach.feel) : null) },
     load: signals.load ? { status: signals.load.status, ratio: signals.load.ratio } : null,
     hrv: signals.hrv,
     sleep: { lastNightMin: signals.lastNightMin, debtMin: signals.sleepDebtMin, needTonightMin: null },

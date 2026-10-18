@@ -19,6 +19,7 @@ Fatigue points from the signals that exist; a signal that is missing adds nothin
 | Signal | Points |
 | --- | --- |
 | Readiness Run down / Strained / Primed | +3 / +2 / -1 |
+| "How does your body feel today?" (only while the watch gives no readiness): worn out / tired / fresh | +4 / +2 / -1 |
 | HRV status low | +2 |
 | Training status overreaching (acute:chronic load over 1.5) | +3 |
 | Last night under 6 h / under 7 h | +2 / +1 |
@@ -45,7 +46,11 @@ Bands: **6 or more** exhausted, **4 to 5** tired, **2 to 3** fair, **0 to 1** fr
 | No plan, tired | Active rest: a 30 minute walk in zone 1 |
 | No plan, fair or fresh | An easy run in zone 2 (30 or 40 minutes; a walk when walking, riding or strength is what you do most; a strength session of 30 or 40 minutes for strength people) |
 
-The reasons shown are the signals that raised the total, biggest first. With no data at all the card says it is a general suggestion.
+The reasons shown are the signals that raised the total, biggest first. With no data at all the card says it is a general suggestion (a strength session for someone who lifts, an easy run otherwise).
+
+### Without a watch
+
+Nothing in Coach needs a watch. With no readiness (no watch, or no night of data yet) the Coach card and screen ask "How does your body feel today?" (fresh, normal, tired, worn out; `feel.ts`, `ui/FeelPicker.tsx`). The answer is kept on the phone for the calendar day (`useFeel.ts`, never synced) and counts as the watch's readiness word in the table above; the watch's own readiness always wins. The chat snapshot sends it as `readiness`. Training-load signals (strain, active streak, recovery time) stay empty without heart-rate data, so the weekly adaptation only reacts to done-against-planned counts.
 
 ## Plans
 

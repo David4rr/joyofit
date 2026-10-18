@@ -1,4 +1,5 @@
 import type { TrainingStatus } from '@/features/fitness/trainingLoad';
+import type { Feel } from './feel';
 import type { PlannedSession, HrZone, SessionType } from './plans/types';
 
 /**
@@ -9,6 +10,7 @@ import type { PlannedSession, HrZone, SessionType } from './plans/types';
  * | Signal                                  | Points |
  * | --------------------------------------- | ------ |
  * | Readiness: Run down / Strained / Primed | +3 / +2 / -1 |
+ * | "How do you feel", only when the watch gives no readiness: wrecked / tired / great | +4 / +2 / -1 |
  * | HRV status low                          | +2 |
  * | Training status overreaching (ACWR > 1.5) | +3 |
  * | Last night under 6 h / under 7 h        | +2 / +1 |
@@ -26,7 +28,10 @@ import type { PlannedSession, HrZone, SessionType } from './plans/types';
 export type ReadinessWord = 'Primed' | 'Balanced' | 'Strained' | 'Run down';
 
 export interface SuggestionInput {
+  /** The watch's readiness; null with no watch or no night of data yet. */
   readiness: ReadinessWord | null;
+  /** What the person said about today, used only while `readiness` is null. */
+  feel: Feel | null;
   load: { status: TrainingStatus; ratio: number } | null;
   hrv: 'balanced' | 'unbalanced' | 'low' | null;
   lastNightMin: number | null;
@@ -54,6 +59,9 @@ export type ReasonCode =
   | 'readinessRunDown'
   | 'readinessStrained'
   | 'readinessPrimed'
+  | 'feelWrecked'
+  | 'feelTired'
+  | 'feelGreat'
   | 'hrvLow'
   | 'overreaching'
   | 'sleepShort'
@@ -124,6 +132,11 @@ export function fatigueReasons(input: SuggestionInput): Reason[] {
   if (input.readiness === 'Run down') add('readinessRunDown', 3);
   else if (input.readiness === 'Strained') add('readinessStrained', 2);
   else if (input.readiness === 'Primed') add('readinessPrimed', -1);
+  else if (input.readiness === null) {
+    if (input.feel === 'wrecked') add('feelWrecked', 4);
+    else if (input.feel === 'tired') add('feelTired', 2);
+    else if (input.feel === 'great') add('feelGreat', -1);
+  }
 
   if (input.hrv === 'low') add('hrvLow', 2);
   if (input.load?.status === 'overreaching') add('overreaching', 3, { ratio: input.load.ratio });
@@ -175,7 +188,7 @@ export function suggest(input: SuggestionInput): Suggestion {
   const base = fatigueReasons(input);
   const fatigue = base.reduce((sum, r) => sum + r.points, 0);
   const band = bandOf(fatigue);
-  const known = base.length > 0 || input.readiness !== null || input.lastNightMin !== null;
+  const known = base.length > 0 || input.readiness !== null || input.lastNightMin !== null || input.feel !== null;
   const reasons = sorted(base);
   const withNote = (...notes: Reason[]): Reason[] => [...sorted(base), ...notes];
   const none: Suggestion = { kind: 'free', session: null, effective: null, scalePct: 100, fatigue, band, reasons };
@@ -241,7 +254,10 @@ export function suggest(input: SuggestionInput): Suggestion {
     return { ...none, kind: 'activeRest', effective: { type: 'walk', minutes: 30, zone: 1 }, scalePct: 0 };
   }
   if (!known) {
-    return { ...none, kind: 'free', effective: { type: 'easy', minutes: 30, zone: 2 }, scalePct: 100, reasons: [{ code: 'noSignal', points: 0, values: {} }] };
+    // No body data at all (no watch, nothing said today): someone who lifts is not handed a run.
+    const effective: Effective =
+      input.usualSport === 'strength' ? { type: 'strength', minutes: 40, zone: null } : { type: 'easy', minutes: 30, zone: 2 };
+    return { ...none, kind: 'free', effective, scalePct: 100, reasons: [{ code: 'noSignal', points: 0, values: {} }] };
   }
   const foot = input.usualSport === 'run' || input.usualSport === null;
   if (input.usualSport === 'strength') {

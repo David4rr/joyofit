@@ -80,6 +80,9 @@ export function reasonText(reason: Reason): string {
     case 'readinessRunDown':
     case 'readinessStrained':
     case 'readinessPrimed':
+    case 'feelWrecked':
+    case 'feelTired':
+    case 'feelGreat':
     case 'hrvLow':
     case 'hardStreak':
     case 'planRestDay':
