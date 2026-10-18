@@ -387,6 +387,28 @@
     "library": {
       "title": "Perpustakaan latihan",
       "subtitle": "{{n}} gerakan dengan langkah dan kesalahan umum"
+    },
+    "chat": {
+      "title": "Tanya coach",
+      "subtitle": "Tanya soal latihan, pemulihan, dan rencanamu (Pro)"
     }
+  },
+  "chat": {
+    "emptyTitle": "Tanya apa saja soal latihanmu",
+    "emptyBody": "Coach membaca data jam, rencana, dan catatan makanmu di JoyoRogo. Dia bukan dokter: untuk nyeri atau cedera, temui tenaga medis.",
+    "suggest": {
+      "q1": "Apa latihan yang pas hari ini?",
+      "q2": "Kenapa saranku hari ini begitu?",
+      "q3": "Bagaimana makanku mendukung rencana latihanku?"
+    },
+    "placeholder": "Tulis pertanyaanmu",
+    "send": "Kirim",
+    "clear": "Hapus obrolan",
+    "thinking": "Coach sedang menulis...",
+    "usage": "Pesan hari ini: {{used}} dari {{cap}}",
+    "capReached": "Batas pesan hari ini sudah tercapai. Coba lagi besok.",
+    "error": "Pesan belum terkirim: {{message}}",
+    "flagged": "Kalau nyeri atau keluhanmu berlanjut, hentikan latihan dan periksakan ke dokter atau fisioterapis.",
+    "privacy": "Pesanmu dan ringkasan datamu dikirim ke AI JoyoRogo untuk dijawab, lalu tidak disimpan di server. Obrolan hanya tersimpan di ponselmu."
   }
 }

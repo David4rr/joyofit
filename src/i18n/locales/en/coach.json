@@ -387,6 +387,28 @@
     "library": {
       "title": "Exercise library",
       "subtitle": "{{n}} exercises with steps and common mistakes"
+    },
+    "chat": {
+      "title": "Ask coach",
+      "subtitle": "Ask about your training, recovery and plan (Pro)"
     }
+  },
+  "chat": {
+    "emptyTitle": "Ask anything about your training",
+    "emptyBody": "Coach reads your watch data, your plan and your food log in JoyoRogo. It is not a doctor: for pain or injury, see a professional.",
+    "suggest": {
+      "q1": "What is the right workout for today?",
+      "q2": "Why is my suggestion what it is today?",
+      "q3": "How does my food support my training plan?"
+    },
+    "placeholder": "Write your question",
+    "send": "Send",
+    "clear": "Clear chat",
+    "thinking": "Coach is writing...",
+    "usage": "Messages today: {{used}} of {{cap}}",
+    "capReached": "Today's message limit is reached. Try again tomorrow.",
+    "error": "The message was not sent: {{message}}",
+    "flagged": "If the pain or symptoms continue, stop training and see a doctor or physiotherapist.",
+    "privacy": "Your message and a summary of your data go to JoyoRogo's AI to be answered, and are not stored on the server. The chat is kept only on your phone."
   }
 }
