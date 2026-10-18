@@ -53,6 +53,30 @@ public enum Inert {
     /// `SosRelayTest`: what an SOS request would do; sends nothing, to nobody.
     public static func sosRelayTest() -> [String: Any] { ["ready": false, "blockers": [sosBlocker]] }
 
+    /// `AgpsStatus`: satellite data (A-GPS) is Android only until the Swift exchange is ported; nothing ever downloaded or delivered.
+    public static func agps() -> [String: Any] {
+        [
+            "linked": false,
+            "phase": "idle",
+            "huaweiServers": false,
+            "cachedAt": 0,
+            "cachedSize": 0,
+            "cachedSource": "",
+            "deliveredAt": 0,
+            "deliveredSize": 0,
+            "deliveredSource": "",
+            "expiresAt": 0,
+            "lastAskAt": 0,
+            "lastAskVersion": -1,
+            "lastAskTags": "",
+            "outcome": "none",
+            "error": "",
+            "attemptAt": 0,
+            "retryAt": 0,
+            "failures": 0,
+        ]
+    }
+
     /// Local calendar day, `YYYY-MM-DD`.
     public static func today(now: Date = Date(), calendar: Calendar = .current) -> String {
         let c = calendar.dateComponents([.year, .month, .day], from: now)

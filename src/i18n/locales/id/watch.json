@@ -646,5 +646,42 @@
       "ant": "ANT+ tidak didukung (butuh perangkat keras ANT). Pakai sensor Bluetooth.",
       "huawei": "Jam Huawei tidak bisa menerima strap dari luar. Strap dipakai oleh latihan yang direkam di HP."
     }
+  },
+  "agps": {
+    "title": "Data satelit (A-GPS)",
+    "lastUpdated": "Terakhir diperbarui",
+    "size": "Ukuran",
+    "asked": "Yang diminta jam-mu",
+    "askedNever": "Belum ada",
+    "never": "Belum pernah",
+    "refresh": "Perbarui sekarang",
+    "cancel": "Batal",
+    "phoneCopy": "Salinan di HP ini",
+    "huaweiSwitch": "Pakai server satelit Huawei",
+    "huaweiHint": "Jam-mu meminta data satelit dari server Huawei. Kalau ini dinyalakan, HP ini mengunduhnya dari server itu dan Huawei bisa melihat alamat IP-mu. Mati secara bawaan.",
+    "details": "Jam-mu memakai data satelit supaya GPS cepat menemukan posisi. Datanya berlaku sekitar 7 hari. JoyoFit mengunduhnya dari server publik Broadcom tanpa akun, lalu memberikannya ke jam-mu saat jam-mu memintanya.",
+    "retryAt": "Percobaan otomatis berikutnya sekitar {{time}}.",
+    "sizeValue": "{{kb}} KB",
+    "status": {
+      "never": "Jam-mu belum pernah mengambil data satelit dari JoyoFit.",
+      "delivered": "Jam-mu sudah punya data satelit terbaru.",
+      "expired": "Data satelit di jam-mu sudah kedaluwarsa. Ketuk Perbarui sekarang.",
+      "stored": "Data sudah diunduh ke HP ini. Data dikirim ke jam-mu saat jam-mu terhubung dan memintanya.",
+      "watchSilent": "Data sudah siap di HP ini, tetapi jam-mu tidak menanggapi. Data dikirim saat jam-mu memintanya.",
+      "noNetwork": "HP ini tidak punya internet. Coba lagi saat sudah tersambung.",
+      "downloadFailed": "Data satelit gagal diunduh.",
+      "invalidFile": "Yang terunduh bukan data satelit yang valid, jadi tidak dikirim ke jam-mu.",
+      "huaweiOff": "Jam-mu meminta data dari server Huawei, dan itu sedang dimatikan. Nyalakan di bawah kalau kamu setuju.",
+      "unsupported": "Jam-mu meminta jenis data yang belum bisa dibuat JoyoFit.",
+      "watchRefused": "Jam-mu menutup pengiriman sebelum selesai.",
+      "timeout": "Pengiriman ke jam-mu berhenti di tengah jalan, jadi dibatalkan.",
+      "cancelled": "Pembaruan dibatalkan.",
+      "busy": "Pembaruan sedang berjalan.",
+      "linkLost": "Koneksi ke jam-mu terputus saat pembaruan.",
+      "asking": "Menanyakan jam-mu...",
+      "downloading": "Mengunduh data satelit...",
+      "waiting": "Data siap, menunggu jam-mu mengambilnya...",
+      "sending": "Mengirim ke jam-mu..."
+    }
   }
 }

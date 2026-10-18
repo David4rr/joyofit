@@ -10,6 +10,7 @@ import { NavRow } from '@/components/NavRow';
 import { Divider, Screen, Section } from '@/components/Screen';
 import { isIos } from '@/components/IosUnavailable';
 import { AvailableWatchesSection } from '@/features/device/AvailableWatchesSection';
+import { AgpsSection } from '@/features/device/AgpsSection';
 import { BindConfirmDialog } from '@/features/device/BindConfirmDialog';
 import { FindWatchSection } from '@/features/device/FindWatchSection';
 import { GuideLink } from '@/features/device/GuideLink';
@@ -154,6 +155,7 @@ function WatchHub() {
         <>
           {onTheWatch}
           <FindWatchSection />
+          <AgpsSection />
           {watchDetails}
           {pairedWatches}
           <SupportReportSection />
@@ -164,6 +166,7 @@ function WatchHub() {
           {pairedWatches}
           {watchDetails}
           {device ? <FindWatchSection /> : null}
+          {device ? <AgpsSection /> : null}
           {onTheWatch}
           <SupportReportSection />
         </>

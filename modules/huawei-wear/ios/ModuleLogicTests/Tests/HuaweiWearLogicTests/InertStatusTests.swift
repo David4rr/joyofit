@@ -22,6 +22,11 @@ final class InertStatusTests: XCTestCase {
             ["fallSupported", "fallNote", "fallSwitch", "fallUpdatedMs", "sosRelayEnabled", "smsSupported", "smsPermission", "telephony", "simReady", "sosReady", "sosBlockers", "sosListedByWatch", "sleepReportEnabled", "sleepReportSupported"]
         )
         XCTAssertEqual(Inert.safety()["fallSwitch"] as? Int, -1)
+        XCTAssertEqual(
+            keys(Inert.agps()),
+            ["linked", "phase", "huaweiServers", "cachedAt", "cachedSize", "cachedSource", "deliveredAt", "deliveredSize", "deliveredSource", "expiresAt", "lastAskAt", "lastAskVersion", "lastAskTags", "outcome", "error", "attemptAt", "retryAt", "failures"]
+        )
+        XCTAssertEqual(Inert.agps()["outcome"] as? String, "none")
         XCTAssertEqual(keys(Inert.sosRelayTest()), ["ready", "blockers"])
         XCTAssertEqual(Inert.sosRelayTest()["ready"] as? Bool, false)
         XCTAssertEqual((Inert.sosRelayTest()["blockers"] as? [String])?.count, 1)
@@ -146,6 +151,7 @@ final class InertStatusTests: XCTestCase {
             "SafetyStatus": Inert.safety(),
             "SafetyStatus#live": liveSafety,
             "SosRelayTest": Inert.sosRelayTest(),
+            "AgpsStatus": Inert.agps(),
             "CycleOverview": try cycle.overview(),
             "CycleOverview#populated": try populatedCycle.overview(),
             "DietStatus": diet.status(),

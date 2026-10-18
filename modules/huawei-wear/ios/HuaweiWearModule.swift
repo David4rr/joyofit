@@ -316,6 +316,7 @@ public final class HuaweiWearModule: Module {
         Function("getAlarms") { () -> [String: Any] in runtime.watchSettings.cachedAlarms() }
         Function("getSafety") { () -> [String: Any] in runtime.safety.status() }
         Function("testSosRelay") { () -> [String: Any] in Inert.sosRelayTest() }
+        Function("getAgps") { () -> [String: Any] in Inert.agps() }
         Function("getDietStatus") { () -> [String: Any] in runtime.diet.status() }
         Function("getBodyMetrics") { () -> [String: Any] in runtime.bodyMetrics.load().toJS() }
         Function("getActivityGoals") { () -> [String: Any] in runtime.activityGoals.status() }
@@ -578,6 +579,9 @@ public final class HuaweiWearModule: Module {
         rejects("setNotificationAppEnabled", String.self, Bool.self)
         rejects("parseWatchfacePackage", String.self, Bool?.self)
         rejects("deleteLocalWatchfaceFile", String.self)
+        rejects("refreshAgps")
+        rejects("cancelAgps")
+        rejects("setAgpsHuaweiServers", Bool.self)
     }
 }
 

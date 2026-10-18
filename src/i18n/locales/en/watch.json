@@ -649,5 +649,42 @@
       "ant": "ANT+ is not supported (it needs ANT hardware). Use a Bluetooth sensor.",
       "huawei": "A Huawei watch cannot take an external strap. A strap is used by workouts recorded on the phone."
     }
+  },
+  "agps": {
+    "title": "Satellite data (A-GPS)",
+    "lastUpdated": "Last updated",
+    "size": "Size",
+    "asked": "Your watch asked for",
+    "askedNever": "Nothing yet",
+    "never": "Never",
+    "refresh": "Update now",
+    "cancel": "Cancel",
+    "phoneCopy": "Copy on this phone",
+    "huaweiSwitch": "Use Huawei satellite servers",
+    "huaweiHint": "Your watch asks for satellite data from Huawei's servers. When this is on, this phone downloads it from them and Huawei can see your IP address. Off by default.",
+    "details": "Your watch uses satellite data to find its GPS position quickly. The data is good for about 7 days. JoyoFit downloads it from Broadcom's public server, with no account, and gives it to your watch when the watch asks.",
+    "retryAt": "Next automatic try around {{time}}.",
+    "sizeValue": "{{kb}} KB",
+    "status": {
+      "never": "Your watch has not taken satellite data from JoyoFit yet.",
+      "delivered": "Your watch has the latest satellite data.",
+      "expired": "The satellite data on your watch has expired. Tap Update now.",
+      "stored": "The data is downloaded to this phone. It goes to your watch when the watch connects and asks for it.",
+      "watchSilent": "The data is ready on this phone, but your watch did not respond. It will be sent when your watch asks.",
+      "noNetwork": "This phone has no internet. Try again when it is connected.",
+      "downloadFailed": "The satellite data could not be downloaded.",
+      "invalidFile": "What was downloaded is not valid satellite data, so it was not sent to your watch.",
+      "huaweiOff": "Your watch asked for data from Huawei's servers, and that is switched off. Turn it on below if you agree.",
+      "unsupported": "Your watch asked for a kind of data JoyoFit cannot make yet.",
+      "watchRefused": "Your watch closed the transfer before it finished.",
+      "timeout": "The transfer to your watch stopped halfway, so it was dropped.",
+      "cancelled": "The update was cancelled.",
+      "busy": "An update is already running.",
+      "linkLost": "The connection to your watch dropped during the update.",
+      "asking": "Asking your watch...",
+      "downloading": "Downloading satellite data...",
+      "waiting": "Data ready, waiting for your watch to take it...",
+      "sending": "Sending to your watch..."
+    }
   }
 }

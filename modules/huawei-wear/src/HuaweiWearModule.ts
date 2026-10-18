@@ -22,7 +22,14 @@ import type {
   WeatherStatus,
 } from './HuaweiWear.types';
 import type { PhoneFeatures, WatchAlarms, WatchAlarmsUpdate } from './HuaweiWearPhone.types';
-import type { CycleOverview, CycleSwitches, SafetyStatus, SosRelayTest } from './HuaweiWearExtras.types';
+import type {
+  AgpsRefreshResult,
+  AgpsStatus,
+  CycleOverview,
+  CycleSwitches,
+  SafetyStatus,
+  SosRelayTest,
+} from './HuaweiWearExtras.types';
 import type {
   ActivityGoals,
   ActivityGoalsStatus,
@@ -344,6 +351,18 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   setSleepReportEnabled(enabled: boolean): Promise<void>;
   /** Pushes the report for the latest stored night now, ignoring the once-a-morning rules. Resolves with "sent" or why not. */
   sendSleepReportNow(): Promise<string>;
+
+  /** Satellite data (A-GPS) state: the newest download, the last delivery to the watch, what the watch asked for, the last outcome. Android only. */
+  getAgps(): AgpsStatus;
+  /**
+   * "Update now": downloads fresh satellite data and, with a watch connected, starts the exchange from the phone so the watch takes it.
+   * Without a watch the data is kept on the phone and goes out when the watch asks. Never rejects for a failed download; the outcome says what happened.
+   */
+  refreshAgps(): Promise<AgpsRefreshResult>;
+  /** Cancels an update that is running (tells the watch "failed" so it does not wait). */
+  cancelAgps(): Promise<void>;
+  /** Allows or forbids data from the watch maker's servers when the watch asks for it. Off by default. */
+  setAgpsHuaweiServers(enabled: boolean): Promise<void>;
 
   /** The cycle log, estimates and switches. Predictions are an average-cycle estimate. */
   getCycle(): Promise<CycleOverview>;
