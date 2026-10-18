@@ -14,7 +14,7 @@ import { sensorHub } from '@/features/sensors/instance';
 import { getWheelMm } from '@/features/sensors/settings';
 import { userWeightKg } from '@/features/strength/profile';
 import { DEFAULT_AGE } from '@/features/workouts/substrate';
-import { formatElapsed } from '@/features/workouts/summary';
+import { formatElapsed, type VirtualRide } from '@/features/workouts/summary';
 import type { ManualSport } from '@/features/workouts/manual';
 import { useSensors } from '@/state/SensorsProvider';
 import { useWatch } from '@/state/WatchProvider';
@@ -22,6 +22,8 @@ import { HuaweiWear } from '@/wear';
 
 export interface RecorderContextValue {
   snapshot: RecordingSnapshot;
+  /** The controller itself, for features that run beside the recording (the ride bridge, `state/RideProvider.tsx`). Screens use the functions below. */
+  controller: RecordingController;
   /** Gets ready to record `sport` (native session, GPS, sensors). `title` is the Android notification title. Rejects with ERR_LOCATION_PERMISSION for an outdoor sport without precise location; ask first (`ensureLocation`). */
   prepare: (sport: ManualSport, title: string) => Promise<void>;
   /**
@@ -38,9 +40,10 @@ export interface RecorderContextValue {
   /**
    * Ends and saves the workout, then reports the data change (cloud sync, lists) and runs the follow-ups (JoyoRogo energy, Strava when
    * `strava` is true). Resolves with the new workout's id, or null when nothing was recorded. Rejects when saving fails; the
-   * recording is kept (`snapshot.status` is `finished`) and `finish` can be called again.
+   * recording is kept (`snapshot.status` is `finished`) and `finish` can be called again. `virtual` is the web game's summary of an
+   * indoor ride ("Main di web"): its distance and climb are saved with the workout.
    */
-  finish: (options: { strava: boolean }) => Promise<FinishResult | null>;
+  finish: (options: { strava: boolean; virtual?: VirtualRide }) => Promise<FinishResult | null>;
   discard: () => Promise<void>;
   /** Calls `listener` every second while a recording is active (also paused); returns the unsubscribe. Bike mode runs its engines from it. */
   observe: (listener: (tick: ControllerTick) => void) => () => void;
@@ -117,8 +120,8 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
   const stopWarmUp = useCallback(() => controller.stopWarmUp(), [controller]);
 
   const finish = useCallback(
-    async (options: { strava: boolean }) => {
-      const result = await controller.finish();
+    async (options: { strava: boolean; virtual?: VirtualRide }) => {
+      const result = await controller.finish(options.virtual);
       if (result) {
         dataChanged();
         void afterRecordingSaved(db, result.workoutId, options);
@@ -131,6 +134,7 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
   const value = useMemo<RecorderContextValue>(
     () => ({
       snapshot,
+      controller,
       prepare: (sport, title) => controller.prepare(sport, title),
       warmUp,
       stopWarmUp,

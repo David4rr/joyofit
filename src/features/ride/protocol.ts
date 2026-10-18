@@ -15,7 +15,7 @@
  * |`s`|phone|web|live sensor sample, about 4 Hz; a missing field means no data|
  * |`ctl`|web, phone|the other side|start / pause / resume / lap / stop; whoever sends it, the phone's recorder obeys it|
  * |`gear`|phone|web|a gear change from the phone's buttons|
- * |`st`|web|phone|the game's state, about 1 Hz, for the phone's status card (power is an estimate)|
+ * |`st`|web|phone, other webs|the game's state, about 1 Hz, for the phone's status card and for spectators (power is an estimate)|
  * |`sum`|web|phone|the ride summary at stop; kept by the relay until the phone confirms it with `ack`|
  * |`ack`|phone|relay|the phone saved the `sum`|
  * |`room`|relay|both|who is connected (sent on every join and leave, and to a socket that just connected)|

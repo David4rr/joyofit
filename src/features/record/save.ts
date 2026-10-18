@@ -7,7 +7,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { workoutElevation } from '../workouts/analysis/elevation';
 import { SPORT_ROWS } from '../workouts/manual';
-import type { WorkoutSummary } from '../workouts/summary';
+import type { VirtualRide, WorkoutSummary } from '../workouts/summary';
 import { insertWorkoutSensors, type WorkoutSensor } from '../sensors/store';
 import type { RecordedSample, RecordedWorkout } from './recorder';
 
@@ -31,7 +31,7 @@ export function minuteHeartRates(samples: readonly RecordedSample[]): [minute: n
 }
 
 /** The `summary_json` of a recording (also what `workoutElevation` reads its fallbacks from). */
-export function summaryOf(w: RecordedWorkout, sensors: readonly WorkoutSensor[], samples: readonly RecordedSample[], start: number, end: number): WorkoutSummary {
+export function summaryOf(w: RecordedWorkout, sensors: readonly WorkoutSensor[], samples: readonly RecordedSample[], start: number, end: number, virtual?: VirtualRide): WorkoutSummary {
   const row = SPORT_ROWS[w.sport];
   const fixes = samples.filter((p) => p.lat !== null);
   const alts = samples.map((p) => p.alt).filter((a): a is number => a !== null);
@@ -72,6 +72,13 @@ export function summaryOf(w: RecordedWorkout, sensors: readonly WorkoutSensor[],
     summary.elevationLoss = elevation.lossM;
     summary.ascentSource = 'computed';
   }
+  if (virtual) {
+    // The web game's route is the ride: its climb replaces the (absent) altitude, and the average speed follows its distance.
+    summary.virtualRide = virtual;
+    summary.elevationGain = virtual.elevM;
+    summary.ascentSource = 'virtual';
+    if (w.movingSec > 0) summary.avgSpeed = virtual.distM / w.movingSec;
+  }
   return summary;
 }
 
@@ -79,7 +86,7 @@ export function summaryOf(w: RecordedWorkout, sensors: readonly WorkoutSensor[],
  * Inserts the workout and returns its row id. A start second that is taken (it is unique) moves the whole workout later by whole
  * seconds, as a manual workout does.
  */
-export async function saveRecordedWorkout(db: SaveDb, w: RecordedWorkout, sensors: readonly WorkoutSensor[]): Promise<number> {
+export async function saveRecordedWorkout(db: SaveDb, w: RecordedWorkout, sensors: readonly WorkoutSensor[], virtual?: VirtualRide): Promise<number> {
   let id = 0;
   await db.withExclusiveTransactionAsync(async (txn) => {
     let shift = 0;
@@ -90,13 +97,13 @@ export async function saveRecordedWorkout(db: SaveDb, w: RecordedWorkout, sensor
     const start = w.start + shift;
     const end = w.end + shift;
     const samples = shift === 0 ? w.samples : w.samples.map((p) => ({ ...p, ts: p.ts + shift }));
-    const summary = summaryOf(w, sensors, samples, start, end);
+    const summary = summaryOf(w, sensors, samples, start, end, virtual);
     const row = SPORT_ROWS[w.sport];
     const inserted = await txn.runAsync(
       `INSERT INTO workouts
          (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete, imported)
        VALUES (0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)`,
-      [start, end, row.type, row.name, w.movingSec, Math.round(w.distanceM), w.calories, w.avgHr, w.maxHr, w.steps, JSON.stringify(summary)],
+      [start, end, row.type, row.name, w.movingSec, Math.round(virtual ? virtual.distM : w.distanceM), w.calories, w.avgHr, w.maxHr, w.steps, JSON.stringify(summary)],
     );
     id = inserted.lastInsertRowId;
     for (let i = 0; i < samples.length; i += CHUNK) {

@@ -21,6 +21,7 @@ import { appendJournal, clearJournal, loadJournal, saveJournalState } from './jo
 import { Recorder, MAX_FIX_ACCURACY_M, type LiveStats, type RecordedLap, type RecordedWorkout, type RecorderMeta, type RecorderStatus } from './recorder';
 import type { EnergyProfile } from './energy';
 import { saveRecordedWorkout, type SaveDb } from './save';
+import type { VirtualRide } from '../workouts/summary';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 export type RecordingPhase = 'idle' | 'ready' | 'active' | 'saving';
@@ -361,8 +362,16 @@ export class RecordingController {
     return true;
   }
 
-  /** Ends the workout and saves it. Null when nothing was recorded (then it is discarded). */
-  async finish(): Promise<FinishResult | null> {
+  /** The web game's current speed (m/s) for an indoor ride ("Main di web"); see `Recorder.virtualSpeed`. */
+  setVirtualSpeed(speedMps: number): void {
+    this.recorder?.virtualSpeed(speedMps, this.deps.now());
+  }
+
+  /**
+   * Ends the workout and saves it. Null when nothing was recorded (then it is discarded). `virtual` is the web game's summary: its
+   * distance and climb are stored with the workout instead of the recorder's own distance.
+   */
+  async finish(virtual?: VirtualRide): Promise<FinishResult | null> {
     const recorder = this.recorder;
     if (this.snap.phase !== 'active' || !recorder) return null;
     this.publish({ phase: 'saving' });
@@ -386,7 +395,7 @@ export class RecordingController {
             ...(mode ? { mode } : {}),
           };
         });
-        result = { workoutId: await saveRecordedWorkout(this.deps.db, workout, sensors) };
+        result = { workoutId: await saveRecordedWorkout(this.deps.db, workout, sensors, virtual) };
       }
     } catch (error) {
       // Nothing is lost: the journal still holds the samples and `pending` the finished workout. Back to `active` with status

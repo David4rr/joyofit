@@ -186,7 +186,7 @@ export class RideRoom extends DurableObject<Env> {
     }
     await this.touch(now, dirty);
 
-    if (FORWARD[role].includes(msg.t)) this.forward(role, msg, now);
+    if (FORWARD[role].includes(msg.t)) this.forward(ws, role, msg, now);
   }
 
   async webSocketClose(ws: WebSocket, _code: number, reason: string): Promise<void> {
@@ -260,10 +260,12 @@ export class RideRoom extends DurableObject<Env> {
     for (const ws of this.live(this.ctx.getWebSockets())) if (ws !== exclude) ws.send(frame);
   }
 
-  private forward(from: RideRole, msg: RideMsg, now: number): void {
+  /** Phone frames go to the webs, web frames to the phone; the game's `st` also goes to the other webs, so a spectator can follow the rider. */
+  private forward(sender: WebSocket, from: RideRole, msg: RideMsg, now: number): void {
     const frame = encode({ ...msg, rt: now });
-    const targets = this.ctx.getWebSockets(from === "phone" ? "web" : "phone");
-    for (const ws of this.live(targets)) ws.send(frame);
+    const targets = [...this.ctx.getWebSockets(from === "phone" ? "web" : "phone")];
+    if (from === "web" && msg.t === "st") targets.push(...this.ctx.getWebSockets("web"));
+    for (const ws of this.live(targets)) if (ws !== sender) ws.send(frame);
   }
 
   private sendTo(ws: WebSocket, msg: RideMsg): void {

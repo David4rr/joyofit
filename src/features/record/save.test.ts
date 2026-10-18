@@ -51,6 +51,26 @@ describe('saveRecordedWorkout', () => {
     expect(await listWorkoutSensors(db, id)).toEqual([{ id: 'AA:BB', name: 'Polar H10', kinds: ['hr'] }]);
   });
 
+  it('a web game ride keeps the game distance, climb, route and laps', async () => {
+    const { db, all } = openDb();
+    await ensureSensorSchema(db);
+    const r = new Recorder({ sport: 'indoorRide', gps: false, wheelCircumferenceM: 2.105, profile });
+    r.start(T0);
+    for (let s = 1; s <= 60; s++) {
+      r.virtualSpeed(7, T0 + s * 1000);
+      r.tick(T0 + s * 1000);
+    }
+    const w = r.finish(T0 + 60_000)!;
+    const virtual = { distM: 12345.6, elevM: 210, route: 'Bukit Jam', laps: [{ sec: 30, distM: 6000 }] };
+    const id = await saveRecordedWorkout(db, w, [], virtual);
+    const [row] = all<Record<string, unknown>>('SELECT * FROM workouts WHERE id = ?', id);
+    expect(row).toMatchObject({ sport_name: 'Indoor ride', distance: 12346 });
+    const summary = JSON.parse(row!.summary_json as string);
+    expect(summary.virtualRide).toEqual(virtual);
+    expect(summary).toMatchObject({ elevationGain: 210, ascentSource: 'virtual' });
+    expect(summary.avgSpeed).toBeCloseTo(12345.6 / w.movingSec, 3);
+  });
+
   it('moves a workout whose start second is taken later, points included', async () => {
     const { db, all } = openDb();
     await ensureSensorSchema(db);

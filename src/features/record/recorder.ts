@@ -123,6 +123,8 @@ const MAX_WHEEL_MPS = 28;
 const JUMPS_BEFORE_REANCHOR = 5;
 /** A GPS fix older than this is not the current position. */
 const FIX_FRESH_MS = 5000;
+/** The web game reports its speed about once a second; one older than this is not the current speed. */
+const VIRTUAL_FRESH_MS = 5000;
 
 interface Segment {
   start: number;
@@ -173,6 +175,8 @@ export class Recorder {
   private gpsDeltaM = 0;
   private lastWheelM = 0;
   private lastFixSpeed: number | null = null;
+  /** The web game's speed for an indoor ride without a wheel sensor ("Main di web"), and when it was last reported. */
+  private virtual: { speedMps: number; at: number } | null = null;
 
   constructor(config: RecorderConfig, tracker?: SensorTracker) {
     this.config = config;
@@ -268,6 +272,11 @@ export class Recorder {
     this.anchor = fix;
   }
 
+  /** The speed (m/s) the web game says the rider makes; used for an indoor ride while it is fresh and no wheel sensor reports a speed. */
+  virtualSpeed(speedMps: number, nowMs: number): void {
+    this.virtual = { speedMps: Math.max(0, speedMps), at: nowMs };
+  }
+
   /** A raw characteristic value from a connected sensor; true when the tracker used it. `ts` is the radio timestamp in ms. */
   sensor(characteristic: string, hex: string, ts: number): boolean {
     return this.tracker.ingest(characteristic, hex, ts);
@@ -302,6 +311,9 @@ export class Recorder {
     if (cycling && r.speedMps !== undefined) {
       delta = wheelDelta;
       speed = r.speedMps;
+    } else if (cycling && !gps && this.virtual !== null && nowMs - this.virtual.at <= VIRTUAL_FRESH_MS) {
+      speed = this.virtual.speedMps;
+      delta = speed;
     } else if (cycling && !gps && r.watts !== undefined) {
       // An indoor ride with a power meter but no wheel sensor: the speed a rider makes with those watts on the flat (`virtualSpeedMs`).
       const recent = [...this.samples.slice(-4).map((p) => p.power ?? 0), r.watts];

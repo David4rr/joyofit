@@ -343,6 +343,17 @@ describe("relay", () => {
     expect(web.inbox.filter((f) => f.t === "st" || f.t === "gear")).toEqual([]);
   });
 
+  it("sends the game's state to spectators too, but not back to the web that sent it", async () => {
+    const { made, web, phone } = await room();
+    const spectator = await open(made.roomId, "web", made.token);
+    await spectator.ofType("room");
+    web.send({ t: "st", v: 1, gear: 3, gearCount: 15, route: "Bukit", phase: "riding", distM: 500, elevM: 10, grade: 1, vKmh: 25, pwrEst: 150 });
+    expect(await spectator.ofType("st")).toMatchObject({ gear: 3, vKmh: 25 });
+    expect(await phone.ofType("st")).toMatchObject({ gear: 3 });
+    await flush(phone, web);
+    expect(web.inbox.filter((f) => f.t === "st")).toEqual([]);
+  });
+
   it("keeps the phone's hello for a viewer who comes later", async () => {
     const { made, phone, web } = await room();
     phone.send(hello("phone", { app: "JoyoFit 9", massKg: 68 }));

@@ -35,6 +35,7 @@ import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
 import { OnboardingProvider } from '@/state/OnboardingProvider';
 import { MealsProvider } from '@/state/MealsProvider';
 import { RecorderProvider } from '@/state/RecorderProvider';
+import { RideProvider } from '@/state/RideProvider';
 import { SensorsProvider } from '@/state/SensorsProvider';
 import { StravaProvider } from '@/state/StravaProvider';
 import { WatchProvider } from '@/state/WatchProvider';
@@ -131,6 +132,7 @@ function RootNavigator() {
               <SensorsProvider>
               <RecorderProvider>
               <BikeRideProvider>
+              <RideProvider>
               <MealsProvider>
                 <LiveWorkoutProvider>
                   <OnboardingProvider>
@@ -217,6 +219,8 @@ function RootNavigator() {
                     <Tabs.Screen name="routes" options={{ href: null }} />
                     {/* Coach (Pro): plan, session details and setup; its stack draws its own headers. */}
                     <Tabs.Screen name="coach" options={{ href: null }} />
+                    {/* "Main di web": the phone as the sensor bridge of the browser game; its stack draws its own headers. */}
+                    <Tabs.Screen name="ride" options={{ href: null }} />
                     {/* Strength logger (workout, routines, history); its stack draws its own headers. */}
                     <Tabs.Screen name="strength" options={{ href: null }} />
                     {/* The setup guide: opened by OnboardingProvider on a first run and from Settings; full screen, no tab bar. */}
@@ -231,6 +235,7 @@ function RootNavigator() {
                   </OnboardingProvider>
                 </LiveWorkoutProvider>
               </MealsProvider>
+              </RideProvider>
               </BikeRideProvider>
               </RecorderProvider>
               </SensorsProvider>

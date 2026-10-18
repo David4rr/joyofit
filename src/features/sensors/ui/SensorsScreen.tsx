@@ -1,8 +1,10 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Divider, Screen, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
@@ -25,6 +27,8 @@ import { WheelSection } from './WheelSection';
  */
 export function SensorsScreen() {
   const { t } = useTranslation('watch');
+  const { t: tRide } = useTranslation('ride');
+  const router = useRouter();
   const { saved, hub, connect, disconnect, remove, rename } = useSensors();
   const [permission, setPermission] = useState<Granted | null>(null);
   const [failure, setFailure] = useState<RadioFailure | null>(null);
@@ -95,6 +99,13 @@ export function SensorsScreen() {
       <ScanSection onPermission={setPermission} onFailure={setFailure} />
 
       {saved.some((sensor) => needsWheelSize(sensor.kinds)) ? <WheelSection /> : null}
+
+      <Section title={tRide('entry.title')} icon="laptop-outline" tint="link">
+        <AppText variant="caption" muted>
+          {tRide('entry.hint')}
+        </AppText>
+        <Button label={tRide('entry.action')} icon="laptop-outline" onPress={() => router.push('/ride')} />
+      </Section>
 
       <Section title={t('sensors.notes.title')} icon="information-circle">
         <AppText variant="caption" muted>

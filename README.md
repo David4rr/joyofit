@@ -148,6 +148,7 @@ Site (`site/`): `bun install`, `bun run dev`, `bun run build` (typecheck, Vite b
 | [docs/multi-watch.md](docs/multi-watch.md) | Several watches: device column, primary rules, switching, background visits |
 | [docs/sensors.md](docs/sensors.md) | External sensors, phone-recorded workouts, device test script |
 | [docs/replay.md](docs/replay.md) | Workout replay: player, camera, map, MP4 export with the native encoder, privacy, known limits |
+| [docs/ride.md](docs/ride.md) | Ride on the web: the phone as sensor bridge, the relay, the wire protocol, virtual power (the game: [docs/ride-web.md](docs/ride-web.md)) |
 | [docs/coach.md](docs/coach.md) | Coach rules, plans, library, chat |
 | [docs/strava.md](docs/strava.md) | Strava integration and review checklist |
 | [docs/family-monitoring.md](docs/family-monitoring.md) | Keluarga |

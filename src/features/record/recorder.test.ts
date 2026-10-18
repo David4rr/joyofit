@@ -393,3 +393,42 @@ describe('normalizedPower', () => {
     expect(normalizedPower(surgy)).toBeGreaterThan(200);
   });
 });
+
+describe('virtual speed from the web game (indoor ride, cadence sensor only)', () => {
+  const run = (virtual: boolean, wheel = false) => {
+    const r = new Recorder(config('indoorRide'));
+    r.start(T0);
+    for (let s = 1; s <= 20; s++) {
+      if (virtual) r.virtualSpeed(8, T0 + s * 1000);
+      if (wheel) r.sensor('2a5b', csc(s * 4, (s * 1024) % 65536, s, (s * 1024) % 65536), T0 + s * 1000);
+      r.tick(T0 + s * 1000);
+    }
+    return r.finish(T0 + 20_000)!;
+  };
+
+  it('is the speed and distance of the ride while the game keeps reporting', () => {
+    const w = run(true);
+    expect(w.distanceM).toBeGreaterThan(150);
+    expect(w.distanceM).toBeLessThanOrEqual(8 * 21);
+    expect(w.samples.at(-1)!.speed).toBe(8);
+  });
+
+  it('stops counting when the game goes quiet for over five seconds', () => {
+    const r = new Recorder(config('indoorRide'));
+    r.start(T0);
+    r.virtualSpeed(8, T0);
+    r.tick(T0 + 10_000);
+    const w = r.finish(T0 + 10_000)!;
+    expect(w.samples.filter((p) => p.speed === 8).length).toBeLessThanOrEqual(6);
+    expect(w.samples.at(-1)!.speed).toBeNull();
+  });
+
+  it('gives way to a real wheel speed sensor', () => {
+    const w = run(true, true);
+    expect(w.samples.at(-1)!.speed).not.toBe(8);
+  });
+
+  it('does nothing without the game', () => {
+    expect(run(false).distanceM).toBe(0);
+  });
+});

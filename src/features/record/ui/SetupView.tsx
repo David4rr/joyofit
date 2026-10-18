@@ -34,6 +34,7 @@ interface SetupViewProps {
 /** Phase `idle`: pick the sport, see which sensors will connect, allow what the sport needs, then "Mulai" gets the recording ready. */
 export function SetupView({ sport, onSport, notice }: SetupViewProps) {
   const { t } = useTranslation('workouts');
+  const { t: tRide } = useTranslation('ride');
   const router = useRouter();
   const { prepare, snapshot } = useRecorder();
   const { saved, hub } = useSensors();
@@ -97,6 +98,15 @@ export function SetupView({ sport, onSport, notice }: SetupViewProps) {
         {autoSensors.length > 0 && hub.bluetooth === 'off' ? <Notice icon="bluetooth">{t('record.setup.bluetoothOff')}</Notice> : null}
         <Button label={t('record.setup.manageSensors')} icon="settings-outline" onPress={() => router.push('/watch/sensors')} />
       </Section>
+
+      {sport === 'indoorRide' ? (
+        <Section title={tRide('entry.title')} icon="laptop-outline" tint="link">
+          <AppText variant="caption" muted>
+            {tRide('entry.hint')}
+          </AppText>
+          <Button label={tRide('entry.action')} icon="laptop-outline" onPress={() => router.push('/ride')} />
+        </Section>
+      ) : null}
 
       <PermissionCards permissions={permissions} plan={plan} />
       {error ? <Notice tone="danger">{error}</Notice> : null}

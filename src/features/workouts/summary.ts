@@ -13,6 +13,14 @@ export interface PaceBlock {
 }
 
 /** The fields of `workouts.summary_json` the app shows (see `WorkoutRecord.kt`); everything is optional. */
+/** What the web game reports at the end of a ride (`sum` in features/ride/protocol.ts), kept with the workout. */
+export interface VirtualRide {
+  distM: number;
+  elevM: number;
+  route: string;
+  laps: { sec: number; distM: number }[];
+}
+
 export interface WorkoutSummary {
   /** Gadgetbridge `ActivityKind` name, e.g. `RUNNING`. */
   kind?: string;
@@ -37,8 +45,10 @@ export interface WorkoutSummary {
   avgAltitude?: number;
   elevationGain?: number;
   elevationLoss?: number;
-  /** Where `elevationGain` and `elevationLoss` come from: the recording device (a FIT file's session) or JoyoFit's computation from the altitude. */
-  ascentSource?: 'device' | 'computed';
+  /** Where `elevationGain` and `elevationLoss` come from: the recording device (a FIT file's session), JoyoFit's computation from the altitude, or the web game's route (`virtualRide`). */
+  ascentSource?: 'device' | 'computed' | 'virtual';
+  /** An indoor ride played in the web game ("Main di web"): the distance and climb are the game's, not measured. */
+  virtualRide?: VirtualRide;
   maxDepth?: number;
   workoutLoad?: number;
   aerobicEffect?: number;

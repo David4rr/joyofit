@@ -46,6 +46,16 @@ which is what `since` filters on. D1 schema: [`migrations/0001_init.sql`](migrat
 (`step_samples`, `sleep_segments` with `stage`, `workouts`, `workout_points`, `device`, `user_state`,
 `imports`).
 
+### Ride relay ("Main di web")
+
+Rooms for the browser ride game, with the JoyoFit phone as the sensor bridge; code in `src/ride/`, the protocol in `../src/features/ride/protocol.ts`, the whole feature in [`../docs/ride.md`](../docs/ride.md). Two SQLite-backed Durable Object classes (`RideRoom`, `RideIndex`, migration `ride-v1`), no D1.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /ride/rooms` | Public (no session, CORS `*`, 10 per address per 10 minutes, `429` + `Retry-After`). Answers `{ roomId, code, token, codeExpiresAt }`: a six digit code valid 10 minutes and the web token for the socket. |
+| `POST /ride/rooms/join` | Body `{ code }`, JoyoRogo session. Answers `{ roomId, token }` (the phone token). `400` malformed, `404` unknown or expired code, `409` another user is the room's phone, `429` rate limited (10 per user, 30 per address, 5 minutes). Free for every account. |
+| `GET /ride/rooms/:roomId/ws?role=phone\|web&token=...` | WebSocket (hibernatable). `401` wrong token, `404` no such room, `429` room full (8 web sockets) or rate limited. Frames: 2 KB at most, validated, stamped with `rt` and relayed; a room idle for 3 hours is closed. |
+
 ### Gear sync
 
 Shoes and bikes (and which workout used which) travel as one JSON document per user, table `gear_doc`
