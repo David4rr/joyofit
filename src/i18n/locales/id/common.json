@@ -1,0 +1,54 @@
+{
+  "actions": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "close": "Tutup",
+    "ok": "OK",
+    "retry": "Coba lagi",
+    "back": "Kembali",
+    "next": "Lanjut",
+    "done": "Selesai",
+    "edit": "Ubah",
+    "add": "Tambah",
+    "share": "Bagikan",
+    "open": "Buka",
+    "later": "Nanti"
+  },
+  "state": {
+    "loading": "Memuat…",
+    "error": "Terjadi kesalahan",
+    "empty": "Belum ada data",
+    "on": "Nyala",
+    "off": "Mati"
+  },
+  "time": {
+    "justNow": "baru saja",
+    "minutesAgo_other": "{{count}} mnt lalu",
+    "hoursAgo_other": "{{count}} j lalu",
+    "today": "Hari ini",
+    "yesterday": "Kemarin"
+  },
+  "duration": {
+    "hm": "{{h}} j {{m}} mnt",
+    "m": "{{m}} mnt"
+  },
+  "units": {
+    "km": "{{value}} km",
+    "m": "{{value}} m"
+  },
+  "nav": {
+    "today": "Hari ini",
+    "workouts": "Latihan",
+    "social": "Sosial",
+    "watch": "Jam",
+    "settings": "Pengaturan"
+  },
+  "language": {
+    "title": "Bahasa",
+    "auto": "Otomatis",
+    "id": "Indonesia",
+    "en": "English",
+    "hint": "Otomatis mengikuti bahasa HP kamu. Pilihan di sini berlaku untuk seluruh aplikasi."
+  }
+}

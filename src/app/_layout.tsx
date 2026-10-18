@@ -11,9 +11,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { Suspense, useEffect } from 'react';
-import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { AppState, View } from 'react-native';
 
 import { TabIcon } from '@/components/TabIcon';
+import { initLocale, refreshAutoLocale } from '@/i18n/native';
 import { migrate } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
@@ -25,6 +27,9 @@ import { MealsProvider } from '@/state/MealsProvider';
 import { StravaProvider } from '@/state/StravaProvider';
 import { WatchProvider } from '@/state/WatchProvider';
 import { ThemeProvider, useTheme } from '@/theme';
+
+// Stored language choice (or the phone's) applies before the first screen is drawn.
+initLocale();
 
 const DATABASE_NAME = 'joyofit.db';
 
@@ -47,6 +52,7 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { colors, fonts, scheme } = useTheme();
+  const { t } = useTranslation('common');
   const [fontsReady, fontError] = useFonts({
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
@@ -55,6 +61,14 @@ function RootNavigator() {
     ...Ionicons.font,
   });
   const ready = fontsReady || fontError !== null;
+
+  // The phone language may change while the app sleeps; "Otomatis" follows it.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshAutoLocale();
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync().catch(() => {});
@@ -86,7 +100,7 @@ function RootNavigator() {
                     <Tabs.Screen
                       name="index"
                       options={{
-                        title: 'Today',
+                        title: t('nav.today'),
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="today" off="today-outline" focused={focused} size={size} color={color} />
                         ),
@@ -95,7 +109,7 @@ function RootNavigator() {
                     <Tabs.Screen
                       name="workouts"
                       options={{
-                        title: 'Workouts',
+                        title: t('nav.workouts'),
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="fitness" off="fitness-outline" focused={focused} size={size} color={color} />
                         ),
@@ -104,7 +118,7 @@ function RootNavigator() {
                     <Tabs.Screen
                       name="social"
                       options={{
-                        title: 'Social',
+                        title: t('nav.social'),
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="people" off="people-outline" focused={focused} size={size} color={color} />
                         ),
@@ -113,7 +127,7 @@ function RootNavigator() {
                     <Tabs.Screen
                       name="watch"
                       options={{
-                        title: 'Watch',
+                        title: t('nav.watch'),
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="watch" off="watch-outline" focused={focused} size={size} color={color} />
                         ),
@@ -122,7 +136,7 @@ function RootNavigator() {
                     <Tabs.Screen
                       name="settings"
                       options={{
-                        title: 'Settings',
+                        title: t('nav.settings'),
                         tabBarIcon: ({ focused, color, size }) => (
                           <TabIcon on="settings" off="settings-outline" focused={focused} size={size} color={color} />
                         ),

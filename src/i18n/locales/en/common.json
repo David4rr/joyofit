@@ -1,0 +1,56 @@
+{
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "close": "Close",
+    "ok": "OK",
+    "retry": "Try again",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "edit": "Edit",
+    "add": "Add",
+    "share": "Share",
+    "open": "Open",
+    "later": "Later"
+  },
+  "state": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "empty": "No data yet",
+    "on": "On",
+    "off": "Off"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo_one": "{{count}} min ago",
+    "minutesAgo_other": "{{count}} min ago",
+    "hoursAgo_one": "{{count}} h ago",
+    "hoursAgo_other": "{{count}} h ago",
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "duration": {
+    "hm": "{{h}} h {{m}} min",
+    "m": "{{m}} min"
+  },
+  "units": {
+    "km": "{{value}} km",
+    "m": "{{value}} m"
+  },
+  "nav": {
+    "today": "Today",
+    "workouts": "Workouts",
+    "social": "Social",
+    "watch": "Watch",
+    "settings": "Settings"
+  },
+  "language": {
+    "title": "Language",
+    "auto": "Automatic",
+    "id": "Indonesia",
+    "en": "English",
+    "hint": "Automatic follows your phone's language. Your choice applies across the whole app."
+  }
+}
