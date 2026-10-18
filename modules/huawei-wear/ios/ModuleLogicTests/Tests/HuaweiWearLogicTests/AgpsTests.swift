@@ -368,16 +368,19 @@ final class AgpsTests: XCTestCase {
         XCTAssertEqual(fetch.message, "LTO: HTTP 503")
     }
 
-    func testVersionsOneToThreeAreDeclinedAsUnsupportedAndNameOnlyTheKindsAskedFor() async {
+    func testVersionsOneToThreeAreDeclinedAsUnsupportedWithoutTouchingTheNetworkOrTheCache() async {
+        let cache = MemoryCache()
+        cache.entries[ltoUrl] = lto()
         let store = AgpsStore(defaults: ephemeralDefaults())
         for version in 1...3 {
             let consult = AgpsConsult(version: version, tag: "p/q/HW_AGNSS;x/HW_PGNSS_PRED", urls: [])
-            let fetch = await source(MemoryCache(), store).fetch(consult, force: false)
-            XCTAssertFalse(fetch.ok)
+            let fetch = await source(cache, store).fetch(consult, force: false)
+            XCTAssertFalse(fetch.ok, "the Broadcom file is never offered to a watch that asked for another kind")
             XCTAssertEqual(fetch.outcome, AgpsOutcome.unsupported)
-            XCTAssertTrue(fetch.message.contains("HW_PGNSS_PRED"), "the message says which kinds were asked for")
-            XCTAssertFalse(fetch.message.contains("p/q"), "never the paths the watch names")
+            XCTAssertTrue(fetch.message.contains("HW_AGNSS,HW_PGNSS_PRED"))
+            XCTAssertFalse(fetch.message.contains("p/q"), "paths are not echoed")
         }
+        XCTAssertNotNil(cache.entries[ltoUrl], "the phone's copy is left alone")
     }
 
     func testUnknownVersionsAreUnsupported() async {

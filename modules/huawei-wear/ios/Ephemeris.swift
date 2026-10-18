@@ -506,9 +506,15 @@ public actor AgpsExchange {
             return
         }
         guard let consult = AgpsMessages.parseConsult(packet.tlv) else {
-            log("consult answer without a 0x81 container: \(describeTlv(packet.tlv))")
+            // The watch refused the question itself (e.g. 118001 when no request is open on its side): nothing was started, so there is
+            // nothing to tell it either; the request just ends here.
+            let why = packet.tlv?.agpsLong(0x7F).map { "the watch answered the phone's question with error \($0) (it has no request open); only the watch can start one" }
+                ?? "the watch's answer had no parameters"
+            logError(why)
+            task = false
+            store.recordOutcome(nowMs: nowMs(), outcome: AgpsOutcome.watchRefused, error: why, countsAsFailure: false)
             consultSeen?.complete(true)
-            sendStatusLater(AgpsMessages.stateFailed, AgpsOutcome.watchRefused, "no parameters in the consult answer")
+            finishWith(AgpsOutcome.watchRefused)
             return
         }
         log(
@@ -520,15 +526,6 @@ public actor AgpsExchange {
         state = 1
         download?.cancel()
         download = Task { await self.runDownload(consult) }
-    }
-
-    private func sendStatusLater(_ state: Int, _ outcome: String, _ why: String) {
-        download?.cancel()
-        download = Task {
-            self.store.recordOutcome(nowMs: self.nowMs(), outcome: outcome, error: why, countsAsFailure: false)
-            await self.sendStatus(state, why)
-            self.finishWith(outcome)
-        }
     }
 
     private func runDownload(_ consult: AgpsConsult) async {

@@ -74,8 +74,9 @@ public protocol AgpsCache: AnyObject, Sendable {
     func delete(_ url: String)
 }
 
-/// The real source: the public Broadcom LTO file for download version 0. Every other version names data this app does not serve (the sources run
-/// by the watch maker are not used) and is declined as unsupported.
+/// The real source: the public Broadcom LTO file, for download version 0 only. Every other kind the watch can ask for is data that only the watch
+/// maker's own app prepares (from servers and with a decoder this app does not use), and sending anything else to a watch that does not validate
+/// what it is given can wedge its GPS: those are declined, never substituted.
 public final class NetworkAgpsSource: AgpsSource, @unchecked Sendable {
     private let cache: AgpsCache
     private let store: AgpsStore
@@ -105,7 +106,7 @@ public final class NetworkAgpsSource: AgpsSource, @unchecked Sendable {
             let names = consult.tagNames
             return .failed(
                 AgpsOutcome.unsupported,
-                "the watch asked for download version \(consult.version) (\(names.isEmpty ? "no tag names" : names)); only version 0, the Broadcom LTO file, is served"
+                "the watch asked for kinds only the watch maker's app prepares (version \(consult.version): \(names.isEmpty ? "no names" : names))"
             )
         default:
             return .failed(AgpsOutcome.unsupported, "download version \(consult.version) is not known")

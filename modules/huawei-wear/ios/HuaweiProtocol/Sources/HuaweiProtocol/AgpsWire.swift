@@ -15,7 +15,7 @@ public enum AgpsOutcome {
     public static let noNetwork = "no_network"
     public static let downloadFailed = "download_failed"
     public static let invalidFile = "invalid_file"
-    /// The watch asked for a kind of data this app does not serve (every download version but 0).
+    /// The watch asked for a kind of data this app cannot and must not make (only the watch maker's own app prepares it).
     public static let unsupported = "unsupported"
     public static let watchRefused = "watch_refused"
     public static let timeout = "timeout"

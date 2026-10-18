@@ -324,7 +324,7 @@ final class AgpsExchangeTests: XCTestCase {
         XCTAssertEqual(store.failures, 1)
     }
 
-    func testAWatchMakerVersionIsAnsweredFailedAndTheAskIsRecordedWithTagNamesOnly() async {
+    func testAKindOnlyTheWatchMakersAppPreparesIsAnsweredFailedAndTheAskIsRecordedWithTagNamesOnly() async {
         let real = NetworkAgpsSource(
             cache: NullAgpsCache(), store: store, log: { _ in }, isOnline: { true },
             httpGet: { _, _ in throw AgpsFetchError("the network must not be used here") }
@@ -336,11 +336,30 @@ final class AgpsExchangeTests: XCTestCase {
         let answer = await awaitMsg(0x1F, 0x03)
         XCTAssertEqual(state(answer), 4)
         XCTAssertEqual(store.lastOutcome, AgpsOutcome.unsupported)
-        XCTAssertEqual(store.lastError.contains("HW_PGNSS_PRED"), true, "the log says which kind was declined")
+        XCTAssertTrue(store.lastError.contains("HW_PGNSS_PRED"), "the log says which kind was declined")
         XCTAssertEqual(store.lastAskVersion, 3)
         XCTAssertEqual(store.lastAskTags, "HW_PGNSS_PRED")
         XCTAssertEqual(store.failures, 0, "a refused kind is not a download failure")
         XCTAssertTrue(events.messages().allSatisfy { !$0.contains("secret/path") })
+        XCTAssertTrue(watch.all(0x1C, 0x01).isEmpty, "no file is offered afterwards")
+        fileList()
+        let list = await awaitMsg(0x1C, 0x01)
+        XCTAssertEqual(code(list), 100_001)
+    }
+
+    func testAWatchThatAnswersThePhoneStartedQuestionWithAnErrorEndsItWithoutAnyStatus() async {
+        let ex = await start(FakeAgpsSource(files: [(AgpsSources.ltoFile, ltoFile())]))
+        let outcome = Task { await ex.probe(force: true) }
+        _ = await awaitMsg(0x1F, 0x02)
+        // What the Fit 4 Pro answers when it has no request open: 7f 118001, no 0x81 container.
+        var refusal = HuaweiTLV()
+        refusal.put(0x7F, int: 118_001)
+        fromWatch(0x1F, 0x02, refusal)
+        let result = await outcome.value
+        XCTAssertEqual(result, AgpsOutcome.watchRefused)
+        XCTAssertTrue(store.lastError.contains("118001"))
+        XCTAssertTrue(watch.all(0x1F, 0x03).isEmpty, "nothing was started, so no status is sent")
+        XCTAssertFalse(ex.busy)
     }
 
     func testAnUnknownVersionIsAnsweredUnsupported() async {

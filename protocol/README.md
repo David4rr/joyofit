@@ -207,8 +207,10 @@ names version 0. The phone always fetches this fixed address, whatever URL the w
 carries on without; nothing else is offered in their place (the watch does not validate files). The phone can also start the exchange itself
 ("Perbarui sekarang"): it sends `1F/02` with no op 1 before it. The Fit 4 Pro answers `7f 118001` with no `0x81` container (no request open on its side);
 the update has to be started on the watch (Settings > Workout settings > Location Services > Satellite updates). The watch's consult version and tag
-names are kept (`getAgps().lastAskVersion`, `lastAskTags`: tag names only); the full tag and URLs go to logcat only (tag `JoyoFit`,
-`AGPS: consult tag=...`). Policy, safety rules, sources and why Huawei's servers are not used: [docs/agps.md](../docs/agps.md).
+names are kept (`getAgps().lastAskVersion`, `lastAskTags`: tag names only); the full tag and URLs go to the platform console only (Android logcat
+tag `JoyoFit`, iOS unified log category `JoyoFit`; line `AGPS: consult tag=...`). The two platforms send the same bytes (the iOS `1C/05` frames are
+`HuaweiPacket.serializeFileChunk1c`, GB `serializeFileChunk1c`); on iOS the stored file name uses the peripheral identifier in place of the watch's
+Bluetooth address. Policy, safety rules, sources and why Huawei's servers are not used: [docs/agps.md](../docs/agps.md).
 
 ### Live workout (`LiveWorkout.kt`, `LiveWorkoutCodec.kt`; as Huawei Health 17.0.8.300 behaves, UNVERIFIED on the Fit 4 Pro)
 
