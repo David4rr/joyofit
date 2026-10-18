@@ -64,6 +64,7 @@ export function summaryOf(w: RecordedWorkout, sensors: readonly WorkoutSensor[],
   if (elevation) {
     summary.elevationGain = elevation.gainM;
     summary.elevationLoss = elevation.lossM;
+    summary.ascentSource = 'computed';
   }
   return summary;
 }

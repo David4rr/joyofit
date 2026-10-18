@@ -29,7 +29,8 @@ function load(name: string): FitActivity {
 function analyse(a: FitActivity, ftp: number | null) {
   return analyzeRide({
     workout: { start: a.start, end: a.end, duration: a.timerSeconds, distance: a.distance, calories: a.calories, sportType: 3, sportName: 'Cycling' },
-    summary: { laps: a.laps },
+    // As the FIT import stores it: the device's own ascent and descent.
+    summary: { laps: a.laps, importedFrom: 'FIT file', elevationGain: a.ascent ?? undefined, elevationLoss: a.descent ?? undefined, ascentSource: 'device' },
     points: a.points,
     profile: { ...PROFILE, ftp },
   });
@@ -67,10 +68,9 @@ describe.skipIf(!has(EDGE810))('Garmin Edge 810 with Vector pedals (device: avg 
     expect(Math.abs((a?.balanceLeftPct ?? 0) - 50.2)).toBeLessThan(1.5);
   });
 
-  it('ascent is within 20 % of the device and the two 3 km climbs are found as category 4', () => {
-    const gain = r?.elevation?.gainM ?? 0;
-    expect(gain / (a?.ascent ?? 1)).toBeGreaterThan(0.8);
-    expect(gain / (a?.ascent ?? 1)).toBeLessThan(1.2);
+  it('ascent is the device\'s own and the two 3 km climbs are found as category 4', () => {
+    expect(r?.elevation?.source).toBe('device');
+    expect(r?.elevation?.gainM).toBe(a?.ascent ?? -1);
     expect(r?.climbs.length).toBeGreaterThanOrEqual(2);
     expect(r?.climbs[0]?.category).toBe('4');
   });
@@ -115,8 +115,13 @@ describe.skipIf(!has(EDGE500))('Garmin Edge 500, 92 km with auto-pause (device: 
     expect((r?.speed.avgMs ?? 0) * 3.6).toBeCloseTo(31.33, 1);
   });
 
-  it('ascent within 25 % of the device (its barometer counts every ripple)', () => {
-    const ratio = (r?.elevation?.gainM ?? 0) / (a?.ascent ?? 1);
+  it('ascent is the device figure; computed it is within 25 % (its barometer counts every ripple)', () => {
+    expect(r?.elevation?.source).toBe('device');
+    expect(r?.elevation?.gainM).toBe(a?.ascent ?? -1);
+    // Without the device's totals (a phone GPS recording) the computed ascent is within 25 % of it.
+    const computed = a ? analyzeRide({ workout: { start: a.start, end: a.end, duration: a.timerSeconds, distance: a.distance, calories: 0, sportType: 3, sportName: 'Cycling' }, summary: {}, points: a.points, profile: PROFILE }) : null;
+    expect(computed?.elevation?.source).toBe('computed');
+    const ratio = (computed?.elevation?.gainM ?? 0) / (a?.ascent ?? 1);
     expect(ratio).toBeGreaterThan(0.75);
     expect(ratio).toBeLessThan(1.25);
   });
@@ -132,7 +137,9 @@ describe.skipIf(!has(COROS))('COROS Pace 2 mountain ride (device: ascent 938 m, 
   const r = a ? analyse(a, null) : null;
 
   it('ascent within 10 % of the device, climbs of category 3 and 4 are found, calories stay the device figure', () => {
-    const ratio = (r?.elevation?.gainM ?? 0) / (a?.ascent ?? 1);
+    expect(r?.elevation?.gainM).toBe(a?.ascent ?? -1);
+    const computed = a ? analyzeRide({ workout: { start: a.start, end: a.end, duration: a.timerSeconds, distance: a.distance, calories: a.calories, sportType: 3, sportName: 'Cycling' }, summary: {}, points: a.points, profile: PROFILE }) : null;
+    const ratio = (computed?.elevation?.gainM ?? 0) / (a?.ascent ?? 1);
     expect(ratio).toBeGreaterThan(0.9);
     expect(ratio).toBeLessThan(1.1);
     expect(r?.climbs.length).toBeGreaterThanOrEqual(4);

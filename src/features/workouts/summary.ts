@@ -37,6 +37,8 @@ export interface WorkoutSummary {
   avgAltitude?: number;
   elevationGain?: number;
   elevationLoss?: number;
+  /** Where `elevationGain` and `elevationLoss` come from: the recording device (a FIT file's session) or JoyoFit's computation from the altitude. */
+  ascentSource?: 'device' | 'computed';
   maxDepth?: number;
   workoutLoad?: number;
   aerobicEffect?: number;

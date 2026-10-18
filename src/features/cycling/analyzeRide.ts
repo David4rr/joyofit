@@ -349,7 +349,13 @@ export function analyzeRide(input: RideInput): RideAnalysis {
   const hasAlt = !indoor && series.alt.some((a) => !Number.isNaN(a));
   const altValues = hasAlt ? Array.from(series.alt, (a) => (Number.isNaN(a) ? null : a)) : null;
   const profileOfAlt = altValues ? elevationProfile(altValues, 1, RIDE_ELEVATION_SMOOTH_SEC, RIDE_ELEVATION_HYSTERESIS_M) : null;
-  const summaryElevation = elevationSummary(altValues, profileOfAlt, summary);
+  // A bike computer's own ascent and descent (a FIT file's session) are what Garmin and Strava show for a barometric device: used as
+  // they are. Without them (phone GPS recording, a watch without totals) the profile of the altitude stream is computed.
+  const deviceTotals =
+    summary.ascentSource === 'device' ||
+    (summary.ascentSource === undefined && summary.importedFrom !== undefined && typeof summary.elevationGain === 'number' && typeof summary.elevationLoss === 'number');
+  const ascentSource: RideElevation['source'] = deviceTotals ? 'device' : 'computed';
+  const summaryElevation = elevationSummary(altValues, profileOfAlt, deviceTotals ? { ...summary, importedFrom: summary.importedFrom ?? 'FIT file' } : { ...summary, importedFrom: undefined });
   let elevation: RideElevation | null = null;
   if (summaryElevation && !indoor) {
     const grade = hasAlt ? gradeExtremes(series) : null;
@@ -358,6 +364,7 @@ export function analyzeRide(input: RideInput): RideAnalysis {
     const first = firstAt >= 0 ? mean(series.alt, series, firstAt, firstAt + 30) : null;
     const last = lastAt >= 0 ? mean(series.alt, series, Math.max(0, lastAt - 30), lastAt) : null;
     elevation = {
+      source: ascentSource,
       gainM: Math.round(summaryElevation.gainM * 10) / 10,
       lossM: Math.round(summaryElevation.lossM * 10) / 10,
       minM: Math.round(summaryElevation.minM * 10) / 10,

@@ -153,6 +153,7 @@ describe('elevation, grade and climbs', () => {
 
   it('gain and loss are the profile (120 m each, within the smoothing), min and max are exact', () => {
     const e = ride().elevation;
+    expect(e?.source).toBe('computed');
     expect(e?.gainM as number).toBeGreaterThan(110);
     expect(e?.gainM as number).toBeLessThan(125);
     expect(e?.lossM as number).toBeGreaterThan(110);
@@ -163,6 +164,15 @@ describe('elevation, grade and climbs', () => {
     expect(e?.maxGradePct as number).toBeGreaterThan(5);
     expect(e?.maxGradePct as number).toBeLessThan(7);
     expect(e?.minGradePct as number).toBeLessThan(-5);
+  });
+
+  it('a device ascent in the summary is used as it is, a phone recording\'s own computed one is not', () => {
+    const opts = { secs: 1400, speed: () => 5, speedChannel: true, gps: true, alt } as const;
+    const device = analyzeRide(rideInput(opts, { summary: { importedFrom: 'Garmin', elevationGain: 200, elevationLoss: 190, ascentSource: 'device' } }));
+    expect(device.elevation).toMatchObject({ source: 'device', gainM: 200, lossM: 190 });
+    const phone = analyzeRide(rideInput(opts, { summary: { elevationGain: 500, elevationLoss: 500, ascentSource: 'computed' } }));
+    expect(phone.elevation?.source).toBe('computed');
+    expect(phone.elevation?.gainM as number).toBeLessThan(130);
   });
 
   it('finds the 2 km climb: length, gain, 6 % grade and Garmin category 4 (score 12 000)', () => {

@@ -65,7 +65,7 @@ Definitions of Andrew Coggan and Hunter Allen, *Training and Racing with a Power
 
 ### Elevation, grade, climbs (`analyzeRide.ts`, `climbs.ts`)
 
-- **Gain and loss**: a 15 s mean of the altitude, then a 2.5 m hysteresis (`elevationProfile`, now taking the smoothing and the hysteresis as optional arguments; running keeps 60 s and 1 m). A bike covers 100 m in 15 s at 25 km/h, a minute is 400 m. No Strava ride data exists to fit, so the pair is the one with the smallest mean error against the ascent four public bike-computer files carry (section 4). An imported file's own totals still win, as for runs.
+- **Gain and loss**: a file's own totals (`summary.ascentSource = 'device'`, written by the FIT import from the session's `total_ascent`/`total_descent`, as Garmin and Strava show for a barometric device) are used as they are. Without them (a phone GPS recording, `ascentSource = 'computed'`; a watch without totals) it is computed: a 15 s mean of the altitude, then a 2.5 m hysteresis (`elevationProfile`, now taking the smoothing and the hysteresis as optional arguments; running keeps 60 s and 1 m). A bike covers 100 m in 15 s at 25 km/h, a minute is 400 m. No Strava ride data exists to fit, so the pair is the one with the smallest mean error against the ascent four public bike-computer files carry (section 4). An imported file's own totals still win, as for runs.
 - **Grade**: net grade over the ride; steepest ascent and descent over a 100 m stretch of the altitude smoothed over distance (a 15 s mean in time, then 90 m); a grade past 30 % is noise and is clamped. A recording gap of 2 minutes ends a stretch, so a lift home or a paused device cannot make a grade.
 - **Climbs** follow Garmin ClimbPro (Edge owner's manual "Climb Categories"; Garmin Technology "ClimbPro"): at least 500 m long, 3 % average grade, a score (length in metres x average grade in percent) of at least 1,500; categories by score above 8,000 (4), 16,000 (3), 32,000 (2), 64,000 (1), 80,000 (HC). ClimbPro reads a planned course; a recorded ride has none, so the climbs are found in the altitude: zigzag of 3 m turning points, ascents cut by a dip of 10 m or less are joined, the flat before and the plateau after are trimmed. Garmin does not publish its own detection; this one is JoyoFit's.
 
@@ -114,16 +114,16 @@ No ride FIT existed on the machine or in the repo (the FIT files in `/tmp` and t
 
 | File | Device values | JoyoFit |
 | --- | --- | --- |
-| Garmin Edge 810 + Vector pedals, 41.3 km, 78 min, FTP 315 | avg 276 W, NP 301 W, IF 0.956, TSS 118.7, work 1296 kJ, ascent 514 m | avg 275 W, **NP 301 W**, IF 0.96, **TSS 119**, work 1295 kJ, ascent 422 m (-18 %), two 3 km climbs category 4, pedal balance 50.2 % left |
-| Wahoo ELEMNT, 78.9 km, timer 13471 s of 23595 s, FTP 220 | NP 157 W, TSS 190, ascent 185 m | timer 13471 s, NP 153 W (-2.4 %), TSS 182 (-4.2 %), ascent 187 m (+1 %), moving 12779 s |
-| Garmin Edge 500, 92.6 km, timer 10641 s of 12691 s | ascent 541 m | timer 10641 s, avg speed 31.3 km/h, ascent 421 m (-22 %) |
-| COROS Pace 2, 32.1 km mountain ride | ascent 938 m, descent 1231 m | ascent 971 m (+3.5 %), 6 climbs (category 3 and 4) |
+| Garmin Edge 810 + Vector pedals, 41.3 km, 78 min, FTP 315 | avg 276 W, NP 301 W, IF 0.956, TSS 118.7, work 1296 kJ, ascent 514 m | avg 275 W, **NP 301 W**, IF 0.96, **TSS 119**, work 1295 kJ, ascent **514 m (device; computed 422 m, -18 %)**, two 3 km climbs category 4, pedal balance 50.2 % left |
+| Wahoo ELEMNT, 78.9 km, timer 13471 s of 23595 s, FTP 220 | NP 157 W, TSS 190, ascent 185 m | timer 13471 s, NP 153 W (-2.4 %), TSS 182 (-4.2 %), ascent **185 m (device; computed 187 m, +1 %)**, moving 12779 s |
+| Garmin Edge 500, 92.6 km, timer 10641 s of 12691 s | ascent 541 m | timer 10641 s, avg speed 31.3 km/h, ascent **541 m (device; computed 421 m, -22 %)** |
+| COROS Pace 2, 32.1 km mountain ride | ascent 938 m, descent 1231 m | ascent **938 m (device; computed 971 m, +3.5 %)**, 6 climbs (category 3 and 4) |
 
 GoldenCheetah's sample data was not used: its repository has no FIT files with reference outputs that I could find with a license that allows keeping them. So agreement with GoldenCheetah's own numbers is **not** verified; agreement with the devices' own NP/IF/TSS is.
 
 ## 4. What is not verified
 
-- **Strava parity for rides.** Strava's moving time and elevation for a ride use a speed threshold and an elevation basemap that Strava does not publish. The 1.0 m/s stop threshold and the 15 s / 2.5 m elevation pair are chosen against bike-computer files, not against Strava rides. Elevation reads about 20 % below the Edge files' ascent (those barometers count every ripple) and within 4 % of the ELEMNT and COROS ones. A set of the owner's rides with Strava's numbers is what would settle it (the walk method was fitted that way).
+- **Strava parity for rides.** Strava's moving time and elevation for a ride use a speed threshold and an elevation basemap that Strava does not publish. The 1.0 m/s stop threshold and the 15 s / 2.5 m elevation pair are chosen against bike-computer files, not against Strava rides. An imported file shows the device's ascent. The computed ascent (phone GPS recordings) reads about 20 % below the Edge files' (those barometers count every ripple) and within 4 % of the ELEMNT and COROS ones. A set of the owner's rides with Strava's numbers is what would settle it (the walk method was fitted that way).
 - **Strava accepting `VirtualRide` without `trainer`, and `EBikeRide`**, was not uploaded to a live account.
 - **A Huawei watch ride with sensors** (speed, cadence, power from a bike sensor paired to the watch): the protocol carries the channels but no recorded ride with them was available; the path is the same points table as the phone's, tested through synthetic and imported data only.
 - **A phone recording with a pedal-balance power meter** (needs a device; the Bluetooth module is unverified on hardware, docs/sensors.md section 7). After a crash restore the balance of the seconds before the crash is lost (only the samples are journalled); the figure then covers the rest.

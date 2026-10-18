@@ -38,6 +38,8 @@ export interface RideTimes {
 }
 
 export interface RideElevation {
+  /** `device`: the head unit's own ascent and descent; `computed`: from the altitude stream (`RIDE_ELEVATION_*`). */
+  source: 'device' | 'computed';
   gainM: number;
   lossM: number;
   minM: number;

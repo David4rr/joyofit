@@ -68,6 +68,7 @@ function summaryOf(a: FitActivity): string {
     minHr: a.minHr ?? undefined,
     elevationGain: a.ascent ?? undefined,
     elevationLoss: a.descent ?? undefined,
+    ascentSource: a.ascent !== null && a.descent !== null ? 'device' : undefined,
     minAltitude: a.minAltitude ?? undefined,
     maxAltitude: a.maxAltitude ?? undefined,
     avgCadence: a.avgCadence ?? undefined,
