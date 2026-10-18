@@ -21,7 +21,7 @@ export interface EngineStats {
 const RIDER_LAT = 0.9;
 const GHOST_LAT = -0.9;
 const WHEEL_RADIUS_M = 0.34;
-/** Metres per crank turn in the default gear (ratio about 2.6 x 2.105 m wheel); sets the ghost's pedalling rate. */
+/** Metres per crank turn in the default gear (ratio about 2.3 x 2.105 m wheel); sets the ghost's pedalling rate. */
 const GHOST_M_PER_REV = 5.5;
 const BASE_FOV = 62;
 

@@ -1,6 +1,7 @@
 import type { GamePhase, SumLap, SumMsg } from "../../../src/features/ride/protocol.ts";
 import {
   DEFAULT_GEAR_INDEX,
+  climbGear,
   DEFAULT_RIDER_KG,
   clampGear,
   speedFromPower,
@@ -91,6 +92,8 @@ export function hrZone(hr: number, maxHr = 190): number {
 export class RideSession {
   phase: GamePhase = "idle";
   gear = DEFAULT_GEAR_INDEX;
+  /** Until the rider shifts (here or on the phone) the game picks the gear for the grade (`climbGear`). */
+  private shifted = false;
   countdownS = COUNTDOWN_S;
   distM = 0;
   elevGainM = 0;
@@ -191,6 +194,7 @@ export class RideSession {
   }
 
   shift(delta: 1 | -1): void {
+    this.shifted = true;
     this.gear = clampGear(this.gear + delta);
   }
 
@@ -227,6 +231,7 @@ export class RideSession {
     this.drafting =
       ghostLive && ghostGap !== null && -ghostGap >= DRAFT_MIN_M && -ghostGap <= DRAFT_MAX_M && this.speedMs > 2;
     const cdaScale = this.drafting ? DRAFT_CDA_SCALE : 1;
+    if (!this.shifted) this.gear = climbGear(this.grade, this.massKg);
 
     if (input.pwr !== undefined) {
       const target = speedFromPower(input.pwr, this.grade, this.massKg, cdaScale);

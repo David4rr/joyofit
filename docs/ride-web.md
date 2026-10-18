@@ -38,7 +38,7 @@ bun scripts/ride-sim.ts --code <the 6 digits on screen>                         
 
 1. Cadence comes from the room, demo or Bluetooth. A reading older than 3 s counts as no data and the rider coasts.
 2. `physics.stepSpeed` turns cadence x the chosen virtual gear into speed on the current grade. Power is an estimate and is labelled "estimasi" / "estimated" in the HUD and the summary. A real `pwr` reading from a meter is shown as "terukur" / "measured" and drives speed instead.
-3. Gears: keyboard up / down, the HUD buttons, or the phone (`gear` messages). Space or Esc pauses, L laps, C changes camera, F fullscreen.
+3. Gears: the game picks the gear for the grade until the first shift (`climbGear`, docs/ride.md); then keyboard up / down, the HUD buttons, or the phone (`gear` messages). Space or Esc pauses, L laps, C changes camera, F fullscreen.
 4. Heart rate colours the HUD and adds a vignette at zones 4 to 5. It never feeds the physics.
 5. At the finish or "Akhiri latihan" the game sends `sum` (distance, climb, route, laps) and then `ctl stop`. The relay keeps `sum` until the phone acknowledges it.
 6. Records in localStorage: the best run per route (`joyofit-ride-ghost:<route>`, one distance per second) is the ghost; segment bests are `joyofit-ride-segments:<route>`. Riding 1.5 to 12 m behind a live ghost lowers air drag (`cdaScale` 0.7) and shows a slipstream hint.

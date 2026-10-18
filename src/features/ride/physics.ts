@@ -70,8 +70,11 @@ function buildGears(): Gear[] {
 /** A compact 34/50 chainset with an 11-28 cassette, easiest first: the rider shifts up and down this list. */
 export const GEARS: readonly Gear[] = buildGears();
 export const GEAR_COUNT = GEARS.length;
-/** The gear a ride starts in: about 2.6, comfortable at 80 to 90 rpm on the flat. */
-export const DEFAULT_GEAR_INDEX = GEARS.reduce((best, g, i) => (Math.abs(g.ratio - 2.6) < Math.abs((GEARS[best]?.ratio ?? 0) - 2.6) ? i : best), 0);
+/** The gear a ride starts in on the flat: about 2.3, relaxed at 80 rpm (23 km/h, under 100 W). */
+export const DEFAULT_GEAR_INDEX = GEARS.reduce((best, g, i) => (Math.abs(g.ratio - 2.3) < Math.abs((GEARS[best]?.ratio ?? 0) - 2.3) ? i : best), 0);
+/** Steady cadence and effort the auto gear aims at on a climb: about 225 W at 80 rpm on 6 %, in the 200 to 250 W band. */
+export const CLIMB_TARGET_CADENCE_RPM = 80;
+export const CLIMB_TARGET_POWER_W = 225;
 
 /** The nearest valid gear index. */
 export function clampGear(index: number): number {
@@ -206,6 +209,24 @@ export function stepSpeed(vMs: number, input: StepInput, dtS: number): StepResul
   const mean = (v + next) / 2;
   const wheelW = resistanceN(mean, input.gradePct, input.massKg, input.cdaScale) * mean + mass * mean * ((next - v) / dtS);
   return { vMs: next, pwrW: Math.min(maxPowerW, Math.max(0, wheelW / DRIVETRAIN_EFFICIENCY)) };
+}
+
+/**
+ * The gear a rider who has not shifted yet rides in on `gradePct`: the one whose steady power at `CLIMB_TARGET_CADENCE_RPM` is closest to
+ * `CLIMB_TARGET_POWER_W`, never harder than `DEFAULT_GEAR_INDEX`. The flat and gentle slopes stay in the default gear; 6 % lands in
+ * 34x24 (about 240 W at 80 rpm), Bukit's 10.8 % in the easiest gear (34x28).
+ */
+export function climbGear(gradePct: number, massKg: number): number {
+  let best = 0;
+  let bestErr = Infinity;
+  for (let i = 0; i <= DEFAULT_GEAR_INDEX; i++) {
+    const err = Math.abs(powerAtSpeed(driveSpeed(CLIMB_TARGET_CADENCE_RPM, i), gradePct, massKg) - CLIMB_TARGET_POWER_W);
+    if (err < bestErr) {
+      best = i;
+      bestErr = err;
+    }
+  }
+  return best;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -7,6 +7,7 @@ import {
   GEAR_COUNT,
   MAX_SPEED_MS,
   clampGear,
+  climbGear,
   driveSpeed,
   effortFromHr,
   estimatePower,
@@ -39,8 +40,8 @@ describe('gears', () => {
   });
 
   it('start in a middling gear, and out-of-range indexes land on the ends', () => {
-    expect(gearRatio(DEFAULT_GEAR_INDEX)).toBeGreaterThan(2.4);
-    expect(gearRatio(DEFAULT_GEAR_INDEX)).toBeLessThan(2.8);
+    expect(gearRatio(DEFAULT_GEAR_INDEX)).toBeGreaterThan(2.1);
+    expect(gearRatio(DEFAULT_GEAR_INDEX)).toBeLessThan(2.5);
     expect(clampGear(-3)).toBe(0);
     expect(clampGear(99)).toBe(GEAR_COUNT - 1);
     expect(clampGear(NaN)).toBe(DEFAULT_GEAR_INDEX);
@@ -206,5 +207,14 @@ describe('effortFromHr', () => {
     expect(effortFromHr(220)).toBe(1);
     expect(effortFromHr(0)).toBe(0);
     expect(effortFromHr(150, 100, 100)).toBe(0);
+  });
+
+  it('the auto gear keeps a climb near 200-250 W at 80 rpm and the flat in the default gear', () => {
+    expect(climbGear(0, 79)).toBe(DEFAULT_GEAR_INDEX);
+    const w6 = powerAtSpeed(driveSpeed(80, climbGear(6, 79)), 6, 79);
+    expect(w6).toBeGreaterThanOrEqual(200);
+    expect(w6).toBeLessThanOrEqual(250);
+    expect(climbGear(10.8, 79)).toBe(0);
+    expect(climbGear(8, 79)).toBeLessThanOrEqual(climbGear(4, 79));
   });
 });
