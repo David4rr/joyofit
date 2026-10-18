@@ -1,1 +1,699 @@
-{}
+{
+  "screens": {
+    "sync": "Watch & sync",
+    "notifications": "Notifications & calls",
+    "notificationApps": "Notification apps",
+    "weather": "Weather",
+    "safety": "Safety",
+    "health": "Health & cloud",
+    "strava": "Strava",
+    "importHuawei": "Import from Huawei Health",
+    "importAppleHealth": "Import from Apple Health",
+    "importFit": "Import a FIT file",
+    "profile": "Profile and goal",
+    "meals": "Meals on watch",
+    "goals": "Goals & reminders",
+    "cycle": "Cycle",
+    "courses": "Running courses",
+    "advanced": "Advanced",
+    "log": "Log",
+    "about": "About",
+    "appearance": "Appearance"
+  },
+  "index": {
+    "groups": {
+      "watch": "On the watch",
+      "you": "You and your data",
+      "app": "App",
+      "advanced": "Advanced"
+    },
+    "title": "Settings",
+    "rows": {
+      "sync": {
+        "title": "Background and sync",
+        "subtitle": "Stay connected, sync interval"
+      },
+      "notifications": {
+        "title": "Notifications and calls",
+        "subtitleIos": "iPhone notifications on the watch, find my phone, calls",
+        "subtitle": "Forwarding, find my phone, call control"
+      },
+      "notificationApps": {
+        "title": "Notification apps",
+        "subtitleIos": "Chosen in iPhone Settings",
+        "subtitle": "Choose which apps notify the watch"
+      },
+      "weather": {
+        "title": "Weather",
+        "subtitle": "Location, unit, update interval"
+      },
+      "safety": {
+        "title": "Safety",
+        "subtitle": "Fall detection, SOS texts, sleep report"
+      },
+      "meals": {
+        "title": "Meals on watch",
+        "subtitle": "JoyoRogo diary and calorie target on the watch"
+      },
+      "goals": {
+        "title": "Goals and reminders",
+        "subtitle": "Steps, calories, exercise, stand, ring reminders"
+      },
+      "health": {
+        "titleIos": "Apple Health and cloud",
+        "title": "Health Connect and cloud",
+        "subtitle": "Share data with other apps, back up"
+      },
+      "strava": {
+        "title": "Strava",
+        "subtitle": "Send watch workouts to Strava, free"
+      },
+      "importHuawei": {
+        "title": "Import from Huawei Health",
+        "subtitle": "Bring your Huawei history into JoyoFit, free"
+      },
+      "importAppleHealth": {
+        "title": "Import from Apple Health",
+        "subtitle": "Bring the history Huawei Health saved in Apple Health, once"
+      },
+      "importFit": {
+        "title": "Import a FIT file",
+        "subtitle": "A ride or run from iGPSPORT, Garmin, Wahoo and others"
+      },
+      "profile": {
+        "title": "Profile and goal",
+        "subtitle": "Height, weight, daily step goal"
+      },
+      "cycle": {
+        "title": "Cycle",
+        "subtitle": "Period log, estimates, calendar on the watch"
+      },
+      "family": {
+        "title": "Family"
+      },
+      "guide": {
+        "title": "Setup guide",
+        "subtitle": "Pair the watch, permissions, JoyoRogo"
+      },
+      "appearance": {
+        "title": "Appearance",
+        "subtitle": "Theme: Classic, Sport, Ocean"
+      },
+      "log": {
+        "title": "Log",
+        "subtitle": "Watch traffic and events"
+      },
+      "advanced": {
+        "title": "Experimental",
+        "subtitle": "Bluetooth LE link, running courses"
+      },
+      "about": {
+        "title": "About"
+      }
+    }
+  },
+  "about": {
+    "app": "App",
+    "version": "Version",
+    "license": "License",
+    "privacyTitle": "Privacy",
+    "privacy": "Watch data stays on this phone in joyofit.db until you sign in to the cloud. Weather, if switched on, sends rounded coordinates to Open-Meteo. Privacy policy: fit.joyorogo.com/privasi"
+  },
+  "advanced": {
+    "bleDenied": "Nearby devices permission denied: the watch is tried at its paired address without a scan.",
+    "experimental": "Experimental",
+    "courses": "Running courses",
+    "coursesSubtitle": "Build a course and send it to the watch",
+    "bleLink": "Bluetooth LE link (developer)",
+    "details": "Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it.",
+    "detailsDev": "Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it. Bluetooth LE link: connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle."
+  },
+  "log": {
+    "filters": {
+      "all": "all",
+      "tx": "tx",
+      "rx": "rx",
+      "info": "info",
+      "error": "error"
+    },
+    "searchPlaceholder": "Search, e.g. TruSleep",
+    "searchLabel": "Search log",
+    "copied": "Copied",
+    "copy": "Copy",
+    "summary": "{{shown}} shown, {{buffered}} of {{capacity}} buffered. Long-press a line to copy.",
+    "lineCopied": "Line copied.",
+    "lineHint": "Long-press to copy this line",
+    "emptyTitle": "No events yet",
+    "emptyDesc": "Connect your watch and its traffic will appear here.",
+    "noneTitle": "Nothing to show",
+    "noMatch": "No events match \"{{query}}\".",
+    "noFilter": "No {{filter}} events in the buffer.",
+    "clear": "Clear filters"
+  },
+  "updates": {
+    "title": "Quick updates",
+    "labels": {
+      "status": "Status",
+      "channel": "Channel",
+      "running": "Running",
+      "runtime": "Runtime"
+    },
+    "status": {
+      "disabled": "Off",
+      "idle": "Up to date",
+      "checking": "Checking…",
+      "downloading": "Downloading…",
+      "ready": "Ready, restart to apply",
+      "error": "Couldn't check",
+      "downloadingPercent": "Downloading {{percent}}%"
+    },
+    "running": {
+      "update": "Update {{id}} ({{date}})",
+      "emergency": "Built into the app (the last update failed to load)",
+      "embedded": "Built into the app"
+    },
+    "hint": "Fixes to screens and logic arrive in the background and apply the next time JoyoFit opens. App Store and Play updates still carry anything native.",
+    "restart": "Restart to update",
+    "checking": "Checking…",
+    "check": "Check for updates",
+    "banner": {
+      "availableTitle": "New version available",
+      "failed": "Couldn't start the update. Try again.",
+      "availableBody": "A JoyoFit update is ready to download.",
+      "downloading": "Downloading update…",
+      "readyTitle": "Update ready to install",
+      "readyBody": "Restart JoyoFit to use the new version.",
+      "later": "Later",
+      "update": "Update"
+    }
+  },
+  "cloud": {
+    "workouts_one": "{{n}} workout",
+    "workouts_other": "{{n}} workouts",
+    "waiting": {
+      "workouts": "{{workouts}}, about {{size}}",
+      "rows_one": "{{n}} step and sleep row",
+      "rows_other": "{{n}} step and sleep rows",
+      "both": "{{first}} and {{second}}",
+      "nothing": "Nothing"
+    },
+    "title": "Cloud sync",
+    "notConfigured": "No cloud server URL in this build. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.",
+    "getPro": "Get Pro",
+    "lockedLink": "Your workouts stay on this phone. Cloud sync is a JoyoRogo Pro benefit. What is already in your cloud stays readable and restores onto a new phone.",
+    "locked": "Your workouts stay on this phone. Cloud sync is a JoyoRogo Pro benefit (get Pro in JoyoRogo). What is already in your cloud stays readable and restores onto a new phone.",
+    "uploading": "Uploading {{done}} of {{total}}",
+    "refused_one": "{{n}} workout could not be uploaded. It is tried again after the next app update.",
+    "refused_other": "{{n}} workouts could not be uploaded. They are tried again after the next app update.",
+    "refusedError": "Last error: {{error}}",
+    "labels": {
+      "account": "Account",
+      "lastSync": "Last sync",
+      "inCloud": "In the cloud",
+      "waiting": "Waiting to upload"
+    },
+    "inCloudValue": "{{workouts}}, {{used}} of {{quota}}",
+    "syncNow": "Sync now",
+    "signOut": "Sign out",
+    "wifiOnly": "Wi-Fi only",
+    "wifiOnlyHint": "Automatic sync waits for Wi-Fi or Ethernet, so workouts do not use mobile data.",
+    "autoSync": "Automatic sync",
+    "autoSyncHint": "Sync after each watch sync and when you open the app.",
+    "wipe": "Delete cloud data",
+    "deleteWarning": "Deletes your JoyoRogo account (the one JoyoRogo uses) and everything it holds in the cloud: your JoyoRogo diary, groups and photos, and the data JoyoFit backed up. Cannot be undone; you are signed out of both apps. Data on this phone stays.",
+    "deleteApple": "Apple will ask you to confirm first.",
+    "deletePermanently": "Delete permanently",
+    "keepAccount": "Keep account",
+    "deleteAccount": "Delete JoyoRogo account",
+    "mobileTitle": "Sync on mobile data?",
+    "mobileMessage": "Wi-Fi only is on and this phone is not on Wi-Fi. Syncing now can use a lot of mobile data when workouts are waiting.",
+    "wipeTitle": "Delete cloud data?",
+    "wipeMessage": "Removes your workouts, steps and sleep from the cloud. This phone's data and your account stay, and automatic sync is turned off so nothing is uploaded again until you turn it back on.",
+    "details": "Cloud sync is part of JoyoRogo Pro. With a Pro account every workout is uploaded to your JoyoRogo account as one compressed file: its GPS track, heart rate, speed, cadence and power, and the analysis the app shows, so it survives a lost phone, shows on the JoyoRogo web and restores onto a new phone after you sign in. Steps, heart rate, SpO2, sleep and the watch's Bluetooth address go to the JoyoFit cloud with the same account. Without Pro nothing is uploaded and your workouts stay on this phone. While you are signed in the app also reads from the cloud: it downloads workouts this phone does not have, and removes the ones you deleted from the cloud elsewhere. JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. Delete cloud data removes your workouts, steps and sleep from the cloud and keeps this phone's data and your account; Delete JoyoRogo account removes the account and everything else (details at fit.joyorogo.com/privasi)."
+  },
+  "goals": {
+    "errors": {
+      "whole": "{{what}} must be a whole number from {{min}} to {{max}}.",
+      "steps": "Steps goal",
+      "calories": "Calories goal",
+      "exercise": "Exercise goal",
+      "stand": "Stand goal"
+    },
+    "sent": "Sent to the watch.",
+    "saved": "Saved. It is sent the next time the watch connects.",
+    "title": "Activity goals",
+    "fields": {
+      "steps": "Steps / day",
+      "calories": "Active kcal",
+      "exercise": "Exercise (min)",
+      "stand": "Stand (hours)"
+    },
+    "saveAndSend": "Save and send",
+    "defaults": "Huawei defaults",
+    "reminders": {
+      "stand": "Stand reminder",
+      "progress": "Progress reminder",
+      "reached": "Goal reached"
+    },
+    "accepts": "Watch accepts goals",
+    "acceptsNotConnected": "Not connected",
+    "acceptsYes": "Yes",
+    "acceptsNo": "Not in its capabilities",
+    "lastSend": "Last send",
+    "details": "The three rings and the calorie goal on the watch. The steps goal is also your daily step goal in Profile and goal. Sent on save and whenever the watch connects. Stand reminder: the watch nudges you when you have been sitting. Progress reminder: tells you how far along the day's goals are. Goal reached: celebrates when a ring closes."
+  },
+  "forecast": {
+    "sent": "Forecast sent: {{hours}}, {{days}}.",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "unsupported": "This watch takes current weather only: it does not list the forecast command.",
+    "unacknowledged": "The watch did not confirm the forecast. Current weather was sent.",
+    "rejected": "The watch refused the forecast{{code}}."
+  },
+  "background": {
+    "intervals": {
+      "m": "{{count}} min",
+      "h": "{{count}} h"
+    },
+    "btRequired": "Bluetooth permission is required to stay connected in the background.",
+    "title": "Background",
+    "stay": "Stay connected in background",
+    "connectFirst": "Connect your watch first.",
+    "notifDenied": "Notification permission denied: the service notification is hidden.",
+    "watch": "Watch",
+    "service": "Service",
+    "running": "Running",
+    "stopped": "Stopped",
+    "autoReconnect": "Auto-reconnect",
+    "paused": "Paused",
+    "active": "Active",
+    "pausedNotice": "Auto-reconnect paused. Connect again to resume.",
+    "interval": "Sync interval",
+    "details": "Keeps the link to the watch up while the app is closed."
+  },
+  "appleImport": {
+    "title": "Import history from Apple Health",
+    "intro": "Huawei Health on iPhone saves your steps, heart rate, sleep, blood oxygen and workouts in Apple Health. Bring that history into JoyoFit once. JoyoFit asks for permission to read Apple Health when you tap the button below, reads it on this phone and sends nothing anywhere.",
+    "reading": "Reading Apple Health: {{percent}}%",
+    "waiting": "Waiting for permission",
+    "footer": "Data your watch already stored in JoyoFit is never replaced, and importing again adds nothing new. Data JoyoFit itself saved to Apple Health is skipped. Imported days stay on this phone: they are not uploaded to the cloud, written back to Apple Health or sent to Strava.",
+    "workoutsAdded": "Workouts added",
+    "heartRate": "Heart rate readings",
+    "sleepFound": "Sleep stages found",
+    "stopped": "Import stopped",
+    "finished": "Import finished",
+    "stoppedNotice": "You stopped the import. What was read so far is saved; import again to continue.",
+    "nothing": "Nothing was found. Check that JoyoFit may read Apple Health (Health, your profile picture, Apps, JoyoFit) and that Huawei Health saves to Apple Health.",
+    "range": "{{from}} to {{to}}",
+    "historyRead": "History read",
+    "sleepAdded": "Sleep stages added",
+    "restingHr": "Resting heart rate readings",
+    "spo2": "Blood oxygen readings",
+    "minutes": "Minutes with data written",
+    "alreadyOnPhone": "Workouts already on the phone",
+    "sleepSkipped": "Sleep stages skipped (watch data kept)",
+    "implausible": "Implausible readings skipped"
+  },
+  "stress": {
+    "unavailable": "Not available on this watch: it does not list automatic stress, so it records no night HRV.",
+    "calibrated": "Calibrated {{when}}",
+    "calibrate": "Takes 1 min to calibrate.",
+    "label": "Automatic stress",
+    "calibrating": "Calibrating: sit still, {{seconds}} s left, {{beats}} beats so far.",
+    "calibratingStart": "Calibrating: sit still with the watch snug. This takes a minute.",
+    "hrvTitle": "Measure HRV",
+    "hrvSubtitle": "1 min, from beat-to-beat intervals"
+  },
+  "fitImport": {
+    "title": "Import a FIT file",
+    "intro": "A ride or run from a bike computer or sports watch, with route, heart rate, speed, power and cadence. Free, runs on this phone.",
+    "importing": "Importing",
+    "choose": "Choose a .fit file",
+    "openWorkout": "Open workout",
+    "howTitle": "How does it work?",
+    "shareIos": "In Files or the app that has the file, choose Share, then JoyoFit.",
+    "shareAndroid": "In your file manager or the bike computer app, open the .fit file with JoyoFit, or share it to JoyoFit.",
+    "details": "Works with the .fit files of iGPSPORT, Garmin, Wahoo, Bryton, Magene and XOSS. {{share}} Importing the same file twice adds nothing, and a file that overlaps a workout your watch already recorded is skipped: the workout from the watch is kept. Imported workouts count for strain, readiness and trends, stay on this phone and are not uploaded to the cloud, written to {{app}} or sent to Strava on their own."
+  },
+  "healthConnect": {
+    "available": "Available",
+    "updateRequired": "Update the {{store}} app first",
+    "unavailable": "Not available on this phone",
+    "busy": {
+      "asking": "Asking for permission",
+      "switchingOff": "Switching off",
+      "writing": "Writing stored data",
+      "opening": "Opening"
+    },
+    "noWrite": "No write permission was granted. Allow JoyoFit in {{store}} to turn this on.",
+    "write": "Write to {{store}}",
+    "lastFailed": "Last export failed: {{error}}",
+    "permission": "Write permission",
+    "permissionValue": "{{granted}} of {{total}} types",
+    "lastExport": "Last export",
+    "missing": "Not allowed, so skipped: {{list}}.",
+    "continue": "Continue",
+    "writeAgain": "Write all again",
+    "details": "Sends steps, distance, calories, heart rate, blood oxygen, sleep and workouts after every sync, so other apps such as JoyoRogo can read them. Turning it on also writes what is already stored."
+  },
+  "healthyLiving": {
+    "notAsked": "The watch has not asked for tasks yet. Open Healthy Living on the watch once.",
+    "title": "Healthy Living",
+    "answer": "Answer watch requests",
+    "support": "Watch support",
+    "supported": "Supported",
+    "notSupported": "Not supported",
+    "lastRequest": "Last request",
+    "notYet": "Not yet",
+    "msgVersion": "Message version",
+    "lastReport": "Last report",
+    "send": "Send today to the watch",
+    "sent": "Sent. Open Healthy Living on the watch to check.",
+    "details": "On by default. Switching on takes effect on the next connect, switching off at once. The watch asks for its tasks itself; the button sends today's tasks without waiting for a request. Unverified on the watch: based on Huawei Health's protocol."
+  },
+  "heartRate": {
+    "unsupported": "This watch does not offer it.",
+    "title": "Heart rate and sensors",
+    "continuous": "Continuous heart rate",
+    "spo2": "Automatic SpO2",
+    "sleep": "Sleep tracking (TruSleep)",
+    "highAlert": "High heart-rate alert (bpm)",
+    "lowAlert": "Low heart-rate alert (bpm)",
+    "notConnected": "Not connected: changes are saved and sent on the next connect.",
+    "notConfirmed": "The watch did not confirm every change. See the Log.",
+    "details": {
+      "continuous": "Continuous heart rate: the watch records your heart rate about every minute. Without it Today shows no heart rate.",
+      "spo2": "Automatic SpO2: measures blood oxygen in the background.",
+      "sleep": "Sleep tracking (TruSleep): newer watches record the sleep stages with it on. Some older watches only report when you slept, shown as \"Sleep (no stages)\", and may give light and deep sleep with it off.",
+      "stress": "Automatic stress: turning it on takes 1 minute of sitting still with the watch snug. The phone measures your beat intervals and sends the watch a baseline.",
+      "high": "High alert: the watch warns when your heart rate stays above this. Needs continuous heart rate.",
+      "low": "Low alert: the watch warns when your heart rate stays below this."
+    }
+  },
+  "history": {
+    "title": "Watch history",
+    "fetching": "Fetching",
+    "fetch": "Fetch all history from watch",
+    "connectFirst": "Connect your watch first.",
+    "detailsIos": "Pulls every day of steps, heart rate, sleep and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept.",
+    "details": "Pulls every day of steps, heart rate, sleep, HRV and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept."
+  },
+  "huaweiImport": {
+    "requestTitle": "Request your data from Huawei",
+    "requestIntro": "Heart rate, sleep, steps and workouts from your Huawei Health account. Free, runs on this phone, sends nothing.",
+    "howTitle": "How to request it (6 steps)",
+    "steps": {
+      "1": "Tap the button below and sign in with your Huawei ID.",
+      "2": "Choose Request your data and tick Health data.",
+      "3": "Set a password for the ZIP and remember it: Huawei cannot show it again and the file does not open without it.",
+      "4": "Wait for the email from Huawei. This can take up to 7 days, and the link works for 21 days. Large exports come as several ZIP parts of up to 5 GB each.",
+      "5": "Before you unbind the watch from Huawei Health, open Huawei Health and pull down to sync once more. What is only on the watch and not yet in your account is lost when you unbind it.",
+      "6Ios": "Download the ZIP (on iPhone it ends up in the Files app), then choose it below and enter the password.",
+      "6Android": "Download the ZIP, then tap it in your email or Files app and choose JoyoFit, or choose it below. Enter the password."
+    },
+    "otherRegion": "An account outside South-East Asia: use {{host}} instead. If the page fails for an Indonesian account, the button above is the one that works; the in-app Privacy Center does not.",
+    "importTitle": "Import the file",
+    "chooseAnother": "Choose another file",
+    "choose": "Choose the ZIP file",
+    "file": "File",
+    "password": "ZIP password",
+    "fileProgress": "File {{index}} of {{count}}",
+    "fileProgressNamed": "File {{index}} of {{count}}: {{name}}",
+    "opening": "Opening the ZIP",
+    "import": "Import",
+    "details": "The password is the one you set when you requested the data; it is only kept while this screen is open. Data the watch already stored on this phone is never replaced. Importing the same file twice adds nothing the second time. Imported days stay on this phone: they are not uploaded to the cloud, written to {{app}} or sent to Strava.",
+    "workoutsAdded": "Workouts added",
+    "heartRate": "Heart rate readings",
+    "sleepFound": "Sleep stages found",
+    "stopped": "Import stopped",
+    "finished": "Import finished",
+    "stoppedNotice": "You stopped the import. What was read so far is saved; import the same file again to continue.",
+    "historyRead": "History read",
+    "range": "{{from}} to {{to}}",
+    "sleepAdded": "Sleep stages added",
+    "restingHr": "Resting HR readings",
+    "spo2": "Blood oxygen readings",
+    "stressAdded": "Stress readings added",
+    "minutes": "Minutes with data",
+    "alreadyHere": "Workouts already here",
+    "sleepSkipped": "Sleep skipped (watch data kept)",
+    "unreadable": "Unreadable skipped",
+    "filesFailed_one": "One file in the ZIP could not be read. The rest was imported; download the export again to fill the gap.",
+    "filesFailed_other": "{{count}} files in the ZIP could not be read. The rest was imported; download the export again to fill the gap.",
+    "summaryDetails": "Calories per minute and weight are not imported. Workout calories are.",
+    "errors": {
+      "password": "That password did not open the ZIP. Use the one you set when you requested your data from Huawei.",
+      "format": "This file is not a Huawei Health export. Pick the ZIP from the Huawei email, the one with your Health data.",
+      "busy": "An import is already running."
+    }
+  },
+  "notifApps": {
+    "iosTitle": "iOS chooses the apps",
+    "iosDesc": "JoyoFit does not forward notifications on iOS. The watch reads them from the iPhone, and which apps appear is set in iPhone Settings, Notifications.",
+    "filter": "Filter apps",
+    "enabledFirst": "Enabled first",
+    "onCount": "{{enabled}} of {{total}} on",
+    "hint": "Apps you haven't chosen are on, except system apps.",
+    "loading": "Loading apps",
+    "noMatchTitle": "No apps match",
+    "noMatch": "Nothing matches \"{{query}}\".",
+    "noApps": "No apps to show.",
+    "clear": "Clear filter"
+  },
+  "notifications": {
+    "disclosure": "JoyoFit reads the notifications on this phone (app name, title and text) so it can show them on your watch. They are sent to the watch over Bluetooth only. JoyoFit does not store them and does not send them over the internet. You can choose which apps are forwarded, and turn this off at any time.",
+    "title": "Notifications",
+    "access": "Notification access",
+    "granted": "Granted",
+    "notGranted": "Not granted",
+    "openAccess": "Open access settings",
+    "readTitle": "Read your notifications?",
+    "restricted": "Android 13+: first allow restricted settings (App info, menu, Allow restricted settings).",
+    "forward": "Forward to the watch",
+    "grantFirst": "Grant access first.",
+    "morning": "Morning summary",
+    "morningDenied": "Notification permission denied: the summary cannot be shown.",
+    "details": "Forwarding sends the app name, title and text of each notification to the watch over Bluetooth only. Nothing is stored or sent over the internet. Choose which apps are forwarded in Notification apps.\n\nMorning summary: once a day after the sync that brings in last night's sleep, with time asleep and HRV against your usual.",
+    "ios": {
+      "shared": "iPhone shares them with watch",
+      "connectToCheck": "Connect the watch to check",
+      "yes": "Yes",
+      "notYet": "Not yet",
+      "howTo": "iPhone Settings, Bluetooth, tap i next to the watch, turn on Show Notifications. Allow it if iOS asks.",
+      "show": "Show notifications on the watch",
+      "details": "iOS does not let JoyoFit read or forward your notifications. The watch reads them from the iPhone itself, over Bluetooth, when iOS allows it; JoyoFit never sees their content. Which apps appear is chosen in iPhone Settings, Notifications.\n\nThe switch changes the watch's own notification setting, the one Huawei Health sets. It is left alone until you change it here.\n\nThe morning summary notification is not available on iOS yet."
+    }
+  },
+  "phone": {
+    "title": "Phone and calls",
+    "iosFind": "Find my phone from the watch: not possible on iOS.",
+    "iosCalls": "Answering or rejecting calls from the watch: not possible on iOS.",
+    "iosDetails": "Find my phone: iOS suspends JoyoFit when it is not on screen and does not let it ring the phone on request, so the watch button cannot find this iPhone. Use Find My on another Apple device or iCloud.com instead.\n\nCalls: iOS does not let an app see, answer or reject phone calls. If the watch shows incoming calls at all, it does so itself through the notifications iOS shares with it (Notifications settings).",
+    "errPhoneState": "Phone state permission is required to see incoming calls.",
+    "errAnswer": "Permission to answer phone calls is required.",
+    "findPhone": "Find my phone from the watch",
+    "showCalls": "Show incoming calls on the watch",
+    "callControl": "Answer and reject calls from the watch",
+    "phoneState": "Phone state",
+    "answerCalls": "Answer phone calls",
+    "callLog": "Caller number (call log)",
+    "contacts": "Contact names",
+    "gps": "Phone GPS (outdoor workouts)",
+    "granted": "Granted",
+    "notGranted": "Not granted",
+    "allowLocation": "Allow location",
+    "appSettings": "App settings",
+    "callerIdDetails": "Without call log access Android hides the caller number. Without contacts access you see the number instead of the name.",
+    "noCallerIdDetails": "The watch shows that the phone is ringing. This version of JoyoFit does not read your call log or contacts, so it cannot show who is calling.",
+    "findDetails": "Find my phone: the watch button rings this phone loudly, even with the app closed. Stop it on the watch or from the notification."
+  },
+  "profile": {
+    "sex": {
+      "male": "Male",
+      "female": "Female",
+      "unknown": "Unspecified"
+    },
+    "errors": {
+      "height": "Height must be a whole number from 100 to 250 cm.",
+      "weight": "Weight must be from 20 to 300 kg.",
+      "birthYear": "Birth year must be a whole number from 1900 to {{year}}.",
+      "steps": "Daily step goal must be a whole number from 1000 to 100000."
+    },
+    "sent": "Sent to the watch.",
+    "saved": "Saved. It is sent the next time the watch connects.",
+    "title": "Profile and goal",
+    "height": "Height (cm)",
+    "weight": "Weight (kg)",
+    "birthYear": "Birth year",
+    "steps": "Daily step goal",
+    "details": "The watch uses these for calories and its step goal. Nothing is sent until you save.",
+    "sexLabel": "Sex"
+  },
+  "appearance": {
+    "title": "Theme",
+    "aboutTitle": "About themes",
+    "details": "A theme changes colors, corner shapes and the size of the big numbers. Classic and Ocean follow the light or dark setting of your phone; Sport is always dark."
+  },
+  "meals": {
+    "support": {
+      "goals": "goals",
+      "meals": "meals",
+      "weight": "weight",
+      "requests": "requests",
+      "extraSlots": "extra slots"
+    },
+    "title": "Meals on watch",
+    "signedIn": "Signed in",
+    "notSignedIn": "Not signed in",
+    "notSignedInCloudOff": "Not signed in (cloud off)",
+    "day": "Day on the watch",
+    "mealsLabel": "Meals",
+    "mealsValue_one": "{{count}} meal, {{kcal}} kcal",
+    "mealsValue_other": "{{count}} meals, {{kcal}} kcal",
+    "mealsValueGoal_one": "{{count}} meal, {{kcal}} of {{goal}} kcal",
+    "mealsValueGoal_other": "{{count}} meals, {{kcal}} of {{goal}} kcal",
+    "lastRead": "Last read from JoyoRogo",
+    "lastPush": "Last push to watch",
+    "lastResult": "Last result",
+    "accepts": "Watch accepts",
+    "notConnected": "Not connected",
+    "nothing": "nothing",
+    "unsynced_one": "{{count}} meal logged on the watch will be written to JoyoRogo the next time the app reads it.",
+    "unsynced_other": "{{count}} meals logged on the watch will be written to JoyoRogo the next time the app reads it.",
+    "pushNow": "Push now",
+    "details": "Your JoyoRogo food diary and calorie target feed the calorie card on the watch. JoyoFit reads them when it opens, after each sync and when the watch connects, and sends them again when the watch asks or logs a meal itself. While the app is closed the background service answers from the last day it stored; it cannot read JoyoRogo then, because the sign-in is kept for the app only. Untested on the Fit 4 Pro so far. While signed in, the app also sends your daily Recovery, Strain and Sleep to the JoyoRogo diary so they sit next to your food."
+  },
+  "signIn": {
+    "label": "Sign in with JoyoRogo",
+    "prompt": "Sign in with",
+    "apple": "Apple",
+    "google": "Google"
+  },
+  "safety": {
+    "fall": {
+      "unknown": "Not reported yet",
+      "off": "Off",
+      "on": "On"
+    },
+    "sms": {
+      "title": "Send SMS for SOS",
+      "message": "When your watch sends an SOS, JoyoFit sends the text message it asks for, from this phone and your SIM. It never sends anything else.",
+      "allow": "Allow",
+      "notNow": "Not now",
+      "denied": "Without the SMS permission JoyoFit cannot send the SOS text. The relay stays off."
+    },
+    "check": "Check without sending",
+    "testReady": "Ready: an SOS from the watch would be sent as a text. Nothing was sent now.",
+    "testBlocked": "An SOS from the watch would not be sent: {{blockers}}. Nothing was sent now.",
+    "fallTitle": "Fall detection",
+    "detect": "Detect falls on the watch",
+    "fallUnavailable": "Not available: {{note}}.",
+    "reports": "Watch reports",
+    "lastChanged": "Last changed",
+    "askWatch": "Ask the watch",
+    "fallDetailsSms": "After a hard fall the watch asks you if you are all right and can start an SOS.",
+    "fallDetails": "After a hard fall the watch asks you if you are all right. This version of JoyoFit cannot send the SOS text.",
+    "sosTitle": "SOS text messages",
+    "sosSwitch": "Send SOS texts for the watch",
+    "smsPermission": "Permission to send SMS",
+    "granted": "Granted",
+    "notGranted": "Not granted",
+    "sim": "SIM card",
+    "simNone": "No telephony",
+    "simReady": "Ready",
+    "simNotReady": "Not ready",
+    "watchLists": "Watch lists SOS texts",
+    "yes": "Yes",
+    "notListed": "Not in its capability list",
+    "appSettings": "App settings",
+    "sosDetails": "When you start an SOS on the watch, the watch hands this phone a number and a message. With the switch on, JoyoFit sends that text from your SIM and tells the watch whether it went out. The watch (or its emergency contacts in the Huawei settings on it) decides who is texted; JoyoFit never picks a recipient and never sends anything the watch did not ask for. Off by default. Needs permission to send SMS and a ready SIM; costs whatever your plan charges per text. If an SOS would not be sent, the watch is told it failed.",
+    "iosNotice": "Not possible on iOS. Do not rely on the watch to text your contacts.",
+    "iosDetails": "iOS does not let an app send a text message by itself, so JoyoFit cannot text your contacts when the watch starts an SOS. JoyoFit tells the watch that nothing was sent.",
+    "playNotice": "Not in the Google Play version. Do not rely on the watch to text your contacts.",
+    "playDetails": "Google Play restricts apps that send text messages, so this version does not include the feature. An SOS started on the watch is not sent as an SMS from this phone: JoyoFit tells the watch that nothing was sent.",
+    "sleepTitle": "Morning sleep report",
+    "sleepShow": "Show last night's sleep",
+    "sleepUnavailable": "Not available: the watch does not report the event channel it needs.",
+    "sleepSend": "Send report now",
+    "sleepSent": "Sent. Check the watch.",
+    "sleepNotSent": "Not sent: {{outcome}}.",
+    "sleepDetails": "Once each morning, after the first sync that holds last night, the watch shows how long you slept and the stages."
+  },
+  "strava": {
+    "intro": "Send watch workouts to Strava. Free, no JoyoRogo Pro needed.",
+    "howTitle": "How does it work?",
+    "how": "Workouts go to Strava with the distance, calories, heart rate and route the watch recorded. After you connect, workouts that finish from then on are sent after each sync; earlier ones stay on the phone unless you send them from the workout screen. JoyoFit only sends workouts to your own Strava account and never reads your Strava activities.",
+    "noCloud": "No cloud server URL in this build, which Strava needs. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.",
+    "serverNotReady": "Strava is not set up on the JoyoFit server yet.",
+    "signInFirst": "Sign in with JoyoRogo first; it only keeps your Strava connection on the server.",
+    "signIn": "Sign in with JoyoRogo",
+    "connect": "Connect with Strava",
+    "connectedSince": "Connected, sending since",
+    "addLink": "Add fit.joyorogo.com to the description",
+    "addLinkHint": "Plain text, never in the title.",
+    "disconnect": "Disconnect Strava",
+    "signInToDisconnect": "Sign in with JoyoRogo to disconnect or send.",
+    "compatible": "Compatible with Strava",
+    "legal": "Compatible with Strava. JoyoFit is not made, sponsored or endorsed by Strava. What you send follows your Strava privacy settings; you can remove JoyoFit any time in Strava under Settings, My Apps."
+  },
+  "weather": {
+    "conditions": {
+      "SUNNY": "Sunny",
+      "CLOUDY": "Cloudy",
+      "OVERCAST": "Overcast",
+      "FOG": "Fog",
+      "HAZY": "Hazy",
+      "DUST": "Dust",
+      "SAND": "Sand",
+      "LIGHT_RAIN": "Light rain",
+      "RAIN": "Rain",
+      "HEAVY_RAIN": "Heavy rain",
+      "FREEZING_RAIN": "Freezing rain",
+      "RAIN_STORM": "Rain storm",
+      "SEVERE_RAIN_STORMS": "Severe rain storms",
+      "THUNDERSTORMS": "Thunderstorms",
+      "SLEET": "Sleet",
+      "LIGHT_SNOW": "Light snow",
+      "SNOW": "Snow",
+      "HEAVY_SNOW": "Heavy snow",
+      "UNKNOWN": "Unknown"
+    },
+    "intervals": {
+      "m": "{{count}} min",
+      "h": "{{count}} h"
+    },
+    "modes": {
+      "current": "This phone",
+      "city": "A city"
+    },
+    "deniedAndroid": "Location denied: weather for this phone cannot be fetched. Allow it, or choose a city.",
+    "deniedIos": "Location is off for JoyoFit. Turn it on in Settings > JoyoFit > Location (While Using the App), or choose a city.",
+    "citySet": "City set to {{name}}.",
+    "citySetDetail": "City set to {{name}} ({{detail}}).",
+    "title": "Weather",
+    "send": "Send weather to the watch",
+    "unit": "Unit",
+    "weatherFor": "Weather for",
+    "permission": "Location permission",
+    "granted": "Granted",
+    "notGranted": "Not granted",
+    "openSettings": "Open Settings",
+    "allowLocation": "Allow location",
+    "city": "City",
+    "cityName": "City name",
+    "cityPlaceholder": "City, or City, Country",
+    "searchCity": "Search city",
+    "interval": "Update interval",
+    "connect": "Connect the watch to send weather.",
+    "noService": "This watch does not list the weather service.",
+    "updateNow": "Update now",
+    "sentToWatch": "Sent to the watch.",
+    "lastSent": "Last sent",
+    "lastWeather": "Last weather",
+    "details": "Sends current weather and a forecast, on every connect and at the chosen interval. Data comes from Open-Meteo; only coordinates rounded to about 1 km go out.",
+    "detailsIos": "This phone: uses your approximate location while the app is open. When the watch asks in the background, iOS gives the app no fresh position, so the last one is reused.",
+    "detailsAndroid": "This phone: uses the last known coarse location. In the background Android may not give a fresh one, so the last position is reused."
+  }
+}

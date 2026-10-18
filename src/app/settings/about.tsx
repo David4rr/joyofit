@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { useTranslation } from 'react-i18next';
 
 import { Details } from '@/components/Details';
 import { GuideLink } from '@/features/device/GuideLink';
@@ -7,19 +8,17 @@ import { Section, Screen } from '@/components/Screen';
 import { OtaSection } from '@/features/updates/OtaSection';
 
 export default function AboutScreen() {
+  const { t } = useTranslation('settings');
   return (
     <Screen>
       <Section title="JoyoFit" icon="information-circle">
         <PairGrid>
-          <Pair label="App" value="JoyoFit" />
-          <Pair label="Version" value={Constants.expoConfig?.version ?? null} />
-          <Pair label="License" value="AGPL-3.0-or-later" />
+          <Pair label={t('about.app')} value="JoyoFit" />
+          <Pair label={t('about.version')} value={Constants.expoConfig?.version ?? null} />
+          <Pair label={t('about.license')} value="AGPL-3.0-or-later" />
         </PairGrid>
         <GuideLink />
-        <Details title="Privacy">
-          Watch data stays on this phone in joyofit.db until you sign in to the cloud. Weather, if switched on, sends
-          rounded coordinates to Open-Meteo. Privacy policy: fit.joyorogo.com/privasi
-        </Details>
+        <Details title={t('about.privacyTitle')}>{t('about.privacy')}</Details>
       </Section>
       <OtaSection />
     </Screen>

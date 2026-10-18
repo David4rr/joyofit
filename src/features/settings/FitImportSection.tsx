@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -17,6 +18,7 @@ const HEALTH_APP = isIos ? 'Apple Health' : 'Health Connect';
  * `+native-intent` with its address in the `uri` parameter and is imported at once.
  */
 export function FitImportSection() {
+  const { t } = useTranslation('settings');
   const router = useRouter();
   const { uri } = useLocalSearchParams<{ uri?: string }>();
   const { running, result, run, pick } = useFitImport();
@@ -31,12 +33,12 @@ export function FitImportSection() {
 
   return (
     <>
-      <Section title="Import a FIT file" icon="bicycle" tint="workouts">
+      <Section title={t('fitImport.title')} icon="bicycle" tint="workouts">
         <AppText variant="caption" muted>
-          A ride or run from a bike computer or sports watch, with route, heart rate, speed, power and cadence. Free, runs on this phone.
+          {t('fitImport.intro')}
         </AppText>
         <Button
-          label={running ? 'Importing' : 'Choose a .fit file'}
+          label={running ? t('fitImport.importing') : t('fitImport.choose')}
           variant="primary"
           icon="folder-open"
           onPress={() => void pick()}
@@ -47,7 +49,7 @@ export function FitImportSection() {
             <Notice
               icon="checkmark-circle"
               action={{
-                label: 'Open workout',
+                label: t('fitImport.openWorkout'),
                 onPress: () => router.push({ pathname: '/workouts/[id]', params: { id: String(result.workoutId) } }),
               }}>
               {result.message}
@@ -56,12 +58,11 @@ export function FitImportSection() {
             <Notice tone="danger">{result.message}</Notice>
           )
         ) : null}
-        <Details title="How does it work?">
-          {`Works with the .fit files of iGPSPORT, Garmin, Wahoo, Bryton, Magene and XOSS. ${
-            isIos
-              ? 'In Files or the app that has the file, choose Share, then JoyoFit.'
-              : 'In your file manager or the bike computer app, open the .fit file with JoyoFit, or share it to JoyoFit.'
-          } Importing the same file twice adds nothing, and a file that overlaps a workout your watch already recorded is skipped: the workout from the watch is kept. Imported workouts count for strain, readiness and trends, stay on this phone and are not uploaded to the cloud, written to ${HEALTH_APP} or sent to Strava on their own.`}
+        <Details title={t('fitImport.howTitle')}>
+          {t('fitImport.details', {
+            share: isIos ? t('fitImport.shareIos') : t('fitImport.shareAndroid'),
+            app: HEALTH_APP,
+          })}
         </Details>
       </Section>
     </>

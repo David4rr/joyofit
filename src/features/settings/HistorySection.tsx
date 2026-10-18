@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Details } from '@/components/Details';
@@ -11,15 +13,16 @@ import { useWatch } from '@/state/WatchProvider';
  * that was bound before or a pull that was cut short. Stored rows are kept and updated, never duplicated.
  */
 export function HistorySection() {
+  const { t } = useTranslation('settings');
   const { linkState, device, error, syncFullHistory } = useWatch();
   const syncing = linkState === 'syncing';
   const canSync = linkState === 'connected' && device !== null;
 
   return (
-    <Section title="Watch history" icon="time" tint="heart">
+    <Section title={t('history.title')} icon="time" tint="heart">
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <Button
-        label={syncing ? 'Fetching' : 'Fetch all history from watch'}
+        label={syncing ? t('history.fetching') : t('history.fetch')}
         variant="secondary"
         icon="cloud-download-outline"
         onPress={() => void syncFullHistory()}
@@ -28,13 +31,11 @@ export function HistorySection() {
       />
       {!canSync && !syncing ? (
         <AppText variant="caption" muted>
-          Connect your watch first.
+          {t('history.connectFirst')}
         </AppText>
       ) : null}
       <Details>
-        {isIos
-          ? 'Pulls every day of steps, heart rate, sleep and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept.'
-          : 'Pulls every day of steps, heart rate, sleep, HRV and workouts the watch still holds, not only what is new since the last sync. It can take a few minutes. Data already on the phone is kept.'}
+        {isIos ? t('history.detailsIos') : t('history.details')}
       </Details>
     </Section>
   );

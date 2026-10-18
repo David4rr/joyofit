@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -17,11 +18,13 @@ import { HuaweiWear, type HealthConnectStatus } from '@/wear';
 /** The same store, by the name each platform uses. */
 const STORE = isIos ? 'Apple Health' : 'Health Connect';
 
-const AVAILABILITY_TEXT: Record<HealthConnectStatus['availability'], string> = {
-  available: 'Available',
-  'update-required': `Update the ${STORE} app first`,
-  unavailable: 'Not available on this phone',
-};
+const AVAILABILITY_KEY = {
+  available: 'healthConnect.available',
+  'update-required': 'healthConnect.updateRequired',
+  unavailable: 'healthConnect.unavailable',
+} as const satisfies Record<HealthConnectStatus['availability'], string>;
+
+type Busy = 'asking' | 'switchingOff' | 'writing' | 'opening';
 
 /** Types written to Health Connect; the count shown next to the permission state. */
 const RECORD_TYPE_COUNT = 8;
@@ -32,9 +35,10 @@ const RECORD_TYPE_COUNT = 8;
  * asks for the write permissions, flips the switch and starts the backfill.
  */
 export function HealthConnectSection() {
+  const { t } = useTranslation(['settings', 'common']);
   const { dataVersion } = useWatch();
   const [status, setStatus] = useState<HealthConnectStatus | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState<Busy | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
@@ -45,7 +49,7 @@ export function HealthConnectSection() {
   // A finished sync may have exported, so re-read the last export time.
   useEffect(refresh, [refresh, dataVersion]);
 
-  const run = async (what: string, action: () => Promise<void>) => {
+  const run = async (what: Busy, action: () => Promise<void>) => {
     setBusy(what);
     setError(null);
     try {
@@ -59,17 +63,17 @@ export function HealthConnectSection() {
   };
 
   const toggle = (next: boolean) =>
-    run(next ? 'Asking for permission' : 'Switching off', async () => {
+    run(next ? 'asking' : 'switchingOff', async () => {
       if (!next) {
         setStatus(await HuaweiWear.setHealthConnectEnabled(false));
         return;
       }
       const afterRequest = await HuaweiWear.requestHealthConnectPermissions();
       if (afterRequest.granted.length === 0) {
-        setError(`No write permission was granted. Allow JoyoFit in ${STORE} to turn this on.`);
+        setError(t('healthConnect.noWrite', { store: STORE }));
         return;
       }
-      setBusy('Writing stored data');
+      setBusy('writing');
       setStatus(await HuaweiWear.setHealthConnectEnabled(true));
     });
 
@@ -80,29 +84,33 @@ export function HealthConnectSection() {
     <Section title={STORE} icon="heart" tint="heart">
       <SwitchRow
         icon="heart"
-        label={`Write to ${STORE}`}
+        label={t('healthConnect.write', { store: STORE })}
         value={status?.enabled ?? false}
         onValueChange={toggle}
         disabled={busy != null || status == null || unavailable}
       />
       {busy ? (
         <AppText variant="caption" muted>
-          {busy}...
+          {t(`healthConnect.busy.${busy}`)}...
         </AppText>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      {status?.lastError ? <Notice tone="danger">Last export failed: {status.lastError}</Notice> : null}
+      {status?.lastError ? <Notice tone="danger">{t('healthConnect.lastFailed', { error: status.lastError })}</Notice> : null}
       <PairGrid>
-        <Pair label={STORE} value={status ? AVAILABILITY_TEXT[status.availability] : null} />
+        <Pair label={STORE} value={status ? t(AVAILABILITY_KEY[status.availability], { store: STORE }) : null} />
         <Pair
-          label="Write permission"
-          value={status && !unavailable ? `${grantedCount} of ${RECORD_TYPE_COUNT} types` : null}
+          label={t('healthConnect.permission')}
+          value={
+            status && !unavailable
+              ? t('healthConnect.permissionValue', { granted: grantedCount, total: RECORD_TYPE_COUNT })
+              : null
+          }
         />
-        <Pair label="Last export" value={status?.lastExportSec ? formatDateTime(status.lastExportSec) : null} />
+        <Pair label={t('healthConnect.lastExport')} value={status?.lastExportSec ? formatDateTime(status.lastExportSec) : null} />
       </PairGrid>
       {status && status.missing.length > 0 && !unavailable && grantedCount > 0 ? (
         <AppText variant="caption" muted>
-          Not allowed, so skipped: {status.missing.join(', ')}.
+          {t('healthConnect.missing', { list: status.missing.join(', ') })}
         </AppText>
       ) : null}
       {status?.lastCounts ? (
@@ -114,11 +122,11 @@ export function HealthConnectSection() {
         <ButtonRow>
           {!unavailable && grantedCount < RECORD_TYPE_COUNT ? (
             <Button
-              label="Continue"
+              label={t('healthConnect.continue')}
               variant="secondary"
               icon="add-circle-outline"
               onPress={() =>
-                run('Asking for permission', async () => {
+                run('asking', async () => {
                   setStatus(await HuaweiWear.requestHealthConnectPermissions());
                 })
               }
@@ -127,31 +135,28 @@ export function HealthConnectSection() {
           ) : null}
           {status.enabled && !unavailable ? (
             <Button
-              label="Write all again"
+              label={t('healthConnect.writeAgain')}
               variant="secondary"
               icon="refresh"
               onPress={() =>
-                run('Writing stored data', async () => {
+                run('writing', async () => {
                   await HuaweiWear.backfillHealthConnect();
                 })
               }
               disabled={busy != null}
-              loading={busy === 'Writing stored data'}
+              loading={busy === 'writing'}
             />
           ) : null}
           <Button
-            label="Open"
+            label={t('common:actions.open')}
             variant="ghost"
             icon="open-outline"
-            onPress={() => run('Opening', () => HuaweiWear.openHealthConnectSettings())}
+            onPress={() => run('opening', () => HuaweiWear.openHealthConnectSettings())}
             disabled={busy != null}
           />
         </ButtonRow>
       ) : null}
-      <Details>
-        Sends steps, distance, calories, heart rate, blood oxygen, sleep and workouts after every sync, so other apps such
-        as JoyoRogo can read them. Turning it on also writes what is already stored.
-      </Details>
+      <Details>{t('healthConnect.details')}</Details>
     </Section>
   );
 }

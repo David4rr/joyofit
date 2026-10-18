@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,6 +8,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useAppUpdate, type UpdateBannerModel } from '@/features/updates/useAppUpdate';
+import type { TFunction } from '@/i18n';
 import { radius, spacing, useTheme } from '@/theme';
 
 /**
@@ -21,17 +23,17 @@ export function UpdateBanner() {
   return <BannerCard banner={banner} onUpdate={() => void update()} onRestart={restart} onDismiss={dismiss} />;
 }
 
-function bannerText(banner: UpdateBannerModel): { title: string; body: string | null } {
+function bannerText(banner: UpdateBannerModel, t: TFunction<'settings'>): { title: string; body: string | null } {
   if (banner.kind === 'available') {
     return {
-      title: 'New version available',
-      body: banner.failed ? "Couldn't start the update. Try again." : 'A JoyoFit update is ready to download.',
+      title: t('updates.banner.availableTitle'),
+      body: banner.failed ? t('updates.banner.failed') : t('updates.banner.availableBody'),
     };
   }
   if (banner.kind === 'downloading') {
-    return { title: 'Downloading update…', body: banner.percent === null ? null : `${banner.percent}%` };
+    return { title: t('updates.banner.downloading'), body: banner.percent === null ? null : `${banner.percent}%` };
   }
-  return { title: 'Update ready to install', body: 'Restart JoyoFit to use the new version.' };
+  return { title: t('updates.banner.readyTitle'), body: t('updates.banner.readyBody') };
 }
 
 function BannerCard({
@@ -45,6 +47,7 @@ function BannerCard({
   onRestart: () => void;
   onDismiss: () => void;
 }) {
+  const { t } = useTranslation('settings');
   const { colors, radius: radii } = useTheme();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
@@ -59,7 +62,7 @@ function BannerCard({
     }).start();
   }, [enter, reduced]);
 
-  const { title, body } = bannerText(banner);
+  const { title, body } = bannerText(banner, t);
 
   return (
     <View pointerEvents="box-none" style={[styles.anchor, { paddingTop: insets.top + spacing.sm }]}>
@@ -102,9 +105,9 @@ function BannerCard({
           </View>
         ) : (
           <View style={styles.actions}>
-            <Button label="Later" variant="ghost" onPress={onDismiss} />
+            <Button label={t('updates.banner.later')} variant="ghost" onPress={onDismiss} />
             <Button
-              label={banner.kind === 'ready' ? 'Restart to update' : 'Update'}
+              label={banner.kind === 'ready' ? t('updates.restart') : t('updates.banner.update')}
               variant="primary"
               onPress={banner.kind === 'ready' ? onRestart : onUpdate}
             />

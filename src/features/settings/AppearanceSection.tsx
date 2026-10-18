@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -37,9 +38,10 @@ function ThemeSwatch({ theme, systemScheme }: { theme: Theme; systemScheme: Sche
 
 /** Theme picker: one row per theme with a preview swatch. The choice applies at once and is remembered. */
 export function AppearanceSection() {
+  const { t } = useTranslation(['settings', 'common']);
   const { theme: active, systemScheme, colors, setThemeId } = useTheme();
   return (
-    <Section title="Theme" icon="color-palette">
+    <Section title={t('appearance.title')} icon="color-palette">
       <View style={styles.list} accessibilityRole="radiogroup">
         {THEMES.map((theme) => {
           const selected = theme.id === active.id;
@@ -47,7 +49,7 @@ export function AppearanceSection() {
             <PressableScale
               key={theme.id}
               accessibilityRole="radio"
-              accessibilityLabel={`${theme.name}. ${theme.tagline}`}
+              accessibilityLabel={`${t(`common:theme.${theme.id}.name`)}. ${t(`common:theme.${theme.id}.tagline`)}`}
               accessibilityState={{ selected }}
               scaleTo={0.985}
               onPress={() => setThemeId(theme.id)}
@@ -61,9 +63,9 @@ export function AppearanceSection() {
               ]}>
               <ThemeSwatch theme={theme} systemScheme={systemScheme} />
               <View style={styles.text}>
-                <AppText variant="bodyStrong">{theme.name}</AppText>
+                <AppText variant="bodyStrong">{t(`common:theme.${theme.id}.name`)}</AppText>
                 <AppText variant="caption" muted>
-                  {theme.tagline}
+                  {t(`common:theme.${theme.id}.tagline`)}
                 </AppText>
               </View>
               <Ionicons
@@ -75,10 +77,7 @@ export function AppearanceSection() {
           );
         })}
       </View>
-      <Details title="About themes">
-        A theme changes colors, corner shapes and the size of the big numbers. Classic and Ocean follow the light or
-        dark setting of your phone; Sport is always dark.
-      </Details>
+      <Details title={t('appearance.aboutTitle')}>{t('appearance.details')}</Details>
     </Section>
   );
 }

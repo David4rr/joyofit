@@ -1,5 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -25,6 +26,7 @@ const HEALTH_APP = isIos ? 'Apple Health' : 'Health Connect';
  * phone: they are not sent to the cloud, Apple Health / Health Connect or Strava.
  */
 export function HuaweiImportSection() {
+  const { t } = useTranslation(['settings', 'common']);
   const { file, password, setPassword, running, progress, summary, error, pick, select, start, cancel } = useHuaweiImport();
   const { uri } = useLocalSearchParams<{ uri?: string }>();
   const handled = useRef<string | null>(null);
@@ -38,55 +40,44 @@ export function HuaweiImportSection() {
 
   return (
     <>
-      <Section title="Request your data from Huawei" icon="mail" tint="heart">
+      <Section title={t('huaweiImport.requestTitle')} icon="mail" tint="heart">
         <AppText variant="caption" muted>
-          Heart rate, sleep, steps and workouts from your Huawei Health account. Free, runs on this phone, sends nothing.
+          {t('huaweiImport.requestIntro')}
         </AppText>
         <Button
-          label="Request your data from Huawei"
+          label={t('huaweiImport.requestTitle')}
           variant="secondary"
           icon="open"
           onPress={() => void Linking.openURL(REQUEST_URL_SEA)}
         />
-        <Details title="How to request it (6 steps)">
+        <Details title={t('huaweiImport.howTitle')}>
         <View style={styles.steps}>
-          <Step n={1}>Tap the button below and sign in with your Huawei ID.</Step>
-          <Step n={2}>Choose Request your data and tick Health data.</Step>
-          <Step n={3}>
-            Set a password for the ZIP and remember it: Huawei cannot show it again and the file does not open without it.
-          </Step>
-          <Step n={4}>
-            Wait for the email from Huawei. This can take up to 7 days, and the link works for 21 days. Large exports come
-            as several ZIP parts of up to 5 GB each.
-          </Step>
-          <Step n={5}>
-            Before you unbind the watch from Huawei Health, open Huawei Health and pull down to sync once more. What is
-            only on the watch and not yet in your account is lost when you unbind it.
-          </Step>
+          <Step n={1}>{t('huaweiImport.steps.1')}</Step>
+          <Step n={2}>{t('huaweiImport.steps.2')}</Step>
+          <Step n={3}>{t('huaweiImport.steps.3')}</Step>
+          <Step n={4}>{t('huaweiImport.steps.4')}</Step>
+          <Step n={5}>{t('huaweiImport.steps.5')}</Step>
           <Step n={6}>
-            {isIos
-              ? 'Download the ZIP (on iPhone it ends up in the Files app), then choose it below and enter the password.'
-              : 'Download the ZIP, then tap it in your email or Files app and choose JoyoFit, or choose it below. Enter the password.'}
+            {isIos ? t('huaweiImport.steps.6Ios') : t('huaweiImport.steps.6Android')}
           </Step>
         </View>
         <AppText variant="caption" muted>
-          An account outside South-East Asia: use {REQUEST_HOST_OTHER} instead. If the page fails for an Indonesian
-          account, the button above is the one that works; the in-app Privacy Center does not.
+          {t('huaweiImport.otherRegion', { host: REQUEST_HOST_OTHER })}
         </AppText>
         </Details>
       </Section>
 
-      <Section title="Import the file" icon="document" tint="heart">
+      <Section title={t('huaweiImport.importTitle')} icon="document" tint="heart">
         <Button
-          label={file ? 'Choose another file' : 'Choose the ZIP file'}
+          label={file ? t('huaweiImport.chooseAnother') : t('huaweiImport.choose')}
           variant="secondary"
           icon="folder-open"
           onPress={() => void pick()}
           disabled={running}
         />
-        {file ? <KeyValue icon="document" label="File" value={file.name} /> : null}
+        {file ? <KeyValue icon="document" label={t('huaweiImport.file')} value={file.name} /> : null}
         <Field
-          label="ZIP password"
+          label={t('huaweiImport.password')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -102,21 +93,18 @@ export function HuaweiImportSection() {
             <ProgressBar fraction={progress?.fraction ?? 0} />
             <AppText variant="caption" muted>
               {progress && progress.fileCount > 0
-                ? `File ${progress.fileIndex} of ${progress.fileCount}${progress.fileName ? `: ${progress.fileName}` : ''}`
-                : 'Opening the ZIP'}
+                ? progress.fileName
+                  ? t('huaweiImport.fileProgressNamed', { index: progress.fileIndex, count: progress.fileCount, name: progress.fileName })
+                  : t('huaweiImport.fileProgress', { index: progress.fileIndex, count: progress.fileCount })
+                : t('huaweiImport.opening')}
             </AppText>
             {progress ? <Counts summary={progress.summary} /> : null}
-            <Button label="Cancel" variant="secondary" icon="close" onPress={cancel} />
+            <Button label={t('common:actions.cancel')} variant="secondary" icon="close" onPress={cancel} />
           </>
         ) : (
-          <Button label="Import" variant="primary" icon="cloud-download" onPress={() => void start()} disabled={!ready} />
+          <Button label={t('huaweiImport.import')} variant="primary" icon="cloud-download" onPress={() => void start()} disabled={!ready} />
         )}
-        <Details>
-          The password is the one you set when you requested the data; it is only kept while this screen is open. Data
-          the watch already stored on this phone is never replaced. Importing the same file twice adds nothing the second
-          time. Imported days stay on this phone: they are not uploaded to the cloud, written to {HEALTH_APP} or sent to
-          Strava.
-        </Details>
+        <Details>{t('huaweiImport.details', { app: HEALTH_APP })}</Details>
       </Section>
 
       {summary ? <Summary summary={summary} /> : null}
@@ -165,53 +153,54 @@ function ProgressBar({ fraction }: { fraction: number }) {
 
 /** The counts that move while the import runs. */
 function Counts({ summary }: { summary: HuaweiImportSummary }) {
+  const { t } = useTranslation('settings');
   return (
     <>
       <View style={styles.grid}>
-        <Pair label="Workouts added" value={formatCount(summary.workoutsAdded)} />
-        <Pair label="Heart rate readings" value={formatCount(summary.heartRateReadings)} />
-        <Pair label="Sleep stages found" value={formatCount(summary.sleepSegmentsFound)} />
+        <Pair label={t('huaweiImport.workoutsAdded')} value={formatCount(summary.workoutsAdded)} />
+        <Pair label={t('huaweiImport.heartRate')} value={formatCount(summary.heartRateReadings)} />
+        <Pair label={t('huaweiImport.sleepFound')} value={formatCount(summary.sleepSegmentsFound)} />
       </View>
     </>
   );
 }
 
 function Summary({ summary }: { summary: HuaweiImportSummary }) {
+  const { t } = useTranslation('settings');
   const range =
     summary.oldestSec !== null && summary.newestSec !== null
-      ? `${formatDateTime(summary.oldestSec)} to ${formatDateTime(summary.newestSec)}`
+      ? t('huaweiImport.range', { from: formatDateTime(summary.oldestSec), to: formatDateTime(summary.newestSec) })
       : null;
   const skippedWorkouts = summary.workoutsFound - summary.workoutsAdded;
   const skippedSleep = summary.sleepSegmentsFound - summary.sleepSegmentsAdded;
   return (
-    <Section title={summary.cancelled ? 'Import stopped' : 'Import finished'} icon="checkmark-circle" tint="heart">
+    <Section title={summary.cancelled ? t('huaweiImport.stopped') : t('huaweiImport.finished')} icon="checkmark-circle" tint="heart">
       {summary.cancelled ? (
         <Notice icon="information-circle">
-          You stopped the import. What was read so far is saved; import the same file again to continue.
+          {t('huaweiImport.stoppedNotice')}
         </Notice>
       ) : null}
-      <KeyValue icon="calendar" label="History read" value={range} />
+      <KeyValue icon="calendar" label={t('huaweiImport.historyRead')} value={range} />
       <View style={styles.grid}>
-        <Pair label="Workouts added" value={formatCount(summary.workoutsAdded)} />
-        <Pair label="Sleep stages added" value={formatCount(summary.sleepSegmentsAdded)} />
-        <Pair label="Heart rate readings" value={formatCount(summary.heartRateReadings)} />
-        <Pair label="Resting HR readings" value={formatCount(summary.restingHeartRateReadings)} />
-        <Pair label="Blood oxygen readings" value={formatCount(summary.spo2Readings)} />
-        <Pair label="Stress readings added" value={formatCount(summary.stressAdded)} />
-        <Pair label="Minutes with data" value={formatCount(summary.minutesWritten)} />
-        {skippedWorkouts > 0 ? <Pair label="Workouts already here" value={formatCount(skippedWorkouts)} /> : null}
-        {skippedSleep > 0 ? <Pair label="Sleep skipped (watch data kept)" value={formatCount(skippedSleep)} /> : null}
+        <Pair label={t('huaweiImport.workoutsAdded')} value={formatCount(summary.workoutsAdded)} />
+        <Pair label={t('huaweiImport.sleepAdded')} value={formatCount(summary.sleepSegmentsAdded)} />
+        <Pair label={t('huaweiImport.heartRate')} value={formatCount(summary.heartRateReadings)} />
+        <Pair label={t('huaweiImport.restingHr')} value={formatCount(summary.restingHeartRateReadings)} />
+        <Pair label={t('huaweiImport.spo2')} value={formatCount(summary.spo2Readings)} />
+        <Pair label={t('huaweiImport.stressAdded')} value={formatCount(summary.stressAdded)} />
+        <Pair label={t('huaweiImport.minutes')} value={formatCount(summary.minutesWritten)} />
+        {skippedWorkouts > 0 ? <Pair label={t('huaweiImport.alreadyHere')} value={formatCount(skippedWorkouts)} /> : null}
+        {skippedSleep > 0 ? <Pair label={t('huaweiImport.sleepSkipped')} value={formatCount(skippedSleep)} /> : null}
         {summary.badRecords + summary.rejectedSamples > 0 ? (
-          <Pair label="Unreadable skipped" value={formatCount(summary.badRecords + summary.rejectedSamples)} />
+          <Pair label={t('huaweiImport.unreadable')} value={formatCount(summary.badRecords + summary.rejectedSamples)} />
         ) : null}
       </View>
       {summary.filesFailed > 0 ? (
         <Notice tone="danger">
-          {summary.filesFailed === 1 ? 'One file' : `${summary.filesFailed} files`} in the ZIP could not be read. The rest
-          was imported; download the export again to fill the gap.
+          {t('huaweiImport.filesFailed', { count: summary.filesFailed })}
         </Notice>
       ) : null}
-      <Details>Calories per minute and weight are not imported. Workout calories are.</Details>
+      <Details>{t('huaweiImport.summaryDetails')}</Details>
     </Section>
   );
 }

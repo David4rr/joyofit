@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Details } from '@/components/Details';
 import { KeyValue } from '@/components/KeyValue';
@@ -16,6 +17,7 @@ import { HuaweiWear } from '@/wear';
  * shows whether iOS shares them. Which apps appear is decided in iPhone Settings > Notifications.
  */
 export function NotificationsSectionIos() {
+  const { t } = useTranslation('settings');
   const { linkState } = useWatch();
   const connected = linkState === 'connected' || linkState === 'syncing';
   const [access, setAccess] = useState(() => HuaweiWear.getNotificationAccess());
@@ -36,26 +38,28 @@ export function NotificationsSectionIos() {
   };
 
   return (
-    <Section title="Notifications" icon="notifications">
+    <Section title={t('notifications.title')} icon="notifications">
       <KeyValue
         icon="phone-portrait"
-        label="iPhone shares them with watch"
-        value={!connected ? 'Connect the watch to check' : access.granted ? 'Yes' : 'Not yet'}
+        label={t('notifications.ios.shared')}
+        value={!connected
+            ? t('notifications.ios.connectToCheck')
+            : access.granted
+              ? t('notifications.ios.yes')
+              : t('notifications.ios.notYet')}
       />
       {connected && !access.granted ? (
-        <Notice>iPhone Settings, Bluetooth, tap i next to the watch, turn on Show Notifications. Allow it if iOS asks.</Notice>
+        <Notice>{t('notifications.ios.howTo')}</Notice>
       ) : null}
       <SwitchRow
         icon="notifications"
-        label="Show notifications on the watch"
+        label={t('notifications.ios.show')}
         value={access.enabled}
         onValueChange={(enabled) => void toggle(enabled)}
         disabled={!connected}
       />
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      <Details>
-        {"iOS does not let JoyoFit read or forward your notifications. The watch reads them from the iPhone itself, over Bluetooth, when iOS allows it; JoyoFit never sees their content. Which apps appear is chosen in iPhone Settings, Notifications.\n\nThe switch changes the watch's own notification setting, the one Huawei Health sets. It is left alone until you change it here.\n\nThe morning summary notification is not available on iOS yet."}
-      </Details>
+      <Details>{t('notifications.ios.details')}</Details>
     </Section>
   );
 }

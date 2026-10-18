@@ -4,6 +4,7 @@ import { File } from 'expo-file-system';
 import { useCallback, useState } from 'react';
 
 import { errorMessage } from '@/format';
+import { t } from '@/i18n';
 import { HuaweiWear, type HuaweiImportProgressEvent, type HuaweiImportSummary } from '@/wear';
 
 export interface PickedExport {
@@ -18,11 +19,11 @@ export function importErrorMessage(e: unknown): string {
   const code = typeof e === 'object' && e !== null && 'code' in e ? String(e.code) : '';
   switch (code) {
     case 'ERR_IMPORT_PASSWORD':
-      return 'That password did not open the ZIP. Use the one you set when you requested your data from Huawei.';
+      return t('settings:huaweiImport.errors.password');
     case 'ERR_IMPORT_FORMAT':
-      return 'This file is not a Huawei Health export. Pick the ZIP from the Huawei email, the one with your Health data.';
+      return t('settings:huaweiImport.errors.format');
     case 'ERR_BUSY':
-      return 'An import is already running.';
+      return t('settings:huaweiImport.errors.busy');
     default:
       return errorMessage(e);
   }
@@ -59,7 +60,7 @@ export function useHuaweiImport() {
 
   /** Preselects a ZIP another app opened with or shared to JoyoFit; the password is still asked for. */
   const select = useCallback((uri: string) => {
-    let name = 'Huawei export.zip';
+    let name = 'Huawei export.zip'; // i18n-ok: fallback file name
     let size: number | null = null;
     try {
       const f = new File(uri);

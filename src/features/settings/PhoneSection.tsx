@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, PermissionsAndroid, type Permission } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -33,18 +34,18 @@ export function PhoneSection() {
 
 /** What iOS does not allow, said once per feature instead of three switches that cannot work. */
 function PhoneSectionIos() {
+  const { t } = useTranslation('settings');
   return (
-    <Section title="Phone and calls" icon="call">
-      <Notice icon="locate">Find my phone from the watch: not possible on iOS.</Notice>
-      <Notice icon="call">Answering or rejecting calls from the watch: not possible on iOS.</Notice>
-      <Details>
-        {"Find my phone: iOS suspends JoyoFit when it is not on screen and does not let it ring the phone on request, so the watch button cannot find this iPhone. Use Find My on another Apple device or iCloud.com instead.\n\nCalls: iOS does not let an app see, answer or reject phone calls. If the watch shows incoming calls at all, it does so itself through the notifications iOS shares with it (Notifications settings)."}
-      </Details>
+    <Section title={t('phone.title')} icon="call">
+      <Notice icon="locate">{t('phone.iosFind')}</Notice>
+      <Notice icon="call">{t('phone.iosCalls')}</Notice>
+      <Details>{t('phone.iosDetails')}</Details>
     </Section>
   );
 }
 
 function PhoneSectionAndroid() {
+  const { t } = useTranslation('settings');
   const [features, setFeatures] = useState(() => HuaweiWear.getPhoneFeatures());
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
@@ -83,7 +84,7 @@ function PhoneSectionAndroid() {
         );
         if (!result.granted) {
           setBlocked(result.blocked);
-          setError('Phone state permission is required to see incoming calls.');
+          setError(t('phone.errPhoneState'));
           return;
         }
       }
@@ -97,7 +98,7 @@ function PhoneSectionAndroid() {
         const result = await ask([PERMISSIONS.ANSWER_PHONE_CALLS], []);
         if (!result.granted) {
           setBlocked(result.blocked);
-          setError('Permission to answer phone calls is required.');
+          setError(t('phone.errAnswer'));
           return;
         }
       }
@@ -105,42 +106,42 @@ function PhoneSectionAndroid() {
     });
 
   return (
-    <Section title="Phone and calls" icon="call">
+    <Section title={t('phone.title')} icon="call">
       <SwitchRow
         icon="locate"
-        label="Find my phone from the watch"
+        label={t('phone.findPhone')}
         value={features.findPhoneEnabled}
         onValueChange={(enabled) => run(() => HuaweiWear.setFindPhoneEnabled(enabled))}
       />
       <SwitchRow
         icon="call"
-        label="Show incoming calls on the watch"
+        label={t('phone.showCalls')}
         value={features.callsEnabled}
         onValueChange={toggleCalls}
       />
       <SwitchRow
         icon="call-outline"
-        label="Answer and reject calls from the watch"
+        label={t('phone.callControl')}
         value={features.callControlEnabled}
         onValueChange={toggleCallControl}
       />
       <PairGrid>
-        <Pair label="Phone state" value={features.readPhoneState ? 'Granted' : 'Not granted'} />
-        <Pair label="Answer phone calls" value={features.answerPhoneCalls ? 'Granted' : 'Not granted'} />
+        <Pair label={t('phone.phoneState')} value={features.readPhoneState ? t('phone.granted') : t('phone.notGranted')} />
+        <Pair label={t('phone.answerCalls')} value={features.answerPhoneCalls ? t('phone.granted') : t('phone.notGranted')} />
         {features.callerIdSupported ? (
           <>
-            <Pair label="Caller number (call log)" value={features.readCallLog ? 'Granted' : 'Not granted'} />
-            <Pair label="Contact names" value={features.readContacts ? 'Granted' : 'Not granted'} />
+            <Pair label={t('phone.callLog')} value={features.readCallLog ? t('phone.granted') : t('phone.notGranted')} />
+            <Pair label={t('phone.contacts')} value={features.readContacts ? t('phone.granted') : t('phone.notGranted')} />
           </>
         ) : null}
-        <Pair label="Phone GPS (outdoor workouts)" value={gps === null ? null : gps ? 'Granted' : 'Not granted'} />
+        <Pair label={t('phone.gps')} value={gps === null ? null : gps ? t('phone.granted') : t('phone.notGranted')} />
       </PairGrid>
       {error ? <Notice tone="danger">{error}</Notice> : null}
       {gps === false || blocked ? (
         <ButtonRow>
           {gps === false ? (
             <Button
-              label="Allow location"
+              label={t('phone.allowLocation')}
               variant="secondary"
               icon="location"
               onPress={() =>
@@ -154,7 +155,7 @@ function PhoneSectionAndroid() {
           ) : null}
           {blocked ? (
             <Button
-              label="App settings"
+              label={t('phone.appSettings')}
               variant="secondary"
               icon="settings-outline"
               onPress={() => void Linking.openSettings()}
@@ -163,10 +164,7 @@ function PhoneSectionAndroid() {
         </ButtonRow>
       ) : null}
       <Details>
-        {(features.callerIdSupported
-          ? 'Without call log access Android hides the caller number. Without contacts access you see the number instead of the name.'
-          : 'The watch shows that the phone is ringing. This version of JoyoFit does not read your call log or contacts, so it cannot show who is calling.') +
-          '\n\nFind my phone: the watch button rings this phone loudly, even with the app closed. Stop it on the watch or from the notification.'}
+        {`${features.callerIdSupported ? t('phone.callerIdDetails') : t('phone.noCallerIdDetails')}\n\n${t('phone.findDetails')}`}
       </Details>
     </Section>
   );

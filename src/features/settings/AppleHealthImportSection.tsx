@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -16,33 +17,32 @@ import type { HuaweiImportSummary } from '@/wear';
  * the phone: they are not uploaded, written back to Apple Health or sent to Strava.
  */
 export function AppleHealthImportSection() {
+  const { t } = useTranslation(['settings', 'common']);
   const { running, progress, summary, error, start, cancel } = useAppleHealthImport();
 
   return (
     <>
-      <Section title="Import history from Apple Health" icon="heart" tint="heart">
+      <Section title={t('appleImport.title')} icon="heart" tint="heart">
         <AppText variant="caption" muted>
-          Huawei Health on iPhone saves your steps, heart rate, sleep, blood oxygen and workouts in Apple Health. Bring that
-          history into JoyoFit once. JoyoFit asks for permission to read Apple Health when you tap the button below, reads
-          it on this phone and sends nothing anywhere.
+          {t('appleImport.intro')}
         </AppText>
         {error ? <Notice tone="danger">{error}</Notice> : null}
         {running ? (
           <>
             <ProgressBar fraction={progress?.fraction ?? 0} />
             <AppText variant="caption" muted>
-              {progress ? `Reading Apple Health: ${Math.round(progress.fraction * 100)}%` : 'Waiting for permission'}
+              {progress
+                ? t('appleImport.reading', { percent: Math.round(progress.fraction * 100) })
+                : t('appleImport.waiting')}
             </AppText>
             {progress ? <Counts summary={progress.summary} /> : null}
-            <Button label="Cancel" variant="secondary" icon="close" onPress={cancel} />
+            <Button label={t('common:actions.cancel')} variant="secondary" icon="close" onPress={cancel} />
           </>
         ) : (
-          <Button label="Import history from Apple Health" variant="primary" icon="heart" onPress={() => void start()} />
+          <Button label={t('appleImport.title')} variant="primary" icon="heart" onPress={() => void start()} />
         )}
         <AppText variant="caption" muted>
-          Data your watch already stored in JoyoFit is never replaced, and importing again adds nothing new. Data JoyoFit
-          itself saved to Apple Health is skipped. Imported days stay on this phone: they are not uploaded to the cloud,
-          written back to Apple Health or sent to Strava.
+          {t('appleImport.footer')}
         </AppText>
       </Section>
 
@@ -65,51 +65,52 @@ function ProgressBar({ fraction }: { fraction: number }) {
 }
 
 function Counts({ summary }: { summary: HuaweiImportSummary }) {
+  const { t } = useTranslation(['settings', 'common']);
   return (
     <>
-      <KeyValue label="Workouts added" value={formatCount(summary.workoutsAdded)} />
-      <KeyValue label="Heart rate readings" value={formatCount(summary.heartRateReadings)} />
-      <KeyValue label="Sleep stages found" value={formatCount(summary.sleepSegmentsFound)} />
+      <KeyValue label={t('appleImport.workoutsAdded')} value={formatCount(summary.workoutsAdded)} />
+      <KeyValue label={t('appleImport.heartRate')} value={formatCount(summary.heartRateReadings)} />
+      <KeyValue label={t('appleImport.sleepFound')} value={formatCount(summary.sleepSegmentsFound)} />
     </>
   );
 }
 
 function Summary({ summary }: { summary: HuaweiImportSummary }) {
+  const { t } = useTranslation(['settings', 'common']);
   const range =
     summary.oldestSec !== null && summary.newestSec !== null
-      ? `${formatDateTime(summary.oldestSec)} to ${formatDateTime(summary.newestSec)}`
+      ? t('appleImport.range', { from: formatDateTime(summary.oldestSec), to: formatDateTime(summary.newestSec) })
       : null;
   const empty = summary.oldestSec === null;
   const skippedWorkouts = summary.workoutsFound - summary.workoutsAdded;
   const skippedSleep = summary.sleepSegmentsFound - summary.sleepSegmentsAdded;
   return (
-    <Section title={summary.cancelled ? 'Import stopped' : 'Import finished'} icon="checkmark-circle" tint="heart">
+    <Section title={summary.cancelled ? t('appleImport.stopped') : t('appleImport.finished')} icon="checkmark-circle" tint="heart">
       {summary.cancelled ? (
         <Notice icon="information-circle">
-          You stopped the import. What was read so far is saved; import again to continue.
+          {t('appleImport.stoppedNotice')}
         </Notice>
       ) : null}
       {empty && !summary.cancelled ? (
         <Notice icon="information-circle">
-          Nothing was found. Check that JoyoFit may read Apple Health (Health, your profile picture, Apps, JoyoFit) and that
-          Huawei Health saves to Apple Health.
+          {t('appleImport.nothing')}
         </Notice>
       ) : null}
-      <KeyValue icon="calendar" label="History read" value={range} />
-      <KeyValue icon="barbell" label="Workouts added" value={formatCount(summary.workoutsAdded)} />
-      <KeyValue icon="moon" label="Sleep stages added" value={formatCount(summary.sleepSegmentsAdded)} />
-      <KeyValue icon="heart" label="Heart rate readings" value={formatCount(summary.heartRateReadings)} />
-      <KeyValue label="Resting heart rate readings" value={formatCount(summary.restingHeartRateReadings)} />
-      <KeyValue label="Blood oxygen readings" value={formatCount(summary.spo2Readings)} />
-      <KeyValue icon="footsteps" label="Minutes with data written" value={formatCount(summary.minutesWritten)} />
+      <KeyValue icon="calendar" label={t('appleImport.historyRead')} value={range} />
+      <KeyValue icon="barbell" label={t('appleImport.workoutsAdded')} value={formatCount(summary.workoutsAdded)} />
+      <KeyValue icon="moon" label={t('appleImport.sleepAdded')} value={formatCount(summary.sleepSegmentsAdded)} />
+      <KeyValue icon="heart" label={t('appleImport.heartRate')} value={formatCount(summary.heartRateReadings)} />
+      <KeyValue label={t('appleImport.restingHr')} value={formatCount(summary.restingHeartRateReadings)} />
+      <KeyValue label={t('appleImport.spo2')} value={formatCount(summary.spo2Readings)} />
+      <KeyValue icon="footsteps" label={t('appleImport.minutes')} value={formatCount(summary.minutesWritten)} />
       {skippedWorkouts > 0 ? (
-        <KeyValue label="Workouts already on the phone" value={formatCount(skippedWorkouts)} />
+        <KeyValue label={t('appleImport.alreadyOnPhone')} value={formatCount(skippedWorkouts)} />
       ) : null}
       {skippedSleep > 0 ? (
-        <KeyValue label="Sleep stages skipped (watch data kept)" value={formatCount(skippedSleep)} />
+        <KeyValue label={t('appleImport.sleepSkipped')} value={formatCount(skippedSleep)} />
       ) : null}
       {summary.rejectedSamples > 0 ? (
-        <KeyValue label="Implausible readings skipped" value={formatCount(summary.rejectedSamples)} />
+        <KeyValue label={t('appleImport.implausible')} value={formatCount(summary.rejectedSamples)} />
       ) : null}
     </Section>
   );

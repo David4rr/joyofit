@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { NavRow } from '@/components/NavRow';
 import { Notice } from '@/components/States';
@@ -14,6 +15,7 @@ import { HuaweiWear } from '@/wear';
  * Turning the switch on runs the calibration minute here; turning it off is immediate.
  */
 export function AutomaticStressRows({ connected }: { connected: boolean }) {
+  const { t } = useTranslation(['settings', 'common']);
   const router = useRouter();
   const [status, setStatus] = useState(() => HuaweiWear.getStressStatus());
   const [calibrating, setCalibrating] = useState(false);
@@ -44,18 +46,18 @@ export function AutomaticStressRows({ connected }: { connected: boolean }) {
   const hint = !connected
     ? undefined
     : unsupported
-      ? 'Not available on this watch: it does not list automatic stress, so it records no night HRV.'
+      ? t('stress.unavailable')
       : status.enabled
         ? status.lastCalibratedAt !== null
-          ? `Calibrated ${formatDateTime(status.lastCalibratedAt)}`
+          ? t('stress.calibrated', { when: formatDateTime(status.lastCalibratedAt) })
           : undefined
-        : 'Takes 1 min to calibrate.';
+        : t('stress.calibrate');
 
   return (
     <>
       <SwitchRow
         icon="pulse"
-        label="Automatic stress"
+        label={t('stress.label')}
         hint={hint}
         value={status.enabled}
         onValueChange={(value) => void change(value)}
@@ -64,20 +66,20 @@ export function AutomaticStressRows({ connected }: { connected: boolean }) {
       {calibrating ? (
         <Notice
           action={{
-            label: 'Cancel',
+            label: t('common:actions.cancel'),
             onPress: () => HuaweiWear.cancelHrvMeasurement().catch((e: unknown) => setError(errorMessage(e))),
           }}>
           {progress
-            ? `Calibrating: sit still, ${progress.secondsLeft} s left, ${progress.beats} beats so far.`
-            : 'Calibrating: sit still with the watch snug. This takes a minute.'}
+            ? t('stress.calibrating', { seconds: progress.secondsLeft, beats: progress.beats })
+            : t('stress.calibratingStart')}
         </Notice>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <NavRow
         icon="pulse"
         tint="heart"
-        title="Measure HRV"
-        subtitle="1 min, from beat-to-beat intervals"
+        title={t('stress.hrvTitle')}
+        subtitle={t('stress.hrvSubtitle')}
         onPress={() => router.push('/hrv')}
       />
     </>

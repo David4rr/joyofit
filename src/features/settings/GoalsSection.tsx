@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -11,6 +12,7 @@ import { SwitchRow } from '@/components/SwitchRow';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatDateTime } from '@/format';
+import { t } from '@/i18n';
 import { HuaweiWear, type ActivityGoals } from '@/wear';
 import { spacing } from '@/theme';
 
@@ -41,22 +43,23 @@ const toFields = (goals: ActivityGoals): Fields => ({
 
 function whole(text: string, min: number, max: number, what: string): number | string {
   const n = Number(text.trim());
-  if (!Number.isInteger(n) || n < min || n > max) return `${what} must be a whole number from ${min} to ${max}.`;
+  if (!Number.isInteger(n) || n < min || n > max) return t('settings:goals.errors.whole', { what, min, max });
   return n;
 }
 
 /** The four goals from the form, or the first message that explains what is out of range. */
 function parseFields(fields: Fields, reminders: Pick<ActivityGoals, 'remindStand' | 'remindProgress' | 'remindGoalReached'>): ActivityGoals | string {
-  const steps = whole(fields.steps, 1000, 100_000, 'Steps goal');
-  const calories = whole(fields.calories, 50, 10_000, 'Calories goal');
-  const exerciseMinutes = whole(fields.exercise, 1, 600, 'Exercise goal');
-  const standHours = whole(fields.stand, 1, 24, 'Stand goal');
+  const steps = whole(fields.steps, 1000, 100_000, t('settings:goals.errors.steps'));
+  const calories = whole(fields.calories, 50, 10_000, t('settings:goals.errors.calories'));
+  const exerciseMinutes = whole(fields.exercise, 1, 600, t('settings:goals.errors.exercise'));
+  const standHours = whole(fields.stand, 1, 24, t('settings:goals.errors.stand'));
   for (const value of [steps, calories, exerciseMinutes, standHours]) if (typeof value === 'string') return value;
   return { steps: steps as number, calories: calories as number, exerciseMinutes: exerciseMinutes as number, standHours: standHours as number, ...reminders };
 }
 
 /** Activity-ring goals and reminders, sent to the watch on save and on every connect. */
 export function GoalsSection() {
+  const { t } = useTranslation('settings');
   const [status, setStatus] = useState(() => HuaweiWear.getActivityGoals());
   const [fields, setFields] = useState<Fields>(() => toFields(HuaweiWear.getActivityGoals()));
   const [message, setMessage] = useState<{ text: string; danger: boolean } | null>(null);
@@ -75,7 +78,7 @@ export function GoalsSection() {
     setMessage(null);
     try {
       const sent = await HuaweiWear.setActivityGoals(goals);
-      setMessage({ text: sent ? 'Sent to the watch.' : 'Saved. It is sent the next time the watch connects.', danger: false });
+      setMessage({ text: sent ? t('goals.sent') : t('goals.saved'), danger: false });
     } catch (e) {
       setMessage({ text: errorMessage(e), danger: true });
     } finally {
@@ -109,63 +112,62 @@ export function GoalsSection() {
   };
 
   return (
-    <Section title="Activity goals" icon="flag">
+    <Section title={t('goals.title')} icon="flag">
       <View style={styles.row}>
         <View style={styles.cell}>
-          <Field label="Steps / day" icon="footsteps" keyboardType="number-pad" value={fields.steps} onChangeText={edit('steps')} />
+          <Field label={t('goals.fields.steps')} icon="footsteps" keyboardType="number-pad" value={fields.steps} onChangeText={edit('steps')} />
         </View>
         <View style={styles.cell}>
-          <Field label="Active kcal" icon="flame" keyboardType="number-pad" value={fields.calories} onChangeText={edit('calories')} />
+          <Field label={t('goals.fields.calories')} icon="flame" keyboardType="number-pad" value={fields.calories} onChangeText={edit('calories')} />
         </View>
       </View>
       <View style={styles.row}>
         <View style={styles.cell}>
-          <Field label="Exercise (min)" icon="timer" keyboardType="number-pad" value={fields.exercise} onChangeText={edit('exercise')} />
+          <Field label={t('goals.fields.exercise')} icon="timer" keyboardType="number-pad" value={fields.exercise} onChangeText={edit('exercise')} />
         </View>
         <View style={styles.cell}>
-          <Field label="Stand (hours)" icon="body" keyboardType="number-pad" value={fields.stand} onChangeText={edit('stand')} />
+          <Field label={t('goals.fields.stand')} icon="body" keyboardType="number-pad" value={fields.stand} onChangeText={edit('stand')} />
         </View>
       </View>
       {message ? <Notice tone={message.danger ? 'danger' : 'info'}>{message.text}</Notice> : null}
       <ButtonRow>
-        <Button label="Save and send" variant="primary" icon="send" loading={busy} onPress={save} />
-        <Button label="Huawei defaults" variant="secondary" disabled={busy} onPress={reset} />
+        <Button label={t('goals.saveAndSend')} variant="primary" icon="send" loading={busy} onPress={save} />
+        <Button label={t('goals.defaults')} variant="secondary" disabled={busy} onPress={reset} />
       </ButtonRow>
       <Divider />
       <SwitchRow
         icon="walk"
-        label="Stand reminder"
+        label={t('goals.reminders.stand')}
         value={status.remindStand}
         disabled={busy}
         onValueChange={toggle('remindStand')}
       />
       <SwitchRow
         icon="speedometer"
-        label="Progress reminder"
+        label={t('goals.reminders.progress')}
         value={status.remindProgress}
         disabled={busy}
         onValueChange={toggle('remindProgress')}
       />
       <SwitchRow
         icon="trophy"
-        label="Goal reached"
+        label={t('goals.reminders.reached')}
         value={status.remindGoalReached}
         disabled={busy}
         onValueChange={toggle('remindGoalReached')}
       />
       <PairGrid>
         <Pair
-          label="Watch accepts goals"
-          value={status.configSupported === null ? 'Not connected' : status.configSupported ? 'Yes' : 'Not in its capabilities'}
+          label={t('goals.accepts')}
+          value={status.configSupported === null
+              ? t('goals.acceptsNotConnected')
+              : status.configSupported
+                ? t('goals.acceptsYes')
+                : t('goals.acceptsNo')}
         />
-        <Pair label="Last send" value={status.lastSentAt ? formatDateTime(status.lastSentAt / 1000) : null} />
+        <Pair label={t('goals.lastSend')} value={status.lastSentAt ? formatDateTime(status.lastSentAt / 1000) : null} />
       </PairGrid>
-      <Details>
-        The three rings and the calorie goal on the watch. The steps goal is also your daily step goal in Profile and
-        goal. Sent on save and whenever the watch connects. Stand reminder: the watch nudges you when you have been
-        sitting. Progress reminder: tells you how far along the day&apos;s goals are. Goal reached: celebrates when a
-        ring closes.
-      </Details>
+      <Details>{t('goals.details')}</Details>
     </Section>
   );
 }

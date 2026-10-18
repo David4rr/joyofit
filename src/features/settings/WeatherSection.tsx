@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, PermissionsAndroid, Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -13,6 +14,7 @@ import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { forecastLine } from '@/features/settings/forecastStatus';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatClock } from '@/format';
+import type { TFunction } from '@/i18n';
 import { spacing } from '@/theme';
 import {
   HuaweiWear,
@@ -26,22 +28,9 @@ const UNITS: readonly { value: TemperatureUnit; label: string }[] = [
   { value: 'fahrenheit', label: '\u00B0F' },
 ];
 
-const MODES: readonly { value: WeatherLocationMode; label: string }[] = [
-  { value: 'current', label: 'This phone' },
-  { value: 'city', label: 'A city' },
-];
+const MODES: readonly WeatherLocationMode[] = ['current', 'city'];
 
-const INTERVALS: readonly { value: number; label: string }[] = [
-  { value: 30, label: '30 min' },
-  { value: 60, label: '1 h' },
-  { value: 120, label: '2 h' },
-  { value: 240, label: '4 h' },
-];
-
-const LOCATION_DENIED_ANDROID =
-  'Location denied: weather for this phone cannot be fetched. Allow it, or choose a city.';
-const LOCATION_DENIED_IOS =
-  'Location is off for JoyoFit. Turn it on in Settings > JoyoFit > Location (While Using the App), or choose a city.';
+const INTERVAL_MINUTES = [30, 60, 120, 240] as const;
 
 /**
  * Asks for the coarse location; true when granted. The native side also accepts the fine one.
@@ -55,13 +44,16 @@ async function ensureCoarseLocation(): Promise<boolean> {
   return (await PermissionsAndroid.request(permission)) === PermissionsAndroid.RESULTS.GRANTED;
 }
 
-/** "Sunny" from the Huawei icon name `SUNNY`, "Light rain" from `LIGHT_RAIN`. */
-function conditionLabel(icon: string): string {
+/** The condition from the Huawei icon name (`SUNNY`, `LIGHT_RAIN`); an icon with no translation reads as its name. */
+function conditionLabel(t: TFunction<'settings'>, icon: string): string {
   const text = icon.toLowerCase().replace(/_/g, ' ');
-  return text.charAt(0).toUpperCase() + text.slice(1);
+  return t(`weather.conditions.${icon}` as 'weather.conditions.UNKNOWN', {
+    defaultValue: text.charAt(0).toUpperCase() + text.slice(1),
+  });
 }
 
 export function WeatherSection() {
+  const { t } = useTranslation('settings');
   const [status, setStatus] = useState<WeatherStatus>(() => HuaweiWear.getWeatherStatus());
   const [city, setCity] = useState('');
   const [busy, setBusy] = useState(false);
@@ -90,7 +82,7 @@ export function WeatherSection() {
   const askLocation = async () => {
     if (Platform.OS === 'ios') return;
     if (!(await ensureCoarseLocation())) {
-      setMessage({ text: LOCATION_DENIED_ANDROID, danger: true });
+      setMessage({ text: t('weather.deniedAndroid'), danger: true });
     }
   };
 
@@ -98,7 +90,7 @@ export function WeatherSection() {
   const reportIosDenial = () => {
     if (Platform.OS !== 'ios' || HuaweiWear.getWeatherStatus().locationPermission) return;
     setNeedsSettings(true);
-    setMessage({ text: LOCATION_DENIED_IOS, danger: true });
+    setMessage({ text: t('weather.deniedIos'), danger: true });
   };
 
   const toggle = (enabled: boolean) =>
@@ -134,7 +126,9 @@ export function WeatherSection() {
       const place = await HuaweiWear.setWeatherCity(city);
       setCity('');
       setMessage({
-        text: `City set to ${place.name}${place.detail ? ` (${place.detail})` : ''}.`,
+        text: place.detail
+          ? t('weather.citySetDetail', { name: place.name, detail: place.detail })
+          : t('weather.citySet', { name: place.name }),
         danger: false,
       });
     });
@@ -143,10 +137,10 @@ export function WeatherSection() {
   const forecast = forecastLine(status.lastForecast);
 
   return (
-    <Section title="Weather" icon="partly-sunny">
+    <Section title={t('weather.title')} icon="partly-sunny">
       <SwitchRow
         icon="partly-sunny"
-        label="Send weather to the watch"
+        label={t('weather.send')}
         value={status.enabled}
         onValueChange={toggle}
         disabled={busy}
@@ -155,7 +149,7 @@ export function WeatherSection() {
       <View style={styles.row}>
         <View style={styles.unit}>
           <AppText variant="label" muted>
-            Unit
+            {t('weather.unit')}
           </AppText>
           <Segmented
             options={UNITS}
@@ -166,20 +160,22 @@ export function WeatherSection() {
         </View>
         <View style={styles.mode}>
           <AppText variant="label" muted>
-            Weather for
+            {t('weather.weatherFor')}
           </AppText>
-          <Segmented options={MODES} value={status.locationMode} onChange={chooseMode} disabled={busy} />
+          <Segmented
+            options={MODES.map((value) => ({ value, label: t(`weather.modes.${value}`) }))}
+            value={status.locationMode} onChange={chooseMode} disabled={busy} />
         </View>
       </View>
 
       {status.locationMode === 'current' ? (
         <>
           <PairGrid>
-            <Pair label="Location permission" value={status.locationPermission ? 'Granted' : 'Not granted'} />
+            <Pair label={t('weather.permission')} value={status.locationPermission ? t('weather.granted') : t('weather.notGranted')} />
           </PairGrid>
           {!status.locationPermission ? (
             <Button
-              label={Platform.OS === 'ios' && needsSettings ? 'Open Settings' : 'Allow location'}
+              label={Platform.OS === 'ios' && needsSettings ? t('weather.openSettings') : t('weather.allowLocation')}
               variant="secondary"
               icon="location-outline"
               onPress={allowLocation}
@@ -191,7 +187,7 @@ export function WeatherSection() {
         <>
           <PairGrid>
             <Pair
-              label="City"
+              label={t('weather.city')}
               value={
                 status.city
                   ? `${status.city.name}${status.city.detail ? `, ${status.city.detail}` : ''}`
@@ -202,8 +198,8 @@ export function WeatherSection() {
           </PairGrid>
           <Input
             icon="search"
-            accessibilityLabel="City name"
-            placeholder="City, or City, Country"
+            accessibilityLabel={t('weather.cityName')}
+            placeholder={t('weather.cityPlaceholder')}
             value={city}
             onChangeText={setCity}
             onSubmitEditing={search}
@@ -211,15 +207,18 @@ export function WeatherSection() {
             autoCorrect={false}
             returnKeyType="search"
           />
-          <Button label="Search city" variant="secondary" onPress={search} disabled={busy || !city.trim()} />
+          <Button label={t('weather.searchCity')} variant="secondary" onPress={search} disabled={busy || !city.trim()} />
         </>
       )}
 
       <AppText variant="label" muted>
-        Update interval
+        {t('weather.interval')}
       </AppText>
       <Segmented
-        options={INTERVALS}
+        options={INTERVAL_MINUTES.map((value) => ({
+          value,
+          label: value >= 60 ? t('weather.intervals.h', { count: value / 60 }) : t('weather.intervals.m', { count: value }),
+        }))}
         value={status.intervalMinutes}
         onChange={(minutes) => run(() => HuaweiWear.setWeatherIntervalMinutes(minutes))}
         disabled={busy}
@@ -227,25 +226,25 @@ export function WeatherSection() {
 
       {message ? <Notice tone={message.danger ? 'danger' : 'info'}>{message.text}</Notice> : null}
       {!connected ? (
-        <Notice>Connect the watch to send weather.</Notice>
+        <Notice>{t('weather.connect')}</Notice>
       ) : status.watchSupported === false ? (
-        <Notice tone="danger">This watch does not list the weather service.</Notice>
+        <Notice tone="danger">{t('weather.noService')}</Notice>
       ) : null}
       <Button
-        label="Update now"
+        label={t('weather.updateNow')}
         variant="primary"
         icon="refresh"
         loading={busy}
         disabled={!status.enabled || !connected}
-        onPress={() => run(async () => void (await HuaweiWear.refreshWeather()), 'Sent to the watch.')}
+        onPress={() => run(async () => void (await HuaweiWear.refreshWeather()), t('weather.sentToWatch'))}
       />
       <PairGrid>
-        <Pair label="Last sent" value={status.lastPushAt ? formatClock(status.lastPushAt) : null} />
+        <Pair label={t('weather.lastSent')} value={status.lastPushAt ? formatClock(status.lastPushAt) : null} />
         <Pair
-          label="Last weather"
+          label={t('weather.lastWeather')}
           value={
             status.lastTemperatureC !== null && status.lastCondition
-              ? `${status.lastTemperatureC}\u00B0C, ${conditionLabel(status.lastCondition)}${
+              ? `${status.lastTemperatureC}\u00B0C, ${conditionLabel(t, status.lastCondition)}${
                   status.lastLocationName ? `, ${status.lastLocationName}` : ''
                 }`
               : null
@@ -258,12 +257,7 @@ export function WeatherSection() {
         </AppText>
       ) : null}
       {status.lastError ? <Notice tone="danger">{status.lastError}</Notice> : null}
-      <Details>
-        {"Sends current weather and a forecast, on every connect and at the chosen interval. Data comes from Open-Meteo; only coordinates rounded to about 1 km go out.\n\n" +
-          (Platform.OS === 'ios'
-            ? 'This phone: uses your approximate location while the app is open. When the watch asks in the background, iOS gives the app no fresh position, so the last one is reused.'
-            : 'This phone: uses the last known coarse location. In the background Android may not give a fresh one, so the last position is reused.')}
-      </Details>
+      <Details>{`${t('weather.details')}\n\n${Platform.OS === 'ios' ? t('weather.detailsIos') : t('weather.detailsAndroid')}`}</Details>
     </Section>
   );
 }

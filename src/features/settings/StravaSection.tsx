@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -26,6 +27,7 @@ const LOGO_SIZE = { width: (437 / 37) * LOGO_HEIGHT, height: LOGO_HEIGHT } as co
  * from their detail screen.
  */
 export function StravaSection() {
+  const { t } = useTranslation('settings');
   const strava = useStrava();
   const cloud = useCloud();
   const connected = strava.settings.connectedAt !== null;
@@ -33,30 +35,25 @@ export function StravaSection() {
   return (
     <Section title="Strava" icon="fitness" tint="workouts">
       <AppText variant="caption" muted>
-        Send watch workouts to Strava. Free, no JoyoRogo Pro needed.
+        {t('strava.intro')}
       </AppText>
-      <Details title="How does it work?">
-        Workouts go to Strava with the distance, calories, heart rate and route the watch recorded. After you connect,
-        workouts that finish from then on are sent after each sync; earlier ones stay on the phone unless you send them
-        from the workout screen. JoyoFit only sends workouts to your own Strava account and never reads your Strava
-        activities.
-      </Details>
+      <Details title={t('strava.howTitle')}>{t('strava.how')}</Details>
       {!strava.configured ? (
         <Notice tone="danger">
-          No cloud server URL in this build, which Strava needs. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.
+          {t('strava.noCloud')}
         </Notice>
       ) : null}
       {strava.configured && strava.serverReady === false ? (
-        <Notice tone="danger">Strava is not set up on the JoyoFit server yet.</Notice>
+        <Notice tone="danger">{t('strava.serverNotReady')}</Notice>
       ) : null}
       {strava.error ? <Notice tone="danger">{strava.error}</Notice> : null}
       {strava.configured && !strava.signedIn && !connected ? (
         <>
           <Notice icon="person-circle">
-            Sign in with JoyoRogo first; it only keeps your Strava connection on the server.
+            {t('strava.signInFirst')}
           </Notice>
           <Button
-            label="Sign in with JoyoRogo"
+            label={t('strava.signIn')}
             variant="primary"
             icon="log-in-outline"
             onPress={() => void cloud.signIn()}
@@ -68,7 +65,7 @@ export function StravaSection() {
       {strava.configured && strava.signedIn && !connected ? (
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel="Connect with Strava"
+          accessibilityLabel={t('strava.connect')}
           accessibilityState={{ disabled: strava.busy || strava.serverReady === false, busy: strava.busy }}
           disabled={strava.busy || strava.serverReady === false}
           onPress={() => void strava.connect()}
@@ -80,17 +77,17 @@ export function StravaSection() {
         <>
           <KeyValue
             icon="checkmark-circle"
-            label="Connected, sending since"
+            label={t('strava.connectedSince')}
             value={strava.settings.connectedAt ? formatDateTime(strava.settings.connectedAt) : null}
           />
           <SwitchRow
-            label="Add fit.joyorogo.com to the description"
-            hint="Plain text, never in the title."
+            label={t('strava.addLink')}
+            hint={t('strava.addLinkHint')}
             value={strava.settings.addLink}
             onValueChange={(on) => void strava.setAddLink(on)}
           />
           <Button
-            label="Disconnect Strava"
+            label={t('strava.disconnect')}
             variant="destructive"
             icon="unlink"
             onPress={() => void strava.disconnect()}
@@ -99,7 +96,7 @@ export function StravaSection() {
           />
           {!strava.signedIn ? (
             <AppText variant="caption" muted>
-              Sign in with JoyoRogo to disconnect or send.
+              {t('strava.signInToDisconnect')}
             </AppText>
           ) : null}
         </>
@@ -107,13 +104,10 @@ export function StravaSection() {
       <Image
         source={COMPATIBLE_LOGO}
         style={[LOGO_SIZE, styles.logo]}
-        accessibilityLabel="Compatible with Strava"
+        accessibilityLabel={t('strava.compatible')}
         accessibilityIgnoresInvertColors
       />
-      <Details>
-        Compatible with Strava. JoyoFit is not made, sponsored or endorsed by Strava. What you send follows your Strava
-        privacy settings; you can remove JoyoFit any time in Strava under Settings, My Apps.
-      </Details>
+      <Details>{t('strava.legal')}</Details>
     </Section>
   );
 }

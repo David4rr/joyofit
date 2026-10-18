@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
@@ -15,6 +16,7 @@ import { formatCount, formatDateTime } from '@/format';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { SignInButtons } from '@/features/settings/SignInButtons';
 import { useCloud } from '@/state/CloudProvider';
+import type { TFunction } from '@/i18n';
 import { HuaweiWear } from '@/wear';
 
 /** Where a sideloaded build sends someone to become Founder. */
@@ -25,14 +27,17 @@ const FOUNDER_URL = 'https://joyorogo.com/pro?from=joyofit&utm_source=joyofit&ut
  */
 const CAN_LINK_TO_FOUNDER = HuaweiWear.distribution !== 'play';
 
-const workoutsText = (count: number) => `${formatCount(count)} ${count === 1 ? 'workout' : 'workouts'}`;
+type T = TFunction<'settings'>;
+
+const workoutsText = (t: T, count: number) => t('cloud.workouts', { count, n: formatCount(count) });
 
 /** What is waiting to go up: the workouts with the size they will take, and the step and sleep rows. */
-function waitingText(workouts: number, bytes: number, rows: number): string {
-  const parts: string[] = [];
-  if (workouts > 0) parts.push(`${workoutsText(workouts)}, about ${formatSize(bytes)}`);
-  if (rows > 0) parts.push(`${formatCount(rows)} step and sleep ${rows === 1 ? 'row' : 'rows'}`);
-  return parts.length > 0 ? parts.join(' and ') : 'Nothing';
+function waitingText(t: T, workouts: number, bytes: number, rows: number): string {
+  const workoutsPart =
+    workouts > 0 ? t('cloud.waiting.workouts', { workouts: workoutsText(t, workouts), size: formatSize(bytes) }) : null;
+  const rowsPart = rows > 0 ? t('cloud.waiting.rows', { count: rows, n: formatCount(rows) }) : null;
+  if (workoutsPart && rowsPart) return t('cloud.waiting.both', { first: workoutsPart, second: rowsPart });
+  return workoutsPart ?? rowsPart ?? t('cloud.waiting.nothing');
 }
 
 /**
@@ -42,6 +47,7 @@ function waitingText(workouts: number, bytes: number, rows: number): string {
  * "Wi-Fi only" keeps the automatic ones off mobile data. Without Pro nothing is uploaded and the workouts stay on the phone.
  */
 export function CloudSection() {
+  const { t } = useTranslation('settings');
   const cloud = useCloud();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingWipe, setConfirmingWipe] = useState(false);
@@ -55,10 +61,10 @@ export function CloudSection() {
   };
 
   return (
-    <Section title="Sinkron cloud" icon="cloud-upload">
+    <Section title={t('cloud.title')} icon="cloud-upload">
       {!cloud.configured ? (
         <Notice tone="danger">
-          No cloud server URL in this build. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.
+          {t('cloud.notConfigured')}
         </Notice>
       ) : null}
       {cloud.signedIn && cloud.locked ? (
@@ -66,43 +72,48 @@ export function CloudSection() {
           icon="lock-closed"
           action={
             CAN_LINK_TO_FOUNDER
-              ? { label: 'Get Pro', onPress: () => void Linking.openURL(FOUNDER_URL) }
+              ? { label: t('cloud.getPro'), onPress: () => void Linking.openURL(FOUNDER_URL) }
               : undefined
           }>
           {CAN_LINK_TO_FOUNDER
-            ? 'Your workouts stay on this phone. Cloud sync is a JoyoRogo Pro benefit. What is already in your cloud stays readable and restores onto a new phone.'
-            : 'Your workouts stay on this phone. Cloud sync is a JoyoRogo Pro benefit (get Pro in JoyoRogo). What is already in your cloud stays readable and restores onto a new phone.'}
+            ? t('cloud.lockedLink')
+            : t('cloud.locked')}
         </Notice>
       ) : null}
       {cloud.error ? <Notice tone="danger">{cloud.error}</Notice> : null}
       {cloud.progress ? (
-        <Notice icon="cloud-upload">{`Uploading ${formatCount(cloud.progress.done)} of ${formatCount(cloud.progress.total)}`}</Notice>
+        <Notice icon="cloud-upload">{t('cloud.uploading', { done: formatCount(cloud.progress.done), total: formatCount(cloud.progress.total) })}</Notice>
       ) : null}
       {cloud.refusedWorkouts > 0 ? (
         <Notice tone="danger">
-          {`${workoutsText(cloud.refusedWorkouts)} could not be uploaded. They are tried again after the next app update.${cloud.refusedError ? ` Last error: ${cloud.refusedError}` : ''}`}
+          {t('cloud.refused', { count: cloud.refusedWorkouts, n: formatCount(cloud.refusedWorkouts) })}
+          {cloud.refusedError ? ` ${t('cloud.refusedError', { error: cloud.refusedError })}` : ''}
         </Notice>
       ) : null}
       <PairGrid>
-        <Pair label="Account" value={cloud.signedIn ? cloud.email : null} wide />
+        <Pair label={t('cloud.labels.account')} value={cloud.signedIn ? cloud.email : null} wide />
         {cloud.signedIn ? (
           <>
-            <Pair label="Last sync" value={cloud.lastSyncAt ? formatDateTime(cloud.lastSyncAt) : null} />
+            <Pair label={t('cloud.labels.lastSync')} value={cloud.lastSyncAt ? formatDateTime(cloud.lastSyncAt) : null} />
             <Pair
-              label="In the cloud"
+              label={t('cloud.labels.inCloud')}
               value={
                 cloud.cloudWorkouts
-                  ? `${workoutsText(cloud.cloudWorkouts.count)}, ${formatSize(cloud.cloudWorkouts.bytes)} of ${formatSize(cloud.cloudWorkouts.quotaBytes)}`
+                  ? t('cloud.inCloudValue', {
+                      workouts: workoutsText(t, cloud.cloudWorkouts.count),
+                      used: formatSize(cloud.cloudWorkouts.bytes),
+                      quota: formatSize(cloud.cloudWorkouts.quotaBytes),
+                    })
                   : null
               }
             />
             {cloud.locked ? null : (
               <Pair
-                label="Waiting to upload"
+                label={t('cloud.labels.waiting')}
                 value={
                   cloud.pendingWorkouts == null || cloud.pendingRows == null || cloud.pendingBytes == null
                     ? null
-                    : waitingText(cloud.pendingWorkouts, cloud.pendingBytes, cloud.pendingRows)
+                    : waitingText(t, cloud.pendingWorkouts, cloud.pendingBytes, cloud.pendingRows)
                 }
                 wide
               />
@@ -114,7 +125,7 @@ export function CloudSection() {
         <>
           <ButtonRow>
             <Button
-              label="Sync now"
+              label={t('cloud.syncNow')}
               variant="primary"
               icon="sync"
               onPress={() => void syncNow()}
@@ -122,7 +133,7 @@ export function CloudSection() {
               loading={cloud.uploading}
             />
             <Button
-              label="Sign out"
+              label={t('cloud.signOut')}
               variant="secondary"
               icon="log-out-outline"
               onPress={() => void cloud.signOut()}
@@ -130,22 +141,22 @@ export function CloudSection() {
             />
           </ButtonRow>
           <SwitchRow
-            label="Wi-Fi only"
-            hint="Automatic sync waits for Wi-Fi or Ethernet, so workouts do not use mobile data."
+            label={t('cloud.wifiOnly')}
+            hint={t('cloud.wifiOnlyHint')}
             icon="wifi"
             value={cloud.wifiOnly}
             onValueChange={cloud.setWifiOnly}
           />
           <SwitchRow
-            label="Automatic sync"
-            hint="Sync after each watch sync and when you open the app."
+            label={t('cloud.autoSync')}
+            hint={t('cloud.autoSyncHint')}
             icon="sync"
             value={cloud.autoSync}
             onValueChange={cloud.setAutoSync}
             disabled={cloud.wiping}
           />
           <Button
-            label="Delete cloud data"
+            label={t('cloud.wipe')}
             variant="destructive"
             icon="cloud-offline-outline"
             loading={cloud.wiping}
@@ -154,22 +165,21 @@ export function CloudSection() {
           />
           {confirmingDelete ? (
             <Notice tone="danger" icon="trash">
-              Deletes your JoyoRogo account (the one JoyoRogo uses) and everything it holds in the cloud: your JoyoRogo
-              diary, groups and photos, and the data JoyoFit backed up. Cannot be undone; you are signed out of both
-              apps. Data on this phone stays.{withApple ? ' Apple will ask you to confirm first.' : ''}
+              {t('cloud.deleteWarning')}
+              {withApple ? ` ${t('cloud.deleteApple')}` : ''}
             </Notice>
           ) : null}
           {confirmingDelete ? (
             <ButtonRow>
               <Button
-                label="Delete permanently"
+                label={t('cloud.deletePermanently')}
                 variant="destructive"
                 icon="trash"
                 loading={cloud.deleting}
                 onPress={() => void cloud.deleteAccount().then((deleted) => deleted && setConfirmingDelete(false))}
               />
               <Button
-                label="Keep account"
+                label={t('cloud.keepAccount')}
                 variant="secondary"
                 disabled={cloud.deleting}
                 onPress={() => setConfirmingDelete(false)}
@@ -177,7 +187,7 @@ export function CloudSection() {
             </ButtonRow>
           ) : (
             <Button
-              label="Delete JoyoRogo account"
+              label={t('cloud.deleteAccount')}
               variant="destructive"
               icon="trash-outline"
               disabled={busy}
@@ -190,9 +200,9 @@ export function CloudSection() {
       )}
       <ConfirmDialog
         visible={confirmingMobile}
-        title="Sync on mobile data?"
-        message="Wi-Fi only is on and this phone is not on Wi-Fi. Syncing now can use a lot of mobile data when workouts are waiting."
-        confirmLabel="Sync now"
+        title={t('cloud.mobileTitle')}
+        message={t('cloud.mobileMessage')}
+        confirmLabel={t('cloud.syncNow')}
         onConfirm={() => {
           setConfirmingMobile(false);
           void cloud.syncNow();
@@ -201,26 +211,16 @@ export function CloudSection() {
       />
       <ConfirmDialog
         visible={confirmingWipe}
-        title="Delete cloud data?"
-        message="Removes your workouts, steps and sleep from the cloud. This phone's data and your account stay, and automatic sync is turned off so nothing is uploaded again until you turn it back on."
-        confirmLabel="Delete cloud data"
+        title={t('cloud.wipeTitle')}
+        message={t('cloud.wipeMessage')}
+        confirmLabel={t('cloud.wipe')}
         onConfirm={() => {
           setConfirmingWipe(false);
           void cloud.wipeCloud();
         }}
         onCancel={() => setConfirmingWipe(false)}
       />
-      <Details>
-        Cloud sync is part of JoyoRogo Pro. With a Pro account every workout is uploaded to your JoyoRogo account as one
-        compressed file: its GPS track, heart rate, speed, cadence and power, and the analysis the app shows, so it
-        survives a lost phone, shows on the JoyoRogo web and restores onto a new phone after you sign in. Steps, heart
-        rate, SpO2, sleep and the watch&apos;s Bluetooth address go to the JoyoFit cloud with the same account. Without
-        Pro nothing is uploaded and your workouts stay on this phone. While you are signed in the app also reads from the
-        cloud: it downloads workouts this phone does not have, and removes the ones you deleted from the cloud
-        elsewhere. JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. Delete cloud data removes your
-        workouts, steps and sleep from the cloud and keeps this phone&apos;s data and your account; Delete JoyoRogo account
-        removes the account and everything else (details at fit.joyorogo.com/privasi).
-      </Details>
+      <Details>{t('cloud.details')}</Details>
     </Section>
   );
 }

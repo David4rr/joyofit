@@ -1,19 +1,11 @@
+import { useTranslation } from 'react-i18next';
+
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
 import { Section } from '@/components/Screen';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { OTA_ENABLED, useOtaUpdate } from '@/features/updates/useOtaUpdate';
-import type { OtaPhase } from '@/features/updates/otaPolicy';
-
-const STATUS: Record<OtaPhase, string> = {
-  disabled: 'Off',
-  idle: 'Up to date',
-  checking: 'Checking…',
-  downloading: 'Downloading…',
-  ready: 'Ready, restart to apply',
-  error: "Couldn't check",
-};
 
 /**
  * About screen block for over-the-air JS updates (expo-updates, docs/ota.md): which bundle runs, whether a
@@ -21,36 +13,40 @@ const STATUS: Record<OtaPhase, string> = {
  * Expo Go, where OTA is off.
  */
 export function OtaSection() {
+  const { t } = useTranslation('settings');
   const ota = useOtaUpdate();
   if (!OTA_ENABLED) return null;
 
   const busy = ota.phase === 'checking' || ota.phase === 'downloading';
   const running =
     ota.source === 'update' && ota.updateId
-      ? `Update ${ota.updateId.slice(0, 8)}${ota.createdAt ? ` (${ota.createdAt.toISOString().slice(0, 10)})` : ''}`
+      ? t('updates.running.update', {
+          id: ota.updateId.slice(0, 8),
+          date: ota.createdAt ? ota.createdAt.toISOString().slice(0, 10) : '',
+        })
       : ota.source === 'emergency'
-        ? 'Built into the app (the last update failed to load)'
-        : 'Built into the app';
-  const status = ota.phase === 'downloading' && ota.percent !== null ? `Downloading ${ota.percent}%` : STATUS[ota.phase];
+        ? t('updates.running.emergency')
+        : t('updates.running.embedded');
+  const status = ota.phase === 'downloading' && ota.percent !== null ? t('updates.status.downloadingPercent', { percent: ota.percent })
+      : t(`updates.status.${ota.phase}`);
 
   return (
-    <Section title="Quick updates" icon="cloud-download">
+    <Section title={t('updates.title')} icon="cloud-download">
       <PairGrid>
-        <Pair label="Status" value={status} />
-        <Pair label="Channel" value={ota.channel} />
-        <Pair label="Running" value={running} wide />
-        <Pair label="Runtime" value={ota.runtimeVersion ? ota.runtimeVersion.slice(0, 8) : null} />
+        <Pair label={t('updates.labels.status')} value={status} />
+        <Pair label={t('updates.labels.channel')} value={ota.channel} />
+        <Pair label={t('updates.labels.running')} value={running} wide />
+        <Pair label={t('updates.labels.runtime')} value={ota.runtimeVersion ? ota.runtimeVersion.slice(0, 8) : null} />
       </PairGrid>
       <AppText variant="caption" muted>
-        Fixes to screens and logic arrive in the background and apply the next time JoyoFit opens. App Store and Play
-        updates still carry anything native.
+        {t('updates.hint')}
       </AppText>
       <ButtonRow>
         {ota.phase === 'ready' ? (
-          <Button label="Restart to update" variant="primary" onPress={() => void ota.restart()} />
+          <Button label={t('updates.restart')} variant="primary" onPress={() => void ota.restart()} />
         ) : null}
         <Button
-          label={busy ? 'Checking…' : 'Check for updates'}
+          label={busy ? t('updates.checking') : t('updates.check')}
           onPress={() => void ota.check()}
           loading={busy}
           disabled={busy}

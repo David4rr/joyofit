@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, Switch, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -19,11 +20,12 @@ const SKELETON_ROWS = 8;
 
 /** Per-app forwarding switches: searchable, windowed, with a sticky header. Loads the apps once. */
 export function NotificationAppList() {
+  const { t } = useTranslation('settings');
   return isIos ? (
     <EmptyState
       icon="apps"
-      title="iOS chooses the apps"
-      description="JoyoFit does not forward notifications on iOS. The watch reads them from the iPhone, and which apps appear is set in iPhone Settings, Notifications."
+      title={t('notifApps.iosTitle')}
+      description={t('notifApps.iosDesc')}
     />
   ) : (
     <NotificationAppListAndroid />
@@ -31,6 +33,7 @@ export function NotificationAppList() {
 }
 
 function NotificationAppListAndroid() {
+  const { t } = useTranslation('settings');
   const theme = useTheme();
   const { colors } = theme;
   const padding = useContentPadding(false);
@@ -106,22 +109,22 @@ function NotificationAppListAndroid() {
   const header = (
     <View style={[styles.header, { backgroundColor: colors.background }]}>
       <Field
-        label="Filter apps"
+        label={t('notifApps.filter')}
         icon="search"
         value={filter}
         onChangeText={setFilter}
-        placeholder="Filter apps"
+        placeholder={t('notifApps.filter')}
         autoCapitalize="none"
         autoCorrect={false}
         clearButtonMode="while-editing"
       />
       <View style={styles.headerRow}>
-        <Chip label="Enabled first" role="checkbox" selected={pinned !== null} onPress={toggleEnabledFirst} />
+        <Chip label={t('notifApps.enabledFirst')} role="checkbox" selected={pinned !== null} onPress={toggleEnabledFirst} />
         <AppText variant="caption" muted>
-          {apps ? `${enabledCount} of ${apps.length} on` : ''}
+          {apps ? t('notifApps.onCount', { enabled: enabledCount, total: apps.length }) : ''}
         </AppText>
       </View>
-      <Details>Apps you haven&apos;t chosen are on, except system apps.</Details>
+      <Details>{t('notifApps.hint')}</Details>
       {error ? <Notice tone="danger">{error}</Notice> : null}
     </View>
   );
@@ -162,7 +165,7 @@ function NotificationAppListAndroid() {
       )}
       ListEmptyComponent={
         apps === null && !error ? (
-          <View accessibilityLabel="Loading apps">
+          <View accessibilityLabel={t('notifApps.loading')}>
             {Array.from({ length: SKELETON_ROWS }, (_, i) => (
               <View key={i} style={[styles.row, groupedRowStyle(theme, i, SKELETON_ROWS)]}>
                 <Skeleton width={40} height={40} radius={20} />
@@ -176,9 +179,9 @@ function NotificationAppListAndroid() {
         ) : apps !== null ? (
           <EmptyState
             icon="search"
-            title="No apps match"
-            description={filter.trim() ? `Nothing matches "${filter.trim()}".` : 'No apps to show.'}
-            action={filter ? { label: 'Clear filter', onPress: () => setFilter('') } : undefined}
+            title={t('notifApps.noMatchTitle')}
+            description={filter.trim() ? t('notifApps.noMatch', { query: filter.trim() }) : t('notifApps.noApps')}
+            action={filter ? { label: t('notifApps.clear'), onPress: () => setFilter('') } : undefined}
           />
         ) : null
       }
