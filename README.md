@@ -31,6 +31,7 @@ Free:
 - **Routes.** Import GPX or TCX, draw a route on a map, send it to the watch.
 - **Health Connect and Apple Health export**, FIT file import, Huawei Health export import.
 - **Share cards**, **Social** (JoyoRogo feed and groups inside the app), **Keluarga** (family monitoring, [docs/family-monitoring.md](docs/family-monitoring.md)).
+- **Several phones, one account.** Pro keeps preferences, routes, templates, workouts, strength, coach, gear and health history in the cloud and restores them on a new phone; free data stays on the phone. See [docs/multi-device.md](docs/multi-device.md).
 - **Settings hub**, full Indonesian and English translation ([docs/i18n.md](docs/i18n.md)), route navigation, OTA updates.
 
 With a JoyoRogo Pro account:
