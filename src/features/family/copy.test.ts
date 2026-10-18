@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 
 import {
   consentAlerts,
@@ -11,8 +11,11 @@ import {
   notificationHref,
   prePermissionBody,
   prePermissionMonitoredBody,
-  SCOPE_ROWS,
+  scopeRows,
 } from '@/features/family/copy';
+import { applyLocale } from '@/i18n';
+
+afterEach(() => applyLocale('id'));
 
 describe('consent copy', () => {
   test('names the watcher in the title and the body', () => {
@@ -28,7 +31,7 @@ describe('consent copy', () => {
 
   test('every category but the required sync one starts off', () => {
     expect(CONSENT_DEFAULT_SCOPES).toEqual({ sync: true, steps: false, sleep: false, restingHr: false, spo2: false });
-    expect(SCOPE_ROWS.map((row) => row.key)).toEqual(['sync', 'steps', 'sleep', 'restingHr', 'spo2']);
+    expect(scopeRows().map((row) => row.key)).toEqual(['sync', 'steps', 'sleep', 'restingHr', 'spo2']);
   });
 });
 
@@ -97,5 +100,26 @@ describe('inviteShareMessage', () => {
   test('says who wants to look at whom', () => {
     expect(inviteShareMessage('watcher', 'u', 'C')).toContain('Aku ingin ikut melihat kabarmu');
     expect(inviteShareMessage('monitored', 'u', 'C')).toContain('melihat kabarku');
+  });
+});
+
+describe('English', () => {
+  test('consent, permission and error copy follow the language', async () => {
+    await applyLocale('en');
+    expect(consentTitle('Dina')).toBe('Let Dina see how you are doing?');
+    expect(prePermissionBody('Mom')).toBe(
+      'Turn on notifications to get updates about Mom. Notifications can be late and do not guarantee you find out right away.',
+    );
+    expect(familyErrorText(null, null)).toContain('Check your internet');
+    expect(familyErrorText(409, 'already_linked')).toBe('You are already connected.');
+    expect(familyErrorText(418, 'teapot')).toBe('Something went wrong. Try again.');
+    expect(scopeRows()[0].label).toBe('When the watch last connected, and battery');
+  });
+
+  test('the share message is built in the sender language', async () => {
+    await applyLocale('en');
+    const message = inviteShareMessage('monitored', 'https://x/keluarga/ABCD2345', 'ABCD2345');
+    expect(message).toContain('I am inviting you');
+    expect(message).toContain('enter the code ABCD2345');
   });
 });

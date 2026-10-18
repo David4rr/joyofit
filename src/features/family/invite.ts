@@ -1,4 +1,5 @@
 import type { FamilyInvitePreview } from '@/cloud/family';
+import { t } from '@/i18n';
 
 export const INVITE_CODE_LENGTH = 8;
 
@@ -13,7 +14,5 @@ export function normalizeInviteCode(input: string): string {
 
 /** Who asks what, for the screen that shows an invite before it is accepted. */
 export function previewLine(preview: Pick<FamilyInvitePreview, 'inviterName' | 'inviterRole'>): string {
-  return preview.inviterRole === 'watcher'
-    ? `${preview.inviterName} ingin ikut memantau kabarmu dari jam Huawei-mu.`
-    : `${preview.inviterName} mengundangmu memantau kabarnya dari jam Huawei-nya.`;
+  return t(preview.inviterRole === 'watcher' ? 'family:invite.previewWatcher' : 'family:invite.previewMonitored', { name: preview.inviterName });
 }

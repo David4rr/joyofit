@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -14,12 +15,13 @@ interface ProLockedRowProps {
 
 /** A setting a free account cannot change: the label, a Pro badge, and a tap that explains. It shows no switch, because the rule is not running. */
 export function ProLockedRow({ label, hint, onPress }: ProLockedRowProps) {
+  const { t } = useTranslation('family');
   const colors = useColors();
   const badge = tintColors(colors, 'workouts');
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${label}. Untuk Pro`}
+      accessibilityLabel={t('rules.proA11y', { label })}
       onPress={onPress}
       scaleTo={0.985}
       style={styles.row}>
@@ -36,7 +38,7 @@ export function ProLockedRow({ label, hint, onPress }: ProLockedRowProps) {
       <View style={[styles.badge, { backgroundColor: badge.soft }]}>
         <Ionicons name="lock-closed" size={12} color={badge.text} />
         <AppText variant="label" color={badge.text}>
-          Pro
+          {t('rules.proBadge')}
         </AppText>
       </View>
     </PressableScale>

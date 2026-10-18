@@ -1,27 +1,27 @@
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, StyleSheet } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { ProUpsell, type ProUpsellCopy } from '@/features/social/ProUpsell';
 import { overlay, spacing } from '@/theme';
 
-const COPY: ProUpsellCopy = {
-  title: 'Ini untuk JoyoRogo Pro',
-  description:
-    'Memantau sampai 5 orang, semua pemberitahuan (detak jantung, langkah, tidur, kadar oksigen), email, dan riwayat sampai 90 hari ada di JoyoRogo Pro. Yang memantau yang berlangganan: orang yang kamu pantau tidak pernah dikenai biaya. Pemberitahuan "Belum sinkron" tetap gratis.',
-  seeLabel: 'Lihat JoyoRogo Pro',
-  openLabel: 'Buka JoyoRogo',
-  mention: 'JoyoRogo Pro diatur di dalam aplikasi JoyoRogo.',
-};
-
 /** The Pro offer over the current screen, for a free account that reached a Pro-only row or limit. Back or a tap outside closes it. */
 export function ProUpsellDialog({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { t } = useTranslation(['family', 'common']);
+  const copy: ProUpsellCopy = {
+    title: t('family:upsell.title'),
+    description: t('family:upsell.description'),
+    seeLabel: t('family:upsell.see'),
+    openLabel: t('family:upsell.open'),
+    mention: t('family:upsell.mention'),
+  };
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Tutup">
+      <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={t('common:actions.close')}>
         {/* A press on the card itself must not reach the scrim. */}
         <Pressable accessibilityViewIsModal style={styles.card} onPress={() => {}}>
-          <ProUpsell copy={COPY} campaign="evergreen-family" />
-          <Button label="Tutup" onPress={onClose} />
+          <ProUpsell copy={copy} campaign="evergreen-family" />
+          <Button label={t('common:actions.close')} onPress={onClose} />
         </Pressable>
       </Pressable>
     </Modal>

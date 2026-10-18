@@ -1,17 +1,28 @@
 import type { FamilyChip, FamilyDay, FamilyLink, FamilyWatchingItem } from '@/cloud/family';
+import { fmtClock, fmtDate, fmtInt, fmtPercent, getLocale, INTL_TAG, t } from '@/i18n';
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'] as const;
+const clock24 = new Map<string, Intl.DateTimeFormat>();
+
+/** The wall clock of a date: `07.05` (id, 24-hour with a leading zero as the screens always wrote it), `7:05 AM` (en). */
+export function clockOf(at: Date): string {
+  const locale = getLocale();
+  if (locale !== 'id') return fmtClock(at, locale);
+  let format = clock24.get(locale);
+  if (!format) {
+    format = new Intl.DateTimeFormat(INTL_TAG[locale], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    clock24.set(locale, format);
+  }
+  return format.format(at);
+}
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-const CHIP_LABELS: Record<FamilyChip, string> = { ok: 'Baik', check: 'Perlu dicek', nosync: 'Belum sinkron' };
-
 export function chipLabel(chip: FamilyChip): string {
-  return CHIP_LABELS[chip];
+  return t(`family:chip.${chip}`);
 }
 
 /** Lower is calmer. A check outranks a missing feed: something looked off, where no data says nothing either way. */
@@ -37,8 +48,8 @@ export function worstChip(items: readonly FamilyWatchingItem[]): FamilyChip | nu
 export function familyCardLine(items: readonly FamilyWatchingItem[]): string {
   const live = items.filter(isLive);
   const worst = worstChip(items);
-  if (worst === null) return items.some((item) => item.status === 'pending') ? 'Menunggu persetujuan' : 'Belum ada data';
-  if (worst === 'ok') return live.length === 1 ? live[0].label : `${live.length} orang dipantau`;
+  if (worst === null) return items.some((item) => item.status === 'pending') ? t('family:card.waiting') : t('family:card.noData');
+  if (worst === 'ok') return live.length === 1 ? live[0].label : t('family:card.watched', { count: live.length });
   return live
     .filter((item) => item.chip === worst)
     .map((item) => item.label)
@@ -55,48 +66,47 @@ export function isPaused(link: Pick<FamilyLink, 'pausedUntil'>, nowMs: number): 
   return link.pausedUntil === -1 || (link.pausedUntil !== null && link.pausedUntil > nowMs);
 }
 
-/** `10.42`; a day other than today gets `kemarin`, `besok` or `12 Okt` in front. Local time. */
+/** The clock (`10.42`, `10:42 AM`); a day other than today gets `kemarin`, `besok` or `12 Okt` in front. Local time. */
 export function clockLabel(ms: number, nowMs: number): string {
   const at = new Date(ms);
-  const clock = `${pad(at.getHours())}.${pad(at.getMinutes())}`;
+  const clock = clockOf(at);
   const today = new Date(nowMs);
   today.setHours(0, 0, 0, 0);
   const dayDiff = Math.round((new Date(at).setHours(0, 0, 0, 0) - today.getTime()) / DAY_MS);
   if (dayDiff === 0) return clock;
-  if (dayDiff === -1) return `kemarin ${clock}`;
-  if (dayDiff === 1) return `besok ${clock}`;
-  return `${at.getDate()} ${MONTHS[at.getMonth()]} ${clock}`;
+  if (dayDiff === -1) return t('family:fmt.yesterday', { clock });
+  if (dayDiff === 1) return t('family:fmt.tomorrow', { clock });
+  return t('family:fmt.dayClock', { day: fmtDate(at, 'short'), clock });
 }
 
 /** `baru saja`, `5 menit lalu`, `3 jam lalu`, `2 hari lalu`. */
 export function agoLabel(ms: number, nowMs: number): string {
   const ago = Math.max(0, nowMs - ms);
-  if (ago < MINUTE_MS) return 'baru saja';
-  if (ago < HOUR_MS) return `${Math.floor(ago / MINUTE_MS)} menit lalu`;
-  if (ago < DAY_MS) return `${Math.floor(ago / HOUR_MS)} jam lalu`;
-  return `${Math.floor(ago / DAY_MS)} hari lalu`;
+  if (ago < MINUTE_MS) return t('family:fmt.justNow');
+  if (ago < HOUR_MS) return t('family:fmt.minutesAgo', { count: Math.floor(ago / MINUTE_MS) });
+  if (ago < DAY_MS) return t('family:fmt.hoursAgo', { count: Math.floor(ago / HOUR_MS) });
+  return t('family:fmt.daysAgo', { count: Math.floor(ago / DAY_MS) });
 }
 
 /** `Data per 10.42 (3 jam lalu)`, or that there is no data yet. */
 export function dataAtText(dataAt: number | null, nowMs: number): string {
-  if (dataAt === null) return 'Belum ada data';
-  return `Data per ${clockLabel(dataAt, nowMs)} (${agoLabel(dataAt, nowMs)})`;
+  if (dataAt === null) return t('family:fmt.noData');
+  return t('family:fmt.dataAt', { clock: clockLabel(dataAt, nowMs), ago: agoLabel(dataAt, nowMs) });
 }
 
-/** `4.230`: thousands with a dot, as Indonesian writes them, whatever the phone's locale. */
+/** `4.230` (id) / `4,230` (en): thousands in the app language's separator. */
 export function stepsText(steps: number | null): string {
-  if (steps === null) return 'Belum ada';
-  return String(Math.round(steps)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return steps === null ? t('family:fmt.none') : fmtInt(steps);
 }
 
 /** `7 jam 5 menit`, `45 menit`, `8 jam`. */
 export function sleepText(minutes: number | null): string {
-  if (minutes === null) return 'Belum ada';
+  if (minutes === null) return t('family:fmt.none');
   const total = Math.round(minutes);
   const h = Math.floor(total / 60);
   const m = total % 60;
-  if (h === 0) return `${m} menit`;
-  return m === 0 ? `${h} jam` : `${h} jam ${m} menit`;
+  if (h === 0) return t('family:fmt.sleepM', { m });
+  return m === 0 ? t('family:fmt.sleepH', { h }) : t('family:fmt.sleepHm', { h, m });
 }
 
 /**
@@ -104,31 +114,36 @@ export function sleepText(minutes: number | null): string {
  * 14 days and needs 7 of them; before that there is no comparison to make.
  */
 export function restingHrText(restingHr: number | null, baseline: number | null): string {
-  if (restingHr === null) return 'Belum ada';
-  const now = `${Math.round(restingHr)} bpm`;
-  return baseline === null ? now : `${now}, biasanya ${Math.round(baseline)}`;
+  if (restingHr === null) return t('family:fmt.none');
+  const bpm = Math.round(restingHr);
+  return baseline === null ? t('family:fmt.bpm', { bpm }) : t('family:fmt.bpmUsual', { bpm, usual: Math.round(baseline) });
 }
 
 /** Why there is no comparison yet, for the detail screen; null when there is one. */
 export function baselineNote(baseline: { restingHr: number | null; days: number }): string | null {
   if (baseline.restingHr !== null) return null;
-  return `Pembanding detak istirahat butuh 7 hari data. Baru ada ${baseline.days} hari.`;
+  return t('family:fmt.baselineNote', { count: baseline.days });
 }
 
 export function batteryText(battery: number | null): string {
-  return battery === null ? 'Tidak diketahui' : `${Math.round(battery)}%`;
+  return battery === null ? t('family:fmt.unknown') : fmtPercent(battery);
 }
 
 export function lastViewedText(lastViewedAt: number | null, nowMs: number): string {
-  return lastViewedAt === null ? 'Belum pernah dilihat' : `Terakhir dilihat ${agoLabel(lastViewedAt, nowMs)}`;
+  return lastViewedAt === null ? t('family:fmt.neverViewed') : t('family:fmt.lastViewed', { ago: agoLabel(lastViewedAt, nowMs) });
 }
 
 /** The subtitle of the Keluarga row in Settings: how many people this account watches and is watched by. */
 export function familySettingsSubtitle(watching: number, watchedBy: number): string {
-  if (watching > 0 && watchedBy > 0) return `Memantau ${watching} orang, dipantau ${watchedBy} orang`;
-  if (watching > 0) return `Memantau ${watching} orang`;
-  if (watchedBy > 0) return `Dipantau ${watchedBy} orang`;
-  return 'Pantau kabar orang tua dari jam Huawei mereka';
+  if (watching > 0 && watchedBy > 0) {
+    return t('family:fmt.settingsBoth', {
+      watching: t('family:fmt.settingsWatchingInline', { count: watching }),
+      watchedBy: t('family:fmt.settingsWatchedByInline', { count: watchedBy }),
+    });
+  }
+  if (watching > 0) return t('family:fmt.settingsWatching', { count: watching });
+  if (watchedBy > 0) return t('family:fmt.settingsWatchedBy', { count: watchedBy });
+  return t('family:fmt.settingsIdle');
 }
 
 export type PauseChoice = 'hour' | 'today' | 'manual';
@@ -148,7 +163,7 @@ export function pauseUntil(choice: PauseChoice, nowMs: number): number {
 /** `Dijeda sampai 14.30`, `Dijeda sampai kamu menyalakannya lagi`; null when not paused. */
 export function pauseText(pausedUntil: number | null, nowMs: number): string | null {
   if (!isPaused({ pausedUntil }, nowMs)) return null;
-  return pausedUntil === -1 ? 'Dijeda sampai kamu menyalakannya lagi' : `Dijeda sampai ${clockLabel(pausedUntil!, nowMs)}`;
+  return pausedUntil === -1 ? t('family:fmt.pausedManual') : t('family:fmt.pausedUntil', { clock: clockLabel(pausedUntil!, nowMs) });
 }
 
 /** The earliest end of a running pause, to wake up and resume uploading; null when nothing is paused for a set time. */
@@ -162,7 +177,7 @@ export function nextPauseEnd(links: readonly Pick<FamilyLink, 'pausedUntil'>[], 
 
 export function snoozeText(snoozeUntil: number | null, nowMs: number): string | null {
   if (snoozeUntil === null || snoozeUntil <= nowMs) return null;
-  return `Pemberitahuan disenyapkan sampai ${clockLabel(snoozeUntil, nowMs)}`;
+  return t('family:fmt.snoozedUntil', { clock: clockLabel(snoozeUntil, nowMs) });
 }
 
 /** Local midnight (unix seconds) of a `YYYY-MM-DD` date, the form the trend chart's axis takes. */

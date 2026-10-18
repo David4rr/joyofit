@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 
 import type { FamilyRules } from '@/cloud/family';
-import { clampHours, isClock, NO_STEPS_HOUR, NO_SYNC_HOURS, normalizeRules, quietText, shiftClock } from '@/features/family/rules';
+import { applyLocale } from '@/i18n';
+import { clampHours, clockText, isClock, NO_STEPS_HOUR, NO_SYNC_HOURS, normalizeRules, quietText, shiftClock } from '@/features/family/rules';
 
 const RULES: FamilyRules = {
   noSync: { on: true, hours: 12 },
@@ -84,5 +85,15 @@ describe('normalizeRules', () => {
 describe('quietText', () => {
   test('writes the hours with a dot', () => {
     expect(quietText(RULES)).toBe('21.30 sampai 06.30');
+  });
+
+  test('English words the range with a 12-hour clock', async () => {
+    await applyLocale('en');
+    try {
+      expect(quietText(RULES)).toBe('9:30 PM to 6:30 AM');
+      expect(clockText('07:00')).toBe('7:00 AM');
+    } finally {
+      await applyLocale('id');
+    }
   });
 });

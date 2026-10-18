@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { family, type FamilyRules } from '@/cloud/family';
 import { AppText } from '@/components/AppText';
@@ -14,6 +15,7 @@ import { useFamilyLinks } from '@/features/family/FamilyProvider';
 import { ProLockedRow } from '@/features/family/ProLockedRow';
 import { PushPermission } from '@/features/family/PushPermission';
 import {
+  clockText,
   DEFAULT_QUIET,
   NO_STEPS_HOUR,
   NO_SYNC_HOURS,
@@ -34,6 +36,7 @@ const SAVE_DELAY_MS = 500;
  */
 export default function RulesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useTranslation(['family', 'common']);
   const ctx = useFamilyLinks();
   const item = ctx.watching.find((link) => link.id === id);
   const load = useCallback(() => family.links.getRules(id), [id]);
@@ -44,7 +47,7 @@ export default function RulesScreen() {
   const saved = data ? normalizeRules(data.rules, DEFAULT_QUIET) : null;
   const rules = draft ?? saved;
   const pro = data?.pro ?? false;
-  const problem = error ?? (!item && !ctx.loading ? 'Orang ini tidak ditemukan. Mungkin sudah dihapus.' : null);
+  const problem = error ?? (!item && !ctx.loading ? t('family:rules.notFound') : null);
 
   useEffect(() => {
     if (draft === null) return;
@@ -75,21 +78,21 @@ export default function RulesScreen() {
   return (
     <Screen>
       <FamilyGate>
-        <Stack.Screen options={{ title: item ? `Pemberitahuan ${item.label}` : 'Pemberitahuan' }} />
+        <Stack.Screen options={{ title: item ? t('family:title.rulesFor', { label: item.label }) : t('family:title.rules') }} />
         <DisclaimerCard />
         {rules && item ? (
           <>
-            <Section title="Belum sinkron" icon="sync" tint="link">
+            <Section title={t('family:rules.noSyncSection')} icon="sync" tint="link">
               <SwitchRow
-                label="Kabari kalau tidak ada data baru"
-                hint={`Notifikasi kalau data ${item.label} berhenti masuk. Gratis.`}
+                label={t('family:rules.noSyncLabel')}
+                hint={t('family:rules.noSyncHint', { label: item.label })}
                 value={rules.noSync.on}
                 onValueChange={(on) => change({ noSync: { ...rules.noSync, on } })}
               />
               {rules.noSync.on ? (
                 <StepperRow
-                  label="Setelah tanpa data selama"
-                  value={`${rules.noSync.hours} jam`}
+                  label={t('family:rules.noSyncAfter')}
+                  value={t('family:rules.hoursValue', { count: rules.noSync.hours })}
                   canLess={rules.noSync.hours > NO_SYNC_HOURS.min}
                   canMore={rules.noSync.hours < NO_SYNC_HOURS.max}
                   onLess={() => change({ noSync: { ...rules.noSync, hours: rules.noSync.hours - 1 } })}
@@ -97,30 +100,30 @@ export default function RulesScreen() {
                 />
               ) : null}
               <AppText variant="caption" muted>
-                Hanya dikirim antara jam 07.00 dan 21.00 waktu {item.otherName}.
+                {t('family:rules.daytime', { from: clockText('07:00'), to: clockText('21:00'), name: item.otherName })}
               </AppText>
             </Section>
 
-            <Section title="Yang terlihat tidak biasa" icon="pulse" tint="heart">
+            <Section title={t('family:rules.unusualSection')} icon="pulse" tint="heart">
               {pro ? (
                 <>
                   <SwitchRow
-                    label="Detak jantung istirahat tidak biasa"
-                    hint="Jauh lebih tinggi atau lebih rendah dari biasanya."
+                    label={t('family:rules.restingHr')}
+                    hint={t('family:rules.restingHrHint')}
                     value={rules.restingHr.on}
                     onValueChange={(on) => change({ restingHr: { on } })}
                   />
                   <Divider />
                   <SwitchRow
-                    label="Belum ada langkah"
-                    hint="Data masuk, tapi langkahnya masih sangat sedikit."
+                    label={t('family:rules.noSteps')}
+                    hint={t('family:rules.noStepsHint')}
                     value={rules.noSteps.on}
                     onValueChange={(on) => change({ noSteps: { ...rules.noSteps, on } })}
                   />
                   {rules.noSteps.on ? (
                     <StepperRow
-                      label="Cek sampai jam"
-                      value={`${String(rules.noSteps.hour).padStart(2, '0')}.00`}
+                      label={t('family:rules.noStepsUntil')}
+                      value={clockText(`${String(rules.noSteps.hour).padStart(2, '0')}:00`)}
                       canLess={rules.noSteps.hour > NO_STEPS_HOUR.min}
                       canMore={rules.noSteps.hour < NO_STEPS_HOUR.max}
                       onLess={() => change({ noSteps: { ...rules.noSteps, hour: rules.noSteps.hour - 1 } })}
@@ -129,18 +132,18 @@ export default function RulesScreen() {
                   ) : null}
                   <Divider />
                   <SwitchRow
-                    label="Tidur kurang"
-                    hint="Masuk ke ringkasan harian, bukan notifikasi sendiri."
+                    label={t('family:rules.sleep')}
+                    hint={t('family:rules.sleepHint')}
                     value={rules.sleep.on}
                     onValueChange={(on) => change({ sleep: { on } })}
                   />
                   <Divider />
                   <SwitchRow
-                    label="Kadar oksigen rendah (kata jam)"
+                    label={t('family:rules.spo2')}
                     hint={
                       item.scopes.spo2
-                        ? 'Mati sampai kamu menyalakannya. Angka dari jam, bukan hasil ukur medis.'
-                        : `${item.otherName} belum membagikan kadar oksigen, jadi aturan ini belum jalan.`
+                        ? t('family:rules.spo2Shared')
+                        : t('family:rules.spo2NotShared', { name: item.otherName })
                     }
                     value={rules.spo2.on}
                     onValueChange={(on) => change({ spo2: { on } })}
@@ -148,28 +151,28 @@ export default function RulesScreen() {
                 </>
               ) : (
                 <>
-                  <ProLockedRow label="Detak jantung istirahat tidak biasa" onPress={locked} />
+                  <ProLockedRow label={t('family:rules.restingHr')} onPress={locked} />
                   <Divider />
-                  <ProLockedRow label="Belum ada langkah" onPress={locked} />
+                  <ProLockedRow label={t('family:rules.noSteps')} onPress={locked} />
                   <Divider />
-                  <ProLockedRow label="Tidur kurang" onPress={locked} />
+                  <ProLockedRow label={t('family:rules.sleep')} onPress={locked} />
                   <Divider />
-                  <ProLockedRow label="Kadar oksigen rendah (kata jam)" hint="Mati secara bawaan." onPress={locked} />
+                  <ProLockedRow label={t('family:rules.spo2')} hint={t('family:rules.spo2Locked')} onPress={locked} />
                 </>
               )}
             </Section>
 
-            <Section title="Cara dikabari" icon="mail" tint="steps">
+            <Section title={t('family:rules.channelsSection')} icon="mail" tint="steps">
               {pro ? (
                 <>
                   <SwitchRow
-                    label="Notifikasi di ponsel"
+                    label={t('family:rules.push')}
                     value={rules.push}
                     onValueChange={(on) => change({ push: on })}
                   />
                   <SwitchRow
-                    label="Email"
-                    hint="Rangkuman harian dan pemberitahuan ke email akun JoyoRogo kamu."
+                    label={t('family:rules.email')}
+                    hint={t('family:rules.emailHint')}
                     value={rules.email}
                     onValueChange={(on) => change({ email: on })}
                   />
@@ -177,46 +180,46 @@ export default function RulesScreen() {
               ) : (
                 <>
                   <AppText variant="caption" muted>
-                    Pemberitahuan &quot;Belum sinkron&quot; datang sebagai notifikasi di ponsel.
+                    {t('family:rules.freeChannel')}
                   </AppText>
-                  <ProLockedRow label="Email dan rangkuman harian" onPress={locked} />
+                  <ProLockedRow label={t('family:rules.emailLocked')} onPress={locked} />
                 </>
               )}
             </Section>
 
-            <Section title="Jam tenang" icon="moon" tint="sleep">
+            <Section title={t('family:rules.quietSection')} icon="moon" tint="sleep">
               {pro ? (
                 <>
                   <AppText variant="caption" muted>
-                    Pemberitahuan yang datang saat jam tenang ditahan sampai selesai. Sekarang: {quietText(rules)}.
+                    {t('family:rules.quietIntro', { range: quietText(rules) })}
                   </AppText>
                   <StepperRow
-                    label="Mulai"
-                    value={rules.quietStart.replace(':', '.')}
+                    label={t('family:rules.quietStart')}
+                    value={clockText(rules.quietStart)}
                     onLess={() => change({ quietStart: shiftClock(rules.quietStart, -QUIET_STEP_MIN) })}
                     onMore={() => change({ quietStart: shiftClock(rules.quietStart, QUIET_STEP_MIN) })}
                   />
                   <StepperRow
-                    label="Selesai"
-                    value={rules.quietEnd.replace(':', '.')}
+                    label={t('family:rules.quietEnd')}
+                    value={clockText(rules.quietEnd)}
                     onLess={() => change({ quietEnd: shiftClock(rules.quietEnd, -QUIET_STEP_MIN) })}
                     onMore={() => change({ quietEnd: shiftClock(rules.quietEnd, QUIET_STEP_MIN) })}
                   />
                 </>
               ) : (
-                <ProLockedRow label="Atur jam tenang" hint={`Sekarang ${quietText(rules)}.`} onPress={locked} />
+                <ProLockedRow label={t('family:rules.quietLocked')} hint={t('family:rules.quietLockedHint', { range: quietText(rules) })} onPress={locked} />
               )}
             </Section>
 
             {saveError ? <Notice tone="danger">{saveError}</Notice> : null}
             {draft !== null ? (
               <AppText variant="caption" muted>
-                Menyimpan...
+                {t('family:rules.saving')}
               </AppText>
             ) : null}
             <PushPermission
               body={prePermissionBody(item.label)}
-              unavailableHint={pro ? 'Kamu masih bisa dikabari lewat email.' : undefined}
+              unavailableHint={pro ? t('family:push.emailHint') : undefined}
             />
           </>
         ) : problem !== null ? (

@@ -1,5 +1,6 @@
 import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Fragment, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { family, type FamilySummary, type FamilyWatchingItem } from '@/cloud/family';
@@ -31,6 +32,7 @@ import {
   snoozeText,
   stepsText,
 } from '@/features/family/format';
+import { fmtPercent } from '@/i18n';
 import { useRogoQuery } from '@/features/social/useRogoQuery';
 import { useNow } from '@/hooks/useNow';
 import { spacing } from '@/theme';
@@ -40,6 +42,7 @@ const SNOOZES = [1, 3, 7] as const;
 /** One watched person: today's numbers, the trend, how healthy the feed is, past alerts, and what to do about them. */
 export default function MemberScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useTranslation(['family', 'common']);
   const router = useRouter();
   const ctx = useFamilyLinks();
   const item = ctx.watching.find((link) => link.id === id);
@@ -60,8 +63,8 @@ export default function MemberScreen() {
         ) : ctx.loading ? (
           <Skeleton width="100%" height={180} radius="card" />
         ) : (
-          <Notice tone="danger" action={{ label: 'Kembali', onPress: leave }}>
-            {ctx.error ?? 'Orang ini tidak ditemukan. Mungkin sudah dihapus.'}
+          <Notice tone="danger" action={{ label: t('common:actions.back'), onPress: leave }}>
+            {ctx.error ?? t('family:detail.notFound')}
           </Notice>
         )}
       </FamilyGate>
@@ -71,6 +74,7 @@ export default function MemberScreen() {
 
 /** Removing a link, asked first: it ends the sharing for both sides. */
 function RemoveButton({ item, onGone }: { item: FamilyWatchingItem; onGone: () => void }) {
+  const { t } = useTranslation(['family', 'common']);
   const ctx = useFamily();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -94,7 +98,7 @@ function RemoveButton({ item, onGone }: { item: FamilyWatchingItem; onGone: () =
     <>
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <Button
-        label={item.status === 'pending' ? 'Batalkan undangan' : `Berhenti memantau ${item.label}`}
+        label={item.status === 'pending' ? t('family:detail.cancelInvite') : t('family:detail.stop', { label: item.label })}
         variant="destructive"
         icon="trash"
         loading={busy}
@@ -102,10 +106,10 @@ function RemoveButton({ item, onGone }: { item: FamilyWatchingItem; onGone: () =
       />
       <ConfirmDialog
         visible={asking}
-        title={`Berhenti memantau ${item.label}?`}
-        message={`Kamu tidak akan melihat kabar ${item.otherName} lagi, dan ${item.otherName} langsung tahu bahwa tautan ini putus. Kalau mau memantau lagi, kalian harus membuat undangan baru.`}
-        confirmLabel="Berhenti memantau"
-        cancelLabel="Batal"
+        title={t('family:detail.stopTitle', { label: item.label })}
+        message={t('family:detail.stopMessage', { name: item.otherName })}
+        confirmLabel={t('family:detail.stopConfirm')}
+        cancelLabel={t('common:actions.cancel')}
         onConfirm={() => void remove()}
         onCancel={() => setAsking(false)}
       />
@@ -115,12 +119,13 @@ function RemoveButton({ item, onGone }: { item: FamilyWatchingItem; onGone: () =
 
 /** A link with nothing to show yet: waiting for consent, or over the free limit. */
 function Waiting({ item, onGone }: { item: FamilyWatchingItem; onGone: () => void }) {
+  const { t } = useTranslation(['family', 'common']);
   return (
     <>
       <Notice icon="time">
         {item.status === 'pending'
-          ? `Menunggu ${item.otherName} menyetujui. Belum ada data yang dikirim.`
-          : 'Akun gratis memantau satu orang. Tautan ini tersimpan tapi tidak diperbarui.'}
+          ? t('family:detail.waitingPending', { name: item.otherName })
+          : t('family:detail.waitingFrozen')}
       </Notice>
       <RemoveButton item={item} onGone={onGone} />
     </>
@@ -128,6 +133,7 @@ function Waiting({ item, onGone }: { item: FamilyWatchingItem; onGone: () => voi
 }
 
 function Member({ item, onGone }: { item: FamilyWatchingItem; onGone: () => void }) {
+  const { t } = useTranslation(['family', 'common']);
   const router = useRouter();
   const ctx = useFamily();
   const nowMs = useNow(60_000);
@@ -187,7 +193,7 @@ function Member({ item, onGone }: { item: FamilyWatchingItem; onGone: () => void
           </View>
           {paused ? null : <ChipBadge chip={data?.chip ?? item.chip} />}
         </View>
-        {paused ? <Notice icon="pause-circle">{`${item.otherName} menjeda berbagi data. ${paused}.`}</Notice> : null}
+        {paused ? <Notice icon="pause-circle">{t('family:detail.pausedBy', { name: item.otherName, pause: paused })}</Notice> : null}
       </Card>
 
       {error !== null && !data ? <Notice tone="danger">{error}</Notice> : null}
@@ -197,18 +203,18 @@ function Member({ item, onGone }: { item: FamilyWatchingItem; onGone: () => void
         <>
           {live ? (
             <>
-          <Section title="Hari ini" icon="today" tint="link">
-            {scopes.steps ? <KeyValue label="Langkah" value={today ? stepsText(today.steps) : null} /> : null}
+          <Section title={t('family:detail.today')} icon="today" tint="link">
+            {scopes.steps ? <KeyValue label={t('family:detail.steps')} value={today ? stepsText(today.steps) : null} /> : null}
             {scopes.restingHr ? (
-              <KeyValue label="Detak istirahat" value={today ? restingHrText(today.restingHr, data.baseline.restingHr) : null} />
+              <KeyValue label={t('family:detail.restingHr')} value={today ? restingHrText(today.restingHr, data.baseline.restingHr) : null} />
             ) : null}
-            {scopes.sleep ? <KeyValue label="Tidur semalam" value={today?.sleepMin != null ? sleepText(today.sleepMin) : null} /> : null}
+            {scopes.sleep ? <KeyValue label={t('family:detail.sleep')} value={today?.sleepMin != null ? sleepText(today.sleepMin) : null} /> : null}
             {scopes.spo2 ? (
-              <KeyValue label="Kadar oksigen terendah (kata jam)" value={today?.spo2Min != null ? `${Math.round(today.spo2Min)}%` : null} />
+              <KeyValue label={t('family:detail.spo2')} value={today?.spo2Min != null ? fmtPercent(today.spo2Min) : null} />
             ) : null}
             {!scopes.steps && !scopes.restingHr && !scopes.sleep && !scopes.spo2 ? (
               <AppText variant="caption" muted>
-                {item.otherName} hanya membagikan waktu terakhir jam tersambung dan baterai.
+                {t('family:detail.onlySync', { name: item.otherName })}
               </AppText>
             ) : null}
             {scopes.restingHr && baselineNote(data.baseline) ? (
@@ -218,11 +224,11 @@ function Member({ item, onGone }: { item: FamilyWatchingItem; onGone: () => void
             ) : null}
           </Section>
 
-          <Section title="Tren" icon="trending-up" tint="steps">
+          <Section title={t('family:detail.trend')} icon="trending-up" tint="steps">
             <Segmented
               options={HISTORY_RANGES.map((days) => ({
                 value: days,
-                label: ctx.limits !== null && days > ctx.limits.historyDays ? `${days} hari (Pro)` : `${days} hari`,
+                label: t(ctx.limits !== null && days > ctx.limits.historyDays ? 'family:detail.rangePro' : 'family:detail.range', { count: days }),
               }))}
               value={range}
               onChange={pick}
@@ -230,18 +236,18 @@ function Member({ item, onGone }: { item: FamilyWatchingItem; onGone: () => void
             <FamilyTrend days={data.days} range={range} scopes={scopes} baseline={data.baseline.restingHr} />
           </Section>
 
-          <Section title="Kondisi sinkron" icon="sync" tint="link">
-            <KeyValue label="Jam terakhir tersambung" value={data.state?.watchSyncAt != null ? clockLabel(data.state.watchSyncAt, nowMs) : null} />
-            <KeyValue label="Ponsel terakhir terlihat" value={data.state?.phoneSeenAt != null ? clockLabel(data.state.phoneSeenAt, nowMs) : null} />
-            <KeyValue label="Baterai jam" value={data.state ? batteryText(data.state.battery) : null} />
+          <Section title={t('family:detail.syncHealth')} icon="sync" tint="link">
+            <KeyValue label={t('family:detail.watchSync')} value={data.state?.watchSyncAt != null ? clockLabel(data.state.watchSyncAt, nowMs) : null} />
+            <KeyValue label={t('family:detail.phoneSeen')} value={data.state?.phoneSeenAt != null ? clockLabel(data.state.phoneSeenAt, nowMs) : null} />
+            <KeyValue label={t('family:detail.battery')} value={data.state ? batteryText(data.state.battery) : null} />
           </Section>
             </>
           ) : null}
 
-          <Section title="Pemberitahuan" icon="notifications" tint="workouts">
+          <Section title={t('family:detail.alerts')} icon="notifications" tint="workouts">
             {data.alerts.length === 0 ? (
               <AppText variant="caption" muted>
-                Belum ada pemberitahuan.
+                {t('family:detail.noAlerts')}
               </AppText>
             ) : (
               data.alerts.map((alert, i) => (
@@ -256,29 +262,29 @@ function Member({ item, onGone }: { item: FamilyWatchingItem; onGone: () => void
             )}
             <Divider />
             <AppText variant="label" muted>
-              {snoozeText(data.snoozeUntil, nowMs) ?? 'Senyapkan pemberitahuan'}
+              {snoozeText(data.snoozeUntil, nowMs) ?? t('family:detail.snooze')}
             </AppText>
             <View style={styles.chips}>
               {SNOOZES.map((days) => (
-                <Chip key={days} label={`${days} hari`} selected={false} onPress={() => void snooze(days, data)} />
+                <Chip key={days} label={t('family:detail.snoozeDays', { count: days })} selected={false} onPress={() => void snooze(days, data)} />
               ))}
             </View>
           </Section>
         </>
       ) : null}
 
-      {poked === 'sent' ? <Notice icon="checkmark-circle">{`Pesan "Tanya kabar" terkirim ke ${item.otherName}. Notifikasi bisa terlambat.`}</Notice> : null}
+      {poked === 'sent' ? <Notice icon="checkmark-circle">{t('family:detail.pokeSent', { name: item.otherName })}</Notice> : null}
       {poked === 'unreached' ? (
-        <Notice icon="alert-circle">{`${item.otherName} belum bisa menerima notifikasi dari JoyoFit, jadi pesannya tidak sampai. Coba telepon langsung.`}</Notice>
+        <Notice icon="alert-circle">{t('family:detail.pokeUnreached', { name: item.otherName })}</Notice>
       ) : null}
       {actionError ? <Notice tone="danger">{actionError}</Notice> : null}
-      <Button label="Tanya kabar" icon="chatbubble-ellipses" variant="primary" loading={poking} onPress={() => void poke()} />
+      <Button label={t('family:detail.poke')} icon="chatbubble-ellipses" variant="primary" loading={poking} onPress={() => void poke()} />
       <Card>
         <NavRow
           icon="options"
           tint="steps"
-          title="Atur pemberitahuan"
-          subtitle="Aturan, jam tenang, notifikasi dan email"
+          title={t('family:detail.manageRules')}
+          subtitle={t('family:detail.manageRulesHint')}
           onPress={() => router.push({ pathname: '/family/rules/[id]', params: { id: item.id } })}
         />
       </Card>

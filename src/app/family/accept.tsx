@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { family, type FamilyInvitePreview } from '@/cloud/family';
 import { AppText } from '@/components/AppText';
@@ -20,6 +21,7 @@ import { INVITE_CODE_LENGTH, normalizeInviteCode, previewLine } from '@/features
  * monitored person goes on to the consent screen (nothing uploads before it), a watcher to the dashboard to wait for it.
  */
 export default function AcceptScreen() {
+  const { t } = useTranslation(['family', 'common']);
   const router = useRouter();
   const { code: param } = useLocalSearchParams<{ code?: string }>();
   const ctx = useFamily();
@@ -95,36 +97,36 @@ export default function AcceptScreen() {
     <Screen>
       <FamilyGate>
         <DisclaimerCard />
-        <Section title="Kode undangan" icon="key" tint="link">
+        <Section title={t('family:invite.sectionCode')} icon="key" tint="link">
           <Field
-            label="Kode 8 karakter"
+            label={t('family:accept.codeLabel')}
             value={code}
             onChangeText={(text) => setCode(normalizeInviteCode(text))}
             autoCapitalize="characters"
             autoCorrect={false}
             maxLength={INVITE_CODE_LENGTH + 4}
           />
-          {checking ? <LoadingState label="Memeriksa kode" /> : null}
+          {checking ? <LoadingState label={t('family:accept.checking')} /> : null}
           {error ? <Notice tone="danger">{error}</Notice> : null}
         </Section>
         {preview ? (
-          <Section title="Undangan" icon="mail-open" tint="link">
+          <Section title={t('family:accept.sectionInvite')} icon="mail-open" tint="link">
             <AppText variant="bodyStrong">{previewLine(preview)}</AppText>
             <AppText variant="caption" muted>
-              Berlaku sampai {clockLabel(preview.expiresAt, now)}.
+              {t('family:accept.validUntil', { time: clockLabel(preview.expiresAt, now) })}
             </AppText>
             {watches ? (
               <>
-                <Field label="Kamu memanggilnya apa?" value={label} onChangeText={setLabelEdit} maxLength={40} autoCapitalize="words" autoCorrect={false} />
-                {capacity === 'full' ? <Notice>Kamu sudah memantau jumlah orang maksimal. Hapus salah satu dulu.</Notice> : null}
+                <Field label={t('family:accept.callThem')} value={label} onChangeText={setLabelEdit} maxLength={40} autoCapitalize="words" autoCorrect={false} />
+                {capacity === 'full' ? <Notice>{t('family:invite.full')}</Notice> : null}
               </>
             ) : (
               <AppText variant="caption" muted>
-                Belum ada yang dibagikan. Di layar berikutnya kamu yang memilih apa yang boleh dilihat.
+                {t('family:accept.nothingShared')}
               </AppText>
             )}
             <Button
-              label="Lanjut"
+              label={t('common:actions.next')}
               variant="primary"
               disabled={capacity === 'full' || (watches && label.trim().length === 0)}
               loading={busy}

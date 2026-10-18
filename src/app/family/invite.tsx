@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Share, StyleSheet, View } from 'react-native';
 
 import { family, type FamilyInvite, type FamilyInviteRole } from '@/cloud/family';
@@ -20,25 +21,27 @@ import { clockLabel } from '@/features/family/format';
 import { useNow } from '@/hooks/useNow';
 import { spacing } from '@/theme';
 
-const PRESETS = ['Ibu', 'Bapak'] as const;
-const OTHER = 'lainnya';
+const PRESETS = ['mom', 'dad'] as const;
+const OTHER = 'other';
+const PRESET_LABEL = { mom: 'family:invite.presetMom', dad: 'family:invite.presetDad' } as const;
 const MAX_LABEL = 40;
 
 /** Who the invite is for, and the code that goes with it. `role` (a route parameter) is the inviter's own side. */
 export default function InviteScreen() {
+  const { t } = useTranslation(['family', 'common']);
   const router = useRouter();
   const { role: param } = useLocalSearchParams<{ role?: string }>();
   const role: FamilyInviteRole = param === 'monitored' ? 'monitored' : 'watcher';
   const ctx = useFamily();
   const now = useNow(60_000);
-  const [preset, setPreset] = useState<(typeof PRESETS)[number] | typeof OTHER>('Ibu');
+  const [preset, setPreset] = useState<(typeof PRESETS)[number] | typeof OTHER>('mom');
   const [custom, setCustom] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invite, setInvite] = useState<FamilyInvite | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const label = (preset === OTHER ? custom : preset).trim();
+  const label = (preset === OTHER ? custom : t(PRESET_LABEL[preset])).trim();
   const capacity = role === 'watcher' ? watchCapacity(ctx.limits, ctx.watching.length) : 'ok';
 
   const create = async () => {
@@ -72,42 +75,42 @@ export default function InviteScreen() {
       <FamilyGate>
         <DisclaimerCard />
         {invite ? (
-          <Section title="Kode undangan" icon="key" tint="link">
-            <AppText variant="figure" selectable style={styles.code} accessibilityLabel={`Kode ${invite.code.split('').join(' ')}`}>
+          <Section title={t('family:invite.sectionCode')} icon="key" tint="link">
+            <AppText variant="figure" selectable style={styles.code} accessibilityLabel={t('family:invite.codeA11y', { code: invite.code.split('').join(' ') })}>
               {invite.code}
             </AppText>
             <AppText variant="caption" muted>
-              Berlaku sampai {clockLabel(invite.expiresAt, now)}, dan hanya bisa dipakai sekali.
+              {t('family:invite.validUntil', { time: clockLabel(invite.expiresAt, now) })}
             </AppText>
             <ButtonRow>
-              <Button label="Bagikan" icon="share-outline" variant="primary" onPress={share} />
-              <Button label={copied ? 'Tersalin' : 'Salin kode'} icon={copied ? 'checkmark' : 'copy-outline'} onPress={() => void copy()} />
+              <Button label={t('common:actions.share')} icon="share-outline" variant="primary" onPress={share} />
+              <Button label={copied ? t('family:invite.copied') : t('family:invite.copyCode')} icon={copied ? 'checkmark' : 'copy-outline'} onPress={() => void copy()} />
             </ButtonRow>
-            <Button label="Selesai" variant="ghost" onPress={() => router.back()} />
+            <Button label={t('common:actions.done')} variant="ghost" onPress={() => router.back()} />
           </Section>
         ) : (
-          <Section title={role === 'watcher' ? 'Undang orang tua' : 'Undang pemantau'} icon="person-add" tint="link">
+          <Section title={role === 'watcher' ? t('family:invite.titleWatcher') : t('family:invite.titleMonitored')} icon="person-add" tint="link">
             <AppText variant="caption" muted>
               {role === 'watcher'
-                ? 'Kamu akan mendapat kode untuk dikirim ke orang tuamu. Mereka melihat siapa yang meminta, lalu memilih sendiri apa yang dibagikan.'
-                : 'Kamu akan mendapat kode untuk dikirim ke orang yang boleh melihat kabarmu. Kamu tetap yang memilih apa yang dibagikan.'}
+                ? t('family:invite.introWatcher')
+                : t('family:invite.introMonitored')}
             </AppText>
             <AppText variant="label" muted>
-              {role === 'watcher' ? 'Orang tua ini kamu panggil apa?' : 'Pemantau akan memanggilmu apa?'}
+              {role === 'watcher' ? t('family:invite.askWatcher') : t('family:invite.askMonitored')}
             </AppText>
             <View style={styles.chips}>
               {PRESETS.map((name) => (
-                <Chip key={name} label={name} selected={preset === name} onPress={() => setPreset(name)} role="radio" />
+                <Chip key={name} label={t(PRESET_LABEL[name])} selected={preset === name} onPress={() => setPreset(name)} role="radio" />
               ))}
-              <Chip label="Lainnya" selected={preset === OTHER} onPress={() => setPreset(OTHER)} role="radio" />
+              <Chip label={t('family:invite.presetOther')} selected={preset === OTHER} onPress={() => setPreset(OTHER)} role="radio" />
             </View>
             {preset === OTHER ? (
-              <Field label="Nama panggilan" value={custom} onChangeText={setCustom} maxLength={MAX_LABEL} autoCapitalize="words" autoCorrect={false} />
+              <Field label={t('family:invite.nickname')} value={custom} onChangeText={setCustom} maxLength={MAX_LABEL} autoCapitalize="words" autoCorrect={false} />
             ) : null}
-            {capacity === 'full' ? <Notice>Kamu sudah memantau jumlah orang maksimal. Hapus salah satu dulu.</Notice> : null}
+            {capacity === 'full' ? <Notice>{t('family:invite.full')}</Notice> : null}
             {error ? <Notice tone="danger">{error}</Notice> : null}
             <Button
-              label="Buat kode undangan"
+              label={t('family:invite.create')}
               variant="primary"
               icon="key"
               disabled={label.length === 0 || capacity === 'full'}

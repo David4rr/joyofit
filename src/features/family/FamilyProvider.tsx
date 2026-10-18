@@ -9,6 +9,7 @@ import { describeFamilyError, isProRequired } from '@/features/family/errors';
 import { ProUpsellDialog } from '@/features/family/ProUpsellDialog';
 import { refreshPushToken } from '@/features/family/push';
 import { useFamilyUploader } from '@/features/family/useFamilyUploader';
+import { useLocale } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
 
 interface FamilyContextValue {
@@ -62,6 +63,7 @@ export function useFamilyLinks(): FamilyContextValue {
  */
 export function FamilyProvider({ children }: { children: ReactNode }) {
   const cloud = useCloud();
+  const locale = useLocale();
   const router = useRouter();
   const navigationReady = useRootNavigationState()?.key != null;
   const available = cloud.configured && cloud.signedIn;
@@ -110,9 +112,10 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   // An Expo push token can change; the Worker only pushes to the one it has. Only for people with a link: on Android before 13
   // notifications are allowed from the start, which says nothing about wanting these.
   const hasLinks = links !== null && (links.watching.length > 0 || links.watchedBy.length > 0);
+  // The locale is a dependency: the Android notification channel carries a translated name that is rewritten on a switch.
   useEffect(() => {
     if (hasLinks) void refreshPushToken();
-  }, [hasLinks]);
+  }, [hasLinks, locale]);
 
   const lastResponse = Notifications.useLastNotificationResponse();
   useEffect(() => {

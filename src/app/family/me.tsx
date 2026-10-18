@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Platform } from 'react-native';
 
 import { family } from '@/cloud/family';
@@ -7,7 +8,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card, Screen, Section } from '@/components/Screen';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
-import { PLATFORM_NOTE, prePermissionMonitoredBody } from '@/features/family/copy';
+import { platformNote, prePermissionMonitoredBody } from '@/features/family/copy';
 import { DisclaimerCard } from '@/features/family/DisclaimerCard';
 import { FamilyGate } from '@/features/family/FamilyGate';
 import { useFamilyLinks } from '@/features/family/FamilyProvider';
@@ -18,6 +19,7 @@ import { WatcherSection } from '@/features/family/WatcherSection';
 
 /** The monitored side: who can see you and what, a pause, the data last sent, and the way out. No covert mode: this is always visible. */
 export default function MeScreen() {
+  const { t } = useTranslation(['family', 'common']);
   const router = useRouter();
   const ctx = useFamilyLinks();
   const [refreshing, setRefreshing] = useState(false);
@@ -46,7 +48,7 @@ export default function MeScreen() {
 
   const consented = ctx.watchedBy.some((link) => link.status === 'active' || link.status === 'paused');
   const full = ctx.limits !== null && ctx.watchedBy.length >= ctx.limits.maxWatchers;
-  const askedName = ctx.watchedBy.find((link) => link.status === 'active' || link.status === 'paused')?.otherName ?? 'pemantaumu';
+  const askedName = ctx.watchedBy.find((link) => link.status === 'active' || link.status === 'paused')?.otherName ?? t('family:me.defaultWatcher');
 
   return (
     <Screen refresh={{ refreshing, onRefresh: () => void refresh(), enabled: ctx.available }}>
@@ -55,7 +57,7 @@ export default function MeScreen() {
         {ctx.loading ? (
           <Skeleton width="100%" height={200} radius="card" />
         ) : ctx.error !== null && ctx.limits === null ? (
-          <Notice tone="danger" action={{ label: 'Coba lagi', onPress: () => void ctx.refresh() }}>
+          <Notice tone="danger" action={{ label: t('common:actions.retry'), onPress: () => void ctx.refresh() }}>
             {ctx.error}
           </Notice>
         ) : (
@@ -64,16 +66,16 @@ export default function MeScreen() {
               <Card>
                 <EmptyState
                   icon="shield-checkmark"
-                  title="Belum ada yang memantau kabarmu"
-                  description="Kamu bisa mengundang seseorang untuk melihat kabar ringkas dari jam Huawei-mu. Kamu yang menentukan apa yang dibagikan, dan bisa berhenti kapan saja."
+                  title={t('family:me.emptyTitle')}
+                  description={t('family:me.emptyDescription')}
                 />
               </Card>
             ) : (
               ctx.watchedBy.map((link) => <WatcherSection key={link.id} link={link} />)
             )}
-            {full ? <Notice>Jumlah pemantau sudah maksimal. Putuskan salah satu dulu untuk mengundang yang baru.</Notice> : null}
+            {full ? <Notice>{t('family:me.full')}</Notice> : null}
             <Button
-              label="Undang pemantau"
+              label={t('family:me.invite')}
               icon="person-add"
               variant={ctx.watchedBy.length === 0 ? 'primary' : 'secondary'}
               disabled={full}
@@ -81,19 +83,19 @@ export default function MeScreen() {
             />
             {consented ? (
               <>
-                <Section title="Data yang terkirim" icon="document-text" tint="steps">
+                <Section title={t('family:me.payloadSection')} icon="document-text" tint="steps">
                   <AppText variant="caption" muted>
-                    Ringkasan harian yang terakhir dikirim ponselmu, persis seperti yang disimpan server.
+                    {t('family:me.payloadIntro')}
                   </AppText>
                   {lastError ? <Notice tone="danger">{lastError}</Notice> : null}
-                  <Button label="Lihat data yang terkirim" icon="eye" loading={lastBusy} onPress={() => void showLast()} />
+                  <Button label={t('family:me.payloadShow')} icon="eye" loading={lastBusy} onPress={() => void showLast()} />
                 </Section>
                 <PushPermission body={prePermissionMonitoredBody(askedName)} />
               </>
             ) : null}
-            <Section title="Kapan data terkirim" icon="information-circle">
+            <Section title={t('family:me.whenSection')} icon="information-circle">
               <AppText variant="caption" muted>
-                {Platform.OS === 'ios' ? PLATFORM_NOTE.ios : PLATFORM_NOTE.android}
+                {platformNote(Platform.OS === 'ios' ? 'ios' : 'android')}
               </AppText>
             </Section>
           </>

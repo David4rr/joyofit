@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { family, type FamilyLink, type FamilyScopes } from '@/cloud/family';
@@ -10,20 +11,18 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Divider, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
-import { SCOPE_ROWS } from '@/features/family/copy';
+import { scopeRows } from '@/features/family/copy';
 import { useFamily } from '@/features/family/FamilyProvider';
 import { lastViewedText, pauseText, pauseUntil, type PauseChoice } from '@/features/family/format';
 import { useNow } from '@/hooks/useNow';
 import { spacing } from '@/theme';
 
-const PAUSES: readonly { choice: PauseChoice; label: string }[] = [
-  { choice: 'hour', label: '1 jam' },
-  { choice: 'today', label: 'Hari ini' },
-  { choice: 'manual', label: 'Sampai kunyalakan' },
-];
+const PAUSES = ['hour', 'today', 'manual'] as const satisfies readonly PauseChoice[];
+const PAUSE_LABEL = { hour: 'watcher.pauseHour', today: 'watcher.pauseToday', manual: 'watcher.pauseManual' } as const;
 
 /** One person who watches you: what they see, a pause, and the way to cut them off. Each change goes to the Worker at once. */
 export function WatcherSection({ link }: { link: FamilyLink }) {
+  const { t } = useTranslation(['family', 'common']);
   const router = useRouter();
   const ctx = useFamily();
   const nowMs = useNow(60_000);
@@ -57,10 +56,10 @@ export function WatcherSection({ link }: { link: FamilyLink }) {
     return (
       <Section title={link.otherName} icon="person" tint="link">
         <AppText variant="caption" muted>
-          {link.otherName} menunggu izinmu. Belum ada yang dikirim.
+          {t('family:watcher.pending', { name: link.otherName })}
         </AppText>
         <Button
-          label="Tinjau permintaan"
+          label={t('family:watcher.review')}
           variant="primary"
           onPress={() => router.push({ pathname: '/family/consent/[id]', params: { id: link.id } })}
         />
@@ -79,7 +78,7 @@ export function WatcherSection({ link }: { link: FamilyLink }) {
       {paused ? (
         <Notice icon="pause-circle">{paused}</Notice>
       ) : null}
-      {SCOPE_ROWS.map((row) => (
+      {scopeRows().map((row) => (
         <SwitchRow
           key={row.key}
           label={row.label}
@@ -91,17 +90,17 @@ export function WatcherSection({ link }: { link: FamilyLink }) {
       ))}
       <Divider />
       {paused ? (
-        <Button label="Nyalakan lagi" icon="play" disabled={busy} onPress={() => void change(() => family.links.update(link.id, { pausedUntil: null }))} />
+        <Button label={t('family:watcher.resume')} icon="play" disabled={busy} onPress={() => void change(() => family.links.update(link.id, { pausedUntil: null }))} />
       ) : (
         <>
           <AppText variant="label" muted>
-            Jeda
+            {t('family:watcher.pause')}
           </AppText>
           <View style={styles.chips}>
-            {PAUSES.map(({ choice, label }) => (
+            {PAUSES.map((choice) => (
               <Chip
                 key={choice}
-                label={label}
+                label={t(`family:${PAUSE_LABEL[choice]}`)}
                 selected={false}
                 onPress={() => void change(() => family.links.update(link.id, { pausedUntil: pauseUntil(choice, Date.now()) }))}
               />
@@ -110,13 +109,13 @@ export function WatcherSection({ link }: { link: FamilyLink }) {
         </>
       )}
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      <Button label="Putuskan dan hapus riwayat" variant="destructive" icon="trash" disabled={busy} onPress={() => setRemoving(true)} />
+      <Button label={t('family:watcher.remove')} variant="destructive" icon="trash" disabled={busy} onPress={() => setRemoving(true)} />
       <ConfirmDialog
         visible={removing}
-        title={`Putuskan ${link.otherName}?`}
-        message={`${link.otherName} langsung tidak bisa melihat apa pun lagi, dan riwayat datamu yang tersimpan untuknya dihapus. Kalau mau dipantau lagi, kalian harus membuat undangan baru.`}
-        confirmLabel="Putuskan dan hapus"
-        cancelLabel="Batal"
+        title={t('family:watcher.removeTitle', { name: link.otherName })}
+        message={t('family:watcher.removeMessage', { name: link.otherName })}
+        confirmLabel={t('family:watcher.removeConfirm')}
+        cancelLabel={t('common:actions.cancel')}
         onConfirm={() => {
           setRemoving(false);
           void change(() => family.links.remove(link.id));

@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 
 import type { FamilyDay, FamilyLink, FamilyWatchingItem } from '@/cloud/family';
 import {
@@ -22,6 +22,9 @@ import {
   stepsText,
   worstChip,
 } from '@/features/family/format';
+import { applyLocale } from '@/i18n';
+
+afterEach(() => applyLocale('id'));
 
 /** Local 2026-10-17 13:45, built from parts so the tests hold in any time zone. */
 const NOW = new Date(2026, 9, 17, 13, 45).getTime();
@@ -257,5 +260,26 @@ describe('newestDay', () => {
 describe('dateToLocalMidnightSec', () => {
   test('is local midnight of the date', () => {
     expect(dateToLocalMidnightSec('2026-10-17')).toBe(Math.floor(new Date(2026, 9, 17).getTime() / 1000));
+  });
+});
+
+describe('English', () => {
+  test('plurals pick one or other', async () => {
+    await applyLocale('en');
+    expect(agoLabel(NOW - 60_000, NOW)).toBe('1 minute ago');
+    expect(agoLabel(NOW - 5 * 3_600_000, NOW)).toBe('5 hours ago');
+    expect(familySettingsSubtitle(1, 0)).toBe('Watching 1 person');
+    expect(familySettingsSubtitle(2, 1)).toBe('Watching 2 people, watched by 1 person');
+    expect(baselineNote({ restingHr: null, days: 1 })).toContain('1 day so far');
+  });
+
+  test('clock, steps and sleep use the English forms', async () => {
+    await applyLocale('en');
+    expect(clockLabel(at(17, 7, 5), NOW)).toBe('7:05 AM');
+    expect(clockLabel(at(16, 22, 0), NOW)).toBe('yesterday 10:00 PM');
+    expect(stepsText(4230)).toBe('4,230');
+    expect(sleepText(425)).toBe('7 h 5 min');
+    expect(chipLabel('nosync')).toBe('Not synced');
+    expect(restingHrText(62, 60)).toBe('62 bpm, usually 60');
   });
 });

@@ -3,10 +3,12 @@ import { StyleSheet, View } from 'react-native';
 import type { FamilyChip } from '@/cloud/family';
 import { AppText } from '@/components/AppText';
 import { chipLabel } from '@/features/family/format';
+import { useLocale } from '@/i18n';
 import { spacing, tintColors, useColors } from '@/theme';
 
-/** Baik (green), Perlu dicek (amber), Belum sinkron (grey). The word is the signal; the color only backs it up. */
+/** Good (green), needs a check (amber), not synced (grey). The word is the signal; the color only backs it up. */
 export function ChipBadge({ chip }: { chip: FamilyChip }) {
+  useLocale();
   const colors = useColors();
   const scheme =
     chip === 'ok'

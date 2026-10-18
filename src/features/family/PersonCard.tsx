@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import type { FamilyWatchingItem } from '@/cloud/family';
@@ -30,20 +31,21 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 /** One watched person on the dashboard: the chip, when the data is from, and today's numbers they agreed to share. */
 export function PersonCard({ item, onPress }: PersonCardProps) {
+  const { t } = useTranslation('family');
   const nowMs = useNow(60_000);
   const live = isLive(item);
   const paused = pauseText(item.pausedUntil, nowMs);
   const note =
     item.status === 'pending'
-      ? `Menunggu ${item.otherName} menyetujui.`
+      ? t('card.pendingNote', { name: item.otherName })
       : item.frozen
-        ? 'Di atas batas akun gratis, jadi tidak diperbarui. Satu orang yang dipantau tetap aktif.'
+        ? t('card.frozenNote')
         : paused;
 
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${item.label}, ${item.otherName}`}
+      accessibilityLabel={t('card.a11y', { label: item.label, name: item.otherName })}
       onPress={onPress}
       scaleTo={0.985}>
       <Card>
@@ -71,9 +73,9 @@ export function PersonCard({ item, onPress }: PersonCardProps) {
             </AppText>
             {item.today ? (
               <View style={styles.stats}>
-                {item.scopes.steps ? <Stat label="Langkah" value={stepsText(item.today.steps)} /> : null}
-                {item.scopes.restingHr ? <Stat label="Detak istirahat" value={restingHrText(item.today.restingHr, item.baselineHr)} /> : null}
-                {item.scopes.sleep ? <Stat label="Tidur semalam" value={sleepText(item.today.sleepMin)} /> : null}
+                {item.scopes.steps ? <Stat label={t('card.steps')} value={stepsText(item.today.steps)} /> : null}
+                {item.scopes.restingHr ? <Stat label={t('card.restingHr')} value={restingHrText(item.today.restingHr, item.baselineHr)} /> : null}
+                {item.scopes.sleep ? <Stat label={t('card.sleep')} value={sleepText(item.today.sleepMin)} /> : null}
               </View>
             ) : null}
           </>

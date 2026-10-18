@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -15,25 +16,26 @@ interface PayloadDialogProps {
 
 /** What the phone last sent, character for character, so the person can see there is nothing more than they agreed to. */
 export function PayloadDialog({ visible, payload, at, onClose }: PayloadDialogProps) {
+  const { t } = useTranslation(['family', 'common']);
   const { colors, radius } = useTheme();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Tutup">
+      <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={t('common:actions.close')}>
         {/* A press on the card itself must not reach the scrim. */}
         <Pressable
           accessibilityViewIsModal
           style={[styles.card, { backgroundColor: colors.card, borderColor: colors.hairline, borderRadius: radius.card }]}
           onPress={() => {}}>
           <AppText variant="heading" accessibilityRole="header">
-            Data yang terkirim
+            {t('family:payload.title')}
           </AppText>
           {payload === null ? (
-            <AppText variant="body">Belum ada data yang terkirim.</AppText>
+            <AppText variant="body">{t('family:payload.none')}</AppText>
           ) : (
             <>
               {at ? (
                 <AppText variant="caption" muted>
-                  Terkirim {at}. Persis seperti ini yang disimpan server:
+                  {t('family:payload.sentAt', { at })}
                 </AppText>
               ) : null}
               <ScrollView style={[styles.box, { backgroundColor: colors.muted, borderRadius: radius.input }]} contentContainerStyle={styles.boxContent}>
@@ -43,7 +45,7 @@ export function PayloadDialog({ visible, payload, at, onClose }: PayloadDialogPr
               </ScrollView>
             </>
           )}
-          <Button label="Tutup" variant="primary" onPress={onClose} />
+          <Button label={t('common:actions.close')} variant="primary" onPress={onClose} />
         </Pressable>
       </Pressable>
     </Modal>

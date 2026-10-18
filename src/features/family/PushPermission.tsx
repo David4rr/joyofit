@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -20,6 +21,7 @@ interface PushPermissionProps {
  * registers this phone's push token with the Worker.
  */
 export function PushPermission({ body, unavailableHint }: PushPermissionProps) {
+  const { t } = useTranslation(['family', 'common']);
   const [outcome, setOutcome] = useState<PushOutcome | 'idle' | 'checking'>('checking');
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -43,25 +45,25 @@ export function PushPermission({ body, unavailableHint }: PushPermissionProps) {
   };
 
   return (
-    <Section title="Notifikasi" icon="notifications" tint="steps">
+    <Section title={t('family:push.section')} icon="notifications" tint="steps">
       {outcome === 'enabled' ? (
         <AppText variant="caption" muted>
-          Notifikasi aktif di ponsel ini. Notifikasi bisa terlambat dan tidak menjamin kamu langsung tahu.
+          {t('family:push.enabled', { late: t('family:push.late') })}
         </AppText>
       ) : null}
       {outcome === 'denied' ? (
-        <Notice icon="notifications-off" action={{ label: 'Buka pengaturan ponsel', onPress: () => void Linking.openSettings() }}>
-          Notifikasi dimatikan untuk JoyoFit. Nyalakan di pengaturan ponsel kalau kamu berubah pikiran.
+        <Notice icon="notifications-off" action={{ label: t('family:push.openSettings'), onPress: () => void Linking.openSettings() }}>
+          {t('family:push.denied')}
         </Notice>
       ) : null}
       {outcome === 'unavailable' ? (
         <Notice icon="notifications-off">
-          Ponsel ini tidak bisa menerima notifikasi dari JoyoFit.{unavailableHint ? ` ${unavailableHint}` : ''}
+          {unavailableHint ? t('family:push.unavailableWithHint', { hint: unavailableHint }) : t('family:push.unavailable')}
         </Notice>
       ) : null}
       {outcome === 'idle' || outcome === 'denied' || outcome === 'checking' ? (
         <Button
-          label="Aktifkan notifikasi"
+          label={t('family:push.enable')}
           icon="notifications"
           variant="primary"
           disabled={outcome === 'checking' || outcome === 'denied'}
@@ -71,10 +73,10 @@ export function PushPermission({ body, unavailableHint }: PushPermissionProps) {
       ) : null}
       <ConfirmDialog
         visible={asking}
-        title="Aktifkan notifikasi?"
+        title={t('family:push.askTitle')}
         message={body}
-        confirmLabel="Lanjut"
-        cancelLabel="Nanti saja"
+        confirmLabel={t('common:actions.next')}
+        cancelLabel={t('family:push.notNow')}
         onConfirm={() => void proceed()}
         onCancel={() => setAsking(false)}
       />

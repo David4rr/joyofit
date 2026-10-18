@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 
 import { family } from '@/cloud/family';
 import { familyDeviceId, pushPlatform } from '@/features/family/device';
+import { t } from '@/i18n';
 
 /** Foreground notifications show like any other: a banner, in the list, with sound. Set once, at import. */
 Notifications.setNotificationHandler({
@@ -16,7 +17,7 @@ const CHANNEL_ID = 'family';
 async function ensureChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-    name: 'Kabar keluarga',
+    name: t('family:push.channel'),
     importance: Notifications.AndroidImportance.HIGH,
   });
 }
@@ -38,7 +39,7 @@ export type PushOutcome =
 /** Gets this phone's Expo push token and hands it to the Worker. Throws when the token cannot be made or sent. */
 async function registerToken(): Promise<void> {
   const projectId = easProjectId();
-  if (projectId === null) throw new Error('This build has no EAS project id.');
+  if (projectId === null) throw new Error('This build has no EAS project id.'); // i18n-ok: caught, never shown
   const token = await Notifications.getExpoPushTokenAsync({ projectId });
   await family.pushToken.put(token.data, pushPlatform, await familyDeviceId());
 }

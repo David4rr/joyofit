@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/Button';
 import { NavRow } from '@/components/NavRow';
@@ -13,6 +14,7 @@ import { PersonCard } from '@/features/family/PersonCard';
 
 /** The watcher's dashboard: a card per person watched, and the way to invite another or to see who watches you. */
 export default function FamilyScreen() {
+  const { t } = useTranslation(['family', 'common']);
   const router = useRouter();
   const family = useFamilyLinks();
   const [refreshing, setRefreshing] = useState(false);
@@ -38,7 +40,7 @@ export default function FamilyScreen() {
         {family.loading ? (
           <Skeleton width="100%" height={140} radius="card" />
         ) : family.error !== null && family.limits === null ? (
-          <Notice tone="danger" action={{ label: 'Coba lagi', onPress: () => void family.refresh() }}>
+          <Notice tone="danger" action={{ label: t('common:actions.retry'), onPress: () => void family.refresh() }}>
             {family.error}
           </Notice>
         ) : (
@@ -48,40 +50,40 @@ export default function FamilyScreen() {
                 {family.watching.map((item) => (
                   <PersonCard key={item.id} item={item} onPress={() => router.push({ pathname: '/family/[id]', params: { id: item.id } })} />
                 ))}
-                <Button label="Undang orang tua" icon="person-add" variant="primary" onPress={invite} />
+                <Button label={t('family:home.inviteParents')} icon="person-add" variant="primary" onPress={invite} />
               </>
             ) : (
               <Card>
                 <EmptyState
                   icon="people"
-                  title="Belum ada yang kamu pantau"
-                  description="Undang orang tuamu. Kamu akan melihat kabar ringkas dari jam Huawei mereka, dan dapat pemberitahuan kalau ada yang tidak biasa. Mereka yang memutuskan apa yang dibagikan."
-                  action={{ label: 'Undang orang tua', icon: 'person-add', onPress: invite }}
+                  title={t('family:home.emptyTitle')}
+                  description={t('family:home.emptyDescription')}
+                  action={{ label: t('family:home.inviteParents'), icon: 'person-add', onPress: invite }}
                 />
               </Card>
             )}
-            {full ? <Notice>Kamu sudah memantau jumlah orang maksimal. Hapus salah satu dulu untuk menambah yang baru.</Notice> : null}
+            {full ? <Notice>{t('family:home.full')}</Notice> : null}
           </>
         )}
         <Card>
           <NavRow
             icon="enter"
             tint="link"
-            title="Masukkan kode undangan"
-            subtitle="Kalau seseorang mengirim kode untukmu"
+            title={t('family:home.enterCode')}
+            subtitle={t('family:home.enterCodeHint')}
             onPress={() => router.push('/family/accept')}
           />
           <Divider />
           <NavRow
             icon="shield-checkmark"
             tint="steps"
-            title="Dipantau"
+            title={t('family:home.monitored')}
             subtitle={
               family.watchedBy.some((link) => link.status === 'pending')
-                ? 'Ada permintaan yang menunggu izinmu'
+                ? t('family:home.monitoredPending')
                 : family.watchedBy.length > 0
-                  ? `${family.watchedBy.length} orang bisa melihat kabarmu`
-                  : 'Undang seseorang untuk memantau kabarmu, atau lihat apa yang kamu bagikan'
+                  ? t('family:home.monitoredCount', { count: family.watchedBy.length })
+                  : t('family:home.monitoredIdle')
             }
             onPress={() => router.push('/family/me')}
           />

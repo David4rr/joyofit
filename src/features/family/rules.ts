@@ -1,4 +1,6 @@
 import type { FamilyRules } from '@/cloud/family';
+import { clockOf } from '@/features/family/format';
+import { t } from '@/i18n';
 
 /** The ranges the Worker accepts (`rulesSchema` in `server/src/family/types.ts`). */
 export const NO_SYNC_HOURS = { min: 3, max: 48 } as const;
@@ -41,7 +43,13 @@ export function normalizeRules(rules: FamilyRules, fallback: Pick<FamilyRules, '
   };
 }
 
+/** An `HH:MM` clock in the app language: `21.30` (id), `9:30 PM` (en). */
+export function clockText(value: string): string {
+  const [h, m] = value.split(':').map(Number);
+  return clockOf(new Date(2000, 0, 1, h, m));
+}
+
 /** `21.30 sampai 06.30`. */
 export function quietText(rules: Pick<FamilyRules, 'quietStart' | 'quietEnd'>): string {
-  return `${rules.quietStart.replace(':', '.')} sampai ${rules.quietEnd.replace(':', '.')}`;
+  return t('family:rules.quietRange', { from: clockText(rules.quietStart), to: clockText(rules.quietEnd) });
 }

@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { family, type FamilyScopes } from '@/cloud/family';
 import { AppText } from '@/components/AppText';
@@ -13,8 +14,8 @@ import {
   consentIntro,
   consentRevoke,
   consentTitle,
-  NEVER_SHARED,
-  SCOPE_ROWS,
+  neverSharedText,
+  scopeRows,
 } from '@/features/family/copy';
 import { DisclaimerCard } from '@/features/family/DisclaimerCard';
 import { FamilyGate } from '@/features/family/FamilyGate';
@@ -25,6 +26,7 @@ import { useFamilyLinks } from '@/features/family/FamilyProvider';
  * watch's last sync time and battery are required). The not-real-time notice comes first.
  */
 export default function ConsentScreen() {
+  const { t } = useTranslation(['family', 'common']);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const ctx = useFamilyLinks();
@@ -61,7 +63,7 @@ export default function ConsentScreen() {
               <DisclaimerCard />
               <Card>
                 <AppText variant="body">{consentIntro(link.otherName)}</AppText>
-                {SCOPE_ROWS.map((row) => (
+                {scopeRows().map((row) => (
                   <SwitchRow
                     key={row.key}
                     label={row.label}
@@ -73,7 +75,7 @@ export default function ConsentScreen() {
                 ))}
                 <Divider />
                 <AppText variant="caption" muted>
-                  {NEVER_SHARED}
+                  {neverSharedText()}
                 </AppText>
                 <AppText variant="caption" muted>
                   {consentAlerts(link.otherName)}
@@ -83,19 +85,19 @@ export default function ConsentScreen() {
                 </AppText>
               </Card>
               {error ? <Notice tone="danger">{error}</Notice> : null}
-              <Button label="Lanjut" variant="primary" loading={busy} onPress={() => void agree()} />
-              <Button label="Nanti saja" disabled={busy} onPress={later} />
+              <Button label={t('common:actions.next')} variant="primary" loading={busy} onPress={() => void agree()} />
+              <Button label={t('family:consent.later')} disabled={busy} onPress={later} />
             </>
           ) : (
-            <Notice action={{ label: 'Lihat yang dibagikan', onPress: () => router.replace('/family/me') }}>
-              Izin ini sudah kamu atur. Pengaturannya ada di layar Dipantau.
+            <Notice action={{ label: t('family:consent.seeShared'), onPress: () => router.replace('/family/me') }}>
+              {t('family:consent.handled')}
             </Notice>
           )
         ) : ctx.loading ? (
           <Skeleton width="100%" height={240} radius="card" />
         ) : (
-          <Notice tone="danger" action={{ label: 'Kembali', onPress: later }}>
-            {ctx.error ?? 'Permintaan ini tidak ditemukan. Mungkin sudah dibatalkan.'}
+          <Notice tone="danger" action={{ label: t('common:actions.back'), onPress: later }}>
+            {ctx.error ?? t('family:consent.notFound')}
           </Notice>
         )}
       </FamilyGate>

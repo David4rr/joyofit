@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -33,16 +34,17 @@ function StepButton({ icon, label, onPress, disabled }: { icon: 'remove' | 'add'
 
 /** A label with its value between a minus and a plus: for a number that moves in small steps. */
 export function StepperRow({ label, value, onLess, onMore, canLess = true, canMore = true, disabled }: StepperRowProps) {
+  const { t } = useTranslation('family');
   return (
     <View style={styles.row}>
       <AppText variant="body" style={styles.label} muted={disabled}>
         {label}
       </AppText>
-      <StepButton icon="remove" label={`Kurangi: ${label}`} onPress={onLess} disabled={!!disabled || !canLess} />
+      <StepButton icon="remove" label={t('rules.less', { label })} onPress={onLess} disabled={!!disabled || !canLess} />
       <AppText variant="bodyStrong" style={styles.value} accessibilityLiveRegion="polite">
         {value}
       </AppText>
-      <StepButton icon="add" label={`Tambah: ${label}`} onPress={onMore} disabled={!!disabled || !canMore} />
+      <StepButton icon="add" label={t('rules.more', { label })} onPress={onMore} disabled={!!disabled || !canMore} />
     </View>
   );
 }
