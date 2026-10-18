@@ -120,7 +120,14 @@ Written 2026-10-18. Master carries native changes (BLE sensors, phone recording,
 
 ### New runtimes
 
-Filled in below from the first store build of the merged master.
+Read from the binaries of the store build cut from master `8461444` (2026-10-18), not from `scripts/ota.sh --runtime` (see "When the printed runtime does not match the installed one"):
+
+| Platform | Build | Runtime embedded in the binary | `ota.sh --runtime` on `8461444` |
+| --- | --- | --- | --- |
+| Android | AAB versionCode 1470815 (`assets/fingerprint`) | `1fe3a3e01c827e0364b68fcef03752c681b8cdbe` | `71b7dc6b9006dfd9ee793ecbe4e92837130a8628` |
+| iOS | TestFlight 1.0 (202610180938) (`EXUpdates.bundle/fingerprint`) | `62b33b49c9d0ac991f023d22487f71d7c60b63c0` | `b805b384f29fabf875bf568341b487e32c88bf23` |
+
+Publish for the embedded values: `scripts/ota.sh --platform <p> --runtime-version <hash> "message"`.
 
 ## When OTA is not enough
 
