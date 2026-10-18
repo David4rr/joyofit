@@ -216,7 +216,7 @@
     "connectWatch": "Hubungkan jammu",
     "empty": {
       "title": "Belum ada latihan",
-      "description": "Mulai satu di atas. Sesi dari jammu juga muncul di sini setelah sinkronisasi.",
+      "description": "Mulai satu di atas. Sesi dari jam-mu juga muncul di sini setelah sinkronisasi.",
       "descriptionNoWatch": "Latihan yang kamu rekam di HP, catat, atau impor dari file FIT muncul di sini. Jam tidak diperlukan."
     },
     "partial": "Baru terunduh sebagian; sinkronisasi berikutnya mengambil sisanya.",
