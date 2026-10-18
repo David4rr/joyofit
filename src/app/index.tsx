@@ -38,7 +38,7 @@ import { ScoresCard } from '@/features/today/ScoresCard';
 import { useRogoScoresPush } from '@/features/today/useRogoScoresPush';
 import { rogoDailyMetrics } from '@/features/today/rogoScores';
 import { useFitnessData } from '@/features/fitness/useFitnessData';
-import { ShareTodayButton } from '@/features/share/ShareTodayButton';
+import { ShareTodayButton } from '@/features/stickers/ui/ShareTodayButton';
 import { formatElapsed } from '@/features/workouts/summary';
 import { formatClock, formatCount, formatDistance } from '@/format';
 import { useNow } from '@/hooks/useNow';
@@ -111,7 +111,7 @@ function WatchToday() {
       caption={new Date().toLocaleDateString(INTL_TAG[getLocale()], WEEKDAY_FORMAT)}
       right={
         data && view ? (
-          <ShareTodayButton day={view.share} nowMs={data.nowSec * 1000} />
+          <ShareTodayButton day={view.share} nowMs={data.nowSec * 1000} stepGoal={goal} restingHr={data.resting.get(data.dayStart) ?? null} />
         ) : null
       }
       refresh={{ refreshing: syncing, onRefresh: () => void sync(), enabled: canSync }}>

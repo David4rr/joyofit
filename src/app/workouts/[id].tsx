@@ -27,7 +27,7 @@ import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/st
 import { GearWorkoutSection } from '@/features/gear/ui/GearWorkoutSection';
 import { CoachFeedbackSection } from '@/features/coach/ui/CoachFeedbackSection';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
-import { ShareWorkoutButton } from '@/features/share/ShareWorkoutSheet';
+import { ShareRunButton } from '@/features/stickers/ui/ShareRunButton';
 import { ShareToRogoButton } from '@/features/social/ShareToRogo';
 import { SaveWorkoutRouteButton } from '@/features/routes/SaveWorkoutRouteButton';
 import { analyzeWorkout } from '@/features/workouts/analysis/analyze';
@@ -284,9 +284,14 @@ export default function WorkoutDetailScreen() {
             </Figure>
           ) : null}
         </View>
-        <ShareWorkoutButton workout={workout} summary={shareSummary} route={route} />
         {bare ? null : (
           <>
+            <ShareRunButton
+              workout={workout}
+              summary={shareSummary}
+              route={route}
+              analysis={analysisState.status === 'ready' ? analysisState.analysis : null}
+            />
             <ShareToRogoButton
               workout={workout}
               points={loaded.points}

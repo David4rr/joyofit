@@ -1,5 +1,4 @@
 {
-  "title": "Bagikan latihan beban",
   "fallbackName": "Latihan beban",
   "unknownExercise": "Gerakan",
   "stats": {
@@ -23,8 +22,7 @@
   },
   "share": {
     "heading": "Bagikan latihan",
-    "caption": "Dicatat dengan JoyoFit · https://fit.joyorogo.com",
-    "hint": "Angka latihanmu di kartu JoyoFit gelap."
+    "caption": "Dicatat dengan JoyoFit · https://fit.joyorogo.com"
   },
   "actions": {
     "title": "Bagikan dan kirim",

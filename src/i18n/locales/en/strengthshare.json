@@ -1,5 +1,4 @@
 {
-  "title": "Share strength workout",
   "fallbackName": "Strength workout",
   "unknownExercise": "Exercise",
   "stats": {
@@ -27,8 +26,7 @@
   },
   "share": {
     "heading": "Share workout",
-    "caption": "Tracked with JoyoFit · https://fit.joyorogo.com",
-    "hint": "Your workout numbers on a dark JoyoFit card."
+    "caption": "Tracked with JoyoFit · https://fit.joyorogo.com"
   },
   "actions": {
     "title": "Share and send",

@@ -13,6 +13,8 @@ and Apple Health screens); `src/components/brandRules.ts` holds the per-platform
 | Claude, ChatGPT | None. Text only ("Claude, ChatGPT and other AI apps"). | Settings → AI connections | The marks belong to Anthropic and OpenAI and are for their own services and partners. The screen is a generic MCP connector, so it keeps a neutral sparkles icon. |
 | Huawei, Honor | None. Names only, nominatively. | Whole app | See `LEGAL.md` and `NOTICE`: JoyoFit is unofficial and has no Huawei or Honor logo. |
 
+Share stickers (`src/features/stickers/`) draw only JoyoFit's own mark and name. No sticker carries a Strava, Apple Health or Health Connect mark: JoyoFit shows no Strava data, and the Apple and Google artwork is allowed only in the app UI (see `docs/sticker-studio.md`).
+
 ## Apple Health icon in a public repository: owner decision
 
 JoyoFit is AGPL-3.0-or-later and its repository is public or may become so. The Apple artwork licence allows the icon in

@@ -1,0 +1,201 @@
+{
+  "label": {
+    "distance": "Jarak",
+    "time": "Waktu",
+    "pace": "Pace",
+    "speed": "Kecepatan",
+    "avgHr": "Detak rata-rata",
+    "maxHr": "Detak maks",
+    "hr": "Detak",
+    "kcal": "Kalori",
+    "elevation": "Elevasi",
+    "cadence": "Kadensi",
+    "effort": "Beban",
+    "steps": "Langkah",
+    "sleep": "Tidur",
+    "recovery": "Pemulihan",
+    "strain": "Beban",
+    "volume": "Volume",
+    "reps": "Repetisi",
+    "sets": "Set",
+    "duration": "Durasi",
+    "workouts": "Latihan",
+    "activeDays": "Hari aktif"
+  },
+  "unit": {
+    "perKm": "/km",
+    "per100m": "/100 m",
+    "kmh": "km/j",
+    "bpm": "bpm",
+    "kcal": "kcal",
+    "m": "m",
+    "spm": "spm",
+    "kg": "kg",
+    "km": "km"
+  },
+  "ui": {
+    "filter": {
+      "all": "Semua",
+      "card": "Kartu",
+      "sticker": "Stiker",
+      "photo": "Foto",
+      "badge": "Lencana"
+    },
+    "canvas": {
+      "story": "Story 9:16",
+      "square": "Persegi 1:1"
+    },
+    "mode": {
+      "dark": "Gelap",
+      "light": "Terang"
+    },
+    "routePrivacy": {
+      "label": "Sembunyikan awal dan akhir rute",
+      "hint": "Memotong 200 m pertama dan terakhir supaya rumahmu tidak kelihatan."
+    },
+    "watermark": {
+      "label": "Tampilkan logo JoyoFit",
+      "hintPro": "Kamu bisa mematikannya karena kamu Pro.",
+      "hintFree": "Hanya pengguna Pro yang bisa mematikannya."
+    },
+    "photo": {
+      "choose": "Pilih foto",
+      "change": "Ganti foto",
+      "take": "Ambil foto",
+      "placeholder": "Pilih foto dari galeri atau ambil foto baru.",
+      "failed": "Foto itu tidak bisa dimuat. Pilih foto lain.",
+      "needed": "Tambahkan fotomu dulu untuk membagikan kartu ini."
+    },
+    "hint": {
+      "sticker": "PNG transparan. Kirim ke Story Instagram sebagai stiker, atau salin lalu tempel di atas fotomu sendiri.",
+      "photo": "Fotomu dengan angka di atasnya.",
+      "card": "Kartu penuh untuk Story, WhatsApp, atau feed."
+    },
+    "preparing": "Menyiapkan gambar",
+    "entry": {
+      "sleep": "Bagikan tidurmu",
+      "week": "Bagikan minggu ini",
+      "badges": "Bagikan pencapaian",
+      "plan": "Bagikan progres rencana"
+    }
+  },
+  "tpl": {
+    "strength": {
+      "bold": "Tebal",
+      "poster": "Poster",
+      "minimal": "Minimal",
+      "muscle": "Beban otot",
+      "photo": "Foto",
+      "receipt": "Struk",
+      "stats": "Statistik",
+      "text": {
+        "newPr_other": "{{count}} PR baru",
+        "exercises_other": "{{count}} gerakan",
+        "topSets": "Set terbaik",
+        "muscleLoad": "Beban otot, set",
+        "rpe": "RPE",
+        "pr": "PR",
+        "thanks": "Makasih sudah angkat. Sampai ketemu di rak."
+      }
+    },
+    "week": {
+      "bold": "Tebal",
+      "poster": "Poster",
+      "stats": "Statistik",
+      "text": {
+        "title": "Minggu ini",
+        "kicker": "Rekap mingguan"
+      }
+    },
+    "load": {
+      "bars": "Batang",
+      "stats": "Statistik",
+      "text": {
+        "title": "Beban latihan",
+        "status": "Status",
+        "ratio": "Rasio",
+        "total": "Total beban"
+      }
+    },
+    "plan": {
+      "ring": "Cincin",
+      "stats": "Statistik",
+      "text": {
+        "weekOf": "Minggu {{week}} dari {{weeks}}",
+        "complete": "selesai",
+        "next": "Berikutnya",
+        "sessionsDone": "{{done}} dari {{total}} sesi selesai",
+        "weekN": "Minggu {{week}}",
+        "weekKicker": "Minggu ke"
+      }
+    },
+    "badge": {
+      "medal": "Medali",
+      "streak": "Streak",
+      "pr": "Rekor",
+      "bold": "Tebal",
+      "text": {
+        "earned": "Pencapaian baru",
+        "best_other": "Terbaik: {{count}} hari",
+        "record": "Rekor pribadi",
+        "streakNow": "Streak kamu",
+        "streakBest": "Streak terbaik"
+      }
+    },
+    "run": {
+      "bold": "Tebal",
+      "poster": "Poster",
+      "minimal": "Minimal",
+      "photo": "Foto",
+      "glass": "Kaca",
+      "route": "Rute",
+      "stats": "Statistik",
+      "receipt": "Struk",
+      "map": "Peta",
+      "splits": "Split",
+      "zones": "Zona",
+      "text": {
+        "total": "Total",
+        "thanks": "Makasih sudah lari",
+        "splits": "Per km",
+        "zones": "Zona detak jantung"
+      }
+    },
+    "sleep": {
+      "ring": "Cincin skor",
+      "stages": "Fase tidur",
+      "poster": "Poster",
+      "stats": "Statistik",
+      "text": {
+        "night": "Semalam",
+        "asleep": "Tertidur",
+        "score": "Skor tidur",
+        "deep": "Dalam",
+        "rem": "REM",
+        "light": "Ringan",
+        "awake": "Terjaga",
+        "bedWake": "Tidur {{bed}}, bangun {{wake}}",
+        "awakenings_other": "{{count}}x terbangun",
+        "target": "Target 8 jam",
+        "poster": "Catatan tidur",
+        "vsMore": "{{time}} lebih lama dari rata-ratamu"
+      }
+    },
+    "ready": {
+      "rings": "Cincin",
+      "bold": "Tebal",
+      "stats": "Pemulihan",
+      "text": {
+        "today": "Hari ini",
+        "ofGoal": "dari {{goal}}"
+      }
+    },
+    "watch": {
+      "rings": "Cincin",
+      "tiles": "Ubin",
+      "text": {
+        "rhr": "Detak istirahat"
+      }
+    }
+  }
+}

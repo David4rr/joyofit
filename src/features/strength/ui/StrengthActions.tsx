@@ -10,13 +10,13 @@ import { KeyValue } from '@/components/KeyValue';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import type { StravaUploadRow } from '@/db/strava';
+import { ShareStrengthSheet } from '@/features/stickers/ui/ShareStrengthButton';
 import { ViewOnStrava } from '@/features/strava/StravaLink';
 import { errorMessage } from '@/format';
 import { useStrava } from '@/state/StravaProvider';
 
 import type { PersonalRecord } from '../calc';
 import type { Catalog } from '../catalog';
-import { StrengthShareSheet } from '../share/StrengthShareSheet';
 import { sendStrengthToStrava, strengthStravaStatus } from '../strava';
 import type { StrengthWorkout } from '../types';
 
@@ -78,7 +78,7 @@ export function StrengthActions({ workout, catalog, records }: Props): ReactElem
   return (
     <Section title={t('strengthshare:actions.title')} icon="share-social" tint="workouts">
       <Button label={t('common:actions.share')} icon="share-outline" onPress={() => setSheetOpen(true)} />
-      <StrengthShareSheet workout={workout} catalog={catalog} records={records} visible={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <ShareStrengthSheet workout={workout} catalog={catalog} records={records} visible={sheetOpen} onClose={() => setSheetOpen(false)} />
 
       {!connected ? (
         <>
