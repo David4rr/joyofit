@@ -128,6 +128,14 @@ internal class WearSettings(context: Context) {
     get() = if (prefs.contains(KEY_AUTO_STRESS_LISTED)) prefs.getBoolean(KEY_AUTO_STRESS_LISTED, false) else null
     set(value) = prefs.edit().apply { if (value == null) remove(KEY_AUTO_STRESS_LISTED) else putBoolean(KEY_AUTO_STRESS_LISTED, value) }.apply()
 
+  /**
+   * The [SleepCleaning.SLEEP_RULES_VERSION] the stored night HRV rows were last re-derived under, 0 before. Set by the night
+   * HRV sync once it has gone through the whole file (see [SleepRulesRepair]).
+   */
+  var nightHrvRulesVersion: Int
+    get() = prefs.getInt(KEY_NIGHT_HRV_RULES, 0)
+    set(value) = prefs.edit().putInt(KEY_NIGHT_HRV_RULES, value).apply()
+
   var profile: UserProfileData?
     get() {
       if (!prefs.contains(KEY_PROFILE_HEIGHT)) return null
@@ -183,5 +191,6 @@ internal class WearSettings(context: Context) {
     private const val KEY_STRESS_ENABLED = "stress_automatic"
     private const val KEY_STRESS_CALIBRATION = "stress_calibration"
     private const val KEY_AUTO_STRESS_LISTED = "stress_auto_listed"
+    private const val KEY_NIGHT_HRV_RULES = "night_hrv_sleep_rules_version"
   }
 }

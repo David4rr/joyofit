@@ -38,7 +38,7 @@ internal interface FamilySource {
   /** Every `spo2` reading above zero. */
   fun spo2Readings(fromSec: Long, toSec: Long): List<Int>
 
-  /** Sleep segments that end in the range. */
+  /** Sleep segments that end in the range, stage-less ones already cleaned of what was not sleep ([SleepCleaning]). */
   fun sleepSegments(fromSec: Long, toSec: Long): List<SleepSegment>
 }
 
@@ -143,7 +143,8 @@ internal object FamilySummary {
   /**
    * Minutes asleep of the night that ends on each of [dates]. Blips and stray unstaged spans are dropped first (the
    * rules Today's last night uses, [withoutBlips], [withoutStrayUnstaged]) with a margin of segments around the range so
-   * the edges see their neighbours; awake stretches do not count. A date without sleep is absent.
+   * the edges see their neighbours; awake stretches do not count. A date without sleep is absent. Minutes are summed
+   * per night window, not per session, so [SleepSegment.breakBefore] changes nothing here.
    */
   private fun nightMinutes(dates: List<LocalDate>, zone: ZoneId, source: FamilySource): Map<LocalDate, Int> {
     val windows = dates.associateWith { nightWindow(it, zone) }

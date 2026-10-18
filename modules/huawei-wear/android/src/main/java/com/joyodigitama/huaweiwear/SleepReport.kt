@@ -93,14 +93,17 @@ internal object SleepReport {
   /** A report is only pushed this long after waking up at most; later it is not a morning report any more. */
   const val MAX_AGE_SEC = 8 * 3600L
 
-  /** The latest session of [segments], chained with gaps up to [SESSION_GAP_SEC] (`lastSleepSession` in `stats.ts`). */
+  /**
+   * The latest session of [segments], chained with gaps up to [SESSION_GAP_SEC] and cut at a segment marked
+   * [SleepSegment.breakBefore] (`lastSleepSession` in `stats.ts`).
+   */
   fun lastNight(segments: List<SleepSegment>): SleepNight? {
     if (segments.isEmpty()) return null
     val sorted = withoutBlips(withoutStrayUnstaged(segments))
     if (sorted.isEmpty()) return null
     var first = sorted.size - 1
     var earliest = sorted[first].start
-    while (first > 0 && earliest - sorted[first - 1].end <= SESSION_GAP_SEC) {
+    while (first > 0 && !sorted[first].breakBefore && earliest - sorted[first - 1].end <= SESSION_GAP_SEC) {
       first--
       earliest = minOf(earliest, sorted[first].start)
     }

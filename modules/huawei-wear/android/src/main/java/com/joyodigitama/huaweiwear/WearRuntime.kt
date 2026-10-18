@@ -186,6 +186,28 @@ internal class WearRuntime private constructor(context: Context) {
 
   init {
     DataSyncFeatures.install(this)
+    repairSleepRules()
+  }
+
+  /**
+   * Once after an update that changed the sleep rules ([SleepCleaning.SLEEP_RULES_VERSION]): the Health Connect sessions
+   * the old rules wrote are replaced, and the night HRV rows that are no longer sleep are removed. The Today screen, the
+   * sleep report, the family summary and the model data need nothing: they clean the stored rows on every read. The
+   * night HRV rows that stay are recomputed by the next sync ([NightHrvSync]).
+   */
+  private fun repairSleepRules() {
+    healthConnect.repairSleepIfDue()
+    if (!SleepRulesRepair.nightHrvDue(settings)) return
+    scope.launch(Dispatchers.IO) {
+      try {
+        val removed = SleepRulesRepair.pruneNightHrv(syncStore.db())
+        events.log(LogDirection.INFO, null, null, null, "Sleep rules ${SleepCleaning.SLEEP_RULES_VERSION}: $removed stored night HRV rows were not sleep any more and were removed")
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        events.log(LogDirection.ERROR, null, null, null, "Sleep rules: could not repair the night HRV rows: ${e.message ?: e.javaClass.simpleName}")
+      }
+    }
   }
 
   fun addListener(listener: WearEvents) {

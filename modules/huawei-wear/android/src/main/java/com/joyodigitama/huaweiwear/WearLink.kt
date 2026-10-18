@@ -788,7 +788,7 @@ internal class WearLink(
    */
   private suspend fun syncNightHrv(connection: Connection, fullHistory: Boolean) {
     try {
-      NightHrvSync(connection.session, events, syncStore).sync(System.currentTimeMillis() / 1000, fullHistory)
+      NightHrvSync(connection.session, events, syncStore, settings).sync(System.currentTimeMillis() / 1000, fullHistory)
     } catch (e: CancellationException) {
       throw e
     } catch (e: WearException) {

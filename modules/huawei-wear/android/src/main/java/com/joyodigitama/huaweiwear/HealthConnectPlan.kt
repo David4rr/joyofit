@@ -112,10 +112,10 @@ internal object HealthConnectPlan {
   }
 
   /**
-   * Groups sleep spans into sessions (gap over [SLEEP_SESSION_GAP_SEC] starts a new one) and turns
-   * each into ordered, non-overlapping stages. Where spans overlap, the earlier-starting one keeps
-   * the time. Sessions that end before [fromSec] are left out, so a window can reach back far
-   * enough to see a whole night without rewriting older ones.
+   * Groups sleep spans into sessions (a gap over [SLEEP_SESSION_GAP_SEC], or a segment marked
+   * [SleepSegment.breakBefore], starts a new one) and turns each into ordered, non-overlapping stages. Where spans
+   * overlap, the earlier-starting one keeps the time. Sessions that end before [fromSec] are left out, so a window can
+   * reach back far enough to see a whole night without rewriting older ones.
    */
   fun sleepSessions(segments: List<SleepSegment>, fromSec: Long): List<SleepPlan> {
     val sessions = ArrayList<SleepPlan>()
@@ -132,7 +132,7 @@ internal object HealthConnectPlan {
 
     for (s in withoutBlips(withoutStrayUnstaged(segments))) {
       if (s.end <= s.start) continue
-      if (stages.isNotEmpty() && s.start - cursor > SLEEP_SESSION_GAP_SEC) close()
+      if (stages.isNotEmpty() && (s.breakBefore || s.start - cursor > SLEEP_SESSION_GAP_SEC)) close()
       val start = if (stages.isNotEmpty()) maxOf(s.start, cursor) else s.start
       if (s.end <= start) continue
       val kind = stageKind(s.stage)
@@ -146,5 +146,17 @@ internal object HealthConnectPlan {
     }
     close()
     return sessions
+  }
+
+  /**
+   * Client record ids of sleep sessions that an earlier build wrote and the cleaned plan no longer holds. Before the
+   * stage-less cleaning ([SleepCleaning]) sessions were planned from the stored rows as they are, so [raw] planned
+   * again with [sleepSessions] gives the ids that build wrote; every one that [planned] does not carry is a record
+   * Health Connect must lose (a session built on a stress check, or one that began with a morning run). An id both
+   * plans carry is rewritten in place by the export's upsert.
+   */
+  fun staleSleepIds(raw: List<SleepSegment>, planned: List<SleepPlan>, fromSec: Long): List<String> {
+    val keep = planned.mapTo(HashSet()) { it.id }
+    return sleepSessions(raw, fromSec).map { it.id }.filter { it !in keep }
   }
 }

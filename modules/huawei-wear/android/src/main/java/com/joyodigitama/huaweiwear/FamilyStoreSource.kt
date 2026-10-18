@@ -42,16 +42,9 @@ internal class FamilyStoreSource(private val store: SyncStore) : FamilySource {
     }
   }
 
-  override fun sleepSegments(fromSec: Long, toSec: Long): List<SleepSegment> = store.read { db ->
-    db.rawQuery(
-      "SELECT start, end, type, stage FROM sleep_segments WHERE imported = 0 AND end >= ? AND end < ? ORDER BY start",
-      range(fromSec, toSec),
-    ).use {
-      val segments = ArrayList<SleepSegment>(it.count)
-      while (it.moveToNext()) segments.add(SleepSegment(it.getLong(0), it.getLong(1), it.getInt(2), if (it.isNull(3)) null else it.getString(3)))
-      segments
-    }
-  }
+  /** Segments ending in the range, stage-less ones cleaned of what was not sleep ([SleepStore]); rows of a Huawei export are left out. */
+  override fun sleepSegments(fromSec: Long, toSec: Long): List<SleepSegment> =
+    store.read { db -> SleepStore.load(db, fromSec, toSec, importedOnly = true) }
 
   private fun range(fromSec: Long, toSec: Long) = arrayOf(fromSec.toString(), toSec.toString())
 }

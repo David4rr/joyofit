@@ -139,8 +139,8 @@ internal object NightHrv {
 
   /**
    * Sleep sessions of [segments] like `buildNights` in `nights.ts`: unstaged strays dropped, sessions split where the gap
-   * exceeds [SleepReport.SESSION_GAP_SEC]. Asleep means deep, light or rem; segments without any decoded stage in the
-   * session count as asleep as a whole. Oldest first.
+   * exceeds [SleepReport.SESSION_GAP_SEC] or a segment is marked [SleepSegment.breakBefore]. Asleep means deep, light
+   * or rem; segments without any decoded stage in the session count as asleep as a whole. Oldest first.
    */
   fun nights(segments: List<SleepSegment>): List<NightSpan> {
     val sorted = withoutBlips(withoutStrayUnstaged(segments))
@@ -149,7 +149,7 @@ internal object NightHrv {
     for (s in sorted) {
       if (s.end <= s.start) continue
       val current = sessions.lastOrNull()
-      if (current != null && s.start - reach <= SleepReport.SESSION_GAP_SEC) {
+      if (current != null && !s.breakBefore && s.start - reach <= SleepReport.SESSION_GAP_SEC) {
         current.add(s)
       } else {
         sessions.add(mutableListOf(s))
@@ -268,24 +268,39 @@ internal object NightHrvDiagnostics {
 /**
  * The nightly HRV step of an activity sync: downloads `rrisqi_data.bin` for the window, works out each sleep night the
  * window covers and upserts `hrv_readings` (source `night`). Everything here is best effort: the caller isolates it.
+ *
+ * After an update that changed the sleep rules ([SleepCleaning.SLEEP_RULES_VERSION]) the first sync also deletes the
+ * stored nights that are no longer sleep and reads the whole file, so every night whose span changed is recomputed
+ * ([SleepRulesRepair]); the marker is set when that sync got through.
  */
 internal class NightHrvSync(
   session: HuaweiSession,
   private val events: WearEvents,
   private val store: SyncStore,
+  private val settings: WearSettings,
 ) {
   private val downloader = FileDownloader(session, events)
 
   suspend fun sync(nowSec: Long, fullHistory: Boolean = false) {
     val diag = NightHrvDiagnostics.Builder(nowSec)
     try {
-      run(nowSec, fullHistory, diag)
+      val repairing = SleepRulesRepair.nightHrvDue(settings)
+      if (repairing) {
+        val removed = withContext(Dispatchers.IO) { SleepRulesRepair.pruneNightHrv(store.db()) }
+        log("Night HRV: sleep rules version ${SleepCleaning.SLEEP_RULES_VERSION}: $removed stored nights are no longer sleep and were removed, the rest is recomputed from the whole file")
+      }
+      val complete = run(nowSec, fullHistory, repairing, diag)
+      if (repairing && complete) settings.nightHrvRulesVersion = SleepCleaning.SLEEP_RULES_VERSION
     } finally {
       NightHrvDiagnostics.last = diag.snapshot()
     }
   }
 
-  private suspend fun run(nowSec: Long, fullHistory: Boolean, diag: NightHrvDiagnostics.Builder) {
+  /**
+   * True when the step ran through for what the watch holds (a download that failed or could not be read is false, so a
+   * night HRV repair waits for the next sync).
+   */
+  private suspend fun run(nowSec: Long, fullHistory: Boolean, repairing: Boolean, diag: NightHrvDiagnostics.Builder): Boolean {
     val autoStress = DeviceCaps.supports(NightHrv.GATE_SERVICE, NightHrv.GATE_COMMAND)
     val newSync = DeviceCaps.rriNewSync
     diag.gate = autoStress
@@ -296,7 +311,7 @@ internal class NightHrvSync(
     if (!autoStress) {
       diag.result = "gate closed: the watch does not list 20/09, so it cannot record night HRV for us (stress file skipped, as GB)"
       log("Night HRV: service 0x20 command 0x09 not supported, RRI file skipped (as GB)")
-      return
+      return true
     }
 
     val lastEnd = withContext(Dispatchers.IO) {
@@ -306,7 +321,7 @@ internal class NightHrvSync(
         }
       }
     }
-    val from = NightHrv.windowStart(lastEnd, nowSec, fullHistory)
+    val from = NightHrv.windowStart(lastEnd, nowSec, fullHistory || repairing)
     val request = FileRequest.rri(newSync, from.toInt(), nowSec.toInt())
     log("Night HRV: requesting $request (last stored night ends ${lastEnd ?: "never"})")
     val data = try {
@@ -319,13 +334,13 @@ internal class NightHrvSync(
       // request with an error status or file size -1, which surfaces here as a protocol error.
       diag.result = "file not available [${e.errorCode}]: ${e.message}"
       events.log(LogDirection.ERROR, null, null, null, "Night HRV: ${request.filename} not available, skipped [${e.errorCode}]: ${e.message}")
-      return
+      return false
     }
     diag.fileBytes = data.size
     if (data.isEmpty()) {
       diag.result = "file empty: the watch holds no stress record in the window (automatic stress off, or nothing measured yet)"
       log("Night HRV: ${request.filename} is empty, the watch has no stress records in the window (automatic stress off, or nothing measured yet)")
-      return
+      return true
     }
     log("Night HRV: ${request.filename} ${data.size} bytes, header ${data.copyOf(minOf(NightHrv.HEADER_BYTES, data.size)).toHex()}")
 
@@ -333,37 +348,26 @@ internal class NightHrvSync(
     if (file == null) {
       diag.result = "file shorter than its ${NightHrv.HEADER_BYTES} byte header, ignored"
       log("Night HRV: file shorter than the ${NightHrv.HEADER_BYTES} byte header, ignored")
-      return
+      return false
     }
     log("Night HRV: parsed fileSize=${file.fileSize} version=${file.version} bitmap=${file.bitmap} records=${file.records.size}")
     diag.records = file.records.size
     if (!file.understood) {
       diag.result = "file version ${file.version} not known (GB only knows 3), no records read"
       log("Night HRV: file version ${file.version} is not known (GB only knows 3), no records read")
-      return
+      return false
     }
     if (file.records.isEmpty()) {
       diag.result = "file has a header but no stress records"
       log("Night HRV: file has no records")
-      return
+      return true
     }
     diag.recordSpan = "${file.records.minOf { it.startSec }}..${file.records.maxOf { it.endSec }}"
     log("Night HRV: records span ${diag.recordSpan}")
     for (r in file.records.sortedBy { it.startSec }.takeLast(LOGGED_RECORDS)) log("Night HRV: record $r")
     diag.result = "records read"
 
-    val segments = withContext(Dispatchers.IO) {
-      store.read { db ->
-        db.rawQuery(
-          "SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? ORDER BY start",
-          arrayOf((from - SleepReport.SESSION_GAP_SEC).toString()),
-        ).use { c ->
-          val out = ArrayList<SleepSegment>()
-          while (c.moveToNext()) out.add(SleepSegment(c.getLong(0), c.getLong(1), c.getInt(2), if (c.isNull(3)) null else c.getString(3)))
-          out
-        }
-      }
-    }
+    val segments = withContext(Dispatchers.IO) { store.read { db -> SleepStore.load(db, from - SleepReport.SESSION_GAP_SEC) } }
     val nights = NightHrv.nights(segments)
     log("Night HRV: ${segments.size} sleep segments in ${nights.size} sessions since ${from - SleepReport.SESSION_GAP_SEC}")
 
@@ -403,6 +407,7 @@ internal class NightHrvSync(
     }
     diag.result = if (stored > 0) "records read, $stored nights stored" else "records read, no night stored"
     log("Night HRV: $stored nights stored")
+    return true
   }
 
   /** A night's row replaces any earlier row for an overlapping session (its start moves when more sleep arrives). */
