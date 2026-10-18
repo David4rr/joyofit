@@ -62,7 +62,7 @@
     "version": "Versi",
     "license": "Lisensi",
     "privacyTitle": "Privasi",
-    "privacy": "Data jam tetap di ponsel ini, di joyofit.db, sampai kamu masuk ke cloud. Cuaca, kalau dinyalakan, mengirim koordinat yang sudah dibulatkan ke Open-Meteo. Kebijakan privasi: fit.joyorogo.com/privasi"
+    "privacy": "Data jam tetap di ponsel ini, di joyofit.db, sampai kamu masuk ke cloud. Dengan Pro, data siklus (bisa dimatikan), pengaturan, template stiker, dan rute tersimpan juga ikut akunmu di cloud. Keluar tidak menghapus data di ponsel tanpa kamu pilih. Cuaca, kalau dinyalakan, mengirim koordinat yang sudah dibulatkan ke Open-Meteo. Kebijakan privasi: fit.joyorogo.com/privasi"
   },
   "advanced": {
     "bleDenied": "Izin perangkat sekitar ditolak: jam dicoba di alamat yang sudah dipasangkan tanpa pemindaian.",
@@ -170,7 +170,16 @@
     "mobileMessage": "Hanya Wi-Fi sedang nyala dan ponsel ini tidak tersambung Wi-Fi. Sinkron sekarang bisa memakai banyak data seluler kalau ada latihan yang menunggu.",
     "wipeTitle": "Hapus data cloud?",
     "wipeMessage": "Menghapus latihan, langkah, dan tidurmu dari cloud. Data di ponsel ini dan akunmu tetap ada, dan sinkron otomatis dimatikan supaya tidak ada yang diunggah lagi sampai kamu menyalakannya kembali.",
-    "details": "Sinkron cloud adalah bagian dari JoyoRogo Pro. Dengan akun Pro, setiap latihan diunggah ke akun JoyoRogo kamu sebagai satu file terkompresi: jalur GPS, detak jantung, kecepatan, kadensi, daya, dan analisis yang ditampilkan aplikasi, sehingga aman kalau ponsel hilang, tampil di web JoyoRogo, dan dipulihkan ke ponsel baru setelah kamu masuk. Langkah, detak jantung, SpO2, tidur, dan alamat Bluetooth jam masuk ke cloud JoyoFit dengan akun yang sama. Tanpa Pro tidak ada yang diunggah dan latihanmu tetap di ponsel ini. Selama kamu masuk, aplikasi juga membaca dari cloud: mengunduh latihan yang belum ada di ponsel ini, dan menghapus yang sudah kamu hapus dari cloud di tempat lain. JoyoFit juga bertukar makanan, berat badan, dan skor harian dengan JoyoRogo. Hapus data cloud menghapus latihan, langkah, dan tidurmu dari cloud dan menyimpan data di ponsel ini serta akunmu; Hapus akun JoyoRogo menghapus akun dan semua yang lain (detail di fit.joyorogo.com/privasi)."
+    "details": "Sinkron cloud adalah bagian dari JoyoRogo Pro. Dengan akun Pro, setiap latihan diunggah ke akun JoyoRogo kamu sebagai satu file terkompresi: jalur GPS, detak jantung, kecepatan, kadensi, daya, dan analisis yang ditampilkan aplikasi, sehingga aman kalau ponsel hilang, tampil di web JoyoRogo, dan dipulihkan ke ponsel baru setelah kamu masuk. Langkah, detak jantung, SpO2, tidur, dan alamat Bluetooth jam masuk ke cloud JoyoFit dengan akun yang sama. Tanpa Pro tidak ada yang diunggah dan latihanmu tetap di ponsel ini. Selama kamu masuk, aplikasi juga membaca dari cloud: mengunduh latihan yang belum ada di ponsel ini, dan menghapus yang sudah kamu hapus dari cloud di tempat lain. JoyoFit juga bertukar makanan, berat badan, dan skor harian dengan JoyoRogo. Dengan Pro, pengaturan yang ikut akun (profil, target, tema, bahasa, cuaca, kalender siklus), template stiker, rute tersimpan, HRV, skor tidur, metrik kesehatan, dan data siklus juga ikut akun, supaya beberapa HP menampilkan hal yang sama; data siklus bisa dimatikan lewat saklar Sinkron data siklus, yang menghapus salinannya di cloud. Pairing jam, kunci jam, dan pengaturan tiap HP tidak ikut. Hapus data cloud menghapus latihan, langkah, tidur, dan data yang ikut akun dari cloud dan menyimpan data di ponsel ini serta akunmu; Hapus akun JoyoRogo menghapus akun dan semua yang lain (detail di fit.joyorogo.com/privasi).",
+    "onlyHere": "Data ini hanya di HP ini. Pro menyimpannya di cloud.",
+    "proSyncs": "Ikut cloud: latihan, langkah, tidur, perlengkapan, rencana pelatih, angkat beban, pengaturan, template stiker, rute, dan data kesehatan. Tidak ikut: pairing jam, koneksi Health Connect atau Apple Health, dan pengaturan tiap HP (Hanya Wi-Fi, sinkron otomatis, izin).",
+    "pairingNote": "Riwayat tampil di sini, tapi jam harus dipasangkan sendiri di HP ini. Pairing jam tidak ikut cloud.",
+    "restoring": "Memulihkan data dari cloud...",
+    "restoringProgress": "Memulihkan data dari cloud... {{done}} dari {{total}}",
+    "cycleSync": "Sinkron data siklus",
+    "cycleSyncHint": "Data siklus adalah data kesehatan dan hanya sinkron untuk Pro. Kalau dimatikan, salinannya di cloud dihapus.",
+    "firstSignInHint": "Data yang sudah ada di HP ini ikut ke akun pertama yang kamu masuki.",
+    "signInAgainHint": "Data di HP ini milik {{email}}. Kalau kamu masuk dengan akun lain, kamu ditanya dulu mau diapakan data itu."
   },
   "goals": {
     "errors": {
@@ -656,5 +665,33 @@
     "signOutTitle": "Keluar dari JoyoRogo?",
     "signOutMessage": "Data di ponsel ini tetap ada. Sinkron cloud berhenti sampai kamu masuk lagi.",
     "deleteTitle": "Hapus akun JoyoRogo?"
+  },
+  "signOut": {
+    "emptyMessage": "Sinkron cloud berhenti sampai kamu masuk lagi.",
+    "offerTitle": "Hapus data dari HP ini?",
+    "offerMessage": "Semua datamu sudah ada di cloud. Data tetap tersimpan di sana dan kembali saat kamu masuk lagi. Pengaturan lain di HP ini tidak berubah.",
+    "offerDelete": "Hapus dari HP ini",
+    "keep": "Simpan di HP",
+    "warnTitle": "Data ini hanya ada di HP ini",
+    "warnFree": "Akun gratis tidak menyimpan data ke cloud, jadi latihan, langkah, tidur, dan catatanmu hanya ada di HP ini.",
+    "warnPending": "Sebagian datamu belum terunggah ke cloud, jadi hanya ada di HP ini.",
+    "warnUnsynced": "Sinkron terakhir belum selesai, jadi belum pasti semua datamu ada di cloud.",
+    "warnAmount": "Belum terunggah: {{amount}}.",
+    "warnDelete": "Kalau dihapus, data itu hilang dan tidak bisa dikembalikan.",
+    "warnDeleteLabel": "Hapus, tidak bisa dibatalkan",
+    "pending": {
+      "workouts_other": "{{n}} latihan",
+      "rows_other": "{{n}} baris langkah dan tidur",
+      "strength_other": "{{n}} catatan angkat beban",
+      "records_other": "{{n}} catatan lain (pengaturan, template, rute, kesehatan)"
+    }
+  },
+  "accountSwitch": {
+    "title": "Akun lain di HP ini",
+    "message": "HP ini masih menyimpan data {{previous}}. Sinkron dijeda sampai kamu memilih. Simpan terpisah: data lama tetap di HP ini dan tidak pernah diunggah ke akun baru. Hapus: data lama hilang dari HP ini, lalu data akun baru dipulihkan.",
+    "previousUnknown": "akun sebelumnya",
+    "keep": "Simpan terpisah",
+    "delete": "Hapus data lama dari HP ini",
+    "signOut": "Keluar lagi"
   }
 }

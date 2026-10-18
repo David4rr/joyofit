@@ -130,7 +130,7 @@ export default function SettingsScreen() {
   const groups = [watchGroup, bodyGroup, connectionsGroup, appGroup, ...(cloud.signedIn ? [accountGroup] : [])];
 
   // Pro is known once a sync or the cloud status has answered; before that the line only says whose account it is.
-  const pro = !cloud.signedIn ? null : cloud.locked ? false : cloud.cloudWorkouts ? cloud.cloudWorkouts.unlocked : null;
+  const { pro } = cloud;
   const accountLine = !cloud.signedIn
     ? t('hub.account.signedOutHint')
     : pro === null

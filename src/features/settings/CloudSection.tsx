@@ -1,7 +1,9 @@
 import * as Linking from 'expo-linking';
+import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Details } from '@/components/Details';
@@ -10,8 +12,10 @@ import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
 import { formatSize } from '@/cloud/estimate';
+import { cycleSyncEnabled, setCycleSync } from '@/cloud/healthSync';
 import { onUnmeteredNetwork } from '@/cloud/syncSettings';
-import { formatCount, formatDateTime } from '@/format';
+import { errorMessage, formatCount, formatDateTime } from '@/format';
+import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { SignInButtons } from '@/features/settings/SignInButtons';
 import { useCloud } from '@/state/CloudProvider';
@@ -52,6 +56,10 @@ export function CloudSection() {
   const { t } = useTranslation('settings');
   const cloud = useCloud();
   const theme = useTheme();
+  const db = useSQLiteContext();
+  const presence = useWatchPresence();
+  const [cycleOn, setCycleOn] = useState(cycleSyncEnabled);
+  const [cycleError, setCycleError] = useState<string | null>(null);
   const [confirmingWipe, setConfirmingWipe] = useState(false);
   const [confirmingMobile, setConfirmingMobile] = useState(false);
   const busy = cloud.uploading || cloud.deleting || cloud.wiping;
@@ -60,6 +68,21 @@ export function CloudSection() {
     if (cloud.wifiOnly && !(await onUnmeteredNetwork())) setConfirmingMobile(true);
     else await cloud.syncNow();
   };
+
+  const changeCycle = (on: boolean) => {
+    setCycleOn(on);
+    setCycleError(null);
+    setCycleSync(db, on).catch((e) => {
+      // Turning it off deletes the cloud copy first: when that failed nothing changed, so the switch goes back.
+      setCycleOn(cycleSyncEnabled());
+      setCycleError(errorMessage(e));
+    });
+  };
+
+  // Only a signed-in account that is not Pro, a signed-out phone, or a locked sync means "this data lives on this phone alone".
+  const onlyHere = !cloud.signedIn || cloud.pro === false;
+  // History came to a phone that has no watch of its own: the watch is paired per phone.
+  const pairingNote = cloud.signedIn && presence === 'data';
 
   return (
     <>
@@ -83,6 +106,16 @@ export function CloudSection() {
           </Notice>
         ) : null}
         {cloud.error ? <Notice tone="danger">{cloud.error}</Notice> : null}
+        {onlyHere ? <Notice icon="phone-portrait-outline">{t('cloud.onlyHere')}</Notice> : null}
+        {cloud.pro === true ? <Notice icon="cloud-done-outline">{t('cloud.proSyncs')}</Notice> : null}
+        {pairingNote ? <Notice icon="watch-outline">{t('cloud.pairingNote')}</Notice> : null}
+        {cloud.restoring ? (
+          <Notice icon="cloud-download-outline">
+            {cloud.restoring.total === null
+              ? t('cloud.restoring')
+              : t('cloud.restoringProgress', { done: formatCount(cloud.restoring.done), total: formatCount(cloud.restoring.total) })}
+          </Notice>
+        ) : null}
         {cloud.progress ? (
           <Notice icon="cloud-upload">{t('cloud.uploading', { done: formatCount(cloud.progress.done), total: formatCount(cloud.progress.total) })}</Notice>
         ) : null}
@@ -148,9 +181,24 @@ export function CloudSection() {
               onValueChange={cloud.setAutoSync}
               disabled={cloud.wiping}
             />
+            <SwitchRow
+              label={t('cloud.cycleSync')}
+              hint={t('cloud.cycleSyncHint')}
+              icon="calendar"
+              value={cycleOn}
+              onValueChange={changeCycle}
+              disabled={cloud.wiping}
+            />
+            {cycleError ? <Notice tone="danger">{cycleError}</Notice> : null}
           </>
         ) : (
-          <SignInButtons />
+          <>
+            <SignInButtons />
+            {/* Said once, where the person signs in: the first account takes over this phone's data, a later one asks. */}
+            <AppText variant="caption" muted>
+              {cloud.email ? t('cloud.signInAgainHint', { email: cloud.email }) : t('cloud.firstSignInHint')}
+            </AppText>
+          </>
         )}
         <ConfirmDialog
           visible={confirmingMobile}

@@ -11,7 +11,7 @@ import { allSessions, generatePlan, weekIndexAt } from './plans/generate';
 import { RECIPES } from './plans/run';
 import { planProgress, sessionStatus } from './progress';
 import { suggest, type SuggestionInput } from './suggest';
-import { syncCoachDoc, type CoachSyncIo, type PutResult, type RemoteCoach } from './syncDoc';
+import { newestCoachChange, syncCoachDoc, type CoachSyncIo, type PutResult, type RemoteCoach } from './syncDoc';
 import { addDays, dayStartSec, localDay, mondayOf, weekdayOf } from './time';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 
@@ -416,10 +416,16 @@ describe('document merge and sync', () => {
     expect(mergeCoachDocs(docA, ended).plan).toBeNull();
   });
 
-  function io(local: CoachDoc, remote: RemoteCoach, put: (baseRev: number, doc: CoachDoc) => PutResult): CoachSyncIo & { local: () => CoachDoc; puts: number } {
+  function io(
+    local: CoachDoc,
+    remote: RemoteCoach,
+    put: (baseRev: number, doc: CoachDoc) => PutResult,
+    detachedAt: number | null = null,
+  ): CoachSyncIo & { local: () => CoachDoc; puts: number } {
     let stored = local;
     const state = { puts: 0 };
     return {
+      detachedAt: async () => detachedAt,
       fetchRemote: async () => remote,
       putRemote: async (baseRev, doc) => {
         state.puts += 1;
@@ -459,6 +465,35 @@ describe('document merge and sync', () => {
     );
     expect(result).toBe('uploaded');
     expect(calls).toBe(2);
+  });
+  const old: CoachDoc = { version: 1, plan: { ...plan, id: 'p1' }, planUpdatedAt: 100, done: { 'p1:0:0': { workoutStart: 1, at: 150, manual: false, skipped: false } }, logs: {} };
+  const ok = () => ({ status: 'ok', rev: 1 }) as PutResult;
+
+  test('the newest change is the plan, a finished session or a log', () => {
+    expect(newestCoachChange(old)).toBe(150);
+    expect(newestCoachChange({ ...old, logs: { 'p1:0:1': { at: 400, exercises: [] } } })).toBe(400);
+    expect(newestCoachChange(EMPTY_COACH_DOC)).toBe(0);
+  });
+
+  test('a plan not newer than the detach is not pushed, even to an empty cloud', async () => {
+    const harness = io(old, { rev: 0, doc: null }, ok, 150);
+    expect(await syncCoachDoc(harness)).toBe('local-only');
+    expect(harness.puts).toBe(0);
+  });
+
+  test('a tick made after the detach uploads the document', async () => {
+    const edited: CoachDoc = { ...old, done: { ...old.done, 'p1:0:1': { workoutStart: null, at: 151, manual: true, skipped: false } } };
+    const harness = io(edited, { rev: 0, doc: null }, ok, 150);
+    expect(await syncCoachDoc(harness)).toBe('uploaded');
+    expect(harness.puts).toBe(1);
+  });
+
+  test('the new account plan is still downloaded', async () => {
+    const theirs: CoachDoc = { ...old, planUpdatedAt: 900, done: {} };
+    const harness = io(EMPTY_COACH_DOC, { rev: 2, doc: theirs }, ok, 150);
+    expect(await syncCoachDoc(harness)).toBe('downloaded');
+    expect(harness.puts).toBe(0);
+    expect(harness.local().planUpdatedAt).toBe(900);
   });
 });
 

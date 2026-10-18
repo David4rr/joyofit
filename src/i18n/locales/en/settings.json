@@ -62,7 +62,7 @@
     "version": "Version",
     "license": "License",
     "privacyTitle": "Privacy",
-    "privacy": "Watch data stays on this phone in joyofit.db until you sign in to the cloud. Weather, if switched on, sends rounded coordinates to Open-Meteo. Privacy policy: fit.joyorogo.com/privasi"
+    "privacy": "Watch data stays on this phone in joyofit.db until you sign in to the cloud. With Pro, cycle data (switchable), settings, sticker templates and saved routes also follow your account in the cloud. Signing out never deletes data on the phone unless you choose it. Weather, if switched on, sends rounded coordinates to Open-Meteo. Privacy policy: fit.joyorogo.com/privasi"
   },
   "advanced": {
     "bleDenied": "Nearby devices permission denied: the watch is tried at its paired address without a scan.",
@@ -173,7 +173,16 @@
     "mobileMessage": "Wi-Fi only is on and this phone is not on Wi-Fi. Syncing now can use a lot of mobile data when workouts are waiting.",
     "wipeTitle": "Delete cloud data?",
     "wipeMessage": "Removes your workouts, steps and sleep from the cloud. This phone's data and your account stay, and automatic sync is turned off so nothing is uploaded again until you turn it back on.",
-    "details": "Cloud sync is part of JoyoRogo Pro. With a Pro account every workout is uploaded to your JoyoRogo account as one compressed file: its GPS track, heart rate, speed, cadence and power, and the analysis the app shows, so it survives a lost phone, shows on the JoyoRogo web and restores onto a new phone after you sign in. Steps, heart rate, SpO2, sleep and the watch's Bluetooth address go to the JoyoFit cloud with the same account. Without Pro nothing is uploaded and your workouts stay on this phone. While you are signed in the app also reads from the cloud: it downloads workouts this phone does not have, and removes the ones you deleted from the cloud elsewhere. JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. Delete cloud data removes your workouts, steps and sleep from the cloud and keeps this phone's data and your account; Delete JoyoRogo account removes the account and everything else (details at fit.joyorogo.com/privasi)."
+    "details": "Cloud sync is part of JoyoRogo Pro. With a Pro account every workout is uploaded to your JoyoRogo account as one compressed file: its GPS track, heart rate, speed, cadence and power, and the analysis the app shows, so it survives a lost phone, shows on the JoyoRogo web and restores onto a new phone after you sign in. Steps, heart rate, SpO2, sleep and the watch's Bluetooth address go to the JoyoFit cloud with the same account. Without Pro nothing is uploaded and your workouts stay on this phone. While you are signed in the app also reads from the cloud: it downloads workouts this phone does not have, and removes the ones you deleted from the cloud elsewhere. JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. With Pro, the settings that follow the account (profile, goals, theme, language, weather, cycle calendar), sticker templates, saved routes, HRV, sleep scores, health metrics and cycle data follow your account too, so several phones show the same thing; cycle data can be switched off with the Sync cycle data switch, which deletes its copy in the cloud. Watch pairing, the watch key and each phone's own settings do not sync. Delete cloud data removes your workouts, steps, sleep and the data that follows the account from the cloud and keeps this phone's data and your account; Delete JoyoRogo account removes the account and everything else (details at fit.joyorogo.com/privasi).",
+    "onlyHere": "This data is only on this phone. Pro keeps it in the cloud.",
+    "proSyncs": "Syncs: workouts, steps, sleep, gear, the coach plan, strength history, settings, sticker templates, routes and health data. Does not sync: watch pairing, the Health Connect or Apple Health connection, and each phone's own settings (Wi-Fi only, automatic sync, permissions).",
+    "pairingNote": "Your history shows here, but the watch has to be paired on this phone. Watch pairing does not go to the cloud.",
+    "restoring": "Restoring data from the cloud...",
+    "restoringProgress": "Restoring data from the cloud... {{done}} of {{total}}",
+    "cycleSync": "Sync cycle data",
+    "cycleSyncHint": "Cycle data is health data and only syncs for Pro. Turning it off deletes the copy in the cloud.",
+    "firstSignInHint": "The data already on this phone goes to the first account you sign in to.",
+    "signInAgainHint": "The data on this phone belongs to {{email}}. If you sign in with another account, you are asked what to do with it first."
   },
   "goals": {
     "errors": {
@@ -665,5 +674,37 @@
     "signOutTitle": "Sign out of JoyoRogo?",
     "signOutMessage": "Data on this phone stays. Cloud sync stops until you sign in again.",
     "deleteTitle": "Delete your JoyoRogo account?"
+  },
+  "signOut": {
+    "emptyMessage": "Cloud sync stops until you sign in again.",
+    "offerTitle": "Delete data from this phone?",
+    "offerMessage": "All your data is already in the cloud. It stays there and comes back when you sign in again. Your other settings on this phone do not change.",
+    "offerDelete": "Delete from this phone",
+    "keep": "Keep on this phone",
+    "warnTitle": "This data is only on this phone",
+    "warnFree": "A free account does not keep data in the cloud, so your workouts, steps, sleep and notes are only on this phone.",
+    "warnPending": "Some of your data has not been uploaded to the cloud yet, so it is only on this phone.",
+    "warnUnsynced": "The last sync did not finish, so it is not certain that all your data is in the cloud.",
+    "warnAmount": "Not uploaded yet: {{amount}}.",
+    "warnDelete": "If you delete it, it is gone and cannot be restored.",
+    "warnDeleteLabel": "Delete, cannot be undone",
+    "pending": {
+      "workouts_one": "{{n}} workout",
+      "workouts_other": "{{n}} workouts",
+      "rows_one": "{{n}} step and sleep row",
+      "rows_other": "{{n}} step and sleep rows",
+      "strength_one": "{{n}} strength record",
+      "strength_other": "{{n}} strength records",
+      "records_one": "{{n}} other record (settings, templates, routes, health)",
+      "records_other": "{{n}} other records (settings, templates, routes, health)"
+    }
+  },
+  "accountSwitch": {
+    "title": "Another account on this phone",
+    "message": "This phone still holds the data of {{previous}}. Sync is paused until you choose. Keep separate: the old data stays on this phone and is never uploaded to the new account. Delete: the old data is removed from this phone, then the new account's data is restored.",
+    "previousUnknown": "the previous account",
+    "keep": "Keep separate",
+    "delete": "Delete old data from this phone",
+    "signOut": "Sign out again"
   }
 }

@@ -101,12 +101,15 @@ function Indonesian() {
             "Per menit: langkah, kalori, jarak, detak jantung, SpO2, detak jantung istirahat.",
             "Tidur: jam mulai dan selesai tiap segmen dan tahap tidurnya.",
             "Olahraga: dijelaskan di bagian Olahraga (JoyoRogo Pro) di bawah.",
+            "Khusus JoyoRogo Pro, supaya beberapa HP menampilkan hal yang sama: pengaturan yang ikut akun (profil: tinggi, berat, tahun lahir, jenis kelamin, target langkah; target harian, tema, bahasa, satuan suhu dan nama kota cuaca, saklar kalender siklus dan pengingatnya, laporan tidur, Healthy Living), template stiker buatanmu, rute yang kamu simpan, HRV, skor tidur, metrik kesehatan lain yang dilaporkan jam, dan data siklus (periode dan catatan harian). Data siklus adalah data kesehatan: ia hanya ikut bila kamu membiarkan saklar Sinkron data siklus menyala (bawaannya menyala untuk Pro); mematikannya menghapus salinannya di cloud.",
           ]}
         />
         <p className="font-semibold">Yang tidak diunggah:</p>
         <p>
-          Profil (tinggi, berat, tahun lahir, jenis kelamin), stres, HRV, data siklus, tekanan darah dan berat
-          yang kamu catat, makanan, notifikasi, data panggilan, lokasi untuk cuaca, nomor seri jam.
+          Tekanan darah dan berat yang kamu catat, makanan, notifikasi, data panggilan, lokasi untuk cuaca, nomor
+          seri jam, interval detak mentah (RRI), kunci pairing jam, dan pengaturan yang milik satu HP (Hanya Wi-Fi,
+          sinkron otomatis, izin, koneksi Health Connect atau Apple Health). Pairing jam tidak ikut cloud: di HP lain
+          riwayatnya tampil, tetapi jam harus dipasangkan sendiri.
         </p>
         <p>
           Data ini disimpan di database dan penyimpanan Cloudflare di akun Cloudflare milik pengembang, terkait
@@ -114,8 +117,12 @@ function Indonesian() {
           login. Server mencatat log permintaan standar Cloudflare Workers. Semua yang dikirim ke server ini lewat HTTPS (TLS).
         </p>
         <p>
-          Keluar (sign out) menghentikan unggahan, tetapi tidak menghapus data yang sudah ada di cloud maupun di
-          HP. Untuk menghapus data cloud atau akun ada tombol di aplikasi, lihat bagian Penghapusan.
+          Keluar (sign out) menghentikan unggahan dan tidak menghapus data di cloud. Data di HP juga tidak pernah
+          dihapus tanpa kamu pilih: saat keluar, aplikasi menanyakan apakah data dihapus dari HP, dan bila datamu
+          belum ada di cloud (akun Gratis, atau unggahan belum selesai) ia memperingatkan bahwa data itu hanya ada di
+          HP. Bila akun lain masuk di HP yang masih memegang data akun sebelumnya, sinkron berhenti sampai kamu memilih
+          menyimpannya terpisah (tidak pernah diunggah ke akun baru) atau menghapusnya dari HP. Untuk menghapus data
+          cloud atau akun ada tombol di aplikasi, lihat bagian Penghapusan.
         </p>
         <p className="font-semibold">Olahraga (JoyoRogo Pro):</p>
         <p>
@@ -445,12 +452,12 @@ function Indonesian() {
       <Block id="hapus" title="Penghapusan data">
         <List
           items={[
-            "Di HP: hapus instalasi JoyoFit atau pilih Pengaturan Android, Aplikasi, JoyoFit, Penyimpanan, Hapus data. Semua data lokal terhapus. Lepas jam dengan Forget pairing di aplikasi.",
+            "Di HP: hapus instalasi JoyoFit atau pilih Pengaturan Android, Aplikasi, JoyoFit, Penyimpanan, Hapus data. Semua data lokal terhapus. Atau pilih Hapus dari HP ini saat keluar dari akun: itu menghapus data JoyoFit dari HP tanpa melepas jam. Lepas jam dengan Forget pairing di aplikasi.",
             "Di Health Connect (Android) atau Apple Health (iPhone): hapus data yang ditulis JoyoFit lewat aplikasi Health Connect atau aplikasi Kesehatan.",
             "Di Strava: Putuskan Strava di aplikasi, atau cabut aplikasi di strava.com; token dihapus dari server JoyoRogo saat itu juga (bila JoyoRogo masih memakai sambungan yang sama, izin di Strava baru dicabut saat keduanya diputus).",
             "Daftar tunggu Strava atau iPhone: email ke alamat kontak di halaman ini dengan subjek Hapus daftar tunggu JoyoFit (lihat bagian Daftar undangan).",
-            "Akun dan cloud: di aplikasi, Settings, Health Connect and cloud (di iPhone: Apple Health and cloud), bagian Sinkron cloud, ketuk Delete JoyoRogo account lalu konfirmasi. Ini langsung menghapus data cloud JoyoFit-mu (langkah, tidur, jam, berkas impor, token Strava), olahraga di cloud, tautan dan ringkasan Keluarga, token push, dan akun JoyoRogo-mu beserta datanya di JoyoRogo, termasuk postingan, komentar, dan kudos. Akun JoyoRogo dipakai bersama, jadi akun itu juga hilang di JoyoRogo. Akun yang masuk dengan Apple diminta konfirmasi Apple dulu, lalu izin Masuk dengan Apple dicabut. Data di HP-mu tidak ikut terhapus.",
-            "Hanya data cloud: di aplikasi, Settings, Health Connect and cloud (di iPhone: Apple Health and cloud), bagian Sinkron cloud, ketuk Delete cloud data. Olahraga, langkah, dan tidur di cloud terhapus dan sinkron otomatis dimatikan, jadi tidak ada yang diunggah lagi sampai kamu menyalakannya kembali. Akun, postingan, Keluarga, dan data di HP-mu tetap ada.",
+            "Akun dan cloud: di aplikasi, Settings, Health Connect and cloud (di iPhone: Apple Health and cloud), bagian Sinkron cloud, ketuk Delete JoyoRogo account lalu konfirmasi. Ini langsung menghapus data cloud JoyoFit-mu (langkah, tidur, jam, berkas impor, token Strava), pengaturan, template, rute, dan data kesehatan yang ikut akun, olahraga di cloud, tautan dan ringkasan Keluarga, token push, dan akun JoyoRogo-mu beserta datanya di JoyoRogo, termasuk postingan, komentar, dan kudos. Akun JoyoRogo dipakai bersama, jadi akun itu juga hilang di JoyoRogo. Akun yang masuk dengan Apple diminta konfirmasi Apple dulu, lalu izin Masuk dengan Apple dicabut. Data di HP-mu tidak ikut terhapus.",
+            "Hanya data cloud: di aplikasi, Settings, Health Connect and cloud (di iPhone: Apple Health and cloud), bagian Sinkron cloud, ketuk Delete cloud data. Olahraga, langkah, tidur, pengaturan, template, rute, dan data kesehatan (termasuk siklus) di cloud terhapus dan sinkron otomatis dimatikan, jadi tidak ada yang diunggah lagi sampai kamu menyalakannya kembali. Akun, postingan, Keluarga, dan data di HP-mu tetap ada.",
             "Postingan dan komentar Social: hapus satu per satu di joyorogo.com lewat menu postingan atau komentar, atau hapus semuanya sekaligus dengan Hapus semua data saya di halaman Profil joyorogo.com (akunnya tetap ada). Menghapus akun JoyoRogo juga menghapusnya.",
             "Token push: keluar dari akun JoyoRogo di JoyoFit menghapus token push HP itu dari server, dan menghapus akun menghapus semua tokenmu (lihat Notifikasi push). Mematikan notifikasi JoyoFit di pengaturan sistem menghentikan pemberitahuan.",
             "Olahraga cloud di web: di joyorogo.com, buka halaman Latihan JoyoFit untuk menghapus satu olahraga atau semuanya. Olahraga yang dihapus di sana ikut hilang dari HP-mu saat HP berikutnya sinkron.",
@@ -537,16 +544,31 @@ function English() {
         <p>
           <span className="font-semibold">Uploaded:</span> the watch&apos;s Bluetooth address, name, model and
           software version; per-minute steps, calories, distance, heart rate, SpO2 and resting heart rate; sleep
-          segments and stages. Workouts are covered under Workouts (JoyoRogo Pro) below.{" "}
-          <span className="font-semibold">Not uploaded:</span> profile (height, weight, birth year, sex), stress,
-          HRV, cycle data, logged weight and blood pressure, meals, notifications, call data, weather location,
-          the watch&apos;s serial number.
+          segments and stages. Workouts are covered under Workouts (JoyoRogo Pro) below.
+        </p>
+        <p>
+          <span className="font-semibold">JoyoRogo Pro only, so several phones show the same thing:</span> the
+          settings that follow the account (profile: height, weight, birth year, sex, step goal; daily goals, theme,
+          language, temperature unit and the weather city&apos;s name, the cycle calendar switch and its reminder
+          switches, the sleep report, Healthy Living), sticker templates you made, routes you saved, HRV, sleep
+          scores, other health metrics the watch reports, and cycle data (periods and daily entries). Cycle data is
+          health data: it only syncs while the Sync cycle data switch is on (it is on by default for Pro), and turning
+          it off deletes the copy in the cloud.{" "}
+          <span className="font-semibold">Not uploaded:</span> logged weight and blood pressure, meals,
+          notifications, call data, weather location, the watch&apos;s serial number, raw beat intervals (RRI), the
+          watch pairing key, and settings that belong to one phone (Wi-Fi only, automatic sync, permissions, the
+          Health Connect or Apple Health connection). Watch pairing does not go to the cloud: on another phone your
+          history shows, but the watch has to be paired there.
         </p>
         <p>
           The data is stored in Cloudflare database and storage under the developer&apos;s Cloudflare account,
-          keyed by your JoyoRogo account ID. It is not sent to anyone else. Signing out stops uploads but deletes
-          nothing, in the cloud or on the phone; the app has buttons to delete the cloud data or the account (see
-          Deleting your data). Everything the app sends to this server goes over HTTPS (TLS).
+          keyed by your JoyoRogo account ID. It is not sent to anyone else. Signing out stops uploads and deletes
+          nothing in the cloud. Data on the phone is never deleted unless you choose it: when you sign out, the app
+          asks whether to delete it from the phone, and if it is not all in the cloud yet (a Free account, or an
+          unfinished upload) it warns that the data exists only on the phone. If another account signs in on a
+          phone that still holds the previous account&apos;s data, sync stops until you choose to keep that data
+          apart (it is never uploaded to the new account) or delete it from the phone. The app has buttons to
+          delete the cloud data or the account (see Deleting your data). Everything the app sends to this server goes over HTTPS (TLS).
         </p>
         <p className="font-semibold">Workouts (JoyoRogo Pro):</p>
         <p>
@@ -836,12 +858,12 @@ function English() {
       <Block title="Deleting your data">
         <List
           items={[
-            "On the phone: uninstall JoyoFit, or Android Settings, Apps, JoyoFit, Storage, Clear data. Use Forget pairing in the app to release the watch.",
+            "On the phone: uninstall JoyoFit, or Android Settings, Apps, JoyoFit, Storage, Clear data. Or choose Delete from this phone when you sign out: that removes JoyoFit data from the phone without releasing the watch. Use Forget pairing in the app to release the watch.",
             "In Health Connect (Android) or Apple Health (iPhone): delete what JoyoFit wrote in the Health Connect or Health app.",
             "Strava: Disconnect Strava in the app, or revoke the app on strava.com; the tokens are deleted from the JoyoRogo server at once (if JoyoRogo still uses the same connection, the access on Strava is revoked when both are disconnected).",
             "Strava or iPhone waitlist: email the contact address on this page with the subject Hapus daftar tunggu JoyoFit (see the invite lists section).",
-            "Account and cloud: in the app, Settings, Health Connect and cloud (Apple Health and cloud on iPhone), Sinkron cloud section, tap Delete JoyoRogo account and confirm. It immediately deletes your JoyoFit cloud data (steps, sleep, devices, imported files, Strava tokens), your cloud workouts, your Keluarga links and summaries, your push tokens, and your JoyoRogo account with its JoyoRogo data, including posts, comments and kudos. The JoyoRogo account is shared, so it is gone in JoyoRogo as well. An account that signs in with Apple asks you to confirm with Apple first, and the Sign in with Apple grant is revoked. Data on your phone is not deleted.",
-            "Cloud data only: in the app, Settings, Health Connect and cloud (Apple Health and cloud on iPhone), Sinkron cloud section, tap Delete cloud data. It wipes your workouts, steps and sleep from the cloud and turns automatic sync off, so nothing is uploaded again until you switch it back on. Your account, posts, Keluarga and the data on your phone stay.",
+            "Account and cloud: in the app, Settings, Health Connect and cloud (Apple Health and cloud on iPhone), Sinkron cloud section, tap Delete JoyoRogo account and confirm. It immediately deletes your JoyoFit cloud data (steps, sleep, devices, imported files, Strava tokens), the settings, templates, routes and health data that follow your account, your cloud workouts, your Keluarga links and summaries, your push tokens, and your JoyoRogo account with its JoyoRogo data, including posts, comments and kudos. The JoyoRogo account is shared, so it is gone in JoyoRogo as well. An account that signs in with Apple asks you to confirm with Apple first, and the Sign in with Apple grant is revoked. Data on your phone is not deleted.",
+            "Cloud data only: in the app, Settings, Health Connect and cloud (Apple Health and cloud on iPhone), Sinkron cloud section, tap Delete cloud data. It wipes your workouts, steps, sleep, settings, templates, routes and health data (including cycle data) from the cloud and turns automatic sync off, so nothing is uploaded again until you switch it back on. Your account, posts, Keluarga and the data on your phone stay.",
             "Social posts and comments: delete them one by one on joyorogo.com from the post or comment menu, or delete all of them at once with Hapus semua data saya on the joyorogo.com Profil page (the account stays). Deleting your JoyoRogo account removes them too.",
             "Push token: signing out of your JoyoRogo account in JoyoFit deletes that phone's push token from the server, and deleting the account deletes all your tokens (see Push notifications). Turning off JoyoFit notifications in system settings stops the notifications.",
             "Cloud workouts on the web: on joyorogo.com, open the JoyoFit workouts page (Latihan JoyoFit) to delete a single workout or everything. A workout deleted there is also removed from your phones the next time they sync.",

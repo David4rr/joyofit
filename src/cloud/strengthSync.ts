@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { CloudHttpError, CloudNotConfiguredError, NotSignedInError } from '@/cloud/api';
 import { cloudLog as log } from '@/cloud/log';
+import { isSyncPaused } from '@/cloud/syncGate';
 import { getCloudState } from '@/db/cloud';
 import { errorMessage } from '@/format';
 import { ensureRows, reconcileLinks } from '@/features/strength/link';
@@ -61,6 +62,7 @@ function ioFor(db: SQLiteDatabase): StrengthSyncIo {
 let running: Promise<StrengthSyncResult> | null = null;
 
 async function run(db: SQLiteDatabase): Promise<StrengthSyncResult> {
+  if (isSyncPaused()) return 'local-only';
   try {
     const result = await runStrengthSync(ioFor(db));
     await setStrengthMeta(db, OFFLINE_META, null);

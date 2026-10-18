@@ -2,6 +2,8 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { CloudHttpError } from '@/cloud/api';
 import { cloudLog as log } from '@/cloud/log';
+import { isSyncPaused } from '@/cloud/syncGate';
+import { getDetachedAt } from '@/db/cloud';
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
 import { getStrengthWorkout } from '@/features/strength/store';
@@ -88,6 +90,7 @@ async function reconcile(db: SQLiteDatabase, workoutId: string, workout: Strengt
  */
 export function pushStrengthKcal(db: SQLiteDatabase, workout: StrengthWorkout, change: 'saved' | 'deleted'): Promise<void> {
   return serial(async () => {
+    if (isSyncPaused()) return;
     try {
       await ensureKcalSchema(db);
       await reconcile(db, workout.id, workout, change === 'deleted');
@@ -104,13 +107,15 @@ export function pushStrengthKcal(db: SQLiteDatabase, workout: StrengthWorkout, c
  */
 export function retryStrengthKcal(db: SQLiteDatabase): Promise<void> {
   return serial(async () => {
+    if (isSyncPaused()) return;
     try {
       await ensureKcalSchema(db);
       const sent = await db.getAllAsync<{ workoutId: string }>('SELECT workout_id AS workoutId FROM strength_kcal_sent');
       const todo = new Set(sent.map((row) => row.workoutId));
       const recent = await db.getAllAsync<{ id: string }>(
         `SELECT id FROM strength_record WHERE kind = 'workout' AND deleted_at IS NULL AND workout_start IS NOT NULL AND updated_at >= ?`,
-        Date.now() - RETRY_WINDOW_MS,
+        // After "keep separate" the workouts of the earlier account are not sent to the new one's diary: only newer changes.
+        Math.max(Date.now() - RETRY_WINDOW_MS, (await getDetachedAt(db)) ?? 0),
       );
       for (const row of recent) todo.add(row.id);
 

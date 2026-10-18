@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { cloudLog as log } from '@/cloud/log';
 import { rogoCall } from '@/cloud/rogo';
+import { getDetachedAt } from '@/db/cloud';
 import { mergeCoachDocs, sameCoachDoc } from './merge';
 import { readCoachDoc, updateCoachDoc } from './store';
 import { syncCoachDoc, type PutResult, type RemoteCoach } from './syncDoc';
@@ -9,6 +10,7 @@ import { syncCoachDoc, type PutResult, type RemoteCoach } from './syncDoc';
 /** `syncCoachDoc` against the app's database and JoyoRogo. */
 export async function syncCoach(db: SQLiteDatabase): Promise<void> {
   const result = await syncCoachDoc({
+    detachedAt: () => getDetachedAt(db),
     fetchRemote: () => rogoCall<RemoteCoach>('coach/getDoc', {}),
     putRemote: (baseRev, doc) => rogoCall<PutResult>('coach/putDoc', { baseRev, doc }),
     readLocal: () => readCoachDoc(db),
