@@ -6,7 +6,7 @@
 #   scripts/ota.sh --channel preview "Try the new notice"            preview channel (needs a binary built for it)
 #   scripts/ota.sh --runtime                                         print the runtimeVersion of this commit, publish nothing
 #
-# Steps: typecheck + unit tests, then a release `expo export` (bundle sanity checks), then `eas update` with that
+# Steps: translation key parity + no hard-coded UI text (scripts/i18n-check.ts), typecheck + unit tests, then a release `expo export` (bundle sanity checks), then `eas update` with that
 # bundle. Prints the update group id. Nothing is uploaded to a store.
 #
 # JS and asset changes only. A change that touches native code (modules/, plugins/), native config (app.json,
@@ -53,6 +53,7 @@ if [ "$runtime_only" = 1 ]; then
 fi
 
 step "1. checks"
+bun scripts/i18n-check.ts
 bunx tsc --noEmit
 bun test ./src/
 
