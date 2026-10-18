@@ -1,0 +1,81 @@
+import { useSQLiteContext } from 'expo-sqlite';
+import { useEffect, useMemo } from 'react';
+
+import { useFitnessData, type FitnessData } from '@/features/fitness/useFitnessData';
+import type { NightHrvAvailability } from '@/features/today/nightHrv';
+import { reconcileCoach } from './actions';
+import type { CoachDoc } from './doc';
+import { planProgress, type PlanProgress } from './progress';
+import { computeSignals, type CoachSignals } from './signals';
+import { loadCoachDoc, useCoachDoc } from './store';
+import { suggest, type Suggestion, type SuggestionInput } from './suggest';
+import { localDay } from './time';
+
+export interface CoachState {
+  /** Everything below is null until the stored document and the body data are both read. */
+  doc: CoachDoc;
+  data: FitnessData;
+  signals: CoachSignals;
+  progress: PlanProgress | null;
+  suggestion: Suggestion;
+  today: string;
+}
+
+/** What `suggest` reads, from the body signals and the plan. */
+export function suggestionInput(signals: CoachSignals, progress: PlanProgress | null): SuggestionInput {
+  const planned = progress?.today && !progress.todayDone && progress.state === 'active' ? progress.today : null;
+  return {
+    readiness: signals.readiness,
+    load: signals.load ? { status: signals.load.status, ratio: signals.load.ratio } : null,
+    hrv: signals.hrv?.state ?? null,
+    lastNightMin: signals.lastNightMin,
+    sleepDebtMin: signals.sleepDebtMin,
+    strainYesterday: signals.strainYesterday,
+    strainDayBefore: signals.strainDayBefore,
+    activeStreak: signals.activeStreak,
+    recoveryHoursLeft: signals.recoveryHoursLeft,
+    trainedToday: signals.trainedToday,
+    usualSport: signals.usualSport,
+    planned,
+    plannedDone: progress?.todayDone != null && !progress.todayDone.skipped,
+    missed: progress?.missed ?? null,
+    planState: progress ? progress.state : 'none',
+  };
+}
+
+/**
+ * The coach for the screen on show: reads the stored document and the body data, matches new workouts to plan sessions
+ * and decides the weeks that have started (once per data version), and answers with the suggestion for today.
+ * Null until both reads are in.
+ */
+export function useCoach(dataVersion: number, availability: NightHrvAvailability | null): CoachState | null {
+  const db = useSQLiteContext();
+  const doc = useCoachDoc();
+  const { data } = useFitnessData(dataVersion, 'full');
+
+  useEffect(() => {
+    void loadCoachDoc(db).catch(() => {});
+  }, [db]);
+
+  const signals = useMemo(() => (data ? computeSignals(data, availability) : null), [data, availability]);
+  const planId = doc?.plan?.id ?? null;
+
+  useEffect(() => {
+    if (!data || !signals || planId === null) return;
+    const workouts = data.workouts.map(({ workout, summary }) => ({
+      start: workout.start,
+      duration: workout.duration,
+      distance: workout.distance,
+      sportName: workout.sportName,
+      summaryKind: summary.kind,
+    }));
+    void reconcileCoach(db, workouts, { load: signals.load, hrv: signals.hrv?.state ?? null, readiness: signals.readiness, sleepDebtMin: signals.sleepDebtMin }).catch(() => {});
+  }, [db, data, signals, planId]);
+
+  return useMemo(() => {
+    if (!doc || !data || !signals) return null;
+    const today = localDay(data.nowSec);
+    const progress = doc.plan ? planProgress(doc.plan, doc.done, today) : null;
+    return { doc, data, signals, progress, suggestion: suggest(suggestionInput(signals, progress)), today };
+  }, [doc, data, signals]);
+}

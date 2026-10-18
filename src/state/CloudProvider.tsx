@@ -32,6 +32,7 @@ import {
 import { releaseFamilyDevice } from '@/features/family/device';
 import { cloudLog } from '@/cloud/log';
 import { syncGear } from '@/features/gear/sync';
+import { syncCoach } from '@/features/coach/sync';
 import { forgetCloudWorkouts, resetCloudCursors, setCloudState } from '@/db/cloud';
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
@@ -202,6 +203,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           await pullWorkouts(db);
           // Gear is small and a free account only reads it; a failure here must not fail the workouts' sync.
           await syncGear(db).catch((e) => cloudLog(`gear sync failed: ${errorMessage(e)}`, 'error'));
+          // The Coach plan: read by every signed-in account, written by Pro; same rule, same isolation.
+          await syncCoach(db).catch((e) => cloudLog(`coach sync failed: ${errorMessage(e)}`, 'error'));
           const pushed = await pushWorkouts(db, setProgress);
           await runUpload(db);
           if (pushed.quota) setError(pushed.quota);

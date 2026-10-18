@@ -25,6 +25,7 @@ import { BurnFigure, FuelBar } from '@/features/live/FuelBar';
 import { startOfLocalDay } from '@/features/today/stats';
 import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/strain';
 import { GearWorkoutSection } from '@/features/gear/ui/GearWorkoutSection';
+import { CoachFeedbackSection } from '@/features/coach/ui/CoachFeedbackSection';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
 import { ShareWorkoutButton } from '@/features/share/ShareWorkoutSheet';
 import { ShareToRogoButton } from '@/features/social/ShareToRogo';
@@ -288,6 +289,7 @@ export default function WorkoutDetailScreen() {
         <Skeleton width="100%" height={320} radius="card" />
       )}
       {summary.gps === 'failed' ? <Notice icon="location-outline">{t('detail.gpsFailed')}</Notice> : null}
+      <CoachFeedbackSection workoutStart={workout.start} analysis={analysisState.status === 'ready' ? analysisState.analysis : null} />
 
       <Section title={t('detail.strain.title')} icon="pulse" tint="workouts">
         {strain ? (

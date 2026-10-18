@@ -32,6 +32,7 @@ import { WatchHero } from '@/features/today/WatchHero';
 import { computeScores } from '@/features/today/scores';
 import { MorningCheckin } from '@/features/today/MorningCheckin';
 import { FitnessTodayCards } from '@/features/fitness/FitnessTodayCards';
+import { CoachTodayCard } from '@/features/coach/ui/CoachTodayCard';
 import { FamilyCard } from '@/features/today/FamilyCard';
 import { ScoresCard } from '@/features/today/ScoresCard';
 import { useRogoScoresPush } from '@/features/today/useRogoScoresPush';
@@ -148,6 +149,8 @@ export default function TodayScreen() {
       </View>
 
       {view ? <ScoresCard readiness={view.scores.readiness} today={view.scores.today} onPress={() => router.push('/readiness')} /> : null}
+
+      <CoachTodayCard dataVersion={dataVersion} availability={nightHrv} />
 
       <FitnessTodayCards dataVersion={dataVersion} availability={nightHrv} />
 
