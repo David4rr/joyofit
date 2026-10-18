@@ -81,6 +81,7 @@ internal class HuaweiAuthenticator(
   private val events: WearEvents,
   private val deviceType: HuaweiDeviceType = HuaweiDeviceType.BR,
   private val lab: AuthLab? = null,
+  private val androidSdk: Int = Build.VERSION.SDK_INT,
 ) {
   private val params get() = session.params
   private val random = SecureRandom()
@@ -352,9 +353,14 @@ internal class HuaweiAuthenticator(
       }
       val outgoing = packet ?: throw WearException(ErrorCodes.PROTOCOL, "$label: no HiChain message for step $step")
 
-      val response = session
-        .request(outgoing, if (step == 0x01) firstStepTimeout else stepTimeout, label)
-        .expect<HiChain.Response>(label)
+      val response = try {
+        session
+          .request(outgoing, if (step == 0x01) firstStepTimeout else stepTimeout, label)
+          .expect<HiChain.Response>(label)
+      } catch (e: WearException) {
+        val hint = if (pairing && step == 0x01 && e.errorCode == ErrorCodes.TIMEOUT) FirstBind.leStepOneTimeoutHint(deviceType, androidSdk) else null
+        throw if (hint != null) WearException(e.errorCode, "${e.message}. $hint", e, e.statusCode) else e
+      }
 
       // GetHiChainRequest.processResponse
       if (response.errorCode != 0) {

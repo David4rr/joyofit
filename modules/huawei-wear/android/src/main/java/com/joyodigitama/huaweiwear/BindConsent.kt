@@ -4,6 +4,7 @@ import java.io.IOException
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiCoordinator.HuaweiDeviceType
 
 /**
  * Whether a connect may start a first bind. A watch keeps one phone credential and a first bind (PinCode, HiChain operationCode 1)
@@ -42,6 +43,22 @@ internal object FirstBind {
 
   /** True when the authentication has to stop before any PinCode request: a first bind is needed and nobody confirmed it. */
   fun needsConfirmation(firstConnection: Boolean, firstBindAllowed: Boolean): Boolean = firstConnection && !firstBindAllowed
+
+  /** First Android release whose stack asks for ATT MTU 517 whatever the app requests (UPSIDE_DOWN_CAKE). */
+  const val ANDROID_14_SDK = 34
+
+  /**
+   * Said when the reply to HiChain operationCode 1 step 1 never arrived on a phone that cannot receive it: over Bluetooth LE
+   * (not RFCOMM) on Android 14+, the watch answers in 514-byte notifications and the stack discards them (protocol/README.md,
+   * 2026-10-16 bind lab). Null where the cause may be something else (Classic link, Android 13 and older).
+   */
+  fun leStepOneTimeoutHint(deviceType: HuaweiDeviceType, sdk: Int): String? =
+    if (deviceType != HuaweiDeviceType.BR && sdk >= ANDROID_14_SDK) {
+      "Android 14 and newer cannot receive the watch's first pairing reply over Bluetooth LE (the system drops 514-byte notifications), " +
+        "so this watch cannot be paired with this phone. A phone with Android 13 or older does not have this limit"
+    } else {
+      null
+    }
 }
 
 /**

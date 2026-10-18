@@ -915,3 +915,10 @@ binding the app holds stayed untouched (the app's op2 reconnect worked right aft
   (Gadgetbridge issues 4148 and 4300: "HH resets the connection keys so you'll need to re-pair the device again with GB"; Huawei's own guide: a watch connects to one phone at a time), so a
   completed bind from a throwaway identity costs the app its binding; the lab refuses that without `--ez commit true`.
 - **Not tested:** a central the watch has no Classic bond with (the phone that ran the lab is bonded; the host's BlueZ adapter, an Intel AX200, scanned nothing at all).
+
+### 2026-10-17: Huawei Band 11 (`HUAWEI Band 11-3CD`), Infinix X6881, Android 14 (issue #2): first bind times out
+
+Support report from a user, no log attached. The app matched the model (Band 11, experimental) and the connect ended with `Authentication timed out: HiChain op1 step 1: no response
+(service 0x01, command 0x28) within 30000 ms`. That is the Android 14+ LE limit above (the 514-byte step 1 reply is discarded) [INFERENCE: the report has no log, so a
+`Magic mismatch` line was not seen; the user may also not have tapped ACCEPT on the band in time]. The step 1 timeout on LE with Android 14+ now says so in its message
+(`FirstBind.leStepOneTimeoutHint`).

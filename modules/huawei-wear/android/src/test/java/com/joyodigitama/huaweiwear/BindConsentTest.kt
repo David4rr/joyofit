@@ -2,6 +2,7 @@ package com.joyodigitama.huaweiwear
 
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiCoordinator.HuaweiDeviceType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -120,5 +121,13 @@ class BindConsentTest {
   fun bindConfirmationIsNotAnErrorInTheStateEvent() {
     assertNull(stateError(WearException(ErrorCodes.BIND_CONFIRMATION, FirstBind.MESSAGE)))
     assertEquals("Timed out", stateError(WearException(ErrorCodes.TIMEOUT, "Timed out")))
+  }
+
+  @Test
+  fun stepOneTimeoutNamesTheAndroid14LeLimitOnlyWhereItApplies() {
+    assertTrue(FirstBind.leStepOneTimeoutHint(HuaweiDeviceType.BLE, 34)!!.contains("Android 14"))
+    assertTrue(FirstBind.leStepOneTimeoutHint(HuaweiDeviceType.AW, 35)!!.contains("514-byte"))
+    assertNull(FirstBind.leStepOneTimeoutHint(HuaweiDeviceType.BLE, 33))
+    assertNull(FirstBind.leStepOneTimeoutHint(HuaweiDeviceType.BR, 34))
   }
 }
