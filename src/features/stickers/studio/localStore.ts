@@ -64,6 +64,27 @@ export function readUserTemplate(raw: string | null): UserTemplate | null {
   }
 }
 
+type ChangeListener = (id: string) => void;
+const changeListeners = new Set<ChangeListener>();
+
+/**
+ * Calls `listener` with the id of every template a store saved or removed, after the write. The cloud sync uses it to stamp the
+ * edit. Returns the function that stops listening.
+ */
+export function onTemplateChange(listener: ChangeListener): () => void {
+  changeListeners.add(listener);
+  return () => void changeListeners.delete(listener);
+}
+
+function changed(id: string): void {
+  for (const listener of changeListeners) listener(id);
+}
+
+/** An entry is stored under this id, readable or not: `list` and `get` skip one that does not parse, but it is not deleted. */
+export async function hasUserTemplate(kv: AsyncKv, id: string): Promise<boolean> {
+  return validId(id) && (await kv.getItem(ENTRY_PREFIX + id)) !== null;
+}
+
 export function createLocalTemplateStore(kv: AsyncKv): TemplateStore {
   return {
     async list() {
@@ -86,15 +107,18 @@ export function createLocalTemplateStore(kv: AsyncKv): TemplateStore {
         ids.push(template.id);
         await kv.setItem(ENTRY_PREFIX + template.id, json);
         await kv.setItem(INDEX_KEY, JSON.stringify(ids));
+        changed(template.id);
         return;
       }
       await kv.setItem(ENTRY_PREFIX + template.id, json);
+      changed(template.id);
     },
     async remove(id) {
       if (!validId(id)) return;
       const ids = await readIndex(kv);
       await kv.setItem(INDEX_KEY, JSON.stringify(ids.filter((known) => known !== id)));
       await kv.removeItem(ENTRY_PREFIX + id);
+      changed(id);
     },
   };
 }
