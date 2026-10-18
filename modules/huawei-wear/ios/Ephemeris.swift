@@ -724,7 +724,7 @@ public actor AgpsExchange {
 }
 
 /// The satellite-data job of the process: attaches an `AgpsExchange` to every live connection, keeps the phone-side copy fresh after every sync, and
-/// answers the app's questions (status, refresh now, the Huawei-servers switch).
+/// answers the app's questions (status, refresh now).
 public final class EphemerisLink: LinkObserver, @unchecked Sendable {
     public let store: AgpsStore
     private let link: LinkHandleSource
@@ -755,13 +755,9 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
         self.timing = timing
     }
 
-    /// The real source for this process: the Broadcom file (and, when allowed, the watch maker's servers) over the network, copies in `cache`.
+    /// The real source for this process: the Broadcom file over the network, copies in `cache`.
     public static func networkSource(store: AgpsStore, events: WearEvents, cache: AgpsCache, isOnline: @escaping @Sendable () -> Bool) -> AgpsSource {
-        NetworkAgpsSource(
-            cache: cache, store: store, log: { message in events.info("AGPS: \(message)") },
-            // The console only: the tag list and URLs can carry the user's rough position, so they stay out of the shareable support log.
-            logRaw: { message in WearConsole.general("AGPS: \(message)") }, isOnline: isOnline
-        )
+        NetworkAgpsSource(cache: cache, store: store, log: { message in events.info("AGPS: \(message)") }, isOnline: isOnline)
     }
 
     private func log(_ message: String) { events.info("AGPS: \(message)") }
@@ -805,12 +801,6 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
 
     // MARK: the app
 
-    /// The Huawei-servers switch. Turning it off takes effect for the next request; it never interrupts one.
-    public func setHuaweiServers(_ enabled: Bool) {
-        store.huaweiServers = enabled
-        log("watch maker's satellite servers: switched \(enabled ? "ON" : "OFF") by the user")
-    }
-
     /// What the Watch tab shows; cheap, read from the store and the live exchange.
     public func status() -> [String: Any] {
         let ex = currentExchange()
@@ -822,7 +812,6 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
         return [
             "linked": ex != nil,
             "phase": phase,
-            "huaweiServers": store.huaweiServers,
             "cachedAt": store.cachedAtMs,
             "cachedSize": store.cachedSize,
             "cachedSource": store.cachedSource,

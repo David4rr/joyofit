@@ -1,6 +1,5 @@
-// Port of AgpsSource.kt and EphemerisDownload.kt: where the satellite data comes from (the public Broadcom LTO file; the watch maker's servers only
-// when the user allowed them), the HTTP side (https only, bodies capped while they arrive, a plain GET with no credentials and no app
-// identification) and the phone-side copies in the Caches directory.
+// Port of AgpsSource.kt and EphemerisDownload.kt: where the satellite data comes from (the public Broadcom LTO file), the HTTP side (https only,
+// bodies capped while they arrive, a plain GET with no credentials and no app identification) and the phone-side copies in the Caches directory.
 import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -44,9 +43,7 @@ public protocol AgpsSource: AnyObject, Sendable {
 
 public enum AgpsSources {
     public static let broadcom = "broadcom_lto"
-    public static let huaweiAgnss = "huawei_agnss"
     public static let ltoFile = "gpslocation.dat"
-    public static let agnssFile = "HW_AGNSS_RTCM_33"
 }
 
 /// A download the watch asked for failed (no network, HTTP error, unreadable body), or arrived as a file the watch may not be sent.
@@ -77,28 +74,24 @@ public protocol AgpsCache: AnyObject, Sendable {
     func delete(_ url: String)
 }
 
-/// The real source: the public Broadcom LTO file for version 0; for the versions that name the watch maker's servers, those servers only when
-/// the user allowed it (`AgpsStore.huaweiServers`), and then only the one kind that is a plain download.
+/// The real source: the public Broadcom LTO file for download version 0. Every other version names data this app does not serve (the sources run
+/// by the watch maker are not used) and is declined as unsupported.
 public final class NetworkAgpsSource: AgpsSource, @unchecked Sendable {
-    private static let huaweiAgnssBase = "https://geo-dra.platform.hicloud.com/"
-
     private let cache: AgpsCache
     private let store: AgpsStore
     private let log: @Sendable (String) -> Void
-    private let logRaw: @Sendable (String) -> Void
     private let isOnline: @Sendable () -> Bool
     private let nowMs: @Sendable () -> Int
     private let httpGet: @Sendable (_ url: String, _ maxBytes: Int) async throws -> AgpsDownload
 
     public init(
-        cache: AgpsCache, store: AgpsStore, log: @escaping @Sendable (String) -> Void, logRaw: @escaping @Sendable (String) -> Void,
-        isOnline: @escaping @Sendable () -> Bool, nowMs: @escaping @Sendable () -> Int = { Int(Date().timeIntervalSince1970 * 1000) },
+        cache: AgpsCache, store: AgpsStore, log: @escaping @Sendable (String) -> Void, isOnline: @escaping @Sendable () -> Bool,
+        nowMs: @escaping @Sendable () -> Int = { Int(Date().timeIntervalSince1970 * 1000) },
         httpGet: @escaping @Sendable (_ url: String, _ maxBytes: Int) async throws -> AgpsDownload = EphemerisNet.get
     ) {
         self.cache = cache
         self.store = store
         self.log = log
-        self.logRaw = logRaw
         self.isOnline = isOnline
         self.nowMs = nowMs
         self.httpGet = httpGet
@@ -109,45 +102,14 @@ public final class NetworkAgpsSource: AgpsSource, @unchecked Sendable {
         case 0:
             return await fetchBroadcom(force: force)
         case 1, 2, 3:
-            if !store.huaweiServers {
-                return .failed(
-                    AgpsOutcome.huaweiOff, "the watch asked for data from the watch maker's servers (version \(consult.version)); they are switched off"
-                )
-            }
-            return await fetchHuawei(consult, force: force)
+            let names = consult.tagNames
+            return .failed(
+                AgpsOutcome.unsupported,
+                "the watch asked for download version \(consult.version) (\(names.isEmpty ? "no tag names" : names)); only version 0, the Broadcom LTO file, is served"
+            )
         default:
             return .failed(AgpsOutcome.unsupported, "download version \(consult.version) is not known")
         }
-    }
-
-    private struct Got {
-        let body: Bytes
-        let dataMs: Int
-        let fromCache: Bool
-    }
-
-    /// The phone-side copy when it is young enough, else the network; saved for next time only when it passed `validate`.
-    private func cachedGet(
-        url: String, force: Bool, maxBytes: Int, source: String, label: String, unwrap: Bool, validate: (Bytes) -> String?
-    ) async throws -> Got {
-        if !force {
-            let hit = cache.read(url, maxAgeMs: AgpsPolicy.cacheFreshMs)
-            if let hit, validate(hit) == nil {
-                log("\(label): from the phone's copy, \(hit.count) bytes")
-                let cachedData = store.cachedDataMs
-                let dataMs = (cachedData > 0 && store.cachedSource == source) ? cachedData : nowMs()
-                return Got(body: hit, dataMs: dataMs, fromCache: true)
-            }
-            if hit != nil { cache.delete(url) }
-        }
-        if !isOnline() { throw AgpsFetchError("no network", kind: .noNetwork) }
-        let started = nowMs()
-        let download = try await httpGet(url, maxBytes)
-        let body = try unwrap ? EphemerisNet.gunzipIfNeeded(download.body, maxBytes: maxBytes) : download.body
-        if let problem = validate(body) { throw AgpsFetchError(problem, kind: .invalidFile) }
-        log("\(label): downloaded \(body.count) bytes in \(nowMs() - started) ms")
-        cache.write(url, data: body)
-        return Got(body: body, dataMs: download.lastModifiedMs > 0 ? download.lastModifiedMs : nowMs(), fromCache: false)
     }
 
     private func fail(_ error: Error, _ label: String) -> AgpsFetch {
@@ -162,51 +124,36 @@ public final class NetworkAgpsSource: AgpsSource, @unchecked Sendable {
         return .failed(outcome, "\(label): \(e.message)")
     }
 
-    /// Version 0: always the fixed Broadcom address, whatever address the watch names. The file is `gpslocation.dat`.
+    /// Version 0: always the fixed Broadcom address, whatever address the watch names. The file is `gpslocation.dat`. The phone-side copy is used
+    /// when it is young enough and still passes the validation; a download is saved for next time only when it passed it.
     private func fetchBroadcom(force: Bool) async -> AgpsFetch {
+        let url = EphemerisNet.ltoHost + EphemerisNet.ltoPath
         do {
-            let got = try await cachedGet(
-                url: EphemerisNet.ltoHost + EphemerisNet.ltoPath, force: force, maxBytes: AgpsPolicy.ltoMaxBytes, source: AgpsSources.broadcom,
-                label: "LTO", unwrap: false, validate: AgpsPolicy.validateLto
-            )
+            if !force {
+                let hit = cache.read(url, maxAgeMs: AgpsPolicy.cacheFreshMs)
+                if let hit, AgpsPolicy.validateLto(hit) == nil {
+                    log("LTO: from the phone's copy, \(hit.count) bytes")
+                    let cachedData = store.cachedDataMs
+                    let dataMs = (cachedData > 0 && store.cachedSource == AgpsSources.broadcom) ? cachedData : nowMs()
+                    return AgpsFetch(
+                        files: [(AgpsSources.ltoFile, hit)], source: AgpsSources.broadcom, dataTimeMs: dataMs, outcome: AgpsOutcome.none, message: "",
+                        fromCache: true
+                    )
+                }
+                if hit != nil { cache.delete(url) }
+            }
+            if !isOnline() { throw AgpsFetchError("no network", kind: .noNetwork) }
+            let started = nowMs()
+            let download = try await httpGet(url, AgpsPolicy.ltoMaxBytes)
+            if let problem = AgpsPolicy.validateLto(download.body) { throw AgpsFetchError(problem, kind: .invalidFile) }
+            log("LTO: downloaded \(download.body.count) bytes in \(nowMs() - started) ms")
+            cache.write(url, data: download.body)
             return AgpsFetch(
-                files: [(AgpsSources.ltoFile, got.body)], source: AgpsSources.broadcom, dataTimeMs: got.dataMs, outcome: AgpsOutcome.none, message: "",
-                fromCache: got.fromCache
+                files: [(AgpsSources.ltoFile, download.body)], source: AgpsSources.broadcom,
+                dataTimeMs: download.lastModifiedMs > 0 ? download.lastModifiedMs : nowMs(), outcome: AgpsOutcome.none, message: ""
             )
         } catch {
             return fail(error, "LTO")
-        }
-    }
-
-    /// The watch maker's servers, switched on by the user. Only the plain download kind (`HW_AGNSS`) is made; the other kinds need the maker's own
-    /// decoder or an account and are declined. UNTESTED against the real server: the entry layout is `<path>/<TAG>`; the path is appended to
-    /// `huaweiAgnssBase` and the answer is gunzipped when it is gzip.
-    private func fetchHuawei(_ consult: AgpsConsult, force: Bool) async -> AgpsFetch {
-        let entries = consult.tag.split(separator: ";", omittingEmptySubsequences: false)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        func lastSegment(_ entry: String) -> String { entry.lastIndex(of: "/").map { String(entry[entry.index(after: $0)...]) } ?? entry }
-        guard let agnss = entries.first(where: { lastSegment($0) == "HW_AGNSS" }) else {
-            let names = consult.tagNames
-            return .failed(AgpsOutcome.unsupported, "the watch asked for \(names.isEmpty ? "nothing named" : names); only HW_AGNSS can be served")
-        }
-        // `substringBeforeLast('/', "")`: empty when the entry has no `/`; leading slashes dropped.
-        var path = agnss.lastIndex(of: "/").map { String(agnss[..<$0]) } ?? ""
-        while path.hasPrefix("/") { path.removeFirst() }
-        if path.isEmpty { return .failed(AgpsOutcome.unsupported, "the HW_AGNSS entry has no path") }
-        let url = NetworkAgpsSource.huaweiAgnssBase + path
-        logRaw("HW_AGNSS url=\(url)")
-        do {
-            let got = try await cachedGet(
-                url: url, force: force, maxBytes: AgpsPolicy.otherMaxBytes, source: AgpsSources.huaweiAgnss, label: "HW_AGNSS", unwrap: true,
-                validate: AgpsPolicy.validateOther
-            )
-            return AgpsFetch(
-                files: [(AgpsSources.agnssFile, got.body)], source: AgpsSources.huaweiAgnss, dataTimeMs: got.dataMs, outcome: AgpsOutcome.none,
-                message: "", fromCache: got.fromCache
-            )
-        } catch {
-            return fail(error, "HW_AGNSS")
         }
     }
 }
@@ -214,7 +161,7 @@ public final class NetworkAgpsSource: AgpsSource, @unchecked Sendable {
 /// The HTTP side of the satellite-data job. Only https, bodies capped by the caller while they arrive, a plain GET with no credentials, no cookies
 /// and no app identification (the default `User-Agent` of URLSession names the app, so it is replaced).
 public enum EphemerisNet {
-    /// The public Broadcom LTO file (valid for 7 days) is what is downloaded unless the user allows the watch maker's servers.
+    /// The public Broadcom LTO file (valid for 7 days): the only data this app downloads for the watch.
     public static let ltoHost = "https://gllto.glpals.com"
     public static let ltoPath = "/7day/v6/latest/lto.dat"
 
@@ -341,40 +288,6 @@ public enum EphemerisNet {
         formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
         guard let date = formatter.date(from: text.trimmingCharacters(in: .whitespaces)) else { return nil }
         return Int(date.timeIntervalSince1970 * 1000)
-    }
-
-    /// A body that starts with the gzip magic is unwrapped (capped, and its CRC and length checked); anything else is returned as it is.
-    static func gunzipIfNeeded(_ data: Bytes, maxBytes: Int) throws -> Bytes {
-        guard data.count >= 2, data[0] == 0x1F, data[1] == 0x8B else { return data }
-        func broken(_ why: String) -> AgpsFetchError { AgpsFetchError("gunzip failed: \(why)") }
-        guard data.count >= 18, data[2] == 8 else { throw broken("not a deflate gzip stream") }
-        let flags = data[3]
-        var position = 10
-        if flags & 0x04 != 0 {
-            guard position + 2 <= data.count else { throw broken("truncated header") }
-            position += 2 + Int(data[position]) + Int(data[position + 1]) << 8
-        }
-        for bit: UInt8 in [0x08, 0x10] where flags & bit != 0 {
-            while position < data.count && data[position] != 0 { position += 1 }
-            position += 1
-        }
-        if flags & 0x02 != 0 { position += 2 }
-        guard position < data.count else { throw broken("truncated header") }
-        let inflated: (data: Bytes, end: Int)
-        do {
-            inflated = try Inflate.inflate(data, at: position, limit: maxBytes)
-        } catch InflateError.tooLarge {
-            throw AgpsFetchError("unzipped response larger than \(maxBytes) bytes")
-        } catch {
-            throw broken("\(error)")
-        }
-        guard inflated.end + 8 <= data.count else { throw broken("truncated trailer") }
-        func le32(_ at: Int) -> UInt32 {
-            UInt32(data[at]) | UInt32(data[at + 1]) << 8 | UInt32(data[at + 2]) << 16 | UInt32(data[at + 3]) << 24
-        }
-        guard le32(inflated.end) == CRC32.checksum(inflated.data) else { throw broken("CRC mismatch") }
-        guard le32(inflated.end + 4) == UInt32(truncatingIfNeeded: inflated.data.count) else { throw broken("length mismatch") }
-        return inflated.data
     }
 
     /// SHA-256 of the watch address without colons, lowercase hex: part of the stored file name the watch's protocol expects.

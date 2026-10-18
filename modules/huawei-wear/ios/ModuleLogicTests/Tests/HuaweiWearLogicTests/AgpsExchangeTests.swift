@@ -324,9 +324,9 @@ final class AgpsExchangeTests: XCTestCase {
         XCTAssertEqual(store.failures, 1)
     }
 
-    func testAHuaweiVersionIsAnsweredFailedAndTheAskIsRecordedWithTagNamesOnly() async {
+    func testAWatchMakerVersionIsAnsweredFailedAndTheAskIsRecordedWithTagNamesOnly() async {
         let real = NetworkAgpsSource(
-            cache: NullAgpsCache(), store: store, log: { _ in }, logRaw: { _ in }, isOnline: { true },
+            cache: NullAgpsCache(), store: store, log: { _ in }, isOnline: { true },
             httpGet: { _, _ in throw AgpsFetchError("the network must not be used here") }
         )
         _ = await start(real)
@@ -335,7 +335,8 @@ final class AgpsExchangeTests: XCTestCase {
         consult(3, "secret/path/HW_PGNSS_PRED")
         let answer = await awaitMsg(0x1F, 0x03)
         XCTAssertEqual(state(answer), 4)
-        XCTAssertEqual(store.lastOutcome, AgpsOutcome.huaweiOff)
+        XCTAssertEqual(store.lastOutcome, AgpsOutcome.unsupported)
+        XCTAssertEqual(store.lastError.contains("HW_PGNSS_PRED"), true, "the log says which kind was declined")
         XCTAssertEqual(store.lastAskVersion, 3)
         XCTAssertEqual(store.lastAskTags, "HW_PGNSS_PRED")
         XCTAssertEqual(store.failures, 0, "a refused kind is not a download failure")

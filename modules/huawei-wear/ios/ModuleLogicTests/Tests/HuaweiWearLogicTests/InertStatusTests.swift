@@ -132,7 +132,6 @@ final class InertStatusTests: XCTestCase {
         ).toJS()
         let populatedAgps: [String: Any] = {
             let store = AgpsStore(defaults: ephemeralDefaults())
-            store.huaweiServers = true
             store.recordAsk(nowMs: 1_792_110_600_000, version: 3, tags: "HW_AGNSS,HW_PGNSS_PRED")
             store.recordDownloaded(nowMs: 1_792_110_650_000, dataMs: 1_792_100_000_000, size: 115_749, source: AgpsSources.broadcom)
             store.recordDelivered(nowMs: 1_792_110_700_000, dataMs: 1_792_100_000_000, size: 115_749, source: AgpsSources.broadcom, address: "A")

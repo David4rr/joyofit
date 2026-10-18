@@ -1,6 +1,6 @@
-// Port of AgpsStore.kt: what the satellite-data job remembers between runs: the user's one choice, the newest download on the phone, the last
-// delivery to the watch, what the watch last asked for, and the retry state. Own UserDefaults suite; nothing here is personal data (only tag
-// names, never the paths and URLs the watch names, which can carry a rough position).
+// Port of AgpsStore.kt: what the satellite-data job remembers between runs: the newest download on the phone, the last delivery to the watch,
+// what the watch last asked for, and the retry state. Own UserDefaults suite; nothing here is personal data (only tag names, never the paths
+// and URLs the watch names, which can carry a rough position).
 import Foundation
 #if canImport(HuaweiProtocol)
 import HuaweiProtocol
@@ -13,7 +13,6 @@ public final class AgpsStore: @unchecked Sendable {
     private let lock = NSLock()
 
     private enum Key {
-        static let huawei = "huawei_servers"
         static let cachedAt = "cached_at"
         static let cachedData = "cached_data"
         static let cachedSize = "cached_size"
@@ -42,12 +41,6 @@ public final class AgpsStore: @unchecked Sendable {
 
     private func int(_ key: String, _ fallback: Int = 0) -> Int { defaults.object(forKey: key) == nil ? fallback : defaults.integer(forKey: key) }
     private func string(_ key: String, _ fallback: String = "") -> String { defaults.string(forKey: key) ?? fallback }
-
-    /// The user allows data from the watch maker's servers. Off until the user turns it on.
-    public var huaweiServers: Bool {
-        get { defaults.bool(forKey: Key.huawei) }
-        set { defaults.set(newValue, forKey: Key.huawei) }
-    }
 
     /// When the newest download finished (phone clock, ms); 0 when none.
     public var cachedAtMs: Int { int(Key.cachedAt) }

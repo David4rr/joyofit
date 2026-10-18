@@ -4,7 +4,7 @@
 //
 // Implemented for real: the link (getBondedDevices, connect, disconnect, getState, getDevice, getSupportReport, refreshBattery, syncActivity,
 // forgetDevice), the background session, the user profile, the HealthKit export, the family monitoring upload and the satellite data exchange
-// (getAgps, refreshAgps, cancelAgps, setAgpsHuaweiServers). Everything else the Android module offers has no iOS
+// (getAgps, refreshAgps, cancelAgps). Everything else the Android module offers has no iOS
 // counterpart or no ported protocol layer yet and keeps its name: getters answer with the inert status of InertStatus.swift, commands reject
 // with ERR_UNSUPPORTED ("... not available on iOS yet"). Nothing claims to have reached the watch that did not.
 #if canImport(ExpoModulesCore) && canImport(CoreBluetooth) && (canImport(SQLite3) || canImport(CSQLite))
@@ -582,10 +582,6 @@ public final class HuaweiWearModule: Module {
 
         AsyncFunction("cancelAgps") { () async throws -> Void in
             await runtime.ephemeris.cancel()
-        }
-
-        AsyncFunction("setAgpsHuaweiServers") { (enabled: Bool) async throws -> Void in
-            runtime.ephemeris.setHuaweiServers(enabled)
         }
 
         // MARK: commands that would reach the watch or Android-only screens: ERR_UNSUPPORTED

@@ -15,9 +15,7 @@ public enum AgpsOutcome {
     public static let noNetwork = "no_network"
     public static let downloadFailed = "download_failed"
     public static let invalidFile = "invalid_file"
-    /// The watch asked for data from the watch maker's servers and the user has not allowed that.
-    public static let huaweiOff = "huawei_off"
-    /// The watch asked for a kind of data this app cannot make.
+    /// The watch asked for a kind of data this app does not serve (every download version but 0).
     public static let unsupported = "unsupported"
     public static let watchRefused = "watch_refused"
     public static let timeout = "timeout"
@@ -67,9 +65,6 @@ public enum AgpsPolicy {
     public static let ltoMinBytes = 16 * 1024
     public static let ltoMaxBytes = 1024 * 1024
 
-    /// Cap for any other file the watch may be sent.
-    public static let otherMaxBytes = 4 * 1024 * 1024
-
     /// Most data one 1C/04 answer may carry, whatever the watch asks for.
     public static let maxDataPerRequest = 1024 * 1024
 
@@ -93,14 +88,6 @@ public enum AgpsPolicy {
         if data.count < ltoMinBytes { return "file too small (\(data.count) bytes)" }
         if data.count > ltoMaxBytes { return "file too large (\(data.count) bytes)" }
         if Array(data[0..<ltoMagic.count]) != ltoMagic { return "not an LTO file (unexpected header)" }
-        return nil
-    }
-
-    /// Why `data` is not fit to send under another name, or nil: not empty, under the cap, and not a web page or error body.
-    public static func validateOther(_ data: Bytes) -> String? {
-        if data.isEmpty { return "empty file" }
-        if data.count > otherMaxBytes { return "file too large (\(data.count) bytes)" }
-        if data[0] == UInt8(ascii: "<") || data[0] == UInt8(ascii: "{") { return "text, not data" }
         return nil
     }
 

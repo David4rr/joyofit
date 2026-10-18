@@ -56,7 +56,6 @@ final class AgpsTests: XCTestCase {
         XCTAssertEqual(AgpsPolicy.validMs, 7 * 24 * 60 * 60_000)
         XCTAssertEqual(AgpsPolicy.ltoMinBytes, 16 * 1024)
         XCTAssertEqual(AgpsPolicy.ltoMaxBytes, 1024 * 1024)
-        XCTAssertEqual(AgpsPolicy.otherMaxBytes, 4 * 1024 * 1024)
         XCTAssertEqual(AgpsPolicy.maxDataPerRequest, 1024 * 1024)
         XCTAssertEqual(AgpsPolicy.maxFrames, 65_535)
         XCTAssertEqual(EphemerisNet.ltoHost + EphemerisNet.ltoPath, "https://gllto.glpals.com/7day/v6/latest/lto.dat")
@@ -77,14 +76,6 @@ final class AgpsTests: XCTestCase {
         let page = Array("<html>".utf8) + Bytes(repeating: 0, count: 40_000)
         XCTAssertTrue(AgpsPolicy.validateLto(page)!.contains("header"))
         XCTAssertNotNil(AgpsPolicy.validateLto([]))
-    }
-
-    func testOtherFilesAreCappedAndMustNotBeWebPagesOrJson() {
-        XCTAssertNil(AgpsPolicy.validateOther([1, 2, 3]))
-        XCTAssertNotNil(AgpsPolicy.validateOther([]))
-        XCTAssertNotNil(AgpsPolicy.validateOther(Bytes(repeating: 1, count: AgpsPolicy.otherMaxBytes + 1)))
-        XCTAssertNotNil(AgpsPolicy.validateOther(Array("<html>".utf8)))
-        XCTAssertNotNil(AgpsPolicy.validateOther(Array("{\"error\":1}".utf8)))
     }
 
     func testFrameCountRoundsUpAndRefusesAbsurdTransfers() {
@@ -233,21 +224,12 @@ final class AgpsTests: XCTestCase {
 
     // MARK: the store
 
-    func testTheStoreStartsEmptyWithTheHuaweiSwitchOff() {
+    func testTheStoreStartsEmpty() {
         let store = AgpsStore(defaults: ephemeralDefaults())
-        XCTAssertFalse(store.huaweiServers)
         XCTAssertEqual(store.cachedAtMs, 0)
         XCTAssertEqual(store.lastAskVersion, -1)
         XCTAssertEqual(store.lastOutcome, AgpsOutcome.none)
         XCTAssertEqual(store.retryAtMs(), 0)
-    }
-
-    func testTheHuaweiSwitchIsRememberedByANewStoreOnTheSameDefaults() {
-        let defaults = ephemeralDefaults()
-        AgpsStore(defaults: defaults).huaweiServers = true
-        XCTAssertTrue(AgpsStore(defaults: defaults).huaweiServers)
-        AgpsStore(defaults: defaults).huaweiServers = false
-        XCTAssertFalse(AgpsStore(defaults: defaults).huaweiServers)
     }
 
     func testFailuresAccumulateIntoTheRetryWaitAndASuccessOrTheUserClearsThem() {
@@ -314,7 +296,7 @@ final class AgpsTests: XCTestCase {
         _ cache: AgpsCache, _ store: AgpsStore, online: Bool = true,
         get: @escaping @Sendable (String, Int) async throws -> AgpsDownload = { _, _ in throw AgpsFetchError("the network must not be used here") }
     ) -> NetworkAgpsSource {
-        NetworkAgpsSource(cache: cache, store: store, log: { _ in }, logRaw: { _ in }, isOnline: { online }, nowMs: { 50_000 }, httpGet: get)
+        NetworkAgpsSource(cache: cache, store: store, log: { _ in }, isOnline: { online }, nowMs: { 50_000 }, httpGet: get)
     }
 
     func testVersionZeroServesAGoodCachedFileAndMarksItAsCached() async {
@@ -386,45 +368,16 @@ final class AgpsTests: XCTestCase {
         XCTAssertEqual(fetch.message, "LTO: HTTP 503")
     }
 
-    func testHuaweiVersionsAreDeclinedUntilTheUserAllowsTheirServers() async {
+    func testVersionsOneToThreeAreDeclinedAsUnsupportedAndNameOnlyTheKindsAskedFor() async {
         let store = AgpsStore(defaults: ephemeralDefaults())
-        let consult = AgpsConsult(version: 3, tag: "p/q/HW_AGNSS;x/HW_PGNSS_PRED", urls: [])
-        let fetch = await source(MemoryCache(), store).fetch(consult, force: false)
-        XCTAssertFalse(fetch.ok)
-        XCTAssertEqual(fetch.outcome, AgpsOutcome.huaweiOff)
-        for version in 1...2 {
-            let other = await source(MemoryCache(), store).fetch(AgpsConsult(version: version, tag: "x", urls: []), force: false)
-            XCTAssertEqual(other.outcome, AgpsOutcome.huaweiOff)
+        for version in 1...3 {
+            let consult = AgpsConsult(version: version, tag: "p/q/HW_AGNSS;x/HW_PGNSS_PRED", urls: [])
+            let fetch = await source(MemoryCache(), store).fetch(consult, force: false)
+            XCTAssertFalse(fetch.ok)
+            XCTAssertEqual(fetch.outcome, AgpsOutcome.unsupported)
+            XCTAssertTrue(fetch.message.contains("HW_PGNSS_PRED"), "the message says which kinds were asked for")
+            XCTAssertFalse(fetch.message.contains("p/q"), "never the paths the watch names")
         }
-    }
-
-    func testWithTheSwitchOnOnlyTheKindThatIsAPlainDownloadIsAttempted() async {
-        let store = AgpsStore(defaults: ephemeralDefaults())
-        store.huaweiServers = true
-        let other = await source(MemoryCache(), store).fetch(AgpsConsult(version: 3, tag: "x/HW_PGNSS_PRED;y/HW_RSMC_A", urls: []), force: false)
-        XCTAssertEqual(other.outcome, AgpsOutcome.unsupported)
-        XCTAssertTrue(other.message.contains("HW_PGNSS_PRED"))
-        let noPath = await source(MemoryCache(), store).fetch(AgpsConsult(version: 3, tag: "HW_AGNSS", urls: []), force: false)
-        XCTAssertEqual(noPath.outcome, AgpsOutcome.unsupported)
-    }
-
-    func testWithTheSwitchOnTheAgnssFileIsDownloadedFromTheEntryPathAndUnzipped() async throws {
-        let store = AgpsStore(defaults: ephemeralDefaults())
-        store.huaweiServers = true
-        let payload = Bytes((0..<300).map { UInt8(truncatingIfNeeded: $0 &+ 1) })
-        let cache = MemoryCache()
-        let fetch = await source(cache, store, get: { url, max in
-            XCTAssertEqual(url, "https://geo-dra.platform.hicloud.com/p/q")
-            XCTAssertEqual(max, AgpsPolicy.otherMaxBytes)
-            return AgpsDownload(body: AgpsTests.gzip(payload), lastModifiedMs: 7_000)
-        }).fetch(AgpsConsult(version: 3, tag: "p/q/HW_AGNSS;x/HW_PGNSS_PRED", urls: []), force: false)
-        // The entry names the tag as its last segment: the URL is the base plus the path before it.
-        XCTAssertTrue(fetch.ok, fetch.message)
-        XCTAssertEqual(fetch.source, AgpsSources.huaweiAgnss)
-        XCTAssertEqual(fetch.files.map(\.name), [AgpsSources.agnssFile])
-        XCTAssertEqual(fetch.files[0].data, payload)
-        XCTAssertEqual(fetch.dataTimeMs, 7_000)
-        XCTAssertEqual(cache.entries["https://geo-dra.platform.hicloud.com/p/q"], payload)
     }
 
     func testUnknownVersionsAreUnsupported() async {
@@ -433,37 +386,6 @@ final class AgpsTests: XCTestCase {
     }
 
     // MARK: HTTP helpers
-
-    /// A gzip stream around one stored deflate block.
-    static func gzip(_ data: Bytes) -> Bytes {
-        var out: Bytes = [0x1F, 0x8B, 8, 0, 0, 0, 0, 0, 0, 0xFF, 0x01]
-        let n = UInt16(data.count)
-        out += [UInt8(n & 0xFF), UInt8(n >> 8), UInt8(~n & 0xFF), UInt8((~n) >> 8)]
-        out += data
-        let crc = CRC32.checksum(data)
-        for shift in stride(from: 0, to: 32, by: 8) { out.append(UInt8((crc >> UInt32(shift)) & 0xFF)) }
-        let size = UInt32(data.count)
-        for shift in stride(from: 0, to: 32, by: 8) { out.append(UInt8((size >> UInt32(shift)) & 0xFF)) }
-        return out
-    }
-
-    func testGunzipUnwrapsAGzipBodyAndPassesOtherBodiesThrough() throws {
-        let payload = Bytes((0..<300).map { UInt8(truncatingIfNeeded: $0) })
-        XCTAssertEqual(try EphemerisNet.gunzipIfNeeded(AgpsTests.gzip(payload), maxBytes: 1000), payload)
-        XCTAssertEqual(try EphemerisNet.gunzipIfNeeded([1, 2, 3], maxBytes: 1000), [1, 2, 3])
-    }
-
-    func testGunzipRefusesTooLargeBadChecksumAndTruncatedBodies() {
-        let payload = Bytes(repeating: 5, count: 300)
-        XCTAssertThrowsError(try EphemerisNet.gunzipIfNeeded(AgpsTests.gzip(payload), maxBytes: 299)) { error in
-            XCTAssertTrue("\(error)".contains("larger than 299"))
-        }
-        var badCrc = AgpsTests.gzip(payload)
-        badCrc[badCrc.count - 8] ^= 0xFF
-        XCTAssertThrowsError(try EphemerisNet.gunzipIfNeeded(badCrc, maxBytes: 1000))
-        let truncated = Array(AgpsTests.gzip(payload).dropLast(6))
-        XCTAssertThrowsError(try EphemerisNet.gunzipIfNeeded(truncated, maxBytes: 1000))
-    }
 
     func testHttpDatesAreReadAsUnixMilliseconds() {
         XCTAssertEqual(EphemerisNet.parseHttpDate("Sun, 06 Nov 1994 08:49:37 GMT"), 784_111_777_000)
