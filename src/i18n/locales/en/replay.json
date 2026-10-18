@@ -49,7 +49,8 @@
     "offline": "The map could not be loaded, so your route is drawn on a plain background.",
     "noRoute": "This workout has no GPS route, so it cannot be replayed yet.",
     "tooShort": "Your route is too short to replay with route privacy on. Turn route privacy off to see it.",
-    "caption": "Replay of my workout on JoyoFit"
+    "caption": "Replay of my workout on JoyoFit",
+    "length": "The video lasts about {{seconds}} seconds"
   },
   "export": {
     "button": "Make video",

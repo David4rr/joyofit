@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Defs, G } from 'react-native-svg';
 
@@ -18,14 +18,13 @@ interface NodeProps {
 
 /** One sticker-engine node, drawn by the sticker painter's own `drawNode`; skipped when it gets the same node object again. */
 const Leaf = memo(function Leaf({ node, fonts }: { node: SceneNode; fonts: FontMap }) {
-  const id = useRef(-1);
-  if (id.current < 0) id.current = leafIds++;
+  const [id] = useState(() => leafIds++);
   const { element, defs } = useMemo(() => {
     let counter = 0;
-    const paintDefs: PaintDefs = { defs: [], next: () => `rp${id.current}g${counter++}` };
-    const env: DrawEnv = { defs: paintDefs, fonts, clipCounter: { n: id.current * 1000 } };
+    const paintDefs: PaintDefs = { defs: [], next: () => `rp${id}g${counter++}` };
+    const env: DrawEnv = { defs: paintDefs, fonts, clipCounter: { n: id * 1000 } };
     return { element: drawNode(node, 'n', env), defs: paintDefs.defs };
-  }, [node, fonts]);
+  }, [node, fonts, id]);
   return (
     <>
       {defs.length > 0 ? <Defs>{defs}</Defs> : null}

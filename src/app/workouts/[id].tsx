@@ -29,6 +29,7 @@ import { GearWorkoutSection } from '@/features/gear/ui/GearWorkoutSection';
 import { CoachFeedbackSection } from '@/features/coach/ui/CoachFeedbackSection';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
 import { ShareRunButton } from '@/features/stickers/ui/ShareRunButton';
+import { ReplayButton } from '@/features/replay/ui/ReplayButton';
 import { ShareToRogoButton } from '@/features/social/ShareToRogo';
 import { SaveWorkoutRouteButton } from '@/features/routes/SaveWorkoutRouteButton';
 import { useRoleText } from '@/features/record/ui/SensorRow';
@@ -326,6 +327,7 @@ export default function WorkoutDetailScreen() {
               route={route}
               analysis={analysisState.status === 'ready' ? analysisState.analysis : null}
             />
+            <ReplayButton workout={workout} analysis={sharedAnalysis} climbs={rideData.ride?.climbs ?? null} />
             <ShareToRogoButton
               workout={workout}
               points={loaded.points}

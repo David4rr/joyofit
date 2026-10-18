@@ -69,7 +69,8 @@ export function themeFor(mode: ReplayMode, kind: ReplayKind): ReplayTheme {
       speed: INK.dark.good,
       height: INK.dark.accent2,
       record: INK.dark.accent,
-      map: { ...darkPalette, background: c.bg },
+      // Land fills sit just above the card colour so tile seams never show; the roads carry the picture.
+      map: { ...darkPalette, background: c.bg, wood: '#0f1310', grass: '#0f1310', park: '#101510', landuse: '#0e0e10', building: '#17181b', water: '#090b0f', waterway: '#10151c' },
       ridges: ['#141518', '#1a1b1f', '#212328'],
     };
   }

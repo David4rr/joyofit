@@ -44,7 +44,7 @@ export async function copyCardImage(card: View, size: ExportSize): Promise<void>
 }
 
 /** Some Android share targets report a dismissal as an error; that is not a failure. */
-function isShareCancel(error: unknown): boolean {
+export function isShareCancel(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /cancel|User did not share|does not respond/i.test(message);
 }
@@ -63,12 +63,12 @@ export async function shareCardImage(fileUri: string, caption: string): Promise<
  * `expo.extra.facebookAppId`. Instagram needs it as `source_application` to open its Story composer directly; without
  * it the Instagram button hands the PNG to the Instagram app's share target instead.
  */
-const FACEBOOK_APP_ID = resolveFacebookAppId(
+export const FACEBOOK_APP_ID = resolveFacebookAppId(
   process.env.EXPO_PUBLIC_FB_APP_ID,
   (Constants.expoConfig?.extra as { facebookAppId?: string } | undefined)?.facebookAppId,
 );
 
-const OS = Platform.OS === 'ios' ? 'ios' : 'android';
+export const OS = Platform.OS === 'ios' ? 'ios' : 'android';
 
 /** Android asks the package manager, iOS asks whether the `instagram` scheme opens (listed in `LSApplicationQueriesSchemes` by the react-native-share plugin). */
 export async function instagramInstalled(): Promise<boolean> {
@@ -95,7 +95,7 @@ export type PhotosPrompt = (purpose: 'save' | 'instagram') => Promise<boolean>;
  * and opens it by id). Android needs none for these. Resolves `false` when the person declines the pre-prompt; throws
  * `PhotosDeniedError` when iOS will not ask again or the system dialog is refused.
  */
-async function ensurePhotosAccess(purpose: 'save' | 'instagram', prompt: PhotosPrompt): Promise<boolean> {
+export async function ensurePhotosAccess(purpose: 'save' | 'instagram', prompt: PhotosPrompt): Promise<boolean> {
   if (OS === 'android') return true;
   const writeOnly = purpose === 'save';
   const current = await MediaLibrary.getPermissionsAsync(writeOnly);

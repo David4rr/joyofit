@@ -49,7 +49,8 @@
     "offline": "Peta belum bisa dimuat, jadi rutemu digambar di latar polos.",
     "noRoute": "Latihan ini tidak punya rute GPS, jadi belum bisa diputar ulang.",
     "tooShort": "Rutemu terlalu pendek untuk diputar ulang dengan privasi rute menyala. Matikan privasi rute untuk melihatnya.",
-    "caption": "Putar ulang latihanku di JoyoFit"
+    "caption": "Putar ulang latihanku di JoyoFit",
+    "length": "Durasi video sekitar {{seconds}} detik"
   },
   "export": {
     "button": "Buat video",
