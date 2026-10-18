@@ -91,14 +91,15 @@
     },
     "bonded": {
       "forgetTitle": "Forget pairing?",
-      "forgetMessage": "This drops the stored auth key for this watch. The next connect is a first-time bind and has to be confirmed on the watch. Android Bluetooth pairing is not touched.",
+      "forgetMessage": "This deletes the watch's authentication key from this phone and removes the watch from your list. Health data already stored stays. The next connection is a first pairing and has to be confirmed on the watch. The Android Bluetooth pairing does not change.",
       "forget": "Forget",
       "forgetPairing": "Forget pairing",
       "unnamed": "Unnamed device",
       "systemConnected": "Already connected to this iPhone. Tap Connect to use it here.",
       "notInReach": "Not in reach. If it is on another phone, disconnect it there first.",
       "disconnect": "Disconnect",
-      "connect": "Connect"
+      "connect": "Connect",
+      "switchHere": "Switch here"
     },
     "list": {
       "title": "Available watches",
@@ -483,5 +484,42 @@
     "file": "File",
     "fileValue": "{{name}}, {{bytes}} bytes",
     "statusHint": "Huawei Health reads an upload status of 1 as accepted. Check the course on the watch."
+  },
+  "multi": {
+    "title": "Your watches",
+    "primaryHint": "The primary watch owns the all-day data: steps, heart rate, SpO2 and sleep. The other watches fill the minutes it has nothing for. Workouts from every watch are kept, and the same workout from two watches is counted once.",
+    "add": "Add another watch",
+    "addHint": "Pair the second watch in Bluetooth settings, then tap Connect in the list below. The watches you already have keep their keys. Only one watch is connected at a time.",
+    "badge": {
+      "primary": "Primary",
+      "active": "Active"
+    },
+    "lastSync": "Last synced {{time}}",
+    "neverSynced": "Never synced",
+    "notTracked": "Its health data is not stored",
+    "switchTo": "Switch to this watch",
+    "manage": "Manage this watch",
+    "makePrimary": "Make primary",
+    "rename": {
+      "title": "Watch name",
+      "placeholder": "For example: Running watch",
+      "save": "Save",
+      "action": "Rename",
+      "reset": "Use the watch's name"
+    },
+    "tracksHealth": {
+      "label": "Store this watch's health data",
+      "hint": "Turn off for somebody else's watch, such as a family band: its steps, sleep, heart rate and workouts are not stored on this phone. Notifications, watch faces and alarms still work."
+    },
+    "background": {
+      "label": "Sync in the background",
+      "hint": "Android only. Between the active watch's syncs this watch is connected briefly and synced. The active watch disconnects for a few seconds."
+    },
+    "remove": {
+      "action": "Remove watch",
+      "title": "Remove this watch?",
+      "message": "{{name}} is removed from the list and its pairing key is deleted from this phone. Health data already stored stays. Connecting it again is a first pairing and has to be confirmed on the watch.",
+      "confirm": "Remove"
+    }
   }
 }

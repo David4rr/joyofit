@@ -24,6 +24,7 @@ import {
 import { BurnFigure, FuelBar } from '@/features/live/FuelBar';
 import { startOfLocalDay } from '@/features/today/stats';
 import { STRAIN_MAX, strainAddedToDay, workoutStrain } from '@/features/today/strain';
+import { useWorkoutSource } from '@/features/device/useWorkoutSource';
 import { GearWorkoutSection } from '@/features/gear/ui/GearWorkoutSection';
 import { CoachFeedbackSection } from '@/features/coach/ui/CoachFeedbackSection';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
@@ -122,6 +123,7 @@ export default function WorkoutDetailScreen() {
   const { t } = useTranslation('workouts');
   const analysisT = useAnalysisT();
   const { catalog } = useStrengthHistory();
+  const recordedBy = useWorkoutSource(Number(id));
 
   useFocusEffect(
     useCallback(() => {
@@ -412,6 +414,7 @@ export default function WorkoutDetailScreen() {
           label={t('detail.more.timeOfDay')}
           value={t('detail.more.timeRange', { from: formatClock(workout.start), to: formatClock(workout.end) })}
         />
+        {recordedBy !== null ? <KeyValue icon="watch-outline" label={t('detail.more.recordedBy')} value={recordedBy} /> : null}
         {paceRows(summary, workout.distance, times.movingSec).map((row) => (
           <KeyValue key={row.key} icon="speedometer-outline" label={row.label} value={row.value} />
         ))}

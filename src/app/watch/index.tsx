@@ -20,6 +20,7 @@ import { SupportedWatches } from '@/features/device/SupportedWatches';
 import { WatchIntro } from '@/features/device/WatchIntro';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { WatchStatusCard } from '@/features/device/WatchStatusCard';
+import { WatchesSection } from '@/features/device/WatchesSection';
 import { useBluetoothPermission } from '@/features/device/useBluetoothPermission';
 import { useBondedDevices } from '@/features/device/useBondedDevices';
 import { useWatch } from '@/state/WatchProvider';
@@ -64,6 +65,17 @@ function WatchHub() {
   const { device } = watch;
   const linked = watch.linkState === 'connected' || watch.linkState === 'syncing';
   const pairedWatches = <AvailableWatchesSection permission={permission} bonded={bonded} />;
+  // Another watch: look for it where the list below shows watches; it is paired there with Connect, and the first one keeps its keys.
+  const addWatch = () => {
+    if (!granted) {
+      void permission.request();
+    } else if (isIos) {
+      void bonded.refresh();
+    } else {
+      void bonded.reload();
+      void bonded.startScan();
+    }
+  };
 
   const watchDetails = device ? (
     <Section title={t('watch:details.title')} icon="watch">
@@ -134,6 +146,7 @@ function WatchHub() {
       refresh={{ refreshing: bonded.loading, onRefresh: () => void bonded.refresh(), enabled: granted }}>
       <WatchStatusCard />
       <SilentWatchHelp />
+      <WatchesSection onAdd={addWatch} />
       {/* Connected, the list is only needed to disconnect or switch, so the watch's own pages come first. */}
       {linked ? (
         <>

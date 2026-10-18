@@ -299,7 +299,9 @@
       "healthIos": "Apple Health",
       "healthAndroid": "Health Connect",
       "partial": "Baru terunduh sebagian; sinkronisasi berikutnya mengambil sisanya.",
-      "missing": "Jam menolak mengembalikan sebagian data latihan ini, jadi sebagian mungkin hilang."
+      "missing": "Jam menolak mengembalikan sebagian data latihan ini, jadi sebagian mungkin hilang.",
+      "recordedBy": "Direkam oleh",
+      "removedWatch": "Jam yang sudah dihapus"
     },
     "value": {
       "perMin": "{{value}} /mnt"

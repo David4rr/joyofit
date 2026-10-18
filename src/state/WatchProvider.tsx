@@ -12,6 +12,8 @@ import {
 } from 'react';
 
 import { getLastSync } from '@/db/queries';
+import { useWatchList, type WatchListActions } from '@/features/device/useWatchList';
+import type { WatchRow } from '@/features/device/watches';
 import { describeConnectFailure } from '@/features/device/connectFailure';
 import { errorMessage } from '@/format';
 import { pushLog } from '@/state/logStore';
@@ -53,6 +55,13 @@ export interface WatchContextValue {
   silentWatch: boolean;
   disconnect: () => Promise<void>;
   forget: (address: string) => Promise<void>;
+  /** Disconnects the watch in use, if any, and connects [address]: the one link moves to another watch. */
+  switchTo: (address: string) => Promise<void>;
+  /** Disconnects, forgets the watch's keys and takes it out of the list. Its stored data stays. */
+  removeWatch: (address: string) => Promise<void>;
+  /** Every watch this phone has used (the `device` table), primary first. */
+  watches: WatchRow[];
+  watchActions: WatchListActions;
   refreshBattery: () => Promise<void>;
   sync: () => Promise<void>;
   /** Pulls everything the watch still holds again; rows already stored are kept. */
@@ -92,6 +101,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   const [lastSync, setLastSync] = useState<number | null>(null);
   const [totals, setTotals] = useState<WatchTotals | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
+  const { watches, actions: watchActions } = useWatchList(db, `${dataVersion}:${device?.address ?? ''}`);
   const syncing = useRef(false);
   // A failed connect() reports its failure through the rejected promise (worded for the person); the state event the native side emits
   // for the same failure carries the English log line, which must not replace it.
@@ -202,16 +212,36 @@ export function WatchProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const forget = useCallback(
+  const removeWatch = useCallback(
     async (address: string) => {
       try {
         if (activeAddress === address) await HuaweiWear.disconnect();
         await HuaweiWear.forgetDevice(address);
+        await watchActions.removeRow(address);
       } catch (e) {
         setError(errorMessage(e));
       }
     },
-    [activeAddress],
+    [activeAddress, watchActions],
+  );
+  // Forgetting a pairing is removing the watch: a watch without keys is no use in the list.
+  const forget = removeWatch;
+
+  const switchTo = useCallback(
+    async (address: string) => {
+      if (linkState === 'syncing' || linkState === 'connecting' || linkState === 'authenticating' || linkState === 'initializing') return;
+      if (linkState !== 'disconnected') {
+        if (activeAddress === address) return;
+        try {
+          await HuaweiWear.disconnect();
+        } catch (e) {
+          setError(errorMessage(e));
+          return;
+        }
+      }
+      await connect(address);
+    },
+    [linkState, activeAddress, connect],
   );
 
   const refreshBattery = useCallback(async () => {
@@ -262,6 +292,10 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       silentWatch,
       disconnect,
       forget,
+      switchTo,
+      removeWatch,
+      watches,
+      watchActions,
       refreshBattery,
       sync,
       syncFullHistory,
@@ -284,6 +318,10 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       silentWatch,
       disconnect,
       forget,
+      switchTo,
+      removeWatch,
+      watches,
+      watchActions,
       refreshBattery,
       sync,
       syncFullHistory,

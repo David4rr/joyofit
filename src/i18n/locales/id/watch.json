@@ -91,14 +91,15 @@
     },
     "bonded": {
       "forgetTitle": "Lupakan pairing?",
-      "forgetMessage": "Ini menghapus kunci autentikasi jam ini dari HP. Hubungan berikutnya jadi pairing pertama dan harus dikonfirmasi di jam. Pairing Bluetooth Android tidak berubah.",
+      "forgetMessage": "Ini menghapus kunci autentikasi jam ini dari HP dan jam dihapus dari daftar jam kamu. Data kesehatan yang sudah tersimpan tetap ada. Hubungan berikutnya jadi pairing pertama dan harus dikonfirmasi di jam. Pairing Bluetooth Android tidak berubah.",
       "forget": "Lupakan",
       "forgetPairing": "Lupakan pairing",
       "unnamed": "Perangkat tanpa nama",
       "systemConnected": "Sudah terhubung ke iPhone ini. Ketuk Hubungkan untuk memakainya di sini.",
       "notInReach": "Di luar jangkauan. Kalau jam ada di HP lain, putuskan dulu di sana.",
       "disconnect": "Putuskan",
-      "connect": "Hubungkan"
+      "connect": "Hubungkan",
+      "switchHere": "Ganti ke sini"
     },
     "list": {
       "title": "Jam yang tersedia",
@@ -481,5 +482,42 @@
     "file": "File",
     "fileValue": "{{name}}, {{bytes}} byte",
     "statusHint": "Huawei Health menganggap status unggah 1 sebagai diterima. Periksa programnya di jam."
+  },
+  "multi": {
+    "title": "Jam kamu",
+    "primaryHint": "Jam utama memegang data seharian: langkah, detak jantung, SpO2, dan tidur. Jam lain mengisi menit yang kosong. Latihan dari semua jam disimpan, dan latihan yang sama dari dua jam hanya dihitung sekali.",
+    "add": "Tambah jam lain",
+    "addHint": "Pasangkan jam kedua di pengaturan Bluetooth, lalu ketuk Hubungkan di daftar di bawah. Jam yang sudah ada tetap tersimpan dengan kuncinya. Hanya satu jam yang terhubung dalam satu waktu.",
+    "badge": {
+      "primary": "Utama",
+      "active": "Aktif"
+    },
+    "lastSync": "Sinkron terakhir {{time}}",
+    "neverSynced": "Belum pernah sinkron",
+    "notTracked": "Data kesehatannya tidak disimpan",
+    "switchTo": "Ganti ke jam ini",
+    "manage": "Atur jam ini",
+    "makePrimary": "Jadikan utama",
+    "rename": {
+      "title": "Nama jam",
+      "placeholder": "Contoh: Jam lari",
+      "save": "Simpan",
+      "action": "Ubah nama",
+      "reset": "Pakai nama dari jam"
+    },
+    "tracksHealth": {
+      "label": "Simpan data kesehatan jam ini",
+      "hint": "Matikan untuk jam orang lain, misalnya band keluarga: langkah, tidur, detak jantung, dan latihannya tidak disimpan di HP ini. Notifikasi, wajah jam, dan alarm tetap jalan."
+    },
+    "background": {
+      "label": "Sinkron di latar belakang",
+      "hint": "Android saja. Di sela sinkronisasi jam aktif, jam ini disambungkan sebentar lalu disinkronkan. Jam aktif terputus beberapa detik."
+    },
+    "remove": {
+      "action": "Hapus jam",
+      "title": "Hapus jam ini?",
+      "message": "{{name}} dihapus dari daftar dan kunci pairing-nya dibuang dari HP. Data kesehatan yang sudah tersimpan tetap ada. Menghubungkannya lagi jadi pairing pertama dan harus dikonfirmasi di jam.",
+      "confirm": "Hapus"
+    }
   }
 }
