@@ -121,7 +121,7 @@ Required assets (Main store listing):
 | Asset | Spec | Source |
 |---|---|---|
 | App icon | 512 x 512 PNG, 32-bit, up to 1 MB | `assets/icon.png` resized, or `scripts/build-icons.ts` |
-| Feature graphic | 1024 x 500 PNG or JPG | make one: logo on the paper background `#F9F6F1` with "Jammu. Datamu. HP-mu." |
+| Feature graphic | 1024 x 500 PNG or JPG | make one: logo on the paper background `#F9F6F1` with "Jam-mu. Datamu. HP-mu." |
 | Phone screenshots | 2 to 8; PNG or JPG up to 8 MB; each side 320 to 3840 px; the long side at most 2x the short side. Capture at the phone's native size (about 1080 x 2400) | see below |
 | 7-inch and 10-inch tablet screenshots | optional; skip | |
 

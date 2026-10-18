@@ -398,7 +398,7 @@ function Pairing({ lang }: { lang: Lang }) {
                   izinkan. Kalau sudah terlanjur ditolak, ketuk <B>Open app settings</B>.
                 </>,
                 <>
-                  Di <B>Available watches</B> pilih jammu. Belum ada? Ketuk <B>Scan nearby devices</B>, atau pasangkan dulu di
+                  Di <B>Available watches</B> pilih jam-mu. Belum ada? Ketuk <B>Scan nearby devices</B>, atau pasangkan dulu di
                   Pengaturan Android → Bluetooth.
                 </>,
                 <>

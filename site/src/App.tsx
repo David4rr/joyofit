@@ -243,7 +243,7 @@ function Footer() {
           <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
             Jam Huawei dan Honor tanpa Huawei Health: langkah, detak jantung, dan{" "}
             <span className="font-semibold text-tidur-ink">tidur</span> masuk ke HP, kalori{" "}
-            <span className="font-semibold text-makan-ink">makan</span> dari JoyoRogo tampil di jammu.
+            <span className="font-semibold text-makan-ink">makan</span> dari JoyoRogo tampil di jam-mu.
           </p>
           <p className="mt-4 flex items-start gap-1.5 text-sm text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -845,7 +845,7 @@ function SocialSection() {
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
         <div className="max-w-2xl">
           <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Baru</p>
-          <SectionTitle>Social: latihan dari jammu, dilihat teman</SectionTitle>
+          <SectionTitle>Social: latihan dari jam-mu, dilihat teman</SectionTitle>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
             Tab Social membuka feed{" "}
             <a href={JOYOROGO_URL} className="font-bold underline underline-offset-2">

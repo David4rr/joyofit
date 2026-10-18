@@ -193,8 +193,8 @@
     "importFit": "Impor file FIT",
     "pickError": "Tidak bisa membuka pemilih file: {{error}}",
     "readError": "Tidak bisa membaca latihan tersimpan: {{error}}",
-    "connectToSync": "Hubungkan jammu untuk sinkronisasi.",
-    "connectWatch": "Hubungkan jammu",
+    "connectToSync": "Hubungkan jam-mu untuk sinkronisasi.",
+    "connectWatch": "Hubungkan jam-mu",
     "empty": {
       "title": "Belum ada latihan",
       "description": "Sesi dari jam muncul di sini setelah sinkronisasi.",
