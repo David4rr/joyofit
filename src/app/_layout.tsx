@@ -198,6 +198,8 @@ function RootNavigator() {
                     <Tabs.Screen name="strength" options={{ href: null }} />
                     {/* The setup guide: opened by OnboardingProvider on a first run and from Settings; full screen, no tab bar. */}
                     <Tabs.Screen name="onboarding" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+                    {/* Where a link to a screen this version lacks lands (+not-found.tsx); not a tab. */}
+                    <Tabs.Screen name="+not-found" options={{ href: null }} />
                   </Tabs>
                   {/* Android installs from Google Play only: flexible in-app update. */}
                   <UpdateBanner />

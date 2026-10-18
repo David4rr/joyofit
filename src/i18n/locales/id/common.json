@@ -127,5 +127,10 @@
       "name": "Ocean",
       "tagline": "Biru dan putih yang bersih. Mengikuti HP."
     }
+  },
+  "notFound": {
+    "title": "Halaman tidak ditemukan",
+    "description": "Tautan ini tidak mengarah ke halaman mana pun di JoyoFit. Kalau baru ada pembaruan, tutup aplikasi lalu buka lagi.",
+    "home": "Ke beranda"
   }
 }
