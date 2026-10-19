@@ -439,6 +439,15 @@ instructions are sent. The P2P push is native (`modules/huawei-wear`, `HuaweiWea
 - **Limits.** Only watches that list route support (`getRoutes().deliver`) take routes; the watch simplifies long routes to a few
   hundred points. Not verified on a watch yet. Tests: `src/features/routes/*.test.ts`, `src/features/sharedfile/`.
 
+## Watch faces from the web (Watch → Tampilan jam → Koleksi → "Dari web", Android, free to read)
+
+The Koleksi tab of the watch faces screen has a "Dari web" section with the watch faces the account uploaded at `app.fit.joyorogo.com` (the web upload is a JoyoRogo Pro benefit; reading the list is open to any signed-in account, so the app gates nothing).
+
+- List: `GET /v1/watchfaces` with the session `Cookie` (`cloudRequest`, so the usual retry rules apply) -> `{ watchfaces: [{ id, name, filename, size, sha256, createdAt }] }`, shown newest first with size and date.
+- Install: `GET /v1/watchfaces/:id/file` with the same `Cookie` is downloaded into the cache (`File.downloadFileAsync`), then goes through the same step as a picked `.hwt` (`useWatchfaceImport.importPackage`: extension check, native package parse, save to the phone library with the usual same-title replace, then the install prompt and BLE install with its progress and errors).
+- States: cloud not set up in the build (explanation), signed out (link to Settings → Akun), loading, error with "Coba lagi", empty (tells to upload at `app.fit.joyorogo.com`), list. A face whose name already matches a face on the watch shows "Terpasang" and is disabled; without a connected watch the buttons are disabled with "Sambungkan jam untuk memasang". The section is hidden where the picker import is unavailable (iOS, old native build).
+- Logic without UI: `src/features/watchfaces/webLibraryModel.ts`; the requests: `src/cloud/webWatchfaces.ts`. JS-only.
+
 ## Tab bar
 
 The five tabs are drawn by the navigator's `BottomTabBar`, wrapped in `TabBarWithLive` (`src/app/_layout.tsx`). Its default height, 49 plus the bottom inset, only fits a 10 px label: with the 12 px label and a larger system font the label spilled into the inset area, under the 3-button bar or the gesture pill ("Hari ini" cut in half on a Samsung with 3-button navigation, touching the pill on a Xiaomi). `src/components/tabBarMetrics.ts` sizes the bar from what is drawn instead: 5 dp item padding, 28 dp icon box, a fixed 16 dp label line scaled by the system font size (capped at 1.3), 5 dp padding, then `insets.bottom` on top of that (gesture area, 3-button bar or the iOS home indicator). A label that is still too wide for its fifth of the screen (Pengaturan on a narrow phone) shrinks to at most 70 % rather than ending in an ellipsis. Tests: `src/components/tabBarMetrics.test.ts`.

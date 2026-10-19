@@ -21,8 +21,13 @@ async function seed(userId: string) {
       "INSERT INTO imports (id, user_id, r2_key, status, created_at) VALUES (?1, ?2, ?3, 'uploaded', 1)",
     ).bind(`import-${userId}`, userId, `imports/${userId}/file`),
     env.DB.prepare("INSERT INTO gear_doc (user_id, doc, rev, updated_at) VALUES (?1, '{}', 1, 1)").bind(userId),
+    env.DB.prepare(
+      "INSERT INTO web_watchfaces (id, user_id, name, filename, size, sha256, created_at) VALUES (?1, ?2, 'Face', 'face.hwt', 3, 'abc', 1)",
+    ).bind(`face-${userId}`, userId),
   ]);
   await env.IMPORTS.put(`imports/${userId}/file`, "zip");
+  await env.IMPORTS.put(`watchfaces/${userId}/face-${userId}`, "hwt");
+  await env.IMPORTS.put(`watchfaces/${userId}/second`, "hwt");
 }
 
 async function rows(table: string, userId: string): Promise<number> {
@@ -30,7 +35,9 @@ async function rows(table: string, userId: string): Promise<number> {
   return row?.n ?? 0;
 }
 
-const TABLES = ["user_state", "step_samples", "sleep_segments", "workouts", "workout_points", "device", "imports", "gear_doc"];
+const TABLES = ["user_state", "step_samples", "sleep_segments", "workouts", "workout_points", "device", "imports", "gear_doc", "web_watchfaces"];
+
+const watchfaceFiles = async (userId: string) => (await env.IMPORTS.list({ prefix: `watchfaces/${userId}/` })).objects.length;
 
 describe("DELETE /v1/account", () => {
   it("requires a session", async () => {
@@ -54,6 +61,8 @@ describe("DELETE /v1/account", () => {
       expect(await rows(table, bob.user.id), table).toBe(1);
     }
     expect(await env.IMPORTS.get(`imports/${alice.user.id}/file`)).toBeNull();
+    expect(await watchfaceFiles(alice.user.id)).toBe(0);
+    expect(await watchfaceFiles(bob.user.id)).toBe(2);
     expect(await env.IMPORTS.get(`imports/${bob.user.id}/file`)).not.toBeNull();
   });
 
@@ -86,6 +95,8 @@ describe("DELETE /v1/data", () => {
       expect(await rows(table, erin.user.id), table).toBe(1);
     }
     expect(await env.IMPORTS.get(`imports/${dana.user.id}/file`)).toBeNull();
+    expect(await watchfaceFiles(dana.user.id)).toBe(0);
+    expect(await watchfaceFiles(erin.user.id)).toBe(2);
     expect(await env.IMPORTS.get(`imports/${erin.user.id}/file`)).not.toBeNull();
   });
 });

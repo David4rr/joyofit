@@ -296,7 +296,21 @@
     "customSize": "Ukuran kustom",
     "unknownResolution": "Resolusi tidak diketahui",
     "savedUnknownHint": "\"{{title}}\" telah disimpan ke koleksi My watch Anda.\n\nCatatan: Tampilan jam ini memiliki resolusi layar yang tidak diketahui dan tidak dapat dipasang ke jam ini ({{watchW}}×{{watchH}}).",
-    "onWatchCount_other": "{{count}} di jam"
+    "onWatchCount_other": "{{count}} di jam",
+    "web": {
+      "title": "Dari web",
+      "hint": "Tampilan jam yang kamu unggah di app.fit.joyorogo.com. Pilih satu untuk masuk ke koleksi ponselmu lalu pasang ke jam.",
+      "notConfigured": "Build ini belum disiapkan untuk sinkron cloud, jadi koleksi web belum tersedia.",
+      "signedOut": "Masuk ke akun JoyoRogo untuk melihat tampilan jam yang kamu unggah di web.",
+      "openAccount": "Buka akun",
+      "loading": "Memuat koleksi webmu...",
+      "error": "Koleksi webmu gagal dimuat. Periksa koneksimu lalu coba lagi.",
+      "retry": "Coba lagi",
+      "empty": "Belum ada apa-apa. Unggah tampilan jam .hwt di app.fit.joyorogo.com dan hasilnya muncul di sini.",
+      "install": "Pasang",
+      "needsWatch": "Sambungkan jam untuk memasang.",
+      "downloadFailed": "Tampilan jam gagal diunduh: {{error}}"
+    }
   },
   "faceEdit": {
     "reported": "Jam melaporkan opsi baru untuk tampilan ini.",

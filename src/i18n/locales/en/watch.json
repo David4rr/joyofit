@@ -297,7 +297,21 @@
     "unknownResolution": "Unknown resolution",
     "savedUnknownHint": "\"{{title}}\" has been saved to your My watch collection.\n\nNote: This watch face has an unknown screen resolution and cannot be installed to this watch ({{watchW}}×{{watchH}}).",
     "onWatchCount_one": "{{count}} on watch",
-    "onWatchCount_other": "{{count}} on watch"
+    "onWatchCount_other": "{{count}} on watch",
+    "web": {
+      "title": "From the web",
+      "hint": "Faces you uploaded at app.fit.joyorogo.com. Pick one to add it to your phone library and install it on the watch.",
+      "notConfigured": "This build is not set up for cloud sync, so the web library is not available.",
+      "signedOut": "Sign in to your JoyoRogo account to see the watch faces you uploaded on the web.",
+      "openAccount": "Open account",
+      "loading": "Loading your web library...",
+      "error": "Could not load your web library. Check your connection and try again.",
+      "retry": "Try again",
+      "empty": "Nothing here yet. Upload .hwt watch faces at app.fit.joyorogo.com and they show up here.",
+      "install": "Install",
+      "needsWatch": "Connect your watch to install.",
+      "downloadFailed": "Could not download the watch face: {{error}}"
+    }
   },
   "faceEdit": {
     "reported": "The watch reported new options for this face.",
