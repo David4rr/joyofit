@@ -41,7 +41,7 @@ describe('submit', () => {
 
   it('parks a report that could not go out and says so', async () => {
     const { queue, ids } = setup(() => OFFLINE);
-    expect(await queue.submit(report('a'))).toEqual({ state: 'queued' });
+    expect(await queue.submit(report('a'))).toEqual({ state: 'queued', reason: 'offline' });
     expect(await ids()).toEqual(['a']);
   });
 
