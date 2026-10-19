@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
@@ -105,6 +105,7 @@ function RootNavigator() {
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
     ...Ionicons.font,
+    ...MaterialCommunityIcons.font,
   });
   const ready = fontsReady || fontError !== null;
 

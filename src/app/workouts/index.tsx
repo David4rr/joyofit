@@ -81,7 +81,7 @@ function WorkoutCard({ workout, strength, onDelete }: { workout: WorkoutRow; str
       }
       style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.card }]}>
       <View style={styles.cardHead}>
-        <IconChip icon={sportIcon(workout.sportName)} tint="workouts" />
+        <IconChip sport={sportIcon(workout.sportName)} tint="workouts" />
         <View style={styles.cardTitle}>
           <AppText variant="bodyStrong" numberOfLines={1}>
             {sport}
