@@ -4,7 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { prepareDatabase } from '@/db/recovery';
+import { prepareDatabase, startNativeErrorWatch } from '@/db/recovery';
 import { spacing, useTheme } from '@/theme';
 
 type Phase = 'preparing' | 'repairing' | 'ready' | 'failed';
@@ -31,6 +31,9 @@ export function DatabaseGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     void prepare();
   }, [prepare]);
+
+  // From the first render on: a native writer already running in the background may hit the damage before the gate is open.
+  useEffect(() => startNativeErrorWatch(), []);
 
   if (failure !== null) throw failure;
   if (phase === 'ready') return <>{children}</>;

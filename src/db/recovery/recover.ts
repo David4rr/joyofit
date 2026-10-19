@@ -108,6 +108,20 @@ export async function integrityProblems(db: RecoveryDb): Promise<string[]> {
   }
 }
 
+/**
+ * `PRAGMA quick_check(1)`: reads every page once like `integrity_check` but skips the index/row cross-checks, so it is the
+ * cheap test run at a start. `damaged` when it reports anything but `ok` or fails with a corruption error; `unknown` when it
+ * could not run for another reason (a lock, a closed connection), which says nothing about the file.
+ */
+export async function quickCheck(db: RecoveryDb): Promise<'ok' | 'damaged' | 'unknown'> {
+  try {
+    const rows = await db.getAllAsync<Record<string, unknown>>('PRAGMA main.quick_check(1)');
+    return rows.length === 1 && String(Object.values(rows[0])[0]) === 'ok' ? 'ok' : 'damaged';
+  } catch (e) {
+    return isCorruptionError(e) ? 'damaged' : 'unknown';
+  }
+}
+
 /** True when every reported problem is about an index: the rows are intact and REINDEX can rebuild what is wrong. */
 function onlyIndexProblems(problems: readonly string[]): boolean {
   return problems.length > 0 && problems.every((line) => /\bindex\b/i.test(line) && !/\b(tree|page)\b/i.test(line));

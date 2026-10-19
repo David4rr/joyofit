@@ -10,6 +10,7 @@ import {
   applyPendingSwap,
   COPY_WINDOW,
   integrityProblems,
+  quickCheck,
   recoverDatabase,
   type RecoveryDb,
   type RecoveryEnv,
@@ -245,6 +246,27 @@ describe('isCorruptionError', () => {
     expect(isCorruptionError(new Error('no such table: gear_item'))).toBe(false);
     expect(isCorruptionError(undefined)).toBe(false);
     expect(isCorruptionError(null)).toBe(false);
+  });
+});
+
+describe('quickCheck', () => {
+  it('says ok for a sound file and damaged for one whose damage the schema build never reads', async () => {
+    await populate();
+    const db = new Conn(at('joyofit.db'));
+    expect(await quickCheck(db)).toBe('ok');
+    db.raw.close();
+    // The damage is in a leaf of a data table: opening the database and reading its schema works, the check finds it.
+    breakPage(at('joyofit.db'), leafPages(at('joyofit.db'), 'workout_points')[3]);
+    const damaged = new Conn(at('joyofit.db'));
+    await damaged.getFirstAsync('PRAGMA user_version');
+    expect(await quickCheck(damaged)).toBe('damaged');
+    damaged.raw.close();
+  });
+
+  it('says unknown when the check fails for a reason that is not the file', async () => {
+    const closed = new Conn(at('closed.db'));
+    closed.raw.close();
+    expect(await quickCheck(closed)).toBe('unknown');
   });
 });
 

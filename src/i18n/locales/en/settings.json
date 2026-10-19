@@ -66,6 +66,9 @@
     "privacy": "Watch data stays on this phone in joyofit.db until you sign in to the cloud. With Pro, cycle data (switchable), settings, sticker templates and saved routes also follow your account in the cloud. Signing out never deletes data on the phone unless you choose it. Weather, if switched on, sends rounded coordinates to Open-Meteo. Privacy policy: fit.joyorogo.com/privasi"
   },
   "advanced": {
+    "repair": "Repair data now",
+    "repairSubtitle": "Checks the data file on this phone and repairs it if it is damaged",
+    "repairHealthy": "No damage found in the data file. If an error keeps coming back, close the app completely and open it again.",
     "bleDenied": "Nearby devices permission denied: the watch is tried at its paired address without a scan.",
     "experimental": "Experimental",
     "courses": "Running courses",

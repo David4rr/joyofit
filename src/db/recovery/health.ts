@@ -28,6 +28,11 @@ export interface HealthDeps {
   recover(options: RecoveryOptions): Promise<RecoveryResult>;
   /** Pauses the app's queries; returns the function that lets them go on. */
   hold(): () => void;
+  /**
+   * Stops the native writer (Kotlin/Swift, a SQLite of its own) before a repair and returns what starts it again. Optional: with
+   * nothing to stop it is left out.
+   */
+  quiesce?(): Promise<() => Promise<void>>;
   storage: { get(key: string): string | null; set(key: string, value: string | null): void };
   now(): number;
 }
@@ -104,6 +109,8 @@ export function createDbHealth(deps: HealthDeps): DbHealth {
     set({ ...state, repairing: true });
     const release = deps.hold();
     let result: RecoveryResult;
+    // The native writer stops first; a failure to stop it must not stop the repair.
+    const resume = await deps.quiesce?.().catch(() => null);
     try {
       result = await deps.recover(options);
     } catch (e) {
@@ -111,6 +118,7 @@ export function createDbHealth(deps: HealthDeps): DbHealth {
       result = { kind: 'failed', keptAs: null, reason: e instanceof Error ? e.message : String(e), swapPending: null };
     } finally {
       release();
+      await resume?.().catch(() => undefined);
     }
     lastRunAt = deps.now();
     const notice = noticeOf(result, lastRunAt);

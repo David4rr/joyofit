@@ -66,6 +66,9 @@
     "privacy": "Data jam tetap di ponsel ini, di joyofit.db, sampai kamu masuk ke cloud. Dengan Pro, data siklus (bisa dimatikan), pengaturan, template stiker, dan rute tersimpan juga ikut akunmu di cloud. Keluar tidak menghapus data di ponsel tanpa kamu pilih. Cuaca, kalau dinyalakan, mengirim koordinat yang sudah dibulatkan ke Open-Meteo. Kebijakan privasi: fit.joyorogo.com/privasi"
   },
   "advanced": {
+    "repair": "Perbaiki data sekarang",
+    "repairSubtitle": "Memeriksa berkas data di ponsel ini dan memperbaikinya kalau rusak",
+    "repairHealthy": "Tidak ada kerusakan di berkas data. Kalau galat terus muncul, tutup aplikasi sepenuhnya lalu buka lagi.",
     "bleDenied": "Izin perangkat sekitar ditolak: jam dicoba di alamat yang sudah dipasangkan tanpa pemindaian.",
     "experimental": "Eksperimental",
     "courses": "Rute lari",

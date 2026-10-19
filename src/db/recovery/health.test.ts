@@ -122,4 +122,33 @@ describe('createDbHealth', () => {
     expect(health.getState().notice).toMatchObject({ kind: 'recreated', lost: true });
     expect(t.store.has(SWAP_KEY)).toBe(false);
   });
+
+  it('stops the native writer before the repair and starts it after the queries are released', async () => {
+    const t = setup([repaired]);
+    t.deps.quiesce = async () => {
+      t.log.push('pause');
+      return async () => {
+        t.log.push('resume');
+      };
+    };
+    const health = createDbHealth(t.deps);
+    await health.repair();
+    expect(t.log).toEqual(['hold', 'pause', 'recover', 'release', 'resume']);
+  });
+
+  it('repairs anyway when the native writer cannot be stopped or started again', async () => {
+    const t = setup([repaired]);
+    t.deps.quiesce = async () => {
+      throw new Error('no service');
+    };
+    const health = createDbHealth(t.deps);
+    expect(await health.repair()).toMatchObject({ kind: 'repaired' });
+    const u = setup([repaired]);
+    u.deps.quiesce = async () => async () => {
+      throw new Error('permission');
+    };
+    const other = createDbHealth(u.deps);
+    expect(await other.repair()).toMatchObject({ kind: 'repaired' });
+    expect(other.getState().repairing).toBe(false);
+  });
 });
