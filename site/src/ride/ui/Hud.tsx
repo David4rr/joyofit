@@ -1,12 +1,38 @@
-import { Camera, ChevronDown, ChevronUp, Flag, Maximize, Pause, Play, Square, Wind } from "lucide-react";
+import { Camera, ChevronDown, ChevronUp, Flag, Maximize, Pause, Play, Square, Volume2, VolumeX, Wind } from "lucide-react";
 
 import { GEAR_COUNT } from "../../../../src/features/ride/physics.ts";
-import type { Game, Toast } from "../game.ts";
+import type { Game, NearbyRider, Toast } from "../game.ts";
 import { ZONE_COLORS, formatGrade, formatKm, formatTime, formatTimeTenths } from "../format.ts";
 import { useT, type TKey, type TFn } from "../i18n.ts";
 import type { IntervalSnapshot } from "../modes.ts";
 import { Profile } from "./Profile.tsx";
 import { useGame } from "./hooks.ts";
+
+/** Gap to the player as Zwift shows it: "+12s" / "−3s", minutes from one up. */
+function formatGap(gapS: number): string {
+  const sign = gapS > 0.5 ? "+" : gapS < -0.5 ? "\u2212" : "";
+  const abs = Math.abs(gapS);
+  return `${sign}${abs < 60 ? `${Math.round(abs)}s` : formatTime(abs)}`;
+}
+
+/** The riders around the player, furthest ahead on top: colour, name, watts per kilo and the gap in seconds. */
+function Nearby({ rows, t }: { rows: NearbyRider[]; t: TFn }) {
+  return (
+    <ol className="rd-nearby" aria-label={t("hud.nearby")}>
+      {rows.map((r) => (
+        <li key={r.key} className={`rd-nearby-row is-${r.kind}`}>
+          <i className="rd-nearby-kit" style={{ background: `#${r.jersey.toString(16).padStart(6, "0")}` }} aria-hidden="true" />
+          <span className="rd-nearby-name">
+            {r.kind === "you" ? t("hud.you") : r.kind === "ghost" ? t("hud.ghost") : r.name}
+            {r.kind === "bot" && <small className="rd-nearby-bot">BOT</small>}
+          </span>
+          <span className="rd-nearby-wkg">{r.wkg === null ? "" : `${r.wkg.toFixed(1)}`}</span>
+          <span className="rd-nearby-gap">{r.kind === "you" ? "" : formatGap(r.gapS)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 function gradeColor(grade: number): string {
   if (grade < -1.5) return "#7fb4de";
@@ -217,6 +243,16 @@ export function Hud({ game }: { game: Game }) {
           <button
             type="button"
             className="rd-tool"
+            onClick={() => game.toggleMute()}
+            title={`${game.audio.muted ? t("hud.soundOn") : t("hud.soundOff")} (M)`}
+            aria-label={game.audio.muted ? t("hud.soundOn") : t("hud.soundOff")}
+            aria-pressed={game.audio.muted}
+          >
+            {game.audio.muted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
+          </button>
+          <button
+            type="button"
+            className="rd-tool"
             onClick={() => (document.fullscreenElement ? void document.exitFullscreen() : void document.documentElement.requestFullscreen?.())}
             title={`${t("hud.fullscreen")} (F)`}
             aria-label={t("hud.fullscreen")}
@@ -224,6 +260,7 @@ export function Hud({ game }: { game: Game }) {
             <Maximize aria-hidden="true" />
           </button>
         </div>
+        {(riding || paused) && hud.nearby.length > 1 && <Nearby rows={hud.nearby} t={t} />}
       </div>
 
       <div className="rd-bottom">
@@ -252,6 +289,7 @@ export function Hud({ game }: { game: Game }) {
             route={game.route}
             positionM={hud.positionM}
             ghostPositionM={hud.ghostPositionM}
+            otherPositionsM={hud.botPositionsM}
             segments
             label={t("hud.profile")}
             className="rd-mini-prof"
@@ -264,7 +302,7 @@ export function Hud({ game }: { game: Game }) {
               {t("hud.power")} <span className={`rd-tag ${hud.powerMeasured ? "" : "is-est"}`}>{hud.powerMeasured ? t("hud.powerMeasured") : t("hud.powerEst")}</span>
             </span>
             <span className="rd-metric-num">{Math.round(hud.powerW)}</span>
-            <span className="rd-unit">W</span>
+            <span className="rd-unit">W · {hud.wkg.toFixed(1)} W/kg</span>
           </div>
           <div className="rd-metric rd-grade" style={{ color: gradeColor(hud.grade) }}>
             <span className="rd-label">{t("hud.grade")}</span>
