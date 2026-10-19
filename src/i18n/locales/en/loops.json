@@ -1,4 +1,8 @@
 {
+  "shortcut": {
+    "title": "New loop from home",
+    "subtitle": "A walk or run route on streets you have not covered yet"
+  },
   "mapLabel": "Map of a new loop from your start point",
   "preparing": "Preparing the map",
   "unavailable": "The map needs the latest JoyoFit version",

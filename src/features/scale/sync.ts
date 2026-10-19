@@ -22,7 +22,7 @@ export async function pushPendingWeighIns(
   let sent = 0;
   for (let i = 0; i < pending.length; i++) {
     const row = pending[i];
-    const input = toRogoCheckIn({ weightKg: row.weightKg }, row.takenAt);
+    const input = toRogoCheckIn(row, row.takenAt);
     if (!input) {
       await markRogo(db, row.id, 'skipped', null);
       continue;

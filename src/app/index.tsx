@@ -33,6 +33,7 @@ import { computeScores } from '@/features/today/scores';
 import { MorningCheckin } from '@/features/today/MorningCheckin';
 import { FitnessTodayCards } from '@/features/fitness/FitnessTodayCards';
 import { CoachTodayCard } from '@/features/coach/ui/CoachTodayCard';
+import { LoopShortcut } from '@/features/loops/ui/LoopShortcut';
 import { FamilyCard } from '@/features/today/FamilyCard';
 import { ScoresCard } from '@/features/today/ScoresCard';
 import { useRogoScoresPush } from '@/features/today/useRogoScoresPush';
@@ -166,6 +167,8 @@ function WatchToday() {
       <FitnessTodayCards data={fitness} availability={nightHrv} />
 
       <FamilyCard />
+
+      <LoopShortcut />
 
       {data ? (
         <MorningCheckin hrv={data.hrv} dayStart={data.dayStart} nowMs={nowMs} connected={isLinkUp(linkState)} onMeasure={() => router.push('/hrv')} />

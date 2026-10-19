@@ -71,7 +71,10 @@ describe('pushPendingWeighIns', () => {
     await insertWeighIn(db, weigh(day + 1_000, 12));
     const sent: unknown[] = [];
     const out = await pushPendingWeighIns(db, async (i) => void sent.push(i), notSignedIn);
-    expect(sent).toEqual([{ weightKg: 73.9, date: '2026-10-19' }, { weightKg: 73.5, date: '2026-10-19' }]);
+    expect(sent).toEqual([
+      { weightKg: 73.9, date: '2026-10-19', source: 'scale' },
+      { weightKg: 73.5, date: '2026-10-19', source: 'scale' },
+    ]);
     expect(out).toEqual({ sent: 2, waiting: 0 });
     expect(await pendingWeighIns(db)).toEqual([]);
     expect((await listWeighIns(db)).map((w) => w.rogoState).sort()).toEqual(['sent', 'sent', 'skipped']);

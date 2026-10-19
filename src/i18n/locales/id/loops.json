@@ -1,4 +1,8 @@
 {
+  "shortcut": {
+    "title": "Loop baru dari rumah",
+    "subtitle": "Rute jalan atau lari lewat jalan yang belum kamu lalui"
+  },
   "mapLabel": "Peta loop baru dari titik awalmu",
   "preparing": "Menyiapkan peta",
   "unavailable": "Peta butuh versi JoyoFit yang terbaru",

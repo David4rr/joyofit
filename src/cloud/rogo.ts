@@ -108,6 +108,19 @@ export interface RogoMyProfile {
   latestWeightKg: number | null;
 }
 
+export interface RogoCheckInInput {
+  weightKg: number;
+  date: string;
+  source?: 'manual' | 'scale';
+  bodyFatPct?: number;
+  musclePct?: number;
+  waterPct?: number;
+  boneKg?: number;
+  visceralFat?: number;
+  bmrKcal?: number;
+  proteinPct?: number;
+}
+
 export interface RogoWeightEntry {
   /** `YYYY-MM-DD`. */
   date: string;
@@ -418,10 +431,10 @@ export const rogo = {
     return history.entries.at(-1) ?? null;
   },
   /**
-   * A weigh-in (`weight.checkIn`, 25 to 400 kg): JoyoRogo keeps one weight per Jakarta day and the last write of a day wins. It has no
-   * field for the source (a scale) or for body composition, so only weight and day travel.
+   * A weigh-in (`weight.checkIn`, 25 to 400 kg): JoyoRogo keeps one weight per Jakarta day and the last write of a day wins. A scale
+   * weigh-in also sends `source: 'scale'` and the body values it has (each optional, already range-checked, see `toRogoCheckIn`).
    */
-  checkInWeight: (input: { weightKg: number; date: string }) => rogoCall<RogoWeightEntry>('weight/checkIn', input),
+  checkInWeight: (input: RogoCheckInInput) => rogoCall<RogoWeightEntry>('weight/checkIn', input),
   /** Writes one item to the diary (a meal the watch quick-logged). */
   addFood: (input: { date: string; meal: RogoMeal; name: string; kcal: number }) =>
     rogoCall<RogoFoodItem>('food/add', { ...input, source: 'manual' }),
