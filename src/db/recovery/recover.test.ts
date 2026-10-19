@@ -249,6 +249,21 @@ describe('isCorruptionError', () => {
     const inner = new Error('database disk image is malformed');
     expect(isCorruptionError(new Error('import failed', { cause: inner }))).toBe(true);
   });
+  it('does not take an unreadable or locked file for a damaged one', () => {
+    for (const text of [
+      'disk I/O error',
+      'unable to open database file',
+      'Error code 14: unable to open database file',
+      'SQLITE_IOERR_READ',
+      'SQLITE_CANTOPEN: file is not a database',
+      'file is not a database (SQLITE_PERM: operation not permitted)',
+      'database is locked',
+      'database or disk is full',
+    ]) {
+      expect(isCorruptionError(new Error(text))).toBe(false);
+    }
+  });
+
   it('leaves other database errors alone', () => {
     expect(isCorruptionError(new Error('database is locked'))).toBe(false);
     expect(isCorruptionError(new Error('UNIQUE constraint failed: workouts.start'))).toBe(false);

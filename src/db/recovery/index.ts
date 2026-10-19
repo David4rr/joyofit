@@ -1,13 +1,15 @@
 import Storage from 'expo-sqlite/kv-store';
 import { File } from 'expo-file-system';
-import { defaultDatabaseDirectory, openDatabaseAsync } from 'expo-sqlite';
+import { defaultDatabaseDirectory, openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 import { useSyncExternalStore } from 'react';
+import { AppState } from 'react-native';
 
 import { buildAppSchema, DATABASE_NAME } from '@/db/appSchema';
 import { isDisconnectedByUser, setDisconnectedByUser } from '@/state/disconnectedByUser';
 import { HuaweiWear, hasNative, nativeDatabaseControl, onNativeCallError } from '@/wear';
 
 import { isCorruptionError } from './corruption';
+import { createForegroundScheduler } from './foreground';
 import { holdQueries } from './gate';
 import { createDbHealth, type DbHealthState } from './health';
 import { watchNativeErrors } from './nativeErrors';
@@ -17,6 +19,18 @@ import { recordRepairLine, startRepairLog } from './repairLog';
 
 /** How long a start waits for the quick check before it opens the app anyway; a check that is still running reports when it ends. */
 const QUICK_CHECK_BUDGET_MS = 2000;
+
+/**
+ * The start check, the repair and the swap of a prepared file run in the foreground only (see `foreground.ts`): a background
+ * launch of the app, with the phone locked, must not scan, copy or replace the database.
+ */
+const foreground = createForegroundScheduler({
+  current: () => AppState.currentState,
+  onChange: (listener) => {
+    const subscription = AppState.addEventListener('change', listener);
+    return () => subscription.remove();
+  },
+});
 
 /** How long a step of stopping the native writers may take. */
 const STEP_TIMEOUT_MS = 10_000;
@@ -60,23 +74,31 @@ async function pauseNativeWriter(): Promise<() => Promise<void>> {
     if (!heldBefore) resumes.unshift(() => setDisconnectedByUser(false));
   }
   let backgroundOwnsLink = false;
-  if (hasNative('getBackgroundStatus') && hasNative('setBackgroundEnabled')) {
-    const { enabled, address } = HuaweiWear.getBackgroundStatus();
-    if (enabled && address !== null) {
-      if (await step('background service stopped', () => HuaweiWear.setBackgroundEnabled(null))) {
-        backgroundOwnsLink = true;
-        resumes.unshift(() => HuaweiWear.setBackgroundEnabled(address));
+  try {
+    if (hasNative('getBackgroundStatus') && hasNative('setBackgroundEnabled')) {
+      const { enabled, address } = HuaweiWear.getBackgroundStatus();
+      if (enabled && address !== null) {
+        if (await step('background service stopped', () => HuaweiWear.setBackgroundEnabled(null))) {
+          backgroundOwnsLink = true;
+          resumes.unshift(() => HuaweiWear.setBackgroundEnabled(address));
+        }
       }
     }
+  } catch (e) {
+    recordRepairLine(`native writers: background status unavailable: ${e instanceof Error ? e.message : String(e)}`);
   }
-  if (hasNative('getState') && hasNative('disconnect') && HuaweiWear.getState() !== 'disconnected') {
-    const connected = hasNative('getDevice') ? HuaweiWear.getDevice() : null;
-    if (await step('watch link closed', () => HuaweiWear.disconnect()) && connected !== null && !backgroundOwnsLink) {
-      // Without the service nothing else brings the link back after the repair.
-      resumes.unshift(async () => {
-        void HuaweiWear.connect(connected.address).catch(() => undefined);
-      });
+  try {
+    if (hasNative('getState') && hasNative('disconnect') && HuaweiWear.getState() !== 'disconnected') {
+      const connected = hasNative('getDevice') ? HuaweiWear.getDevice() : null;
+      if (await step('watch link closed', () => HuaweiWear.disconnect()) && connected !== null && !backgroundOwnsLink) {
+        // Without the service nothing else brings the link back after the repair.
+        resumes.unshift(async () => {
+          void HuaweiWear.connect(connected.address).catch(() => undefined);
+        });
+      }
     }
+  } catch (e) {
+    recordRepairLine(`native writers: link state unavailable: ${e instanceof Error ? e.message : String(e)}`);
   }
   const control = nativeDatabaseControl();
   if (control !== null && (await step('native connection closed', control.release))) resumes.unshift(control.resume);
@@ -112,7 +134,10 @@ export function useDbHealth(): DbHealthState {
 }
 
 /** Tells the repair about an error from a query or from the native writer; only corruption starts anything. */
-export const reportDatabaseError = (error: unknown): void => dbHealth.report(error);
+export const reportDatabaseError = (error: unknown): void => {
+  if (!isCorruptionError(error)) return;
+  foreground.run('report', () => dbHealth.report(error));
+};
 
 /**
  * At a start, before anything opens `joyofit.db`: puts in the database a repair prepared but could not swap in. Nothing here
@@ -159,7 +184,7 @@ async function buildSchemaOnce(check: boolean): Promise<boolean> {
           await db.closeAsync().catch(() => undefined);
           if (late === 'damaged') {
             recordRepairLine('late quick_check says the file is damaged');
-            void dbHealth.repair();
+            foreground.run('repair', () => void dbHealth.repair());
           }
         })
         .catch(() => undefined);
@@ -178,15 +203,25 @@ async function buildSchemaOnce(check: boolean): Promise<boolean> {
  * still unusable after the repair (the notice says what happened); any other error is thrown as it was.
  */
 export async function prepareDatabase(onRepairing: () => void): Promise<boolean> {
-  await applyPendingDatabaseSwap();
+  // A background launch builds the schema as it always did and leaves everything else for when the app is in front.
+  if (foreground.isActive()) await applyPendingDatabaseSwap();
   for (let attempt = 0; attempt < 2; attempt++) {
+    const active = foreground.isActive();
     try {
       // After a repair the second pass only builds the schema: the repair ran the full integrity check already.
-      if (await buildSchemaOnce(attempt === 0)) return true;
+      if (await buildSchemaOnce(attempt === 0 && active)) {
+        if (attempt === 0 && !active) foreground.run('startCheck', () => void checkInForeground());
+        return true;
+      }
       recordRepairLine('start check: quick_check says the file is damaged');
     } catch (e) {
       if (!isCorruptionError(e)) throw e;
       recordRepairLine(`start check: building the schema met corruption: ${e instanceof Error ? e.message : String(e)}`);
+      if (!active) {
+        recordRepairLine('the app is not in the foreground: the repair waits until it is');
+        foreground.run('repair', () => void dbHealth.repair());
+        return true;
+      }
     }
     onRepairing();
     const result = await dbHealth.repair({ canSwap: true });
@@ -194,6 +229,23 @@ export async function prepareDatabase(onRepairing: () => void): Promise<boolean>
     if (result.kind === 'failed') return false;
   }
   return false;
+}
+
+/** The start check of a launch that was not in the foreground, run when the app comes forward (no file swap: the app's handle is open). */
+async function checkInForeground(): Promise<void> {
+  let db: SQLiteDatabase | null = null;
+  try {
+    db = await openDatabaseAsync(DATABASE_NAME, { useNewConnection: true });
+    await db.execAsync('PRAGMA busy_timeout = 5000');
+    if ((await quickCheck(db)) === 'damaged') {
+      recordRepairLine('quick_check after coming to the foreground says the file is damaged');
+      void dbHealth.repair();
+    }
+  } catch (e) {
+    reportDatabaseError(e);
+  } finally {
+    await db?.closeAsync().catch(() => undefined);
+  }
 }
 
 /**

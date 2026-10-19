@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import RawHuaweiWear from '../modules/huawei-wear';
 
 export * from '../modules/huawei-wear';
@@ -57,11 +59,18 @@ function guard(target: object, fn: NativeFunction): NativeFunction {
   return wrapper;
 }
 
-/** The native module, every call of it watched by `onNativeCallError`. */
-export const HuaweiWear: typeof RawHuaweiWear = new Proxy(RawHuaweiWear, {
+/**
+ * The native module. On Android every call of it is watched by `onNativeCallError` (the Kotlin writer is where the corruption
+ * shows first). On iOS it is the module itself, untouched: a proxy around a native module object is not what the iOS runtime
+ * hands out, and the repair has no iOS writer to hear from.
+ */
+export const HuaweiWear: typeof RawHuaweiWear = Platform.OS !== 'android' ? RawHuaweiWear : new Proxy(RawHuaweiWear, {
   get(target, property) {
     const value: unknown = Reflect.get(target, property, target);
-    if (typeof value !== 'function' || (typeof property === 'string' && property in EMITTER)) return value;
+    if (typeof value !== 'function') return value;
+    // The emitter methods go through untouched but always on the module itself: a native `addListener` looks for the module's
+    // native state in `this`, and `this` is the proxy when the caller wrote `HuaweiWear.addListener(...)`.
+    if (typeof property === 'string' && property in EMITTER) return (value as NativeFunction).bind(target);
     return guard(target, value as NativeFunction);
   },
 });
