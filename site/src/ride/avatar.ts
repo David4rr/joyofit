@@ -329,12 +329,19 @@ export function createAvatar(options: AvatarOptions): Avatar {
       bake(box(), 0, -0.002, 0.11, 0.07, 0.006, 0.05, 0x1d1e22),
     ]),
   );
-  // Glove: palm wrapped round the hood, knuckles, a pale padding patch.
+  // Glove, built along +Y from the wrist (y = 0) with the palm on +Z: oriented along the forearm, +Z faces down onto the hood, so
+  // the fingers curl over the front of the hood and the thumb wraps under it.
+  const GLOVE = 0x1b1c20;
   const gloveGeo = track(
     merge([
-      bake(unit(), 0, 0, 0, 0.04, 0.034, 0.046, 0x1b1c20),
-      bake(box(), 0, -0.02, 0.03, 0.06, 0.024, 0.04, 0x1b1c20, 0.5),
-      bake(unit(), 0, 0.02, -0.01, 0.03, 0.012, 0.03, 0x5a5e66),
+      bake(new CylinderGeometry(1, 1, 1, 12), 0, 0.012, 0, 0.033, 0.03, 0.03, 0x3a3d42),
+      bake(unit(), 0, 0.05, 0, 0.038, 0.05, 0.02, GLOVE),
+      bake(box(), 0, 0.06, 0.002, 0.074, 0.07, 0.03, GLOVE),
+      bake(box(), 0, 0.1, 0.004, 0.078, 0.022, 0.034, GLOVE),
+      bake(box(), 0, 0.122, 0.026, 0.074, 0.044, 0.024, GLOVE, 0.95),
+      bake(box(), 0, 0.118, 0.052, 0.07, 0.026, 0.02, GLOVE, 1.9),
+      bake(box(), 0, 0.05, 0.03, 0.024, 0.06, 0.022, GLOVE, -0.4),
+      bake(box(), 0, 0.06, -0.018, 0.05, 0.05, 0.006, 0x6a6e76),
     ]),
   );
 
@@ -563,7 +570,10 @@ export function createAvatar(options: AvatarOptions): Avatar {
       solveIk(shoulderY, shoulderZ, handY, handZ, ARM_UPPER, ARM_FORE, -1);
       s.handV.set(hx, endY, endZ);
       s.elbowV.set((sx + hx) * 0.5 + outward * 0.035, jointY, jointZ);
-      s.hand.position.copy(s.handV);
+      // Glove along the forearm, its palm centred on the hood.
+      dir.subVectors(s.handV, s.elbowV).normalize();
+      s.hand.quaternion.setFromUnitVectors(Y_AXIS, dir);
+      s.hand.position.copy(s.handV).addScaledVector(dir, -0.06);
       s.elbow.position.copy(s.elbowV);
       placeLimb(s.upper, s.shoulderV, s.elbowV, 0.046, 0.046);
       placeLimb(s.fore, s.elbowV, s.handV, 0.037, 0.037);
