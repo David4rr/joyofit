@@ -11,7 +11,8 @@ renders every digit, hand, ring and icon to a bitmap, and exports two things:
 
 Nothing is uploaded: the Worker only serves static files.
 
-Live: https://joyofit-studio.dzulfikar-at.workers.dev
+Live: https://app.fit.joyorogo.com/studio/ (also https://joyofit-studio.dzulfikar-at.workers.dev/studio/; every other path on
+that host redirects to `/studio/`).
 
 Stack: Vite 8, React 19, Tailwind v4, zustand, `@cloudflare/vite-plugin` (a Worker with static assets, no bindings),
 and [`packages/hwt`](../packages/hwt) for the `.hwt` format. Design: JoyoRogo's tokens and components (paper canvas,
@@ -23,12 +24,12 @@ borderless white cards, big radii, Plus Jakarta Sans) with JoyoFit's ink-teal pr
 ```sh
 cd web
 bun install
-bun run dev            # http://localhost:3100
+bun run dev            # http://localhost:3100/studio/
 bun run typecheck
 bun run test           # vitest, runs in node with @napi-rs/canvas
 bunx playwright install chromium   # once
-bun run test:e2e       # Playwright against a local dev server on :4173
-STUDIO_URL=https://joyofit-studio.dzulfikar-at.workers.dev bun run test:e2e   # the same tests against a deployment
+bun run test:e2e       # Playwright: builds, then `vite preview` (the real Worker) on http://localhost:4173/studio/
+STUDIO_URL=https://app.fit.joyorogo.com/studio/ bun run test:e2e   # the same tests against a deployment (keep the trailing slash)
 bun run build          # tsc --noEmit && vite build, output in dist/
 bunx wrangler deploy --dry-run
 bun run deploy         # build + wrangler deploy
@@ -36,6 +37,28 @@ bun run deploy         # build + wrangler deploy
 
 `wrangler.jsonc` pins the Cloudflare account and the Worker name `joyofit-studio`. The Vite plugin writes
 `dist/wrangler.json` and a `.wrangler/deploy/config.json` redirect, so `wrangler deploy` ships `dist/`.
+
+### Where it is served
+
+Studio is part of the JoyoFit web app's site: **https://app.fit.joyorogo.com/studio/**. That host is a Custom Domain of a different
+Worker (`joyofit-web`, `apps/fit` in the JoyoRogo repo, an assets-only SPA). Cloudflare runs a Worker *route* before a Custom Domain
+Worker on the same hostname ([docs](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/#interaction-with-routes)),
+so `wrangler.jsonc` claims only `app.fit.joyorogo.com/studio` and `app.fit.joyorogo.com/studio/*` (zone `joyorogo.com`) and the web
+app keeps every other path, with its own SPA fallback. Nothing changes in the JoyoRogo repo for this to work, and `joyofit-web`'s
+`dist/` does not contain Studio.
+
+- `vite.config.ts` sets `base: "/studio/"`, so the built HTML, CSS (fonts) and chunks all reference `/studio/...`. There is no
+  client router, service worker or absolute URL in `src/`; `index.html` has the canonical link.
+- The built files sit at the root of the asset store, so `worker/index.ts` (`main`, with `assets.run_worker_first`) strips the
+  `/studio` prefix before calling `env.ASSETS.fetch`, and the store's SPA fallback returns *Studio's* `index.html`. `/studio` gets a
+  308 to `/studio/`; any path outside `/studio/` (the `workers.dev` root) gets a 302 to `/studio/`. Tested in `worker/index.test.ts`.
+- The browser storage is per origin: projects saved on the old `joyofit-studio.dzulfikar-at.workers.dev` origin (localStorage,
+  IndexedDB) are not visible on `app.fit.joyorogo.com`; use *Save project JSON* there and *Open project JSON* here.
+- The theme switch stores its value in `vite-ui-theme`, the key JoyoFit Web uses on the same origin, so the two follow each other.
+  The header shows the JoyoFit ring mark and a *Kembali ke JoyoFit Web* link (`/` on `app.fit.joyorogo.com`, the live URL elsewhere).
+- Any link from the web app to Studio must be a plain `<a href="/studio/">` (full page load), not a TanStack Router `Link`, which
+  would treat `/studio/` as an unknown route of the SPA.
+
 `@joyofit/hwt` is an alias to `../packages/hwt/src/index.ts` (Vite, Vitest and `tsconfig.json`); there is no workspace
 dependency and no copy of the codec.
 

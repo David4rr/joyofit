@@ -374,7 +374,7 @@ ExpandCapability 83 / 84 / 85 / 173). **None of it has been seen working on the 
 
 ## JoyoFit Studio
 
-[`web/`](../web/README.md) is a watch face editor for the Fit 4 and Fit 4 Pro, hosted as a Cloudflare Worker with static assets. You design a 408 x 480 face in the browser (time, date, analog hands,
+[`web/`](../web/README.md) is a watch face editor for the Fit 4 and Fit 4 Pro, hosted as a Cloudflare Worker with static assets at <https://app.fit.joyorogo.com/studio/> (a route on the JoyoFit web app's hostname). You design a 408 x 480 face in the browser (time, date, analog hands,
 data fields such as steps, heart rate, battery, altitude and temperature, progress rings, images, solid, gradient or photo
 backgrounds, six templates) against a simulated watch. Nothing leaves the browser. It builds on
 [`packages/hwt`](../packages/hwt/README.md), the TypeScript `.hwt` codec.

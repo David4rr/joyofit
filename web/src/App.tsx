@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CircleHelp, Download, FolderOpen, LayoutTemplate, Moon, Redo2, Save, Sun, Undo2 } from "lucide-react";
+import { ArrowLeft, CircleHelp, Download, FolderOpen, LayoutTemplate, Moon, Redo2, Save, Sun, Undo2 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { ExportDialog } from "@/editor/ExportDialog";
 import { HelpDialog } from "@/editor/HelpDialog";
@@ -13,19 +13,24 @@ import { useShortcuts } from "@/editor/shortcuts";
 import { loadProjectAssets } from "@/model/assets";
 import { assetIdsOf, downloadBlob, parseProjectFile, ProjectFileError, serializeProject } from "@/model/projectFile";
 import { hwtFileName } from "@/model/defaults";
-import { Button } from "@/ui/button";
+import { Button, buttonVariants } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { cn } from "@/ui/utils";
 
 const HELP_SEEN = "joyofit-studio:help-seen";
+/** JoyoFit Web (apps/fit) keeps its theme here ("light" | "dark" | "system") on the same origin, so one toggle serves both. */
+const THEME_KEY = "vite-ui-theme";
+const WEB_HOST = "app.fit.joyorogo.com";
+/** The JoyoFit web app is the root of the host Studio is mounted on; elsewhere (workers.dev, localhost) it is the live site. */
+const WEB_URL = location.hostname === WEB_HOST ? "/" : `https://${WEB_HOST}/`;
 const AUTOSAVE_TOAST = "autosave-failed";
 type Panel = "layers" | "stage" | "props";
 
 function useTheme(): [boolean, () => void] {
   const [dark, setDark] = useState(() => {
     try {
-      const saved = localStorage.getItem("joyofit-studio:theme");
-      return saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const saved = localStorage.getItem(THEME_KEY);
+      return saved === "dark" || saved === "light" ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
     } catch {
       return false;
     }
@@ -42,7 +47,7 @@ function useTheme(): [boolean, () => void] {
       document.head.append(style);
       setDark((d) => {
         try {
-          localStorage.setItem("joyofit-studio:theme", d ? "light" : "dark");
+          localStorage.setItem(THEME_KEY, d ? "light" : "dark");
         } catch {
           // Theme still switches for this session.
         }
@@ -53,16 +58,17 @@ function useTheme(): [boolean, () => void] {
   ];
 }
 
+/** The JoyoFit ring mark and wordmark of the web app (apps/fit brand-mark.tsx), with a Studio pill where the web app has "Web". */
 function Logo() {
   return (
     <div className="flex items-center gap-2.5">
-      <svg viewBox="0 0 64 64" className="size-8 shrink-0" aria-hidden>
-        <rect width="64" height="64" rx="18" fill="var(--primary)" />
-        <rect x="19" y="14" width="26" height="36" rx="9" fill="#0F2F3A" />
-        <path d="M32 22v10l6 4" stroke="#5FD3EE" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <svg viewBox="0 0 1024 1024" className="size-8 shrink-0" aria-hidden>
+        <path d="M512 250A262 262 0 1 1 285.1 643" fill="none" strokeWidth="120" strokeLinecap="round" className="stroke-primary" />
+        <circle cx="255.73" cy="457.53" r="74" className="fill-[#2BA3C4] dark:fill-[#BFE7F3]" />
       </svg>
-      <span className="hidden text-[0.9375rem] font-extrabold tracking-tight sm:inline">
-        JoyoFit <span className="text-primary">Studio</span>
+      <span className="hidden items-center gap-2 sm:flex">
+        <span className="text-lg font-extrabold tracking-tight">JoyoFit</span>
+        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.6875rem] font-bold tracking-wide text-primary uppercase">Studio</span>
       </span>
     </div>
   );
@@ -145,15 +151,27 @@ export function App() {
 
   return (
     <div className="flex h-full flex-col gap-3 p-3">
-      <header className="flex items-center gap-1 px-1 sm:gap-2">
+      {/* Below lg the face name and the file/theme buttons move to a second row (order-2, after the line break) so the header never overflows. */}
+      <header className="flex flex-wrap items-center gap-1 px-1 sm:gap-2">
+        <a
+          href={WEB_URL}
+          data-testid="back-to-web"
+          aria-label="Kembali ke JoyoFit Web"
+          title="Kembali ke JoyoFit Web"
+          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "h-10 max-xl:size-10 max-xl:px-0")}
+        >
+          <ArrowLeft />
+          <span className="max-xl:hidden">Kembali ke JoyoFit Web</span>
+        </a>
         <Logo />
+        <div aria-hidden className="order-1 -my-0.5 basis-full sm:-my-1 lg:hidden" />
         <Input
           aria-label="Face name"
           data-testid="face-name"
           value={project.name}
           maxLength={40}
           onChange={(e) => patchProject({ name: e.currentTarget.value })}
-          className="ml-1 h-10 w-28 min-w-0 rounded-full px-4 text-sm font-bold sm:w-56"
+          className="h-10 min-w-0 flex-1 rounded-full px-4 text-sm font-bold max-lg:order-2 lg:ml-1 lg:w-56 lg:flex-none"
         />
         <div className="ml-1 flex">
           <Button variant="ghost" size="icon" className={iconBtn} aria-label="Undo" title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={undo}>
@@ -179,13 +197,13 @@ export function App() {
             if (f) void openProject(f);
           }}
         />
-        <Button variant="ghost" size="icon" className={cn(iconBtn, "hidden sm:inline-flex")} aria-label="Open project JSON" title="Open project JSON" onClick={() => openInput.current?.click()}>
+        <Button variant="ghost" size="icon" className={cn(iconBtn, "max-lg:order-2")} aria-label="Open project JSON" title="Open project JSON" onClick={() => openInput.current?.click()}>
           <FolderOpen />
         </Button>
-        <Button variant="ghost" size="icon" className={cn(iconBtn, "hidden sm:inline-flex")} aria-label="Save project JSON" title="Save project JSON" onClick={() => void saveProject()}>
+        <Button variant="ghost" size="icon" className={cn(iconBtn, "max-lg:order-2")} aria-label="Save project JSON" title="Save project JSON" onClick={() => void saveProject()}>
           <Save />
         </Button>
-        <Button variant="ghost" size="icon" className={cn(iconBtn, "max-sm:hidden")} aria-label={dark ? "Light theme" : "Dark theme"} title={dark ? "Light theme" : "Dark theme"} onClick={toggleTheme}>
+        <Button variant="ghost" size="icon" className={cn(iconBtn, "max-lg:order-2")} aria-label={dark ? "Light theme" : "Dark theme"} title={dark ? "Light theme" : "Dark theme"} onClick={toggleTheme}>
           {dark ? <Sun /> : <Moon />}
         </Button>
         <Button variant="ghost" size="icon" className={iconBtn} aria-label="Help and export guide" title="Help and export guide" onClick={() => setHelp(true)} data-testid="open-help">
@@ -197,7 +215,7 @@ export function App() {
         </Button>
       </header>
 
-      <main className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[17rem_minmax(0,1fr)_21rem]">
+      <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[17rem_minmax(0,1fr)_21rem]">
         <aside className={cn("min-h-0 overflow-hidden rounded-3xl bg-card", panel === "layers" ? "block" : "hidden lg:block")} aria-label="Layers">
           <LayerPanel />
         </aside>
