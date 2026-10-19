@@ -20,6 +20,7 @@ import { strava, stravaPublic } from "./strava";
 import { applySync, pullSync, restoreSleep, restoreSteps } from "./sync";
 import { watchfaces } from "./watchfaces";
 import { waitlist } from "./waitlist";
+import { appConfig } from "./appConfig";
 
 const app = new Hono<AppContext>();
 
@@ -27,6 +28,8 @@ app.get("/", (c) => c.json({ service: "joyofit-api", ok: true }));
 
 // Public (no session): registered before `v1` so its session check never runs for these routes.
 app.route("/v1/waitlist", waitlist);
+// Public: the launch-time update gate reads it before any sign-in (docs/force-update.md).
+app.route("/v1/app-config", appConfig);
 // Device-token auth, not a session: the monitored phone uploads from native background code.
 app.route("/v1/family", familyDevice);
 // Live tracking link: the phone posts with its write key (Bearer) and anyone with the link reads; neither uses a session.

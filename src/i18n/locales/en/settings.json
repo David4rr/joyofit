@@ -130,7 +130,28 @@
       "readyTitle": "Update ready to install",
       "readyBody": "Restart JoyoFit to use the new version.",
       "later": "Later",
-      "update": "Update"
+      "update": "Update",
+      "newerTitle": "New version available",
+      "newerBody": "A newer JoyoFit is available in the store."
+    },
+    "gate": {
+      "title": "Update first",
+      "body": "The JoyoFit on your phone is out of date. Many problems you may be seeing are already fixed in the latest version, but the fixes only work once the app is updated.",
+      "steps": "Open the store, tap Update, then open JoyoFit again. Your data stays safe on your phone.",
+      "build": "Installed version: {{build}}",
+      "openPlay": "Update in Play Store",
+      "openTestFlight": "Open TestFlight",
+      "openAppStore": "Open App Store",
+      "openWeb": "Open update page",
+      "openTesting": "Open the testing page",
+      "failed": "Could not open the store page. Open the Play Store or TestFlight yourself and look for JoyoFit.",
+      "recheck": "Check again",
+      "rechecking": "Checking…",
+      "stillOld": "No newer version is installed yet. Update first, then check again."
+    },
+    "launch": {
+      "title": "Updating…",
+      "body": "Getting the latest fixes. One moment."
     }
   },
   "cloud": {

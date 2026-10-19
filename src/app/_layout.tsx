@@ -33,6 +33,8 @@ import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
 import { LivePill } from '@/features/record/ui/LivePill';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
+import { UpdateGateProvider, useUpdateGate } from '@/features/updates/UpdateGateProvider';
+import { LaunchUpdateScreen, UpdateRequiredScreen } from '@/features/updates/UpdateRequiredScreen';
 import { DeleteSnackbar } from '@/features/workouts/ui/DeleteSnackbar';
 import { CloudProvider } from '@/state/CloudProvider';
 import { LiveWorkoutProvider } from '@/state/LiveWorkoutProvider';
@@ -59,7 +61,9 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <RootNavigator />
+      <UpdateGateProvider>
+        <RootNavigator />
+      </UpdateGateProvider>
     </ThemeProvider>
   );
 }
@@ -108,6 +112,7 @@ function RootNavigator() {
     ...MaterialCommunityIcons.font,
   });
   const ready = fontsReady || fontError !== null;
+  const { launch, decision, blockedAtLaunch } = useUpdateGate();
 
   // The phone language may change while the app sleeps; "Otomatis" follows it.
   useEffect(() => {
@@ -122,11 +127,16 @@ function RootNavigator() {
     void lockPortrait();
   }, []);
 
+  // The splash also covers the cold-start update gate (server minimum build, newer OTA bundle; at most ~8 s).
+  const launched = ready && launch !== 'gate';
   useEffect(() => {
-    if (ready) void SplashScreen.hideAsync().catch(() => {});
-  }, [ready]);
+    if (launched) void SplashScreen.hideAsync().catch(() => {});
+  }, [launched]);
 
-  if (!ready) return null;
+  if (!launched) return null;
+  // A blocked cold start never mounts the app (no database, no sync, no sensors); see docs/force-update.md.
+  if (blockedAtLaunch && decision.kind === 'block') return <UpdateRequiredScreen cover={false} />;
+  if (launch === 'ota') return <LaunchUpdateScreen />;
 
   return (
     <DatabaseGate>
@@ -235,6 +245,8 @@ function RootNavigator() {
                   </Tabs>
                   {/* Android installs from Google Play only: flexible in-app update. */}
                   <UpdateBanner />
+                  {/* A block found when the app returns to the foreground covers the running app instead of unmounting it. */}
+                  <UpdateRequiredScreen cover />
                   <DeleteSnackbar />
                   <DbHealthNotice />
                   </View>

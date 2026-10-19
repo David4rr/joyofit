@@ -130,7 +130,28 @@
       "readyTitle": "Update siap dipasang",
       "readyBody": "Mulai ulang JoyoFit untuk memakai versi baru.",
       "later": "Nanti",
-      "update": "Update"
+      "update": "Update",
+      "newerTitle": "Ada versi baru",
+      "newerBody": "Versi JoyoFit yang lebih baru sudah tersedia di toko."
+    },
+    "gate": {
+      "title": "Update dulu ya",
+      "body": "Versi JoyoFit di HP kamu sudah lama. Banyak masalah yang kamu alami sudah kami perbaiki di versi terbaru, tapi perbaikannya cuma jalan kalau aplikasinya diperbarui.",
+      "steps": "Buka toko, ketuk Update, lalu buka JoyoFit lagi. Data kamu tetap aman di HP.",
+      "build": "Versi terpasang: {{build}}",
+      "openPlay": "Perbarui di Play Store",
+      "openTestFlight": "Buka TestFlight",
+      "openAppStore": "Buka App Store",
+      "openWeb": "Buka halaman update",
+      "openTesting": "Buka halaman uji coba",
+      "failed": "Halaman toko tidak bisa dibuka. Buka Play Store atau TestFlight sendiri dan cari JoyoFit.",
+      "recheck": "Cek lagi",
+      "rechecking": "Memeriksa…",
+      "stillOld": "Belum ada versi baru yang terpasang. Update dulu, lalu cek lagi."
+    },
+    "launch": {
+      "title": "Memperbarui…",
+      "body": "Mengambil perbaikan terbaru. Sebentar ya."
     }
   },
   "cloud": {
