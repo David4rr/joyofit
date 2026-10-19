@@ -3,6 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { BUSY_TIMEOUT_MS } from '@/db/migrations';
 import { waitForHold } from '@/db/recovery/gate';
 import { reportDatabaseError } from '@/db/recovery';
+import { createTransactionLane } from '@/db/transactionLane';
 
 /**
  * expo-sqlite on Android releases a statement's native object while another query on the same handle is still in
@@ -59,9 +60,14 @@ export function serializeQueries(db: SQLiteDatabase): void {
     };
     Object.defineProperty(db, name, { value: gated, configurable: true, writable: true });
   }
+  // One transaction at a time on this handle (`transactionLane.ts`); the exclusive kind has a connection of its own and stays outside.
+  const lane = createTransactionLane();
   for (const name of TRANSACTIONS) {
     const original = db[name].bind(db) as (...args: unknown[]) => Promise<unknown>;
-    const wrapped = (...args: unknown[]) => watch(original(...(name === 'withExclusiveTransactionAsync' ? [waitForLocks(args[0])] : args)));
+    const wrapped =
+      name === 'withExclusiveTransactionAsync'
+        ? (...args: unknown[]) => watch(original(waitForLocks(args[0])))
+        : (...args: unknown[]) => watch(lane(() => original(...args)));
     Object.defineProperty(db, name, { value: wrapped, configurable: true, writable: true });
   }
 }
