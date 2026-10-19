@@ -65,6 +65,7 @@
     "failedBody": "Berkas data di ponsel rusak dan perbaikan otomatis belum berhasil. Data kamu tidak dihapus. Coba lagi, atau tutup aplikasi lalu buka lagi.",
     "pendingBody": "Berkas data di ponsel rusak. Versi barunya sudah disiapkan dan dipasang saat aplikasi dibuka lagi. Tutup aplikasi sepenuhnya lalu buka lagi. Data kamu tidak dihapus.",
     "retry": "Coba lagi",
+    "continue": "Buka aplikasi saja",
     "dismiss": "Mengerti"
   },
   "language": {

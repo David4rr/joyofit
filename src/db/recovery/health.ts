@@ -16,6 +16,8 @@ export interface RepairNotice {
   pendingSwap: boolean;
   /** Name of the kept copy of the damaged file, when one was made. */
   keptAs: string | null;
+  /** Why a failed repair failed, in the words of the error: shown to the person so it can be read back when nothing else can. */
+  reason: string | null;
   at: number;
 }
 
@@ -48,11 +50,11 @@ function noticeOf(result: RecoveryResult, now: number): RepairNotice | null {
     case 'healthy':
       return null;
     case 'repaired':
-      return { kind: 'repaired', lost: result.lost, pendingSwap: false, keptAs: result.keptAs, at: now };
+      return { kind: 'repaired', lost: result.lost, pendingSwap: false, keptAs: result.keptAs, reason: null, at: now };
     case 'recreated':
-      return { kind: 'recreated', lost: true, pendingSwap: false, keptAs: result.keptAs, at: now };
+      return { kind: 'recreated', lost: true, pendingSwap: false, keptAs: result.keptAs, reason: null, at: now };
     case 'failed':
-      return { kind: 'failed', lost: false, pendingSwap: result.swapPending !== null, keptAs: result.keptAs, at: now };
+      return { kind: 'failed', lost: false, pendingSwap: result.swapPending !== null, keptAs: result.keptAs, reason: result.reason, at: now };
   }
 }
 
@@ -67,11 +69,13 @@ function readNotice(raw: string | null): RepairNotice | null {
     if (kind !== 'repaired' && kind !== 'recreated' && kind !== 'failed') return null;
     const keptAs = field(value, 'keptAs');
     const at = field(value, 'at');
+    const reason = field(value, 'reason');
     return {
       kind,
       lost: field(value, 'lost') === true,
       pendingSwap: field(value, 'pendingSwap') === true,
       keptAs: typeof keptAs === 'string' ? keptAs : null,
+      reason: typeof reason === 'string' ? reason : null,
       at: typeof at === 'number' ? at : 0,
     };
   } catch {

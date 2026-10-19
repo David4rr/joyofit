@@ -67,6 +67,7 @@
     "failedBody": "The data file on your phone is damaged and the automatic repair did not work. Your data is not deleted. Try again, or close the app and open it again.",
     "pendingBody": "The data file on your phone is damaged. A fresh copy is ready and goes in when the app opens again. Close the app completely, then open it again. Your data is not deleted.",
     "retry": "Try again",
+    "continue": "Open the app anyway",
     "dismiss": "Got it"
   },
   "language": {

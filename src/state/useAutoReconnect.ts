@@ -1,4 +1,3 @@
-import Storage from 'expo-sqlite/kv-store';
 import { useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
@@ -7,25 +6,9 @@ import { createAutoReconnect, type AutoReconnectControl, type ObservedFacts } fr
 import { bluetoothConnectGranted } from '@/features/device/useBluetoothPermission';
 import { HuaweiWear, type BondedDevice, type LinkState } from '@/wear';
 
-const DISCONNECTED_BY_USER_KEY = 'watch.disconnectedByUser';
+import { isDisconnectedByUser, setDisconnectedByUser } from './disconnectedByUser';
 
-/** Remembers that the person tapped Disconnect (or that they connected again), across launches. A storage failure only loses the memory. */
-export async function setDisconnectedByUser(value: boolean): Promise<void> {
-  try {
-    if (value) await Storage.setItem(DISCONNECTED_BY_USER_KEY, '1');
-    else await Storage.removeItem(DISCONNECTED_BY_USER_KEY);
-  } catch {
-    // The reconnect then behaves as if the person had not disconnected, which is the default.
-  }
-}
-
-async function disconnectedByUser(): Promise<boolean> {
-  try {
-    return (await Storage.getItem(DISCONNECTED_BY_USER_KEY)) === '1';
-  } catch {
-    return false;
-  }
-}
+export { setDisconnectedByUser };
 
 /** Android's list of watches with their pairing state; empty on iOS (its list scans for four seconds) and when it cannot be read. */
 async function androidPairedRows(): Promise<BondedDevice[]> {
@@ -41,7 +24,7 @@ async function androidPairedRows(): Promise<BondedDevice[]> {
 async function observe(): Promise<ObservedFacts> {
   const { address, enabled } = HuaweiWear.getBackgroundStatus();
   const [userDisconnected, permitted, listed] = await Promise.all([
-    disconnectedByUser(),
+    isDisconnectedByUser(),
     bluetoothConnectGranted(),
     address === null ? [] : androidPairedRows(),
   ]);

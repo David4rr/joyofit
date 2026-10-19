@@ -151,4 +151,12 @@ describe('createDbHealth', () => {
     expect(await other.repair()).toMatchObject({ kind: 'repaired' });
     expect(other.getState().repairing).toBe(false);
   });
+
+  it('keeps why a repair failed in the notice, across starts', async () => {
+    const t = setup([{ kind: 'failed', keptAs: null, reason: 'disk full', swapPending: null }]);
+    const health = createDbHealth(t.deps);
+    await health.repair();
+    expect(health.getState().notice).toMatchObject({ kind: 'failed', reason: 'disk full' });
+    expect(createDbHealth(t.deps).getState().notice).toMatchObject({ reason: 'disk full' });
+  });
 });

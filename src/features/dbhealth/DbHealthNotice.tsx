@@ -10,6 +10,8 @@ import { dbHealth, useDbHealth, type RepairNotice } from '@/db/recovery';
 import { radius, spacing, useTheme } from '@/theme';
 import { useWatch } from '@/state/WatchProvider';
 
+import { RepairDetails } from './RepairDetails';
+
 interface NoticeKeys {
   title: 'failedTitle' | 'recreatedTitle' | 'lostTitle' | 'repairedTitle' | 'repairingTitle';
   body: 'pendingBody' | 'failedBody' | 'recreatedBody' | 'lostBody' | 'repairedBody' | 'repairingBody';
@@ -67,6 +69,7 @@ export function DbHealthNotice() {
             </AppText>
           </View>
         </View>
+        {failed ? <RepairDetails reason={notice?.reason ?? null} /> : null}
         {repairing ? null : (
           <View style={styles.actions}>
             {failed ? <Button label={t('dbRecovery.retry')} variant="ghost" onPress={() => void dbHealth.repair()} /> : null}

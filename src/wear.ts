@@ -77,3 +77,17 @@ export function hasNative(name: string): boolean {
     return false;
   }
 }
+
+/** Closes and reopens the native connection to `joyofit.db` (`releaseDatabase` / `resumeDatabase` of the Android module). */
+export interface NativeDatabaseControl {
+  /** Closes the native connection and keeps it closed (native reads and writes fail with ERR_STORAGE) until `resume`; waits for a running transaction. */
+  release(): Promise<void>;
+  resume(): Promise<void>;
+}
+
+/** The control, or null on a binary that does not have it (iOS, and Android builds older than the shared-SQLite change). */
+export function nativeDatabaseControl(): NativeDatabaseControl | null {
+  if (!hasNative('releaseDatabase') || !hasNative('resumeDatabase')) return null;
+  const module = HuaweiWear as unknown as Record<'releaseDatabase' | 'resumeDatabase', () => Promise<void>>;
+  return { release: () => module.releaseDatabase(), resume: () => module.resumeDatabase() };
+}

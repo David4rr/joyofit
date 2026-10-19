@@ -59,6 +59,8 @@ export interface RecoveryEnv {
   buildSchema(db: RecoveryDb): Promise<void>;
   /** Runs on the repaired database when rows could not be saved, e.g. to make the cloud pull start from the beginning. */
   afterLoss?(db: RecoveryDb): Promise<void>;
+  /** One line per step and outcome of the repair, for the device log and the repair notice. */
+  log?(message: string): void;
 }
 
 export interface RecoveryOptions {
@@ -96,6 +98,15 @@ const SIDE_FILES = ['', '-wal', '-shm', '-journal'] as const;
 const quoteIdent = (name: string): string => `"${name.replace(/"/g, '""')}"`;
 const quoteLiteral = (text: string): string => `'${text.replace(/'/g, "''")}'`;
 const errorText = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
+/** Tells the environment what the repair is doing (the log of the repair); a log that fails never stops it. */
+function say(env: RecoveryEnv, message: string): void {
+  try {
+    env.log?.(message);
+  } catch {
+    // Logging is for people reading logs.
+  }
+}
 
 /** Problems `PRAGMA main.integrity_check` reports (the schema is named so an attached database is not checked too); empty when it says `ok`. A check that itself fails is a problem too. */
 export async function integrityProblems(db: RecoveryDb): Promise<string[]> {
@@ -153,13 +164,16 @@ async function vacuumInto(env: RecoveryEnv, from: RecoveryDb, intoName: string):
   try {
     await removeDatabase(env, intoName);
     await from.execAsync(`VACUUM INTO ${quoteLiteral(env.pathOf(intoName))}`);
-  } catch {
+  } catch (e) {
+    say(env, `VACUUM INTO failed: ${errorText(e)}`);
     await removeDatabase(env, intoName);
     return false;
   }
   const copy = await env.open(intoName);
   try {
-    if ((await integrityProblems(copy)).length === 0) return true;
+    const problems = await integrityProblems(copy);
+    if (problems.length === 0) return true;
+    say(env, `VACUUM INTO result fails its integrity check: ${problems.slice(0, 3).join(' | ')}`);
   } finally {
     await closeQuietly(copy);
   }
@@ -325,8 +339,13 @@ async function salvage(env: RecoveryEnv, name: string, intoName: string): Promis
     try {
       await fresh.execAsync(`ATTACH DATABASE ${quoteLiteral(env.pathOf(name))} AS old`);
       const reports = await salvageTables(fresh);
-      return (await integrityProblems(fresh)).length === 0 ? reports : null;
+      for (const report of reports) say(env, `salvage ${report.table}: copied ${report.copied}, unreadable places ${report.unreadable}`);
+      const problems = await integrityProblems(fresh);
+      if (problems.length === 0) return reports;
+      say(env, `salvaged database fails its integrity check: ${problems.slice(0, 3).join(' | ')}`);
+      return null;
     } catch (e) {
+      say(env, `salvage stopped: ${errorText(e)}`);
       if (isCorruptionError(e)) return null;
       throw e;
     } finally {
@@ -383,9 +402,11 @@ async function install(env: RecoveryEnv, name: string, sourceName: string, canSw
     from = await env.open(sourceName);
     to = await env.open(name);
     await env.backup(from, to);
+    say(env, 'in-place backup done');
     return { done: true };
   } catch (e) {
     reason = errorText(e);
+    say(env, `in-place backup failed: ${reason}`);
   } finally {
     await closeQuietly(from);
     await closeQuietly(to);
@@ -393,20 +414,48 @@ async function install(env: RecoveryEnv, name: string, sourceName: string, canSw
   if (!canSwap) return { done: false, reason, swapPending: sourceName };
   try {
     await swapFiles(env, name, sourceName);
+    say(env, 'files swapped');
     return { done: true };
   } catch (e) {
+    say(env, `file swap failed: ${errorText(e)}`);
     return { done: false, reason: `${reason}; swap: ${errorText(e)}`, swapPending: null };
   }
 }
 
-/** The repaired database must open, pass the integrity check and hold the app's schema version. */
+/** The repaired database must open and pass the integrity check. */
 async function verify(env: RecoveryEnv, name: string): Promise<boolean> {
   const db = await env.open(name);
   try {
-    return (await integrityProblems(db)).length === 0;
+    const problems = await integrityProblems(db);
+    if (problems.length > 0) say(env, `the installed database fails its integrity check: ${problems.slice(0, 3).join(' | ')}`);
+    return problems.length === 0;
   } finally {
     await closeQuietly(db);
   }
+}
+
+/**
+ * Installs and checks the result. A check that fails right after an in-place install means something wrote into the file while
+ * it was being replaced (the native writer is a different SQLite library and does not wait for the app's locks): the copy is
+ * still there, so the install is done a second time, and when that fails too the files are swapped where that is allowed or the
+ * prepared file is left for `applyPendingSwap` at the next start.
+ */
+async function installAndVerify(env: RecoveryEnv, name: string, sourceName: string, canSwap: boolean): Promise<Installed> {
+  let installed = await install(env, name, sourceName, canSwap);
+  if (!installed.done) return installed;
+  if (await verify(env, name)) return installed;
+  say(env, 'second install attempt');
+  installed = await install(env, name, sourceName, false);
+  if (installed.done && (await verify(env, name))) return installed;
+  if (!canSwap) return { done: false, reason: 'the repaired database did not pass the integrity check', swapPending: sourceName };
+  try {
+    await swapFiles(env, name, sourceName);
+    say(env, 'files swapped after the in-place install did not verify');
+  } catch (e) {
+    return { done: false, reason: `the repaired database did not pass the integrity check; swap: ${errorText(e)}`, swapPending: null };
+  }
+  if (await verify(env, name)) return { done: true };
+  return { done: false, reason: 'the repaired database did not pass the integrity check after a file swap', swapPending: null };
 }
 
 /**
@@ -414,6 +463,7 @@ async function verify(env: RecoveryEnv, name: string): Promise<boolean> {
  * ever replaced after a copy of it was made.
  */
 export async function recoverDatabase(env: RecoveryEnv, name: string, options: RecoveryOptions = {}): Promise<RecoveryResult> {
+  say(env, `repair of ${name} starts`);
   const stamp = env.now();
   const keptAs = `${name}.corrupt-${stamp}`;
   const vacuumName = `${name}.vacuum-${stamp}`;
@@ -428,12 +478,15 @@ export async function recoverDatabase(env: RecoveryEnv, name: string, options: R
     } catch (e) {
       problems = [errorText(e)];
     }
+    say(env, `integrity problems (${problems.length}): ${problems.slice(0, 3).join(' | ')}`);
     if (problems.length === 0) return { kind: 'healthy' };
 
     try {
       await keepDamagedFile(env, name, keptAs);
       kept = true;
+      say(env, `kept a copy of the damaged file as ${keptAs}`);
     } catch (e) {
+      say(env, `could not keep a copy of the damaged file: ${errorText(e)}`);
       return { kind: 'failed', keptAs: null, reason: `could not keep a copy of the damaged file: ${errorText(e)}`, swapPending: null };
     }
 
@@ -450,6 +503,7 @@ export async function recoverDatabase(env: RecoveryEnv, name: string, options: R
       }
     }
     if (method === null && probe && (await vacuumInto(env, probe, vacuumName))) {
+      say(env, 'VACUUM INTO produced a sound copy');
       method = 'vacuum';
       sourceName = vacuumName;
     }
@@ -473,6 +527,7 @@ export async function recoverDatabase(env: RecoveryEnv, name: string, options: R
     }
 
     if (sourceName === null) {
+      say(env, 'nothing could be read: rebuilding an empty database');
       await emptyDatabase(env, salvageName);
       sourceName = salvageName;
       recreated = true;
@@ -480,24 +535,28 @@ export async function recoverDatabase(env: RecoveryEnv, name: string, options: R
     await closeQuietly(probe);
     probe = null;
 
-    const installed = await install(env, name, sourceName, options.canSwap === true);
+    say(env, `installing ${sourceName} over ${name} (${method ?? 'recreate'}, canSwap ${options.canSwap === true})`);
+    const installed = await installAndVerify(env, name, sourceName, options.canSwap === true);
     if (!installed.done) return { kind: 'failed', keptAs, reason: installed.reason, swapPending: installed.swapPending };
-    if (!(await verify(env, name))) {
-      return { kind: 'failed', keptAs, reason: 'the repaired database did not pass the integrity check', swapPending: null };
-    }
 
     const lost = recreated || tables.some((table) => table.unreadable > 0);
     if (lost && env.afterLoss) {
-      const db = await env.open(name);
+      // The database is installed and sound; failing to reset the cloud cursors must not turn that into a failed repair.
+      let db: RecoveryDb | null = null;
       try {
+        db = await env.open(name);
         await env.afterLoss(db);
+      } catch (e) {
+        say(env, `afterLoss failed (ignored): ${errorText(e)}`);
       } finally {
         await closeQuietly(db);
       }
     }
     for (const temp of [vacuumName, salvageName]) await removeDatabase(env, temp);
+    say(env, recreated ? 'done: database recreated' : `done: repaired by ${method ?? 'salvage'}${lost ? ', some rows lost' : ''}`);
     return recreated ? { kind: 'recreated', keptAs } : { kind: 'repaired', method: method ?? 'salvage', keptAs, tables, lost };
   } catch (e) {
+    say(env, `repair threw: ${errorText(e)}`);
     return { kind: 'failed', keptAs: kept ? keptAs : null, reason: errorText(e), swapPending: null };
   } finally {
     await closeQuietly(probe);

@@ -25,6 +25,7 @@ import {
 } from '@/components/tabBarMetrics';
 import { initLocale, refreshAutoLocale } from '@/i18n/native';
 import { DATABASE_NAME } from '@/db/appSchema';
+import { BUSY_TIMEOUT_MS } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
 import { DatabaseGate } from '@/features/dbhealth/DatabaseGate';
 import { DbHealthNotice } from '@/features/dbhealth/DbHealthNotice';
@@ -50,8 +51,13 @@ import { ThemeProvider, useTheme } from '@/theme';
 // Stored language choice (or the phone's) applies before the first screen is drawn.
 initLocale();
 
-/** The schema is built before this handle opens (`DatabaseGate`, which repairs a damaged file first); from here on one query at a time (see `serialize.ts`). */
+/**
+ * The schema is built before this handle opens (`DatabaseGate`, which repairs a damaged file first); from here on one query at a
+ * time (see `serialize.ts`). The native writer opens the same file with the same SQLite library, so the two really do lock each
+ * other: a statement waits for the other's transaction instead of failing with SQLITE_BUSY.
+ */
 async function initDatabase(db: SQLiteDatabase): Promise<void> {
+  await db.execAsync(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`);
   serializeQueries(db);
 }
 
