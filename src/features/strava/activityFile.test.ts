@@ -148,12 +148,19 @@ describe('buildFit records', () => {
     expect(offsetsOf(dense)).toEqual([0, 0, 60, 600]);
   });
 
-  it('writes no pause when the watch reports none, or when no gap could hold it', () => {
+  it('writes no pause when the watch reports no timer or a timer as long as the elapsed time', () => {
     expect(roundTrip({ ...walk, duration: 600 }, [hrOnly(100, 90)]).events.length).toBe(2);
-    expect(roundTrip({ ...walk, duration: 590 }, [hrOnly(100, 90)]).events.length).toBe(2);
     expect(roundTrip({ ...walk, duration: 0 }, [hrOnly(100, 90)]).events.length).toBe(2);
+  });
+
+  it('writes a pause of any length so the timer events match the watch timer, even 2 s, at the longest gap, dropping nothing', () => {
+    const { events, records, session } = roundTrip({ ...walk, duration: 598 }, [hrOnly(100, 90), hrOnly(400, 95)]);
+    expect(events.map((e) => [e.eventType, (e.timestamp ?? 0) - FIT_START])).toEqual([[0, 0], [4, 249], [0, 251], [4, 600]]);
+    expect(estimateMovingTime(records, events)).toEqual({ seconds: 598, from: 'timer events' });
+    expect(session?.totalTimerTime).toBe(598);
+    expect(records.length).toBe(4);
     const dense = Array.from({ length: 119 }, (_, i) => hrOnly((i + 1) * 5, 90));
-    expect(roundTrip(walk, dense).events.length).toBe(2);
+    expect(roundTrip(walk, dense).events.length).toBe(4);
   });
 
   it('keeps HR-only samples and merges samples of the same second', () => {
@@ -242,7 +249,7 @@ describe('buildFit session and lap', () => {
     expect(roundTrip({ ...walk, maxSpeed: null }, points).session?.maxSpeed).toBeUndefined();
   });
 
-  it('uses the elapsed time when the watch has no active time, and never more than it', () => {
+  it('uses the elapsed time when the watch has no timer, and never more than it', () => {
     expect(roundTrip({ ...walk, duration: 0 }, points).session?.totalTimerTime).toBe(600);
     expect(roundTrip({ ...walk, duration: 999 }, points).session?.totalTimerTime).toBe(600);
   });
