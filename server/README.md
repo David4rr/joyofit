@@ -169,7 +169,7 @@ from `../packages/hwt/src`, so building the Worker needs the repo's root `bun in
 
 JoyoFit Studio's "save to db" (Pro). A project is a Studio `.project.json` document (`{ "format": "joyofit-studio-project", "project": { "version": n, ... }, "assets": { id: { name, dataUrl } } }`) plus metadata.
 One row per project in D1 `studio_projects(id, user_id, name, rev, size, thumb, doc_key, created_at, updated_at)`
-([`migrations/0011_studio_projects.sql`](migrations/0011_studio_projects.sql), index `(user_id, updated_at DESC)`); the document lives in R2 `IMPORTS` under `studio/<userId>/<id>/<uuid>`,
+([`migrations/0012_studio_projects.sql`](migrations/0012_studio_projects.sql), index `(user_id, updated_at DESC)`); the document lives in R2 `IMPORTS` under `studio/<userId>/<id>/<uuid>`,
 where `<uuid>` is fresh for every document version and `doc_key` names the current one, so a stale writer never overwrites the stored file. Apply the migration before deploying
 (`bun run db:migrate:remote`). Code: `src/studio.ts`. Behind `requireUser`; **writing is Pro** (`requireFounder`: `402 {"error":"founder_required","paywall":true}`), listing, reading and
 deleting are open to every signed-in account, so a lapsed Pro keeps what it saved. The browser reaches it only through JoyoRogo's `/api/fit/studio/projects` proxy. Every query is scoped to the caller: another user's id is `404`.
