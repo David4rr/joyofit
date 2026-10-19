@@ -14,7 +14,7 @@ import { spacing } from '@/theme';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type Outcome = { kind: 'sent'; sequenceId: number } | { kind: 'queued' } | { kind: 'error'; message: string };
+type Outcome = { kind: 'sent'; sequenceId: number } | { kind: 'queued'; reason: string } | { kind: 'error'; message: string };
 
 /**
  * "Kirim laporan": what went wrong in the person's words, an email to answer to (the account's, until changed or cleared),
@@ -43,7 +43,7 @@ export function AturReportForm({ onClose }: { onClose: () => void }) {
         accountId: user?.id ?? null,
         name: user?.name?.trim() || null,
       });
-      setOutcome(result.state === 'sent' ? { kind: 'sent', sequenceId: result.sequenceId } : { kind: 'queued' });
+      setOutcome(result.state === 'sent' ? { kind: 'sent', sequenceId: result.sequenceId } : { kind: 'queued', reason: result.reason });
       setMessage('');
     } catch (e) {
       const reason = e instanceof ReportRefusedError ? e.message : errorMessage(e);
@@ -57,7 +57,9 @@ export function AturReportForm({ onClose }: { onClose: () => void }) {
   return (
     <View style={styles.form}>
       {outcome?.kind === 'sent' ? <Notice>{t('watch:device.support.atur.sent', { number: outcome.sequenceId })}</Notice> : null}
-      {outcome?.kind === 'queued' ? <Notice icon="cloud-offline-outline">{t('watch:device.support.atur.queued')}</Notice> : null}
+      {outcome?.kind === 'queued' ? (
+        <Notice icon="cloud-offline-outline">{`${t('watch:device.support.atur.queued')} (${outcome.reason})`}</Notice>
+      ) : null}
       {outcome?.kind === 'error' ? <Notice tone="danger">{outcome.message}</Notice> : null}
       {done ? null : (
         <>

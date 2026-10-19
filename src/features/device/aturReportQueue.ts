@@ -8,7 +8,7 @@ export interface QueueStore {
   write: (value: string) => Promise<void>;
 }
 
-export type Submitted = { state: 'sent'; sequenceId: number } | { state: 'queued' };
+export type Submitted = { state: 'sent'; sequenceId: number } | { state: 'queued'; reason: string };
 
 /** Atur refused the report for good (bad token, too big, wrong shape): another try would get the same answer. */
 export class ReportRefusedError extends Error {}
@@ -46,7 +46,7 @@ export function createReportQueue(deps: { store: QueueStore; send: (report: Pend
         if (!result.retryable) throw new ReportRefusedError(result.message);
         const kept = (await load()).filter((r) => r.id !== report.id);
         await save([...kept, report].slice(-MAX_QUEUED));
-        return { state: 'queued' };
+        return { state: 'queued', reason: result.message };
       }),
 
     /** Tries the parked reports oldest first and stops at the first retryable failure. Returns how many went out. */

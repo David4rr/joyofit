@@ -22,7 +22,8 @@ const queue = createReportQueue({
   },
   send: (report: PendingReport) =>
     sendReport(report, {
-      fetch,
+      // Called as `deps.fetch(...)`: pass a wrapper, the global fetch must not run with `deps` as `this`.
+      fetch: (url, init) => fetch(url, init),
       baseUrl: ATUR_FEEDBACK_URL,
       token: ATUR_FEEDBACK_TOKEN,
       writeTempFile: (name, text) => {
