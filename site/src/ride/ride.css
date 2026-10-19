@@ -1637,3 +1637,19 @@ button.rd-option:active {
   bottom: 0;
   padding-top: calc(var(--u) * 0.6);
 }
+
+/* JoyoFit mark above the route name during a ride. */
+.rd-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: calc(var(--u) * 0.85);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  opacity: 0.9;
+}
+
+.rd-brand img {
+  width: 1.3em;
+  height: 1.3em;
+}

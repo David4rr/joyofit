@@ -6,6 +6,7 @@
 // Crank angle convention: 0 = right pedal at the top (12 o'clock), PI/2 = right pedal
 // forward (+Z), PI = bottom, 3*PI/2 = back. Increasing angle is the forward pedalling
 // direction. The left pedal is always at crankAngle + PI.
+import { jerseyLogoTexture } from './brand.ts';
 import {
   BoxGeometry,
   BufferAttribute,
@@ -20,6 +21,7 @@ import {
   MeshLambertMaterial,
   MeshStandardMaterial,
   Object3D,
+  PlaneGeometry,
   SphereGeometry,
   TorusGeometry,
   Vector2,
@@ -455,6 +457,19 @@ export function createAvatar(options: AvatarOptions): Avatar {
   const stripe = new Mesh(stripeGeo, jerseyMat);
   stripe.position.set(0, 0.133, -0.02);
   head.add(stripe);
+  // JoyoFit print across the back of the jersey, placed on the torso every frame (the torso mesh is scaled, a child would stretch).
+  const logoTexture = ghost ? null : jerseyLogoTexture();
+  const logo = logoTexture ? addMesh(track(new PlaneGeometry(0.15, 0.047)), material(0xffffff, 'fabric')) : null;
+  if (logo && logoTexture) {
+    const m = logo.material as MeshStandardMaterial;
+    m.map = logoTexture;
+    m.transparent = true;
+    m.polygonOffset = true;
+    m.polygonOffsetFactor = -2;
+  }
+  const backNormal = new Vector3();
+  const basis = new Matrix4();
+  const LEFT = new Vector3(-1, 0, 0);
 
   const makeSide = (sign: number): Side => {
     const ball = (mat: Material, r: number): Mesh => {
@@ -517,6 +532,15 @@ export function createAvatar(options: AvatarOptions): Avatar {
     pelvis.position.copy(pelvisV);
     neckV.set(shoulderSway, shoulderY, shoulderZ);
     placeLimb(torso, pelvisV, neckV, SHOULDER_X + 0.005, 0.115);
+    if (logo) {
+      // Across the shoulder blades: two thirds up the torso, on its back surface, reading left to right from behind.
+      torsoAxis.subVectors(neckV, pelvisV);
+      const len = torsoAxis.length();
+      torsoAxis.divideScalar(len);
+      backNormal.set(0, torsoAxis.z, -torsoAxis.y);
+      logo.position.copy(pelvisV).addScaledVector(torsoAxis, len * 0.66).addScaledVector(backNormal, 0.106);
+      logo.quaternion.setFromRotationMatrix(basis.makeBasis(LEFT, torsoAxis, backNormal));
+    }
 
     head.position.set(shoulderSway, shoulderY + 0.1 - 0.03 * tuck, shoulderZ + 0.07 + 0.07 * tuck);
     // The torso leans forward but the eyes stay on the road: chin up a little, more in the tuck.
@@ -600,6 +624,7 @@ export function createAvatar(options: AvatarOptions): Avatar {
     },
     dispose(): void {
       for (const g of geos) g.dispose();
+      logoTexture?.dispose();
       for (const m of mats) m.dispose();
     },
   };

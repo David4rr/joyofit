@@ -147,6 +147,10 @@ export function Hud({ game }: { game: Game }) {
       <div className="rd-vignette" style={{ opacity: effort * 0.55 }} aria-hidden="true" />
 
       <div className="rd-top-left">
+        <span className="rd-brand">
+          <img src="/brand/logo-mark.svg" alt="" width={16} height={16} />
+          JoyoFit
+        </span>
         <span className="rd-label">
           {game.route.name} <span className="rd-dim">{source}</span>
         </span>

@@ -33,6 +33,7 @@ import {
 } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
+import { BRAND_DOT, BRAND_INK, BRAND_RING, drawMark } from "./brand.ts";
 import { buildRoadside } from "./roadside.ts";
 import type { RouteDef } from "./routes.ts";
 import { Scenery } from "./scenery.ts";
@@ -192,13 +193,15 @@ function waveNormalTexture(): CanvasTexture {
   return texture;
 }
 
-function bannerTexture(text: string, fg: string, bg: string): CanvasTexture {
+/** A gantry banner; the start and finish ones carry the JoyoFit mark at both ends. */
+function bannerTexture(text: string, fg: string, bg: string, mark: { ring: string; dot: string } | null = null): CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 96;
   const g = canvas.getContext("2d")!;
   g.fillStyle = bg;
   g.fillRect(0, 0, 512, 96);
+  if (mark) for (const x of [52, 460]) drawMark(g, x, 48, 76, mark.ring, mark.dot);
   g.fillStyle = fg;
   g.font = "800 54px 'Plus Jakarta Sans Variable', system-ui, sans-serif";
   g.textAlign = "center";
@@ -761,7 +764,7 @@ export class World {
     const trussGeometry = own(new BoxGeometry((ROAD_HALF + 0.8) * 2 + 0.34, 0.12, 0.3));
     const shadows = this.quality.shadowMap > 0;
 
-    const gantry = (s: number, text: string, fg: string, bg: string) => {
+    const gantry = (s: number, text: string, fg: string, bg: string, mark: { ring: string; dot: string } | null = null) => {
       const t = this.track.at(s, this.point);
       const group = new Group();
       for (const side of [-1, 1]) {
@@ -779,7 +782,7 @@ export class World {
         truss.castShadow = shadows;
         group.add(truss);
       }
-      const banner = new Mesh(bannerGeometry, own(new MeshBasicMaterial({ map: own(bannerTexture(text, fg, bg)), side: DoubleSide })));
+      const banner = new Mesh(bannerGeometry, own(new MeshBasicMaterial({ map: own(bannerTexture(text, fg, bg, mark)), side: DoubleSide })));
       banner.position.set(0, 6.0, 0.02);
       banner.castShadow = shadows;
       group.add(banner);
@@ -788,8 +791,8 @@ export class World {
       this.scene.add(group);
     };
 
-    gantry(0, "START", "#141414", "#f1efe6");
-    gantry(this.route.lengthM, "FINISH", "#f1efe6", "#141414");
+    gantry(0, "START", "#141414", "#f1efe6", { ring: BRAND_INK, dot: BRAND_RING });
+    gantry(this.route.lengthM, "FINISH", "#f1efe6", "#141414", { ring: BRAND_RING, dot: BRAND_DOT });
 
     const finish = new Mesh(own(new PlaneGeometry(ROAD_HALF * 2, 1.6)), own(new MeshBasicMaterial({ map: own(finishTexture()) })));
     const t = this.track.at(this.route.lengthM, this.point);
