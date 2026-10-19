@@ -376,7 +376,7 @@ ExpandCapability 83 / 84 / 85 / 173). **None of it has been seen working on the 
 
 [`web/`](../web/README.md) is a watch face editor for the Fit 4 and Fit 4 Pro, hosted as a Cloudflare Worker with static assets at <https://app.fit.joyorogo.com/studio/> (a route on the JoyoFit web app's hostname). You design a 408 x 480 face in the browser (time, date, analog hands,
 data fields such as steps, heart rate, battery, altitude and temperature, progress rings, images, solid, gradient or photo
-backgrounds, six templates) against a simulated watch. Nothing leaves the browser. It builds on
+backgrounds, six templates) against a simulated watch. Nothing leaves the browser unless you save a project to your account (*Cloud projects* below). It builds on
 [`packages/hwt`](../packages/hwt/README.md), the TypeScript `.hwt` codec.
 
 - **Photo face (the export that works with JoyoFit).** Export gives a `<Name>.photo.png`: the picture layers (background and
@@ -392,5 +392,14 @@ backgrounds, six templates) against a simulated watch. Nothing leaves the browse
   Elements whose ids are known only from sample faces are marked *Unconfirmed* and can be left out of the `.hwt`; elements with no
   known id (calories, AM/PM) are *Preview only* and never exported. The export dialog lists both, plus the package size against
   Huawei's limits.
+- **Cloud projects (Pro).** A signed-in JoyoFit account can keep Studio `.project.json` documents in the cloud: `GET|POST /v1/studio/projects`,
+  `GET|PUT|DELETE /v1/studio/projects/:id` on joyofit-api, reached from the browser through JoyoRogo's `/api/fit/studio/projects` proxy (the
+  session cookie is host-only on `api.joyorogo.com`). Saving (`POST`, `PUT`) needs Pro like the other cloud writes (`402 founder_required`);
+  listing, opening and deleting stay open to every signed-in account, so a lapsed Pro keeps its projects. At most 100 projects per
+  account and 5 MiB per request; updates are optimistic (`PUT` carries the `rev` last seen, a stale one is `409 rev_conflict`). Metadata
+  (name, `rev`, size, 16 KiB thumbnail) is a D1 row, the document an R2 object under `studio/<userId>/<id>/<uuid>`, replaced under a fresh
+  key on every save; account deletion removes both. Contract and limits: [`server/README.md`](../server/README.md) → *Studio cloud projects*.
+  In Studio the header's cloud button opens the dialog (save, open, rename, delete, optional autosave; sign-in and Pro prompts); the client is `web/src/cloud/`.
+- **Language.** Indonesian (default) and English, with i18next like JoyoFit Web. The choice is localStorage `jfit-locale` on `app.fit.joyorogo.com`, the key JoyoFit Web uses, so one pick serves both; without it the browser language decides, then Indonesian. The header's `ID`/`EN` button switches it. Details: [`web/README.md`](../web/README.md) → *Language*.
 - Setup, tests, deploy and the element-to-layout mapping are in [`web/README.md`](../web/README.md).
 

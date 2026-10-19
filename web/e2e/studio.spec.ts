@@ -4,7 +4,11 @@ import { expect, test, type Page } from "@playwright/test";
 import { VALUE_TYPES, decodeImage, readHwt, verifyWatchface, writeWatchface } from "@joyofit/hwt";
 
 async function open(page: Page): Promise<void> {
-  await page.addInitScript(() => localStorage.setItem("joyofit-studio:help-seen", "1"));
+  await page.addInitScript(() => {
+    localStorage.setItem("joyofit-studio:help-seen", "1");
+    // The assertions below use the English wording; Indonesian is the default and has its own tests (i18n.spec.ts).
+    localStorage.setItem("jfit-locale", "en");
+  });
   await page.goto("./");
   await expect(page.getByTestId("face-canvas")).toBeVisible();
 }
@@ -78,7 +82,7 @@ test("mounted under /studio/: every asset loads from the prefix, the link back t
 
   const back = page.getByTestId("back-to-web");
   await expect(back).toBeVisible();
-  await expect(back).toHaveAccessibleName("Kembali ke JoyoFit Web");
+  await expect(back).toHaveAccessibleName("Back to JoyoFit Web");
   await expect(back).toHaveAttribute("href", /^(\/|https:\/\/app\.fit\.joyorogo\.com\/)$/);
 });
 

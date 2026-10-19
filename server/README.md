@@ -165,6 +165,31 @@ from `../packages/hwt/src`, so building the Worker needs the repo's root `bun in
 
 `DELETE /v1/data` and `DELETE /v1/account` remove the user's `web_watchfaces` rows and every object under `watchfaces/<userId>/`, like imports.
 
+### Studio cloud projects: `/v1/studio/projects`
+
+JoyoFit Studio's "save to db" (Pro). A project is a Studio `.project.json` document (`{ "format": "joyofit-studio-project", "project": { "version": n, ... }, "assets": { id: { name, dataUrl } } }`) plus metadata.
+One row per project in D1 `studio_projects(id, user_id, name, rev, size, thumb, doc_key, created_at, updated_at)`
+([`migrations/0011_studio_projects.sql`](migrations/0011_studio_projects.sql), index `(user_id, updated_at DESC)`); the document lives in R2 `IMPORTS` under `studio/<userId>/<id>/<uuid>`,
+where `<uuid>` is fresh for every document version and `doc_key` names the current one, so a stale writer never overwrites the stored file. Apply the migration before deploying
+(`bun run db:migrate:remote`). Code: `src/studio.ts`. Behind `requireUser`; **writing is Pro** (`requireFounder`: `402 {"error":"founder_required","paywall":true}`), listing, reading and
+deleting are open to every signed-in account, so a lapsed Pro keeps what it saved. The browser reaches it only through JoyoRogo's `/api/fit/studio/projects` proxy. Every query is scoped to the caller: another user's id is `404`.
+
+Meta, everywhere: `{ id, name, rev, size, createdAt, updatedAt, thumb }` (`size` is the bytes of the stored document, `thumb` a `data:image/(png|jpeg|webp);base64,...` string or `null`, times in ms).
+
+| Endpoint | What it does |
+|---|---|
+| `GET /v1/studio/projects` | `{ "projects": [Meta], "max": 100, "maxBytes": 5242880 }`, `updatedAt` descending (id as tiebreak). Never carries documents. |
+| `POST /v1/studio/projects` | Body `{ name, thumb?, document }` -> `201 Meta` at `rev` 1. `Content-Length` required (`411`), the whole body at most 5 MiB (`413 {"error":"too_large","maxBytes":5242880}`, also when the stream is longer than declared). A user holds at most 100 projects: `409 {"error":"library_full","max":100}` (the cap is part of the `INSERT`, so concurrent creations cannot overshoot; the refused document's object is deleted). |
+| `GET /v1/studio/projects/:id` | `200 { ...Meta, document }`, `Cache-Control: private, no-store`; `404 {"error":"not_found"}` for an id that is not yours (or whose document is gone). |
+| `PUT /v1/studio/projects/:id` | Body `{ rev, name?, thumb?, document? }` (`rev` is the revision the client last saw, at least one of the other three; `thumb: null` clears it) -> `200 Meta` with `rev + 1` and `updatedAt` now. A stale `rev` is `409 {"error":"rev_conflict","rev":<current>,"updatedAt":<ms>}` and nothing changes. A new document is written to a fresh R2 key first, the conditional `UPDATE ... WHERE id AND user_id AND rev` then switches `doc_key`, and the losing object is deleted (the new one on a conflict, the old one on success). A rename or thumbnail change keeps the object. Same body limits as `POST`; `404` when not yours. |
+| `DELETE /v1/studio/projects/:id` | `{ "deleted": true }`: removes the row, then every object under `studio/<userId>/<id>/`; `404` when not yours. |
+
+Validation (`400 {"error":"invalid_body"}`; a body that is not JSON is `400 invalid_json`): `name` is trimmed, 1 to 80 characters; `document` is an object with `format === "joyofit-studio-project"`, a `project` object with a numeric
+`version`, and `assets` absent or an object (shallow on purpose: the client validates the rest); `thumb`, when a string, matches `^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$` and is at most 16 KiB long.
+Limits live in `src/limits.ts` (`MAX_STUDIO_BODY_BYTES`, `MAX_STUDIO_PROJECTS_PER_USER`).
+
+`DELETE /v1/data` and `DELETE /v1/account` remove the user's `studio_projects` rows and every object under `studio/<userId>/`, like watch faces.
+
 ### Run it locally with a local JoyoRogo
 
 For the web app (`apps/fit`, port 3003; its server reaches this API through the JoyoRogo proxy `/api/fit/*`) against JoyoRogo on port 3000; the API listens on **3004**. From the repo root once, `bun install` (the Worker imports `packages/hwt`, which needs `fflate`),

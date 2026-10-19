@@ -24,10 +24,15 @@ async function seed(userId: string) {
     env.DB.prepare(
       "INSERT INTO web_watchfaces (id, user_id, name, filename, size, sha256, created_at) VALUES (?1, ?2, 'Face', 'face.hwt', 3, 'abc', 1)",
     ).bind(`face-${userId}`, userId),
+    env.DB.prepare(
+      "INSERT INTO studio_projects (id, user_id, name, rev, size, thumb, doc_key, created_at, updated_at) VALUES (?1, ?2, 'Project', 1, 2, NULL, ?3, 1, 1)",
+    ).bind(`project-${userId}`, userId, `studio/${userId}/project-${userId}/doc`),
   ]);
   await env.IMPORTS.put(`imports/${userId}/file`, "zip");
   await env.IMPORTS.put(`watchfaces/${userId}/face-${userId}`, "hwt");
   await env.IMPORTS.put(`watchfaces/${userId}/second`, "hwt");
+  await env.IMPORTS.put(`studio/${userId}/project-${userId}/doc`, "{}");
+  await env.IMPORTS.put(`studio/${userId}/project-${userId}/older`, "{}");
 }
 
 async function rows(table: string, userId: string): Promise<number> {
@@ -35,9 +40,10 @@ async function rows(table: string, userId: string): Promise<number> {
   return row?.n ?? 0;
 }
 
-const TABLES = ["user_state", "step_samples", "sleep_segments", "workouts", "workout_points", "device", "imports", "gear_doc", "web_watchfaces"];
+const TABLES = ["user_state", "step_samples", "sleep_segments", "workouts", "workout_points", "device", "imports", "gear_doc", "web_watchfaces", "studio_projects"];
 
 const watchfaceFiles = async (userId: string) => (await env.IMPORTS.list({ prefix: `watchfaces/${userId}/` })).objects.length;
+const studioFiles = async (userId: string) => (await env.IMPORTS.list({ prefix: `studio/${userId}/` })).objects.length;
 
 describe("DELETE /v1/account", () => {
   it("requires a session", async () => {
@@ -63,6 +69,8 @@ describe("DELETE /v1/account", () => {
     expect(await env.IMPORTS.get(`imports/${alice.user.id}/file`)).toBeNull();
     expect(await watchfaceFiles(alice.user.id)).toBe(0);
     expect(await watchfaceFiles(bob.user.id)).toBe(2);
+    expect(await studioFiles(alice.user.id)).toBe(0);
+    expect(await studioFiles(bob.user.id)).toBe(2);
     expect(await env.IMPORTS.get(`imports/${bob.user.id}/file`)).not.toBeNull();
   });
 
@@ -97,6 +105,8 @@ describe("DELETE /v1/data", () => {
     expect(await env.IMPORTS.get(`imports/${dana.user.id}/file`)).toBeNull();
     expect(await watchfaceFiles(dana.user.id)).toBe(0);
     expect(await watchfaceFiles(erin.user.id)).toBe(2);
+    expect(await studioFiles(dana.user.id)).toBe(0);
+    expect(await studioFiles(erin.user.id)).toBe(2);
     expect(await env.IMPORTS.get(`imports/${erin.user.id}/file`)).not.toBeNull();
   });
 });
