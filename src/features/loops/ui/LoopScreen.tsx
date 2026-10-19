@@ -1,6 +1,6 @@
 import type { CameraRef } from '@maplibre/maplibre-react-native';
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Linking, PanResponder, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +21,7 @@ import { loadMapLibre, type MapLibre } from '@/features/routes/map/maplibre';
 import { resolveStartView, type StartView } from '@/features/routes/map/startPosition';
 import { formatRouteDistance } from '@/features/routes/routeModel';
 import { fmtDecimal } from '@/i18n';
-import { spacing, useTheme } from '@/theme';
+import { HIT, spacing, useTheme } from '@/theme';
 
 import { bigNumber, formatPace, secondaryLine, targetText } from '../display';
 import { TOLERANCE, type LoopCandidate } from '../generate';
@@ -56,12 +56,23 @@ export function LoopScreen() {
 
 function LoopMap({ maplibre }: { maplibre: MapLibre }) {
   const { t } = useTranslation('loops');
+  const { t: tCommon } = useTranslation('common');
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { Map: MapView, Camera } = maplibre;
   const planner = useLoopPlanner(maplibre);
   const { prefs, start, loop, area, home } = planner;
+
+  // Full screen: the map runs under where the tab bar sits. The tab navigator is this stack's parent.
+  useFocusEffect(
+    useCallback(() => {
+      const tabs = navigation.getParent();
+      tabs?.setOptions({ tabBarStyle: { display: 'none' } });
+      return () => tabs?.setOptions({ tabBarStyle: undefined });
+    }, [navigation]),
+  );
 
   const cameraRef = useRef<CameraRef>(null);
   const rootRef = useRef<View>(null);
@@ -202,7 +213,7 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
           touchRotate={false}
           touchPitch={false}
           attribution
-          attributionPosition={{ top: 8, right: 8 }}
+          attributionPosition={{ top: insets.top + spacing.sm + HIT + spacing.xs, right: 8 }}
           onDidFailLoadingMap={() => setMapFailed(true)}
           onDidFinishLoadingMap={() => setMapFailed(false)}
           onPress={(event) => {
@@ -237,7 +248,29 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
       )}
 
       <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-        <View pointerEvents="box-none" style={styles.top}>
+        <View pointerEvents="box-none" style={[styles.controls, { top: insets.top + spacing.sm }]}>
+          <MapButton
+            icon="arrow-back"
+            label={tCommon('actions.back')}
+            surface="floating"
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/routes'))}
+          />
+          {start && sheet !== 'search' ? (
+            <MapButton
+              icon="locate"
+              label={t('start.center')}
+              surface="floating"
+              onPress={() =>
+                cameraRef.current?.flyTo({
+                  center: [start.lon, start.lat],
+                  zoom: PLACE_ZOOM,
+                  duration: 600,
+                })
+              }
+            />
+          ) : null}
+        </View>
+        <View pointerEvents="box-none" style={[styles.top, { top: insets.top + spacing.sm + HIT + spacing.sm }]}>
           {showChip ? (
             <View
               accessible
@@ -266,20 +299,6 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
             ]}>
             <View pointerEvents="box-none" style={styles.edge}>
               <MapAttribution extra={credits} style={styles.credit} />
-              {start && sheet !== 'search' ? (
-                <MapButton
-                  icon="locate"
-                  label={t('start.center')}
-                  surface="floating"
-                  onPress={() =>
-                    cameraRef.current?.flyTo({
-                      center: [start.lon, start.lat],
-                      zoom: PLACE_ZOOM,
-                      duration: 600,
-                    })
-                  }
-                />
-              ) : null}
             </View>
             {sheet === 'search' ? (
               <SearchSheet onPick={goTo} onClose={() => setSheet('home')} />
@@ -769,9 +788,15 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   fill: { flex: 1 },
   unavailable: { padding: spacing.lg },
+  controls: {
+    position: 'absolute',
+    left: spacing.sm,
+    right: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   top: {
     position: 'absolute',
-    top: spacing.sm,
     left: spacing.sm,
     right: 64,
     gap: spacing.sm,

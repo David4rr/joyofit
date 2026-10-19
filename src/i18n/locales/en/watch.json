@@ -524,6 +524,7 @@
     "neverSynced": "Never synced",
     "notTracked": "Its health data is not stored",
     "switchTo": "Switch to this watch",
+    "connect": "Connect",
     "manage": "Manage this watch",
     "makePrimary": "Make primary",
     "rename": {
