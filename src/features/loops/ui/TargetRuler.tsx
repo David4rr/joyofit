@@ -18,9 +18,9 @@ import { rulerLabel, type RulerScale } from '../targets';
 
 /** Distance between two ticks, in dp: wide enough to read the labels, narrow enough that a flick covers the range. */
 export const TICK_WIDTH = 14;
-const HEIGHT = 64;
-const MAJOR_TICK = 30;
-const MINOR_TICK = 16;
+const HEIGHT = 48;
+const MAJOR_TICK = 22;
+const MINOR_TICK = 12;
 /** One tick of haptic per snap; Android only (the vibration API of iOS has no short tick), and never faster than this. */
 const HAPTIC_MS = 6;
 const HAPTIC_GAP_MS = 35;
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   ticks: { flexDirection: 'row', height: HEIGHT },
   cell: { width: TICK_WIDTH, height: MAJOR_TICK, alignItems: 'center', justifyContent: 'flex-start' },
   tick: { width: 2, borderRadius: 1 },
-  label: { position: 'absolute', top: MAJOR_TICK + 4, width: LABEL_WIDTH, alignItems: 'center' },
+  label: { position: 'absolute', top: MAJOR_TICK + 2, width: LABEL_WIDTH, alignItems: 'center' },
   labelText: { textAlign: 'center' },
   marker: { position: 'absolute', top: 0, width: 3, height: MAJOR_TICK + 6, borderRadius: 2 },
 });

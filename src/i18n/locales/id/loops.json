@@ -1,4 +1,11 @@
 {
+  "sheet": {
+    "expand": "Buka pengaturan loop",
+    "collapse": "Lipat pengaturan loop"
+  },
+  "candidate": {
+    "label": "Rute {{n}}"
+  },
   "shortcut": {
     "title": "Loop baru dari rumah",
     "subtitle": "Rute jalan atau lari lewat jalan yang belum kamu lalui"

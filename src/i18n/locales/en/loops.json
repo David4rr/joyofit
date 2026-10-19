@@ -1,4 +1,11 @@
 {
+  "sheet": {
+    "expand": "Open loop settings",
+    "collapse": "Fold loop settings"
+  },
+  "candidate": {
+    "label": "Route {{n}}"
+  },
   "shortcut": {
     "title": "New loop from home",
     "subtitle": "A walk or run route on streets you have not covered yet"

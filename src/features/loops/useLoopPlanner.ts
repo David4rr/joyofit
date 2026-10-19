@@ -34,6 +34,7 @@ import {
 
 /** The target a new session starts with, in metres. */
 const DEFAULT_LOOP_M = 5000;
+const NO_CANDIDATES: readonly LoopCandidate[] = [];
 
 export type LocationAnswer = 'unknown' | 'granted' | 'denied' | 'blocked';
 export type FindStatus = 'idle' | 'finding' | 'error';
@@ -60,6 +61,11 @@ export interface LoopPlanner {
   error: string | null;
   /** The loop on the map; null when there is none for the current target and start. */
   loop: LoopCandidate | null;
+  /** The loops of the batch for the current plan, best first; empty when there is none. */
+  candidates: readonly LoopCandidate[];
+  /** Index of `loop` in `candidates`. */
+  candidateIndex: number;
+  choose: (index: number) => void;
   /** Loops were made for another target or start than the ones now chosen. */
   stale: boolean;
   /** The saved copy of the loop on the map. */
@@ -116,6 +122,7 @@ export function useLoopPlanner(maplibre: MapLibre): LoopPlanner {
   const targetM = bodyInfo && value !== null ? loopLengthM(prefs.mode, value, bodyInfo.body) : null;
   const key = start && targetM !== null ? poolKey(start, targetM, prefs.activity) : null;
   const loop = currentLoop(pool, key);
+  const candidates = pool !== null && key !== null && pool.key === key ? pool.candidates : NO_CANDIDATES;
   const stale = pool !== null && key !== null && pool.key !== key;
 
   useEffect(() => {
@@ -263,6 +270,11 @@ export function useLoopPlanner(maplibre: MapLibre): LoopPlanner {
     if (prefs.startFrom === 'home') update({ startFrom: 'here' });
   }, [prefs.startFrom, update]);
 
+  const choose = useCallback(
+    (index: number) => setPool((p) => (p !== null && p.key === key && index >= 0 && index < p.candidates.length ? { ...p, at: index } : p)),
+    [key],
+  );
+
   const find = useCallback(() => {
     if (!start || targetM === null || !area || !key) return;
     // "Another route" shows the next loop of the batch; a new batch is made only when they have all been shown.
@@ -379,6 +391,9 @@ export function useLoopPlanner(maplibre: MapLibre): LoopPlanner {
     progress,
     error,
     loop,
+    candidates,
+    candidateIndex: pool?.at ?? 0,
+    choose,
     stale,
     saved,
     saving,

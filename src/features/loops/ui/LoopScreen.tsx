@@ -2,12 +2,13 @@ import type { CameraRef } from '@maplibre/maplibre-react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, Linking, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, PanResponder, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Segmented } from '@/components/Segmented';
+import { PressableScale } from '@/components/PressableScale';
 import { LoadingState, Notice } from '@/components/States';
 import { LIVE_ROUTE, OPEN_LIVE } from '@/features/record/liveRoute';
 import { SearchSheet, SheetCard } from '@/features/routes/map/DrawSheets';
@@ -23,15 +24,19 @@ import { fmtDecimal } from '@/i18n';
 import { spacing, useTheme } from '@/theme';
 
 import { bigNumber, formatPace, secondaryLine, targetText } from '../display';
-import { TOLERANCE } from '../generate';
+import { TOLERANCE, type LoopCandidate } from '../generate';
 import { useLoopPlanner, type LoopPlanner } from '../useLoopPlanner';
 import type { StartFrom } from '../prefs';
 import { scaleFor, TARGET_MODES, type LoopActivity, type TargetMode } from '../targets';
 import { LoopLayers } from './LoopLayers';
 import { TargetRuler } from './TargetRuler';
 
-/** The share of the window the plan sheet may take before it scrolls. */
-const SHEET_MAX_SHARE = 0.6;
+/** The share of the window the plan sheet may take before it scrolls, open and folded (the map keeps the rest). */
+const SHEET_MAX_SHARE = 0.7;
+const SHEET_COLLAPSED_SHARE = 0.4;
+/** A drag of this many dp opens or folds the sheet; a touch that moves less than `TAP_PX` is a tap. */
+const DRAG_PX = 24;
+const TAP_PX = 8;
 
 type Sheet = 'plan' | 'home' | 'search';
 
@@ -61,9 +66,16 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
   const cameraRef = useRef<CameraRef>(null);
   const rootRef = useRef<View>(null);
   const [rootTop, setRootTop] = useState(0);
-  const [sheetHeight, setSheetHeight] = useState(280);
   const [startView, setStartView] = useState<StartView | null>(null);
   const [sheet, setSheet] = useState<Sheet>('plan');
+  const [expanded, setExpanded] = useState(true);
+  const expandedRef = useRef(true);
+  useEffect(() => {
+    expandedRef.current = expanded;
+  }, [expanded]);
+  const sheetHeightRef = useRef(280);
+  // A loop came while the sheet was open: the camera waits for the folded sheet's height before it fits.
+  const pendingFit = useRef(false);
   const [picking, setPicking] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
   const [homeError, setHomeError] = useState(false);
@@ -84,23 +96,56 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
   const startLon = start?.lon;
   useEffect(() => {
     if (startLat === undefined || startLon === undefined) return;
-    cameraRef.current?.flyTo({ center: [startLon, startLat], zoom: PLACE_ZOOM, duration: 700 });
+    cameraRef.current?.flyTo({
+      center: [startLon, startLat],
+      zoom: PLACE_ZOOM,
+      duration: 700,
+    });
   }, [startLat, startLon]);
 
-  // A loop appeared: fit it above the sheet.
+  const fitLoop = (height: number) => {
+    const bounds = loopLine ? boundsOf(loopLine) : null;
+    if (!bounds) return;
+    cameraRef.current?.fitBounds(bounds, {
+      padding: {
+        top: insets.top + 72,
+        right: 32,
+        bottom: height + 24,
+        left: 32,
+      },
+      duration: 800,
+    });
+  };
+
+  // A loop appeared: fold the sheet and fit the loop above it. Only a new loop moves the camera, not a taller sheet.
   const loopId = loop?.id;
   const loopLine = loop?.line;
   useEffect(() => {
     if (!loopLine || loopId === undefined) return;
-    const bounds = boundsOf(loopLine);
-    if (!bounds) return;
-    cameraRef.current?.fitBounds(bounds, {
-      padding: { top: insets.top + 72, right: 32, bottom: sheetHeight + 24, left: 32 },
-      duration: 800,
-    });
-    // Only a new loop moves the camera, not a taller sheet.
+    if (!expandedRef.current) {
+      fitLoop(sheetHeightRef.current);
+      return;
+    }
+    pendingFit.current = true;
+    setExpanded(false);
+    // The layout of the folded sheet normally triggers the fit; this covers a layout that never changes size.
+    const timer = setTimeout(() => {
+      if (pendingFit.current) {
+        pendingFit.current = false;
+        fitLoop(sheetHeightRef.current);
+      }
+    }, 450);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loopId]);
+
+  const onSheetLayout = (height: number) => {
+    sheetHeightRef.current = height;
+    if (pendingFit.current && !expandedRef.current) {
+      pendingFit.current = false;
+      fitLoop(height);
+    }
+  };
 
   const layers = useMemo(() => {
     const markerPoint = sheet === 'home' ? home : start;
@@ -111,7 +156,10 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
       start: markerPoint
         ? ({
             type: 'FeatureCollection',
-            features: pointCollection([markerPoint]).features.map((f) => ({ ...f, properties: { label: markerLabel } })),
+            features: pointCollection([markerPoint]).features.map((f) => ({
+              ...f,
+              properties: { label: markerLabel },
+            })),
           } as GeoJSON.FeatureCollection)
         : null,
     };
@@ -125,7 +173,11 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
 
   const goTo = (place: Place) => {
     setSheet('home');
-    cameraRef.current?.flyTo({ center: [place.lon, place.lat], zoom: PLACE_ZOOM, duration: 800 });
+    cameraRef.current?.flyTo({
+      center: [place.lon, place.lat],
+      zoom: PLACE_ZOOM,
+      duration: 800,
+    });
   };
 
   const setHomeHere = async () => {
@@ -163,7 +215,10 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
             initialViewState={
               start
                 ? { center: [start.lon, start.lat], zoom: PLACE_ZOOM }
-                : { center: [startView.lon, startView.lat], zoom: startView.zoom }
+                : {
+                    center: [startView.lon, startView.lat],
+                    zoom: startView.zoom,
+                  }
             }
           />
           <LoopLayers
@@ -186,7 +241,9 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
           {showChip ? (
             <View
               accessible
-              accessibilityLabel={t('chip.label', { pct: Math.round((loop.newShare ?? 0) * 100) })}
+              accessibilityLabel={t('chip.label', {
+                pct: Math.round((loop.newShare ?? 0) * 100),
+              })}
               style={[styles.chip, { backgroundColor: MAP_INK.chipBackground }]}>
               <AppText variant="label" color={MAP_INK.chipText}>
                 {t('chip.new', { pct: Math.round((loop.newShare ?? 0) * 100) })}
@@ -197,23 +254,33 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
           {picking ? <Notice icon="locate">{t('home.pickHint')}</Notice> : null}
         </View>
 
-        {start ? (
-          <View pointerEvents="box-none" style={styles.side}>
-            <MapButton
-              icon="locate"
-              label={t('start.center')}
-              surface="floating"
-              onPress={() => cameraRef.current?.flyTo({ center: [start.lon, start.lat], zoom: PLACE_ZOOM, duration: 600 })}
-            />
-          </View>
-        ) : null}
-
         <KeyboardAvoidingView pointerEvents="box-none" behavior="padding" keyboardVerticalOffset={rootTop} style={styles.bottom}>
           <View
             pointerEvents="box-none"
-            onLayout={(event) => setSheetHeight(event.nativeEvent.layout.height)}
-            style={[styles.stack, { paddingBottom: sheet === 'search' ? spacing.sm : insets.bottom + spacing.sm }]}>
-            <MapAttribution extra={credits} style={styles.credit} />
+            onLayout={(event) => onSheetLayout(event.nativeEvent.layout.height)}
+            style={[
+              styles.stack,
+              {
+                paddingBottom: sheet === 'search' ? spacing.sm : insets.bottom + spacing.sm,
+              },
+            ]}>
+            <View pointerEvents="box-none" style={styles.edge}>
+              <MapAttribution extra={credits} style={styles.credit} />
+              {start && sheet !== 'search' ? (
+                <MapButton
+                  icon="locate"
+                  label={t('start.center')}
+                  surface="floating"
+                  onPress={() =>
+                    cameraRef.current?.flyTo({
+                      center: [start.lon, start.lat],
+                      zoom: PLACE_ZOOM,
+                      duration: 600,
+                    })
+                  }
+                />
+              ) : null}
+            </View>
             {sheet === 'search' ? (
               <SearchSheet onPick={goTo} onClose={() => setSheet('home')} />
             ) : sheet === 'home' ? (
@@ -237,6 +304,8 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
             ) : (
               <PlanSheet
                 planner={planner}
+                expanded={expanded}
+                onExpandedChange={setExpanded}
                 onOpenHome={() => setSheet('home')}
                 onBegin={() => router.navigate({ pathname: LIVE_ROUTE, params: { sport: prefs.activity } }, OPEN_LIVE)}
                 onOpenSaved={(id) => router.push({ pathname: '/routes/[id]', params: { id } })}
@@ -251,21 +320,36 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
 
 interface PlanSheetProps {
   planner: LoopPlanner;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
   onOpenHome: () => void;
   onBegin: () => void;
   onOpenSaved: (id: string) => void;
 }
 
-function PlanSheet({ planner, onOpenHome, onBegin, onOpenSaved }: PlanSheetProps) {
+/**
+ * The plan as a bottom sheet. Expanded it is the whole planner (mode, ruler, start); collapsed it is what a loop needs next to the map:
+ * the target and Walk/Run, the candidate loops as a row of small cards, and the find / save / send / begin actions.
+ */
+function PlanSheet({ planner, expanded, onExpandedChange, onOpenHome, onBegin, onOpenSaved }: PlanSheetProps) {
   const { t } = useTranslation('loops');
   const { t: tRoot } = useTranslation('routes');
   const router = useRouter();
   const { height } = useWindowDimensions();
   const { prefs, body, value, targetM, start, loop, area, status, progress, error, stale, saved, saving, saveError, push } = planner;
 
-  const modeOptions = TARGET_MODES.map((mode) => ({ value: mode, label: t(`mode.${mode}`) }));
-  const activityOptions = (['walk', 'run'] as const).map((activity) => ({ value: activity, label: t(`activity.${activity}`) }));
-  const startOptions = (['here', 'home'] as const).map((from) => ({ value: from, label: t(`start.${from}`) }));
+  const modeOptions = TARGET_MODES.map((mode) => ({
+    value: mode,
+    label: t(`mode.${mode}`),
+  }));
+  const activityOptions = (['walk', 'run'] as const).map((activity) => ({
+    value: activity,
+    label: t(`activity.${activity}`),
+  }));
+  const startOptions = (['here', 'home'] as const).map((from) => ({
+    value: from,
+    label: t(`start.${from}`),
+  }));
 
   const finding = status === 'finding';
   const number = value !== null ? bigNumber(prefs.mode, value) : null;
@@ -280,49 +364,64 @@ function PlanSheet({ planner, onOpenHome, onBegin, onOpenSaved }: PlanSheetProps
   const lengthOffPercent = loop && Math.abs(loop.lengthError) > TOLERANCE ? Math.round(Math.abs(loop.lengthError) * 100) : null;
   const sentOrOutcome = push.outcome !== null && !push.sending;
   const canSend = push.connected && push.status.deliver && !push.appOutdated;
+  const hasLoop = loop !== null && !stale;
+
+  const activityControl = <Segmented<LoopActivity> options={activityOptions} value={prefs.activity} onChange={planner.setActivity} />;
 
   return (
     <SheetCard>
+      <SheetHandle expanded={expanded} onChange={onExpandedChange} />
       <ScrollView
-        style={{ maxHeight: height * SHEET_MAX_SHARE }}
+        style={{
+          maxHeight: height * (expanded ? SHEET_MAX_SHARE : SHEET_COLLAPSED_SHARE),
+        }}
         contentContainerStyle={styles.sheet}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <Segmented<TargetMode> options={modeOptions} value={prefs.mode} onChange={planner.setMode} />
+        {expanded ? <Segmented<TargetMode> options={modeOptions} value={prefs.mode} onChange={planner.setMode} /> : null}
 
         {number && body && targetM !== null && scale && value !== null ? (
           <>
-            <View style={styles.numberRow} accessible accessibilityLabel={valueText} accessibilityLiveRegion="polite">
-              <AppText variant="display" adjustsFontSizeToFit minimumFontScale={0.6} numberOfLines={1} style={styles.number}>
-                {number.number}
-              </AppText>
-              <AppText variant="bodyStrong" muted style={styles.unit} numberOfLines={1}>
-                {number.unit}
-              </AppText>
+            <View style={styles.valueRow}>
+              <View style={styles.numberRow} accessible accessibilityLabel={valueText} accessibilityLiveRegion="polite">
+                <AppText variant="title" adjustsFontSizeToFit minimumFontScale={0.6} numberOfLines={1} style={styles.number}>
+                  {number.number}
+                </AppText>
+                <AppText variant="bodyStrong" muted style={styles.unit} numberOfLines={1}>
+                  {number.unit}
+                </AppText>
+              </View>
+              {expanded ? null : <View style={styles.activityInline}>{activityControl}</View>}
             </View>
-            <AppText variant="caption" muted>
-              {secondaryLine(prefs.mode, targetM, body.body)}
-            </AppText>
-            <TargetRuler scale={scale} mode={prefs.mode} value={value} valueText={valueText} onChange={planner.setValue} />
+            {expanded ? (
+              <>
+                <AppText variant="caption" muted>
+                  {secondaryLine(prefs.mode, targetM, body.body)}
+                </AppText>
+                <TargetRuler scale={scale} mode={prefs.mode} value={value} valueText={valueText} onChange={planner.setValue} />
+              </>
+            ) : null}
           </>
         ) : (
           <LoadingState label={t('preparing')} />
         )}
 
-        <Segmented<LoopActivity> options={activityOptions} value={prefs.activity} onChange={planner.setActivity} />
-        <View style={styles.startRow}>
-          <AppText variant="label" muted>
-            {t('start.label')}
-          </AppText>
-          <Segmented<StartFrom> options={startOptions} value={prefs.startFrom} onChange={onStart} />
-        </View>
-        <Button label={t('home.set')} icon="home-outline" variant="ghost" onPress={onOpenHome} />
+        {expanded ? (
+          <>
+            {activityControl}
+            <View style={styles.startRow}>
+              <AppText variant="label" muted>
+                {t('start.label')}
+              </AppText>
+              <Segmented<StartFrom> options={startOptions} value={prefs.startFrom} onChange={onStart} />
+            </View>
+            <Button label={t('home.set')} icon="home-outline" variant="ghost" onPress={onOpenHome} />
+          </>
+        ) : null}
 
         <StartNotices planner={planner} onOpenHome={onOpenHome} />
 
-        {stale ? (
-          <Notice icon="refresh">{t('stale', { target: valueText })}</Notice>
-        ) : null}
+        {stale ? <Notice icon="refresh">{t('stale', { target: valueText })}</Notice> : null}
         {error ? <Notice tone="danger">{error}</Notice> : null}
         {finding && progress ? (
           <AppText variant="caption" muted accessibilityLiveRegion="polite">
@@ -330,40 +429,61 @@ function PlanSheet({ planner, onOpenHome, onBegin, onOpenSaved }: PlanSheetProps
           </AppText>
         ) : null}
 
-        {loop && !stale ? (
+        {hasLoop ? (
           <View style={styles.result}>
             <AppText variant="bodyStrong" accessibilityLiveRegion="polite">
               {loop.newShare !== null
-                ? t('result.summary', { distance: formatRouteDistance(loop.lengthM), pct: Math.round(loop.newShare * 100) })
-                : t('result.plain', { distance: formatRouteDistance(loop.lengthM) })}
+                ? t('result.summary', {
+                    distance: formatRouteDistance(loop.lengthM),
+                    pct: Math.round(loop.newShare * 100),
+                  })
+                : t('result.plain', {
+                    distance: formatRouteDistance(loop.lengthM),
+                  })}
             </AppText>
-            {loop.newShare === null ? (
+            {expanded && loop.newShare === null ? (
               <AppText variant="caption" muted>
                 {t('result.noHistory')}
               </AppText>
-            ) : area && area.workouts > 0 ? (
+            ) : expanded && area && area.workouts > 0 ? (
               <AppText variant="caption" muted>
                 {t('result.history', { count: area.workouts })}
               </AppText>
             ) : null}
             {lengthOffPercent !== null ? (
               <AppText variant="caption" muted>
-                {t('result.lengthOff', { percent: fmtDecimal(lengthOffPercent, 0) })}
+                {t('result.lengthOff', {
+                  percent: fmtDecimal(lengthOffPercent, 0),
+                })}
               </AppText>
             ) : null}
           </View>
         ) : null}
 
+        {!stale && planner.candidates.length > 1 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.candidates} keyboardShouldPersistTaps="handled">
+            {planner.candidates.map((candidate, index) => (
+              <CandidateCard
+                key={candidate.id}
+                candidate={candidate}
+                index={index}
+                selected={index === planner.candidateIndex}
+                onPress={() => planner.choose(index)}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
+
         <Button
-          label={loop && !stale ? t('another') : t('find')}
-          icon={loop && !stale ? 'shuffle' : 'search'}
+          label={hasLoop ? t('another') : t('find')}
+          icon={hasLoop ? 'shuffle' : 'search'}
           variant="primary"
           loading={finding}
           disabled={!start || !area || targetM === null}
           onPress={planner.find}
         />
 
-        {loop && !stale ? (
+        {hasLoop ? (
           <>
             <View style={styles.actions}>
               {saved ? (
@@ -390,12 +510,17 @@ function PlanSheet({ planner, onOpenHome, onBegin, onOpenSaved }: PlanSheetProps
               <Button label={t('actions.begin')} icon="play" lines={2} style={styles.action} onPress={onBegin} />
             </View>
             {saveError ? <Notice tone="danger">{saveError}</Notice> : null}
-            {!push.connected ? (
-              <Notice icon="bluetooth" action={{ label: t('push.openWatch'), onPress: () => router.navigate('/watch') }}>
+            {expanded && !push.connected ? (
+              <Notice
+                icon="bluetooth"
+                action={{
+                  label: t('push.openWatch'),
+                  onPress: () => router.navigate('/watch'),
+                }}>
                 {t('push.needConnect')}
               </Notice>
             ) : null}
-            {push.connected && !push.status.deliver && !push.appOutdated ? <Notice>{tRoot('push.unsupported')}</Notice> : null}
+            {expanded && push.connected && !push.status.deliver && !push.appOutdated ? <Notice>{tRoot('push.unsupported')}</Notice> : null}
             {push.appOutdated ? <Notice tone="danger">{tRoot('push.appOutdated')}</Notice> : null}
             {push.phase !== 'idle' ? (
               <AppText variant="caption" muted accessibilityLiveRegion="polite">
@@ -403,13 +528,17 @@ function PlanSheet({ planner, onOpenHome, onBegin, onOpenSaved }: PlanSheetProps
               </AppText>
             ) : null}
             {sentOrOutcome && push.outcome ? <PushOutcomeView planner={planner} /> : null}
-            <AppText variant="caption" muted>
-              {t('actions.beginHint', { sport: t(`activity.${prefs.activity}`).toLowerCase() })}
-            </AppText>
+            {expanded ? (
+              <AppText variant="caption" muted>
+                {t('actions.beginHint', {
+                  sport: t(`activity.${prefs.activity}`).toLowerCase(),
+                })}
+              </AppText>
+            ) : null}
           </>
         ) : null}
 
-        {body ? (
+        {expanded && body ? (
           <AppText variant="caption" muted>
             {t('body.line', {
               stride: fmtDecimal(body.body.strideM, 2),
@@ -421,11 +550,86 @@ function PlanSheet({ planner, onOpenHome, onBegin, onOpenSaved }: PlanSheetProps
               : t('body.estimated')}
           </AppText>
         ) : null}
-        <AppText variant="caption" muted>
-          {t('privacy')}
-        </AppText>
+        {expanded ? (
+          <AppText variant="caption" muted>
+            {t('privacy')}
+          </AppText>
+        ) : null}
       </ScrollView>
     </SheetCard>
+  );
+}
+
+/** The grabber on top of the sheet: drag up to open, drag down to fold, tap (or a screen reader's activate) to switch. */
+function SheetHandle({ expanded, onChange }: { expanded: boolean; onChange: (expanded: boolean) => void }) {
+  const { t } = useTranslation('loops');
+  const { colors } = useTheme();
+  const responder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderRelease: (_event, gesture) => {
+          if (gesture.dy <= -DRAG_PX) onChange(true);
+          else if (gesture.dy >= DRAG_PX) onChange(false);
+          else if (Math.abs(gesture.dy) < TAP_PX && Math.abs(gesture.dx) < TAP_PX) onChange(!expanded);
+        },
+      }),
+    [expanded, onChange],
+  );
+  return (
+    <View
+      {...responder.panHandlers}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={t(expanded ? 'sheet.collapse' : 'sheet.expand')}
+      accessibilityActions={[{ name: 'activate' }]}
+      onAccessibilityAction={() => onChange(!expanded)}
+      style={styles.handleHit}>
+      <View style={[styles.grabber, { backgroundColor: colors.mutedForeground }]} />
+    </View>
+  );
+}
+
+interface CandidateCardProps {
+  candidate: LoopCandidate;
+  index: number;
+  selected: boolean;
+  onPress: () => void;
+}
+
+/** One loop of the batch as a small card: its number, length and share of new streets. */
+function CandidateCard({ candidate, index, selected, onPress }: CandidateCardProps) {
+  const { t } = useTranslation('loops');
+  const { colors, radius } = useTheme();
+  const distance = formatRouteDistance(candidate.lengthM);
+  const pct = candidate.newShare !== null ? t('chip.new', { pct: Math.round(candidate.newShare * 100) }) : null;
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={`${t('candidate.label', { n: index + 1 })}. ${distance}${pct ? `. ${pct}` : ''}`}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      scaleTo={0.97}
+      style={[
+        styles.candidate,
+        {
+          backgroundColor: colors.muted,
+          borderRadius: radius.control,
+          borderColor: selected ? colors.primary : 'transparent',
+        },
+      ]}>
+      <AppText variant="caption" muted numberOfLines={1}>
+        {t('candidate.label', { n: index + 1 })}
+      </AppText>
+      <AppText variant="bodyStrong" numberOfLines={1}>
+        {distance}
+      </AppText>
+      {pct ? (
+        <AppText variant="caption" muted numberOfLines={1}>
+          {pct}
+        </AppText>
+      ) : null}
+    </PressableScale>
   );
 }
 
@@ -435,12 +639,26 @@ function StartNotices({ planner, onOpenHome }: { planner: LoopPlanner; onOpenHom
   const { prefs, start, location, locating, locateFailed, home } = planner;
   if (start) return null;
   if (prefs.startFrom === 'home') {
-    return home === null ? <Notice icon="home-outline" action={{ label: t('home.set'), onPress: onOpenHome }}>{t('start.needStart')}</Notice> : null;
+    return home === null ? (
+      <Notice icon="home-outline" action={{ label: t('home.set'), onPress: onOpenHome }}>
+        {t('start.needStart')}
+      </Notice>
+    ) : null;
   }
   if (location === 'granted') {
-    if (locating) return <AppText variant="caption" muted>{t('start.locating')}</AppText>;
+    if (locating)
+      return (
+        <AppText variant="caption" muted>
+          {t('start.locating')}
+        </AppText>
+      );
     return locateFailed ? (
-      <Notice tone="danger" action={{ label: t('start.retry'), onPress: () => void planner.readLocation() }}>
+      <Notice
+        tone="danger"
+        action={{
+          label: t('start.retry'),
+          onPress: () => void planner.readLocation(),
+        }}>
         {t('start.locateFailed')}
       </Notice>
     ) : null;
@@ -448,7 +666,13 @@ function StartNotices({ planner, onOpenHome }: { planner: LoopPlanner; onOpenHom
   if (location === 'denied' || location === 'blocked') {
     return (
       <>
-        <Notice tone="danger" icon="location-outline" action={{ label: t('permission.openSettings'), onPress: () => void Linking.openSettings() }}>
+        <Notice
+          tone="danger"
+          icon="location-outline"
+          action={{
+            label: t('permission.openSettings'),
+            onPress: () => void Linking.openSettings(),
+          }}>
           {t('permission.denied')}
         </Notice>
         {location === 'denied' ? <Button label={t('permission.allow')} onPress={() => void planner.askLocation()} /> : null}
@@ -545,14 +769,63 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   fill: { flex: 1 },
   unavailable: { padding: spacing.lg },
-  top: { position: 'absolute', top: spacing.sm, left: spacing.sm, right: 64, gap: spacing.sm, alignItems: 'flex-start' },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: 999 },
-  side: { position: 'absolute', top: 56, right: spacing.sm, gap: spacing.sm },
+  top: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    right: 64,
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: 999,
+  },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   stack: { paddingHorizontal: spacing.sm },
-  credit: { position: 'relative', left: 0, bottom: 0, alignSelf: 'flex-start', marginBottom: spacing.xs, marginLeft: spacing.xs },
-  sheet: { gap: spacing.md },
-  numberRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  edge: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  credit: {
+    position: 'relative',
+    left: 0,
+    bottom: 0,
+    alignSelf: 'flex-end',
+    marginLeft: spacing.xs,
+    flexShrink: 1,
+  },
+  sheet: { gap: spacing.sm },
+  handleHit: {
+    height: 28,
+    marginTop: -spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  grabber: { width: 40, height: 4, borderRadius: 2, opacity: 0.5 },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  activityInline: { width: 150 },
+  candidates: { gap: spacing.sm },
+  candidate: {
+    minWidth: 104,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 2,
+  },
+  numberRow: {
+    flexShrink: 1,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+  },
   number: { flexShrink: 1 },
   unit: { flexShrink: 0 },
   startRow: { gap: spacing.xs },
