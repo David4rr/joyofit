@@ -64,6 +64,12 @@ export interface RecoveryEnv {
 }
 
 export interface RecoveryOptions {
+  /**
+   * False when the native writer may hold a connection to the file (it cannot be released): the repaired copy is never written
+   * into the file in use, because that connection keeps its own cache and WAL view of the old content and misreads or damages the
+   * new. The copy is swapped in as a file where `canSwap` allows, and otherwise prepared for the next start. Default true.
+   */
+  inPlace?: boolean;
   /** True where nothing else has the file open (before the database provider mounts): a failed in-place install may then swap the files. */
   canSwap?: boolean;
 }
@@ -476,7 +482,22 @@ async function verify(env: RecoveryEnv, name: string): Promise<boolean> {
  * still there, so the install is done a second time, and when that fails too the files are swapped where that is allowed or the
  * prepared file is left for `applyPendingSwap` at the next start.
  */
-async function installAndVerify(env: RecoveryEnv, name: string, sourceName: string, canSwap: boolean): Promise<Installed> {
+async function installAndVerify(env: RecoveryEnv, name: string, sourceName: string, canSwap: boolean, inPlace: boolean): Promise<Installed> {
+  if (!inPlace) {
+    if (!canSwap) {
+      say(env, `${sourceName} prepared: the native writer may hold ${name} open, it goes in at the next start`);
+      return { done: false, reason: 'the repaired copy is prepared and goes in when the app is opened again', swapPending: sourceName };
+    }
+    try {
+      await swapFiles(env, name, sourceName);
+      say(env, 'files swapped');
+    } catch (e) {
+      say(env, `file swap failed: ${errorText(e)}`);
+      return { done: false, reason: `swap: ${errorText(e)}`, swapPending: null };
+    }
+    if (await verify(env, name)) return { done: true };
+    return { done: false, reason: 'the repaired database did not pass the integrity check after a file swap', swapPending: null };
+  }
   let installed = await install(env, name, sourceName, canSwap);
   if (!installed.done) return installed;
   if (await verify(env, name)) return installed;
@@ -530,7 +551,7 @@ export async function recoverDatabase(env: RecoveryEnv, name: string, options: R
     let sourceName: string | null = null;
     let tables: TableReport[] = [];
     let recreated = false;
-    if (probe && onlyIndexProblems(problems)) {
+    if (probe && options.inPlace !== false && onlyIndexProblems(problems)) {
       try {
         await probe.execAsync('REINDEX');
         if ((await integrityProblems(probe)).length === 0) method = 'reindex';
@@ -572,7 +593,7 @@ export async function recoverDatabase(env: RecoveryEnv, name: string, options: R
     probe = null;
 
     say(env, `installing ${sourceName} over ${name} (${method ?? 'recreate'}, canSwap ${options.canSwap === true})`);
-    const installed = await installAndVerify(env, name, sourceName, options.canSwap === true);
+    const installed = await installAndVerify(env, name, sourceName, options.canSwap === true, options.inPlace !== false);
     if (!installed.done) return { kind: 'failed', keptAs, reason: installed.reason, swapPending: installed.swapPending };
 
     const lost = recreated || tables.some((table) => table.unreadable > 0);

@@ -13,13 +13,13 @@ import { useWatch } from '@/state/WatchProvider';
 import { RepairDetails } from './RepairDetails';
 
 interface NoticeKeys {
-  title: 'failedTitle' | 'recreatedTitle' | 'lostTitle' | 'repairedTitle' | 'repairingTitle';
+  title: 'pendingTitle' | 'failedTitle' | 'recreatedTitle' | 'lostTitle' | 'repairedTitle' | 'repairingTitle';
   body: 'pendingBody' | 'failedBody' | 'recreatedBody' | 'lostBody' | 'repairedBody' | 'repairingBody';
 }
 
 /** Title and body of what a repair did, in the person's words; the tone is the same for every outcome: what happened, what is safe, what comes next. */
 function textFor(notice: RepairNotice): NoticeKeys {
-  if (notice.kind === 'failed') return { title: 'failedTitle', body: notice.pendingSwap ? 'pendingBody' : 'failedBody' };
+  if (notice.kind === 'failed') return notice.pendingSwap ? { title: 'pendingTitle', body: 'pendingBody' } : { title: 'failedTitle', body: 'failedBody' };
   if (notice.kind === 'recreated') return { title: 'recreatedTitle', body: 'recreatedBody' };
   return notice.lost ? { title: 'lostTitle', body: 'lostBody' } : { title: 'repairedTitle', body: 'repairedBody' };
 }
@@ -72,7 +72,7 @@ export function DbHealthNotice() {
         {failed ? <RepairDetails reason={notice?.reason ?? null} /> : null}
         {repairing ? null : (
           <View style={styles.actions}>
-            {failed ? <Button label={t('dbRecovery.retry')} variant="ghost" onPress={() => void dbHealth.repair()} /> : null}
+            {failed && !notice?.pendingSwap ? <Button label={t('dbRecovery.retry')} variant="ghost" onPress={() => void dbHealth.repair()} /> : null}
             <Button label={t('dbRecovery.dismiss')} variant="primary" onPress={dbHealth.dismiss} />
           </View>
         )}

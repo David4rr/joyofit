@@ -427,6 +427,54 @@ describe('rows a damaged page decodes into', () => {
   });
 });
 
+describe('the native writer may hold the file open (inPlace: false)', () => {
+  it('writes nothing into the file in use: the repaired copy is prepared for the next start', async () => {
+    await populate();
+    breakPage(at('joyofit.db'), leafPages(at('joyofit.db'), 'workout_points')[3]);
+    const before = readFileSync(at('joyofit.db'));
+    let backups = 0;
+    const base = makeEnv();
+    const env = makeEnv({
+      backup: async (from, to) => {
+        backups++;
+        await base.backup(from, to);
+      },
+    });
+    const result = await recoverDatabase(env, 'joyofit.db', { canSwap: false, inPlace: false });
+    expect(result.kind).toBe('failed');
+    if (result.kind !== 'failed') return;
+    expect(backups).toBe(0);
+    expect(result.swapPending).not.toBeNull();
+    expect(readFileSync(at('joyofit.db')).equals(before)).toBe(true);
+    // At the next start, before anything opens the file:
+    expect(await applyPendingSwap(base, 'joyofit.db', result.swapPending ?? '')).toBe(true);
+    expect(await integrityProblems(await base.open('joyofit.db'))).toEqual([]);
+  });
+
+  it('does not even reindex in place', async () => {
+    await populate();
+    desyncIndex(at('joyofit.db'));
+    const result = await recoverDatabase(makeEnv(), 'joyofit.db', { canSwap: false, inPlace: false });
+    expect(result.kind === 'failed' && result.swapPending !== null).toBe(true);
+  });
+
+  it('swaps the files where that is allowed', async () => {
+    await populate();
+    breakPage(at('joyofit.db'), leafPages(at('joyofit.db'), 'workout_points')[3]);
+    let backups = 0;
+    const base = makeEnv();
+    const env = makeEnv({
+      backup: async (from, to) => {
+        backups++;
+        await base.backup(from, to);
+      },
+    });
+    expect((await recoverDatabase(env, 'joyofit.db', { canSwap: true, inPlace: false })).kind).toBe('repaired');
+    expect(backups).toBe(0);
+    expect(await integrityProblems(await base.open('joyofit.db'))).toEqual([]);
+  });
+});
+
 describe('quickCheck', () => {
   it('says ok for a sound file and damaged for one whose damage the schema build never reads', async () => {
     await populate();

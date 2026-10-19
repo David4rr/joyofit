@@ -122,13 +122,14 @@ export function createDbHealth(deps: HealthDeps): DbHealth {
       result = { kind: 'failed', keptAs: null, reason: e instanceof Error ? e.message : String(e), swapPending: null };
     } finally {
       release();
-      await resume?.().catch(() => undefined);
     }
     lastRunAt = deps.now();
     const notice = noticeOf(result, lastRunAt);
     if (result.kind === 'failed') deps.storage.set(SWAP_KEY, result.swapPending);
     else if (result.kind !== 'healthy') deps.storage.set(SWAP_KEY, null);
     if (notice) deps.storage.set(NOTICE_KEY, JSON.stringify(notice));
+    // After the outcome is stored: what restarts the native writers looks at the pending swap (a prepared file means they stay off).
+    await resume?.().catch(() => undefined);
     // A healthy result keeps the notice of an earlier repair; it only ends the spinner.
     set({ repairing: false, notice: notice ?? state.notice });
     return result;
@@ -154,6 +155,8 @@ export function createDbHealth(deps: HealthDeps): DbHealth {
     report(error) {
       if (!isCorruptionError(error)) return;
       if (running !== null || deps.now() - lastRunAt < COOLDOWN_MS) return;
+      // A repaired copy is waiting for the next start: the file in use is replaced then, and errors until that start change nothing.
+      if (deps.storage.get(SWAP_KEY) !== null) return;
       void repair();
     },
     repair,
@@ -162,6 +165,15 @@ export function createDbHealth(deps: HealthDeps): DbHealth {
       set({ ...state, notice: null });
     },
     pendingSwap: () => deps.storage.get(SWAP_KEY),
-    clearPendingSwap: () => deps.storage.set(SWAP_KEY, null),
+    clearPendingSwap() {
+      deps.storage.set(SWAP_KEY, null);
+      // The prepared copy is in: what the notice announced as waiting has happened (what could not be read was left out).
+      const waiting = state.notice;
+      if (waiting?.pendingSwap) {
+        const done: RepairNotice = { kind: 'repaired', lost: true, pendingSwap: false, keptAs: waiting.keptAs, reason: null, at: deps.now() };
+        deps.storage.set(NOTICE_KEY, JSON.stringify(done));
+        set({ ...state, notice: done });
+      }
+    },
   };
 }
