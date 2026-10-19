@@ -12,6 +12,7 @@ import {
 } from './activityFile';
 import { FIT_EPOCH_OFFSET, toSemicircles } from './fitEncoder';
 import { decodeFit, estimateMovingTime } from './testDecode';
+import { HUAWEI_HEALTH_DESCRIPTION } from './huaweiHealth.fixture';
 
 const START = 1_792_058_016;
 const FIT_START = START - FIT_EPOCH_OFFSET;
@@ -374,6 +375,17 @@ describe('sport mapping and upload form', () => {
     const on = latin1(buildUploadForm(walk, file, { addLink: true }).body);
     expect(on).toContain(`name="description"\r\n\r\n${DESCRIPTION_LINK}\r\n`);
     expect(on).toContain('name="name"\r\n\r\nWalking\r\n');
+  });
+
+  it('names the watch below the description and above the link, like Huawei Health ends its own description', () => {
+    const description = (options: Parameters<typeof buildUploadForm>[2]) =>
+      /name="description"\r\n\r\n([\s\S]*?)\r\n--/.exec(latin1(buildUploadForm(walk, file, options).body))?.[1];
+    const line = 'Recorded with HUAWEI WATCH FIT 4 Pro';
+    expect(description({ addLink: false, deviceLine: line })).toBe(line);
+    expect(description({ addLink: false, description: 'Easy loop', deviceLine: line })).toBe(`Easy loop\n\n${line}`);
+    expect(description({ addLink: true, description: 'Easy loop', deviceLine: line })).toBe(`Easy loop\n\n${line}\n\n${DESCRIPTION_LINK}`);
+    expect(description({ addLink: false })).toBeUndefined();
+    expect(HUAWEI_HEALTH_DESCRIPTION.endsWith('HUAWEI WATCH FIT 4 Pro')).toBe(true);
   });
 
   it('builds a binary multipart body with the fields Strava needs and the file untouched', () => {

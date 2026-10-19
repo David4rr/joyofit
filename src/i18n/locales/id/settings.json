@@ -579,6 +579,8 @@
     "connectedSince": "Terhubung, mengirim sejak",
     "addLink": "Tambahkan fit.joyorogo.com ke deskripsi",
     "addLinkHint": "Teks biasa, tidak pernah di judul.",
+    "addDevice": "Tulis nama jam di deskripsi",
+    "addDeviceHint": "Contoh: Direkam dengan HUAWEI WATCH FIT 4 Pro. Dibuat di bawah deskripsimu, tidak pernah di judul.",
     "disconnect": "Putuskan Strava",
     "signInToDisconnect": "Masuk dengan JoyoRogo untuk memutuskan atau mengirim.",
     "compatible": "Kompatibel dengan Strava",

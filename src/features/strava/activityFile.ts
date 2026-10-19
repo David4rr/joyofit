@@ -802,9 +802,18 @@ export interface UploadForm {
 export function buildUploadForm(
   workout: StravaWorkout,
   file: Uint8Array,
-  options: { addLink: boolean; /** Replaces the sport name as the activity title. */ name?: string; /** Text above the optional link. */ description?: string },
+  options: {
+    addLink: boolean;
+    /** Replaces the sport name as the activity title. */
+    name?: string;
+    /** Text above the device line and the optional link. */
+    description?: string;
+    /** The line naming the recording watch, e.g. `Recorded with HUAWEI WATCH FIT 4 Pro`; appended below the description. */
+    deviceLine?: string;
+  },
 ): UploadForm {
   const sport = stravaSport(workout.sportType, workout.ebike);
+  const description = [options.description, options.deviceLine, options.addLink ? DESCRIPTION_LINK : undefined].filter((part) => part).join('\n\n');
   const boundary = `----joyofit${workout.start.toString(36)}${file.length.toString(36)}`;
   const fields: Record<string, string> = {
     data_type: 'fit',
@@ -812,11 +821,7 @@ export function buildUploadForm(
     external_id: externalId(workout.start),
     sport_type: sport.sportType,
     ...(sport.trainer ? { trainer: '1' } : {}),
-    ...(options.description
-      ? { description: options.addLink ? `${options.description}\n\n${DESCRIPTION_LINK}` : options.description }
-      : options.addLink
-        ? { description: DESCRIPTION_LINK }
-        : {}),
+    ...(description ? { description } : {}),
   };
   let head = '';
   for (const [name, value] of Object.entries(fields)) {

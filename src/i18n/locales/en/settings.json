@@ -588,6 +588,8 @@
     "connectedSince": "Connected, sending since",
     "addLink": "Add fit.joyorogo.com to the description",
     "addLinkHint": "Plain text, never in the title.",
+    "addDevice": "Name the watch in the description",
+    "addDeviceHint": "For example: Recorded with HUAWEI WATCH FIT 4 Pro. Added below your description, never in the title.",
     "disconnect": "Disconnect Strava",
     "signInToDisconnect": "Sign in with JoyoRogo to disconnect or send.",
     "compatible": "Compatible with Strava",
