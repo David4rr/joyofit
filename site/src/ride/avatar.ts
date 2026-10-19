@@ -268,7 +268,7 @@ export function createAvatar(options: AvatarOptions): Avatar {
   const foreArmGeo = shaped([[0.95, 0], [1.06, 0.2], [0.96, 0.5], [0.72, 0.9], [0.66, 1]]);
   // Torso from the hips to the neck: waist, rib cage, chest, shoulders closing to the collar. Vertex colours paint the bib
   // shorts' waist, darker side panels, a chest band and the collar over the jersey colour.
-  const torsoGeo = shaped([[0.8, 0], [0.72, 0.22], [0.82, 0.5], [0.94, 0.74], [0.9, 0.88], [0.66, 0.96], [0.4, 1]], 20);
+  const torsoGeo = shaped([[0.8, 0], [0.72, 0.22], [0.82, 0.5], [0.95, 0.74], [0.97, 0.86], [0.84, 0.95], [0.5, 1]], 20);
   {
     const pos = torsoGeo.getAttribute('position');
     const col = new Float32Array(pos.count * 3);
@@ -476,7 +476,7 @@ export function createAvatar(options: AvatarOptions): Avatar {
       fore: addMesh(foreArmGeo, skinMat),
       elbow: ball(skinMat, 0.04),
       hand: addMesh(gloveGeo, gloveMat),
-      shoulder: ball(jerseyMat, 0.055),
+      shoulder: ball(jerseyMat, 0.05),
       hip: new Vector3(),
       kneeV: new Vector3(),
       ankle: new Vector3(),
@@ -495,6 +495,7 @@ export function createAvatar(options: AvatarOptions): Avatar {
   const pelvisV = new Vector3();
   const neckV = new Vector3();
   const headBase = new Vector3();
+  const torsoAxis = new Vector3();
   const crankEnd = new Vector3();
 
   const update = (pose: AvatarPose): void => {
@@ -563,11 +564,14 @@ export function createAvatar(options: AvatarOptions): Avatar {
       s.sockTop.subVectors(s.kneeV, s.ankle).setLength(0.12).add(s.ankle);
       placeLimb(s.sock, s.ankle, s.sockTop, 0.047, 0.047);
 
-      const sx = outward * SHOULDER_X + shoulderSway;
+      // The arm hangs from the torso's upper corner, a little below its top and just inside its edge, so the jersey's shoulder line
+      // runs over the joint instead of the arm sprouting from above it.
+      torsoAxis.subVectors(neckV, pelvisV).normalize();
+      const sx = outward * (SHOULDER_X - 0.022) + shoulderSway;
       const hx = outward * HAND_X;
-      s.shoulderV.set(sx, shoulderY, shoulderZ);
+      s.shoulderV.set(sx, shoulderY, shoulderZ).addScaledVector(torsoAxis, -0.06);
       s.shoulder.position.copy(s.shoulderV);
-      solveIk(shoulderY, shoulderZ, handY, handZ, ARM_UPPER, ARM_FORE, -1);
+      solveIk(s.shoulderV.y, s.shoulderV.z, handY, handZ, ARM_UPPER, ARM_FORE, -1);
       s.handV.set(hx, endY, endZ);
       s.elbowV.set((sx + hx) * 0.5 + outward * 0.035, jointY, jointZ);
       // Glove along the forearm, its palm centred on the hood.
