@@ -217,9 +217,14 @@ async function resumePoint(db: RecoveryDb, table: string, lo: number): Promise<n
   return good;
 }
 
+/** A row-level failure while copying: the page is damaged, or the row it decodes into breaks a constraint of the new table. */
+const isRowError = (e: unknown): boolean => isCorruptionError(e) || /constraint failed|datatype mismatch|string or blob too big|out of order/i.test(errorText(e));
+
 /** Copies one rowid table from `old` to `main`, window by window, skipping what cannot be read. */
-async function copyRows(db: RecoveryDb, table: string, columns: readonly string[]): Promise<TableReport> {
+async function copyRows(db: RecoveryDb, table: string, columns: readonly string[], required: readonly string[]): Promise<TableReport> {
   const q = quoteIdent(table);
+  // Rows a damaged page decoded with NULL in a NOT NULL column are left out; INSERT OR REPLACE would abort on them.
+  const present = required.map((column) => ` AND ${quoteIdent(column)} IS NOT NULL`).join('');
   const list = columns.map(quoteIdent).join(', ');
   const report: TableReport = { table, copied: 0, unreadable: 0 };
   let lo = MIN_ROWID;
@@ -248,12 +253,14 @@ async function copyRows(db: RecoveryDb, table: string, columns: readonly string[
     try {
       // LIMIT, not `rowid <= hi`: a scan with an upper bound reads one row past it to see that it is past, and that row may be in the damaged leaf next door.
       const result = await db.runAsync(
-        `INSERT OR REPLACE INTO main.${q} (${list}) SELECT ${list} FROM old.${q} WHERE rowid >= ? ORDER BY rowid LIMIT ?`,
+        `INSERT OR REPLACE INTO main.${q} (${list}) SELECT ${list} FROM old.${q} WHERE rowid >= ?${present} ORDER BY rowid LIMIT ?`,
         [lo, size],
       );
       report.copied += result.changes;
+      const attempted = hi === null ? null : await db.getFirstAsync<{ n: number }>(`SELECT COUNT(*) AS n FROM (SELECT 1 FROM old.${q} WHERE rowid >= ? ORDER BY rowid LIMIT ?)`, [lo, size]);
+      if (attempted && attempted.n > result.changes) report.unreadable += attempted.n - result.changes;
     } catch (e) {
-      if (!isCorruptionError(e)) throw e;
+      if (!isRowError(e)) throw e;
       if (size > 1) {
         size = Math.max(1, size >> 1);
         continue;
@@ -276,6 +283,30 @@ async function columnsOf(db: RecoveryDb, schema: 'main' | 'old', table: string):
   return rows.map((row) => row.name);
 }
 
+/** The columns of `table` (among `columns`) that must hold a value: NOT NULL with no default, and not the rowid alias. */
+async function requiredColumns(db: RecoveryDb, table: string, columns: readonly string[]): Promise<string[]> {
+  const info = await db.getAllAsync<{ name: string; notnull: number; dflt_value: string | null; pk: number }>(`PRAGMA main.table_info(${quoteIdent(table)})`);
+  const wanted = new Set(columns);
+  return info.filter((column) => wanted.has(column.name) && column.notnull === 1 && column.dflt_value === null && column.pk === 0).map((column) => column.name);
+}
+
+/**
+ * Points of a workout whose row did not survive cannot be shown or exported; they go, so the new database is consistent. The
+ * count is taken off `copied` and put in `unreadable`.
+ */
+async function removeOrphans(db: RecoveryDb, reports: TableReport[]): Promise<void> {
+  try {
+    const removed = await db.runAsync(`DELETE FROM main.workout_points WHERE workout_id NOT IN (SELECT rowid FROM main.workouts)`);
+    const report = reports.find((table) => table.table === 'workout_points');
+    if (removed.changes > 0 && report) {
+      report.copied = Math.max(0, report.copied - removed.changes);
+      report.unreadable++;
+    }
+  } catch (e) {
+    if (!/no such (table|column)/i.test(errorText(e))) throw e;
+  }
+}
+
 /** The tables the app's schema has, each filled with whatever `old` still holds of it. `db` is the new database with the damaged one attached as `old`. */
 async function salvageTables(db: RecoveryDb): Promise<TableReport[]> {
   const targets = await db.getAllAsync<{ name: string }>(
@@ -283,6 +314,8 @@ async function salvageTables(db: RecoveryDb): Promise<TableReport[]> {
   );
   const triggers = await db.getAllAsync<{ name: string; sql: string }>(`SELECT name, sql FROM main.sqlite_master WHERE type = 'trigger'`);
   for (const trigger of triggers) await db.execAsync(`DROP TRIGGER ${quoteIdent(trigger.name)}`);
+  // Rows are copied as they are, in any order: the new database must not check them against each other.
+  await db.execAsync('PRAGMA foreign_keys = OFF');
 
   const reports: TableReport[] = [];
   for (const { name } of targets) {
@@ -299,19 +332,21 @@ async function salvageTables(db: RecoveryDb): Promise<TableReport[]> {
     const mine = new Set(await columnsOf(db, 'main', name));
     const columns = oldColumns.filter((column) => mine.has(column));
     if (columns.length === 0) continue;
+    const required = await requiredColumns(db, name, columns);
+    const where = required.length === 0 ? '' : ` WHERE ${required.map((column) => `${quoteIdent(column)} IS NOT NULL`).join(' AND ')}`;
     const definition = await db.getFirstAsync<{ sql: string | null }>(`SELECT sql FROM old.sqlite_master WHERE type = 'table' AND name = ?`, [name]);
     if (/WITHOUT\s+ROWID/i.test(definition?.sql ?? '')) {
       const list = columns.map(quoteIdent).join(', ');
       try {
-        const result = await db.runAsync(`INSERT OR REPLACE INTO main.${quoteIdent(name)} (${list}) SELECT ${list} FROM old.${quoteIdent(name)}`);
+        const result = await db.runAsync(`INSERT OR REPLACE INTO main.${quoteIdent(name)} (${list}) SELECT ${list} FROM old.${quoteIdent(name)}${where}`);
         reports.push({ table: name, copied: result.changes, unreadable: 0 });
       } catch (e) {
-        if (!isCorruptionError(e)) throw e;
+        if (!isRowError(e)) throw e;
         reports.push({ table: name, copied: 0, unreadable: 1 });
       }
       continue;
     }
-    reports.push(await copyRows(db, name, columns));
+    reports.push(await copyRows(db, name, columns, required));
   }
 
   // AUTOINCREMENT counters: an id that was handed out and deleted must not be handed out again.
@@ -325,6 +360,7 @@ async function salvageTables(db: RecoveryDb): Promise<TableReport[]> {
     if (!isCorruptionError(e) && !/no such table/i.test(errorText(e))) throw e;
   }
 
+  await removeOrphans(db, reports);
   for (const trigger of triggers) await db.execAsync(trigger.sql);
   return reports;
 }

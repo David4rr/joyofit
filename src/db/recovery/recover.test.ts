@@ -371,6 +371,47 @@ describe('something writes into the file while it is being replaced', () => {
   });
 });
 
+describe('rows a damaged page decodes into', () => {
+  /** The damaged file's own table is looser than the app's: NULL in workout_id, a repeated key, points of a workout that is gone. */
+  function loosenAndPoison(file: string): void {
+    const raw = new Database(file);
+    raw.exec('PRAGMA legacy_alter_table = ON');
+    raw.exec(`DROP INDEX workout_points_by_workout;
+      ALTER TABLE workout_points RENAME TO wp_old;
+      CREATE TABLE workout_points (workout_id INTEGER, ts INTEGER NOT NULL, lat REAL, lon REAL, alt REAL, hr INTEGER, speed REAL, cadence INTEGER, stride REAL, power INTEGER);
+      INSERT INTO workout_points SELECT workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power FROM wp_old;
+      DROP TABLE wp_old;
+      CREATE INDEX workout_points_by_workout ON workout_points (workout_id, ts)`);
+    raw.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    raw.close();
+    const again = new Database(file);
+    again.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    for (let i = 0; i < 30; i++) again.exec(`INSERT INTO workout_points (workout_id, ts) VALUES (NULL, ${2_000_000_000 + i})`);
+    for (let i = 0; i < 30; i++) again.exec(`INSERT INTO workout_points (workout_id, ts) VALUES (99999, ${2_100_000_000 + i})`);
+    again.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    again.close();
+  }
+
+  it('never stops the salvage: NOT NULL violations are skipped, orphan points removed, the rest copied', async () => {
+    await populate();
+    loosenAndPoison(at('joyofit.db'));
+    breakPage(at('joyofit.db'), leafPages(at('joyofit.db'), 'workout_points')[3]);
+    const lines: string[] = [];
+    const result = await recoverDatabase(makeEnv({ log: (line) => lines.push(line) }), 'joyofit.db', { canSwap: true });
+    expect(result.kind).toBe('repaired');
+    if (result.kind !== 'repaired') return;
+    expect(result.method).toBe('salvage');
+    expect(result.lost).toBe(true);
+    expect(lines.some((line) => line.startsWith('salvage stopped'))).toBe(false);
+    expect(scalar('joyofit.db', 'SELECT COUNT(*) FROM workout_points WHERE workout_id IS NULL')).toBe(0);
+    expect(scalar('joyofit.db', 'SELECT COUNT(*) FROM workout_points WHERE workout_id NOT IN (SELECT rowid FROM workouts)')).toBe(0);
+    // Everything of the other leaves of the table is there (one leaf of about a hundred rows is gone).
+    expect(count('joyofit.db', 'workout_points')).toBeGreaterThan(POINT_ROWS - 400);
+    expect(count('joyofit.db', 'workouts')).toBe(WORKOUTS);
+    expect(await integrityProblems(await makeEnv().open('joyofit.db'))).toEqual([]);
+  });
+});
+
 describe('quickCheck', () => {
   it('says ok for a sound file and damaged for one whose damage the schema build never reads', async () => {
     await populate();
