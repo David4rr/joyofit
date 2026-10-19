@@ -134,6 +134,8 @@ const MAX_BRAKE = 3;
 const STEER_MS = 0.7;
 const FOLLOW_M = 8;
 const MIN_GAP_M = 1.7;
+/** Lateral spacing of two riders side by side, metres. */
+const SIDE_BY_SIDE_M = 0.9;
 
 export class Peloton {
   readonly bots: Bot[];
@@ -218,6 +220,13 @@ export class Peloton {
       if (sameLine && ahead.gapM < MIN_GAP_M + 0.6 && next > ahead.speedMs) {
         next = Math.max(ahead.speedMs, v - MAX_BRAKE * dt);
       }
+    }
+    // Someone alongside (overlapping wheels): hold a shoulder's width away from them, whatever else the bot wanted.
+    for (const o of others) {
+      if (Math.abs(o.gapM) >= MIN_GAP_M || Math.abs(o.lat - bot.lat) >= SIDE_BY_SIDE_M) continue;
+      const away = bot.lat >= o.lat ? 1 : -1;
+      const wanted = o.lat + away * SIDE_BY_SIDE_M;
+      targetLat = wanted > LANE_MAX || wanted < LANE_MIN ? o.lat - away * SIDE_BY_SIDE_M : wanted;
     }
     targetLat = Math.min(LANE_MAX, Math.max(LANE_MIN, targetLat));
     const dl = targetLat - bot.lat;

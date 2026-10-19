@@ -42,7 +42,7 @@ export interface Avatar {
   /** Local space: forward is +Z, up is +Y, origin at the ground point under the bottom bracket. 1 unit = 1 metre. */
   group: Group;
   update(pose: AvatarPose): void;
-  /** Recolours the jersey, helmet stripe and frame in place. */
+  /** Recolours the jersey (torso, sleeves, helmet stripe) and the frame in place. */
   setJersey(color: number): void;
   dispose(): void;
 }
@@ -245,24 +245,98 @@ export function createAvatar(options: AvatarOptions): Avatar {
   };
 
   const jerseyMat = material(options.jersey, 'fabric');
+  const torsoMat = material(options.jersey, 'fabric', true);
   const skinMat = material(0xc98f6c, 'skin');
   const shortsMat = material(0x16181e, 'fabric');
   const darkMat = material(0x15171c, 'rubber');
-  const shoeMat = material(0xf1f1ef, 'shell');
+  const shoeMat = material(0xffffff, 'shell', true);
+  const gloveMat = material(0xffffff, 'rubber', true);
+  const headMat = material(0xffffff, 'shell', true);
   const sockMat = material(0xf4f4f2, 'fabric');
-  const helmetMat = material(0xf0f1f3, 'shell');
-  const lensMat = material(0x1b2026, 'lens');
   const metalMat = material(0xaab1ba, 'metal');
   const frameMat = material(options.jersey, 'paint', true);
   const bikeMat = material(0xffffff, 'carbon', true);
 
+  /** A limb or torso shaped by [profile] (radius, 0..1 along its length), revolved; unit length along +Y like `tubeGeo`. */
+  const shaped = (profile: readonly (readonly [number, number])[], segments = 14) =>
+    track(new LatheGeometry(profile.map(([r, y]) => new Vector2(r, y)), segments));
   const tubeGeo = track(new CylinderGeometry(1, 1, 1, 8, 1).translate(0, 0.5, 0));
-  const taperGeo = track(new CylinderGeometry(0.78, 1, 1, 12, 1).translate(0, 0.5, 0));
-  const torsoGeo = track(new CylinderGeometry(1, 0.72, 1, 14, 1).translate(0, 0.5, 0));
+  // Muscle shapes: quads full above the knee, calves bulging below it, a narrow ankle, shoulders rounder than the wrist.
+  const thighGeo = shaped([[0.9, 0], [1.05, 0.12], [1.1, 0.3], [1.02, 0.55], [0.86, 0.8], [0.74, 1]]);
+  const shinGeo = shaped([[0.84, 0], [0.98, 0.12], [1.1, 0.3], [1.0, 0.5], [0.74, 0.75], [0.6, 0.92], [0.62, 1]]);
+  const upperArmGeo = shaped([[1.0, 0], [1.06, 0.25], [1.0, 0.55], [0.86, 0.85], [0.8, 1]]);
+  const foreArmGeo = shaped([[0.95, 0], [1.06, 0.2], [0.96, 0.5], [0.72, 0.9], [0.66, 1]]);
+  // Torso from the hips to the neck: waist, rib cage, chest, shoulders closing to the collar. Vertex colours paint the bib
+  // shorts' waist, darker side panels, a chest band and the collar over the jersey colour.
+  const torsoGeo = shaped([[0.8, 0], [0.72, 0.22], [0.82, 0.5], [0.94, 0.74], [0.9, 0.88], [0.66, 0.96], [0.4, 1]], 20);
+  {
+    const pos = torsoGeo.getAttribute('position');
+    const col = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      const r = Math.hypot(pos.getX(i), pos.getZ(i)) || 1;
+      const side = Math.abs(pos.getX(i)) / r;
+      let k = side > 0.82 ? 0.45 : 1;
+      if (y > 0.6 && y < 0.67) k *= 0.72;
+      if (y > 0.95) k = 0.5;
+      if (y < 0.12) k = 0.09;
+      col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = k;
+    }
+    torsoGeo.setAttribute('color', new BufferAttribute(col, 3));
+  }
   const ballGeo = track(new SphereGeometry(1, 16, 11));
-  const helmetGeo = track(new SphereGeometry(1, 16, 9, 0, Math.PI * 2, 0, Math.PI * 0.62));
-  const footGeo = track(new BoxGeometry(0.09, 0.08, 0.27).translate(0, -0.035, 0.06));
   const pedalGeo = track(new BoxGeometry(0.1, 0.02, 0.1));
+
+  /** One baked part: [geo] scaled, turned about X and moved, in [hex]. */
+  const bake = (geo: BufferGeometry, x: number, y: number, z: number, sx: number, sy: number, sz: number, hex: number, rotX = 0): Part => ({
+    geo: track(geo),
+    matrix: new Matrix4().makeTranslation(x, y, z).multiply(new Matrix4().makeRotationX(rotX)).multiply(new Matrix4().makeScale(sx, sy, sz)),
+    color: new Color(hex),
+  });
+  const unit = () => new SphereGeometry(1, 18, 12);
+  const box = () => new BoxGeometry(1, 1, 1);
+  const SKIN = 0xc98f6c;
+  const HAIR = 0x1e1712;
+  // Head, origin at the skull's centre, facing +Z: face, jaw, nose, ears, hair at the nape, an aero-road helmet with vents and
+  // straps, wrap-around glasses.
+  const headGeo = track(
+    merge([
+      bake(unit(), 0, 0, 0, 0.083, 0.102, 0.098, SKIN),
+      bake(unit(), 0, -0.058, 0.028, 0.064, 0.05, 0.068, SKIN),
+      bake(box(), 0, -0.012, 0.098, 0.02, 0.036, 0.026, 0xb87e5c, -0.3),
+      bake(unit(), 0.083, -0.008, -0.006, 0.012, 0.03, 0.02, 0xb87e5c),
+      bake(unit(), -0.083, -0.008, -0.006, 0.012, 0.03, 0.02, 0xb87e5c),
+      bake(unit(), 0, -0.005, -0.045, 0.082, 0.06, 0.068, HAIR),
+      bake(new SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.6), 0, 0.028, -0.012, 0.106, 0.102, 0.138, 0xf0f1f3),
+      bake(unit(), 0, 0.045, -0.115, 0.07, 0.045, 0.065, 0xf0f1f3),
+      ...[-0.045, 0, 0.045].map((x) => bake(box(), x, 0.125, -0.005, 0.016, 0.012, 0.11, 0x2a2c30)),
+      ...[-0.03, 0.03].map((x) => bake(box(), x, 0.09, 0.085, 0.022, 0.012, 0.03, 0x2a2c30, 0.6)),
+      ...[-1, 1].map((s) => bake(box(), s * 0.078, -0.055, 0.03, 0.006, 0.09, 0.008, 0x1d1d22, -0.5)),
+      bake(box(), 0, 0.012, 0.094, 0.172, 0.042, 0.018, 0x1b2026),
+      bake(box(), 0, 0.036, 0.092, 0.176, 0.008, 0.02, 0x3a3d42),
+      ...[-1, 1].map((s) => bake(box(), s * 0.087, 0.02, 0.045, 0.006, 0.008, 0.1, 0x3a3d42)),
+    ]),
+  );
+  const stripeGeo = track(new BoxGeometry(0.035, 0.02, 0.24));
+  // Road shoe, origin at the ankle: white upper and rounded toe, carbon sole with a heel pad, a dial on top.
+  const footGeo = track(
+    merge([
+      bake(box(), 0, -0.032, 0.05, 0.084, 0.066, 0.2, 0xf1f1ef),
+      bake(unit(), 0, -0.042, 0.155, 0.043, 0.036, 0.06, 0xf1f1ef),
+      bake(unit(), 0, -0.03, -0.04, 0.042, 0.05, 0.035, 0xf1f1ef),
+      bake(box(), 0, -0.074, 0.06, 0.088, 0.016, 0.27, 0x1d1e22),
+      bake(new CylinderGeometry(1, 1, 1, 12), 0.025, 0.003, 0.05, 0.016, 0.012, 0.016, 0x1d1e22),
+      bake(box(), 0, -0.002, 0.11, 0.07, 0.006, 0.05, 0x1d1e22),
+    ]),
+  );
+  // Glove: palm wrapped round the hood, knuckles, a pale padding patch.
+  const gloveGeo = track(
+    merge([
+      bake(unit(), 0, 0, 0, 0.04, 0.034, 0.046, 0x1b1c20),
+      bake(box(), 0, -0.02, 0.03, 0.06, 0.024, 0.04, 0x1b1c20, 0.5),
+      bake(unit(), 0, 0.02, -0.01, 0.03, 0.012, 0.03, 0x5a5e66),
+    ]),
+  );
 
   const group = new Group();
   const addMesh = (geo: BufferGeometry, mat: Material): Mesh => {
@@ -366,14 +440,14 @@ export function createAvatar(options: AvatarOptions): Avatar {
   // Rider.
   const pelvis = addMesh(ballGeo, shortsMat);
   pelvis.scale.set(0.14, 0.1, 0.12);
-  const torso = addMesh(torsoGeo, jerseyMat);
+  const torso = addMesh(torsoGeo, torsoMat);
   const neck = addMesh(tubeGeo, skinMat);
-  const head = addMesh(ballGeo, skinMat);
-  head.scale.set(0.085, 0.105, 0.1);
-  const helmet = addMesh(helmetGeo, helmetMat);
-  helmet.scale.set(0.1, 0.095, 0.13);
-  const stripe = addMesh(track(new BoxGeometry(0.035, 0.02, 0.22)), jerseyMat);
-  const glasses = addMesh(track(new BoxGeometry(0.17, 0.038, 0.03)), lensMat);
+  const head = new Group();
+  group.add(head);
+  head.add(new Mesh(headGeo, headMat));
+  const stripe = new Mesh(stripeGeo, jerseyMat);
+  stripe.position.set(0, 0.133, -0.02);
+  head.add(stripe);
 
   const makeSide = (sign: number): Side => {
     const ball = (mat: Material, r: number): Mesh => {
@@ -384,18 +458,18 @@ export function createAvatar(options: AvatarOptions): Avatar {
     return {
       sign,
       phase: sign > 0 ? 0 : Math.PI,
-      thigh: addMesh(taperGeo, shortsMat),
-      shin: addMesh(taperGeo, skinMat),
+      thigh: addMesh(thighGeo, shortsMat),
+      shin: addMesh(shinGeo, skinMat),
       sock: addMesh(tubeGeo, sockMat),
       knee: ball(skinMat, 0.058),
       foot: addMesh(footGeo, shoeMat),
       pedal: addMesh(pedalGeo, darkMat),
       crank: addMesh(tubeGeo, metalMat),
-      upper: addMesh(taperGeo, jerseyMat),
-      fore: addMesh(taperGeo, skinMat),
+      upper: addMesh(upperArmGeo, jerseyMat),
+      fore: addMesh(foreArmGeo, skinMat),
       elbow: ball(skinMat, 0.04),
-      hand: ball(darkMat, 0.04),
-      shoulder: ball(jerseyMat, 0.064),
+      hand: addMesh(gloveGeo, gloveMat),
+      shoulder: ball(jerseyMat, 0.055),
       hip: new Vector3(),
       kneeV: new Vector3(),
       ankle: new Vector3(),
@@ -437,11 +511,10 @@ export function createAvatar(options: AvatarOptions): Avatar {
     placeLimb(torso, pelvisV, neckV, SHOULDER_X + 0.005, 0.115);
 
     head.position.set(shoulderSway, shoulderY + 0.1 - 0.03 * tuck, shoulderZ + 0.07 + 0.07 * tuck);
+    // The torso leans forward but the eyes stay on the road: chin up a little, more in the tuck.
+    head.rotation.x = -0.12 - 0.1 * tuck;
     headBase.set(head.position.x, head.position.y - 0.06, head.position.z - 0.03);
     placeLimb(neck, neckV, headBase, 0.045, 0.045);
-    helmet.position.set(head.position.x, head.position.y + 0.03, head.position.z - 0.005);
-    stripe.position.set(head.position.x, head.position.y + 0.121, head.position.z - 0.01);
-    glasses.position.set(head.position.x, head.position.y + 0.012, head.position.z + 0.088);
 
     const handY = HOOD_Y + (DROP_Y - HOOD_Y) * tuck;
     const handZ = HOOD_Z + (DROP_Z - HOOD_Z) * tuck;
@@ -508,6 +581,7 @@ export function createAvatar(options: AvatarOptions): Avatar {
     setJersey(color: number): void {
       if (ghost) return;
       jerseyMat.color.set(color);
+      torsoMat.color.set(color);
       frameMat.color.set(color);
     },
     dispose(): void {
