@@ -229,17 +229,58 @@ export interface RogoPublicProfile {
   posts: RogoPostPage;
 }
 
+/** What a comment can carry besides text (`social.comments`): a photo, or one of the commenter's own items from the app. */
+export type RogoAttachmentKind = 'image' | 'workout' | 'food' | 'weight' | 'recap' | 'route';
+
+/** The safe preview JoyoRogo renders for an attachment; every `stats` key may be null or absent. */
+export interface RogoAttachment {
+  kind: RogoAttachmentKind;
+  /** `''` for image, weight and recap: the app words those by kind. */
+  title: string;
+  /** `YYYY-MM-DD`. */
+  date: string | null;
+  /** Encoded polyline (5 decimals), trimmed for privacy. */
+  mapLine: string | null;
+  hasPhoto: boolean;
+  /**
+   * workout `durationMin kcal distanceM sportKind sets volumeKg avgHr`, route `distanceM durationMin sportKind`,
+   * food `kcal protein carbs fat meal items`, weight `weightKg deltaKg`, recap `weekStart weekEnd avgKcal targetKcal
+   * daysOnTarget loggedDays streakDays exerciseMin weightChangeKg`.
+   */
+  stats: Record<string, number | string | null | undefined>;
+}
+
+/**
+ * A comment of a post. Top-level comments carry `replyCount`; a reply carries `parentId` (the top-level comment) and, when it
+ * answers another reply, `replyTo`. `deleted` is a tombstone kept because replies survive: its `body` is a localized line.
+ */
 export interface RogoComment {
   id: string;
   body: string;
   /** ISO timestamp. */
   createdAt: string;
   author: RogoAuthor;
+  deleted: boolean;
+  parentId: string | null;
+  replyCount: number;
+  replyTo: { id: string; name: string; handle: string | null } | null;
+  attachment: RogoAttachment | null;
 }
 
 export interface RogoCommentPage {
   items: RogoComment[];
   nextCursor: number | null;
+}
+
+/** What `addComment` takes besides the text: an uploaded photo, or an item of the commenter's by its id. */
+export type RogoAttachmentInput = { kind: 'image'; photoId: string } | { kind: Exclude<RogoAttachmentKind, 'image'>; refId: string };
+
+/** One recent item of the caller for the "Dari aplikasi" picker (`social.commentAttachables`). */
+export interface RogoAttachable {
+  kind: Exclude<RogoAttachmentKind, 'image'>;
+  refId: string;
+  photoId: string | null;
+  preview: RogoAttachment;
 }
 
 /** The stats of a post JoyoFit made (`stats.source === 'joyofit'`); every number may be null. */
@@ -412,7 +453,16 @@ export const rogo = {
     /** Toggles the signed-in person's kudos; the answer is the new state. */
     kudos: (postId: string) => rogoCall<{ kudos: boolean; kudosCount: number }>('social/kudos', { postId }),
     comments: (postId: string, cursor?: number) => rogoCall<RogoCommentPage>('social/comments', { postId, cursor }),
-    addComment: (postId: string, body: string) => rogoCall<{ id: string }>('social/addComment', { postId, body }),
+    /** The replies under a top-level comment, oldest first. */
+    commentReplies: (parentId: string, cursor?: number) => rogoCall<RogoCommentPage>('social/commentReplies', { parentId, cursor }),
+    addComment: (input: { postId: string; body?: string; parentId?: string; attachment?: RogoAttachmentInput }) =>
+      rogoCall<{ id: string; parentId: string | null; comment: RogoComment }>('social/addComment', input),
+    /** Removes the comment, or turns it into a tombstone when it has replies. Allowed for its author and the post's author. */
+    deleteComment: (id: string) => rogoCall<{ ok: true; mode: 'removed' | 'hidden' }>('social/deleteComment', { id }),
+    uploadCommentPhoto: (input: { imageBase64: string; mimeType: 'image/jpeg' | 'image/webp' }) =>
+      rogoCall<{ photoId: string }>('social/uploadCommentPhoto', input),
+    commentAttachables: (kind: Exclude<RogoAttachmentKind, 'image'>) =>
+      rogoCall<{ items: RogoAttachable[] }>('social/commentAttachables', { kind }),
     createWatchPost: (input: RogoWatchPostInput) =>
       rogoCall<{ id: string; visibility: RogoVisibility }>('social/createWatchPost', input),
     workoutDetail: (postId: string) => rogoCall<RogoWorkoutDetail>('social/workoutDetail', { postId }),
