@@ -238,7 +238,8 @@ export function Hud({ game }: { game: Game }) {
           </button>
           <button type="button" className="rd-tool" onClick={() => game.lap()} disabled={!riding} title={`${t("hud.lap")} (L)`}>
             <Flag aria-hidden="true" />
-            <span>{t("hud.lap")}{hud.lapCount > 0 ? ` ${hud.lapCount}` : ""}</span>
+            <span>{t("hud.lap")}</span>
+            {hud.lapCount > 0 && <span className="rd-tool-count">{hud.lapCount}</span>}
           </button>
           <button type="button" className="rd-tool" onClick={() => game.togglePause()} disabled={!riding && !paused} title={`${riding ? t("hud.pause") : t("hud.resume")} (Space)`}>
             {riding ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}

@@ -821,7 +821,25 @@ button.rd-option:active {
   font-size: calc(var(--u) * 0.95);
   font-weight: 700;
   text-shadow: none;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: transform 140ms var(--rd-ease);
+}
+
+/* Laps taken, a small round count after the label. */
+.rd-tool-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6em;
+  height: 1.6em;
+  padding: 0 0.35em;
+  border-radius: 0.8em;
+  background: var(--rd-accent);
+  color: oklch(0.15 0.01 230);
+  font-size: 0.85em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .rd-tool svg {
