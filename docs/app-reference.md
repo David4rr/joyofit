@@ -74,6 +74,12 @@ two days before it (`src/features/today/rogoActive.ts`, `useRogoActiveKcal`, `ro
 push is corrected. A day with no samples or a 0 total leaves the field out (JoyoRogo keeps what it stored; the server keeps the larger
 of the old and new value). JoyoRogo counts it in Sisa as exercise credit (its own percentage and cap). Pure JS: no native change.
 
+JoyoFit also sends the **hours slept** (`sleepHours`, 0..24, rounded to 0.1 h) with the daily scores: today's with the body metrics, and
+each of the six days before it as an entry of its own (`rogoSleepHoursByDate`, `ROGO_SLEEP_DAYS`), the day being the night that ended on it
+plus that day's naps. A night the phone read after that day's last push, and a day before this was sent at all, still reach JoyoRogo; a day
+with only naps sends nothing. JoyoRogo shows the hours as that day's "Tidur" (Beranda tile, Tidur screen) unless the person logged the night by hand.
+Pure JS: no native change.
+
 ## Cloud sync
 
 Settings → Health & cloud → **Cloud sync** signs in with your **JoyoRogo account**. Steps and sleep go to a separate
@@ -323,7 +329,7 @@ the watch gave none, JoyoFit's estimate is shown and labelled "perkiraan". Nothi
 | HRV status | | mean ln(RMSSD) of the last 7 nights against the mean ± 1 SD of the 60 days before them (Plews 2013, Buchheit 2014; spread floor 0.05): inside balanced, below low, above unbalanced | Android night HRV: 14 baseline nights, 3 recent; iPhone shows the "not read on iPhone yet" note |
 | Intensity minutes | | Monday to Sunday: minutes in Edwards zones 2 and 3 (60 to 80 % of max HR) count 1, zones 4 and 5 count 2; target 150 (WHO 2020, ACSM 2018) | per-minute heart rate |
 | Sleep need tonight | | `readiness.ts`: 7 h 30 min + up to 1 h from today's strain ÷ 21 + a quarter of the 7-night sleep debt (at most 1 h) | 3 nights for the debt |
-| Sleep of the day | | `stats.ts` `lastSleepSession` (Today summary, readiness sleep signal, JoyoRogo `sleepPct`) and `nights.ts` `sleepByDay` (debt, trend, Sleep screen need %, JoyoRogo `sleepHours`): night plus naps, a nap belonging to the day it ends on like the main sleep, overlaps counted once; the watch's sleep score, stages and awakenings stay on the main sleep; a day with only naps has no night for debt, trend and `sleepHours` | |
+| Sleep of the day | | `stats.ts` `lastSleepSession` (Today summary, readiness sleep signal, JoyoRogo `sleepPct`) and `nights.ts` `sleepByDay` (debt, trend, Sleep screen need %, JoyoRogo `sleepHours`, today's and each earlier day of the week's): night plus naps, a nap belonging to the day it ends on like the main sleep, overlaps counted once; the watch's sleep score, stages and awakenings stay on the main sleep; a day with only naps has no night for debt, trend and `sleepHours` | |
 | Energi Tubuh | | 0 to 100, own model: wake level 30 + 60 × min(1, asleep ÷ need) + up to ±10 from the HRV z-score, minus 0.8 per hour awake, minus up to 55 from strain since waking, minus up to 1 per hour from stress above 40, plus 5 per hour of naps and 0.4 per hour of still minutes near resting HR; clamped | last night's sleep |
 
 Max heart rate is `userMaxHr()` everywhere (Sleep, Today, workouts and these metrics), from the profile's birth year, or 220 − 35 without one. The watch's

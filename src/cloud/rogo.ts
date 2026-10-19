@@ -126,8 +126,8 @@ export type RogoTrainingStatus = 'productive' | 'maintaining' | 'recovery' | 'ov
 
 /**
  * The daily body metrics of `fitness.upsertScores`, every one optional: a metric JoyoFit has not computed is left out (never
- * zero), and JoyoRogo keeps what it stored for it. Only today's entry carries them.
- *  - sleepHours 0..24: hours asleep of the night that ended that day (naps left out).
+ * zero), and JoyoRogo keeps what it stored for it. Today's entry carries all of them; an earlier day carries only `sleepHours`.
+ *  - sleepHours 0..24: hours asleep on that day (the night that ended on it plus that day's naps), which JoyoRogo shows as that day's sleep.
  *  - restingHr integer bpm 25..220: the watch's resting heart rate of the day.
  *  - hrvMs 1..500: average overnight RMSSD of the night that ended that day.
  *  - hrvStatus: the last 7 nights against the personal range.
@@ -148,8 +148,8 @@ export interface RogoScoreMetrics {
 
 /**
  * One day of scores for `fitness.upsertScores`. `date` is `YYYY-MM-DD`; a score that is left out keeps what JoyoRogo has
- * stored for that day. Ranges: recoveryPct 0..100, strain 0..21, sleepPct 0..300, activeKcal 0..20000. Past days carry strain
- * and activeKcal only; today's entry also carries the {@link RogoScoreMetrics} JoyoFit has computed for it.
+ * stored for that day. Ranges: recoveryPct 0..100, strain 0..21, sleepPct 0..300, activeKcal 0..20000. Past days carry strain,
+ * activeKcal and sleepHours only; today's entry also carries the {@link RogoScoreMetrics} JoyoFit has computed for it.
  */
 export interface RogoScoreDay extends RogoScoreMetrics {
   date: string;
