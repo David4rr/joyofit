@@ -43,10 +43,21 @@ type Sheet = 'plan' | 'home' | 'search';
 /** `/routes/loop`: pick a target (steps, distance, time or kcal), get a dotted loop from the door on streets not walked yet. */
 export function LoopScreen() {
   const { t } = useTranslation('loops');
+  const { t: tCommon } = useTranslation('common');
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const maplibre = loadMapLibre();
   if (!maplibre) {
     return (
-      <View style={styles.unavailable}>
+      <View style={[styles.unavailable, { paddingTop: insets.top + spacing.sm, gap: spacing.md }]}>
+        <View style={styles.backRow}>
+          <MapButton
+            icon="arrow-back"
+            label={tCommon('actions.back')}
+            surface="floating"
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/routes'))}
+          />
+        </View>
         <Notice icon="map-outline">{t('unavailable')}</Notice>
       </View>
     );
@@ -788,6 +799,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   fill: { flex: 1 },
   unavailable: { padding: spacing.lg },
+  backRow: { flexDirection: 'row' },
   controls: {
     position: 'absolute',
     left: spacing.sm,
