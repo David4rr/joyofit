@@ -51,17 +51,40 @@ through any number of waypoints, snap distance per waypoint). Variety comes from
    out-and-back of at most 150 m one way, returning to the same point along the same street, is cut. The routed length is measured
    on the cleaned line. Longer out-and-backs stay and cost `2 × repeat share` in the ranking. In 6 live Jakarta loops of 4 km the
    plain request had 11% of its length in such stubs, with `continue_straight` 7%, which the cleanup then removes.
-4. If it is not within 5% of the target, the ring is rescaled by `target / length` and routed again (at most 3 requests per loop).
-   The measured `length / circumference` ratio (about 1.25 in cities) is kept and starts the next loops and the next batch, so most
-   loops need one request.
-5. A batch is 4 loops with ring centres 90° apart (2 more tries when fewer than 2 came out). About 6 to 10 requests, 6 to 10 s.
-   A loop is dropped when a waypoint had to move more than 150 m to reach a road, or its length stays more than 10% off.
+4. If it is not within 5% of the target, the ring is rescaled and routed again (at most 3 requests per loop; `nextCircumference`):
+   a proportional step after one measurement, a secant step after two on the same side of the target, an interpolation between
+   the nearest length below and the nearest above once both are known. A shape whose rescaled ring is still more than 50% off is
+   dropped (another shape will do better than a third request), and so is one whose length jumps over the target between rings
+   3% apart. The `length / circumference` ratio (about 1.25 in open cities, 1.4 to 2.5 around Perak) starts the next loops and the
+   next batch, but it is learned only from a loop that came out within 10% of the target and is kept within 1 to 2.5; a
+   ratio of 10 or 29 only says a waypoint landed across a barrier. The hook keeps it per start point.
+5. A batch wants 4 loops with ring centres 90° apart; after that round it goes on in the gaps while fewer than 2 are in, up to 24
+   requests (about 26 s). Open city: 6 to 10 requests, 6 to 10 s. A loop is dropped when a waypoint had to move more than 150 m to
+   reach a road, or its length stays more than 10% off.
 6. Ranking: loops within 5% first, then by `score = new share − 2 × repeat share − 0.5 × |length error|`. Without history the
    new share is unknown (`null`), the chip is hidden and the sheet says so; no number is made up.
 
 Live check of the generator against the real service (Jakarta 7 km: 4 loops, 10 requests, 10 s, lengths +0.4% to +8.9%; Stockholm
 10 km: 6 requests; Yogyakarta 4 km: 9 requests) is how `INITIAL_RATIO` was set. The loops are real street loops; the short spurs
 where a waypoint snapped to a dead end are cut (step 3).
+
+### Barriers: Perak, Surabaya (2026-10-20)
+
+Around (-7.2295, 112.7300) (rivers, rail, toll road, the port) the routed length is not a smooth function of the ring: of 25
+starts 100 m apart and 3 bearings each on an 800 m ring, most came out either 0.7 to 2 km or 8 to 12 km, because a waypoint landed
+across a barrier. From the exact point, 4 batches of the earlier generator in a row ended "no good loop" (18, 18, 16 and 18
+requests, no HTTP error, start 13 m from a road), with and without `continue_straight`; a session of 6 batches failed 3 times from
+there, 1 time from a point 100 m south and 4 times from one 100 m west, and the successful batches left ratios of 10 to 29 behind,
+which made the next batches start from rings of a few hundred metres. With the rescaling above, the ratio rule and the request
+budget, the same three sessions of 6 batches (5 km) failed 0, 0 and 3 times (the first two gave 2 loops in every batch), and every loop was within 10% of the target.
+
+### When no loop comes out (`failure.ts`)
+
+The sheet says why. `busy`: half or more of the requests failed with an HTTP error (429, 5xx), a timeout; "wait a moment". `network`:
+the requests did not reach the service. `no_road`: the start is more than 300 m from any street. `no_loop`: the service answered
+but nothing came within 10% of the target; the message names the target and, when the nearest routed loop is within 50% of it,
+how far off it is, with a **Tampilkan loop 6,6 km** button that puts that loop on the map (the sheet then shows "length is 32% off
+the target"). Without such a loop it suggests another length or another start.
 
 If FOSSGIS ever becomes unreliable or asks us to stop: swap `routing.routeVia` in `useLoopPlanner.ts`. A keyed provider
 (ORS or GraphHopper round trip) needs a session-gated, rate-limited, cached endpoint in `server/` with the key as a Worker

@@ -452,7 +452,17 @@ function PlanSheet({ planner, expanded, onExpandedChange, onOpenHome, onBegin, o
         <StartNotices planner={planner} onOpenHome={onOpenHome} />
 
         {stale ? <Notice icon="refresh">{t('stale', { target: valueText })}</Notice> : null}
-        {error ? <Notice tone="danger">{error}</Notice> : null}
+        {error ? (
+          <Notice
+            tone="danger"
+            action={
+              planner.closest
+                ? { label: t('errors.showClosest', { closest: formatRouteDistance(planner.closest.lengthM) }), onPress: planner.showClosest }
+                : undefined
+            }>
+            {error}
+          </Notice>
+        ) : null}
         {finding && progress ? (
           <AppText variant="caption" muted accessibilityLiveRegion="polite">
             {t('finding', { index: progress.index, count: progress.count })}. {t('findingHint')}
