@@ -11,6 +11,8 @@ export const MIN_STRIDE_SPEED_MS = 0.5;
 /** Steps per minute: a slow walk is about 60, a sprint about 230; outside 40 to 260 the reading is not a gait. */
 export const MIN_SPM = 40;
 export const MAX_SPM = 260;
+/** A FIT file counts one foot (strides per minute); above this a "per-leg" figure would be over 260 steps per minute, so the writer already counted steps. */
+export const MAX_PER_LEG_CADENCE = 130;
 /** Metres per step: a shuffling step is 0.2 m, a sprinter's about 2.5 m. */
 export const MIN_STEP_M = 0.2;
 export const MAX_STEP_M = 2.5;

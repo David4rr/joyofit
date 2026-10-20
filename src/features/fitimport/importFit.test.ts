@@ -129,6 +129,33 @@ describe('parseFitActivity', () => {
     expect(a.avgCadence).toBe(85);
   });
 
+  it('adds the session\'s fractional cadence to its average and maximum (per leg), keeping both decimals', () => {
+    const a = parseFitActivity(buildActivityFile({ start: START, elapsed: 1800, distance: 5000, sport: 1, sessionFractionalCadence: true }));
+    if (!('start' in a)) throw new Error(a.message);
+    expect(a.avgCadence).toBe(85.5);
+    expect(a.maxCadence).toBe(112.25);
+  });
+
+  it('doubles a per-leg run cadence, and reads a writer that counts steps from its own speed and step length', () => {
+    // 5000 m in 1800 s is 2.78 m/s; at a 1.05 m step that is 158.7 steps per minute.
+    const perLeg = parseFitActivity(buildActivityFile({ start: START, elapsed: 1800, distance: 5000, sport: 1, stepLength: true, cadence: 79 }));
+    if (!('start' in perLeg)) throw new Error(perLeg.message);
+    expect(perLeg.cadencePerLeg).toBe(true);
+    expect(perLeg.points[5]?.cadence).toBe(158);
+    const steps = parseFitActivity(buildActivityFile({ start: START, elapsed: 1800, distance: 5000, sport: 1, stepLength: true, cadence: 159 }));
+    if (!('start' in steps)) throw new Error(steps.message);
+    expect(steps.cadencePerLeg).toBe(false);
+    expect(steps.points[5]?.cadence).toBe(159);
+  });
+
+  it('keeps FIT\'s per-leg reading when the file has no step length to check it against, and never doubles an impossible one', () => {
+    const noStep = parseFitActivity(buildActivityFile({ start: START, elapsed: 1800, distance: 5000, sport: 1, cadence: 159 }));
+    if (!('start' in noStep)) throw new Error(noStep.message);
+    expect(noStep.cadencePerLeg).toBe(true);
+    // 159 per leg would be 318 steps per minute: the writer counted steps.
+    expect(noStep.points[5]?.cadence).toBe(159);
+  });
+
   it('reads the lap messages of a file with two or more laps', () => {
     const a = parseFitActivity(buildActivityFile({ start: START, elapsed: 3600, distance: 20_000, laps: 3 }));
     if (!('start' in a)) throw new Error(a.message);

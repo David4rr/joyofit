@@ -74,6 +74,8 @@ export interface WorkoutSummary {
   balanceLeftPct?: number;
   avgCadence?: number;
   maxCadence?: number;
+  /** On a foot-sport FIT import: false when the file's `avgCadence` and `maxCadence` already count steps per minute instead of strides (one foot). Absent means per leg. */
+  cadencePerLeg?: boolean;
   /** Metres per step: a FIT session's `avg_step_length`. A watch keeps the mean of its samples in centimetres under `samples.avgStepLength`. */
   avgStepLengthM?: number;
   /** Set on workouts imported from a FIT file: the device brand, or `FIT file` when the file does not say. */

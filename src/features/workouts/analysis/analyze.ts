@@ -14,7 +14,7 @@ import { buildGrid, type AnalysisPoint, type Grid } from './series';
 import { selectSimilar, type SimilarCandidate } from './similar';
 import { hasPace, isFootKind, sportKind } from './sport';
 import { kmSplits, paceBlockSplits, type SplitGrid } from './splits';
-import { cadenceFromSteps, plausibleStepLength, stepLengthFromSpeed } from './stride';
+import { cadenceFigures } from './cadence';
 import {
   ANALYSIS_LIMITS,
   WORKOUT_ANALYSIS_VERSION,
@@ -115,37 +115,16 @@ function finitePositive(value: number | undefined): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
 }
 
-/** Mean of one field over the watch's per-km blocks that have it, weighted by block length (a short last block counts less). */
-function sectionsMean(summary: WorkoutSummary, field: 'cadence' | 'stepLength'): number | null {
-  let sum = 0;
-  let weight = 0;
-  for (const section of summary.sections ?? []) {
-    const value = finitePositive(section[field]);
-    if (value === null) continue;
-    const w = finitePositive(section.distance) ?? 1;
-    sum += value * w;
-    weight += w;
-  }
-  return weight > 0 ? sum / weight : null;
+/** The distance the analysis shows: the watch's total, else where the grid's track ends; null when neither is above zero. */
+export function analysisDistanceM(workout: Pick<WorkoutRow, 'distance'>, grid: Pick<Grid, 'dist' | 'n'>): number | null {
+  if (workout.distance > 0) return Math.round(workout.distance);
+  const last = grid.dist?.[grid.n - 1];
+  return last !== undefined && last > 0 ? Math.round(last) : null;
 }
 
-/**
- * Average and maximum cadence a workout's summary holds, in steps per minute. A FIT import keeps the file's own session
- * figures, which count strides (one foot) per minute on foot, so they are doubled; a watch workout keeps the mean of its
- * samples under `samples` (`avgStepRate` for walking with the new step algorithm, `avgCadence` otherwise) and its per-km
- * blocks under `sections`.
- */
-function summaryCadence(kind: SportKind, summary: WorkoutSummary, which: 'avg' | 'max'): number | null {
-  const own = finitePositive(which === 'avg' ? summary.avgCadence : summary.maxCadence);
-  if (own !== null) return summary.importedFrom && isFootKind(kind) ? own * 2 : own;
-  if (which === 'max') return null;
-  return finitePositive(summary.samples?.avgCadence) ?? finitePositive(summary.samples?.avgStepRate) ?? sectionsMean(summary, 'cadence');
-}
-
-/** Metres per step a summary holds: a FIT session's `avg_step_length`, or a watch's own mean over its samples or per-km blocks (centimetres). */
-function summaryStepLength(summary: WorkoutSummary): number | null {
-  const watchCm = finitePositive(summary.samples?.avgStepLength) ?? sectionsMean(summary, 'stepLength');
-  return plausibleStepLength(summary.avgStepLengthM) ?? plausibleStepLength(watchCm === null ? null : watchCm / 100);
+/** Average speed in m/s: the distance over the moving time, as Strava computes it; the summary's own figure (distance over the watch's active time) only stands in without a distance. */
+export function analysisAvgSpeedMs(distanceM: number | null, movingSec: number, summary: Pick<WorkoutSummary, 'avgSpeed'>): number | null {
+  return (distanceM === null ? null : averageSpeedMs(distanceM, movingSec)) ?? finitePositive(summary.avgSpeed);
 }
 
 function buildStats(
@@ -164,28 +143,11 @@ function buildStats(
   const bestPace = minOf(grid.pace) ?? finitePositive(summary.paceFastestSecPerKm) ?? finitePositive(summary.minPaceSecPerKm);
   // Average pace and speed are the watch's distance over the moving time, as Strava computes them; the summary's own
   // figures (distance over the watch's active time) only stand in when there is no distance.
-  const avgSpeed = (distanceM === null ? null : averageSpeedMs(distanceM, grid.movingSec)) ?? finitePositive(summary.avgSpeed);
+  const avgSpeed = analysisAvgSpeedMs(distanceM, grid.movingSec, summary);
   const avgPace = hasPace(kind) ? (distanceM === null ? null : averagePaceSec(distanceM, grid.movingSec)) ?? finitePositive(summary.avgPaceSecPerKm) : null;
   const maxSpeed = finitePositive(summary.maxSpeed) ?? (bestPace !== null ? 1000 / bestPace : null);
 
-  let strideSum = 0;
-  let strideCount = 0;
-  for (const p of points) {
-    if (typeof p.stride === 'number' && p.stride > 0) {
-      strideSum += p.stride;
-      strideCount += 1;
-    }
-  }
-
-  // Cadence: the samples, else the source's own average, else (on foot) the watch's step count over the moving time.
-  const foot = isFootKind(kind);
-  const avgCad = meanOf(grid.cad) ?? summaryCadence(kind, summary, 'avg') ?? (foot ? cadenceFromSteps(workout.steps, grid.movingSec) : null);
-  const maxCad = maxOf(grid.cad) ?? summaryCadence(kind, summary, 'max');
-  // Step length: the samples, else the source's own average, else (on foot) the average speed over the average cadence.
-  const avgStride =
-    plausibleStepLength(strideCount > 0 ? strideSum / strideCount : null) ??
-    summaryStepLength(summary) ??
-    (foot ? stepLengthFromSpeed(avgSpeed, avgCad) : null);
+  const { avgCad, maxCad, avgStrideM } = cadenceFigures({ kind, summary, steps: workout.steps, grid, points, avgSpeedMs: avgSpeed });
 
   const avgPower = meanOf(grid.power) ?? finitePositive(summary.avgPower);
   return {
@@ -201,7 +163,7 @@ function buildStats(
     avgPower: roundOrNull(avgPower, 0),
     maxPower: roundOrNull(maxOf(grid.power) ?? finitePositive(summary.maxPower), 0),
     normalizedPower: roundOrNull(finitePositive(summary.normalizedPower) ?? normalizedPowerOf(grid.power, grid.stepSec), 0),
-    avgStrideM: roundOrNull(avgStride, 2),
+    avgStrideM: roundOrNull(avgStrideM, 2),
   };
 }
 
@@ -270,7 +232,7 @@ export function analyzeWorkout(input: AnalyzeInput, options: AnalyzeOptions): Wo
   const efforts = foot ? bestEfforts(grid.fixes, history.efforts) : [];
   const threshold = foot && grid.pace ? thresholdPaceFromEfforts(efforts, history.efforts) : null;
 
-  const distanceM = workout.distance > 0 ? Math.round(workout.distance) : grid.dist && grid.dist[grid.n - 1] > 0 ? Math.round(grid.dist[grid.n - 1]) : null;
+  const distanceM = analysisDistanceM(workout, grid);
   const split = options.includeHr && workout.calories > 0 ? splitWorkout(workout.calories, hrPoints, input.maxHr) : null;
   const e = elevationSummary(grid.alt, profile, summary);
   const similar = options.includeComparison

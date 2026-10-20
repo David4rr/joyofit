@@ -578,6 +578,11 @@
         "title": "Bluetooth",
         "body": "Used to connect the heart rate strap and other sensors you paired.",
         "denied": "Bluetooth is not allowed yet, so your sensors will not connect. You can still record without sensors, or open settings to allow it."
+      },
+      "steps": {
+        "title": "Count steps and cadence from the phone",
+        "body": "Optional. The phone's step counter gives the cadence and step count of a run, walk or hike when the phone is in a pocket, in your hand or in an armband. Nothing leaves the phone. You can start without this permission.",
+        "denied": "Step counter access is not allowed yet, so this recording has no cadence or steps from the phone. It still records. Open settings if you want to allow it."
       }
     },
     "gps": {
@@ -591,6 +596,7 @@
       "gps": "GPS",
       "hint": "You can start without waiting for GPS. Distance counts as soon as the signal is ready.",
       "hintNoGps": "Press Start when you are ready.",
+      "noPhoneSteps": "The phone step counter is off, so cadence and steps are only recorded when a running pod is connected.",
       "noService": "A dark screen can stop the recording. Allow notifications and turn off battery saver for JoyoFit in the phone's settings so it keeps running.",
       "start": "Start",
       "cancel": "Cancel"

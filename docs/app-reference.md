@@ -188,8 +188,8 @@ are in [`docs/strava.md`](strava.md) section 1.
   loss, average and maximum speed, and, for running, walking and hiking, the step count as strides plus the average
   cadence over the active time, then a mapped FIT sport/sub-sport and `sport_type`. The file names the recording watch (`file_id` and a creator
   `device_info`: Huawei watches as manufacturer 348, the model name, the firmware) and JoyoFit as the writing software; Strava does not show
-  a device line for it until Strava adds the model to its device list (docs/strava.md 3a). The watch gives no per-sample speed or
-  cadence and no list of pauses: when its elapsed time exceeds its active time by 30 s or more, the pause is written as a
+  a device line for it until Strava adds the model to its device list (docs/strava.md 3a). Records carry speed, cadence and step length where the
+  stored points have them (see Workout analysis, cadence). The watch gives no list of pauses: when its elapsed time exceeds its active time by 30 s or more, the pause is written as a
   timer stop and start (`elapsed - active` long, centred on the longest gap between GPS fixes, else between samples),
   because Strava takes a run's moving time from the file's timer events and otherwise recomputes it from the distance
   stream. Strava then keeps the watch's numbers. The upload goes
@@ -324,10 +324,25 @@ open, so it also fills workouts stored earlier) takes each figure from the first
 | 4 | on foot, the workout's step count over its moving time | on foot, average speed over average cadence (`speed / (cadence / 60)`) |
 
 Estimates (3 and 4) are dropped, never clamped, outside 40 to 260 steps per minute and 0.2 to 2.5 m (`analysis/stride.ts`); a speed under 0.5 m/s gives no
-step length. The watch sync reads cadence from the sample's cadence short and, on foot, from its step-rate byte when the short has no reading
-(`WorkoutBuilder.sampleCadence`); its `samples` averages leave zero readings out. Phone recordings have cadence only from a paired running pod (the
-phone's own step counter is not read). A GPX file is not a workout import (the route planner reads GPX); the app imports FIT and the Huawei export.
-The raw FIT file is not kept, so a file imported before the per-sample columns existed has no cadence samples and shows steps-based or session figures only.
+step length. The sources are resolved in one place (`analysis/cadence.ts`, `cadenceFigures`), so the card, the share card, the cloud analysis and the Strava
+file (`strava/cadenceFields.ts`: session and lap cadence, `avg_step_length`, per-record `step_length` where a point has one) show the same numbers.
+
+- **Watch sync.** Cadence comes from the sample's cadence short and, on foot, from its step-rate byte when the short has no reading
+  (`WorkoutBuilder.sampleCadence`); the `samples` averages leave zero readings out (averages stored before that change may include them, and are used
+  only when a workout has no per-sample cadence).
+- **FIT import.** FIT counts one foot, so a foot sport's cadence (+ `fractional_cadence`, session and lap fractions too) is doubled to steps per minute.
+  A per-leg figure above 130 (over 260 steps per minute) is never doubled, and a file whose records carry speed, step length and cadence that agree
+  with steps per minute rather than strides (20 records and a clear majority) is read as counting steps (`legFactor` in `parseFit.ts`; the summary then
+  holds `cadencePerLeg: false`). A file without step lengths keeps FIT's rule. The session's `avg_step_length` is kept as `summary.avgStepLengthM`.
+- **Huawei export import.** Per-sample cadence (`tp=s-r`) is kept; the export has no step length, so the card derives it, and the workout's step count
+  covers a workout without samples.
+- **Phone recording.** Cadence and steps come from a paired running pod, else from the phone's own step counter (docs/sensors.md); never a per-sample step
+  length (derived on the card).
+- **Cloud and share.** The cloud document carries the samples (`cadence`, `stride`) and `summary_json` verbatim, so a restore recomputes the same figures; the
+  shared analysis carries `stats.avgCad`, `maxCad`, `avgStrideM` and the cadence series, which JoyoRogo's web feed and fit viewer show in the summary.
+- **Not recoverable.** The raw FIT file is not kept. A file imported before per-sample cadence existed has none, and one whose only step length was the
+  session's `avg_step_length` lost it before it was stored (the card derives an estimate instead). A GPX file is not a workout import (the route planner
+  reads GPX).
 
 Map data © OpenStreetMap contributors, tiles by [OpenFreeMap](https://openfreemap.org); the attribution is drawn on every map.
 

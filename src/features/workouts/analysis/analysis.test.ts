@@ -432,6 +432,15 @@ describe('cadence, power and stride', () => {
     expect(ride.stats).toMatchObject({ avgCad: 85, maxCad: 112, avgStrideM: null });
   });
 
+  it('does not double a FIT summary that already counts steps (flagged by the import) or that is above any per-leg value', () => {
+    const synth = steady5k();
+    expect(analyze(synth, { summary: { avgCadence: 158, maxCadence: 175, importedFrom: 'Huawei', cadencePerLeg: false } }).stats).toMatchObject({ avgCad: 158, maxCad: 175 });
+    // 150 per leg would be 300 steps per minute.
+    expect(analyze(synth, { summary: { avgCadence: 150, importedFrom: 'Huawei' } }).stats.avgCad).toBe(150);
+    // The boundary: 130 per leg is 260 steps per minute, still a stride count.
+    expect(analyze(synth, { summary: { avgCadence: 130, importedFrom: 'Garmin' } }).stats.avgCad).toBe(260);
+  });
+
   it('reads the watch\'s own sample averages (cadence or step rate in steps per minute, step length in centimetres)', () => {
     const a = analyze(steady5k(), { summary: { samples: { avgCadence: 158, avgStepLength: 78 } } });
     expect(a.stats).toMatchObject({ avgCad: 158, avgStrideM: 0.78 });

@@ -16,6 +16,7 @@ class WorkoutSessionOptionsRecord : Record {
   @Field var title: String = ""
   @Field var text: String = ""
   @Field var gps: Boolean = false
+  @Field var steps: Boolean = false
   @Field var openUrl: String? = null
   @Field var controls: WorkoutControlsRecord? = null
 }
@@ -78,7 +79,7 @@ class BleSensorsModule : Module() {
     Name("BleSensors")
 
     Events(
-      "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction",
+      "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction", "onSteps",
       "onScaleAdvertisement", "onScaleScanState", "onScaleLink", "onScaleValue",
     )
 
@@ -151,9 +152,18 @@ class BleSensorsModule : Module() {
       if (context().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) "granted" else "denied"
     }
 
+    // "unavailable" without the sensor; Android cannot tell "never asked" from "denied". Before Android 10 there is no runtime permission.
+    AsyncFunction("stepCounterPermission") {
+      when {
+        !WorkoutSteps.hasSensor(context()) -> "unavailable"
+        WorkoutSteps.hasPermission(context()) -> "granted"
+        else -> "denied"
+      }
+    }
+
     AsyncFunction("startWorkoutSession") Coroutine { options: WorkoutSessionOptionsRecord ->
       val controls = options.controls?.let { RecordingNotificationSpec.Controls(it.locale, it.paused, it.pause, it.resume, it.lap) }
-      WorkoutSession.start(context(), options.title, options.text, options.gps, options.openUrl, controls)
+      WorkoutSession.start(context(), options.title, options.text, options.gps, options.openUrl, controls, options.steps)
     }
 
     AsyncFunction("updateWorkoutSession") { state: WorkoutSessionStateRecord ->

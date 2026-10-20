@@ -36,6 +36,8 @@ export interface FixtureOptions {
   cadence?: number | null;
   /** Adds the session's `avg_step_length` (1050 mm). */
   sessionStepLength?: boolean;
+  /** Adds the session's `avg_fractional_cadence` (0.5) and `max_fractional_cadence` (0.25). */
+  sessionFractionalCadence?: boolean;
 }
 
 const MESG = { fileId: 0, session: 18, lap: 19, record: 20, activity: 34 } as const;
@@ -132,6 +134,8 @@ export function buildActivityFile(options: FixtureOptions): Uint8Array {
       [23, 'uint16', 295],
       [34, 'uint16', 215],
       [134, 'uint16', options.sessionStepLength ? 10_500 : null],
+      [92, 'uint8', options.sessionFractionalCadence ? 64 : null],
+      [93, 'uint8', options.sessionFractionalCadence ? 32 : null],
     ]);
   }
   message(fit, 4, MESG.activity, [

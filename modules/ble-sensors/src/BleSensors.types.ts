@@ -89,6 +89,16 @@ export interface LocationEvent {
 
 export type LocationPermission = 'granted' | 'denied' | 'undetermined';
 
+/** The phone's step counter. `unavailable`: the device has none (or, iOS, no motion coprocessor). */
+export type StepCounterPermission = 'granted' | 'denied' | 'undetermined' | 'unavailable';
+
+export interface StepsEvent {
+  /** Milliseconds since the epoch of the counter reading itself. */
+  ts: number;
+  /** Steps counted since the workout session started (cumulative, it only goes up). The first reading of a session may be 0. */
+  steps: number;
+}
+
 export interface WorkoutSessionOptions {
   /** Notification title (Android), e.g. "Lari". */
   title: string;
@@ -96,6 +106,12 @@ export interface WorkoutSessionOptions {
   text: string;
   /** Record GPS: starts location updates and, on Android, the location foreground type. */
   gps: boolean;
+  /**
+   * Count steps with the phone's own step counter and deliver them as `onSteps`. Starts only when the permission is granted (Android:
+   * ACTIVITY_RECOGNITION; iOS: motion) and the device has the sensor; otherwise it silently does not, the workout runs without steps.
+   * Default false.
+   */
+  steps?: boolean;
   /**
    * Android: the link (`joyofit://...`) tapping the notification opens, so it lands on the recording screen whatever screen was open last.
    * Without it, or when it is not a link of the app, the tap resumes the app where it was. iOS has no notification: ignored.
@@ -206,6 +222,8 @@ export type BleSensorsModuleEvents = {
   onConnection: (event: ConnectionEvent) => void;
   onValue: (event: ValueEvent) => void;
   onLocation: (event: LocationEvent) => void;
+  /** Only while a workout session runs with `steps`. */
+  onSteps: (event: StepsEvent) => void;
   onBluetoothState: (event: { state: BluetoothState }) => void;
   /** Android: a button of the recording notification was pressed (only with `WorkoutSessionOptions.controls`). */
   onWorkoutAction: (event: { action: WorkoutAction }) => void;

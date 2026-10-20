@@ -573,6 +573,11 @@
         "title": "Bluetooth",
         "body": "Dipakai untuk menyambung strap detak jantung dan sensor lain yang sudah kamu pasangkan.",
         "denied": "Izin Bluetooth belum diberikan, jadi sensor tidak akan tersambung. Kamu tetap bisa merekam tanpa sensor, atau buka pengaturan untuk mengizinkannya."
+      },
+      "steps": {
+        "title": "Hitung langkah dan kadens dari HP",
+        "body": "Opsional. Penghitung langkah di HP dipakai untuk kadens dan jumlah langkah saat kamu lari, jalan, atau hiking dengan HP di saku, tangan, atau armband. Datanya tidak keluar dari HP. Kamu tetap bisa mulai tanpa izin ini.",
+        "denied": "Izin penghitung langkah belum diberikan, jadi rekaman ini tidak punya kadens dan langkah dari HP. Rekaman tetap jalan. Buka pengaturan kalau kamu ingin mengizinkannya."
       }
     },
     "gps": {
@@ -586,6 +591,7 @@
       "gps": "GPS",
       "hint": "Kamu bisa mulai tanpa menunggu GPS. Jarak dihitung begitu sinyalnya siap.",
       "hintNoGps": "Tekan Mulai kalau kamu sudah siap.",
+      "noPhoneSteps": "Penghitung langkah HP tidak aktif, jadi kadens dan langkah hanya terekam kalau ada sensor lari yang tersambung.",
       "noService": "Layar mati bisa menghentikan rekaman. Izinkan notifikasi dan matikan penghemat baterai untuk JoyoFit di pengaturan HP supaya rekaman tetap jalan.",
       "start": "Mulai",
       "cancel": "Batal"

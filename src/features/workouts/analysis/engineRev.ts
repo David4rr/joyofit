@@ -6,5 +6,6 @@
  * 2: distance is the watch's total, moving time follows Strava, elevation is smoothed with a hysteresis.
  * 3: pace zones and best-effort ranks take their history from every run of the last 90 days, whatever its sport name.
  * 4: average cadence and step length of a run or walk fall back to the source's summary, then to the step count and speed.
+ * 5: a FIT import's fractional cadence counts and a file found to count steps (or a per-leg figure above 130) is no longer doubled.
  */
-export const ANALYSIS_ENGINE_REV = 4;
+export const ANALYSIS_ENGINE_REV = 5;
