@@ -1,4 +1,4 @@
-import { IOS_TESTFLIGHT_LIVE, STRAVA_PATH } from "./lib.ts";
+import { IOS_TESTFLIGHT_LIVE, STRAVA_PATH, TIMBANGAN_PATH } from "./lib.ts";
 
 /** A tracking goal for the link at the end of an answer. */
 export type FaqLink = { href: string; label: string; goal?: { name: string; location: string } };
@@ -25,6 +25,11 @@ export const FAQ: readonly FaqItem[] = [
       (IOS_TESTFLIGHT_LIVE
         ? " Versi iPhone ada sebagai beta publik lewat TestFlight, dan versi App Store 1.0 sedang menunggu review Apple. Baru diuji dengan Huawei Watch Fit 4 Pro."
         : ""),
+  },
+  {
+    q: "Timbangan Bluetooth apa yang bisa dipakai?",
+    a: "JoyoFit membaca timbangan badan lewat protokol openScale: timbangan Bluetooth standar (Weight Scale dan Body Composition, misalnya Beurer, Sanitas, A&D) dan protokol beberapa merek seperti Xiaomi Mi Scale, Renpho dan QN, Fitdays dan AiLink, OKOK dan Chipsea, Yunmai, 1byone, Eufy, Etekcity, Inlife, Senssun, Excelvan, Hesley, dan Exingtech. Belum ada yang kami uji langsung di timbangan asli. Timbangan yang belum dikenali bisa direkam lewat Rekam data timbangan supaya dukungannya ditambahkan. Berat dan komposisi tubuh ikut masuk ke catatan berat badan JoyoRogo kalau kamu masuk dengan akunnya, dan kalau timbangannya dipakai serumah, berat yang jauh beda dari timbangan terakhirmu ditanyakan dulu.",
+    link: { href: TIMBANGAN_PATH, label: "Lihat daftar timbangan", goal: { name: "timbangan_click", location: "faq" } },
   },
   {
     q: "Bisa dipakai tanpa jam?",

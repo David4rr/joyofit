@@ -12,6 +12,10 @@ Decoders are ported from [openScale](https://github.com/oliexdev/openScale) (GPL
 
 Not established. What was found: the Shopee listing "HAN RIVER Smart Body Fat Scale", model HRTZC01WT (rechargeable, 180 kg, 0.1 kg, up to 10 users, "Body Fat Monitor with App"), sold by HK HAN RIVER (hanriver.asia, a Shenzhen white-label of kitchen and home appliances). None of the listings, the brand site or the two Indonesian video reviews names the phone app, and the Play Store app called "Han River" (`asmart.ad`) is the brand's smart-home app, not a scale app. White-label scales of this price are almost always one of the Chipsea / OKOK, Fitdays (AAA-series, AiLink) or QN families, which are all decoded here, but that is an inference, not a fact. The first thing to do when it arrives is the test below: the recorder tells which family it is.
 
+## Website list
+
+fit.joyorogo.com/timbangan (`site/src/Timbangan.tsx`) lists the protocols in `registry.ts`: `site/scripts/timbangan.ts` reads the registry for labels and brands and writes `site/src/timbangan.ts` (`bun run timbangan`, also the first step of `bun run build`). The grouping by brand and the "what you get" tag (weight only, scale-reported body values, estimated body values, depends on model) are editorial and live in `GROUPS` in that script. A new protocol makes the build and `bun test scripts` fail until it is added there, so the page cannot silently miss a scale. The page says none of them is tested on a real scale yet; change that copy when one is.
+
 ## Protocols
 
 All ids are in `src/features/scale/registry.ts`. "Vectors" says where the test bytes come from.
