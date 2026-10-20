@@ -168,7 +168,7 @@ export default function WorkoutDetailScreen() {
           }
           try {
             const maxHr = userMaxHr();
-            const history = await loadAnalysisHistory(db, value.workout, maxHr);
+            const history = await loadAnalysisHistory(db, value.workout, value.summary, maxHr);
             // Let the summary paint before the analysis blocks the JS thread.
             await new Promise<void>((resolve) => setTimeout(resolve, 0));
             if (cancelled) return;

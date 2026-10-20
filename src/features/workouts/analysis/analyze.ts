@@ -24,7 +24,7 @@ import {
   type SportKind,
   type WorkoutAnalysis,
 } from './types';
-import { hrZones, paceZones, thresholdCandidates, thresholdPace } from './zones';
+import { hrZones, paceZones, thresholdPaceFromEfforts } from './zones';
 
 const MIN_BPM = 20;
 const MAX_BPM = 250;
@@ -32,7 +32,7 @@ const MAX_SPORT_NAME = 60;
 const NORMALIZED_POWER_WINDOW_SEC = 30;
 
 export interface AnalysisHistory {
-  /** Best-effort seconds of similar past workouts (see `bestEffortsForHistory`). */
+  /** Best-effort seconds of the on-foot workouts of the same kind in the last 90 days (every run, whatever its sport name, for a run; see `loadAnalysisHistory`). The threshold pace comes from these. */
   efforts: readonly EffortSeconds[];
   /** TRIMP of the other workouts of the last 28 days. */
   trimps: readonly TrimpEntry[];
@@ -230,8 +230,7 @@ export function analyzeWorkout(input: AnalyzeInput, options: AnalyzeOptions): Wo
   splits = splits.slice(0, ANALYSIS_LIMITS.splits);
 
   const efforts = foot ? bestEfforts(grid.fixes, history.efforts) : [];
-  const candidates = thresholdCandidates(efforts, history.efforts);
-  const threshold = foot && grid.pace ? thresholdPace(candidates) : null;
+  const threshold = foot && grid.pace ? thresholdPaceFromEfforts(efforts, history.efforts) : null;
 
   const distanceM = workout.distance > 0 ? Math.round(workout.distance) : grid.dist && grid.dist[grid.n - 1] > 0 ? Math.round(grid.dist[grid.n - 1]) : null;
   const split = options.includeHr && workout.calories > 0 ? splitWorkout(workout.calories, hrPoints, input.maxHr) : null;

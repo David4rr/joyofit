@@ -176,7 +176,7 @@
     "note": {
       "effort": "Tiap menit detak jantung dihitung menurut zona tempatnya berada (TRIMP Edwards), lalu totalnya dipetakan ke skala 0 sampai 21. Hasilnya bergantung pada detak jantung maksimalmu, jadi isi di profil untuk hasil terbaik.",
       "load": "Beban adalah TRIMP Edwards: menit di tiap zona detak jantung dikali nomor zonanya. 7 hari terakhir dijumlahkan sampai latihan ini; rata-rata mingguan adalah rata-rata 28 hari sebelumnya.",
-      "threshold": "Pace ambang diperkirakan dari performa terbaikmu di 1 mil, 5 km, 10 km, dan half marathon, lalu diperlambat ke usaha satu jam. Zona ditentukan sebagai persentase dari pace ini."
+      "threshold": "Pace ambang diperkirakan dari performa terbaikmu di 1 mil, 5 km, 10 km, dan half marathon pada semua lari 90 hari terakhir (jalan dan hiking tidak dihitung), lalu diperlambat ke usaha satu jam. Pace ini tidak melambat hanya karena lari terbaru santai. Zona ditentukan sebagai persentase dari pace ini."
     },
     "empty": {
       "noSeries": "Grafik, peta, dan split tidak tersedia untuk latihan ini karena tidak ada sampel detail yang direkam."

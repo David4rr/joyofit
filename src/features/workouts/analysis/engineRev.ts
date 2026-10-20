@@ -4,5 +4,6 @@
  * bump it whenever a figure changes for the same workout.
  *
  * 2: distance is the watch's total, moving time follows Strava, elevation is smoothed with a hysteresis.
+ * 3: pace zones and best-effort ranks take their history from every run of the last 90 days, whatever its sport name.
  */
-export const ANALYSIS_ENGINE_REV = 2;
+export const ANALYSIS_ENGINE_REV = 3;
