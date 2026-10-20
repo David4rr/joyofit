@@ -298,7 +298,7 @@ export function useLoopPlanner(maplibre: MapLibre): LoopPlanner {
       seed: Math.floor(Math.random() * 0x7fffffff),
       ratio: ratio.current,
       signal: controller.signal,
-      router: (waypoints, signal) => routing.routeVia('foot', waypoints, signal),
+      router: (waypoints, signal) => routing.routeVia('foot', waypoints, signal, { noUTurns: true }),
       onProgress: (index, count) => setProgress({ index, count }),
     }).then(
       (result) => {

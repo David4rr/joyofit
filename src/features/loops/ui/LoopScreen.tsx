@@ -40,7 +40,7 @@ const TAP_PX = 8;
 
 type Sheet = 'plan' | 'home' | 'search';
 
-/** `/routes/loop`: pick a target (steps, distance, time or kcal), get a dotted loop from the door on streets not walked yet. */
+/** `/routes/loop`: pick a target (steps, distance, time or kcal), get a loop from the door on streets not walked yet. */
 export function LoopScreen() {
   const { t } = useTranslation('loops');
   const { t: tCommon } = useTranslation('common');
@@ -461,9 +461,9 @@ function PlanSheet({ planner, expanded, onExpandedChange, onOpenHome, onBegin, o
 
         {hasLoop ? (
           <View style={styles.result}>
-            <AppText variant="bodyStrong" accessibilityLiveRegion="polite">
+            <AppText variant="bodyStrong" numberOfLines={expanded ? undefined : 1} accessibilityLiveRegion="polite">
               {loop.newShare !== null
-                ? t('result.summary', {
+                ? t(expanded ? 'result.summary' : 'result.short', {
                     distance: formatRouteDistance(loop.lengthM),
                     pct: Math.round(loop.newShare * 100),
                   })
@@ -496,6 +496,7 @@ function PlanSheet({ planner, expanded, onExpandedChange, onOpenHome, onBegin, o
               <CandidateCard
                 key={candidate.id}
                 candidate={candidate}
+                compact={!expanded}
                 index={index}
                 selected={index === planner.candidateIndex}
                 onPress={() => planner.choose(index)}
@@ -504,40 +505,50 @@ function PlanSheet({ planner, expanded, onExpandedChange, onOpenHome, onBegin, o
           </ScrollView>
         ) : null}
 
-        <Button
-          label={hasLoop ? t('another') : t('find')}
-          icon={hasLoop ? 'shuffle' : 'search'}
-          variant="primary"
-          loading={finding}
-          disabled={!start || !area || targetM === null}
-          onPress={planner.find}
-        />
+        {expanded || !hasLoop ? (
+          <Button
+            label={hasLoop ? t('another') : t('find')}
+            icon={hasLoop ? 'shuffle' : 'search'}
+            variant="primary"
+            loading={finding}
+            disabled={!start || !area || targetM === null}
+            onPress={planner.find}
+          />
+        ) : null}
 
         {hasLoop ? (
           <>
             <View style={styles.actions}>
+              {expanded ? null : (
+                <Button
+                  label={t('another')}
+                  icon="shuffle"
+                  iconOnly
+                  loading={finding}
+                  disabled={!start || !area || targetM === null}
+                  onPress={planner.find}
+                />
+              )}
               {saved ? (
-                <Button label={t('actions.openSaved')} icon="open-outline" lines={2} style={styles.action} onPress={() => onOpenSaved(saved.id)} />
+                <Button label={t('actions.openSaved')} icon="open-outline" iconOnly onPress={() => onOpenSaved(saved.id)} />
               ) : (
                 <Button
                   label={saving ? t('actions.saving') : t('actions.save')}
                   icon="bookmark-outline"
-                  lines={2}
+                  iconOnly
                   loading={saving}
-                  style={styles.action}
                   onPress={() => void planner.save()}
                 />
               )}
               <Button
                 label={t('actions.send')}
                 icon="send"
-                lines={2}
+                iconOnly
                 loading={push.sending}
                 disabled={!canSend || saving}
-                style={styles.action}
                 onPress={planner.sendToWatch}
               />
-              <Button label={t('actions.begin')} icon="play" lines={2} style={styles.action} onPress={onBegin} />
+              <Button label={t('actions.begin')} icon="play" variant="primary" style={styles.begin} onPress={onBegin} />
             </View>
             {saveError ? <Notice tone="danger">{saveError}</Notice> : null}
             {expanded && !push.connected ? (
@@ -622,13 +633,15 @@ function SheetHandle({ expanded, onChange }: { expanded: boolean; onChange: (exp
 
 interface CandidateCardProps {
   candidate: LoopCandidate;
+  /** One line instead of three: the folded sheet. */
+  compact: boolean;
   index: number;
   selected: boolean;
   onPress: () => void;
 }
 
 /** One loop of the batch as a small card: its number, length and share of new streets. */
-function CandidateCard({ candidate, index, selected, onPress }: CandidateCardProps) {
+function CandidateCard({ candidate, compact, index, selected, onPress }: CandidateCardProps) {
   const { t } = useTranslation('loops');
   const { colors, radius } = useTheme();
   const distance = formatRouteDistance(candidate.lengthM);
@@ -641,24 +654,32 @@ function CandidateCard({ candidate, index, selected, onPress }: CandidateCardPro
       onPress={onPress}
       scaleTo={0.97}
       style={[
-        styles.candidate,
+        compact ? styles.candidateCompact : styles.candidate,
         {
           backgroundColor: colors.muted,
           borderRadius: radius.control,
           borderColor: selected ? colors.primary : 'transparent',
         },
       ]}>
-      <AppText variant="caption" muted numberOfLines={1}>
-        {t('candidate.label', { n: index + 1 })}
-      </AppText>
-      <AppText variant="bodyStrong" numberOfLines={1}>
-        {distance}
-      </AppText>
-      {pct ? (
-        <AppText variant="caption" muted numberOfLines={1}>
-          {pct}
+      {compact ? (
+        <AppText variant="bodyStrong" numberOfLines={1}>
+          {`${index + 1} \u00B7 ${distance}`}
         </AppText>
-      ) : null}
+      ) : (
+        <>
+          <AppText variant="caption" muted numberOfLines={1}>
+            {t('candidate.label', { n: index + 1 })}
+          </AppText>
+          <AppText variant="bodyStrong" numberOfLines={1}>
+            {distance}
+          </AppText>
+          {pct ? (
+            <AppText variant="caption" muted numberOfLines={1}>
+              {pct}
+            </AppText>
+          ) : null}
+        </>
+      )}
     </PressableScale>
   );
 }
@@ -857,6 +878,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderWidth: 2,
   },
+  candidateCompact: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderWidth: 2,
+  },
   numberRow: {
     flexShrink: 1,
     flexDirection: 'row',
@@ -867,8 +894,8 @@ const styles = StyleSheet.create({
   unit: { flexShrink: 0 },
   startRow: { gap: spacing.xs },
   result: { gap: spacing.xs },
-  actions: { flexDirection: 'row', gap: spacing.sm },
-  action: { flex: 1, paddingHorizontal: spacing.sm },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  begin: { flex: 1 },
   outcome: { gap: spacing.sm },
   permission: { gap: spacing.sm },
 });

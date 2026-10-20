@@ -83,6 +83,7 @@
     "label": "{{pct}} persen dari rute ini lewat jalan yang belum kamu lalui"
   },
   "result": {
+    "short": "{{distance}} · {{pct}}% jalan baru",
     "summary": "Loop {{distance}}, {{pct}}% lewat jalan yang belum kamu lalui",
     "plain": "Loop {{distance}}",
     "noHistory": "Belum ada jejak jalan atau lari kamu di sekitar sini, jadi kebaruan jalan belum bisa dihitung.",

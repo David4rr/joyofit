@@ -21,7 +21,7 @@ import {
   type LoopCandidate,
   type LoopRouter,
 } from './generate';
-import { destination, pathLengthM, resampleLine } from './geo';
+import { destination, pathLengthM, removeSpurs, resampleLine } from './geo';
 import { createPaintedIndex } from './painted';
 
 const HOME: LatLon = { lat: -6.2088, lon: 106.8456 };
@@ -109,6 +109,25 @@ describe('generateLoops', () => {
     for (const c of candidates) {
       expect(c.line[0]).toEqual(HOME);
       expect(c.line[c.line.length - 1]).toEqual(HOME);
+    }
+  });
+
+  test('a dead-end stub the router goes into is not part of the loop, nor of its length', async () => {
+    const plain = bendyRouter();
+    // The service goes 90 m up a side street at the middle of the line and comes back the same way.
+    const stubbed: LoopRouter = async (waypoints, signal) => {
+      const routed = await plain(waypoints, signal);
+      const mid = Math.floor(routed.line.length / 2);
+      const at = routed.line[mid];
+      const tip = destination(at, 0, 90);
+      const line = [...routed.line.slice(0, mid + 1), destination(at, 0, 45), tip, destination(at, 0, 45), at, ...routed.line.slice(mid + 1)];
+      return { ...routed, line };
+    };
+    const { candidates } = await generateLoops({ ...base, router: stubbed });
+    expect(candidates.length).toBeGreaterThan(0);
+    for (const c of candidates) {
+      expect(removeSpurs(c.line)).toEqual(c.line);
+      expect(Math.abs(c.lengthError)).toBeLessThanOrEqual(FALLBACK_TOLERANCE);
     }
   });
 

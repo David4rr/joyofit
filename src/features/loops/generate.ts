@@ -9,7 +9,7 @@ import { isAborted } from '@/features/routes/map/http';
 import type { ViaRoute } from '@/features/routes/map/routingClient';
 import { haversineM } from '@/features/routes/routeModel';
 
-import { destination, pathLengthM, seededRandom } from './geo';
+import { destination, pathLengthM, removeSpurs, seededRandom } from './geo';
 import { scoreLoop, type PaintedIndex } from './painted';
 
 /** A loop within this share of the target length is "on target". */
@@ -173,13 +173,15 @@ async function tryOne(
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const waypoints = ringWaypoints(start, circumference, shape);
     const routed = await router(waypoints, signal);
-    const lengthM = pathLengthM(routed.line);
+    // The length that counts is the one of the loop as it is drawn: without the stubs a waypoint on a dead-end street makes.
+    const line = removeSpurs(routed.line);
+    const lengthM = pathLengthM(line);
     if (report.startSnap === null && routed.snapM.length > 0) report.startSnap = routed.snapM[0];
     // The start routed to itself: the ring could not be walked at all.
     if (lengthM < 1) return best;
     ratio.value = lengthM / circumference;
     const snapOk = routed.snapM.length === 0 || routed.snapM.every((d) => d <= MAX_SNAP_M);
-    const current: Attempt = { line: closeLoop(routed.line, start), lengthM, snapOk };
+    const current: Attempt = { line: closeLoop(line, start), lengthM, snapOk };
     if (snapOk && (best === null || Math.abs(lengthM - targetM) < Math.abs(best.lengthM - targetM))) best = current;
     if (!snapOk) return best;
     if (Math.abs(lengthM - targetM) / targetM <= TOLERANCE) return best;

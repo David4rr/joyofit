@@ -1,6 +1,6 @@
 # Loop baru dari rumah (Routes, `/routes/loop`)
 
-A new round trip of a chosen size from the phone's position or a saved Home point, drawn dotted over the streets the person has
+A new round trip of a chosen size from the phone's position or a saved Home point, drawn as a solid outlined line with direction arrows over the streets the person has
 already walked, with the share of it that is on streets they have not. Walking and running, Indonesian and English, JS only
 (no native change, no new dependency: OTA-able to any binary that already has the MapLibre map).
 
@@ -20,7 +20,12 @@ in the route library.
 - **Simpan** (route library, source "Gambar"), **Kirim ke jam** (saves first when needed, then the existing `useRoutePush` and its
   outcomes from `pushOutcome.ts`; "already on the watch" and "name too long" send the person to the route page to rename), **Mulai**
   (opens the phone recorder on a walk or a run, `/workouts/record?sport=`; to follow the line on the watch the route is sent first).
-- The map shows the person's past walks and runs as thin lines, the loop as dots, the start as a dot labelled `Start · Rumah`.
+- The map shows the person's past walks and runs as thin lines, the loop as a solid line with a dark outline and arrows along it
+  (`LoopLayers.tsx`), the start (and finish) as a ringed dot labelled `Start · Rumah`.
+- When a loop comes, the sheet folds by itself to one compact block: target and Walk/Run, one line `5,0 km · 98% jalan baru`
+  (plus small pills when the batch has several loops), then one row of actions: shuffle (**Ganti rute**), save and send as
+  icon-only buttons (the label is their accessibility label), and **Mulai**. Labels never wrap in that row, in either language.
+  Open, the sheet has the full-width **Ganti rute** button and the same row.
 
 ## Where the loop comes from (routing source)
 
@@ -41,7 +46,11 @@ through any number of waypoints, snap distance per waypoint). Variety comes from
 
 1. A ring through the start: centre at a seeded compass bearing from the start, circumference `target / ratio`.
 2. 3 or 4 waypoints on the ring, jittered in radius (±15%) and angle (±10°), clockwise or not, from the candidate's seed.
-3. One request `start, w1 .. wn, start`. The routed length is measured on the returned line.
+3. One request `start, w1 .. wn, start` with `continue_straight=true` (`ViaOptions.noUTurns`: no turning back at a waypoint, which
+   is what makes a stub when a waypoint snaps to a side street). The returned line goes through `removeSpurs` (`geo.ts`): an
+   out-and-back of at most 150 m one way, returning to the same point along the same street, is cut. The routed length is measured
+   on the cleaned line. Longer out-and-backs stay and cost `2 × repeat share` in the ranking. In 6 live Jakarta loops of 4 km the
+   plain request had 11% of its length in such stubs, with `continue_straight` 7%, which the cleanup then removes.
 4. If it is not within 5% of the target, the ring is rescaled by `target / length` and routed again (at most 3 requests per loop).
    The measured `length / circumference` ratio (about 1.25 in cities) is kept and starts the next loops and the next batch, so most
    loops need one request.
@@ -51,8 +60,8 @@ through any number of waypoints, snap distance per waypoint). Variety comes from
    new share is unknown (`null`), the chip is hidden and the sheet says so; no number is made up.
 
 Live check of the generator against the real service (Jakarta 7 km: 4 loops, 10 requests, 10 s, lengths +0.4% to +8.9%; Stockholm
-10 km: 6 requests; Yogyakarta 4 km: 9 requests) is how `INITIAL_RATIO` was set. The loops are real street loops with small spurs
-where a waypoint snapped to a dead end.
+10 km: 6 requests; Yogyakarta 4 km: 9 requests) is how `INITIAL_RATIO` was set. The loops are real street loops; the short spurs
+where a waypoint snapped to a dead end are cut (step 3).
 
 If FOSSGIS ever becomes unreliable or asks us to stop: swap `routing.routeVia` in `useLoopPlanner.ts`. A keyed provider
 (ORS or GraphHopper round trip) needs a session-gated, rate-limited, cached endpoint in `server/` with the key as a Worker

@@ -83,6 +83,7 @@
     "label": "{{pct}} percent of this route is on streets you have not been on"
   },
   "result": {
+    "short": "{{distance}} · {{pct}}% new streets",
     "summary": "{{distance}} loop, {{pct}}% on streets you have not painted",
     "plain": "{{distance}} loop",
     "noHistory": "No walk or run tracks of yours around here yet, so new streets cannot be counted.",
