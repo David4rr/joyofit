@@ -15,6 +15,7 @@ import { elapsedSec, formatGrams, isActive } from '@/features/live/liveWorkout';
 import { HourlyBars } from '@/features/today/HourlyBars';
 import { scoreFor } from '@/features/sleep/nights';
 import { SleepSummaryView } from '@/features/today/SleepSummaryView';
+import { ownTotalsOf } from '@/features/device/watchDayTotals';
 import { isLinkUp } from '@/features/device/linkState';
 import { SyncButton } from '@/features/device/SyncButton';
 import {
@@ -70,7 +71,7 @@ function WatchToday() {
   const colors = useColors();
   const { t } = useTranslation(['today', 'common']);
   const locale = useLocale();
-  const { linkState, device, battery, lastSync, totals, error, dataVersion, sync } = useWatch();
+  const { linkState, device, battery, lastSync, totals, watches, error, dataVersion, sync } = useWatch();
   const { data, error: loadError } = useTodayData(dataVersion);
   const nightHrv = useNightHrvAvailability(dataVersion);
   const goal = useStepGoal();
@@ -79,7 +80,7 @@ function WatchToday() {
 
   const view = useMemo(() => {
     if (!data) return null;
-    const watchTotals = totals && totals.at >= data.dayStart ? totals : null;
+    const watchTotals = ownTotalsOf(totals, watches, data.dayStart);
     const sleep = lastSleepSession(data.sleep);
     const dayTotals = watchTotals ?? sumTotals(data.samples);
     const scores = computeScores(data, nightHrv);
@@ -94,7 +95,7 @@ function WatchToday() {
       hasSamples: data.samples.length > 0,
       scores,
     };
-  }, [data, totals, nightHrv, locale]);
+  }, [data, totals, watches, nightHrv, locale]);
 
   // One read of the fitness inputs for the cards below and for the body metrics JoyoRogo gets.
   const { data: fitness } = useFitnessData(dataVersion, 'full');
