@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { fmtDecimal, fmtInt } from '@/i18n';
 
+import { isFootKind } from '../sport';
 import { formatDuration, formatPace, type WorkoutAnalysis } from '../types';
 import { distanceParts, kcalPerHour } from './chartMath';
 import { useAnalysisContext } from './context';
@@ -99,6 +100,9 @@ function SummaryStripImpl({ analysis }: { analysis: WorkoutAnalysis }) {
       unit: t(sport.kind === 'ride' ? 'unit.rpm' : 'unit.spm'),
       sub: stats.maxCad !== null ? t('summary.maxCadence', { value: Math.round(stats.maxCad) }) : undefined,
     });
+  }
+  if (stats.avgStrideM !== null && isFootKind(sport.kind)) {
+    grid.push({ key: 'stride', label: t('summary.stride'), value: fmtDecimal(stats.avgStrideM, 2), unit: t('unit.m') });
   }
   if (stats.avgPower !== null) {
     grid.push({

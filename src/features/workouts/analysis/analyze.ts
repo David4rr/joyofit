@@ -14,6 +14,7 @@ import { buildGrid, type AnalysisPoint, type Grid } from './series';
 import { selectSimilar, type SimilarCandidate } from './similar';
 import { hasPace, isFootKind, sportKind } from './sport';
 import { kmSplits, paceBlockSplits, type SplitGrid } from './splits';
+import { cadenceFromSteps, plausibleStepLength, stepLengthFromSpeed } from './stride';
 import {
   ANALYSIS_LIMITS,
   WORKOUT_ANALYSIS_VERSION,
@@ -114,10 +115,37 @@ function finitePositive(value: number | undefined): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
 }
 
-/** FIT files count strides (one foot) per minute on foot; the grid's own cadence is steps per minute already. */
-function summaryCadence(value: number | undefined, summary: WorkoutSummary, kind: SportKind): number | null {
-  const v = finitePositive(value);
-  return v !== null && summary.importedFrom && isFootKind(kind) ? v * 2 : v;
+/** Mean of one field over the watch's per-km blocks that have it, weighted by block length (a short last block counts less). */
+function sectionsMean(summary: WorkoutSummary, field: 'cadence' | 'stepLength'): number | null {
+  let sum = 0;
+  let weight = 0;
+  for (const section of summary.sections ?? []) {
+    const value = finitePositive(section[field]);
+    if (value === null) continue;
+    const w = finitePositive(section.distance) ?? 1;
+    sum += value * w;
+    weight += w;
+  }
+  return weight > 0 ? sum / weight : null;
+}
+
+/**
+ * Average and maximum cadence a workout's summary holds, in steps per minute. A FIT import keeps the file's own session
+ * figures, which count strides (one foot) per minute on foot, so they are doubled; a watch workout keeps the mean of its
+ * samples under `samples` (`avgStepRate` for walking with the new step algorithm, `avgCadence` otherwise) and its per-km
+ * blocks under `sections`.
+ */
+function summaryCadence(kind: SportKind, summary: WorkoutSummary, which: 'avg' | 'max'): number | null {
+  const own = finitePositive(which === 'avg' ? summary.avgCadence : summary.maxCadence);
+  if (own !== null) return summary.importedFrom && isFootKind(kind) ? own * 2 : own;
+  if (which === 'max') return null;
+  return finitePositive(summary.samples?.avgCadence) ?? finitePositive(summary.samples?.avgStepRate) ?? sectionsMean(summary, 'cadence');
+}
+
+/** Metres per step a summary holds: a FIT session's `avg_step_length`, or a watch's own mean over its samples or per-km blocks (centimetres). */
+function summaryStepLength(summary: WorkoutSummary): number | null {
+  const watchCm = finitePositive(summary.samples?.avgStepLength) ?? sectionsMean(summary, 'stepLength');
+  return plausibleStepLength(summary.avgStepLengthM) ?? plausibleStepLength(watchCm === null ? null : watchCm / 100);
 }
 
 function buildStats(
@@ -149,6 +177,16 @@ function buildStats(
     }
   }
 
+  // Cadence: the samples, else the source's own average, else (on foot) the watch's step count over the moving time.
+  const foot = isFootKind(kind);
+  const avgCad = meanOf(grid.cad) ?? summaryCadence(kind, summary, 'avg') ?? (foot ? cadenceFromSteps(workout.steps, grid.movingSec) : null);
+  const maxCad = maxOf(grid.cad) ?? summaryCadence(kind, summary, 'max');
+  // Step length: the samples, else the source's own average, else (on foot) the average speed over the average cadence.
+  const avgStride =
+    plausibleStepLength(strideCount > 0 ? strideSum / strideCount : null) ??
+    summaryStepLength(summary) ??
+    (foot ? stepLengthFromSpeed(avgSpeed, avgCad) : null);
+
   const avgPower = meanOf(grid.power) ?? finitePositive(summary.avgPower);
   return {
     avgHr: hrOk ? roundOrNull(validBpm(workout.avgHr) ?? hrMean, 0) : null,
@@ -158,12 +196,12 @@ function buildStats(
     bestPaceSecKm: roundOrNull(bestPace, 0),
     avgSpeedMs: roundOrNull(avgSpeed, 2),
     maxSpeedMs: roundOrNull(maxSpeed, 2),
-    avgCad: roundOrNull(meanOf(grid.cad) ?? summaryCadence(summary.avgCadence, summary, kind), 0),
-    maxCad: roundOrNull(maxOf(grid.cad) ?? summaryCadence(summary.maxCadence, summary, kind), 0),
+    avgCad: roundOrNull(avgCad, 0),
+    maxCad: roundOrNull(maxCad, 0),
     avgPower: roundOrNull(avgPower, 0),
     maxPower: roundOrNull(maxOf(grid.power) ?? finitePositive(summary.maxPower), 0),
     normalizedPower: roundOrNull(finitePositive(summary.normalizedPower) ?? normalizedPowerOf(grid.power, grid.stepSec), 0),
-    avgStrideM: roundOrNull(strideCount > 0 ? strideSum / strideCount : null, 2),
+    avgStrideM: roundOrNull(avgStride, 2),
   };
 }
 

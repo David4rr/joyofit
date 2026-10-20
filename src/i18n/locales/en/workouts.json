@@ -41,6 +41,7 @@
       "maxHr": "max {{value}} bpm",
       "cadence": "Cadence",
       "maxCadence": "max {{value}}",
+      "stride": "Step length",
       "power": "Avg power",
       "normalizedPower": "NP {{value}} W",
       "fuel": "Estimated fuel",
@@ -228,8 +229,69 @@
       "bpmAvg": "bpm avg",
       "strain": "strain"
     },
+    "filter": {
+      "all": "All",
+      "run": "Run",
+      "walk": "Walk",
+      "ride": "Ride",
+      "swim": "Swim",
+      "strength": "Strength",
+      "other": "Other"
+    },
     "strengthElsewhere_one": "{{count}} strength workout from JoyoRogo is in the strength history, not in this list.",
     "strengthElsewhere_other": "{{count}} strength workouts from JoyoRogo are in the strength history, not in this list."
+  },
+  "progress": {
+    "period": {
+      "week": "Week",
+      "month": "Month"
+    },
+    "periodA11y": "Chart range",
+    "current": {
+      "week": "This week",
+      "month": "This month"
+    },
+    "chart": {
+      "week": "Distance per week",
+      "month": "Distance per month"
+    },
+    "chartA11y": {
+      "week": "Distance per week, last 12 weeks. Longest {{value}}.",
+      "month": "Distance per month, last 12 months. Longest {{value}}."
+    },
+    "stat": {
+      "time": "Time",
+      "elevation": "Elevation",
+      "count": "Activities"
+    },
+    "compare": {
+      "up": {
+        "week": "{{value}} more than last week",
+        "month": "{{value}} more than last month"
+      },
+      "down": {
+        "week": "{{value}} less than last week",
+        "month": "{{value}} less than last month"
+      },
+      "same": {
+        "week": "Same as last week",
+        "month": "Same as last month"
+      },
+      "none": {
+        "week": "No activity last week",
+        "month": "No activity last month"
+      }
+    },
+    "kind": {
+      "run": "running",
+      "walk": "walking",
+      "ride": "cycling",
+      "swim": "swimming"
+    },
+    "empty": {
+      "week": "No {{sport}} activity in the last 12 weeks.",
+      "month": "No {{sport}} activity in the last 12 months."
+    }
   },
   "detail": {
     "title": "Workout",

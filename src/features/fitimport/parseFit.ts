@@ -172,6 +172,8 @@ export interface FitActivity {
   /** rpm of a bike, strides per minute of a foot sport. */
   avgCadence: number | null;
   maxCadence: number | null;
+  /** Metres per step: the session's `avg_step_length` (millimetres in the file). */
+  avgStepLength: number | null;
   /** Watts. */
   avgPower: number | null;
   maxPower: number | null;
@@ -422,6 +424,10 @@ export function parseFitActivity(bytes: Uint8Array): FitActivity | FitImportErro
     steps: sport.foot && strides !== null ? Math.round(strides * 2) : 0,
     avgCadence: rounded(weighted(sessions, (s) => positive(s.avgCadence))),
     maxCadence: maxOf(sessions, (s) => positive(s.maxCadence)),
+    avgStepLength: weighted(sessions, (s) => {
+      const mm = positive(s.avgStepLength);
+      return mm === null ? null : mm / 1000;
+    }),
     avgPower: rounded(weighted(sessions, (s) => positive(s.avgPower))),
     maxPower: maxOf(sessions, (s) => positive(s.maxPower)),
     normalizedPower: rounded(weighted(sessions, (s) => positive(s.normalizedPower))),

@@ -312,6 +312,23 @@ Data availability:
 SQLite migration 12 adds per-sample `speed`, `cadence`, `stride` and `power` to `workout_points`. They are only filled for workouts synced or imported after
 that version; older workouts show the analysis without those charts. The migration needs the new native build (the schema is shared with the native module).
 
+**Cadence and step length ("Panjang langkah").** The summary card shows average cadence (steps per minute on foot, rpm on a bike, with the maximum) and,
+for runs and walks, the average step length in metres. The chart tab "Kadens" plots the cadence series. `analyzeWorkout` (`buildStats`, computed on every
+open, so it also fills workouts stored earlier) takes each figure from the first source that has it:
+
+| | Cadence | Step length |
+| --- | --- | --- |
+| 1 | mean of the per-sample `cadence` (zeros are gaps) | mean of the per-sample `stride` |
+| 2 | the summary: a FIT import's session average (per leg on foot, so doubled), else the watch's `summary.samples.avgCadence` / `avgStepRate` | the FIT session's `avg_step_length` (`summary.avgStepLengthM`), else the watch's `samples.avgStepLength` (centimetres) |
+| 3 | the watch's per-km `summary.sections[].cadence`, weighted by block length | `sections[].stepLength` the same way |
+| 4 | on foot, the workout's step count over its moving time | on foot, average speed over average cadence (`speed / (cadence / 60)`) |
+
+Estimates (3 and 4) are dropped, never clamped, outside 40 to 260 steps per minute and 0.2 to 2.5 m (`analysis/stride.ts`); a speed under 0.5 m/s gives no
+step length. The watch sync reads cadence from the sample's cadence short and, on foot, from its step-rate byte when the short has no reading
+(`WorkoutBuilder.sampleCadence`); its `samples` averages leave zero readings out. Phone recordings have cadence only from a paired running pod (the
+phone's own step counter is not read). A GPX file is not a workout import (the route planner reads GPX); the app imports FIT and the Huawei export.
+The raw FIT file is not kept, so a file imported before the per-sample columns existed has no cadence samples and shows steps-based or session figures only.
+
 Map data © OpenStreetMap contributors, tiles by [OpenFreeMap](https://openfreemap.org); the attribution is drawn on every map.
 
 ## Fitness metrics (Today cards, Today → Kebugaran; screens in Indonesian)
@@ -405,8 +422,8 @@ arrives through the `CFBundleDocumentTypes` entry for `.fit` in `app.json` (not 
 | `file_id.type` must be `activity`, `file_id.manufacturer` names the workout (`Ride (iGPSPORT)`; unknown brands give `Ride`) | `workouts.sport_name` |
 | `session` (several, as some head units write after a pause, are added up): start, `total_elapsed_time`, `total_timer_time`, distance, calories, avg/max heart rate, ascent | `workouts.start`, `end`, `duration` (active seconds), `distance`, `calories`, `avg_hr`, `max_hr`, `summary_json` |
 | `session.sport` / `sub_sport` | `sport_type`: cycling 3, indoor cycling or virtual 7, running 1, trail run 11, treadmill 5, walking 2, indoor walking 13, hiking 14, anything else 255 (Exercise) |
-| avg/max speed, ascent/descent, altitude range, avg/max cadence, avg/max/normalized power | `summary_json` (`workout_points` has no columns for power or cadence) |
-| `record`: time, position (semicircles to degrees), altitude, heart rate | `workout_points` (`ts`, `lat`, `lon`, `alt`, `hr`) |
+| avg/max speed, ascent/descent, altitude range, avg/max cadence (per leg on foot), `avg_step_length` (mm), avg/max/normalized power | `summary_json` (`avgCadence`, `maxCadence`, `avgStepLengthM`, ...) |
+| `record`: time, position (semicircles to degrees), altitude, heart rate, speed, cadence (+ `fractional_cadence`, doubled to steps per minute on foot), `step_length` (mm), power | `workout_points` (`ts`, `lat`, `lon`, `alt`, `hr`, `speed`, `cadence`, `stride`, `power`) |
 | `record.heart_rate`, averaged per minute | `step_samples.heart_rate`, `imported = 1`: Strain, Readiness and Trends read the per-minute heart rate, not `workouts` |
 
 Same rules as the Huawei import: the row has `imported = 1`, so the cloud upload, Health Connect / Apple Health and the

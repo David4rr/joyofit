@@ -73,6 +73,7 @@ function summaryOf(a: FitActivity): string {
     maxAltitude: a.maxAltitude ?? undefined,
     avgCadence: a.avgCadence ?? undefined,
     maxCadence: a.maxCadence ?? undefined,
+    avgStepLengthM: a.avgStepLength === null ? undefined : Math.round(a.avgStepLength * 1000) / 1000,
     avgPower: a.avgPower ?? undefined,
     maxPower: a.maxPower ?? undefined,
     normalizedPower: a.normalizedPower ?? undefined,

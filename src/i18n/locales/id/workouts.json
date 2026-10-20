@@ -41,6 +41,7 @@
       "maxHr": "maks {{value}} bpm",
       "cadence": "Kadens",
       "maxCadence": "maks {{value}}",
+      "stride": "Panjang langkah",
       "power": "Daya rata-rata",
       "normalizedPower": "NP {{value}} W",
       "fuel": "Perkiraan bahan bakar",
@@ -226,7 +227,68 @@
       "bpmAvg": "bpm rata-rata",
       "strain": "strain"
     },
+    "filter": {
+      "all": "Semua",
+      "run": "Lari",
+      "walk": "Jalan",
+      "ride": "Sepeda",
+      "swim": "Renang",
+      "strength": "Kekuatan",
+      "other": "Lainnya"
+    },
     "strengthElsewhere_other": "{{count}} latihan beban dari JoyoRogo ada di riwayat latihan beban, tidak di daftar ini."
+  },
+  "progress": {
+    "period": {
+      "week": "Minggu",
+      "month": "Bulan"
+    },
+    "periodA11y": "Rentang grafik",
+    "current": {
+      "week": "Minggu ini",
+      "month": "Bulan ini"
+    },
+    "chart": {
+      "week": "Jarak per minggu",
+      "month": "Jarak per bulan"
+    },
+    "chartA11y": {
+      "week": "Jarak per minggu, 12 minggu terakhir. Terjauh {{value}}.",
+      "month": "Jarak per bulan, 12 bulan terakhir. Terjauh {{value}}."
+    },
+    "stat": {
+      "time": "Waktu",
+      "elevation": "Tanjakan",
+      "count": "Sesi"
+    },
+    "compare": {
+      "up": {
+        "week": "{{value}} lebih jauh dari minggu lalu",
+        "month": "{{value}} lebih jauh dari bulan lalu"
+      },
+      "down": {
+        "week": "{{value}} lebih pendek dari minggu lalu",
+        "month": "{{value}} lebih pendek dari bulan lalu"
+      },
+      "same": {
+        "week": "Sama dengan minggu lalu",
+        "month": "Sama dengan bulan lalu"
+      },
+      "none": {
+        "week": "Tidak ada aktivitas minggu lalu",
+        "month": "Tidak ada aktivitas bulan lalu"
+      }
+    },
+    "kind": {
+      "run": "lari",
+      "walk": "jalan",
+      "ride": "sepeda",
+      "swim": "renang"
+    },
+    "empty": {
+      "week": "Tidak ada aktivitas {{sport}} dalam 12 minggu terakhir.",
+      "month": "Tidak ada aktivitas {{sport}} dalam 12 bulan terakhir."
+    }
   },
   "detail": {
     "title": "Latihan",

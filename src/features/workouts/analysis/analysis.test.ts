@@ -24,7 +24,7 @@ const hrRamp = (total: number) => (t: number) => 130 + (40 * t) / total;
 
 function analyze(
   synth: Synth,
-  over: { sportName?: string; summary?: WorkoutSummary; history?: AnalysisHistory; options?: AnalyzeOptions; distance?: number; calories?: number; duration?: number } = {},
+  over: { sportName?: string; summary?: WorkoutSummary; history?: AnalysisHistory; options?: AnalyzeOptions; distance?: number; calories?: number; duration?: number; steps?: number } = {},
 ): WorkoutAnalysis {
   const input: AnalyzeInput = {
     workout: workoutRow({
@@ -33,6 +33,7 @@ function analyze(
       duration: over.duration ?? synth.elapsed,
       distance: over.distance ?? Math.round(synth.distance),
       calories: over.calories ?? 0,
+      steps: over.steps ?? 0,
     }),
     summary: over.summary ?? {},
     points: synth.points,
@@ -404,6 +405,57 @@ describe('cadence, power and stride', () => {
     const synth = steady5k();
     const withStride = synth.points.map((p, i) => (i % 3 === 0 ? { ...p, stride: 1.1 } : p));
     expect(analyze({ ...synth, points: withStride }).stats.avgStrideM).toBe(1.1);
+  });
+
+  it('derives the step length of a run from its speed and cadence when no source gives one', () => {
+    // 5:00 per km is 3.33 m/s; at 170 steps per minute (2.83 steps a second) a step is 1.18 m.
+    const a = analyze(steady5k({ cadence: () => 170 }));
+    expect(a.stats.avgCad).toBe(170);
+    expect(a.stats.avgStrideM).toBeCloseTo(1.18, 1);
+  });
+
+  it('prefers a measured step length to the derived one, and drops an impossible one', () => {
+    const synth = steady5k({ cadence: () => 170 });
+    const measured = synth.points.map((p) => (p.ts % 2 === 0 ? { ...p, stride: 0.9 } : p));
+    expect(analyze({ ...synth, points: measured }).stats.avgStrideM).toBe(0.9);
+    const absurd = synth.points.map((p) => ({ ...p, stride: 3.5 }));
+    expect(analyze({ ...synth, points: absurd }).stats.avgStrideM).toBeCloseTo(1.18, 1);
+  });
+
+  it('doubles the per-leg cadence a FIT file keeps in its summary and reads its avg_step_length', () => {
+    const synth = steady5k();
+    const summary: WorkoutSummary = { avgCadence: 85, maxCadence: 112, avgStepLengthM: 1.05, importedFrom: 'Garmin' };
+    const a = analyze(synth, { summary });
+    expect(a.stats).toMatchObject({ avgCad: 170, maxCad: 224, avgStrideM: 1.05 });
+    // A bike's cadence is revolutions per minute: never doubled.
+    const ride = analyze(synth, { summary: { avgCadence: 85, maxCadence: 112, importedFrom: 'Garmin' }, sportName: 'Biking' });
+    expect(ride.stats).toMatchObject({ avgCad: 85, maxCad: 112, avgStrideM: null });
+  });
+
+  it('reads the watch\'s own sample averages (cadence or step rate in steps per minute, step length in centimetres)', () => {
+    const a = analyze(steady5k(), { summary: { samples: { avgCadence: 158, avgStepLength: 78 } } });
+    expect(a.stats).toMatchObject({ avgCad: 158, avgStrideM: 0.78 });
+    const walk = analyze(steady5k(), { summary: { samples: { avgStepRate: 112.4 } }, sportName: 'Outdoor Walk' });
+    expect(walk.stats.avgCad).toBe(112);
+  });
+
+  it('reads the watch\'s per-km blocks, weighted by length, and skips blocks with no reading', () => {
+    const sections = [
+      { distance: 1000, cadence: 160, stepLength: 70 },
+      { distance: 1000, cadence: 170, stepLength: 80 },
+      { distance: 500, cadence: -1, stepLength: 0 },
+    ];
+    expect(analyze(steady5k(), { summary: { sections } }).stats).toMatchObject({ avgCad: 165, avgStrideM: 0.75 });
+  });
+
+  it('falls back to the step count over the moving time, and ignores a count that is not a gait', () => {
+    const synth = steady5k();
+    // 1510 s is 25.17 minutes: 4000 steps are 159 per minute.
+    const a = analyze(synth, { steps: 4000 });
+    expect(a.stats.avgCad).toBe(159);
+    expect(a.stats.avgStrideM).toBeCloseTo(1.26, 1);
+    expect(analyze(synth, { steps: 20_000 }).stats).toMatchObject({ avgCad: null, avgStrideM: null });
+    expect(analyze(synth, { steps: 0 }).stats).toMatchObject({ avgCad: null, avgStrideM: null });
   });
 });
 

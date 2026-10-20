@@ -68,7 +68,7 @@ import { EbikeRow } from '@/features/cycling/ui/EbikeRow';
 import { RideAnalysisView } from '@/features/cycling/ui/RideAnalysisView';
 import { useRideData } from '@/features/cycling/ui/useRideData';
 import { withRideStats } from '@/features/cycling/ui/withRideStats';
-import { sportKind } from '@/features/workouts/analysis/sport';
+import { isFootKind, sportKind } from '@/features/workouts/analysis/sport';
 import { errorMessage, formatClock, formatCount, formatDateTime } from '@/format';
 import { fmtDecimal, fmtInt, t as translate } from '@/i18n';
 import { spacing, useColors } from '@/theme';
@@ -257,6 +257,8 @@ export default function WorkoutDetailScreen() {
   const jumpRope = summary.kind === 'JUMP_ROPING';
   const swim = summary.swim;
   const sport = sportLabel(workout.sportName);
+  // On foot the analysis card carries cadence in steps per minute; a FIT file's per-leg figure here would read as rpm.
+  const onFoot = isFootKind(sportKind(workout.sportName, summary.kind));
   const { value: distance, unit: distanceUnit } = workoutDistanceParts(workout.distance);
   const swimRows: { key: string; label: string; value: string | null }[] = swim
     ? [
@@ -552,10 +554,10 @@ export default function WorkoutDetailScreen() {
         {summary.maxPower !== undefined ? (
           <KeyValue icon="flash-outline" label={t('detail.more.peakPower')} value={`${fmtInt(summary.maxPower)} ${t('analysis.unit.w')}`} />
         ) : null}
-        {summary.avgCadence !== undefined ? (
+        {!onFoot && summary.avgCadence !== undefined ? (
           <KeyValue icon="sync-outline" label={t('detail.more.avgCadence')} value={`${fmtInt(summary.avgCadence)} ${t('analysis.unit.rpm')}`} />
         ) : null}
-        {summary.maxCadence !== undefined ? (
+        {!onFoot && summary.maxCadence !== undefined ? (
           <KeyValue icon="sync-outline" label={t('detail.more.peakCadence')} value={`${fmtInt(summary.maxCadence)} ${t('analysis.unit.rpm')}`} />
         ) : null}
         {summary.maxDepth !== undefined ? (
