@@ -298,6 +298,7 @@ internal class WearRuntime private constructor(context: Context) {
     val address = rawAddress.trim().uppercase(Locale.ROOT)
     bindConsent.clear(address)
     pairingConsent.clear(address)
+    settings.switchBackfill.done(address)
     link.forget(address)
     if (settings.watchAddress == address) {
       setBackground(null)

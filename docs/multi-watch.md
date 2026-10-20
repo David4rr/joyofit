@@ -35,7 +35,7 @@ JoyoFit's architecture does not: `WearRuntime` owns **one** `WearLink` (`current
 | Auth/session keys | per address (Android prefs, iOS Keychain) | unchanged |
 | `device` row | address, name, model, version, `last_sync` | + `alias`, `is_primary`, `added_at`, `tracks_health`, `bg_sync` |
 | `WearSettings.watchAddress/watchName` | the one background watch | unchanged: the *active* watch; every connect from the app makes the watch the background watch (a visit does not) |
-| Sync window of steps/sleep | `device.last_sync` per address | unchanged |
+| Sync window of steps/sleep | `device.last_sync` per address | unchanged, except the first sync after the link moved to the watch from another one: from 0 (section 7) |
 | Sync window of **workouts** | `MAX(end)` of all workouts | per watch (`WorkoutStore.syncStart(address)`), else the second watch would never download anything older than the first watch's newest workout |
 | Sync window of health metrics, night HRV | `MAX(last_ts)` / `MAX(end)` of all rows | per watch |
 | Rows | **no device id**: `step_samples` PK `timestamp`, `sleep_segments` PK `(start, type)`, `workouts.start UNIQUE`; an upsert of watch B overwrote watch A's row | `device` column on `step_samples`, `sleep_segments`, `sleep_scores`, `workouts`, `health_metrics`, `hrv_readings`, plus the rules below |
@@ -94,6 +94,7 @@ Native and schema, so: Play and App Store builds only. After installing, an exis
 - The Android store statements ran on `sqlite-jdbc`, not on Android's own SQLite; the background visit, `connect(remember = false)` and the `tracks_health` gate are compiled and unit-tested only for their decision logic, they need a phone with two watches. The Swift `tracks_health` gate is tested at the store function, not through a connected `WearLink`.
 - How Huawei Health itself treats two watches on one phone is not documented in anything we could read (section 1).
 - Not done: separate people. A family member's band can be paired and used for faces, alarms and battery with `tracks_health` off, but JoyoFit has one profile; per-person data would be a different feature.
+- Section 7 (borrowed band): the Kotlin backfill logic and its marks run on the JVM (`SwitchBackfillTest`), the TypeScript data-layer scenarios on the shipped schema (`watchSwitch.test.ts`). The chain connect, mark, sync through a live `WearLink` was not run (it needs a phone with two watches), and the Swift twin (`WearSettings.noteConnect`, `WearLink.runSync`) was written to mirror the Kotlin and not compiled or run here (no Swift toolchain on the Linux machine). The Today ring rule was not looked at on a phone. Whether a Huawei band keeps seven days or more of step history is the watch's own limit, not measured here.
 
 ## 7. Someone else's watch on your phone (a borrowed band)
 
@@ -104,4 +105,13 @@ Reported 2026-10-20: the owner of a Huawei watch connected his wife's Band 10 an
 
 **The ring (all runtimes with migration 14, JS only).** `ownTotalsOf` (`src/features/device/watchDayTotals.ts`): a phone with one watch row keeps showing the watch counter, as before. With several watches, the counter is used only when exactly one of them stores health data and the counter is that watch's (a guest band with `tracks_health` off reports zeros and is ignored). When two or more store health data the day is the sum of the stored minutes, the merged timeline of section 3. The totals carry the address of the watch that reported them (`WatchTotals.address`). No new binary is needed.
 
-Tests: `src/features/device/watchDayTotals.test.ts` (the rule) and `src/db/watchSwitch.test.ts` (pairing a second watch leaves the first watch's days unchanged, switching back restores the totals, and a day an older build overwrote is back after a full pull of the owner's watch).
+**Backfill on a switch (native, needs a new build).** `device.last_sync` is one cursor per watch, so a watch that comes back after another one was linked only asks for what is newer than its own last sync; whatever the other watch wrote over its minutes in the meantime is never asked for again. Now a connect the person makes (the one that becomes the remembered watch, never a background visit or the reconnect of the watch already followed) to a watch other than the remembered one marks the new watch (`SwitchBackfill`, `WearSettings.switchBackfill`; Swift: `WearSettings.noteConnect`). The next activity sync of a marked watch starts at 0, like a first sync or Sync full history, for steps and sleep (slices as in `syncSlices`; workouts and night HRV keep their own windows), and the mark is cleared once those slices were stored; a failed sync leaves it. Forgetting a watch clears its mark. Each switch therefore costs one pull of what the watch still holds; the rows are upserts and the merge rules above decide each minute.
+
+What gets back on the owner's phone, by the state it is in:
+
+- Rows the owner's watch wrote and the band could not touch (migration 14 builds): nothing to restore.
+- Minutes an older build overwrote and migration 14 left without a watch (a phone with two `device` rows when it migrated): the owner's full pull replaces them, a row without a watch loses to every watch. The migration also makes the watch synced last primary, which is the band when it synced after the owner's watch: **Make primary** on the owner's watch (Watch tab, Your watches) before the band is linked again, or the band, as primary, takes minutes back.
+- Days the watch no longer holds (older than its retention) cannot come back from JoyoFit.
+- Remove and pair again (what a person tries first): removing the primary hands the primary to the watch synced most recently, so the owner's watch comes back as a non-primary watch and its row has no `last_sync`, which pulls everything by itself (`watchSwitch.test.ts`, "re-paired"). Make it primary again afterwards, or the band, as primary, keeps the minutes it fills.
+
+Tests: Kotlin `SwitchBackfillTest` (the mark and the window rule, then the restore and the band's later sync on the shipped schema), Swift `SettingsAndIdentityTests.testSwitchBackfill…` and `MultiWatchTests.testAFullPullOfTheOwnersWatch…`.

@@ -124,6 +124,11 @@ export interface SyncSummary {
   workouts: number;
   /** Today's totals as reported by the watch. */
   totals: FitnessTotals;
+  /**
+   * The watch the sync ran on (`device.address`). Android names it (a background visit syncs a watch that is not the one the app shows);
+   * absent on iOS and on older binaries, where the watch the link is up to is the one.
+   */
+  address?: string | null;
 }
 
 export type LogDirection = 'tx' | 'rx' | 'info' | 'error';

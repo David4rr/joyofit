@@ -125,10 +125,11 @@ export function WatchProvider({ children }: { children: ReactNode }) {
     setActiveAddress(address);
     if (address) setLastSync(await getLastSync(db, address));
   }, [db]);
-  /** [address]: the watch the sync ran on, the one the link is up to. */
+
+  /** [address]: the watch the link is up to, for a summary that does not name its watch (iOS, older binaries). */
   const applySummary = useCallback((summary: SyncSummary, address: string | null) => {
     setLastSync(summary.to);
-    setTotals({ ...summary.totals, at: summary.to, address });
+    setTotals({ ...summary.totals, at: summary.to, address: summary.address ?? address });
     setDataVersion((v) => v + 1);
   }, []);
 

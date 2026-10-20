@@ -586,6 +586,7 @@ internal class WearLink(
 
   /** The watch becomes the one background mode follows, and gets its row in the shared database. */
   private fun rememberWatch(address: String, name: String, info: Map<String, Any?>) {
+    settings.switchBackfill.noteConnect(settings.watchAddress, address)
     settings.watchAddress = address
     settings.watchName = name
     try {
@@ -788,10 +789,12 @@ internal class WearLink(
       events.state(LinkState.SYNCING, null)
       try {
         if (!storage { syncStore.tracksHealth(connection.address) }) return@withLock syncWithoutHealth(connection)
-        val last = if (fullHistory) null else storage { syncStore.lastSync(connection.address) }
+        val backfill = fullHistory || settings.switchBackfill.pending(connection.address)
+        val last = settings.switchBackfill.windowBase(connection.address, fullHistory) { storage { syncStore.lastSync(connection.address) } }
         val nowSec = System.currentTimeMillis() / 1000
         val slices = syncSlices(syncWindowStart(last), nowSec)
-        events.log(LogDirection.INFO, null, null, null, "History: ${if (fullHistory) "full" else "incremental"} pull in ${slices.size} slices from ${slices.first().first}")
+        val kind = if (fullHistory) "full" else if (backfill) "backfill after a switch" else "incremental"
+        events.log(LogDirection.INFO, null, null, null, "History: $kind pull in ${slices.size} slices from ${slices.first().first}")
         var stored: SyncSummary? = null
         var samples = 0
         var sleep = 0
@@ -823,6 +826,7 @@ internal class WearLink(
           syncWorkouts(connection, fullHistory)
           throw activityError
         }
+        settings.switchBackfill.done(connection.address)
         val finalSlice = stored!!
         val workoutsSynced = syncWorkouts(connection, fullHistory)
         val summary = SyncSummary(
@@ -834,6 +838,7 @@ internal class WearLink(
           totalCalories = finalSlice.totalCalories,
           totalDistance = finalSlice.totalDistance,
           workouts = workoutsSynced,
+          address = connection.address,
         )
         val oldestWorkout = storage {
           syncStore.read { db ->
@@ -885,7 +890,7 @@ internal class WearLink(
     val nowSec = System.currentTimeMillis() / 1000
     storage { syncStore.touchLastSync(connection.address, nowSec) }
     events.log(LogDirection.INFO, null, null, null, "History: ${connection.address} does not track health, no rows stored")
-    return SyncSummary(from = nowSec, to = nowSec, samples = 0, sleep = 0, totalSteps = 0, totalCalories = 0, totalDistance = 0)
+    return SyncSummary(from = nowSec, to = nowSec, samples = 0, sleep = 0, totalSteps = 0, totalCalories = 0, totalDistance = 0, address = connection.address)
   }
 
   /** Database access off the caller's thread; a failed read or write surfaces as ERR_STORAGE. */
