@@ -37,6 +37,7 @@ import { LoopShortcut } from '@/features/loops/ui/LoopShortcut';
 import { FamilyCard } from '@/features/today/FamilyCard';
 import { ScoresCard } from '@/features/today/ScoresCard';
 import { useRogoScoresPush } from '@/features/today/useRogoScoresPush';
+import { useSleepNightsPush } from '@/features/sleep/useSleepNightsPush';
 import { useRogoActiveKcal } from '@/features/today/useRogoActiveKcal';
 import { rogoDailyMetrics, rogoSleepHoursByDate } from '@/features/today/rogoScores';
 import { useFitnessData } from '@/features/fitness/useFitnessData';
@@ -101,6 +102,7 @@ function WatchToday() {
   const rogoSleepHours = useMemo(() => (fitness && data ? rogoSleepHoursByDate(fitness, data.dayStart) : undefined), [fitness, data]);
   const rogoActiveKcal = useRogoActiveKcal(dataVersion);
   useRogoScoresPush(view?.scores ?? null, data?.dayStart ?? null, rogoMetrics, rogoActiveKcal, rogoSleepHours);
+  useSleepNightsPush(dataVersion);
 
   const canSync = linkState === 'connected' && device !== null;
   const syncing = linkState === 'syncing';
