@@ -34,6 +34,7 @@ import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
 import { flushSupportReports } from '@/features/device/aturReports';
 import { LivePill } from '@/features/record/ui/LivePill';
+import { RoomCaptureRunner } from '@/features/thermometer/RoomCaptureRunner';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { UpdateGateProvider, useUpdateGate } from '@/features/updates/UpdateGateProvider';
 import { LaunchUpdateScreen, UpdateRequiredScreen } from '@/features/updates/UpdateRequiredScreen';
@@ -172,6 +173,8 @@ function RootNavigator() {
                   <OnboardingProvider>
                   <FamilyProvider>
                   <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+                  {/* The bedroom thermometer's readings (foreground scan, overnight file); idle without a paired thermometer. */}
+                  <RoomCaptureRunner />
                   <View style={{ flex: 1 }}>
                   <Tabs
                     tabBar={(props) => <TabBarWithLive {...props} />}

@@ -82,6 +82,7 @@ export default function SettingsScreen() {
     data: [
       { key: 'profile', title: t('screens.profile'), icon: 'person', onPress: go('/settings/profile') },
       { key: 'scale', title: t('screens.scale'), icon: 'scale-outline', onPress: go('/settings/scale') },
+      { key: 'thermometer', title: t('screens.thermometer'), icon: 'thermometer-outline', onPress: go('/settings/thermometer') },
       { key: 'cycling', title: tOther('cycling:settings.title'), icon: 'bicycle', onPress: go('/settings/cycling') },
       ...(withWatch ? [{ key: 'goals', title: t('screens.goals'), icon: 'flag' as const, onPress: go('/settings/goals') }] : []),
       { key: 'cycle', title: t('screens.cycle'), icon: 'calendar', tint: 'heart', onPress: go('/settings/cycle') },

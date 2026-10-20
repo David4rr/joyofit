@@ -568,7 +568,8 @@
       "hr": "Heart rate",
       "csc": "Speed and cadence",
       "power": "Power",
-      "rsc": "Running pod"
+      "rsc": "Running pod",
+      "thermometer": "Room thermometer"
     },
     "battery": "Battery {{value}}",
     "unnamed": "Unnamed sensor ({{tail}})",

@@ -37,6 +37,15 @@ class WorkoutSessionStateRecord : Record {
   @Field var paused: Boolean = false
 }
 
+/** `RoomCaptureOptions` in `BleSensors.types.ts`. `untilMs` is a Double because an epoch in milliseconds does not fit an Int. */
+class RoomCaptureOptionsRecord : Record {
+  @Field var ids: List<String> = emptyList()
+  @Field var untilMs: Double = 0.0
+  @Field var title: String = ""
+  @Field var text: String = ""
+  @Field var stopLabel: String = ""
+}
+
 /**
  * Expo module implementing `BleSensorsModule.ts`. The work lives in the process-wide [SensorHub] and [WorkoutSession]; this
  * class wires the TS contract to them and forwards their events to JS while the module is alive. Destroying the module does
@@ -113,6 +122,19 @@ class BleSensorsModule : Module() {
         scaleOperation(promise, id, ScaleLink.Kind.WRITE, service, characteristic, bytes, withResponse)
       }
     }
+
+    // Overnight bedroom thermometer (Android only): the contract is in BleSensorsModule.ts, the work in RoomCapture.kt and RoomScanService.kt.
+    AsyncFunction("startRoomCapture") { options: RoomCaptureOptionsRecord ->
+      RoomCapture.start(context(), hub(), options.ids, options.untilMs.toLong(), options.title, options.text, options.stopLabel)
+    }
+
+    AsyncFunction("stopRoomCapture") { RoomCapture.stop(context()) }
+
+    AsyncFunction("roomCaptureState") { RoomCapture.state(context()) }
+
+    AsyncFunction("roomAdverts") { RoomCapture.adverts(context()) }
+
+    AsyncFunction("clearRoomAdverts") { upToTs: Double -> RoomCapture.clearAdverts(context(), upToTs.toLong()) }
 
     AsyncFunction("stopScan") { hub().stopScan() }
 

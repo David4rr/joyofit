@@ -19,5 +19,10 @@
       android:name=".RecordingService"
       android:exported="false"
       android:foregroundServiceType="location|connectedDevice" />
+    <!-- Overnight scan of the bedroom thermometer (Settings, Termometer kamar): started by the person or by the app while it is open in the evening. -->
+    <service
+      android:name=".RoomScanService"
+      android:exported="false"
+      android:foregroundServiceType="connectedDevice" />
   </application>
 </manifest>

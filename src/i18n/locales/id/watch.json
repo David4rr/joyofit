@@ -566,7 +566,8 @@
       "hr": "Detak jantung",
       "csc": "Kecepatan dan kadence",
       "power": "Daya",
-      "rsc": "Pod lari"
+      "rsc": "Pod lari",
+      "thermometer": "Termometer kamar"
     },
     "battery": "Baterai {{value}}",
     "unnamed": "Sensor tanpa nama ({{tail}})",

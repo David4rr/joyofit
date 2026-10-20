@@ -32,6 +32,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="import-fit" options={{ title: t('screens.importFit') }} />
       <Stack.Screen name="profile" options={{ title: t('screens.profile') }} />
       <Stack.Screen name="scale" options={{ title: t('screens.scale') }} />
+      <Stack.Screen name="thermometer" options={{ title: t('screens.thermometer') }} />
       <Stack.Screen name="cycling" options={{ title: tc('settings.title') }} />
       <Stack.Screen name="bikecomputer" options={{ title: tb('settings.title') }} />
       <Stack.Screen name="meals" options={{ title: t('screens.meals') }} />

@@ -166,6 +166,40 @@ export interface ScaleLinkEvent {
   error: string | null;
 }
 
+/**
+ * Overnight capture of the bedroom thermometer (Android only; see `docs/sleep-insights.md`). A foreground service listens to the sensors'
+ * advertisements with the app closed and keeps one per sensor per 5 minutes; the app reads them when it opens and decodes them in
+ * TypeScript (`src/features/sensors/thermometerAdvert.ts`).
+ */
+export interface RoomCaptureOptions {
+  /** Bluetooth addresses (`AA:BB:CC:DD:EE:FF`) of the thermometers to listen to; anything else is ignored. */
+  ids: string[];
+  /** Epoch ms the capture ends by itself; must be in the future and is capped at 18 h from now. */
+  untilMs: number;
+  /** Notification title, text and Stop button label, in the app's language. */
+  title: string;
+  text: string;
+  stopLabel: string;
+}
+
+export interface RoomCaptureState {
+  active: boolean;
+  /** Epoch ms the running capture ends, null when none runs. */
+  untilMs: number | null;
+  ids: string[];
+  /** Epoch ms the person last stopped a capture (Stop button or `stopRoomCapture`), null if never or since started again: the app does not restart it by itself that night. */
+  userStoppedAt: number | null;
+}
+
+/** One advertisement the overnight scan kept: the service data under `uuid` (`181a` or `fcd2`) as lowercase hex, heard at `ts` (epoch ms). */
+export interface RoomAdvert {
+  /** Bluetooth address, upper case. */
+  id: string;
+  ts: number;
+  uuid: string;
+  hex: string;
+}
+
 export type BleSensorsModuleEvents = {
   onScanResult: (event: ScanResultEvent) => void;
   onScanState: (event: ScanStateEvent) => void;

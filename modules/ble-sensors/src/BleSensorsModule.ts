@@ -4,6 +4,9 @@ import type {
   BluetoothState,
   ConnectionEvent,
   LocationPermission,
+  RoomAdvert,
+  RoomCaptureOptions,
+  RoomCaptureState,
   WorkoutSessionOptions,
   WorkoutSessionState,
 } from './BleSensors.types';
@@ -73,6 +76,25 @@ declare class BleSensorsModule extends NativeModule<BleSensorsModuleEvents> {
   scaleSubscribe(id: string, service: string, characteristic: string): Promise<void>;
   scaleRead(id: string, service: string, characteristic: string): Promise<void>;
   scaleWrite(id: string, service: string, characteristic: string, hex: string, withResponse: boolean): Promise<void>;
+
+  /**
+   * ANDROID ONLY, store build only: absent on iOS and on a binary built before it existed, so check `typeof module.startRoomCapture ===
+   * 'function'` first (`src/features/thermometer/native.ts` does).
+   *
+   * Starts the overnight scan of the bedroom thermometer: a foreground service (type connectedDevice) with an ongoing notification and a
+   * low-power scan filtered by `ids` in the Bluetooth controller, so it keeps running with the screen off and the app closed. It keeps one
+   * advertisement per sensor per 5 minutes in a file and ends at `untilMs`, on the notification's Stop button, or at `stopRoomCapture`.
+   * Calling it while a capture runs replaces the request. Call it while the app is visible. Rejects with ERR_BLUETOOTH_PERMISSION,
+   * ERR_BLUETOOTH_OFF, ERR_BLUETOOTH_UNAVAILABLE, ERR_INVALID_ARGUMENT (no address, end time not ahead) or ERR_SERVICE_NOT_ALLOWED.
+   */
+  startRoomCapture(options: RoomCaptureOptions): Promise<void>;
+  /** Stops the overnight scan. What it already kept stays for `roomAdverts`. Resolves even when none ran. */
+  stopRoomCapture(): Promise<void>;
+  roomCaptureState(): Promise<RoomCaptureState>;
+  /** What the overnight scan kept and JS has not removed yet, oldest first. Reading does not remove. */
+  roomAdverts(): Promise<RoomAdvert[]>;
+  /** Removes the advertisements heard at `upToTs` (epoch ms) or earlier: call it after they were stored. */
+  clearRoomAdverts(upToTs: number): Promise<void>;
 
   /**
    * Starts the phone side of a recorded workout so it survives a locked screen:
