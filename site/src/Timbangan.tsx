@@ -1,4 +1,4 @@
-import { ArrowLeft, Activity, Calculator, Info, Scale, Weight, Users, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Activity, BadgeCheck, Calculator, Info, KeyRound, Scale, Weight, Users, type LucideIcon } from "lucide-react";
 
 import { CONTACT_EMAIL, GITHUB_URL, JOYOROGO_URL, goal } from "./lib";
 import { TIMBANGAN_FAMILIES, TIMBANGAN_PROTOKOL, type TimbanganData, type TimbanganFamily } from "./timbangan";
@@ -35,6 +35,8 @@ const CHECK_STEPS = [
   "Kalau timbanganmu muncul di bawah Timbangan dikenali, ketuk Pakai ini, lalu Coba timbang.",
   "Kalau tidak muncul, pakai Rekam data timbangan di halaman yang sama: pilih perangkatnya, mulai merekam, naik ke timbangan, lalu bagikan rekamannya supaya dukungannya bisa ditambahkan.",
 ] as const;
+
+const TESTED_NAMES = TIMBANGAN_FAMILIES.flatMap((family) => family.items.filter((item) => item.teruji).map((item) => item.nama));
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
@@ -83,6 +85,18 @@ function TimbanganList() {
                       <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
                       {label}
                     </p>
+                    {item.teruji && (
+                      <p className="mt-1 flex items-start gap-1.5 text-sm font-medium text-makan-ink">
+                        <BadgeCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
+                        Sudah diuji di timbangan asli
+                      </p>
+                    )}
+                    {item.butuhKunci && (
+                      <p className="mt-1 flex items-start gap-1.5 text-sm font-medium text-muted-foreground">
+                        <KeyRound className="mt-0.5 size-4 shrink-0" aria-hidden />
+                        Perlu kunci timbangan (local key)
+                      </p>
+                    )}
                     {item.catatan && (
                       <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{item.catatan}</p>
                     )}
@@ -120,14 +134,19 @@ export function TimbanganPage() {
         <div className="mt-8 flex max-w-3xl items-start gap-3.5 rounded-[1.75rem] bg-makan-soft p-5 md:p-6">
           <Info className="mt-0.5 size-5 shrink-0 text-makan-ink" aria-hidden />
           <div>
-            <h2 className="text-lg font-extrabold tracking-tight">Belum diuji di timbangan asli</h2>
+            <h2 className="text-lg font-extrabold tracking-tight">
+              {TESTED_NAMES.length === 0
+                ? "Belum diuji di timbangan asli"
+                : `Baru ${TESTED_NAMES.length} jenis yang diuji di timbangan asli`}
+            </h2>
             <p className="mt-1.5 leading-relaxed">
-              Semua yang ada di daftar ini didukung lewat protokol{" "}
+              Hampir semua yang ada di daftar ini didukung lewat protokol{" "}
               <a href="https://github.com/oliexdev/openScale" target="_blank" rel="noopener" className={link}>
                 openScale
               </a>
-              , proyek open source untuk timbangan Bluetooth. Pembacaannya kami uji dengan data contoh dari openScale,
-              belum satu pun dengan timbangan sungguhan di tangan kami. Jadi didukung di sini berarti kodenya ada, bukan
+              , proyek open source untuk timbangan Bluetooth. Pembacaannya kami uji dengan data contoh dari openScale.
+              Satu-satunya yang sudah kami coba di timbangan sungguhan di tangan kami: {TESTED_NAMES.join(", ")}, dan
+              itu ditandai Sudah diuji di timbangan asli di daftar. Jadi didukung di sini berarti kodenya ada, bukan
               sudah terbukti jalan di modelmu. Kalau timbanganmu salah baca atau tidak terbaca, kabari kami.
             </p>
           </div>

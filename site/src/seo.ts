@@ -78,7 +78,7 @@ const STATIC_PAGES = {
     title: "Timbangan Bluetooth yang Didukung JoyoFit: Xiaomi, Renpho, Yunmai, dan Lainnya",
     name: "Timbangan",
     description:
-      "Daftar timbangan badan Bluetooth yang dibaca JoyoFit lewat protokol openScale, dikelompokkan menurut merek, dengan data yang didapat dari tiap timbangan. Belum diuji di timbangan asli. Berat masuk ke catatan JoyoRogo.",
+      "Daftar timbangan badan Bluetooth yang dibaca JoyoFit lewat protokol openScale, dikelompokkan menurut merek, dengan data yang didapat dari tiap timbangan. Baru satu jenis yang diuji di timbangan asli. Berat masuk ke catatan JoyoRogo.",
   },
   [DUKUNG_JAM_PATH]: {
     title: "Dukung Jam Barumu di JoyoFit",
