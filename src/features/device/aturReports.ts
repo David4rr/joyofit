@@ -1,6 +1,5 @@
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
-import { File, Paths } from 'expo-file-system';
 import Storage from 'expo-sqlite/kv-store';
 import { Platform } from 'react-native';
 
@@ -26,11 +25,6 @@ const queue = createReportQueue({
       fetch: (url, init) => fetch(url, init),
       baseUrl: ATUR_FEEDBACK_URL,
       token: ATUR_FEEDBACK_TOKEN,
-      writeTempFile: (name, text) => {
-        const file = new File(Paths.cache, name);
-        file.write(text);
-        return { uri: file.uri, remove: () => file.delete() };
-      },
     }),
 });
 

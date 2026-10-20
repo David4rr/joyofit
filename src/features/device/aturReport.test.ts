@@ -110,7 +110,6 @@ interface Call {
 
 function fakeAtur(answers: (Response | Error)[]) {
   const calls: Call[] = [];
-  const removed: string[] = [];
   const deps: SendDeps = {
     baseUrl: 'https://atur.test',
     token: 'pk_fb_test',
@@ -121,54 +120,35 @@ function fakeAtur(answers: (Response | Error)[]) {
       if (next instanceof Error) throw next;
       return next;
     }) as unknown as typeof fetch,
-    writeTempFile: (name) => ({ uri: `file:///cache/${name}`, remove: () => void removed.push(name) }),
   };
-  return { calls, removed, deps };
+  return { calls, deps };
 }
 
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 
-/** React Native's FormData keeps a `{ uri, name, type }` part as it is; Bun's turns it into "[object Object]". */
-class NativeFormData {
-  readonly parts = new Map<string, unknown>();
-  append(key: string, value: unknown) {
-    this.parts.set(key, value);
-  }
-  get(key: string) {
-    return this.parts.get(key);
-  }
-}
-
-async function withNativeFormData<T>(run: () => Promise<T>): Promise<T> {
-  const original = globalThis.FormData;
-  globalThis.FormData = NativeFormData as unknown as typeof FormData;
-  try {
-    return await run();
-  } finally {
-    globalThis.FormData = original;
-  }
-}
-
 describe('sendReport', () => {
   it('uploads the report as a text file, then files the item that claims it', async () => {
-    const { calls, removed, deps } = fakeAtur([json({ id: 'att-9' }, 201), json({ id: 'i', sequence_id: 17 }, 201)]);
-    const result = await withNativeFormData(() => sendReport(build(), deps));
+    const { calls, deps } = fakeAtur([json({ id: 'att-9' }, 201), json({ id: 'i', sequence_id: 17 }, 201)]);
+    const report = build();
+    const result = await sendReport(report, deps);
 
     expect(result).toEqual({ ok: true, sequenceId: 17 });
     expect(calls.map((c) => c.url)).toEqual([
       'https://atur.test/api/feedback/pk_fb_test/attachments',
       'https://atur.test/api/feedback/pk_fb_test/items',
     ]);
-    const part = (calls[0].init.body as FormData).get('file') as unknown as { uri: string; name: string; type: string };
-    expect(part).toEqual({ uri: expect.stringContaining('file:///cache/joyofit-report-'), name: expect.stringMatching(/\.txt$/), type: 'text/plain' });
+    // The bytes a multipart parser reads back as one text/plain file carrying the whole report.
+    const upload = new Request('https://x', { method: 'POST', headers: calls[0].init.headers, body: calls[0].init.body });
+    const file = (await upload.formData()).get('file') as File;
+    expect(file.name).toBe(report.filename);
+    expect(file.type).toStartWith('text/plain');
+    expect(await file.text()).toBe(report.text);
     expect(JSON.parse(calls[1].init.body as string).attachment_ids).toEqual(['att-9']);
-    expect(removed).toHaveLength(1);
   });
 
-  it('calls a lost connection retryable and still removes the temp file', async () => {
-    const { removed, deps } = fakeAtur([new TypeError('Network request failed')]);
+  it('calls a lost connection retryable', async () => {
+    const { deps } = fakeAtur([new TypeError('Network request failed')]);
     expect(await sendReport(build(), deps)).toEqual({ ok: false, retryable: true, message: 'Network request failed' });
-    expect(removed).toHaveLength(1);
   });
 
   it('retries rate limits and server errors, also when the item (not the upload) fails', async () => {

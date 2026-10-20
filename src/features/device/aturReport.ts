@@ -128,8 +128,25 @@ export interface SendDeps {
   fetch: typeof fetch;
   baseUrl: string;
   token: string;
-  /** A file the multipart upload can stream from (React Native's FormData takes a uri, not text). */
-  writeTempFile: (name: string, text: string) => { uri: string; remove: () => void };
+}
+
+/**
+ * The upload body as bytes. React Native's FormData only sends files from disk (`{ uri }`), which failed on a phone and read
+ * as "offline"; the Strava upload (`buildUploadForm`) sends a hand-built multipart `Uint8Array` the same way and works.
+ */
+export function textFileForm(filename: string, text: string, boundary: string): { contentType: string; body: Uint8Array<ArrayBuffer> } {
+  const encoder = new TextEncoder();
+  const safeName = filename.replace(/["\r\n]/g, '_');
+  const head = encoder.encode(
+    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${safeName}"\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n`,
+  );
+  const file = encoder.encode(text);
+  const tail = encoder.encode(`\r\n--${boundary}--\r\n`);
+  const body = new Uint8Array(head.length + file.length + tail.length);
+  body.set(head, 0);
+  body.set(file, head.length);
+  body.set(tail, head.length + file.length);
+  return { contentType: `multipart/form-data; boundary=${boundary}`, body };
 }
 
 export type SendResult =
@@ -152,11 +169,13 @@ async function failure(res: Response): Promise<SendResult> {
 /** Uploads the report file, then files the item that claims it. Never throws: the outcome says whether to queue or give up. */
 export async function sendReport(report: PendingReport, deps: SendDeps): Promise<SendResult> {
   const base = `${deps.baseUrl}/api/feedback/${encodeURIComponent(deps.token)}`;
-  const file = deps.writeTempFile(report.filename, report.text);
   try {
-    const form = new FormData();
-    form.append('file', { uri: file.uri, name: report.filename, type: 'text/plain' } as unknown as Blob);
-    const upload = await deps.fetch(`${base}/attachments`, { method: 'POST', body: form });
+    const form = textFileForm(report.filename, report.text, `----joyofit${report.id.replace(/[^0-9a-z]/gi, '')}`);
+    const upload = await deps.fetch(`${base}/attachments`, {
+      method: 'POST',
+      headers: { 'Content-Type': form.contentType, Accept: 'application/json' },
+      body: form.body,
+    });
     if (!upload.ok) return await failure(upload);
     const { id } = (await upload.json()) as { id: string };
 
@@ -170,11 +189,5 @@ export async function sendReport(report: PendingReport, deps: SendDeps): Promise
     return { ok: true, sequenceId: sequence_id };
   } catch (e) {
     return { ok: false, retryable: true, message: e instanceof Error ? e.message : String(e) };
-  } finally {
-    try {
-      file.remove();
-    } catch {
-      // The cache is cleared by the system anyway.
-    }
   }
 }

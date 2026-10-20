@@ -50,5 +50,5 @@ Local test: run Atur (`cd apps/app && bun run dev`), create a board, and start E
 | `src/features/device/aturConfig.ts` | URL and token, `ATUR_REPORTS_ENABLED` |
 | `src/features/device/aturReport.ts` | `buildReport` (pure), `itemBody`, `sendReport` (upload then item) |
 | `src/features/device/aturReportQueue.ts` | queue and flush with an injected store and sender |
-| `src/features/device/aturReports.ts` | wires the phone: support report, temp file, kv-store, `fetch` |
+| `src/features/device/aturReports.ts` | wires the phone: support report, kv-store, `fetch` |
 | `src/features/device/AturReportForm.tsx` | the form |
