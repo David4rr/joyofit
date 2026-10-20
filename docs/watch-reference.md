@@ -225,8 +225,11 @@ watch** (Android) runs the full pull again; rows already stored are upserted by 
 
 Over Bluetooth LE on Android 14 and newer the phone discards any 514-byte notification, so a watch reply longer than that loses its head
 (the log shows "Magic mismatch" and the request times out). A step or sleep frame that gets no answer is skipped and logged as
-`... skipping this frame`; a second unanswered frame in a row aborts the pull. Classic (RFCOMM) watches are not affected; the developer LE
-switch only applies in debug builds.
+`... skipping this frame`; three unanswered frames in a row end the pull of that data type with what arrived (a Band 11 Pro, 2026-10-20
+report: StepData 37/40 and 38/40 got only the tail of their reply ("Magic mismatch") on every sync while frames 1 to 36 were answered; that
+the newest frames, a workout's minutes, are the long ones is [INFERENCE]). The sync then goes on with workouts. If the activity
+pull itself fails (an unanswered count request, a storage error), the workouts are still synced before the error is reported. Classic
+(RFCOMM) watches are not affected; the developer LE switch only applies in debug builds.
 
 To read how far back the watch actually reaches, run a sync and read the `History:` lines (logcat tag `JoyoFit`):
 

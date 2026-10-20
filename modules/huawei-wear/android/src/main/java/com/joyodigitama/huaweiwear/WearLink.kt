@@ -797,18 +797,31 @@ internal class WearLink(
         var sleep = 0
         var oldestSample: Long? = null
         var oldestSleep: Long? = null
-        for ((index, slice) in slices.withIndex()) {
-          val result = ActivitySync(connection.session, events).sync(slice.first, slice.second)
-          val slicePart = storage { syncStore.save(connection.address, result) }
-          samples += slicePart.samples
-          sleep += slicePart.sleep
-          result.samples.minOfOrNull { it.timestamp }?.let { oldestSample = minOf(oldestSample ?: it, it) }
-          result.sleep.minOfOrNull { it.start }?.let { oldestSleep = minOf(oldestSleep ?: it, it) }
-          events.log(
-            LogDirection.INFO, null, null, null,
-            "History: slice ${index + 1}/${slices.size} ${slice.first}..${slice.second}: ${slicePart.samples} step samples, ${slicePart.sleep} sleep segments",
-          )
-          stored = slicePart
+        // A step/sleep request the watch never answers must not keep the workouts (and their GPS tracks) from syncing;
+        // the slices stored so far stay, last_sync stays where the last stored slice left it, and the error is thrown after the workouts.
+        var activityError: WearException? = null
+        try {
+          for ((index, slice) in slices.withIndex()) {
+            val result = ActivitySync(connection.session, events).sync(slice.first, slice.second)
+            val slicePart = storage { syncStore.save(connection.address, result) }
+            samples += slicePart.samples
+            sleep += slicePart.sleep
+            result.samples.minOfOrNull { it.timestamp }?.let { oldestSample = minOf(oldestSample ?: it, it) }
+            result.sleep.minOfOrNull { it.start }?.let { oldestSleep = minOf(oldestSleep ?: it, it) }
+            events.log(
+              LogDirection.INFO, null, null, null,
+              "History: slice ${index + 1}/${slices.size} ${slice.first}..${slice.second}: ${slicePart.samples} step samples, ${slicePart.sleep} sleep segments",
+            )
+            stored = slicePart
+          }
+        } catch (e: WearException) {
+          if (e.errorCode == ErrorCodes.DISCONNECTED || e.errorCode == ErrorCodes.NOT_CONNECTED) throw e
+          events.log(LogDirection.ERROR, null, null, null, "Activity sync failed [${e.errorCode}]: ${e.message}; syncing the workouts anyway")
+          activityError = e
+        }
+        if (activityError != null) {
+          syncWorkouts(connection, fullHistory)
+          throw activityError
         }
         val finalSlice = stored!!
         val workoutsSynced = syncWorkouts(connection, fullHistory)
