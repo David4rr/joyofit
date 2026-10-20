@@ -4,6 +4,23 @@ Written 2026-10-20, revised the same day after the owner's decision: **the featu
 
 Decided by the owner: placement in JoyoRogo; **free = general tips and progress, Pro = personal findings** (and the Pro AI reflection).
 
+## 0. Owner decisions (final) and how the MVP differs from the sections below
+
+The sections below are the original design; where they disagree with this list, **this list wins**. Shipped behavior is described in JoyoRogo `docs/sleep-insights.md` and, for the phone side, in `docs/sleep-insights.md` here.
+
+1. JoyoRogo: migration `0054_sleep_insights` (`sleep_night`, `sleep_insight_pref`, `sleep_insight_cache`, plus `food_log.eaten_at`), router `sleepInsights`, wipe additions; caffeine/alcohol rules moved from `maternal.ts` to `lib/intake.ts`. `food_log.eaten_at` with a "jam makan" picker (native and web); time factors use it, else the log time when it fits the meal.
+2. One server switch (`sleep_insight_pref.enabled`) editable from both apps; 90 nights; turning off deletes.
+3. Free: Umum tips and progress, plus the teaser "N pola ditemukan, buka dengan Pro". Pro: personal findings.
+4. Evening workouts reuse `watch_workout` with the age-based max HR (220 - age); JoyoFit sends no workout data. A late workout counts as exposure only when vigorous (average HR at 80 % of max); a lighter or HR-less late workout drops the night. No backup, no workout factor. (So `workouts_json` from section 6 does not exist.)
+5. Hamil/Menyusui: no personal caffeine card and no caffeine or alcohol tip. Ramadan pauses dinner and caffeine. **Alcohol is a general tip only: there is no personal alcohol factor**, so night HRV is not an outcome in the MVP (the HRV column is still stored).
+6. Free days default Saturday and Sunday, with a setting.
+7. The weekly reflection may carry at most one sleep fact per week (`SLEEP_FACTOR`, Pro and consent only); only the unfavourable direction becomes a fact; the validator blocks causal and overclaiming words.
+8. Notifications: later.
+9. Stage-less watches are supported (duration and awake time outcomes only).
+10. Room sensor: the Xiaomi LYWSD03MMC is **in scope** and shipped as the last step: JoyoFit decodes pvvx/ATC (0x181A) and BTHome v2 (0xFCD2) adverts (stock firmware is encrypted and unreadable), pairs it in Settings, captures overnight through an Android foreground service (needs a store build; iOS and old binaries scan only while the app is open), keeps raw samples on the phone and pushes only per-night aggregates (mean/min/max temperature and humidity). JoyoRogo adds the `temperature` and `humidity` factors (the person's own warmest / most humid third of nights against the rest, outcome awake minutes) and a general room tip. An air purifier (PM2.5, air quality) is later: `sleep_night.pm25_mean` is reserved as a nullable column and further nullable columns fit without a redesign.
+
+Known simplifications against the text below: the dinner calorie tertile is not computed (dinner is the 3 h gap only); the Beranda "Tidur" tile line is not added; `alignsWithResearch`-style notes are not rendered; permutation p-values (stratified by work/free night, Benjamini-Hochberg) stand in for "the interval excludes 0".
+
 ## 1. What exists today (read from both repos)
 
 | Need | Where | Fact that shapes the design |
@@ -116,7 +133,7 @@ The reflection validator (`validateRecapText`) accepts a number only if the mode
 - Validator addition for these facts: reject causal verbs ("menyebabkan", "karena kopi", "causes", "because of") and any claim beyond "mungkin / cenderung"; the existing forbidden-terms and number checks apply unchanged. `selectionSignature` includes the new fact so the text is rewritten only when the finding changes; the cache, retry and 4-runs-per-week cap are unchanged. No night, time, food name or HRV series reaches the prompt. Hamil / Menyusui and Ramadan follow section 4.
 - Tests: the fixture week gains a consent-on variant; boundary tests for each variant; a validator test that a causal sentence about caffeine is refused.
 
-## 10. Bedroom sensor (later; the model already fits)
+## 10. Bedroom sensor (shipped last; see section 0, item 10)
 
 The sensor is read by **JoyoFit** (the BLE module is there; JoyoRogo's native app has none). JoyoFit keeps raw 5-minute samples (`env_sample`: sensor id, ts, temp, RH, battery) on the phone and sends only per-night aggregates into the nullable `sleep_night` env columns of section 6, so room data never leaves as a series. A *factor registry* (id, per-night extractor, primary outcome, prior, copy keys) is the only thing the stats engine knows: temperature and humidity are two new registry rows, a nullable-column migration and the card copy, with no engine change. Bands are personal (hottest third of the person's own nights against the rest, from their 75th percentile), because the literature gives no universal threshold and tropical bedrooms are warm.
 
@@ -132,11 +149,11 @@ The sensor is read by **JoyoFit** (the BLE module is there; JoyoRogo's native ap
   The MAC is in the payload (useful on iOS, where the scan id is a UUID); `counter` dedupes repeats. Units sold since 2025-03 (B1.5/B1.6) are not recommended by the firmware author and firmware 2.1.1 needs Mi Home registration, so check the hardware version before buying. I could not confirm here whether stock firmware advertises readings in the clear [INFERENCE: it does not].
 - **Overnight capture with the app closed is the real risk** [INFERENCE: background scanning is throttled on both platforms; needs a spike]. Options: (a) foreground scan only, (b) a foreground service like the workout recorder, (c) read the firmware's flash log in the morning (20,000 records, 10 minute step by default; needs a GATT reader, a store build). The spike picks one. Pairing reuses JoyoFit's `sensor` table with a new kind.
 
-## 11. MVP vs later
+## 11. MVP vs later (superseded by section 0 where it differs)
 
 **MVP**: JoyoRogo migration 0054 and the `sleepInsights` router; the stats engine and registry with caffeine, alcohol, dinner, evening workout and regularity; Tidur section on native and web; consent switch on both apps; `SLEEP_FACTOR` in the reflection; JoyoFit `useSleepNightsPush` and switch; privacy copy and wipe; id/en copy; tests next to the code. Build order: server tables and wipe, engine with fixtures, router, JoyoFit push, UI, reflection, privacy copy, then roll out to the owner's account first. **Later**: `food_log.eaten_at` and a "jam makan" picker; notifications; MCP tool `get_sleep_insights` under `recovery:read`; room sensor and its factors; naps as a factor; SpO2 and skin temperature as context only; hours-only users (Health Connect, manual log) for duration-only findings; iOS night HRV.
 
-## 12. Open questions for the owner
+## 12. Open questions for the owner (answered, see section 0)
 
 1. JoyoRogo changes: OK to add migration 0054 (three tables, a `sleepInsights` router, wipe additions) and to move the caffeine/alcohol rules out of `maternal.ts` into a shared module? Separately, should `food_log` get an optional `eaten_at` plus a "jam makan" picker in the logging UI? Without it every time-based claim rests on log time, and late-logged items drop their night from the factor.
 2. Consent: one switch stored on the server and editable from either app, with 90 nights of retention and delete-on-off. Right shape, and is 90 nights acceptable (60 is possible, 42 is the minimum the gate needs)?
