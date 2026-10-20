@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it } from 'bun:test';
 
 import { aggregateProgress, periodStarts, progressIsEmpty, PROGRESS_BUCKETS, type ProgressRow } from './progress';
 
-const ORIGINAL_TZ = process.env.TZ;
+// Bun keeps the last zone after `delete process.env.TZ`, so restore the resolved zone explicitly.
+const ORIGINAL_TZ = process.env.TZ ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 afterEach(() => {
-  if (ORIGINAL_TZ === undefined) delete process.env.TZ;
-  else process.env.TZ = ORIGINAL_TZ;
+  process.env.TZ = ORIGINAL_TZ;
 });
 
 const sec = (ms: number) => Math.floor(ms / 1000);
