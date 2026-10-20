@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'bun:test';
 
-import { cadenceFromSteps, MAX_SPM, MAX_STEP_M, MIN_SPM, MIN_STEP_M, MIN_STRIDE_SPEED_MS, plausibleStepLength, stepLengthFromSpeed } from './stride';
+import {
+  cadenceFromSteps,
+  MAX_SPM,
+  MAX_STEP_M,
+  MIN_SPM,
+  MIN_STEP_M,
+  MIN_STRIDE_SPEED_MS,
+  plausibleStepLength,
+  stepLengthFromSpeed,
+  stepLengthSeries,
+} from './stride';
 
 describe('stepLengthFromSpeed', () => {
   it('is speed over steps per second', () => {
@@ -61,5 +71,27 @@ describe('plausibleStepLength', () => {
     expect(plausibleStepLength(MAX_STEP_M + 0.001)).toBeNull();
     expect(plausibleStepLength(null)).toBeNull();
     expect(plausibleStepLength(undefined)).toBeNull();
+  });
+});
+
+describe('stepLengthSeries', () => {
+  it('derives each sample from pace and cadence and leaves a gap where one is missing or implausible', () => {
+    const out = stepLengthSeries({ pace: [300, 300, null, 300, 3000], cad: [170, null, 170, 170, 170] }, 5)!;
+    expect(out[0]).toBeCloseTo(1.176, 3);
+    expect(out[1]).toBeNull();
+    expect(out[2]).toBeNull();
+    expect(out[3]).toBeCloseTo(1.176, 3);
+    // 3000 s/km is 0.33 m/s: standing.
+    expect(out[4]).toBeNull();
+  });
+
+  it('lets a measured series win as a whole, dropping impossible readings', () => {
+    const out = stepLengthSeries({ pace: [300, 300, 300], cad: [170, 170, 170], stride: [0.9, null, 3.5] }, 3)!;
+    expect(out).toEqual([0.9, null, null]);
+  });
+
+  it('is null when no sample has a step length', () => {
+    expect(stepLengthSeries({ pace: null, cad: [170, 170] }, 2)).toBeNull();
+    expect(stepLengthSeries({ pace: [300, 300], cad: null }, 2)).toBeNull();
   });
 });

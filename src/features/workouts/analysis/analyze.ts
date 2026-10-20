@@ -179,12 +179,14 @@ function buildSeries(grid: Grid, options: AnalyzeOptions): AnalysisSeries | null
     alt: rounded(grid.alt, 1),
     cad: rounded(grid.cad, 0),
     power: rounded(grid.power, 0),
+    // Only a measured step length travels: the chart derives the rest from pace and cadence, so the payload stays as before.
+    ...(grid.stride ? { stride: rounded(grid.stride, 2) } : {}),
     track:
       options.includeRoute && grid.track
         ? grid.track.map((p): LatLon | null => (p ? [round(p[0], 5), round(p[1], 5)] : null))
         : null,
   };
-  const carries = [series.dist, series.hr, series.pace, series.alt, series.cad, series.power, series.track].some((a) => a !== null);
+  const carries = [series.dist, series.hr, series.pace, series.alt, series.cad, series.stride ?? null, series.power, series.track].some((a) => a !== null);
   return carries ? series : null;
 }
 
@@ -206,6 +208,7 @@ export function analyzeWorkout(input: AnalyzeInput, options: AnalyzeOptions): Wo
     distance: workout.distance,
     kind,
     points,
+    minuteSteps: input.daySamples,
   });
 
   const hrPoints = points.filter((p) => p.hr !== null && p.hr >= MIN_BPM && p.hr <= MAX_BPM);

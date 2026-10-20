@@ -21,6 +21,7 @@ const TAB_LABEL: Record<ChartMetric, AnalysisTextKey> = {
   hr: 'metric.hr',
   alt: 'metric.elevation',
   cad: 'metric.cadence',
+  stride: 'metric.stride',
   power: 'metric.power',
 };
 
@@ -30,6 +31,7 @@ const TAB_ICON: Record<ChartMetric, keyof typeof Ionicons.glyphMap> = {
   hr: 'heart',
   alt: 'trending-up',
   cad: 'footsteps',
+  stride: 'swap-horizontal',
   power: 'flash',
 };
 

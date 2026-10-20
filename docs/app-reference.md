@@ -281,13 +281,18 @@ been checked against a real export yet. The first real file may need field-name 
 
 One workout opens a Strava-style analysis, computed on the phone from the stored points and summary (`src/features/workouts/analysis/`: `analyzeWorkout`,
 history from `loadAnalysisHistory`; the screen is `src/app/workouts/[id].tsx`, the views are in `analysis/ui/`). The summary card shows at once and the
-analysis fills in a moment later. Sections, each only when the data exists:
+analysis fills in a moment later. Every figure appears once, in the place it reads best: the header card holds only the sport, the date and one row of
+actions (a primary Share button plus icon buttons for Replay, Share to JoyoRogo and Save as route, and the small cloud line); the summary strip is the one
+stats grid (distance, moving and elapsed time, pace, elevation, calories, heart rate with its maximum, steps, cadence, step length, power); per-kilometre and
+per-sample detail lives in the charts and splits, the watch's training effect in its own section (not repeated in the load card), the heart-rate zone times
+in the zones card (the burn section only adds the fat and carbohydrate grams) and the strain in the effort card. The header keeps the totals itself only
+for a session that has no analysis card (a logged strength session, or an analysis that failed). Sections, each only when the data exists:
 
 - **Summary strip and map.** Distance, time, moving time, pace or speed, elevation. A tile map of the route (OpenFreeMap vector tiles drawn with
   react-native-svg, no native module, `src/features/map/`; cached on the phone) with a km marker per kilometre.
-- **Scrubber charts.** Pace or speed, heart rate, elevation, cadence and power on one shared time grid; touching a chart moves a dot on the map and fills a
+- **Scrubber charts.** Pace or speed, heart rate, elevation, cadence, step length and power on one shared time grid; touching a chart moves a dot on the map and fills a
   readout. The screen's scroll freezes while a chart is touched.
-- **Splits and laps.** Per kilometre (pace, heart rate, climb, cadence) and the watch's or FIT file's laps.
+- **Splits and laps.** Per kilometre (pace, heart rate, climb, cadence, and step length when the row has room) and the watch's or FIT file's laps.
 - **Heart-rate zones, pace zones, best efforts** (400 m, 1 km, 1 mile, 5 km, 10 km, half marathon, ranked against the same sport of the last 120 days),
   **effort** (JoyoFit workout strain), **training load** (acute against chronic, with the watch's own training effect and recovery time when it reports them)
   and **comparison** with similar earlier workouts.
@@ -313,7 +318,12 @@ SQLite migration 12 adds per-sample `speed`, `cadence`, `stride` and `power` to 
 that version; older workouts show the analysis without those charts. The migration needs the new native build (the schema is shared with the native module).
 
 **Cadence and step length ("Panjang langkah").** The summary card shows average cadence (steps per minute on foot, rpm on a bike, with the maximum) and,
-for runs and walks, the average step length in metres. The chart tab "Kadens" plots the cadence series. `analyzeWorkout` (`buildStats`, computed on every
+for runs and walks, the average step length in metres. The chart tab "Kadens" plots the cadence series and "Panjang langkah" the step length (hidden when its series is empty). On foot a workout whose points
+carry no cadence gets a real per-minute cadence from the watch's minute step samples (`step_samples`, the day view's data, passed in as `daySamples`;
+`analysis/minuteCadence.ts`): only minutes wholly inside the workout, a minute outside 40 to 260 steps stays a gap, nothing is smoothed or filled, and an
+average is never drawn as a flat line. The step length series is speed over steps per second per sample (pace and cadence series, same bounds as below); a
+per-sample `stride` the source measured wins and is the one optional series field, `series.stride`, which travels in the cloud analysis only when measured
+(`ANALYSIS_ENGINE_REV` 6). `analyzeWorkout` (`buildStats`, computed on every
 open, so it also fills workouts stored earlier) takes each figure from the first source that has it:
 
 | | Cadence | Step length |

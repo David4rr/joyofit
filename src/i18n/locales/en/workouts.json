@@ -56,6 +56,7 @@
       "hr": "Heart rate",
       "elevation": "Elevation",
       "cadence": "Cadence",
+      "stride": "Step length",
       "power": "Power"
     },
     "chart": {
@@ -71,6 +72,7 @@
       "elev": "Elev",
       "hr": "HR",
       "cad": "Cad",
+      "stride": "Step",
       "a11yRowPace": "Split {{label}}, {{value}} per kilometre",
       "a11yRowSpeed": "Split {{label}}, {{value}} kilometres per hour",
       "a11yHint": "Moves the marker on the charts and the map"
@@ -119,7 +121,7 @@
       },
       "outOf": "of 21",
       "addedToDay": "+{{value}} to the day",
-      "explain": "Relative Effort is JoyoFit's strain for this workout on a 0 to 21 scale: the longer your heart works at a high level, the higher it goes (TRIMP {{trimp}}).",
+      "explain": "Relative Effort is JoyoFit's strain for this workout on a 0 to 21 scale: the longer your heart works at a high level, the higher it goes.",
       "a11y": "Relative effort {{value}} of 21, {{band}}"
     },
     "load": {
@@ -315,15 +317,6 @@
       "bpm": "bpm"
     },
     "gpsFailed": "The watch did not provide a GPS file for this workout.",
-    "strain": {
-      "title": "Strain",
-      "a11y": "Workout strain {{value}} of {{max}}",
-      "toTheDay": "to the day",
-      "dayNow": "Day strain now {{value}}",
-      "how": "How is this calculated?",
-      "explain": "An estimate by JoyoFit, the watch does not report it: the heart-rate zones of this workout, with a maximum of {{maxHr}} bpm, are summed (Edwards TRIMP: zones 1 to 5 count 1 to 5 per minute) and mapped onto 0 to 21 like the strain of a day. Zones are 50 to 60 % of max for Z1 up to 90 to 100 % for Z5. Pauses over two minutes count for nothing. The added part is the strain of the day with this workout minus the strain of the day without its minutes, so the same workout adds less on a day that already carried load.",
-      "noHr": "No heart rate stored for this workout, so no strain."
-    },
     "effect": {
       "title": "Training effect",
       "aerobic": "Aerobic effect",
@@ -353,30 +346,21 @@
         "4": "Anaerobic",
         "5": "Extreme"
       },
-      "zoneRow": "Zone {{zone}} {{label}} · {{time}}",
-      "zoneRowBelow": "{{label}} · {{time}}",
+      "zoneRow": "Zone {{zone}} {{label}}",
       "grams": "fat {{fat}} g, carbs {{carbs}} g",
       "how": "How is this calculated?",
       "explain": "An estimate by JoyoFit, the watch does not measure it: the {{kcal}} kcal are split over the time you actually spent at each heart rate, with a maximum of {{maxHr}} bpm (220 minus your age from the profile). Easier effort burns a larger share of fat."
     },
     "more": {
       "title": "More stats",
-      "timeOfDay": "Time of day",
-      "timeRange": "{{from}} to {{to}}",
       "avgPace": "Average pace",
       "bestPace": "Best pace",
       "avgSpeed": "Average speed",
       "topSpeed": "Top speed",
       "lowestHr": "Lowest heart rate",
-      "elevGain": "Elevation gain",
-      "elevLoss": "Elevation loss",
       "highest": "Highest point",
       "lowest": "Lowest point",
-      "avgPower": "Average power",
-      "normPower": "Normalized power",
       "peakPower": "Peak power",
-      "avgCadence": "Average cadence",
-      "peakCadence": "Peak cadence",
       "maxDepth": "Maximum depth",
       "imported": "Imported from a {{brand}} FIT file. Stays on this phone, not sent to the cloud or {{health}}.",
       "healthIos": "Apple Health",

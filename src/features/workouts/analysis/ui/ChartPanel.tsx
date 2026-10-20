@@ -4,6 +4,7 @@ import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as SvgText } 
 
 import { fmtDecimal } from '@/i18n';
 
+import { isFootKind } from '../sport';
 import { formatDuration, formatPace, type AnalysisSeries, type SportKind } from '../types';
 import {
   chartGeometry,
@@ -31,6 +32,7 @@ export function metricColor(palette: AnalysisPalette, metric: ChartMetric): stri
     case 'alt':
       return palette.elevation;
     case 'cad':
+    case 'stride':
       return palette.cadence;
     case 'power':
       return palette.power;
@@ -170,6 +172,9 @@ export const Readout = memo(function Readout({ series, metric, kind }: ReadoutPr
   if (series.hr) cells.push({ key: 'hr', value: r.hr !== null ? String(Math.round(r.hr)) : '--', unit: t('unit.bpm') });
   if (series.alt) cells.push({ key: 'alt', value: r.alt !== null ? String(Math.round(r.alt)) : '--', unit: t('unit.m') });
   if (series.cad) cells.push({ key: 'cad', value: r.cad !== null ? String(Math.round(r.cad)) : '--', unit: t(kind === 'ride' ? 'unit.rpm' : 'unit.spm') });
+  if (isFootKind(kind) && (series.stride || (series.pace && series.cad))) {
+    cells.push({ key: 'stride', value: r.stride !== null ? fmtDecimal(r.stride, 2) : '--', unit: t('unit.m') });
+  }
   if (series.power) cells.push({ key: 'power', value: r.power !== null ? String(Math.round(r.power)) : '--', unit: t('unit.w') });
   return (
     <View

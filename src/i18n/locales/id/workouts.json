@@ -56,6 +56,7 @@
       "hr": "Detak jantung",
       "elevation": "Elevasi",
       "cadence": "Kadens",
+      "stride": "Panjang langkah",
       "power": "Daya"
     },
     "chart": {
@@ -71,6 +72,7 @@
       "elev": "Elev",
       "hr": "HR",
       "cad": "Kad",
+      "stride": "Lgk",
       "a11yRowPace": "Split {{label}}, {{value}} per kilometer",
       "a11yRowSpeed": "Split {{label}}, {{value}} kilometer per jam",
       "a11yHint": "Memindahkan penanda di grafik dan peta"
@@ -119,7 +121,7 @@
       },
       "outOf": "dari 21",
       "addedToDay": "+{{value}} ke hari ini",
-      "explain": "Usaha Relatif adalah strain JoyoFit untuk latihan ini dalam skala 0 sampai 21: makin lama jantungmu bekerja di level tinggi, makin besar angkanya (TRIMP {{trimp}}).",
+      "explain": "Usaha Relatif adalah strain JoyoFit untuk latihan ini dalam skala 0 sampai 21: makin lama jantungmu bekerja di level tinggi, makin besar angkanya.",
       "a11y": "Usaha relatif {{value}} dari 21, {{band}}"
     },
     "load": {
@@ -312,15 +314,6 @@
       "bpm": "bpm"
     },
     "gpsFailed": "Jam tidak menyediakan file GPS untuk latihan ini.",
-    "strain": {
-      "title": "Strain",
-      "a11y": "Strain latihan {{value}} dari {{max}}",
-      "toTheDay": "ke hari ini",
-      "dayNow": "Strain hari ini sekarang {{value}}",
-      "how": "Bagaimana ini dihitung?",
-      "explain": "Perkiraan dari JoyoFit, jam tidak melaporkannya: zona detak jantung latihan ini, dengan maksimum {{maxHr}} bpm, dijumlahkan (TRIMP Edwards: zona 1 sampai 5 dihitung 1 sampai 5 per menit) lalu dipetakan ke 0 sampai 21 seperti strain harian. Zona berkisar dari 50 sampai 60 % dari maks untuk Z1 sampai 90 sampai 100 % untuk Z5. Jeda lebih dari dua menit tidak dihitung. Bagian tambahannya adalah strain hari itu dengan latihan ini dikurangi strain hari itu tanpa menit-menitnya, jadi latihan yang sama menambah lebih sedikit pada hari yang sudah berbeban.",
-      "noHr": "Tidak ada detak jantung tersimpan untuk latihan ini, jadi tidak ada strain."
-    },
     "effect": {
       "title": "Efek latihan",
       "aerobic": "Efek aerobik",
@@ -349,30 +342,21 @@
         "4": "Anaerobik",
         "5": "Ekstrem"
       },
-      "zoneRow": "Zona {{zone}} {{label}} · {{time}}",
-      "zoneRowBelow": "{{label}} · {{time}}",
+      "zoneRow": "Zona {{zone}} {{label}}",
       "grams": "lemak {{fat}} g, karbo {{carbs}} g",
       "how": "Bagaimana ini dihitung?",
       "explain": "Perkiraan dari JoyoFit, jam tidak mengukurnya: {{kcal}} kcal dibagi menurut waktu yang benar-benar kamu habiskan di tiap detak jantung, dengan maksimum {{maxHr}} bpm (220 dikurangi usiamu dari profil). Usaha yang lebih ringan membakar porsi lemak yang lebih besar."
     },
     "more": {
       "title": "Statistik lainnya",
-      "timeOfDay": "Waktu latihan",
-      "timeRange": "{{from}} sampai {{to}}",
       "avgPace": "Pace rata-rata",
       "bestPace": "Pace terbaik",
       "avgSpeed": "Kecepatan rata-rata",
       "topSpeed": "Kecepatan tertinggi",
       "lowestHr": "Detak jantung terendah",
-      "elevGain": "Tanjakan",
-      "elevLoss": "Turunan",
       "highest": "Titik tertinggi",
       "lowest": "Titik terendah",
-      "avgPower": "Daya rata-rata",
-      "normPower": "Daya ternormalisasi",
       "peakPower": "Daya puncak",
-      "avgCadence": "Kadens rata-rata",
-      "peakCadence": "Kadens puncak",
       "maxDepth": "Kedalaman maksimum",
       "imported": "Diimpor dari file FIT {{brand}}. Tetap di ponsel ini, tidak dikirim ke cloud atau {{health}}.",
       "healthIos": "Apple Health",

@@ -468,6 +468,73 @@ describe('cadence, power and stride', () => {
   });
 });
 
+describe('cadence and step length series from the watch minutes', () => {
+  const minutes = (steps: number, from: number, count: number) =>
+    Array.from({ length: count }, (_, i) => ({ timestamp: T0 + from + i * 60, steps, calories: 0, distance: 0, heartRate: null, spo2: null, restingHeartRate: null }));
+
+  function withMinutes(synth: Synth, daySamples: ReturnType<typeof minutes>, summary: WorkoutSummary = {}): WorkoutAnalysis {
+    return analyzeWorkout(
+      {
+        workout: workoutRow({ end: T0 + synth.elapsed, duration: synth.elapsed, distance: Math.round(synth.distance), steps: 4000 }),
+        summary,
+        points: synth.points,
+        maxHr: MAX_HR,
+        daySamples,
+        history: NO_HISTORY,
+      },
+      ALL,
+    );
+  }
+
+  it('builds a real per-minute cadence for a run whose points carry none, gaps staying gaps', () => {
+    const synth = steady5k();
+    // 25 minutes; minutes 0-9 and 12-24 have steps, 10 and 11 are missing.
+    const day = [...minutes(160, 0, 10), ...minutes(172, 720, 13)];
+    const a = withMinutes(synth, day);
+    const s = a.series!;
+    expect(s.cad![0]).toBe(160);
+    expect(s.cad![Math.floor(1490 / s.stepSec)]).toBe(172);
+    const gap = Math.round(630 / s.stepSec);
+    expect(s.cad![gap]).toBeNull();
+    // Not a flat line: two distinct values.
+    expect(new Set(s.cad!.filter((v) => v !== null)).size).toBe(2);
+    expect(a.stats.avgCad).toBeGreaterThan(160);
+    expect(a.stats.maxCad).toBe(172);
+    // The step length is derived by the chart from this pace and cadence; the payload carries no stride series of its own.
+    expect(s.stride).toBeUndefined();
+  });
+
+  it('prefers stored per-sample cadence to the minute data', () => {
+    const synth = steady5k({ cadence: () => 150 });
+    const a = withMinutes(synth, minutes(170, 0, 25));
+    expect(a.series!.cad!.filter((v) => v !== null).every((v) => v === 150)).toBe(true);
+  });
+
+  it('does not use minute steps for a ride (its cadence is rpm)', () => {
+    const synth = steady5k();
+    const a = analyzeWorkout(
+      {
+        workout: workoutRow({ end: T0 + synth.elapsed, duration: synth.elapsed, sportName: 'Biking', distance: Math.round(synth.distance) }),
+        summary: {},
+        points: synth.points,
+        maxHr: MAX_HR,
+        daySamples: minutes(170, 0, 25),
+        history: NO_HISTORY,
+      },
+      ALL,
+    );
+    expect(a.series!.cad).toBeNull();
+  });
+
+  it('carries a measured per-sample step length in series.stride', () => {
+    const synth = steady5k({ cadence: () => 170 });
+    const measured = synth.points.map((p) => (p.ts % 2 === 0 ? { ...p, stride: 0.9 } : p));
+    const a = analyze({ ...synth, points: measured });
+    expect(a.series!.stride!.some((v) => v === 0.9)).toBe(true);
+    expect(a.series!.stride!.every((v) => v === null || v === 0.9)).toBe(true);
+  });
+});
+
 describe('heart-rate gaps', () => {
   it('leaves a long dropout null and fills short ones', () => {
     const synth = steady5k({ hr: (t) => (t >= 300 && t < 400 ? null : t % 5 === 0 ? 150 : null) });

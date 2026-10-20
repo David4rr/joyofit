@@ -37,3 +37,36 @@ export function cadenceFromSteps(steps: number, movingSec: number): number | nul
 export function plausibleStepLength(metres: number | null | undefined): number | null {
   return typeof metres === 'number' && inRange(metres, MIN_STEP_M, MAX_STEP_M) ? metres : null;
 }
+
+/** The series a step-length reader needs: `stride` is what the source measured per sample, `pace` seconds per km, `cad` steps per minute. */
+export interface StrideSources {
+  pace: readonly (number | null)[] | null;
+  cad: readonly (number | null)[] | null;
+  stride?: readonly (number | null)[] | null;
+}
+
+function derivedStepLength(sources: StrideSources, index: number): number | null {
+  const pace = sources.pace?.[index] ?? null;
+  return stepLengthFromSpeed(pace !== null && pace > 0 ? 1000 / pace : null, sources.cad?.[index] ?? null);
+}
+
+/**
+ * Step length of one sample: the measured value when the series carries one, else speed (from the pace) over steps per second
+ * (from the cadence), each dropped outside the human range. Null while standing or without a cadence.
+ */
+export function stepLengthAt(sources: StrideSources, index: number): number | null {
+  if (sources.stride) return plausibleStepLength(sources.stride[index]);
+  return derivedStepLength(sources, index);
+}
+
+/** Step length per sample (see `stepLengthAt`); null when no sample has one. A measured series wins as a whole, its gaps stay gaps. */
+export function stepLengthSeries(sources: StrideSources, n: number): (number | null)[] | null {
+  const out: (number | null)[] = [];
+  let any = false;
+  for (let i = 0; i < n; i++) {
+    const value = stepLengthAt(sources, i);
+    if (value !== null) any = true;
+    out.push(value);
+  }
+  return any ? out : null;
+}
