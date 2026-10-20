@@ -1848,6 +1848,7 @@ function Options() {
                 "Termasuk di JoyoRogo Pro (cadangan cloud JoyoFit)",
                 "Server kami yang urus, tanpa setup",
                 "Masuk dengan akun JoyoRogo yang sama",
+                "Dukungan prioritas: laporan dan permintaan fiturmu didahulukan",
               ].map((line) => (
                 <li key={line} className="flex gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-makan-ink" aria-hidden />
