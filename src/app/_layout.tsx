@@ -243,6 +243,7 @@ function RootNavigator() {
                     {/* Pushed from Today (or Settings, for hrv); each draws its own header (HiddenTabHeader). */}
                     <Tabs.Screen name="health" options={{ href: null }} />
                     <Tabs.Screen name="hrv" options={{ href: null }} />
+                    <Tabs.Screen name="heart" options={{ href: null }} />
                     <Tabs.Screen name="sleep" options={{ href: null }} />
                     <Tabs.Screen name="readiness" options={{ href: null }} />
                     <Tabs.Screen name="trends" options={{ href: null }} />

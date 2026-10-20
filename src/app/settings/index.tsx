@@ -121,6 +121,9 @@ export default function SettingsScreen() {
     title: t('hub.groups.app'),
     data: [
       { key: 'appearance', title: t('screens.appearance'), icon: 'color-palette', onPress: go('/settings/appearance') },
+      ...(withWatch
+        ? [{ key: 'home-cards', title: t('screens.homeCards'), icon: 'albums' as const, onPress: go('/settings/home-cards') }]
+        : []),
       { key: 'guide', title: t('index.rows.guide.title'), icon: 'compass', onPress: () => guide.open() },
       { key: 'advanced', title: t('screens.advanced'), icon: 'information-circle', onPress: go('/settings/advanced') },
     ],

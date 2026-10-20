@@ -48,6 +48,8 @@ interface PanelProps {
   compact?: boolean;
   /** Six bpm bounds; paints the heart-rate line by zone. */
   hrBounds?: readonly number[] | null;
+  /** Text of an x tick (axis units); the default is elapsed time or distance. A whole-day chart labels the clock time. */
+  xLabel?: (value: number) => string;
 }
 
 interface CrosshairProps {
@@ -74,7 +76,7 @@ const Crosshair = memo(function Crosshair({ geo, width, height, color, dot }: Cr
 });
 
 /** One metric over the shared axis. Static between re-layouts; the crosshair is a separate overlay. */
-export const ChartPanel = memo(function ChartPanel({ series, metric, width, height, compact = false, hrBounds }: PanelProps) {
+export const ChartPanel = memo(function ChartPanel({ series, metric, width, height, compact = false, hrBounds, xLabel }: PanelProps) {
   const { palette } = useAnalysisContext();
   const gradientId = `hrz${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const geo = useMemo(
@@ -123,7 +125,7 @@ export const ChartPanel = memo(function ChartPanel({ series, metric, width, heig
             fontFamily={fontFamily}
             textAnchor="middle"
           >
-            {formatAxisTick(tick.value, geo.isDistance)}
+            {xLabel ? xLabel(tick.value) : formatAxisTick(tick.value, geo.isDistance)}
           </SvgText>
         ))}
       </Svg>

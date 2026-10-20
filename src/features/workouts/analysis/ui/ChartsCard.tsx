@@ -10,7 +10,7 @@ import { Card, MIN_HIT, Txt } from './primitives';
 import { useScrubSelector, type ScrubStore } from './scrub';
 import type { AnalysisTextKey } from './text';
 
-const CHART_HEIGHT = 176;
+export const CHART_HEIGHT = 176;
 const STRIP_HEIGHT = 52;
 /** Horizontal travel before a touch counts as a scrub that owns the gesture. */
 const ENGAGE_DX = 6;
@@ -45,7 +45,7 @@ interface GestureTarget {
  * Touch or drag sets the shared scrub index. The finger only owns the gesture (and the host locks its scroll view) once it
  * has moved sideways; a vertical swipe is released to the surrounding scroll view and restores the previous marker.
  */
-function useScrubGesture(store: ScrubStore, setActive: (active: boolean) => void, target: GestureTarget) {
+export function useScrubGesture(store: ScrubStore, setActive: (active: boolean) => void, target: GestureTarget) {
   const targetRef = useRef(target);
   targetRef.current = target;
   return useMemo(() => {
@@ -87,7 +87,7 @@ function useScrubGesture(store: ScrubStore, setActive: (active: boolean) => void
   }, [store, setActive]);
 }
 
-function ClearButton() {
+export function ClearButton() {
   const { store, t, palette } = useAnalysisContext();
   const active = useScrubSelector(store, useCallback((i: number | null) => i !== null, []));
   if (!active) return null;

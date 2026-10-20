@@ -43,6 +43,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="log" options={{ title: t('screens.log') }} />
       <Stack.Screen name="about" options={{ title: t('screens.about') }} />
       <Stack.Screen name="appearance" options={{ title: t('screens.appearance') }} />
+      <Stack.Screen name="home-cards" options={{ title: t('screens.homeCards') }} />
     </Stack>
   );
 }
