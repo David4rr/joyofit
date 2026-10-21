@@ -51,14 +51,20 @@ internal class NotificationActionCache(private val maxEntries: Int = 30) {
     )
 
     synchronized(lock) {
-      cache[primaryKey] = cached
+      val existing = cache.put(primaryKey, cached)
+      if (existing != null && existing.notificationId != notificationId) {
+        idToKey.remove(existing.notificationId)
+      }
       idToKey[notificationId] = primaryKey
     }
     return cached
   }
 
   fun store(action: CachedReplyAction) = synchronized(lock) {
-    cache[action.key] = action
+    val existing = cache.put(action.key, action)
+    if (existing != null && existing.notificationId != action.notificationId) {
+      idToKey.remove(existing.notificationId)
+    }
     idToKey[action.notificationId] = action.key
   }
 
@@ -127,23 +133,19 @@ internal class NotificationActionCache(private val maxEntries: Int = 30) {
       context: Context,
       action: CachedReplyAction,
       replyText: String,
-    ): Boolean {
-      val intent = action.actionIntent ?: return false
-      val inputs = action.remoteInputs ?: return false
-      return try {
-        val sendIntent = Intent()
-        val bundle = Bundle()
-        for (input in inputs) {
-          bundle.putCharSequence(input.resultKey, replyText)
-        }
-        RemoteInput.addResultsToIntent(inputs, sendIntent, bundle)
-        intent.send(context, 0, sendIntent)
-        true
-      } catch (_: PendingIntent.CanceledException) {
-        false
-      } catch (_: Exception) {
-        false
+    ) {
+      val intent = action.actionIntent
+        ?: throw IllegalStateException("Missing PendingIntent for notification action")
+      val inputs = action.remoteInputs?.takeIf { it.isNotEmpty() }
+        ?: throw IllegalStateException("Missing RemoteInput for notification action")
+
+      val sendIntent = Intent()
+      val bundle = Bundle()
+      for (input in inputs) {
+        bundle.putCharSequence(input.resultKey, replyText)
       }
+      RemoteInput.addResultsToIntent(inputs, sendIntent, bundle)
+      intent.send(context, 0, sendIntent)
     }
   }
 }

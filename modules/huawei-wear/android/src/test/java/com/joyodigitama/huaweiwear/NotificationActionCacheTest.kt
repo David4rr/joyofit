@@ -176,4 +176,39 @@ class NotificationActionCacheTest {
     }
     assertEquals(20, count)
   }
+
+  @Test
+  fun restoringKeyWithNewIdRemovesOldIdFromMapping() {
+    val cache = NotificationActionCache(maxEntries = 5)
+    val key = "0|com.whatsapp|chat1||0"
+
+    val a1 = CachedReplyAction(key = key, notificationId = 10, packageName = "com.whatsapp")
+    cache.store(a1)
+
+    assertEquals("com.whatsapp", cache.find("", notificationId = 10)?.packageName)
+
+    // Chat updates: new notification arrives with same primary key but new notification ID
+    val a2 = CachedReplyAction(key = key, notificationId = 20, packageName = "com.whatsapp")
+    cache.store(a2)
+
+    // New ID must resolve to the action
+    val byNewId = cache.find("", notificationId = 20)
+    assertNotNull(byNewId)
+    assertEquals(20, byNewId?.notificationId)
+
+    // Old ID must be removed from idToKey, returning null
+    assertNull(cache.find("", notificationId = 10))
+  }
+
+  @Test(expected = IllegalStateException::class)
+  fun sendReplyThrowsWhenMissingPendingIntent() {
+    val action = CachedReplyAction(
+      key = "test_key",
+      notificationId = 1,
+      packageName = "test",
+      actionIntent = null,
+    )
+    val context = android.content.ContextWrapper(null)
+    NotificationActionCache.sendReply(context, action, "test")
+  }
 }

@@ -33,8 +33,8 @@ internal class NotificationForwarder(
 
   private val lock = Any()
   val actionCache = NotificationActionCache()
-  private var replySubscription: AutoCloseable? = null
-
+  private var attached: HuaweiSession? = null
+  private val subscriptions = ArrayList<AutoCloseable>()
 
   /** HuaweiNotificationsManager.notificationSpecCache: the last notifications, for remove requests. */
   private val cache = LinkedList<WatchNotification>()
@@ -151,21 +151,27 @@ internal class NotificationForwarder(
     when (state) {
       LinkState.CONNECTED, LinkState.SYNCING -> {
         val session = link.handle()?.session ?: return
-        if (replySubscription == null) {
-          replySubscription = session.subscribe(
-            Notifications.id,
-            Notifications.NotificationReply.id,
-            "notification reply",
-          ) { onWatchReplyPacket(it, session) }
-        }
+        if (session === attached) return
+        detach()
+        attached = session
+        subscriptions += session.subscribe(
+          Notifications.id,
+          Notifications.NotificationReply.id,
+          "notification reply",
+        ) { onWatchReplyPacket(it, session) }
       }
       LinkState.DISCONNECTED -> {
-        replySubscription?.close()
-        replySubscription = null
+        detach()
         actionCache.clear()
       }
-      else -> {}
+      else -> Unit
     }
+  }
+
+  private fun detach() {
+    subscriptions.forEach { it.close() }
+    subscriptions.clear()
+    attached = null
   }
 
   private fun onWatchReplyPacket(packet: HuaweiPacket, session: HuaweiSession) {
@@ -183,18 +189,19 @@ internal class NotificationForwarder(
           Notifications.id.toInt(),
           Notifications.NotificationReply.id.toInt(),
           null,
-          "Watch reply received: key='$key', text='$text', type=$type, subId=${reply.subId}",
+          "Watch reply received: type=$type, subId=${reply.subId}, length=${text?.length ?: 0}",
         )
 
-        // Immediately acknowledge reply to watch
-        val ackCode: Byte = if (!text.isNullOrBlank()) (0xff).toByte() else (0x7f).toByte()
-        try {
-          session.send(
-            Notifications.NotificationReply.ReplyAck(session.params, ackCode),
-            "NotificationReplyAck",
+        // Only handle type 2 (app notification); ignore other types (e.g. type 1 SMS)
+        if (type != 2) {
+          events.log(
+            LogDirection.INFO,
+            Notifications.id.toInt(),
+            Notifications.NotificationReply.id.toInt(),
+            null,
+            "Watch reply ignored: unsupported type $type",
           )
-        } catch (e: Exception) {
-          events.log(LogDirection.ERROR, null, null, null, "Sending NotificationReplyAck failed: ${e.message}")
+          return@launch
         }
 
         if (text.isNullOrBlank()) {
@@ -209,28 +216,31 @@ internal class NotificationForwarder(
             Notifications.id.toInt(),
             Notifications.NotificationReply.id.toInt(),
             null,
-            "No matching notification action found for key '$key' to reply '$text'",
+            "No matching notification action found for watch reply (type=$type, subId=${reply.subId})",
           )
+          sendAck(session, (0x7f).toByte())
           return@launch
         }
 
-        val success = NotificationActionCache.sendReply(appContext, cachedAction, text)
-        if (success) {
+        try {
+          NotificationActionCache.sendReply(appContext, cachedAction, text)
           events.log(
             LogDirection.INFO,
             Notifications.id.toInt(),
             Notifications.NotificationReply.id.toInt(),
             null,
-            "Smart reply sent successfully to ${cachedAction.packageName}: '$text'",
+            "Smart reply sent to ${cachedAction.packageName} (type=$type, length=${text.length})",
           )
-        } else {
+          sendAck(session, (0xff).toByte())
+        } catch (e: Exception) {
           events.log(
             LogDirection.ERROR,
             Notifications.id.toInt(),
             Notifications.NotificationReply.id.toInt(),
             null,
-            "Failed to send smart reply to ${cachedAction.packageName}",
+            "Failed to send smart reply to ${cachedAction.packageName}: ${e.message ?: e.javaClass.simpleName}",
           )
+          sendAck(session, (0x7f).toByte())
         }
       } catch (e: Exception) {
         events.log(
@@ -241,6 +251,17 @@ internal class NotificationForwarder(
           "Error processing watch notification reply: ${e.message}",
         )
       }
+    }
+  }
+
+  private suspend fun sendAck(session: HuaweiSession, ackCode: Byte) {
+    try {
+      session.send(
+        Notifications.NotificationReply.ReplyAck(session.params, ackCode),
+        "NotificationReplyAck",
+      )
+    } catch (e: Exception) {
+      events.log(LogDirection.ERROR, null, null, null, "Sending NotificationReplyAck failed: ${e.message}")
     }
   }
 
