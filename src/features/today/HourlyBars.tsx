@@ -31,7 +31,7 @@ export function HourlyBars({ steps }: { steps: readonly number[] }) {
         color={colors.steps}
         height={BAR_AREA_HEIGHT}
         gap={3}
-        current={peak > 0 ? peakHour : 0}
+        current={null}
         tick={(h) => (h % LABEL_EVERY_HOURS === 0 || h === 23 ? String(h) : null)}
         tickWidth={24}
       />

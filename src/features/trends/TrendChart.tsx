@@ -1,18 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Polyline, Rect } from 'react-native-svg';
 
 import { AppText } from '@/components/AppText';
 import { BarReadout, useBarScrub } from '@/components/BarChart';
-import { labelLeft, labelledBars, LABEL_CHAR_WIDTH } from '@/components/barScrub';
 import type { DaySeries } from '@/features/trends/series';
 import { fmtDate } from '@/i18n';
-import { fontSize, useTheme } from '@/theme';
+import { useTheme } from '@/theme';
 
 const HEIGHT = 56;
-/** Bars leave a row above the tallest one for its value. */
-const BAR_LABEL = 14;
 const PAD = 6;
 const DOT = 3;
 
@@ -34,7 +31,7 @@ interface TrendChartProps {
   reference?: readonly number[];
   /** Dashed horizontal line at the range's average. */
   average?: number | null;
-  /** A value with its unit, e.g. `62 ms`; read out on touch and printed above bars. */
+  /** A value with its unit, e.g. `62 ms`; read out on touch. The card header already shows the latest value, so no bar carries a label. */
   format: (value: number) => string;
   label: string;
   /** The right end of the axis; "Today" unless the last day is another day. */
@@ -46,7 +43,7 @@ interface TrendChartProps {
  * and a lone day is a dot. Dots mark only lone days and the newest day, so 90 days stay readable.
  */
 export function TrendChart({ values, kind, color, firstDay, domain, reference, average, format, label, endLabel }: TrendChartProps) {
-  const { colors, fonts } = useTheme();
+  const { colors } = useTheme();
   const { t } = useTranslation('common');
   const [width, setWidth] = useState(0);
   const scrub = useBarScrub(values.length, values, PAD, PAD, 'slot');
@@ -67,8 +64,8 @@ export function TrendChart({ values, kind, color, firstDay, domain, reference, a
   const inner = Math.max(0, width - 2 * PAD);
   const slot = inner / n;
   const x = (i: number) => PAD + slot * (i + 0.5);
-  const top = kind === 'bar' ? PAD + BAR_LABEL : PAD;
-  const height = HEIGHT + (kind === 'bar' ? BAR_LABEL : 0);
+  const top = PAD;
+  const height = HEIGHT;
   const y = (v: number) => top + (1 - (v - lo) / span) * (height - PAD - top);
 
   // Runs of consecutive days with a value.
@@ -94,8 +91,6 @@ export function TrendChart({ values, kind, color, firstDay, domain, reference, a
   const selValue = sel !== null ? values[sel] : null;
   const readTitle = sel !== null ? fmtDate(day(sel), 'weekday') : null;
   const readText = sel !== null ? (selValue !== null && selValue !== undefined ? format(selValue) : t('chart.noValue')) : null;
-  const shorts = values.map((v) => (v === null ? '' : format(v)));
-  const labelled = kind === 'bar' ? labelledBars(values.length, inner, shorts, sel === null ? lastIndex : null, sel) : new Set<number>();
   const a11yDays = values.flatMap((v, i) => (v === null ? [] : [`${fmtDate(day(i), 'weekday')}: ${format(v)}`]));
 
   return (
@@ -126,25 +121,6 @@ export function TrendChart({ values, kind, color, firstDay, domain, reference, a
                     />
                   ),
                 )
-              : null}
-            {kind === 'bar'
-              ? values.map((v, i) => {
-                  if (v === null || !labelled.has(i)) return null;
-                  const text = shorts[i]!;
-                  const room = text.length * LABEL_CHAR_WIDTH;
-                  return (
-                    <SvgText
-                      key={`l${i}`}
-                      x={labelLeft(x(i), room, width, PAD) + room / 2}
-                      y={y(Math.min(v, hi)) - 4}
-                      fontSize={fontSize.xs}
-                      fontFamily={fonts.regular}
-                      fill={colors.mutedForeground}
-                      textAnchor="middle">
-                      {text}
-                    </SvgText>
-                  );
-                })
               : null}
             {kind === 'line' && average !== null && average !== undefined ? (
               <Line

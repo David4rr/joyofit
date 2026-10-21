@@ -174,8 +174,8 @@ interface BarChartProps {
   /** The tick under bar `i`, or null for none. */
   tick: (index: number) => string | null;
   tickWidth: number;
-  /** The bar that gets a value label when labels do not fit for all; the newest by default. */
-  current?: number;
+  /** The bar that gets a value label when labels do not fit for all; the newest by default. null for none: use it when the screen already states that bar's value next to the chart. */
+  current?: number | null;
 }
 
 /**
@@ -187,7 +187,7 @@ export function BarChart({ data, color, height, gap, tick, tickWidth, current }:
   const colors = useColors();
   const scrub = useBarScrub(data.length, data);
   const peak = Math.max(0, ...data.map((d) => d.value));
-  const highlighted = scrub.selected === null ? (current ?? data.length - 1) : null;
+  const highlighted = scrub.selected === null ? (current === undefined ? data.length - 1 : current) : null;
   const labelled = labelledBars(data.length, scrub.width, data.map((d) => d.short), highlighted, scrub.selected);
   const picked = scrub.selected !== null ? data[scrub.selected]! : null;
   const barHeight = (d: BarDatum) => (d.value > 0 ? Math.max(MIN_BAR, (d.value / peak) * height) : MIN_BAR);
