@@ -275,7 +275,10 @@ the update has to be started on the watch (Settings > Workout settings > Locatio
 names are kept (`getAgps().lastAskVersion`, `lastAskTags`: tag names only); the full tag and URLs go to the platform console only (Android logcat
 tag `JoyoFit`, iOS unified log category `JoyoFit`; line `AGPS: consult tag=...`). The two platforms send the same bytes (the iOS `1C/05` frames are
 `HuaweiPacket.serializeFileChunk1c`, GB `serializeFileChunk1c`); on iOS the stored file name uses the peripheral identifier in place of the watch's
-Bluetooth address. Policy, safety rules, sources and why Huawei's servers are not used: [docs/agps.md](../docs/agps.md).
+Bluetooth address. Observed consult answers (both download version 3, one tag each): Band 11 Pro `higeo/v1/gnssinfo?type=0x0004/HW_AGNSS`, asked on its own; Fit 4 Pro
+`com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;`, asked when started on the watch. The `1F/03` state 4 in a support log is JoyoFit's own "failed" answer, not a
+refusal by the watch. `scripts/agps-rtcm.ts` builds the content the community reads out of `HW_AGNSS_RTCM_33` (RTCM 3 frames 1019/1020/1042/1046) from BKG's open broadcast ephemeris; it is a
+lab tool and nothing sends it. Policy, safety rules, sources, chips and why Huawei's servers are not used: [docs/agps.md](../docs/agps.md).
 
 ### Live workout (`LiveWorkout.kt`, `LiveWorkoutCodec.kt`; as Huawei Health 17.0.8.300 behaves, UNVERIFIED on the Fit 4 Pro)
 
