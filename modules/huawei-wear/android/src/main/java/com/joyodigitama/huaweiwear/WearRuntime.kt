@@ -72,6 +72,7 @@ internal class WearRuntime private constructor(context: Context) {
       status.update { it.copy(state = state, note = if (state == LinkState.DISCONNECTED) it.note else null) }
       listeners.forEach { it.state(state, error) }
       if (state == LinkState.DISCONNECTED || state == LinkState.CONNECTED) controller?.onLinkChanged()
+      forwarder.onLinkState(state)
       dataSync.onLinkState(state)
       features.onLinkState(state)
       weather.onLinkState(state)

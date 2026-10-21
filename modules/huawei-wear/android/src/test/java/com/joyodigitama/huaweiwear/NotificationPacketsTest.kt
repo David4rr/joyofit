@@ -71,6 +71,37 @@ class NotificationPacketsTest {
   }
 
   @Test
+  fun notificationWithReplyActionCarriesReplyKeyAndFlags() {
+    val params = HuaweiPacket.ParamsProvider().also { it.setSecretKey(ByteArray(16)) }
+    val state = HuaweiNotificationState(2)
+    // Set expandCapability bit 89 (supportsNotificationsReply) and bit 73 (supportsNotificationsReplyActions)
+    val caps = ByteArray(12)
+    caps[89 / 8] = (caps[89 / 8].toInt() or (1 shl (89 % 8))).toByte()
+    caps[73 / 8] = (caps[73 / 8].toInt() or (1 shl (73 % 8))).toByte()
+    DeviceCaps.expandCapabilities = caps
+
+    val withReply = WatchNotification(
+      id = 10,
+      key = "0|com.chat|10||0",
+      sourceAppId = "com.chat",
+      sourceName = "Chat",
+      title = "Ann",
+      body = "hello",
+      channelId = "messages",
+      category = null,
+      whenMs = 0L,
+      isEmail = false,
+      hasReply = true,
+      replyKey = "0|com.chat|10||0",
+    )
+
+    val packet = NotificationPackets.build(params, state, withReply, 1)
+    val frames = packet.serialize()
+    assertEquals(1, frames.size)
+    assertEquals(Notifications.NotificationActionRequest.id, frames[0][5])
+  }
+
+  @Test
   fun removeSerializesToAWireFrame() {
     val params = HuaweiPacket.ParamsProvider().also { it.setSecretKey(ByteArray(16)) }
     val frames = NotificationPackets.remove(params, spec()).serialize()
