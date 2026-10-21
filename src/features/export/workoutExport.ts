@@ -120,7 +120,7 @@ export function exportEntries(os: string, available: Readonly<Record<ExportForma
   return actions.flatMap((action) => formats.map((format) => ({ format, action })));
 }
 
-/** Translation key (`workouts` namespace) of an entry's label: "Save .fit file", "Save .fit to Files" or "Share .fit file". */
+/** Translation key (`workouts` namespace) of an entry's label: Save (Android), Save to Files (iOS) or Share. */
 export function exportLabelKey(os: string, { format, action }: ExportEntry): `export.${'save' | 'saveFiles' | 'share'}.${ExportFormat}` {
   if (action === 'share') return `export.share.${format}`;
   return saveFlow(os) === 'files' ? `export.saveFiles.${format}` : `export.save.${format}`;
