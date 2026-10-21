@@ -243,6 +243,10 @@
   "faces": {
     "active": "Active",
     "installResult": "{{name}}: {{message}}",
+    "unsignedTitle": "This watch needs an official Huawei face",
+    "unsignedBody": "This watch only accepts watch faces signed by Huawei. This file will likely be rejected after sending. Photo faces still work.",
+    "unsignedTryAnyway": "Try anyway",
+    "unsignedUsePhoto": "Use Photo face",
     "signatureRefused": "The watch rejected this face because it is not signed by Huawei. Try another face from the JoyoFit gallery.",
     "deleteTitle": "Delete watch face",
     "deleteMessage": "Delete \"{{name}}\" from the watch?",

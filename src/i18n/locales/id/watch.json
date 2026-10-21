@@ -243,6 +243,10 @@
   "faces": {
     "active": "Aktif",
     "installResult": "{{name}}: {{message}}",
+    "unsignedTitle": "Jam ini butuh tampilan resmi Huawei",
+    "unsignedBody": "Jam ini hanya menerima tampilan jam yang ditandatangani Huawei. File ini kemungkinan ditolak setelah dikirim. Photo face tetap bisa dipakai.",
+    "unsignedTryAnyway": "Tetap coba",
+    "unsignedUsePhoto": "Pakai Photo face",
     "signatureRefused": "Jam menolak tampilan ini karena tidak ditandatangani Huawei. Coba tampilan lain dari galeri JoyoFit.",
     "deleteTitle": "Hapus tampilan jam",
     "deleteMessage": "Hapus \"{{name}}\" dari jam?",

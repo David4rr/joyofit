@@ -13,6 +13,7 @@ import { EmptyState, Notice } from '@/components/States';
 import { InstalledFaceCard } from '@/features/watchfaces/InstalledFaceCard';
 import { LibraryFaceCard } from '@/features/watchfaces/LibraryFaceCard';
 import { ThemedDialog, type CustomDialogState } from '@/features/watchfaces/ThemedDialog';
+import { shouldWarnUnsigned } from '@/features/watchfaces/unsignedWarning';
 import { WatchfacePreviewModal } from '@/features/watchfaces/WatchfacePreviewModal';
 import { WebFacesSection } from '@/features/watchfaces/WebFacesSection';
 import { WatchStorageCard } from '@/features/watchfaces/WatchStorageCard';
@@ -112,7 +113,29 @@ export function WatchfacesScreen() {
     if (file) await importPackage({ ...file, size: face.size });
   };
 
-  const handleInstall = async (face: WatchfaceItem) => {
+  /** Runs `proceed` straight away, or after the user chose "try anyway" when the watch deletes unsigned faces. */
+  const confirmUnsigned = (proceed: () => void) => {
+    if (!shouldWarnUnsigned(list, 'user-hwt')) {
+      proceed();
+      return;
+    }
+    setDialog({
+      visible: true,
+      icon: 'shield-checkmark-outline',
+      title: t('watch:faces.unsignedTitle'),
+      message: t('watch:faces.unsignedBody'),
+      closeLabel: t('common:actions.close'),
+      cancelLabel: t('watch:faces.unsignedTryAnyway'),
+      onCancel: proceed,
+      confirmLabel: t('watch:faces.unsignedUsePhoto'),
+      confirmVariant: 'primary',
+      onConfirm: () => router.push('/watch/photos'),
+    });
+  };
+
+  const handleInstall = async (face: WatchfaceItem) => confirmUnsigned(() => void installLibraryFace(face));
+
+  const installLibraryFace = async (face: WatchfaceItem) => {
     if (!face.downloadUrl) return;
     setInstallingUrl(face.downloadUrl);
     const outcome = await installFromUri(face.downloadUrl);
@@ -212,7 +235,7 @@ export function WatchfacesScreen() {
                 style={{ flex: 1 }}
                 disabled={!connected || !idle}
                 loading={installing}
-                onPress={() => void install()}
+                onPress={() => confirmUnsigned(() => void install())}
               />
             </View>
           ) : (
@@ -328,7 +351,7 @@ export function WatchfacesScreen() {
                 onPress: () => void handleImportToMyWatch(),
               }
             : installFromFile
-              ? { label: t('watch:faces.install'), icon: 'document-attach-outline', onPress: () => void install() }
+              ? { label: t('watch:faces.install'), icon: 'document-attach-outline', onPress: () => confirmUnsigned(() => void install()) }
               : undefined
         }
       />
