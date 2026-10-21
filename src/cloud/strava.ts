@@ -14,7 +14,7 @@ import { getWorkout } from '@/db/queries';
 import { gearSport, stravaGearFits } from '@/features/gear/model';
 import { gearOfWorkout, getStravaGearSent, reconcileDefaults, setStravaGearSent } from '@/features/gear/store';
 import { isEbike } from '@/features/cycling/settings';
-import { buildUploadForm, duplicateOf } from '@/features/strava/activityFile';
+import { buildUploadForm, duplicateOf, plainStravaError } from '@/features/strava/activityFile';
 import { buildWorkoutFit } from '@/features/strava/workoutFit';
 import { errorMessage } from '@/format';
 import { pushLog } from '@/state/logStore';
@@ -222,7 +222,7 @@ async function doSend(db: SQLiteDatabase, workoutId: number): Promise<StravaUplo
       const existing = duplicateOf(status.error);
       if (existing !== null) return await saveStravaUpload(db, { ...base, status: 'done', uploadId, activityId: existing, error: null });
       log(`Strava refused workout ${workout.start}: ${status.error}`, 'error');
-      return await saveStravaUpload(db, { ...base, status: 'rejected', uploadId, activityId: null, error: status.error });
+      return await saveStravaUpload(db, { ...base, status: 'rejected', uploadId, activityId: null, error: plainStravaError(status.error) });
     }
     // Still processing after the polling window: the next run polls the same upload again.
     return await saveStravaUpload(db, { ...base, status: 'processing', uploadId, activityId: null, error: null });
