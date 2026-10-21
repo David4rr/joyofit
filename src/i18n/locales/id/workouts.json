@@ -671,5 +671,11 @@
     "done": "Latihan dihapus",
     "undo": "Urungkan",
     "undoA11y": "Urungkan penghapusan {{sport}}"
+  },
+  "export": {
+    "title": "Ekspor",
+    "hint": "Simpan latihan sebagai file atau buka di aplikasi lain, misalnya Strava atau Garmin Connect. Bisa tanpa internet.",
+    "fit": "Bagikan file .fit",
+    "gpx": "Bagikan file GPX"
   }
 }

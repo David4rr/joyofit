@@ -49,7 +49,8 @@
     "downloading": "Still downloading from the watch. Send after the next sync.",
     "check": "Check Strava",
     "send": "Send to Strava",
-    "signIn": "Sign in with JoyoRogo (Settings, Health and cloud) to send."
+    "signIn": "Sign in with JoyoRogo (Settings, Health and cloud) to send.",
+    "fileHint": "You can also share the .fit file and upload it at strava.com → Upload activity."
   },
   "fitImport": {
     "sports": {

@@ -676,5 +676,11 @@
     "done": "Workout deleted",
     "undo": "Undo",
     "undoA11y": "Undo deleting {{sport}}"
+  },
+  "export": {
+    "title": "Export",
+    "hint": "Save the workout as a file or open it in another app, such as Strava or Garmin Connect. Works offline.",
+    "fit": "Share .fit file",
+    "gpx": "Share GPX file"
   }
 }

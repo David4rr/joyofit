@@ -27,6 +27,8 @@ import { workoutStrain } from '@/features/today/strain';
 import { useWorkoutSource } from '@/features/device/useWorkoutSource';
 import { GearWorkoutSection } from '@/features/gear/ui/GearWorkoutSection';
 import { CoachFeedbackSection } from '@/features/coach/ui/CoachFeedbackSection';
+import { useWorkoutExport } from '@/features/export/useWorkoutExport';
+import { WorkoutExportSection } from '@/features/export/WorkoutExportSection';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
 import { ShareRunButton } from '@/features/stickers/ui/ShareRunButton';
 import { ReplayButton } from '@/features/replay/ui/ReplayButton';
@@ -254,6 +256,12 @@ export default function WorkoutDetailScreen() {
         : [],
     [loaded, t],
   );
+  const exporter = useWorkoutExport(db, loaded?.workout ?? null, loaded?.points ?? NO_POINTS);
+  const menuItems: MenuItem[] = [
+    ...(exporter.available.fit ? [{ key: 'fit', label: t('export.fit'), icon: 'document-outline', onPress: () => exporter.run('fit') } satisfies MenuItem] : []),
+    ...(exporter.available.gpx ? [{ key: 'gpx', label: t('export.gpx'), icon: 'trail-sign-outline', onPress: () => exporter.run('gpx') } satisfies MenuItem] : []),
+    { key: 'delete', label: t('delete.action'), icon: 'trash-outline', danger: true, onPress: () => setDeleteOpen(true) },
+  ];
 
   if (!loaded) {
     return (
@@ -346,7 +354,7 @@ export default function WorkoutDetailScreen() {
       <MenuSheet
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        items={[{ key: 'delete', label: t('delete.action'), icon: 'trash-outline', danger: true, onPress: () => setDeleteOpen(true) }] satisfies MenuItem[]}
+        items={menuItems}
       />
       <DeleteWorkoutDialog
         target={deleteOpen ? { start: workout.start, sportName: workout.sportName, name: loaded.strength?.name } : null}
@@ -495,6 +503,7 @@ export default function WorkoutDetailScreen() {
       ) : null}
 
       <GearWorkoutSection workout={workout} />
+      <WorkoutExportSection exporter={exporter} />
       <StravaWorkoutSection workout={workout} />
 
       <Section title={t('detail.more.title')} icon="list">
