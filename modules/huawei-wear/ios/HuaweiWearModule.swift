@@ -339,6 +339,9 @@ public final class HuaweiWearModule: Module {
         Function("getActivityGoals") { () -> [String: Any] in runtime.activityGoals.status() }
         Function("getHealthyLiving") { () -> [String: Any] in runtime.p2p.healthLivingStatus() }
         Function("getCourses") { () -> [String: Any] in runtime.p2p.coursesStatus() }
+        // Quick replies are Android only (iOS cannot reply to another app's notification): nothing to show, nothing to send.
+        Function("getQuickReplies") { () -> [String: Any] in ["supported": false, "slots": 0, "maxLength": 0] }
+        AsyncFunction("setQuickReplies") { (_: [String]) async throws -> Bool in false }
         Function("getRoutes") { () -> [String: Any] in runtime.p2p.routesStatus() }
 
         AsyncFunction("getNotificationApps") { () async throws -> [[String: Any]] in [] }

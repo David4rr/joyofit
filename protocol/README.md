@@ -98,6 +98,29 @@ by anything we parse; a missing ack is only logged.
 
 Watch quick replies arrive as `02/10` (NotificationReply): tags `01` type (1 = SMS, 2 = app notification), `02` encoding (3 = UTF-16, otherwise UTF-8), `03` subId, `04` key, `05` addData, `06` text. JoyoFit handles type 2 only: the key or subId integer is matched against cached Android notification actions, the reply text is dispatched via RemoteInput with PendingIntent, and a ReplyAck (`07`: `FF` on success, `7F` on failure) is returned to the watch.
 
+### Quick replies (the list the watch offers; P2P module `hw.unitedevice.smsquick`)
+
+Source: Gadgetbridge master (codeberg.org/Freeyourgadget/Gadgetbridge, checked at `73035e7`):
+`service/devices/huawei/p2p/HuaweiP2PCannedRepliesService.java`, `HuaweiSupportProvider.onSetCannedMessages` and
+`registerP2P...` (registers the service when `supportsCannedReplies`), `devices/huawei/HuaweiDeviceStateManager.java`
+(`supportsCannedReplies` = ExpandCapability **82**; `getCannedRepliesSlotCount` = 10 with the comment "TODO: find proper count").
+Huawei Health exposes it as device details, "Quick replies" (Add reply, tap to edit, delete).
+It is **global**, not per app: one list on the watch for SMS and app notifications. No limit on the text length is in GB; no packet carries one.
+
+P2P data (`34/01`, `sendCommand`: source module `hw.unitedevice.smsquick`, destination package `com.huawei.watch.home`, fingerprint
+`603AC6A57E2023E00C9C93BB539CA653DF3003EBA4E92EA1904BA4AAA5D938F0`), body TLV:
+
+| Command (`01`, int32) | Body | Meaning |
+|---|---|---|
+| 7001 query | none | the watch answers `01 = 7001, 82 { 83 { 04 text } ... }` |
+| 7002 update | `82 { 83 { 04 text } ... }`, one `83` per reply, in order | replaces the list; GB: "replies cannot be empty" |
+| 7003 connect | none | the watch answers by asking for defaults; GB left it unused ("can clean saved canned messages") and so do we |
+
+JoyoFit (`QuickReplies.kt`, Android only; iOS cannot answer another app's notification): gate ExpandCapability 82 + `34/01`; on registration it
+queries, and sends the stored list when it differs from what this watch address last got; `setQuickReplies` sends at once. Limits applied by the
+phone: 1 to 10 replies, 1 to 30 characters, one line each (the 30 is ours, **not read from any watch**). **Not tested on a watch**: the layout
+is GB's, which runs it on Huawei watches; whether a watch rejects a longer text is unknown. Unit tests: `QuickRepliesTest`.
+
 Init appends, after `ConnectStatus` and in GB order: UserInfo `07/02` and MotionGoal `07/01` (only if
 the user saved a profile; each only if the watch lists the command), NotificationCapabilities,
 NotificationConstraints, NotificationState. UserInfo carries the optional gender-unknown (ExpandCapability
