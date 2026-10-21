@@ -93,8 +93,9 @@ function FloatingTabItem({ focused, radius, height, accessibilityLabel, onPress,
 }
 
 /**
- * The floating tab bar: a rounded pill inset from the screen edges and lifted above the bottom inset, in the layout flow (the strip is
- * a row of the navigator, so scenes end above it and nothing can hide behind it). Only the visible tabs are drawn; routes hidden with
+ * The floating tab bar: a solid rounded pill inset from the screen edges and lifted above the bottom inset. It is absolutely positioned over
+ * the screen (`TabBarWithLive`): content scrolls behind and below it, and every scrolling screen pads the end of its content by the covered
+ * height (`tabBarInset`). Only the visible tabs are drawn; routes hidden with
  * `href: null` carry `tabBarItemStyle.display === 'none'`. Draws nothing where the focused route hides the bar
  * (`tabBarStyle.display === 'none'`) and, on Android, while the keyboard is open.
  */
@@ -113,7 +114,7 @@ export function FloatingTabBar({ state, descriptors, navigation, insets }: Botto
   const itemRadius = tabItemRadius(barRadius, itemHeight);
 
   return (
-    <View style={[styles.strip, { backgroundColor: colors.background, paddingBottom: TAB_BAR_GAP_BOTTOM + Math.max(0, insets.bottom) }]}>
+    <View pointerEvents="box-none" style={[styles.strip, { paddingBottom: TAB_BAR_GAP_BOTTOM + Math.max(0, insets.bottom) }]}>
       <View
         accessibilityRole="tablist"
         style={[
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: TAB_BAR_PADDING,
     borderWidth: TAB_BAR_BORDER,
-    // One restrained lift: a soft, short shadow (iOS) or elevation 6 (Android); no glow.
+    // One restrained lift: a soft, short shadow (iOS) or elevation 6 (Android); no glow. The pill floats over the content, so it needs the lift.
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,

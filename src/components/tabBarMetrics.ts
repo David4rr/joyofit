@@ -1,9 +1,9 @@
 /**
  * Size budget of the floating bottom tab bar, in dp.
  *
- * The bar is a rounded pill inset from the screen edges and lifted above the bottom inset (gesture area, 3-button bar, iOS home
- * indicator). It stays in the layout flow: the strip it lives in (`floatingTabBarFootprint`) is a row of the navigator, so the
- * scenes end above it and nothing on a screen can hide behind it. The pill is sized from what is drawn: item padding, icon box,
+ * The bar is a solid rounded pill inset from the screen edges and lifted above the bottom inset (gesture area, 3-button bar, iOS
+ * home indicator). It floats over the screens (absolute): content scrolls underneath, and each scrolling screen pads the end of its
+ * content by what the bar covers (`tabBarInset`). The pill is sized from what is drawn: item padding, icon box,
  * label line, the pill's own padding and border. The label is 12 px Plus Jakarta Sans (a 1.26 line) and the system font size makes
  * it larger still, so the label line is fixed and scaled with the system setting up to a cap.
  */

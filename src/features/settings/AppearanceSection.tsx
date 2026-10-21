@@ -26,30 +26,37 @@ const SAMPLE_MAX = 40;
 function PreviewHalf({ theme, palette, fontsReady }: { theme: Theme; palette: Colors; fontsReady: boolean }) {
   const { numeral, fonts } = theme.type;
   const size = Math.min(numeral.lg.size, SAMPLE_MAX);
+  const lineHeight = Math.round(size * (numeral.lg.line / numeral.lg.size));
   const buttonRadius = Math.min(theme.radius.control, 6);
   return (
     <View style={[styles.half, { backgroundColor: palette.background }]}>
       <View style={[styles.tile, { backgroundColor: palette.card, borderRadius: Math.min(theme.radius.tile, 14) }]}>
-        <View style={styles.sampleRow}>
-          <Text
-            allowFontScaling={false}
-            style={{
-              opacity: fontsReady ? 1 : 0,
-              color: palette.foreground,
-              fontFamily: fonts.numeral,
-              fontSize: size,
-              lineHeight: Math.round(size * (numeral.lg.line / numeral.lg.size)),
-              letterSpacing: numeral.lg.tracking * (size / numeral.lg.size),
-              fontVariant: ['tabular-nums'],
-            }}>
-            6:42
-          </Text>
-          <Text
-            allowFontScaling={false}
-            style={{ opacity: fontsReady ? 1 : 0, color: palette.mutedForeground, fontFamily: fonts.medium, fontSize: 11, lineHeight: 14 }}>
-            /km
-          </Text>
-        </View>
+        {/* Mounted only once the fonts are registered, and keyed on it: Android measures a Text with the face it has at first layout and
+            does not re-measure when the face arrives later, which cut '6:42' to '6:4' and left a gap before the unit. Until then a box of the
+            same height keeps the tile from jumping. */}
+        {fontsReady ? (
+          <View key="sample" style={[styles.sampleRow, { height: lineHeight }]}>
+            <Text
+              allowFontScaling={false}
+              style={{
+                color: palette.foreground,
+                fontFamily: fonts.numeral,
+                fontSize: size,
+                lineHeight,
+                letterSpacing: numeral.lg.tracking * (size / numeral.lg.size),
+                fontVariant: ['tabular-nums'],
+              }}>
+              6:42
+            </Text>
+            <Text
+              allowFontScaling={false}
+              style={{ color: palette.mutedForeground, fontFamily: fonts.medium, fontSize: 11, lineHeight: 14 }}>
+              /km
+            </Text>
+          </View>
+        ) : (
+          <View style={{ height: lineHeight }} />
+        )}
         <View style={styles.dots}>
           {DATA_TINTS.map((tint) => (
             <View key={tint} style={[styles.dot, { backgroundColor: palette[tint] }]} />
@@ -139,17 +146,16 @@ export function AppearanceSection() {
               <ThemePreview theme={theme} fontsReady={fontsReady} />
               <View style={styles.caption}>
                 <View style={styles.text}>
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      opacity: fontsReady ? 1 : 0,
-                      color: colors.foreground,
-                      fontFamily: theme.type.fonts.headline,
-                      fontSize: 18,
-                      lineHeight: 24,
-                    }}>
-                    {t(`common:theme.${theme.id}.name`)}
-                  </Text>
+                  {fontsReady ? (
+                    <Text
+                      key="name"
+                      numberOfLines={1}
+                      style={{ color: colors.foreground, fontFamily: theme.type.fonts.headline, fontSize: 18, lineHeight: 24 }}>
+                      {t(`common:theme.${theme.id}.name`)}
+                    </Text>
+                  ) : (
+                    <View style={styles.namePlaceholder} />
+                  )}
                   <AppText variant="caption" muted>
                     {t(`common:theme.${theme.id}.tagline`)}
                   </AppText>
@@ -184,7 +190,8 @@ const styles = StyleSheet.create({
   preview: { flexDirection: 'row', overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, height: 112 },
   half: { flex: 1, padding: spacing.sm, gap: spacing.sm, justifyContent: 'space-between' },
   tile: { flex: 1, paddingHorizontal: spacing.sm, paddingVertical: 6, justifyContent: 'space-between' },
-  sampleRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  sampleRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
+  namePlaceholder: { height: 24 },
   dots: { flexDirection: 'row', gap: 4 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   button: { height: 10 },

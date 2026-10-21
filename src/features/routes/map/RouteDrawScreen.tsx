@@ -9,6 +9,7 @@ import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Segmented } from '@/components/Segmented';
 import { LoadingState, Notice } from '@/components/States';
+import { useTabBarInset } from '@/components/tabBarInset';
 import {
   addVerdict,
   drawReducer,
@@ -74,6 +75,7 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
   const { Map: MapView, Camera } = maplibre;
 
   const cameraRef = useRef<CameraRef>(null);
+  const tabBarInset = useTabBarInset();
   const rootRef = useRef<View>(null);
   const [rootTop, setRootTop] = useState(0);
   const [startView, setStartView] = useState<StartView | null>(null);
@@ -290,7 +292,7 @@ function DrawMap({ maplibre }: { maplibre: MapLibre }) {
           behavior="padding"
           keyboardVerticalOffset={rootTop}
           style={styles.bottom}>
-          <View pointerEvents="box-none" style={styles.stack}>
+          <View pointerEvents="box-none" style={[styles.stack, { paddingBottom: spacing.sm + tabBarInset }]}>
             <MapAttribution extra={credits} style={styles.credit} />
             {sheet === 'name' ? (
               <NameSheet

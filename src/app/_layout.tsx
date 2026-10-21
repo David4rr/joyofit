@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { AppState, StyleSheet, Text, View, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
 
 import { FloatingTabBar } from '@/components/FloatingTabBar';
+import { TabBarInsetProvider, useReportTabBarInset } from '@/components/tabBarInset';
 import { TabIcon } from '@/components/TabIcon';
 import { TAB_LABEL_LINE, TAB_LABEL_MAX_SCALE, TAB_LABEL_MIN_SHRINK, TAB_LABEL_SIZE } from '@/components/tabBarMetrics';
 import { initLocale, refreshAutoLocale } from '@/i18n/native';
@@ -89,13 +90,16 @@ function TabLabel({ name, color }: { name: 'today' | 'workouts' | 'social' | 'wa
 
 /**
  * The floating tab bar with the way back into a running recording on top of it (`LivePill`); the pill is not drawn where the tab bar is
- * hidden. Both are rows of the navigator (in flow), so scenes end above them. Sizes: `tabBarMetrics`.
+ * hidden. Both float over the screens (absolute, no solid strip): content scrolls underneath. The height they really cover is measured
+ * and published (`tabBarInset`), and every scrolling screen pads the end of its content by it. 0 where nothing is drawn.
  */
 function TabBarWithLive(props: BottomTabBarProps) {
   const focused = props.state.routes[props.state.index];
   const hidden = StyleSheet.flatten(props.descriptors[focused.key].options.tabBarStyle as StyleProp<ViewStyle>)?.display === 'none';
+  const report = useReportTabBarInset();
+  useEffect(() => () => report(0), [report]);
   return (
-    <View>
+    <View pointerEvents="box-none" style={styles.floating} onLayout={(event) => report(Math.ceil(event.nativeEvent.layout.height))}>
       <LivePill tabBarHidden={hidden} />
       <FloatingTabBar {...props} />
     </View>
@@ -174,6 +178,7 @@ function RootNavigator() {
                   <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
                   {/* The bedroom thermometer's readings (foreground scan, overnight file); idle without a paired thermometer. */}
                   <RoomCaptureRunner />
+                  <TabBarInsetProvider>
                   <View style={{ flex: 1 }}>
                   <Tabs
                     tabBar={(props) => <TabBarWithLive {...props} />}
@@ -270,6 +275,7 @@ function RootNavigator() {
                   <DeleteSnackbar />
                   <DbHealthNotice />
                   </View>
+                  </TabBarInsetProvider>
                   </FamilyProvider>
                   </OnboardingProvider>
                 </LiveWorkoutProvider>
@@ -287,3 +293,7 @@ function RootNavigator() {
     </DatabaseGate>
   );
 }
+
+const styles = StyleSheet.create({
+  floating: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+});

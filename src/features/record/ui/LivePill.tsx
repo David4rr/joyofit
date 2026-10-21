@@ -34,7 +34,7 @@ export function LivePill({ tabBarHidden }: { tabBarHidden: boolean }): ReactElem
   const icon = state === 'ready' ? 'locate' : state === 'paused' ? 'pause-circle' : 'radio-button-on';
 
   return (
-    <View style={[styles.bar, { backgroundColor: colors.background }]}>
+    <View pointerEvents="box-none" style={styles.bar}>
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel={t('liveEntry.a11y', { status: statusText, detail })}
