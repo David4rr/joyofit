@@ -1,4 +1,4 @@
-import { useWindowDimensions } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { floatingTabBarFootprint } from '@/components/tabBarMetrics';
@@ -12,5 +12,5 @@ export function useFloatingTabBarFootprint(): number {
   const { fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const barShown = useTabBarInset() > 0;
-  return barShown ? floatingTabBarFootprint(fontScale, insets.bottom) : insets.bottom;
+  return barShown ? floatingTabBarFootprint(fontScale, insets.bottom, Platform.OS) : insets.bottom;
 }

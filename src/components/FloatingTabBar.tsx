@@ -11,12 +11,12 @@ import {
   CENTER_RING,
   CENTER_SLOT,
   TAB_BAR_BORDER,
-  TAB_BAR_GAP_BOTTOM,
   TAB_BAR_MARGIN_X,
   TAB_BAR_PADDING,
   TAB_ICON_BOX,
   TAB_ITEM_PADDING,
   tabBarContentHeight,
+  tabBarBottomOffset,
   tabBarPillHeight,
   tabBarRadius,
   tabItemRadius,
@@ -162,7 +162,7 @@ export function FloatingTabBar({ state, descriptors, navigation, insets, center 
   const half = Math.ceil(items.length / 2);
 
   return (
-    <View pointerEvents="box-none" style={[styles.strip, { paddingBottom: TAB_BAR_GAP_BOTTOM + Math.max(0, insets.bottom) }]}>
+    <View pointerEvents="box-none" style={[styles.strip, { paddingBottom: tabBarBottomOffset(insets.bottom, Platform.OS) }]}>
       <View
         accessibilityRole="tablist"
         style={[

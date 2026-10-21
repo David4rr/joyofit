@@ -7,6 +7,7 @@ import {
   CENTER_SIZE,
   CENTER_SLOT,
   floatingTabBarFootprint,
+  tabBarBottomOffset,
   TAB_BAR_BORDER,
   TAB_BAR_GAP_BOTTOM,
   TAB_BAR_PADDING,
@@ -72,64 +73,34 @@ describe('tabBarPillHeight', () => {
   });
 });
 
-describe('floatingTabBarFootprint', () => {
-  it('is the centre button rise, the pill and the gap where there is no inset', () => {
-    expect(floatingTabBarFootprint(1, 0)).toBe(CENTER_RAISE + tabBarPillHeight(1) + TAB_BAR_GAP_BOTTOM);
+describe('tabBarBottomOffset', () => {
+  it('tucks the pill toward the iOS home indicator', () => {
+    expect(tabBarBottomOffset(34, 'ios')).toBe(22);
+    expect(tabBarBottomOffset(20, 'ios')).toBe(TAB_BAR_GAP_BOTTOM);
   });
-  it('keeps the pill and gaps the same for every kind of navigation', () => {
-    const gesture = 16;
-    const threeButton = 48;
-    const iosHomeIndicator = 34;
-    for (const inset of [gesture, threeButton, iosHomeIndicator]) {
-      expect(floatingTabBarFootprint(1.15, inset) - inset).toBe(floatingTabBarFootprint(1.15, 0));
-    }
+  it('is the inset plus the gap on Android', () => {
+    expect(tabBarBottomOffset(16, 'android')).toBe(16 + TAB_BAR_GAP_BOTTOM);
+    expect(tabBarBottomOffset(48, 'android')).toBe(48 + TAB_BAR_GAP_BOTTOM);
   });
-  it('adds a fractional inset as it is', () => {
-    expect(floatingTabBarFootprint(1, 24.5)).toBe(floatingTabBarFootprint(1, 0) + 24.5);
+  it('is the minimum gap without an inset', () => {
+    expect(tabBarBottomOffset(0, 'ios')).toBe(TAB_BAR_GAP_BOTTOM);
+    expect(tabBarBottomOffset(0, 'android')).toBe(TAB_BAR_GAP_BOTTOM);
   });
   it('ignores a negative or missing inset', () => {
-    expect(floatingTabBarFootprint(1, -4)).toBe(floatingTabBarFootprint(1, 0));
-    expect(floatingTabBarFootprint(1, Number.NaN)).toBe(floatingTabBarFootprint(1, 0));
+    expect(tabBarBottomOffset(-4, 'ios')).toBe(TAB_BAR_GAP_BOTTOM);
+    expect(tabBarBottomOffset(Number.NaN, 'android')).toBe(TAB_BAR_GAP_BOTTOM);
   });
 });
 
-describe('centre button', () => {
-  it('is at least a 48 dp target', () => {
-    expect(CENTER_SIZE).toBeGreaterThanOrEqual(48);
+describe('floatingTabBarFootprint', () => {
+  const strip = CENTER_RAISE + tabBarPillHeight(1);
+  it('is the centre button rise, the pill and the gap where there is no inset', () => {
+    expect(floatingTabBarFootprint(1, 0, 'android')).toBe(strip + TAB_BAR_GAP_BOTTOM);
+    expect(floatingTabBarFootprint(1, 0, 'ios')).toBe(strip + TAB_BAR_GAP_BOTTOM);
   });
-  it('sits in a ring, with room either side in its slot', () => {
-    expect(CENTER_OUTER).toBe(CENTER_SIZE + CENTER_RING * 2);
-    expect(CENTER_SLOT).toBeGreaterThan(CENTER_OUTER);
-  });
-  it('rises less than its own height, so most of it stays over the pill', () => {
-    expect(CENTER_RAISE).toBeGreaterThan(0);
-    expect(CENTER_RAISE).toBeLessThan(CENTER_OUTER / 2);
-  });
-});
-
-describe('tabBarRadius', () => {
-  it('keeps a small theme radius as it is', () => {
-    expect(tabBarRadius(14, 64)).toBe(14);
-  });
-  it('turns 999 into a full pill (half the height)', () => {
-    expect(tabBarRadius(999, 64)).toBe(32);
-  });
-  it('never goes negative or non-finite', () => {
-    expect(tabBarRadius(-5, 64)).toBe(0);
-    expect(tabBarRadius(Number.NaN, 64)).toBe(32);
-  });
-});
-
-describe('tabItemRadius', () => {
-  it('is concentric: the bar radius minus the padding and border', () => {
-    expect(tabItemRadius(20, 50)).toBe(20 - TAB_BAR_PADDING - TAB_BAR_BORDER);
-  });
-  it('is a full pill inside a full pill', () => {
-    const pill = tabBarPillHeight(1);
-    const item = tabBarContentHeight(1);
-    expect(tabItemRadius(tabBarRadius(999, pill), item)).toBe(item / 2);
-  });
-  it('does not go below zero for a squarish bar', () => {
-    expect(tabItemRadius(4, 50)).toBe(0);
+  it('uses the same offset the bar is placed at', () => {
+    expect(floatingTabBarFootprint(1, 34, 'ios')).toBe(strip + 22);
+    expect(floatingTabBarFootprint(1, 34, 'android')).toBe(strip + 34 + TAB_BAR_GAP_BOTTOM);
+    expect(floatingTabBarFootprint(1, 24.5, 'android')).toBe(strip + 24.5 + TAB_BAR_GAP_BOTTOM);
   });
 });

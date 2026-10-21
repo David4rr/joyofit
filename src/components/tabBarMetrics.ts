@@ -35,8 +35,10 @@ export const CENTER_OUTER = CENTER_SIZE + CENTER_RING * 2;
 export const CENTER_RAISE = 20;
 /** Width the centre slot reserves in the pill for the button, with breathing room either side. */
 export const CENTER_SLOT = CENTER_OUTER + 8;
-/** Gap between the pill and the bottom inset. */
+/** Gap between the pill and the bottom inset (Android), and the least distance from the screen's bottom edge on iOS. */
 export const TAB_BAR_GAP_BOTTOM = 8;
+/** iOS: how far the pill dips into the home indicator's safe area; the indicator is a thin line, so the full inset leaves an empty band. */
+export const TAB_BAR_IOS_INSET_TUCK = 12;
 
 /** The scale the label is drawn at, and so the one the bar is sized for: the system's, within [1, max]. */
 export function tabLabelScale(fontScale: number): number {
@@ -59,11 +61,21 @@ function safeInset(bottomInset: number): number {
 }
 
 /**
- * Total height the bar takes from the screen: the centre button's rise above the pill, the pill, gap below, and the bottom inset.
+ * Distance from the screen's bottom edge to the pill. Android: the inset plus the gap. iOS: the inset minus a tuck so the pill
+ * sits close to the home indicator, never nearer the edge than the gap (devices without a home indicator).
+ */
+export function tabBarBottomOffset(bottomInset: number, os: string): number {
+  const inset = safeInset(bottomInset);
+  if (os === 'ios') return Math.max(inset - TAB_BAR_IOS_INSET_TUCK, TAB_BAR_GAP_BOTTOM);
+  return inset + TAB_BAR_GAP_BOTTOM;
+}
+
+/**
+ * Total height the bar takes from the screen: the centre button's rise above the pill, the pill, and the offset below it.
  * Overlays that sit above the bar (snackbar, toast) use this as their bottom offset.
  */
-export function floatingTabBarFootprint(fontScale: number, bottomInset: number): number {
-  return CENTER_RAISE + tabBarPillHeight(fontScale) + TAB_BAR_GAP_BOTTOM + safeInset(bottomInset);
+export function floatingTabBarFootprint(fontScale: number, bottomInset: number, os: string): number {
+  return CENTER_RAISE + tabBarPillHeight(fontScale) + tabBarBottomOffset(bottomInset, os);
 }
 
 /** The theme's bar radius, never more than half the pill's height (999 means a full pill), never negative. */
