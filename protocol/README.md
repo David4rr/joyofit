@@ -67,6 +67,7 @@ ProductInfo with their own tag sets. None of this has been tried on a real band 
 | `02` | `04` | NotificationState | the watch-side notification switch (`0x81{02:on,03:on}`); sent in init and when forwarding is toggled, if `02/04` is supported |
 | `02` | `01` | NotificationAction | one notification: id, type (`7F` generic, `0F` email), title/sender/text elements, source package, optional key/channel/category/timestamp tags by ExpandCapability |
 | `02` | `06` | NotificationRemoveAction | dismisses one notification on the watch; only when ExpandCapability 94 or 120 is set |
+| `02` | `10` (watch → phone) | NotificationReply | watch replies to a notification; tags: `01` type (1 = SMS, 2 = app notification), `02` encoding (3 = UTF-16, otherwise UTF-8), `03` subId, `04` key, `05` addData, `06` text. JoyoFit handles type 2 only (dispatched via RemoteInput); a ReplyAck (`07`: `FF` success, `7F` failure) is returned |
 | `0B` FindPhone | `01` (watch → phone) | start / stop find phone | tag `01` bool: true = start; a missing tag means stop |
 | `0B` | `02` | StopFindPhone | `01` = 2, sent whenever the phone's alert ends |
 | `37` DataSync | `01` | ConfigCommand | find my watch: `01` = `hw.unitedevice.finddevice`, `02` = `findDevice`, `83{84{05 = 900100002, 06 = 2 start / 1 stop}}`; gated by ExpandCapability 79 (find device) and 83 (config commands) |
@@ -94,6 +95,8 @@ watch's content length is cut to `length - 13` characters plus `...`. ExpandCapa
 73 reply actions, 77 timestamp (`0x15`), 89 reply key (`0x18`), 94 repeated notify and 120 remove single
 (`0x19` key, `0x1A` id, `0x1B` channel), 256 pictures (not used). Notifications are not acknowledged
 by anything we parse; a missing ack is only logged.
+
+Watch quick replies arrive as `02/10` (NotificationReply): tags `01` type (1 = SMS, 2 = app notification), `02` encoding (3 = UTF-16, otherwise UTF-8), `03` subId, `04` key, `05` addData, `06` text. JoyoFit handles type 2 only: the key or subId integer is matched against cached Android notification actions, the reply text is dispatched via RemoteInput with PendingIntent, and a ReplyAck (`07`: `FF` on success, `7F` on failure) is returned to the watch.
 
 Init appends, after `ConnectStatus` and in GB order: UserInfo `07/02` and MotionGoal `07/01` (only if
 the user saved a profile; each only if the watch lists the command), NotificationCapabilities,
