@@ -79,7 +79,7 @@ publish() {
 
   step "2. $p: export"
   rm -rf "$out"
-  bunx expo export --platform "$p" --output-dir "$out" > /dev/null
+  bunx expo export --clear --platform "$p" --output-dir "$out" > /dev/null
   local bundle
   bundle=$(find "$out/_expo/static/js/$p" \( -name '*.hbc' -o -name '*.js' \) | head -n 1)
   [ -f "$bundle" ] || fail "$p: no JS bundle in $out"
