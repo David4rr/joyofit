@@ -156,5 +156,9 @@
     "title": "Page not found",
     "description": "This link doesn't lead to any page in JoyoFit. If an update just came out, close the app and open it again.",
     "home": "Go home"
+  },
+  "chart": {
+    "hint": "Tap a bar to see its value",
+    "noValue": "No value"
   }
 }

@@ -166,7 +166,10 @@
     "latest": "Terbaru",
     "a11y": "Grafik {{metric}} {{count}} hari terakhir",
     "baseline": "Garis putus-putus: biasanya {{bpm}} bpm.",
-    "sleepBars": "Tinggi batang dalam jam."
+    "sleepBars": "Tinggi batang dalam jam.",
+    "valueSteps": "{{value}} langkah",
+    "valueRestingHr": "{{value}} bpm",
+    "valueSleep": "{{value}} j"
   },
   "me": {
     "emptyTitle": "Belum ada yang memantau kabarmu",

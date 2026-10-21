@@ -150,5 +150,9 @@
     "title": "Halaman tidak ditemukan",
     "description": "Tautan ini tidak mengarah ke halaman mana pun di JoyoFit. Kalau baru ada pembaruan, tutup aplikasi lalu buka lagi.",
     "home": "Ke beranda"
+  },
+  "chart": {
+    "hint": "Ketuk batang untuk melihat nilainya",
+    "noValue": "Tidak ada nilai"
   }
 }

@@ -169,7 +169,10 @@
     "latest": "Latest",
     "a11y": "{{metric}} chart, last {{count}} days",
     "baseline": "Dashed line: usually {{bpm}} bpm.",
-    "sleepBars": "Bar height is in hours."
+    "sleepBars": "Bar height is in hours.",
+    "valueSteps": "{{value}} steps",
+    "valueRestingHr": "{{value}} bpm",
+    "valueSleep": "{{value}} h"
   },
   "me": {
     "emptyTitle": "Nobody is watching you yet",
