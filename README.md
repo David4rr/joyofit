@@ -118,7 +118,7 @@ bun install
 bunx expo prebuild -p android      # generates android/ (gitignored)
 bun run android                    # build, install, start Metro
 
-bun run typecheck                  # tsc --noEmit
+bun run typecheck                  # tsrs --noEmit (TypeScript 7 checker in Rust, docs/ci-release.md "Typecheck")
 bun run lint                       # expo lint
 bun test ./src/                    # app unit tests
 bun scripts/i18n-check.ts          # id/en key parity, no hard-coded UI text
@@ -167,7 +167,7 @@ Site (`site/`): `bun install`, `bun run dev`, `bun run build` (typecheck, Vite b
 Pull requests are welcome, especially watch reports and translations.
 
 1. **Watch reports.** Own a watch that is not tested? Connect once, then in the app open Watch, Help support your watch, Send report (goes to the maintainers' Atur board, [docs/atur-reports.md](docs/atur-reports.md)) or Report on GitHub. The report has no Bluetooth addresses or serial numbers. Or use the [watch report template](https://github.com/dzulfikar08/joyofit/issues/new?template=watch-report.yml).
-2. **Before you open a PR**, run what CI runs: `bunx tsc --noEmit`, `bun test ./src/`, `bun scripts/i18n-check.ts`, and the Kotlin or Swift tests if you touched `modules/huawei-wear`.
+2. **Before you open a PR**, run what CI runs: `bunx tsrs --noEmit`, `bun test ./src/`, `bun scripts/i18n-check.ts`, and the Kotlin or Swift tests if you touched `modules/huawei-wear`.
 3. **UI copy** goes through i18next with keys in both `id` and `en`; no emojis in UI text; icons are Ionicons, except workout types, which use the Material Design Icons pictograms of `SportIcon` (`sportIcon()` maps a sport name to one); use the app's own components, not native alerts.
 4. **Watch code is safety-critical.** Bounded transfer sizes, malformed-input handling, timeouts, no leaked Bluetooth connections, nothing that can hang the watch or break its pairing.
 5. **No secrets or personal data** in code, logs, fixtures or screenshots.

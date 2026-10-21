@@ -65,7 +65,7 @@ fi
 
 step "1. checks"
 bun scripts/i18n-check.ts
-bunx tsc --noEmit
+bunx tsrs --noEmit
 bun test ./src/
 
 # The store builds bake nothing in from the environment (cloud and API URLs live in app.json extra). A stray
