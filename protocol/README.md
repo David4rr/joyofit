@@ -270,6 +270,30 @@ watch never sends the start event. The watch sends no fat or carbohydrate figure
 and carbs on the live screen are JoyoFit's estimate (`SubstrateEstimator`: %HRmax to %VO2max after Swain, RER curve,
 fat share `(1 - RER) / 0.3`, 9 and 4 kcal per gram).
 
+### Workout started from the phone (`WatchWorkout.kt`, `WatchWorkoutModuleApi.kt`; iOS `WatchWorkoutCodec.swift`, `WatchWorkoutControl.swift`; as Huawei Health 17.0.8.300 behaves, UNVERIFIED on any watch)
+
+Huawei Health's "phone-started linkage": the phone starts a workout, the watch follows. It is the legacy workout service, not DataSync
+(`HwLinkageServiceManager.setOperator` -> `HwExerciseCommandUtil.notifyOperatorStatus`; the caller is `fjq.a(int, int)`). Gadgetbridge has
+nothing for it. Reverse linkage above (`37/02`) is the opposite direction (watch starts, phone mirrors) and cannot start the watch.
+
+| Step | Wire |
+|---|---|
+| support | `17/01` listed in SupportedCommands (Huawei: DeviceCapability `23.1`). Optional tags: `17/12` listed (`23.18`) adds version and run course, `17/15` listed (`23.21`) adds forbid pause. The Fit 4 Pro answers `17/03` without listing it, so a missing listing is not proof of absence [INFERENCE for `17/01`] |
+| start / pause / resume / stop | `17/01 81{02 operator, 03 kind, 05 workout type, 06 operation time s i32, 87{08 distance dm i32, 09 calories i32, 0A duration i32}, [0B version], 0C start time s i32, [0D run course version], [0E forbid pause]}`. Operator 1 start, 2 pause, 3 resume, 4 stop. Kind 1 = single track (2 = run plan, never sent). Integers 02/03/05/0B/0D/0E are minimal-length big-endian (`ego.e`): 140 is one byte `8c`. Tag order and lengths match Huawei's hand-built hex (`81 29 ...` for the base shape, checked by `WatchWorkoutTest`) |
+| the watch answers | `17/01` `7F <i32>` (100000 accepts) or an empty body; the reply format is read from `fjq`'s callback (`err_code 100000`), not captured |
+| the watch reports its own pause, resume or stop | `17/02 81{02 operator, 03 kind, 05 workout type, 06 time}`; the phone answers `17/02 7F 04 <100000>` |
+| is it running | `17/03` `81 00`; the answer's `81{03 operator, 04 sport, 06 workout type}` (operator 1 or 3 = running); JoyoFit asks once 1.5 s after a start |
+
+Sport codes: the workout type of tag 05 is in the watch's own sport space (the table in `WorkoutSportTypes.kt`, the same byte as
+`17/08` tag `14`), strength training is **140**. Huawei Health only maps 1 run, 2 walk, 3 ride, 5 indoor run, 7 indoor ride, 134 elliptical,
+135 rower, 137 yoga and 255 other onto the wire (`transSportType`), and sends a phone workout type that is not in that list as 1 (run): 140 is
+a value no Huawei Health code path was seen to send, so whether a watch starts "Strength training" for it is the open question the first
+test on a watch has to answer (log lines `Watch workout: ... answered`, `status after the start`).
+
+While a workout the phone started is open, `LiveWorkout` does not open a mirror of the watch's workout (`phoneOwned`), because the
+strength logger is that workout's screen; the watch's heart rate and calories arrive with the normal workout sync (`link.ts` joins them to
+the logged workout by overlap). Details and settings: `docs/strength.md`.
+
 ## Weather
 
 Port of GB's `HuaweiWeatherManager.sendWeather` (`Weather.java`, `SendWeather*Request`). The watch only

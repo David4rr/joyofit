@@ -79,6 +79,7 @@ internal class WearRuntime private constructor(context: Context) {
       stress.onLinkState(state)
       extras.onLinkState(state)
       workoutLink.onLinkState(state)
+      watchWorkout.onLinkState(state)
       p2p.onLinkState(state)
       ephemeris.onLinkState(state)
     }
@@ -200,6 +201,7 @@ internal class WearRuntime private constructor(context: Context) {
   val diet = DietSync(appContext, syncStore, dataSync, events, settings, activityGoals, bodyMetrics)
   val liveWorkout = LiveWorkout(appContext, dataSync, events, settings, liveHeartRate, scope)
   val workoutLink = WorkoutLink(appContext, link, events, scope, liveWorkout)
+  val watchWorkout = WatchWorkoutControl(link, events, scope).also { liveWorkout.phoneOwned = it::owns }
   val extras = WatchExtras(appContext, syncStore, link, events, scope)
   val language = WatchLanguage(appContext, settings, link, events, scope)
   val p2p = P2pController(appContext, P2pSettings(appContext), link, settings, syncStore, events, scope)

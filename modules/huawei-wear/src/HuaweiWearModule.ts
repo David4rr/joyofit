@@ -18,6 +18,8 @@ import type {
   SupportReport,
   SyncSummary,
   UserProfile,
+  WatchWorkoutResult,
+  WatchWorkoutStatus,
   WeatherLocationMode,
   WeatherPlace,
   WeatherStatus,
@@ -253,6 +255,19 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   startLiveWorkout(): void;
   /** Ends the live session now. */
   finishLiveWorkout(): void;
+
+  /** Whether the connected watch can be told to start a workout, and the workout the phone started on it (strength logger). */
+  getWatchWorkout(): WatchWorkoutStatus;
+  /**
+   * Starts workout `sport` (a Huawei sport code, `WATCH_SPORT_STRENGTH_TRAINING`) on the watch (`17/01`, operator 1). While it is open the
+   * watch's workout is not mirrored as a live workout. Resolves with what the watch answered; never rejects for a watch that cannot or
+   * does not answer (`unsupported`, `not_connected`, `sent`, `refused`). UNVERIFIED on a watch: needs a store build.
+   */
+  startWatchWorkout(sport: number): Promise<WatchWorkoutResult>;
+  pauseWatchWorkout(): Promise<WatchWorkoutResult>;
+  resumeWatchWorkout(): Promise<WatchWorkoutResult>;
+  /** Stops the workout on the watch and releases it (the live mirror works again), whatever the watch answers. */
+  stopWatchWorkout(): Promise<WatchWorkoutResult>;
 
   /**
    * Makes the watch ring and vibrate (`start` true) or stops it. Needs a connected watch that
