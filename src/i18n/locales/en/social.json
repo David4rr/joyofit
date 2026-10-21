@@ -188,6 +188,7 @@
     "button": "Share to JoyoRogo",
     "title": "Share to JoyoRogo",
     "posted": "Posted to JoyoRogo.",
+    "needsProfile": "Your JoyoRogo account has no profile yet, so it cannot post. Open JoyoRogo once, finish its setup (height, weight, goal), then post again.",
     "viewPost": "View post",
     "caption": "Caption",
     "captionHint": "Optional.",

@@ -181,6 +181,7 @@
     "button": "Bagikan ke JoyoRogo",
     "title": "Bagikan ke JoyoRogo",
     "posted": "Terkirim ke JoyoRogo.",
+    "needsProfile": "Akun JoyoRogo-mu belum punya profil, jadi belum bisa memposting. Buka JoyoRogo sekali, selesaikan pengaturannya (tinggi, berat, target), lalu posting lagi.",
     "viewPost": "Lihat postingan",
     "caption": "Keterangan",
     "captionHint": "Opsional.",

@@ -15,6 +15,7 @@ import { Segmented } from '@/components/Segmented';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
 import type { WorkoutPointRow, WorkoutRow } from '@/db/queries';
+import { needsRogoProfile } from '@/features/social/shareError';
 import { SignInGate } from '@/features/social/SignInGate';
 import { buildWatchPost, canShareToRogo, hrSeries, routePairs } from '@/features/social/watchPost';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
@@ -80,7 +81,7 @@ export function ShareToRogoButton({ workout, points, analysis, analysisPending, 
       setCaption('');
       setPostedId(created.id);
     } catch (e) {
-      setError(errorMessage(e));
+      setError(needsRogoProfile(e) ? t('share.needsProfile') : errorMessage(e));
     } finally {
       setPosting(false);
     }
