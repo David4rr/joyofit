@@ -702,9 +702,8 @@
     "undoA11y": "Undo deleting {{sport}}"
   },
   "export": {
-    "title": "Export",
-    "hint": "Strava and Garmin Connect don't accept files from the Share menu. Save the workout as a file, then upload it on their website. Saving works offline.",
-    "folderHint": "The first time, Android asks for a destination folder: pick or create one (for example JoyoFit) inside Downloads. JoyoFit remembers it.",
+    "title": "Export file",
+    "formats": ".fit · GPX",
     "save": {
       "fit": "Save .fit file",
       "gpx": "Save GPX file"
@@ -720,7 +719,7 @@
     "strava": "Upload on strava.com",
     "stravaHint": "On your phone, switch the browser to Desktop site, then pick the .fit file from Downloads.",
     "stravaHintFiles": "On your phone, switch the browser to Desktop site, then pick the .fit file from Files.",
-    "saved": "Saved to {{folder}}: {{name}}",
+    "saved": "Saved to {{folder}}",
     "otherFolder": "Save to another folder"
   }
 }

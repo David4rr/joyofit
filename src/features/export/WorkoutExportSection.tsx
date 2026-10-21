@@ -1,78 +1,56 @@
 import { Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { AppText } from '@/components/AppText';
-import { Button } from '@/components/Button';
-import { ButtonRow } from '@/components/ButtonRow';
-import { Section } from '@/components/Screen';
+import { Card } from '@/components/Screen';
+import { NavRow } from '@/components/NavRow';
 import { Notice } from '@/components/States';
+import type { MenuItem } from '@/features/strength/ui/Sheet';
 
 import type { WorkoutExport } from './useWorkoutExport';
 import { saveFlow } from './workoutExport';
 
-/**
- * Save the workout as a .fit file (and, for a workout with a route, a GPX file), then upload it by hand on strava.com: the Strava and
- * Garmin Connect apps take no file from the share sheet. Sharing stays as the quiet option for Drive, chats and a laptop. Free and
- * offline; nothing shows when no file can be built.
- */
-export function WorkoutExportSection({ exporter }: { exporter: WorkoutExport }) {
+/** The sheet's entries: save, upload by hand on strava.com (unless the workout already went there), share, save elsewhere. */
+export function useExportItems(exporter: WorkoutExport): MenuItem[] {
+  const { t } = useTranslation('workouts');
+  const files = saveFlow(Platform.OS) === 'files';
+  const { saved } = exporter;
+  const item = (action: 'save' | 'share') =>
+    exporter.entries
+      .filter((entry) => entry.action === action)
+      .map(
+        ({ format, label }): MenuItem => ({
+          key: `${action}-${format}`,
+          label,
+          icon: action === 'save' ? (files ? 'folder-outline' : 'download-outline') : 'share-outline',
+          onPress: () => exporter.run(format, action),
+        }),
+      );
+  return [
+    ...item('save'),
+    ...(exporter.available.fit && !exporter.sentToStrava
+      ? [{ key: 'strava', label: t('export.strava'), hint: t(files ? 'export.stravaHintFiles' : 'export.stravaHint'), icon: 'open-outline', onPress: exporter.openStrava } satisfies MenuItem]
+      : []),
+    ...item('share'),
+    ...(saved ? [{ key: 'folder', label: t('export.otherFolder'), icon: 'folder-open-outline', onPress: () => exporter.run(saved.format, 'save', true) } satisfies MenuItem] : []),
+  ];
+}
+
+/** One row: ".fit · GPX" with a chevron, opening the export sheet. Free and offline; nothing shows when no file can be built. */
+export function WorkoutExportRow({ exporter, onOpen }: { exporter: WorkoutExport; onOpen: () => void }) {
   const { t } = useTranslation('workouts');
   if (exporter.entries.length === 0) return null;
-  const files = saveFlow(Platform.OS) === 'files';
-  const { busy, saved } = exporter;
-  const saves = exporter.entries.filter((entry) => entry.action === 'save');
-  const shares = exporter.entries.filter((entry) => entry.action === 'share');
   return (
-    <Section title={t('export.title')} icon="download-outline" tint="workouts">
-      <AppText variant="caption" muted>
-        {t('export.hint')}
-      </AppText>
-      {files ? null : (
-        <AppText variant="caption" muted>
-          {t('export.folderHint')}
-        </AppText>
-      )}
-      {saves.map(({ format, action, label }) => (
-        <Button
-          key={format}
-          label={label}
-          variant={format === 'fit' ? 'primary' : 'secondary'}
-          icon={files ? 'folder-outline' : 'download-outline'}
-          onPress={() => exporter.run(format, action)}
-          loading={busy?.format === format && busy.action === action}
-          disabled={busy !== null}
+    <>
+      <Card>
+        <NavRow
+          icon="download-outline"
+          tint="workouts"
+          title={t('export.title')}
+          subtitle={exporter.available.gpx ? t('export.formats') : '.fit'}
+          onPress={onOpen}
         />
-      ))}
-      {exporter.available.fit ? (
-        <>
-          <Button label={t('export.strava')} variant="secondary" icon="open-outline" onPress={exporter.openStrava} />
-          <AppText variant="caption" muted>
-            {t(files ? 'export.stravaHintFiles' : 'export.stravaHint')}
-          </AppText>
-        </>
-      ) : null}
-      {shares.length > 0 ? (
-        <ButtonRow>
-          {shares.map(({ format, action, label }) => (
-            <Button
-              key={format}
-              label={label}
-              variant="ghost"
-              icon="share-outline"
-              lines={2}
-              onPress={() => exporter.run(format, action)}
-              loading={busy?.format === format && busy.action === action}
-              disabled={busy !== null}
-            />
-          ))}
-        </ButtonRow>
-      ) : null}
-      {saved ? (
-        <Notice icon="checkmark-circle" action={{ label: t('export.otherFolder'), onPress: () => exporter.run(saved.format, 'save', true) }}>
-          {t('export.saved', { name: saved.name, folder: saved.folder })}
-        </Notice>
-      ) : null}
+      </Card>
       {exporter.error ? <Notice tone="danger">{exporter.error}</Notice> : null}
-    </Section>
+    </>
   );
 }

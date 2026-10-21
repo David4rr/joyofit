@@ -695,9 +695,8 @@
     "undoA11y": "Urungkan penghapusan {{sport}}"
   },
   "export": {
-    "title": "Ekspor",
-    "hint": "Strava dan Garmin Connect tidak menerima file dari menu Bagikan. Simpan latihan sebagai file, lalu upload lewat situs web mereka. Menyimpan bisa tanpa internet.",
-    "folderHint": "Pertama kali, Android meminta folder tujuan: pilih atau buat folder (misalnya JoyoFit) di dalam Unduhan. JoyoFit mengingatnya.",
+    "title": "Ekspor file",
+    "formats": ".fit · GPX",
     "save": {
       "fit": "Simpan file .fit",
       "gpx": "Simpan file GPX"
@@ -713,7 +712,7 @@
     "strava": "Upload di strava.com",
     "stravaHint": "Di HP, pakai mode Situs desktop di browser, lalu pilih file .fit dari Unduhan.",
     "stravaHintFiles": "Di HP, pakai mode Situs desktop di browser, lalu pilih file .fit dari Files.",
-    "saved": "Tersimpan di {{folder}}: {{name}}",
+    "saved": "Tersimpan di {{folder}}",
     "otherFolder": "Simpan di folder lain"
   }
 }

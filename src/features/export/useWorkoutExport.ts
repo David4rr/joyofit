@@ -1,9 +1,11 @@
 import * as WebBrowser from 'expo-web-browser';
 import type { SQLiteDatabase } from 'expo-sqlite';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform } from 'react-native';
 
+import { getStravaUpload } from '@/db/strava';
 import { errorMessage } from '@/format';
 
 import { exportWorkoutFile } from './exportWorkoutFile';
@@ -39,6 +41,8 @@ export interface WorkoutExport {
   saved: SavedExport | null;
   /** Saves the file to a folder (Android) or opens the share sheet with "Save to Files" (iOS), or shares it. `pickFolder` asks for the folder again. */
   run: (format: ExportFormat, action: ExportAction, pickFolder?: boolean) => void;
+  /** The workout already went to Strava: no need to offer the manual upload. */
+  sentToStrava: boolean;
   /** Opens strava.com's upload page in the browser. */
   openStrava: () => void;
 }
@@ -50,6 +54,24 @@ export function useWorkoutExport(db: SQLiteDatabase, workout: (ExportWorkout & {
   const [saved, setSaved] = useState<SavedExport | null>(null);
   const { t } = useTranslation('workouts');
   const id = workout?.id;
+  const start = workout?.start;
+  const [sentToStrava, setSentToStrava] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (start === undefined) return undefined;
+      let live = true;
+      getStravaUpload(db, start).then(
+        (row) => {
+          if (live) setSentToStrava(row?.status === 'done');
+        },
+        () => {},
+      );
+      return () => {
+        live = false;
+      };
+    }, [db, start]),
+  );
 
   const run = useCallback(
     (format: ExportFormat, action: ExportAction, pickFolder = false) => {
@@ -84,6 +106,7 @@ export function useWorkoutExport(db: SQLiteDatabase, workout: (ExportWorkout & {
     busy,
     error,
     saved,
+    sentToStrava,
     run,
     openStrava,
   };
