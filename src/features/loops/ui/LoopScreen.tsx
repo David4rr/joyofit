@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { Segmented } from '@/components/Segmented';
 import { useHideTabBar } from '@/components/navigation';
 import { PressableScale } from '@/components/PressableScale';
@@ -595,11 +596,7 @@ function PlanSheet({ planner, expanded, onExpandedChange, onOpenHome, onBegin, o
               : t('body.estimated')}
           </AppText>
         ) : null}
-        {expanded ? (
-          <AppText variant="caption" muted>
-            {t('privacy')}
-          </AppText>
-        ) : null}
+        {expanded ? <Details>{t('privacy')}</Details> : null}
       </ScrollView>
     </SheetCard>
   );
@@ -806,11 +803,7 @@ function HomeSheet({ planner, picking, busy, failed, onPick, onUseHere, onSearch
       </AppText>
       {picking ? <Notice icon="locate">{t('home.pickHint')}</Notice> : null}
       {failed ? <Notice tone="danger">{t('home.locateFailed')}</Notice> : null}
-      {location !== 'granted' ? (
-        <AppText variant="caption" muted>
-          {t('permission.body')}
-        </AppText>
-      ) : null}
+      {location !== 'granted' ? <Details>{t('permission.body')}</Details> : null}
       <Button label={t('home.useHere')} icon="navigate" loading={busy} onPress={onUseHere} />
       <Button label={t('home.pickOnMap')} icon="pin" variant={picking ? 'primary' : 'secondary'} onPress={onPick} />
       <Button label={t('home.search')} icon="search" onPress={onSearch} />

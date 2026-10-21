@@ -8,6 +8,7 @@ import { rogo, type RogoMcpActivity, type RogoMcpConnection, type RogoMcpInfo } 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { Details } from '@/components/Details';
 import { Divider, Screen, Section } from '@/components/Screen';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { useToast } from '@/components/Toast';
@@ -157,9 +158,6 @@ export function KoneksiScreen() {
               </Section>
 
               <Section title={t('koneksi:activity.title')} icon="time" tint="link">
-                <AppText variant="caption" muted>
-                  {t('koneksi:activity.hint')}
-                </AppText>
                 {data.activity.length === 0 ? (
                   <AppText variant="caption" muted>
                     {t('koneksi:activity.empty')}
@@ -172,12 +170,11 @@ export function KoneksiScreen() {
                     </View>
                   ))
                 )}
+                <Details>{t('koneksi:activity.hint')}</Details>
               </Section>
 
-              <AppText variant="caption" muted>
-                {t('koneksi:disclaimer')}
-              </AppText>
               <Button label={t('koneksi:privacy')} variant="ghost" icon="shield-checkmark-outline" onPress={() => void Linking.openURL(PRIVACY_URL)} />
+              <Details>{t('koneksi:disclaimer')}</Details>
             </>
           ) : null}
         </SignInGate>

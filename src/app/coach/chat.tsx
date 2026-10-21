@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Details } from '@/components/Details';
 import { Input } from '@/components/Input';
 import { Card, Screen } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
@@ -84,14 +85,12 @@ function ChatBody() {
       {turns.length === 0 ? (
         <Card>
           <AppText variant="heading">{t('chat.emptyTitle')}</AppText>
-          <AppText variant="caption" muted>
-            {t('chat.emptyBody')}
-          </AppText>
           <View style={styles.suggestions}>
             {(['q1', 'q2', 'q3'] as const).map((key) => (
               <Button key={key} label={t(`chat.suggest.${key}`)} variant="secondary" lines={2} onPress={() => void send(t(`chat.suggest.${key}`))} disabled={sending} />
             ))}
           </View>
+          <Details>{t('chat.emptyBody')}</Details>
         </Card>
       ) : (
         <View style={styles.list}>
@@ -125,12 +124,14 @@ function ChatBody() {
           {t('chat.usage', { used: fmtInt(usage.used), cap: fmtInt(usage.cap) })}
         </AppText>
       ) : null}
-      <AppText variant="caption" muted>
-        {t('chat.privacy')}
-      </AppText>
-      <AppText variant="caption" muted>
-        {t('disclaimer')}
-      </AppText>
+      <Details>
+        <AppText variant="caption" muted>
+          {t('chat.privacy')}
+        </AppText>
+        <AppText variant="caption" muted>
+          {t('disclaimer')}
+        </AppText>
+      </Details>
     </>
   );
 }
