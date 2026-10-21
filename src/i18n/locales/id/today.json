@@ -22,6 +22,8 @@
     "connectWatch": "Hubungkan jam",
     "workoutInProgress": "{{sport}} sedang berjalan",
     "workoutPaused": "{{sport}} dijeda",
+    "workoutSearching": "{{sport}}: mencari GPS di jam",
+    "workoutSearchingSubtitle": "Waktu mulai berjalan setelah latihan berjalan di jam",
     "workoutDefault": "Latihan",
     "workoutSubtitle": "{{elapsed}} · lemak {{fat}} g, karbo {{carbs}} g",
     "workoutSubtitleHr": "{{elapsed}} · {{bpm}} bpm · lemak {{fat}} g, karbo {{carbs}} g",
