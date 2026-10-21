@@ -16,6 +16,7 @@ import { sportLabel } from '@/features/workouts/sportLabel';
 import { errorMessage } from '@/format';
 import { useRecorder } from '@/state/RecorderProvider';
 import { useSensors } from '@/state/SensorsProvider';
+import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
 
 import { canPrepare, gpsChip, permissionPlan } from './format';
@@ -55,6 +56,7 @@ export function SetupView({ sport, onSport, notice, onBack }: SetupViewProps) {
   const { height } = useWindowDimensions();
   const { prepare, snapshot } = useRecorder();
   const { saved, hub } = useSensors();
+  const { linkState } = useWatch();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stepsOpen, setStepsOpen] = useState(false);
@@ -100,6 +102,12 @@ export function SetupView({ sport, onSport, notice, onBack }: SetupViewProps) {
         showsVerticalScrollIndicator={false}>
         {notice ? <Notice icon="information-circle">{notice}</Notice> : null}
         {error ? <Notice tone="danger">{error}</Notice> : null}
+        {plan.location && (linkState === 'connected' || linkState === 'syncing') ? (
+          <>
+            <Notice icon="information-circle">{t('record.setup.gnssHint')}</Notice>
+            <Details title={t('record.setup.gnssWhy')}>{t('record.setup.gnssWhyBody')}</Details>
+          </>
+        ) : null}
         {chip === 'fair' || chip === 'weak' ? <GpsLine fix={snapshot.fix} /> : null}
         {autoSensors.length > 0 && hub.bluetooth === 'off' ? <Notice icon="bluetooth">{t('record.setup.bluetoothOff')}</Notice> : null}
         <PermissionCards permissions={permissions} plan={plan} />

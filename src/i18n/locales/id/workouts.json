@@ -560,6 +560,9 @@
       },
       "gpsNote": "GPS HP merekam rute dan jarak latihan ini.",
       "noGpsNote": "Tanpa GPS. Jarak dan kecepatan datang dari sensor, kalau ada.",
+      "gnssHint": "Jam bilang data GNSS kedaluwarsa? Itu wajar. GPS tetap jalan, cuma butuh 30–60 detik di luar ruangan. Tunggu ikon GPS sebelum mulai.",
+      "gnssWhy": "Kenapa?",
+      "gnssWhyBody": "Data bantuan GPS jam Huawei hanya bisa datang dari Huawei Health. JoyoFit mengirim lokasi dan waktu HP-mu untuk membantu titik GPS pertama. Jamnya tidak rusak.",
       "start": "Mulai",
       "prepareError": "Tidak bisa menyiapkan rekaman: {{error}}",
       "bluetoothOff": "Bluetooth mati. Nyalakan dulu supaya sensor bisa tersambung."

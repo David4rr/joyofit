@@ -567,6 +567,9 @@
       },
       "gpsNote": "The phone's GPS records the route and distance of this workout.",
       "noGpsNote": "No GPS. Distance and speed come from your sensors, if you have any.",
+      "gnssHint": "Watch says GNSS data expired? That's normal. GPS still works, it just needs 30–60 seconds outdoors. Wait for the GPS icon before you start.",
+      "gnssWhy": "Why?",
+      "gnssWhyBody": "Huawei watches only get GPS assistance data from Huawei Health. JoyoFit sends your phone's location and time to help the first fix. Nothing is wrong with the watch.",
       "start": "Start",
       "prepareError": "Could not get the recording ready: {{error}}",
       "bluetoothOff": "Bluetooth is off. Turn it on so your sensors can connect."

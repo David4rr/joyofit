@@ -83,4 +83,8 @@ export const FAQ: readonly FaqItem[] = [
     q: "Apa hubungannya dengan JoyoRogo?",
     a: "JoyoRogo adalah aplikasi catatan makan kami. Asupan kalori dari JoyoRogo bisa tampil di kartu kalori jam, skor Recovery dan Strain JoyoFit ikut tampil di catatan makan JoyoRogo, dan masuk ke cloud JoyoFit memakai akun JoyoRogo. JoyoFit tetap bisa dipakai sendiri tanpa JoyoRogo.",
   },
+  {
+    q: "Jam bilang data GNSS kedaluwarsa saat mulai olahraga luar ruangan. Rusak?",
+    a: "Tidak, itu wajar. GPS tetap jalan, cuma butuh 30–60 detik di luar ruangan. Tunggu ikon GPS di jam sebelum mulai. Pesan itu dari firmware jam dan tidak bisa kami ubah: data bantuan GPS jam Huawei hanya bisa datang dari Huawei Health. JoyoFit mengirim lokasi dan waktu HP-mu untuk membantu titik GPS pertama. Jamnya tidak rusak.",
+  },
 ];
