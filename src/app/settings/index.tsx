@@ -1,4 +1,6 @@
 import { useRouter, type Href } from 'expo-router';
+
+import { activeWatchName } from '@/features/device/watchName';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SectionList, StyleSheet, View } from 'react-native';
@@ -51,7 +53,7 @@ export default function SettingsScreen() {
   const cloud = useCloud();
   const strava = useStrava();
   const presence = useWatchPresence();
-  const { device, linkState } = useWatch();
+  const { device, linkState, watches } = useWatch();
   const user = authClient.useSession().data?.user;
   const { askSignOut, askDelete, dialogs } = useAccountDialogs();
 
@@ -65,7 +67,7 @@ export default function SettingsScreen() {
       {
         key: 'watch',
         title: t('hub.groups.watch'),
-        subtitle: device ? `${device.name} · ${linkLabel(linkState)}` : t('hub.watchRow.none'),
+        subtitle: device ? `${activeWatchName(device, watches)} · ${linkLabel(linkState)}` : t('hub.watchRow.none'),
         icon: 'watch',
         onPress: go('/watch'),
       },

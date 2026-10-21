@@ -17,6 +17,7 @@ import { scoreFor } from '@/features/sleep/nights';
 import { SleepSummaryView } from '@/features/today/SleepSummaryView';
 import { ownTotalsOf } from '@/features/device/watchDayTotals';
 import { isLinkUp } from '@/features/device/linkState';
+import { activeWatchName } from '@/features/device/watchName';
 import { SyncButton } from '@/features/device/SyncButton';
 import {
   heartRateStats,
@@ -199,7 +200,7 @@ function WatchToday() {
       <View style={styles.stack}>
         <WatchHero
           linkState={linkState}
-          deviceName={device ? (device.productModel ?? device.name) : null}
+          deviceName={device ? activeWatchName(device, watches) : null}
           steps={view?.totals.steps ?? 0}
           goal={goal}
           heart={heartReading}
