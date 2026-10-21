@@ -1,5 +1,6 @@
 {
   "screens": {
+    "quickReplies": "Balasan cepat",
     "sync": "Sinkron & latar belakang",
     "notifications": "Notifikasi & panggilan",
     "notificationApps": "Aplikasi notifikasi",
@@ -801,5 +802,27 @@
     "keep": "Simpan terpisah",
     "delete": "Hapus data lama dari HP ini",
     "signOut": "Keluar lagi"
+  },
+  "quickReplies": {
+    "title": "Balasan cepat",
+    "rowTitle": "Balasan cepat",
+    "rowSubtitle": "Jawaban singkat yang muncul di jam saat membalas notifikasi",
+    "intro": "Dipilih di jam saat kamu membalas pesan dari WhatsApp, Telegram, dan aplikasi lain. Urutan di sini sama dengan di jam.",
+    "count": "{{count}} dari {{max}} balasan",
+    "placeholder": "Tulis balasan",
+    "add": "Tambah balasan",
+    "save": "Simpan ke jam",
+    "reset": "Kembalikan bawaan",
+    "moveUp": "Naikkan balasan {{n}}",
+    "moveDown": "Turunkan balasan {{n}}",
+    "remove": "Hapus balasan {{n}}",
+    "empty": "Tulis minimal satu balasan.",
+    "tooLong": "Maksimal {{max}} karakter.",
+    "multiline": "Satu baris saja.",
+    "blank": "Balasan tidak boleh kosong.",
+    "tooMany": "Jam ini hanya menampung {{max}} balasan.",
+    "sent": "Terkirim ke jam.",
+    "stored": "Tersimpan. Dikirim ke jam saat tersambung.",
+    "needsWatch": "Jam yang tersambung belum mendukung balasan cepat."
   }
 }

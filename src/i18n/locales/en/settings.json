@@ -1,5 +1,6 @@
 {
   "screens": {
+    "quickReplies": "Quick replies",
     "sync": "Sync & background",
     "notifications": "Notifications & calls",
     "notificationApps": "Notification apps",
@@ -817,5 +818,27 @@
     "keep": "Keep separate",
     "delete": "Delete old data from this phone",
     "signOut": "Sign out again"
+  },
+  "quickReplies": {
+    "title": "Quick replies",
+    "rowTitle": "Quick replies",
+    "rowSubtitle": "Short answers the watch offers when you reply to a notification",
+    "intro": "You pick one on the watch when you answer a message from WhatsApp, Telegram and other apps. The order here is the order on the watch.",
+    "count": "{{count}} of {{max}} replies",
+    "placeholder": "Write a reply",
+    "add": "Add reply",
+    "save": "Save to watch",
+    "reset": "Restore defaults",
+    "moveUp": "Move reply {{n}} up",
+    "moveDown": "Move reply {{n}} down",
+    "remove": "Delete reply {{n}}",
+    "empty": "Write at least one reply.",
+    "tooLong": "At most {{max}} characters.",
+    "multiline": "One line only.",
+    "blank": "A reply cannot be empty.",
+    "tooMany": "This watch holds only {{max}} replies.",
+    "sent": "Sent to the watch.",
+    "stored": "Saved. It goes to the watch when it connects.",
+    "needsWatch": "The connected watch does not support quick replies."
   }
 }
