@@ -133,7 +133,7 @@ function SetupForm() {
 export default function CoachSetupScreen() {
   return (
     <Screen>
-      <CoachGate campaign="evergreen-coach-setup">
+      <CoachGate>
         <SetupForm />
       </CoachGate>
     </Screen>

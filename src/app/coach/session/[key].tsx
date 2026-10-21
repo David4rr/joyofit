@@ -175,7 +175,7 @@ function SessionByKey() {
 export default function CoachSessionScreen() {
   return (
     <Screen>
-      <CoachGate campaign="evergreen-coach-session">
+      <CoachGate>
         <SessionByKey />
       </CoachGate>
     </Screen>
