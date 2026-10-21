@@ -9,6 +9,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { HeroGradient } from '@/components/HeroGradient';
 import { IconChip } from '@/components/IconChip';
 import { NavRow } from '@/components/NavRow';
 import { Card, Screen, Section } from '@/components/Screen';
@@ -345,6 +346,7 @@ function FreshHeader({ name, records }: { name: string; records: number }) {
   const colors = useColors();
   return (
     <Card style={[styles.fresh, { backgroundColor: colors.hero }]}>
+      <HeroGradient />
       <Ionicons name="checkmark-circle" size={44} color={colors.heroAccent} />
       <AppText variant="title" color={colors.heroForeground} style={styles.centered} accessibilityRole="header">
         {t('summary.freshTitle')}
@@ -473,7 +475,7 @@ const styles = StyleSheet.create({
   titleBlock: { gap: 2 },
   tiles: { gap: spacing.sm },
   tileRow: { flexDirection: 'row', gap: spacing.sm, flex: 1 },
-  fresh: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
+  fresh: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg, overflow: 'hidden' },
   centered: { textAlign: 'center' },
   recordRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   grow: { flex: 1 },

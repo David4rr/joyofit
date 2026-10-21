@@ -1,6 +1,6 @@
 import type { CameraRef } from '@maplibre/maplibre-react-native';
-import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Linking, PanResponder, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Segmented } from '@/components/Segmented';
+import { useHideTabBar } from '@/components/navigation';
 import { PressableScale } from '@/components/PressableScale';
 import { LoadingState, Notice } from '@/components/States';
 import { LIVE_ROUTE, OPEN_LIVE } from '@/features/record/liveRoute';
@@ -69,21 +70,14 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
   const { t } = useTranslation('loops');
   const { t: tCommon } = useTranslation('common');
   const router = useRouter();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { Map: MapView, Camera } = maplibre;
   const planner = useLoopPlanner(maplibre);
   const { prefs, start, loop, area, home } = planner;
 
-  // Full screen: the map runs under where the tab bar sits. The tab navigator is this stack's parent.
-  useFocusEffect(
-    useCallback(() => {
-      const tabs = navigation.getParent();
-      tabs?.setOptions({ tabBarStyle: { display: 'none' } });
-      return () => tabs?.setOptions({ tabBarStyle: undefined });
-    }, [navigation]),
-  );
+  // Full screen: the map runs under where the tab bar sits.
+  useHideTabBar(true);
 
   const cameraRef = useRef<CameraRef>(null);
   const rootRef = useRef<View>(null);

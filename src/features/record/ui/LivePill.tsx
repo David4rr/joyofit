@@ -57,7 +57,7 @@ export function LivePill({ tabBarHidden }: { tabBarHidden: boolean }): ReactElem
 }
 
 const styles = StyleSheet.create({
-  bar: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.sm },
+  bar: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
   pill: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, minHeight: 48, borderRadius: radius.pill },
   text: { flex: 1 },
 });

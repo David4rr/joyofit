@@ -526,7 +526,12 @@
   "appearance": {
     "title": "Theme",
     "aboutTitle": "About themes",
-    "details": "A theme changes colors, corner shapes and the size of the big numbers. Classic and Ocean follow the light or dark setting of your phone; Sport is always dark."
+    "details": "A theme changes colors, corner shapes, fonts and the size of the big numbers. Themes marked as following the phone use its light or dark setting; the others are fixed. Applying a theme restarts the app so every screen and the bars start clean in it; if it does not restart by itself, close the app and open it again.",
+    "confirm": {
+      "title": "Apply the {{name}} theme?",
+      "message": "The app will restart so colors, fonts and the navigation bars start clean in the new theme.",
+      "apply": "Apply"
+    }
   },
   "meals": {
     "support": {

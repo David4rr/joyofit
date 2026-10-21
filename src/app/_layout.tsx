@@ -1,28 +1,18 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import {
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-  useFonts,
-} from '@expo-google-fonts/plus-jakarta-sans';
+import { useFonts } from 'expo-font';
 import { Tabs } from 'expo-router';
-import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppState, StyleSheet, Text, useWindowDimensions, View, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
+import { AppState, StyleSheet, Text, View, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
 
+import { FloatingTabBar } from '@/components/FloatingTabBar';
 import { TabIcon } from '@/components/TabIcon';
-import {
-  TAB_LABEL_LINE,
-  TAB_LABEL_MAX_SCALE,
-  TAB_LABEL_MIN_SHRINK,
-  TAB_LABEL_SIZE,
-  tabBarHeight,
-} from '@/components/tabBarMetrics';
+import { TAB_LABEL_LINE, TAB_LABEL_MAX_SCALE, TAB_LABEL_MIN_SHRINK, TAB_LABEL_SIZE } from '@/components/tabBarMetrics';
 import { initLocale, refreshAutoLocale } from '@/i18n/native';
 import { DATABASE_NAME } from '@/db/appSchema';
 import { BUSY_TIMEOUT_MS } from '@/db/migrations';
@@ -49,6 +39,8 @@ import { ScaleProvider } from '@/state/ScaleProvider';
 import { SensorsProvider } from '@/state/SensorsProvider';
 import { StravaProvider } from '@/state/StravaProvider';
 import { WatchProvider } from '@/state/WatchProvider';
+import { themeFontMap } from '@/theme/fonts';
+import { NavigationTheme } from '@/theme/NavigationTheme';
 import { ThemeProvider, useTheme } from '@/theme';
 
 // Stored language choice (or the phone's) applies before the first screen is drawn.
@@ -70,9 +62,11 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <UpdateGateProvider>
-        <RootNavigator />
-      </UpdateGateProvider>
+      <NavigationTheme>
+        <UpdateGateProvider>
+          <RootNavigator />
+        </UpdateGateProvider>
+      </NavigationTheme>
     </ThemeProvider>
   );
 }
@@ -94,29 +88,27 @@ function TabLabel({ name, color }: { name: 'today' | 'workouts' | 'social' | 'wa
 }
 
 /**
- * The tab bar with the way back into a running recording on top of it (`LivePill`); the pill is not drawn where the tab bar is hidden.
- * Its height is the content's (`tabBarMetrics`) plus the bottom inset, not the navigator's 49 + inset, which cut the labels.
+ * The floating tab bar with the way back into a running recording on top of it (`LivePill`); the pill is not drawn where the tab bar is
+ * hidden. Both are rows of the navigator (in flow), so scenes end above them. Sizes: `tabBarMetrics`.
  */
 function TabBarWithLive(props: BottomTabBarProps) {
-  const { fontScale } = useWindowDimensions();
   const focused = props.state.routes[props.state.index];
   const hidden = StyleSheet.flatten(props.descriptors[focused.key].options.tabBarStyle as StyleProp<ViewStyle>)?.display === 'none';
   return (
     <View>
       <LivePill tabBarHidden={hidden} />
-      <BottomTabBar {...props} style={{ height: tabBarHeight(fontScale, props.insets.bottom) }} />
+      <FloatingTabBar {...props} />
     </View>
   );
 }
 
 function RootNavigator() {
-  const { colors, scheme } = useTheme();
+  const { theme, colors, scheme } = useTheme();
   const { t } = useTranslation('common');
+  // Only the active theme's families (4 to 6 files): the theme is fixed for the life of the JS app (a change restarts it), so
+  // this map never changes, and the picker registers the others when it opens.
   const [fontsReady, fontError] = useFonts({
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
+    ...themeFontMap(theme),
     ...Ionicons.font,
     ...MaterialCommunityIcons.font,
   });
@@ -147,8 +139,15 @@ function RootNavigator() {
 
   // The splash also covers the cold-start update gate (server minimum build, newer OTA bundle; at most ~8 s).
   const launched = ready && launch !== 'gate';
+  // The root view color is set before the splash goes away, so the first frame and the bars behind it are already the theme's.
   useEffect(() => {
-    if (launched) void SplashScreen.hideAsync().catch(() => {});
+    if (!launched) return;
+    SystemUI.setBackgroundColorAsync(colors.background)
+      .catch(() => undefined)
+      .then(() => SplashScreen.hideAsync())
+      .catch(() => undefined);
+    // Once, at launch: later changes of the color are the ThemeProvider's.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [launched]);
 
   if (!launched) return null;
@@ -181,9 +180,7 @@ function RootNavigator() {
                     screenOptions={{
                       headerShown: false,
                       sceneStyle: { backgroundColor: colors.background },
-                      tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.hairline },
-                      tabBarActiveTintColor: colors.primary,
-                      tabBarInactiveTintColor: colors.mutedForeground,
+                      // FloatingTabBar draws the bar from the theme; `tabBarStyle: { display: 'none' }` on a route hides it.
                     }}>
                     <Tabs.Screen
                       name="index"
@@ -250,7 +247,7 @@ function RootNavigator() {
                     <Tabs.Screen name="trends" options={{ href: null }} />
                     <Tabs.Screen name="fitness" options={{ href: null }} />
                     {/* Opens by itself when a workout starts on the watch (LiveWorkoutProvider). */}
-                    <Tabs.Screen name="workout-live" options={{ href: null }} />
+                    <Tabs.Screen name="workout-live" options={{ href: null, tabBarStyle: { display: 'none' } }} />
                     {/* Family monitoring: opened from Today, Settings and notifications; its stack draws its own headers. */}
                     <Tabs.Screen name="family" options={{ href: null }} />
                     {/* Watch routes: opened from the Watch tab and by shared GPX/TCX files; its stack draws its own headers. */}
