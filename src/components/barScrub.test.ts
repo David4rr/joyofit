@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { bucketAt, pointAt, labelledBars, labelsFit, nextSelection } from './barScrub';
+import { bucketAt, labelLeft, labelledBars, labelsFit, nextSelection, pointAt, slotCenter } from './barScrub';
 
 describe('bucketAt', () => {
   test('maps x to equal slots', () => {
@@ -52,6 +52,42 @@ describe('labels', () => {
     expect([...labelledBars(24, 300, ['1', '2'], 5)]).toEqual([5]);
     expect([...labelledBars(24, 300, ['1', '2'], null)]).toEqual([]);
     expect([...labelledBars(3, 300, ['1', '2', '3'], 1)]).toEqual([0, 1, 2]);
+  });
+  test('the selected bar is left to the readout', () => {
+    expect([...labelledBars(24, 300, ['1', '2'], null, 5)]).toEqual([]);
+    expect([...labelledBars(3, 300, ['1', '2', '3'], null, 1)]).toEqual([0, 2]);
+    expect([...labelledBars(24, 300, ['1', '2'], 5, 5)]).toEqual([]);
+    expect([...labelledBars(24, 300, ['1', '2'], 5, 7)]).toEqual([5]);
+  });
+});
+
+describe('slotCenter', () => {
+  test('centres of equal slots with gaps', () => {
+    expect(slotCenter(0, 4, 100, 0)).toBe(12.5);
+    expect(slotCenter(3, 4, 100, 0)).toBe(87.5);
+    // 24 slots of 10px and 3px gaps: width 24 * 10 + 23 * 3.
+    expect(slotCenter(0, 24, 309, 3)).toBe(5);
+    expect(slotCenter(23, 24, 309, 3)).toBe(304);
+  });
+  test('no slots', () => {
+    expect(slotCenter(0, 0, 100, 3)).toBe(0);
+  });
+});
+
+describe('labelLeft', () => {
+  test('centres on the bar when there is room', () => {
+    expect(labelLeft(100, 30, 300)).toBe(85);
+  });
+  test('slides in at the left edge', () => {
+    expect(labelLeft(5, 30, 300)).toBe(0);
+    expect(labelLeft(5, 30, 300, 6)).toBe(6);
+  });
+  test('slides in at the right edge', () => {
+    expect(labelLeft(304, 30, 309)).toBe(279);
+    expect(labelLeft(304, 30, 309, 6)).toBe(273);
+  });
+  test('a label wider than the chart starts at the edge, never off to the left', () => {
+    expect(labelLeft(50, 120, 100)).toBe(0);
   });
 });
 

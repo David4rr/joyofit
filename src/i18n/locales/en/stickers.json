@@ -74,6 +74,7 @@
     },
     "preparing": "Preparing the image",
     "entry": {
+      "menu": "Share",
       "sleep": "Share your sleep",
       "week": "Share this week",
       "badges": "Share achievements",

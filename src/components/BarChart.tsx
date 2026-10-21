@@ -4,10 +4,12 @@ import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { bucketAt, labelledBars, pointAt, nextSelection } from '@/components/barScrub';
+import { bucketAt, labelLeft, labelledBars, LABEL_CHAR_WIDTH, nextSelection, pointAt, slotCenter } from '@/components/barScrub';
 import { spacing, useColors } from '@/theme';
 
-const LABEL_HEIGHT = 14;
+const LABEL_HEIGHT = 16;
+/** Space between a bar and the value printed over it. */
+const LABEL_LIFT = 2;
 const MIN_BAR = 3;
 
 interface Scrub {
@@ -127,10 +129,40 @@ export interface BarDatum {
   title: string;
   /** Value with its unit, for the readout and the accessibility label. */
   text: string;
-  /** Short value for the label above the bar (no unit). */
+  /** Short value for the label above the bar (no unit). Printed in full, never cut. */
   short: string;
   /** Draws the bar dimmed, like a past period. */
   dim?: boolean;
+}
+
+interface BarValueProps {
+  text: string;
+  /** Centre x of the bar in the chart. */
+  center: number;
+  chartWidth: number;
+  /** Distance from the chart's bottom edge to the label. */
+  bottom: number;
+}
+
+/**
+ * A bar's value over it at its natural width, centred on the bar and slid inward at the chart's edges so it is never cut.
+ * Its width is measured after the first frame; until then the estimate places it.
+ */
+function BarValue({ text, center, chartWidth, bottom }: BarValueProps) {
+  const [measured, setMeasured] = useState<number | null>(null);
+  const width = measured ?? text.length * LABEL_CHAR_WIDTH;
+  return (
+    <View pointerEvents="none" importantForAccessibility="no-hide-descendants" style={[styles.valueRow, { bottom }]}>
+      <AppText
+        variant="caption"
+        muted
+        numberOfLines={1}
+        onLayout={(e) => setMeasured(e.nativeEvent.layout.width)}
+        style={[styles.value, { marginLeft: labelLeft(center, width, chartWidth) }]}>
+        {text}
+      </AppText>
+    </View>
+  );
 }
 
 interface BarChartProps {
@@ -147,47 +179,51 @@ interface BarChartProps {
 }
 
 /**
- * Bars made of plain Views, scaled to the tallest. Touch shows a readout above and highlights the bar; the selected (or
- * current) bar carries its value, and with few bars every bar does when the labels fit.
+ * Bars made of plain Views, scaled to the tallest. Touch highlights a bar and reads its date and value out above the
+ * chart. Value labels over the bars: the current bar (every bar when they fit) while nothing is selected, none for the
+ * selected bar, since the readout already shows it. Labels are printed in full, centred on the bar and kept inside the chart.
  */
 export function BarChart({ data, color, height, gap, tick, tickWidth, current }: BarChartProps) {
   const colors = useColors();
   const scrub = useBarScrub(data.length, data);
   const peak = Math.max(0, ...data.map((d) => d.value));
-  const highlighted = scrub.selected ?? current ?? data.length - 1;
-  const labelled = labelledBars(data.length, scrub.width, data.map((d) => d.short), highlighted);
+  const highlighted = scrub.selected === null ? (current ?? data.length - 1) : null;
+  const labelled = labelledBars(data.length, scrub.width, data.map((d) => d.short), highlighted, scrub.selected);
   const picked = scrub.selected !== null ? data[scrub.selected]! : null;
+  const barHeight = (d: BarDatum) => (d.value > 0 ? Math.max(MIN_BAR, (d.value / peak) * height) : MIN_BAR);
 
   return (
     <View style={styles.wrap}>
       <BarReadout title={picked?.title ?? null} text={picked?.text ?? null} color={color} />
       <View {...scrub.touch} style={[styles.bars, { height: height + LABEL_HEIGHT, gap }]}>
         {data.map((d, i) => {
-          const isSelected = i === scrub.selected;
-          const dimmed = scrub.selected !== null ? !isSelected : d.dim === true;
+          const dimmed = scrub.selected !== null ? i !== scrub.selected : d.dim === true;
           return (
             <View key={d.key} accessible accessibilityLabel={`${d.title}: ${d.text}`} style={styles.slot}>
-              {labelled.has(i) && d.value > 0 ? (
-                <AppText
-                  variant="caption"
-                  color={isSelected ? color : undefined}
-                  muted={!isSelected}
-                  numberOfLines={1}
-                  style={[styles.value, { width: Math.max(32, tickWidth) }]}>
-                  {d.short}
-                </AppText>
-              ) : null}
               <View
                 style={[
                   styles.bar,
                   d.value > 0
-                    ? { height: Math.max(MIN_BAR, (d.value / peak) * height), backgroundColor: color, opacity: dimmed ? 0.5 : 1 }
+                    ? { height: barHeight(d), backgroundColor: color, opacity: dimmed ? 0.5 : 1 }
                     : { height: MIN_BAR, backgroundColor: colors.muted },
                 ]}
               />
             </View>
           );
         })}
+        {scrub.width > 0
+          ? data.map((d, i) =>
+              labelled.has(i) && d.value > 0 ? (
+                <BarValue
+                  key={d.key}
+                  text={d.short}
+                  center={slotCenter(i, data.length, scrub.width, gap)}
+                  chartWidth={scrub.width}
+                  bottom={barHeight(d) + LABEL_LIFT}
+                />
+              ) : null,
+            )
+          : null}
       </View>
       <View style={[styles.axis, { gap }]} pointerEvents="none">
         {data.map((d, i) => {
@@ -218,7 +254,8 @@ const styles = StyleSheet.create({
   readoutValue: { fontVariant: ['tabular-nums'] },
   bars: { flexDirection: 'row', alignItems: 'flex-end' },
   slot: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
-  value: { textAlign: 'center', fontSize: 11, lineHeight: 14, fontVariant: ['tabular-nums'] },
+  valueRow: { position: 'absolute', left: 0, right: 0, flexDirection: 'row' },
+  value: { flexShrink: 0, fontSize: 11, lineHeight: 14, fontVariant: ['tabular-nums'] },
   bar: { alignSelf: 'stretch', borderTopLeftRadius: 3, borderTopRightRadius: 3, borderBottomLeftRadius: 1, borderBottomRightRadius: 1 },
   axis: { flexDirection: 'row' },
   tick: { textAlign: 'center', fontSize: 11, lineHeight: 15 },

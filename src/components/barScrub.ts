@@ -6,7 +6,7 @@
 /** Bars at or under this count may print a small value above each bar. */
 export const LABEL_MAX_BARS = 12;
 /** Average glyph width of the 11pt caption used for the value labels. */
-const LABEL_CHAR_WIDTH = 6;
+export const LABEL_CHAR_WIDTH = 6;
 const LABEL_GAP = 4;
 
 /** The bar under touch x, for `count` equal slots spanning [left, left + width). -1 when there is no bar there. */
@@ -38,9 +38,38 @@ export function labelsFit(count: number, width: number, longestLabel: number): b
   return width / count >= longestLabel * LABEL_CHAR_WIDTH + LABEL_GAP;
 }
 
-/** Which bars print a value label: all of them when they fit, else only the highlighted one (selected, or the current). */
-export function labelledBars(count: number, width: number, labels: readonly string[], highlighted: number | null): ReadonlySet<number> {
+/**
+ * Which bars print a value label. The selected bar never does: the readout above the chart already says its value.
+ * Otherwise all bars when they fit, else only `highlighted` (the current or busiest bar; null while a bar is selected).
+ */
+export function labelledBars(
+  count: number,
+  width: number,
+  labels: readonly string[],
+  highlighted: number | null,
+  selected: number | null = null,
+): ReadonlySet<number> {
   const longest = labels.reduce((m, l) => Math.max(m, l.length), 0);
-  if (labelsFit(count, width, longest)) return new Set(labels.keys());
-  return highlighted !== null && highlighted >= 0 && highlighted < count ? new Set([highlighted]) : new Set();
+  const shown = labelsFit(count, width, longest)
+    ? new Set(labels.keys())
+    : highlighted !== null && highlighted >= 0 && highlighted < count
+      ? new Set([highlighted])
+      : new Set<number>();
+  if (selected !== null) shown.delete(selected);
+  return shown;
+}
+
+/** Centre x of bar `index` among `count` equal slots separated by `gap`, in a chart `width` wide. */
+export function slotCenter(index: number, count: number, width: number, gap: number): number {
+  if (count <= 0) return 0;
+  const slot = (width - gap * (count - 1)) / count;
+  return index * (slot + gap) + slot / 2;
+}
+
+/**
+ * Left edge for a label `labelWidth` wide, centred on `center` and kept inside [inset, width - inset]. A label wider
+ * than that room starts at `inset` and runs over the right edge rather than being cut.
+ */
+export function labelLeft(center: number, labelWidth: number, width: number, inset = 0): number {
+  return Math.max(inset, Math.min(center - labelWidth / 2, width - inset - labelWidth));
 }

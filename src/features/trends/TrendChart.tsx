@@ -5,7 +5,7 @@ import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native
 
 import { AppText } from '@/components/AppText';
 import { BarReadout, useBarScrub } from '@/components/BarChart';
-import { labelledBars } from '@/components/barScrub';
+import { labelLeft, labelledBars, LABEL_CHAR_WIDTH } from '@/components/barScrub';
 import type { DaySeries } from '@/features/trends/series';
 import { fmtDate } from '@/i18n';
 import { fontSize, useTheme } from '@/theme';
@@ -95,7 +95,7 @@ export function TrendChart({ values, kind, color, firstDay, domain, reference, a
   const readTitle = sel !== null ? fmtDate(day(sel), 'weekday') : null;
   const readText = sel !== null ? (selValue !== null && selValue !== undefined ? format(selValue) : t('chart.noValue')) : null;
   const shorts = values.map((v) => (v === null ? '' : format(v)));
-  const labelled = kind === 'bar' ? labelledBars(values.length, inner, shorts, sel ?? lastIndex) : new Set<number>();
+  const labelled = kind === 'bar' ? labelledBars(values.length, inner, shorts, sel === null ? lastIndex : null, sel) : new Set<number>();
   const a11yDays = values.flatMap((v, i) => (v === null ? [] : [`${fmtDate(day(i), 'weekday')}: ${format(v)}`]));
 
   return (
@@ -130,17 +130,18 @@ export function TrendChart({ values, kind, color, firstDay, domain, reference, a
             {kind === 'bar'
               ? values.map((v, i) => {
                   if (v === null || !labelled.has(i)) return null;
-                  const edge = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
+                  const text = shorts[i]!;
+                  const room = text.length * LABEL_CHAR_WIDTH;
                   return (
                     <SvgText
                       key={`l${i}`}
-                      x={edge === 'start' ? x(i) - barWidth / 2 : edge === 'end' ? x(i) + barWidth / 2 : x(i)}
+                      x={labelLeft(x(i), room, width, PAD) + room / 2}
                       y={y(Math.min(v, hi)) - 4}
                       fontSize={fontSize.xs}
                       fontFamily={fonts.regular}
-                      fill={i === sel ? color : colors.mutedForeground}
-                      textAnchor={edge}>
-                      {shorts[i]}
+                      fill={colors.mutedForeground}
+                      textAnchor="middle">
+                      {text}
                     </SvgText>
                   );
                 })
