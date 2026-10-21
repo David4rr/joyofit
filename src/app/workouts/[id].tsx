@@ -258,8 +258,15 @@ export default function WorkoutDetailScreen() {
   );
   const exporter = useWorkoutExport(db, loaded?.workout ?? null, loaded?.points ?? NO_POINTS);
   const menuItems: MenuItem[] = [
-    ...(exporter.available.fit ? [{ key: 'fit', label: t('export.fit'), icon: 'document-outline', onPress: () => exporter.run('fit') } satisfies MenuItem] : []),
-    ...(exporter.available.gpx ? [{ key: 'gpx', label: t('export.gpx'), icon: 'trail-sign-outline', onPress: () => exporter.run('gpx') } satisfies MenuItem] : []),
+    ...exporter.entries.map(
+      ({ format, action, label }) =>
+        ({
+          key: `${action}-${format}`,
+          label,
+          icon: action === 'save' ? 'download-outline' : 'share-outline',
+          onPress: () => exporter.run(format, action),
+        }) satisfies MenuItem,
+    ),
     { key: 'delete', label: t('delete.action'), icon: 'trash-outline', danger: true, onPress: () => setDeleteOpen(true) },
   ];
 

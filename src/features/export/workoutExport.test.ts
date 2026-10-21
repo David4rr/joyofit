@@ -3,7 +3,7 @@ import { describe, expect, it } from 'bun:test';
 import { buildFit, type StravaPoint, type StravaWorkout } from '@/features/strava/activityFile';
 import { decodeFit } from '@/features/strava/testDecode';
 
-import { buildGpx, canExportFit, canExportGpx, exportFileName, shareExport, type ExportIo } from './workoutExport';
+import { buildGpx, canExportFit, canExportGpx, exportEntries, exportFile, exportFileName, exportLabelKey, saveFlow, STRAVA_UPLOAD_URL, type ExportIo } from './workoutExport';
 
 const START = 1_792_058_016;
 const workout: StravaWorkout = {
@@ -37,27 +37,126 @@ describe('exportFileName', () => {
   });
 });
 
-describe('shareExport', () => {
-  it('shares exactly the bytes the Strava builder produces', async () => {
-    const built = buildFit(workout, points, { utcOffsetSeconds: 7 * 3600 });
-    const written: { name: string; content: Uint8Array | string }[] = [];
-    const shared: { uri: string; mime: string; name: string }[] = [];
-    const io: ExportIo = {
-      writeCacheFile: (name, content) => {
-        written.push({ name, content });
-        return `file:///cache/${name}`;
-      },
-      share: async (uri, mime, name) => {
-        shared.push({ uri, mime, name });
-      },
-    };
-    const name = await shareExport(io, row, 'fit', built.bytes);
-    expect(written).toHaveLength(1);
-    expect(written[0]?.name).toBe(name);
-    expect(written[0]?.content).toBe(built.bytes);
-    expect(Buffer.from(written[0]?.content as Uint8Array).equals(Buffer.from(buildFit(workout, points, { utcOffsetSeconds: 7 * 3600 }).bytes))).toBe(true);
-    expect(shared).toEqual([{ uri: `file:///cache/${name}`, mime: 'application/vnd.ant.fit', name }]);
+interface Calls {
+  cache: { name: string; content: Uint8Array | string }[];
+  shared: { uri: string; mime: string; name: string }[];
+  folder: { name: string; mime: string; content: Uint8Array | string; pickFolder: boolean }[];
+}
+
+/** An `ExportIo` that records what it was asked; `folderName` is what the picker "returns" (null: closed without a choice). */
+function recordingIo(folderName: string | null = 'Download/JoyoFit'): { io: ExportIo; calls: Calls } {
+  const calls: Calls = { cache: [], shared: [], folder: [] };
+  const io: ExportIo = {
+    writeCacheFile: (name, content) => {
+      calls.cache.push({ name, content });
+      return `file:///cache/${name}`;
+    },
+    share: async (uri, mime, name) => {
+      calls.shared.push({ uri, mime, name });
+    },
+    saveToFolder: async (name, mime, content, pickFolder) => {
+      calls.folder.push({ name, mime, content, pickFolder });
+      return folderName;
+    },
+  };
+  return { io, calls };
+}
+
+describe('saveFlow', () => {
+  it('asks Android for a folder and lets iOS use the share sheet\'s Save to Files', () => {
+    expect(saveFlow('android')).toBe('folder');
+    expect(saveFlow('ios')).toBe('files');
+    expect(saveFlow('web')).toBe('files');
+  });
+});
+
+describe('exportFile', () => {
+  const built = buildFit(workout, points, { utcOffsetSeconds: 7 * 3600 });
+
+  it('Android Save writes the exact Strava FIT bytes into the picked folder, without the share sheet or the cache', async () => {
+    const { io, calls } = recordingIo();
+    const outcome = await exportFile(io, 'android', row, 'fit', 'save', built.bytes);
+    expect(outcome.kind).toBe('saved');
+    if (outcome.kind !== 'saved') return;
+    expect(outcome.folder).toBe('Download/JoyoFit');
+    expect(calls.folder).toHaveLength(1);
+    expect(calls.folder[0]?.name).toBe(outcome.name);
+    expect(calls.folder[0]?.mime).toBe('application/vnd.ant.fit');
+    expect(calls.folder[0]?.pickFolder).toBe(false);
+    expect(Buffer.from(calls.folder[0]?.content as Uint8Array).equals(Buffer.from(buildFit(workout, points, { utcOffsetSeconds: 7 * 3600 }).bytes))).toBe(true);
+    expect(calls.shared).toEqual([]);
+    expect(calls.cache).toEqual([]);
     expect(decodeFit(built.bytes).integrity).toBe(true);
+  });
+
+  it('Android Save passes "pick the folder again" on and reports a closed picker as cancelled', async () => {
+    const asked = recordingIo();
+    await exportFile(asked.io, 'android', row, 'gpx', 'save', '<gpx/>', true);
+    expect(asked.calls.folder[0]?.pickFolder).toBe(true);
+    expect(asked.calls.folder[0]?.mime).toBe('application/gpx+xml');
+    const closed = recordingIo(null);
+    expect(await exportFile(closed.io, 'android', row, 'fit', 'save', built.bytes)).toEqual({ kind: 'cancelled' });
+    expect(closed.calls.shared).toEqual([]);
+  });
+
+  it('iOS Save is the share sheet (Save to Files) on a cache file', async () => {
+    const { io, calls } = recordingIo();
+    const outcome = await exportFile(io, 'ios', row, 'fit', 'save', built.bytes);
+    expect(outcome.kind).toBe('sheet');
+    if (outcome.kind !== 'sheet') return;
+    expect(calls.folder).toEqual([]);
+    expect(calls.cache).toHaveLength(1);
+    expect(calls.cache[0]?.name).toBe(outcome.name);
+    expect(calls.cache[0]?.content).toBe(built.bytes);
+    expect(calls.shared).toEqual([{ uri: `file:///cache/${outcome.name}`, mime: 'application/vnd.ant.fit', name: outcome.name }]);
+  });
+
+  it('Share opens the share sheet on both platforms and never touches a folder', async () => {
+    for (const os of ['android', 'ios']) {
+      const { io, calls } = recordingIo();
+      const outcome = await exportFile(io, os, row, 'gpx', 'share', '<gpx/>');
+      expect(outcome.kind).toBe('sheet');
+      expect(calls.folder).toEqual([]);
+      expect(calls.shared).toHaveLength(1);
+      expect(calls.shared[0]?.mime).toBe('application/gpx+xml');
+    }
+  });
+});
+
+describe('exportEntries', () => {
+  const both = { fit: true, gpx: true };
+  it('Android: Save, then Share, per available format', () => {
+    expect(exportEntries('android', both)).toEqual([
+      { format: 'fit', action: 'save' },
+      { format: 'gpx', action: 'save' },
+      { format: 'fit', action: 'share' },
+      { format: 'gpx', action: 'share' },
+    ]);
+    expect(exportEntries('android', { fit: true, gpx: false })).toEqual([
+      { format: 'fit', action: 'save' },
+      { format: 'fit', action: 'share' },
+    ]);
+  });
+  it('iOS: Save only, because Save and Share are the same sheet', () => {
+    expect(exportEntries('ios', both)).toEqual([
+      { format: 'fit', action: 'save' },
+      { format: 'gpx', action: 'save' },
+    ]);
+  });
+  it('offers nothing when no file can be built', () => {
+    expect(exportEntries('android', { fit: false, gpx: false })).toEqual([]);
+    expect(exportEntries('ios', { fit: false, gpx: false })).toEqual([]);
+  });
+  it('labels Save "Save .fit file" on Android and "Save .fit to Files" on iOS', () => {
+    expect(exportLabelKey('android', { format: 'fit', action: 'save' })).toBe('export.save.fit');
+    expect(exportLabelKey('ios', { format: 'gpx', action: 'save' })).toBe('export.saveFiles.gpx');
+    expect(exportLabelKey('android', { format: 'gpx', action: 'share' })).toBe('export.share.gpx');
+  });
+});
+
+describe('strava upload page', () => {
+  it('is the file upload page', () => {
+    expect(STRAVA_UPLOAD_URL).toBe('https://www.strava.com/upload/select');
   });
 });
 

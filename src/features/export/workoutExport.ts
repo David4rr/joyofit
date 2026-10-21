@@ -89,19 +89,78 @@ export function buildGpx(workout: ExportWorkout, points: readonly ExportPoint[],
   return lines.join('\n');
 }
 
-/** The phone side of an export, injected so the logic is testable: write into the cache, open the system share sheet. */
+/** What a button does with the file: write it to a folder the person can find again, or hand it to the system share sheet. */
+export type ExportAction = 'save' | 'share';
+
+/**
+ * How "Save" works on a platform. Android has no system sheet with a "Save to Downloads" entry, so the app asks for a folder
+ * (Storage Access Framework) and writes there. iOS has one: the share sheet's "Save to Files", so Save and Share are the same sheet.
+ */
+export type SaveFlow = 'folder' | 'files';
+
+export function saveFlow(os: string): SaveFlow {
+  return os === 'android' ? 'folder' : 'files';
+}
+
+/** One button or menu entry: a format and what happens to it. */
+export interface ExportEntry {
+  format: ExportFormat;
+  action: ExportAction;
+}
+
+const FORMATS: readonly ExportFormat[] = ['fit', 'gpx'];
+
+/**
+ * The entries to offer, Save before Share. iOS has no Share entries: its Save is the share sheet, so a second one would open the
+ * same sheet.
+ */
+export function exportEntries(os: string, available: Readonly<Record<ExportFormat, boolean>>): ExportEntry[] {
+  const formats = FORMATS.filter((format) => available[format]);
+  const actions: ExportAction[] = saveFlow(os) === 'files' ? ['save'] : ['save', 'share'];
+  return actions.flatMap((action) => formats.map((format) => ({ format, action })));
+}
+
+/** Translation key (`workouts` namespace) of an entry's label: "Save .fit file", "Save .fit to Files" or "Share .fit file". */
+export function exportLabelKey(os: string, { format, action }: ExportEntry): `export.${'save' | 'saveFiles' | 'share'}.${ExportFormat}` {
+  if (action === 'share') return `export.share.${format}`;
+  return saveFlow(os) === 'files' ? `export.saveFiles.${format}` : `export.save.${format}`;
+}
+
+/** Where a Strava user uploads a file by hand. Neither the Strava nor the Garmin Connect app takes a file from the share sheet. */
+export const STRAVA_UPLOAD_URL = 'https://www.strava.com/upload/select';
+
+/** The phone side of an export, injected so the logic is testable. */
 export interface ExportIo {
   /** Writes the file into the cache directory and returns its `file://` URI. */
   writeCacheFile(name: string, content: Uint8Array | string): string;
   /** Opens the share sheet; resolves when it closes (also when the person cancels). */
   share(uri: string, mime: string, name: string): Promise<void>;
+  /**
+   * Writes the file into a folder the person picked (the one used last time unless `pickFolder`). Resolves with the folder's
+   * name, or null when the picker was closed without a choice.
+   */
+  saveToFolder(name: string, mime: string, content: Uint8Array | string, pickFolder: boolean): Promise<string | null>;
 }
 
-/** Writes the file and opens the share sheet. */
-export async function shareExport(io: ExportIo, workout: ExportWorkout, format: ExportFormat, content: Uint8Array | string): Promise<string> {
+/** `saved`: the file is in `folder`. `sheet`: the share sheet closed (what the person chose in it is not known). `cancelled`: nothing was written. */
+export type ExportOutcome = { kind: 'saved'; name: string; folder: string } | { kind: 'sheet'; name: string } | { kind: 'cancelled' };
+
+/** Saves or shares the file; `os` picks the Save flow (`saveFlow`). */
+export async function exportFile(
+  io: ExportIo,
+  os: string,
+  workout: ExportWorkout,
+  format: ExportFormat,
+  action: ExportAction,
+  content: Uint8Array | string,
+  pickFolder = false,
+): Promise<ExportOutcome> {
   const name = exportFileName(workout, format);
-  const uri = io.writeCacheFile(name, content);
-  await io.share(uri, EXPORT_MIME[format], name);
-  return name;
+  const mime = EXPORT_MIME[format];
+  if (action === 'save' && saveFlow(os) === 'folder') {
+    const folder = await io.saveToFolder(name, mime, content, pickFolder);
+    return folder === null ? { kind: 'cancelled' } : { kind: 'saved', name, folder };
+  }
+  await io.share(io.writeCacheFile(name, content), mime, name);
+  return { kind: 'sheet', name };
 }
-

@@ -674,8 +674,24 @@
   },
   "export": {
     "title": "Ekspor",
-    "hint": "Simpan latihan sebagai file atau buka di aplikasi lain, misalnya Strava atau Garmin Connect. Bisa tanpa internet.",
-    "fit": "Bagikan file .fit",
-    "gpx": "Bagikan file GPX"
+    "hint": "Strava dan Garmin Connect tidak menerima file dari menu Bagikan. Simpan latihan sebagai file, lalu upload lewat situs web mereka. Menyimpan bisa tanpa internet.",
+    "folderHint": "Pertama kali, Android meminta folder tujuan: pilih atau buat folder (misalnya JoyoFit) di dalam Unduhan. JoyoFit mengingatnya.",
+    "save": {
+      "fit": "Simpan file .fit",
+      "gpx": "Simpan file GPX"
+    },
+    "saveFiles": {
+      "fit": "Simpan .fit ke Files",
+      "gpx": "Simpan GPX ke Files"
+    },
+    "share": {
+      "fit": "Bagikan file .fit",
+      "gpx": "Bagikan file GPX"
+    },
+    "strava": "Upload di strava.com",
+    "stravaHint": "Di HP, pakai mode Situs desktop di browser, lalu pilih file .fit dari Unduhan.",
+    "stravaHintFiles": "Di HP, pakai mode Situs desktop di browser, lalu pilih file .fit dari Files.",
+    "saved": "Tersimpan di {{folder}}: {{name}}",
+    "otherFolder": "Simpan di folder lain"
   }
 }

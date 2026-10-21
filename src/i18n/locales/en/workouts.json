@@ -679,8 +679,24 @@
   },
   "export": {
     "title": "Export",
-    "hint": "Save the workout as a file or open it in another app, such as Strava or Garmin Connect. Works offline.",
-    "fit": "Share .fit file",
-    "gpx": "Share GPX file"
+    "hint": "Strava and Garmin Connect don't accept files from the Share menu. Save the workout as a file, then upload it on their website. Saving works offline.",
+    "folderHint": "The first time, Android asks for a destination folder: pick or create one (for example JoyoFit) inside Downloads. JoyoFit remembers it.",
+    "save": {
+      "fit": "Save .fit file",
+      "gpx": "Save GPX file"
+    },
+    "saveFiles": {
+      "fit": "Save .fit to Files",
+      "gpx": "Save GPX to Files"
+    },
+    "share": {
+      "fit": "Share .fit file",
+      "gpx": "Share GPX file"
+    },
+    "strava": "Upload on strava.com",
+    "stravaHint": "On your phone, switch the browser to Desktop site, then pick the .fit file from Downloads.",
+    "stravaHintFiles": "On your phone, switch the browser to Desktop site, then pick the .fit file from Files.",
+    "saved": "Saved to {{folder}}: {{name}}",
+    "otherFolder": "Save to another folder"
   }
 }
