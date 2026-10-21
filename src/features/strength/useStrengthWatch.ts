@@ -24,7 +24,9 @@ export function useWatchWorkoutAvailability(): WatchWorkoutAvailability {
  * What the logger shows about the watch for workout `workoutId`: nothing (`none`: switched off, no watch, or a watch that cannot be
  * started from the phone), `offline` (wanted, but the watch is not connected: it starts by itself once it is), or the session's phase.
  */
-export type WatchView = { view: 'none' | 'offline'; outcome: null } | { view: WatchSessionPhase; outcome: WatchWorkoutOutcome | null };
+export type WatchView =
+  | { view: 'none' | 'offline'; outcome: null; code: null; worn: null }
+  | { view: WatchSessionPhase; outcome: WatchWorkoutOutcome | null; code: number | null; worn: boolean | null };
 
 /**
  * Starts the watch's workout for the logger: once per workout, when the logger is ready, the setting is on, the workout is fresh (`startedAt`
@@ -53,9 +55,11 @@ export function useStrengthWatchStart(workoutId: string | null, wanted: boolean,
     if (workoutId !== null) void startStrengthWatch(db, workoutId);
   }, [db, workoutId]);
 
-  if (!active) return { watch: { view: 'none', outcome: null }, retry };
-  if (session.workoutId === workoutId && session.phase !== 'idle') return { watch: { view: session.phase, outcome: session.outcome }, retry };
-  return { watch: { view: availability === 'offline' ? 'offline' : 'none', outcome: null }, retry };
+  if (!active) return { watch: { view: 'none', outcome: null, code: null, worn: null }, retry };
+  if (session.workoutId === workoutId && session.phase !== 'idle') {
+    return { watch: { view: session.phase, outcome: session.outcome, code: session.code, worn: session.worn }, retry };
+  }
+  return { watch: { view: availability === 'offline' ? 'offline' : 'none', outcome: null, code: null, worn: null }, retry };
 }
 
 /** The phase of the watch session of workout `workoutId`, for the header chip; null when it has none. Redraws on its own, not the screen. */

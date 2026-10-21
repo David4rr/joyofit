@@ -7,6 +7,7 @@ import { Notice } from '@/components/States';
 import { radius, spacing, useTheme } from '@/theme';
 
 import { useStrengthWatchStart, useWatchChip } from '../useStrengthWatch';
+import { refusedNoticeKey } from '../watchWorkout';
 
 /**
  * The watch in the session header: a small "Jam" chip while Strength training runs on the watch (dimmed while paused or when the watch never
@@ -46,7 +47,7 @@ export function WatchNotice({ workoutId, wanted, startedAt }: { workoutId: strin
   if (watch.view === 'offline') return <Notice icon="watch-outline">{t('watch.notConnected')}</Notice>;
   if (watch.view === 'lost') return <Notice icon="watch-outline">{t('watch.lost')}</Notice>;
   if (watch.view === 'failed') {
-    const text = watch.outcome === 'refused' ? t('watch.refused') : t('watch.notConnected');
+    const text = watch.outcome === 'refused' ? t(refusedNoticeKey(watch.code, watch.worn), { code: watch.code }) : t('watch.notConnected');
     return (
       <Notice icon="watch-outline" action={{ label: t('watch.retry'), onPress: retry }}>
         {text}

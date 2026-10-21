@@ -33,6 +33,15 @@ export function watchWorkoutAvailability(native: WatchWorkoutNative | null, hasW
 }
 
 /**
+ * The notice text for a refused start (`strength` namespace): the watch said it is not on the wrist (`worn` false, read right after the
+ * refusal), else the refusal with its code, else the plain refusal (iOS and older binaries give no code).
+ */
+export function refusedNoticeKey(code: number | null, worn: boolean | null): 'watch.notWorn' | 'watch.refusedCode' | 'watch.refused' {
+  if (worn === false) return 'watch.notWorn';
+  return code !== null ? 'watch.refusedCode' : 'watch.refused';
+}
+
+/**
  * `idle`: nothing started (or the session is over). `starting`: the command is on its way. `running` / `paused`: the watch confirmed the
  * start. `unconfirmed`: the command went out and the watch did not confirm it (it may well be recording). `failed`: the watch is not
  * connected, refused, or does not support it. `lost`: the workout was started from the phone before the app restarted; the watch cannot be
@@ -45,9 +54,20 @@ export interface WatchSessionSnapshot {
   phase: WatchSessionPhase;
   /** Why `failed`: the outcome the watch gave. */
   outcome: WatchWorkoutOutcome | null;
+  /** The result code of a refusal (`outcome` `refused`), else null. */
+  code: number | null;
+  /** The wear state the watch reported right after a refusal: false is "not on the wrist"; null when it was not asked or did not say. */
+  worn: boolean | null;
 }
 
-const IDLE: WatchSessionSnapshot = { workoutId: null, phase: 'idle', outcome: null };
+const IDLE: WatchSessionSnapshot = { workoutId: null, phase: 'idle', outcome: null, code: null, worn: null };
+
+const snapshot = (
+  workoutId: string | null,
+  phase: WatchSessionPhase,
+  outcome: WatchWorkoutOutcome | null = null,
+  result: WatchWorkoutResult | null = null,
+): WatchSessionSnapshot => ({ workoutId, phase, outcome, code: result?.code ?? null, worn: result?.worn ?? null });
 
 export interface WatchSessionDeps {
   /** The native module, or null on a binary without the functions. */
@@ -98,42 +118,44 @@ export class StrengthWatchSession {
       const native = this.deps.native();
       const { workoutId } = options;
       if (native === null) {
-        this.set({ workoutId, phase: 'failed', outcome: 'unsupported' });
+        this.set(snapshot(workoutId, 'failed', 'unsupported'));
         return 'failed';
       }
       // The native side still owns a workout (the screens reloaded, the app did not restart): take it over instead of starting again.
       const open = native.getWatchWorkout();
       if (open.active) {
         this.told = open.state === 'paused' ? 'paused' : 'running';
-        this.set({ workoutId, phase: this.told, outcome: null });
+        this.set(snapshot(workoutId, this.told));
         return this.told;
       }
       if (options.startedBefore) {
         this.deps.log?.(`watch workout for ${workoutId} was started before the app restarted; not started again`);
-        this.set({ workoutId, phase: 'lost', outcome: null });
+        this.set(snapshot(workoutId, 'lost'));
         return 'lost';
       }
-      this.set({ workoutId, phase: 'starting', outcome: null });
+      this.set(snapshot(workoutId, 'starting'));
       let result: WatchWorkoutResult;
       try {
         result = await native.startWatchWorkout(options.sport);
       } catch (e) {
         this.deps.log?.(`watch workout start failed: ${String((e as { message?: unknown } | null)?.message ?? e)}`);
-        this.set({ workoutId, phase: 'failed', outcome: 'sent' });
+        this.set(snapshot(workoutId, 'failed', 'sent'));
         return 'failed';
       }
-      this.deps.log?.(`watch workout start: ${result.outcome}${result.code !== null ? ` (${result.code})` : ''}`);
+      this.deps.log?.(
+        `watch workout start: ${result.outcome}${result.code !== null ? ` (${result.code})` : ''}${result.worn === false ? ', watch not worn' : ''}`,
+      );
       switch (result.outcome) {
         case 'confirmed':
           this.told = 'running';
-          this.set({ workoutId, phase: 'running', outcome: 'confirmed' });
+          this.set(snapshot(workoutId, 'running', 'confirmed'));
           return 'running';
         case 'sent':
           this.told = 'running';
-          this.set({ workoutId, phase: 'unconfirmed', outcome: 'sent' });
+          this.set(snapshot(workoutId, 'unconfirmed', 'sent'));
           return 'unconfirmed';
         default:
-          this.set({ workoutId, phase: 'failed', outcome: result.outcome });
+          this.set(snapshot(workoutId, 'failed', result.outcome, result));
           return 'failed';
       }
     });

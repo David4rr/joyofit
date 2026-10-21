@@ -6,6 +6,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiPacket
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.DeviceConfig
 
 /**
  * A workout started from the phone: Huawei Health's "phone-started linkage" over the legacy workout service. Reconstructed from Huawei
@@ -108,6 +109,25 @@ internal object WatchWorkoutWire {
 
   /** The answer to a `17/02` notice: `7F 04 <100000>`. */
   fun noticeAck(params: HuaweiPacket.ParamsProvider): HuaweiPacket = RawPacket(params, SERVICE, OPERATOR_NOTICE, HuaweiTLV().put(0x7F, OK))
+
+  /**
+   * The code the Fit 4 Pro (6.1.0.117) gives every `17/01`, whatever the operator, sport or tag subset (observed 2026-10-21): "the watch could
+   * not do it". Huawei Health uses the same number in the other direction (its `17/02` answer when pausing, resuming or stopping its own
+   * workout failed). The watch gives no reason in the answer.
+   */
+  const val ERR_FAILED = 123_002
+
+  /** DeviceConfig `01/3D` WearStatus answer, tag 01: 2 is "not worn" (Huawei Health `etj`: `wearStatus == 2` is false), anything else is worn. */
+  const val WEAR_NOT_WORN = 2
+
+  /** The wear state in a `01/3D` answer: false not worn, true worn, null when the answer has no state. */
+  fun wornFrom(tlv: HuaweiTLV?): Boolean? {
+    val state = tlv?.getBytes(0x01, null)?.firstOrNull()?.toInt() ?: return null
+    return state != WEAR_NOT_WORN
+  }
+
+  /** [tlv] as the plaintext hex the watch gets or gave (the wire frame is encrypted), for the log. */
+  fun plain(tlv: HuaweiTLV?): String = tlv?.serialize()?.toHex() ?: "(empty)"
 }
 
 /** What a start, pause, resume or stop came to. [wire] is the string JS reads. */
@@ -127,8 +147,9 @@ internal enum class WatchWorkoutOutcome(val wire: String) {
   NOT_CONNECTED("not_connected"),
 }
 
-internal class WatchWorkoutResult(val outcome: WatchWorkoutOutcome, val code: Int? = null) {
-  fun toJs(): Map<String, Any?> = mapOf("outcome" to outcome.wire, "code" to code)
+internal class WatchWorkoutResult(val outcome: WatchWorkoutOutcome, val code: Int? = null, val worn: Boolean? = null) {
+  /** [worn]: the wear state the watch reported right after a refusal (false: not on the wrist), null when it was not asked or did not say. */
+  fun toJs(): Map<String, Any?> = mapOf("outcome" to outcome.wire, "code" to code, "worn" to worn)
 }
 
 /**
@@ -277,22 +298,38 @@ internal class WatchWorkoutControl(
       return WatchWorkoutResult(WatchWorkoutOutcome.UNSUPPORTED)
     }
     val shape = WatchWorkoutWire.shapeFor(DeviceCaps::supports)
+    val packet = WatchWorkoutWire.setOperator(handle.session.params, operator, sport, now, startMs, shape)
+    log("Watch workout: ${operatorName(operator)} (type $sport) sending 17/01 ${WatchWorkoutWire.plain(packet.getTlv())}")
     return try {
-      val answer = handle.session.request(
-        WatchWorkoutWire.setOperator(handle.session.params, operator, sport, now, startMs, shape),
-        REQUEST_MS,
-        "workout ${operatorName(operator)}",
-      )
+      val answer = handle.session.request(packet, REQUEST_MS, "workout ${operatorName(operator)}")
       val tlv = answer.getTlv()
       val code = WatchWorkoutWire.resultCode(tlv)
-      log("Watch workout: ${operatorName(operator)} (type $sport) answered ${tlv ?: "(empty)"}")
-      if (code != null && code != WatchWorkoutWire.OK) WatchWorkoutResult(WatchWorkoutOutcome.REFUSED, code) else WatchWorkoutResult(WatchWorkoutOutcome.CONFIRMED, code)
+      log("Watch workout: ${operatorName(operator)} (type $sport) answered ${WatchWorkoutWire.plain(tlv)}" + if (code != null) " (code $code)" else "")
+      if (code != null && code != WatchWorkoutWire.OK) {
+        val worn = readWorn(handle.session)
+        log("Watch workout: ${operatorName(operator)} refused with code $code, watch worn: ${worn ?: "unknown"}")
+        WatchWorkoutResult(WatchWorkoutOutcome.REFUSED, code, worn)
+      } else {
+        WatchWorkoutResult(WatchWorkoutOutcome.CONFIRMED, code)
+      }
     } catch (e: CancellationException) {
       throw e
     } catch (e: Exception) {
       log("Watch workout: ${operatorName(operator)} not confirmed: ${e.message}")
       WatchWorkoutResult(WatchWorkoutOutcome.SENT)
     }
+  }
+
+  /** `01/3D` WearStatus, asked after a refusal so the support log says whether the watch was on the wrist. Null without an answer. */
+  private suspend fun readWorn(session: HuaweiSession): Boolean? = try {
+    val tlv = session.request(DeviceConfig.WearStatus.Request(session.params), REQUEST_MS, "wear status").getTlv()
+    log("Watch workout: wear status answer ${WatchWorkoutWire.plain(tlv)}")
+    WatchWorkoutWire.wornFrom(tlv)
+  } catch (e: CancellationException) {
+    throw e
+  } catch (e: Exception) {
+    log("Watch workout: wear status not read: ${e.message}")
+    null
   }
 
   /** `17/03` once, a moment after a start: true when the watch reports a running workout, false when it reports none, null without an answer. */
@@ -302,7 +339,7 @@ internal class WatchWorkoutControl(
     return try {
       val answer = handle.session.request(WatchWorkoutWire.statusRequest(handle.session.params), REQUEST_MS, "workout status after start")
       val tlv = answer.getTlv()
-      log("Watch workout: status after the start $tlv")
+      log("Watch workout: status after the start ${WatchWorkoutWire.plain(tlv)}")
       WatchWorkoutWire.parseStatus(tlv)?.running ?: false
     } catch (e: CancellationException) {
       throw e

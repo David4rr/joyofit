@@ -309,7 +309,7 @@ nothing for it. Reverse linkage above (`37/02`) is the opposite direction (watch
 |---|---|
 | support | `17/01` listed in SupportedCommands (Huawei: DeviceCapability `23.1`). Optional tags: `17/12` listed (`23.18`) adds version and run course, `17/15` listed (`23.21`) adds forbid pause. The Fit 4 Pro answers `17/03` without listing it, so a missing listing is not proof of absence [INFERENCE for `17/01`] |
 | start / pause / resume / stop | `17/01 81{02 operator, 03 kind, 05 workout type, 06 operation time s i32, 87{08 distance dm i32, 09 calories i32, 0A duration i32}, [0B version], 0C start time s i32, [0D run course version], [0E forbid pause]}`. Operator 1 start, 2 pause, 3 resume, 4 stop. Kind 1 = single track (2 = run plan, never sent). Integers 02/03/05/0B/0D/0E are minimal-length big-endian (`ego.e`): 140 is one byte `8c`. Tag order and lengths match Huawei's hand-built hex (`81 29 ...` for the base shape, checked by `WatchWorkoutTest`) |
-| the watch answers | `17/01` `7F <i32>` (100000 accepts) or an empty body; the reply format is read from `fjq`'s callback (`err_code 100000`), not captured |
+| the watch answers | `17/01` `7F 04 <i32>`: 100000 accepts; **123002** (`0001E07A`) is "the watch could not do it" with no reason in the answer (observed, below). Huawei Health uses 123002 the other way round too: its `17/02` answer when pausing, resuming or stopping its own workout failed (`fjt.y/w/u/v/p/x`) |
 | the watch reports its own pause, resume or stop | `17/02 81{02 operator, 03 kind, 05 workout type, 06 time}`; the phone answers `17/02 7F 04 <100000>` |
 | is it running | `17/03` `81 00`; the answer's `81{03 operator, 04 sport, 06 workout type}` (operator 1 or 3 = running); JoyoFit asks once 1.5 s after a start |
 
@@ -318,6 +318,21 @@ Sport codes: the workout type of tag 05 is in the watch's own sport space (the t
 135 rower, 137 yoga and 255 other onto the wire (`transSportType`), and sends a phone workout type that is not in that list as 1 (run): 140 is
 a value no Huawei Health code path was seen to send, so whether a watch starts "Strength training" for it is the open question the first
 test on a watch has to answer (log lines `Watch workout: ... answered`, `status after the start`).
+
+**Observed on the Fit 4 Pro (6.1.0.117), 2026-10-21, `adb` probe, plaintext of the encrypted frames.** The watch lists `17/01 04 06 07 0B 0C 12 15 17`
+and `16/01 03` (so Huawei Health's `isSupportExerciseAdvice` 22.1, `isSupportWorkoutExerciseDisplayLink` 23.11, 23.18 and 23.21 are all true, and the
+captured HH log on this watch says `setNewLinkStrategy is true`); ExpandCapability 0, 83, 84, 85, 175, 234 set. JoyoFit's start for strength (`81 32 02 01 01 03 01 01
+05 01 8C 06 04 <t> 87 12 08 04 0 09 04 0 0A 04 0 0B 01 00 0C 04 <t> 0D 01 00 0E 01 00`) has the same length (0x32) and tag order as Huawei's builder. The
+answer was `7F 04 0001E07A` (123002) to **every** `17/01`: start for sport 140, 1 (run), 137, 255, with or without `17/12` open first, with or without
+`22/01` first, kind tag 0/1/2/4, without tags 05, 87 or the optional ones, and stop, pause and resume with no workout. So the refusal does not depend
+on the payload or the sport; the sport-type question above is moot until a start is accepted. `17/03` answered `81 06 02 01 00 03 01 00` (nothing running) before
+and after. At the same time `01/3D` WearStatus answered `01 01 02`, which Huawei Health reads as **not worn** (`etj`: value 2 is false), and Huawei's own
+instructions for starting a workout from Huawei Health say to wear the watch snugly. **Not verified**: whether a worn watch accepts the start (the watch
+was off the wrist for the whole probe and nobody was available to put it on). JoyoFit therefore reads `01/3D` after a refusal, logs it and hands it to JS
+(`worn`), which says "not on your wrist" only when the watch said so.
+
+Huawei's own text also says a workout started from Huawei Health and synced to the watch is stored **only in Huawei Health**: the watch displays and supplies heart
+rate, it may not keep a workout of its own. So even an accepted start may give no watch workout to join with `link.ts`; check after the first accepted start.
 
 While a workout the phone started is open, `LiveWorkout` does not open a mirror of the watch's workout (`phoneOwned`), because the
 strength logger is that workout's screen; the watch's heart rate and calories arrive with the normal workout sync (`link.ts` joins them to

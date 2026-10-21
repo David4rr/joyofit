@@ -314,6 +314,8 @@
     "unconfirmed": "The start command was sent to the watch, not confirmed",
     "notConnected": "The watch is not connected, so the workout did not start on it. Start Strength training on the watch if you want its heart rate recorded.",
     "refused": "The watch refused the start command. Start Strength training on the watch if you want its heart rate recorded.",
+    "refusedCode": "The watch refused the start command (code {{code}}). Start Strength training on the watch if you want its heart rate recorded.",
+    "notWorn": "The watch says it is not on your wrist and refused to start the workout (code {{code}}). Put it on snugly and tap Try again, or start Strength training on the watch if you want its heart rate recorded.",
     "lost": "This workout was started on the watch before the app restarted, so it cannot be stopped from here. Stop it on the watch when you finish.",
     "retry": "Try again"
   }

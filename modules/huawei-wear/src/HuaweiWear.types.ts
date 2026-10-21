@@ -481,6 +481,11 @@ export interface WatchWorkoutResult {
   outcome: WatchWorkoutOutcome;
   /** The watch's result code when it sent one (100000 accepts), else null. */
   code: number | null;
+  /**
+   * Android only: the wear state the watch reported right after a refusal (DeviceConfig `01/3D`): false is "not on the wrist", true is worn,
+   * null when it was not asked or the watch did not say. Absent on iOS and on a binary older than that change.
+   */
+  worn?: boolean | null;
 }
 
 /** `getWatchWorkout`: whether the connected watch can be told to start a workout, and the workout the phone started on it. */

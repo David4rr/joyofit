@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 
 import type { WatchWorkoutOutcome, WatchWorkoutResult, WatchWorkoutStatus } from '../../../modules/huawei-wear/src/HuaweiWear.types';
-import { StrengthWatchSession, watchWorkoutAvailability, type WatchWorkoutNative } from './watchWorkout';
+import { refusedNoticeKey, StrengthWatchSession, watchWorkoutAvailability, type WatchWorkoutNative } from './watchWorkout';
 
 const STRENGTH = 140;
 
@@ -63,7 +63,7 @@ describe('StrengthWatchSession', () => {
   it('starts strength training on the watch and follows pause, resume and the end', async () => {
     const { watch, session } = make();
     expect(await session.begin({ workoutId: 'w1', sport: STRENGTH, startedBefore: false })).toBe('running');
-    expect(session.getSnapshot()).toEqual({ workoutId: 'w1', phase: 'running', outcome: 'confirmed' });
+    expect(session.getSnapshot()).toEqual({ workoutId: 'w1', phase: 'running', outcome: 'confirmed', code: null, worn: null });
 
     await session.setPaused(true);
     expect(session.getSnapshot().phase).toBe('paused');
@@ -72,7 +72,7 @@ describe('StrengthWatchSession', () => {
     expect(session.getSnapshot().phase).toBe('running');
     await session.end();
     expect(watch.calls).toEqual(['start:140', 'pause', 'resume', 'stop']);
-    expect(session.getSnapshot()).toEqual({ workoutId: null, phase: 'idle', outcome: null });
+    expect(session.getSnapshot()).toEqual({ workoutId: null, phase: 'idle', outcome: null, code: null, worn: null });
   });
 
   it('keeps an unconfirmed start controllable but says so', async () => {
@@ -90,7 +90,7 @@ describe('StrengthWatchSession', () => {
       const { watch, session } = make();
       watch.startOutcome = outcome;
       expect(await session.begin({ workoutId: 'w1', sport: STRENGTH, startedBefore: false })).toBe('failed');
-      expect(session.getSnapshot()).toEqual({ workoutId: 'w1', phase: 'failed', outcome });
+      expect(session.getSnapshot()).toEqual({ workoutId: 'w1', phase: 'failed', outcome, code: null, worn: null });
       await session.setPaused(true);
       await session.end();
       expect(watch.calls).toEqual(['start:140']);
@@ -149,5 +149,23 @@ describe('StrengthWatchSession', () => {
     await session.end();
     off();
     expect(seen).toEqual(['starting', 'running', 'idle']);
+  });
+});
+
+describe('a refused start', () => {
+  it('keeps the code and the wear state the watch gave, for the notice and the log', async () => {
+    const watch = new FakeWatch();
+    watch.startWatchWorkout = async () => ({ outcome: 'refused', code: 123002, worn: false });
+    const { session, logs } = make(watch);
+    expect(await session.begin({ workoutId: 'w1', sport: STRENGTH, startedBefore: false })).toBe('failed');
+    expect(session.getSnapshot()).toEqual({ workoutId: 'w1', phase: 'failed', outcome: 'refused', code: 123002, worn: false });
+    expect(logs).toContain('watch workout start: refused (123002), watch not worn');
+  });
+
+  it('says "not on the wrist" only when the watch said so, else the code, else the plain refusal', () => {
+    expect(refusedNoticeKey(123002, false)).toBe('watch.notWorn');
+    expect(refusedNoticeKey(123002, true)).toBe('watch.refusedCode');
+    expect(refusedNoticeKey(123002, null)).toBe('watch.refusedCode');
+    expect(refusedNoticeKey(null, null)).toBe('watch.refused');
   });
 });

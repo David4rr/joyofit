@@ -90,6 +90,28 @@ class WatchWorkoutTest {
   }
 
   @Test
+  fun theFit4ProRefusalAndIdleStatusAsCapturedOn2026_10_21() {
+    // Every 17/01 on the Fit 4 Pro (6.1.0.117), whatever the operator, sport or tag subset, answered this while its WearStatus said not worn
+    // (plaintext of the encrypted frame 5A00090017017F040001E07A6157).
+    val refusal = HuaweiTLV().parse(hex("7f 04 0001e07a"))
+    assertEquals(WatchWorkoutWire.ERR_FAILED, WatchWorkoutWire.resultCode(refusal))
+    assertEquals("7F040001E07A", WatchWorkoutWire.plain(refusal))
+    // The 17/03 answers before and after: trainMonitorState 0, operator 0, nothing running.
+    val idle = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06 02 01 00 03 01 00")))!!
+    assertEquals(0, idle.operator)
+    assertFalse(idle.running)
+    assertEquals("(empty)", WatchWorkoutWire.plain(null))
+  }
+
+  @Test
+  fun wearStatusTwoMeansNotWorn() {
+    assertEquals(false, WatchWorkoutWire.wornFrom(HuaweiTLV().parse(hex("01 01 02"))))
+    assertEquals(true, WatchWorkoutWire.wornFrom(HuaweiTLV().parse(hex("01 01 01"))))
+    assertNull(WatchWorkoutWire.wornFrom(HuaweiTLV().parse(hex("7f 04 000186a0"))))
+    assertNull(WatchWorkoutWire.wornFrom(null))
+  }
+
+  @Test
   fun statusAnswerSaysWhetherTheWatchRunsAWorkout() {
     val running = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 0c  02 01 01  03 01 01  04 01 01  06 01 8c")))!!
     assertEquals(1, running.operator)

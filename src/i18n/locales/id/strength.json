@@ -310,6 +310,8 @@
     "unconfirmed": "Perintah mulai terkirim ke jam, belum dikonfirmasi",
     "notConnected": "Jam belum terhubung, jadi latihan tidak ikut mulai di jam. Mulai Latihan kekuatan di jam kalau kamu mau detak jantungnya direkam.",
     "refused": "Jam menolak perintah mulai. Mulai Latihan kekuatan di jam kalau kamu mau detak jantungnya direkam.",
+    "refusedCode": "Jam menolak perintah mulai (kode {{code}}). Mulai Latihan kekuatan di jam kalau kamu mau detak jantungnya direkam.",
+    "notWorn": "Jam bilang sedang tidak dipakai di pergelangan tangan dan menolak memulai latihan (kode {{code}}). Pakai jam dengan pas lalu ketuk Coba lagi, atau mulai Latihan kekuatan di jam kalau kamu mau detak jantungnya direkam.",
     "lost": "Latihan ini sudah dimulai di jam sebelum aplikasi dibuka ulang, jadi jam tidak bisa dihentikan dari sini. Hentikan di jam setelah selesai.",
     "retry": "Coba lagi"
   }
