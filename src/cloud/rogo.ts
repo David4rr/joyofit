@@ -94,6 +94,8 @@ export interface RogoMyProfile {
     startWeightKg: number;
     targetWeightKg: number;
     targetDate: string;
+    /** IANA zone JoyoRogo counts this person's days in; null = Asia/Jakarta. */
+    timezone?: string | null;
   } | null;
   targets: {
     /** Basal metabolic rate, kcal per day. */

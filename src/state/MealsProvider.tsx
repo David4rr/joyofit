@@ -14,6 +14,7 @@ import { AppState } from 'react-native';
 
 import { authClient } from '@/cloud/auth';
 import { rogo } from '@/cloud/rogo';
+import { setRogoProfileZone } from '@/cloud/rogoZone';
 import { rememberedWatch } from '@/features/device/rememberedWatch';
 import { bodyMetricsFrom, buildDay, localDate, rogoMealFor } from '@/features/meals/mealMap';
 import { errorMessage } from '@/format';
@@ -109,6 +110,7 @@ export function MealsProvider({ children }: { children: ReactNode }) {
       if (food.status === 'rejected') throw food.reason;
       const profile = my.status === 'fulfilled' ? my.value : null;
       if (my.status === 'rejected') notes.push(t('common:meals.goalsNotRead', { error: errorMessage(my.reason) }));
+      else setRogoProfileZone(my.value.profile?.timezone);
       const latest = weighIn.status === 'fulfilled' ? weighIn.value : null;
 
       const body = bodyMetricsFrom(profile, latest);
