@@ -292,6 +292,8 @@
     "importHwt": "Import .hwt file",
     "noSaved": "No watch faces saved",
     "noSavedHint": "Import a .hwt file from your phone storage to build your personal offline collection.",
+    "noSavedHintIos": "Faces are sent to the watch straight from a file on iPhone and are not kept here. Use Install from file above to put one on your watch.",
+    "installFromFileHint": "Install a .hwt file straight onto your watch. On iPhone the file is sent from the picker and is not saved in this library.",
     "installed": "Installed",
     "installedOnWatch": "Installed on Watch",
     "wrongSize": "Wrong size",

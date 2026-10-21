@@ -17,7 +17,7 @@ import { WatchfacePreviewModal } from '@/features/watchfaces/WatchfacePreviewMod
 import { WebFacesSection } from '@/features/watchfaces/WebFacesSection';
 import { WatchStorageCard } from '@/features/watchfaces/WatchStorageCard';
 import { FaceSkeleton } from '@/features/watchfaces/WatchThumbnail';
-import { type WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
+import { libraryEntry, type WatchfaceItem } from '@/features/watchfaces/watchfaceModel';
 import { useWatchfaceImport } from '@/features/watchfaces/useWatchfaceImport';
 import { useWatchfaceLibrary, type DownloadedFace } from '@/features/watchfaces/useWatchfaceLibrary';
 import { useWatchfaces } from '@/features/watchfaces/useWatchfaces';
@@ -70,7 +70,7 @@ export function WatchfacesScreen() {
   const { t } = useTranslation(['watch', 'common']);
   const colors = useColors();
   const padding = useContentPadding(false);
-  const { connected, list, busy, error, notice, progress, refresh, setActive, remove, installFromUri } =
+  const { connected, list, busy, error, notice, progress, refresh, setActive, remove, install, installFromUri } =
     useWatchfaces();
   const { library, saveToLibrary, removeFromLibrary } = useWatchfaceLibrary();
   const [tab, setTab] = useState<TabMode>('installed');
@@ -87,7 +87,11 @@ export function WatchfacesScreen() {
     onRefresh: () => void refresh(),
     enabled: connected,
   });
-  const canImport = Platform.OS !== 'ios' && hasNative('parseWatchfacePackage');
+  // The iOS module cannot read a .hwt (parseWatchfacePackage is ERR_UNSUPPORTED there), so a file cannot be saved into
+  // the library; it is sent to the watch straight from the picker instead.
+  const entry = libraryEntry(Platform.OS, hasNative('parseWatchfacePackage'));
+  const canImport = entry === 'import';
+  const installFromFile = entry === 'install';
   const idle = busy === null;
   const installing = busy === 'install';
   const percent =
@@ -199,10 +203,22 @@ export function WatchfacesScreen() {
                 onPress={() => void handleImportToMyWatch()}
               />
             </View>
-          ) : Platform.OS !== 'ios' ? (
+          ) : installFromFile ? (
+            <View style={styles.actionRow}>
+              <Button
+                label={t('watch:faces.install')}
+                variant="primary"
+                icon="document-attach-outline"
+                style={{ flex: 1 }}
+                disabled={!connected || !idle}
+                loading={installing}
+                onPress={() => void install()}
+              />
+            </View>
+          ) : (
             <AppText variant="caption">{t('watch:faces.updateApp')}</AppText>
-          ) : null}
-          <Details>{t('watch:faces.personalLibraryHint')}</Details>
+          )}
+          <Details>{installFromFile ? t('watch:faces.installFromFileHint') : t('watch:faces.personalLibraryHint')}</Details>
         </Section>
       )}
 
@@ -303,7 +319,7 @@ export function WatchfacesScreen() {
       <EmptyState
         icon="folder"
         title={t('watch:faces.noSaved')}
-        description={t('watch:faces.noSavedHint')}
+        description={installFromFile ? t('watch:faces.noSavedHintIos') : t('watch:faces.noSavedHint')}
         action={
           canImport
             ? {
@@ -311,7 +327,9 @@ export function WatchfacesScreen() {
                 icon: 'document-attach-outline',
                 onPress: () => void handleImportToMyWatch(),
               }
-            : undefined
+            : installFromFile
+              ? { label: t('watch:faces.install'), icon: 'document-attach-outline', onPress: () => void install() }
+              : undefined
         }
       />
     </Card>
