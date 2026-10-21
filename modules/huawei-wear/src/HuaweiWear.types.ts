@@ -224,7 +224,10 @@ export interface UserProfile {
 
 export type HealthConnectAvailability = 'available' | 'update-required' | 'unavailable';
 
-/** Health Connect record types JoyoFit writes; also the names in `granted` / `missing`. */
+/**
+ * Health Connect record types JoyoFit writes; also the names in `granted` / `missing`. `ExerciseRoute` (Android only) is the
+ * permission to attach a workout's GPS route to its exercise session, not a record type of its own.
+ */
 export type HealthConnectRecordType =
   | 'Steps'
   | 'HeartRate'
@@ -233,7 +236,8 @@ export type HealthConnectRecordType =
   | 'Distance'
   | 'ActiveCaloriesBurned'
   | 'SleepSession'
-  | 'ExerciseSession';
+  | 'ExerciseSession'
+  | 'ExerciseRoute';
 
 /** State of the Health Connect export (write only; JoyoFit never reads Health Connect). */
 export interface HealthConnectStatus {

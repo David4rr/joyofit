@@ -345,7 +345,7 @@
     "missing": "Not allowed, so skipped: {{list}}.",
     "continue": "Continue",
     "writeAgain": "Write all again",
-    "details": "Sends steps, distance, calories, heart rate, blood oxygen, sleep and workouts after every sync, so other apps such as JoyoRogo can read them. Turning it on also writes what is already stored."
+    "details": "Sends steps, distance, calories, heart rate, blood oxygen, sleep and workouts (on Android with their GPS route) after every sync, so other apps such as JoyoRogo can read them. Turning it on also writes what is already stored."
   },
   "healthyLiving": {
     "notAsked": "The watch has not asked for tasks yet. Open Healthy Living on the watch once.",
