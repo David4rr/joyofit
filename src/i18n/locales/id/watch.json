@@ -243,6 +243,7 @@
   "faces": {
     "active": "Aktif",
     "installResult": "{{name}}: {{message}}",
+    "signatureRefused": "Jam menolak tampilan ini karena tidak ditandatangani Huawei. Coba tampilan lain dari galeri JoyoFit.",
     "deleteTitle": "Hapus tampilan jam",
     "deleteMessage": "Hapus \"{{name}}\" dari jam?",
     "screenSize": "Layar {{width}} x {{height}} px",

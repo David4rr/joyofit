@@ -14,3 +14,11 @@ describe('needsRogoProfile', () => {
     expect(needsRogoProfile('FAILED_PRECONDITION')).toBe(false);
   });
 });
+
+describe('onboarding links', () => {
+  it('tries the JoyoRogo app first, then the web onboarding', async () => {
+    const { ROGO_ONBOARDING_URLS } = await import('./shareError');
+    expect(ROGO_ONBOARDING_URLS[0]).toStartWith('joyorogo://onboarding');
+    expect(ROGO_ONBOARDING_URLS[1]).toStartWith('https://joyorogo.com/onboarding');
+  });
+});
