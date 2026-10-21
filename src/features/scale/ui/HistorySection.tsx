@@ -55,7 +55,7 @@ export function HistorySection({ weighIns, rogoWaiting, needsProfile, onRetry, o
               <View style={styles.text}>
                 <AppText variant="bodyStrong">{t('live.weight', { value: fmtDecimal(w.weightKg, 1) })}</AppText>
                 <AppText variant="caption" muted>
-                  {`${fmtDateTime(w.takenAt)} · ${t(`history.${w.rogoState}`)}`}
+                  {`${fmtDateTime(new Date(w.takenAt))} · ${t(`history.${w.rogoState}`)}`}
                 </AppText>
                 <BodyLine values={bodyValues(w.reported)} label={t('body.measured')} />
                 <BodyLine values={bodyValues(w.estimate)} label={t('body.estimate')} />
