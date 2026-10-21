@@ -190,6 +190,7 @@ function WatchToday() {
   return (
     <Screen
       title={t('common:nav.today')}
+      decorated
       caption={new Date().toLocaleDateString(INTL_TAG[getLocale()], WEEKDAY_FORMAT)}
       right={
         data && view ? (
@@ -264,7 +265,13 @@ function WatchToday() {
 export default function TodayScreen() {
   const { t } = useTranslation('common');
   const presence = useWatchPresence();
-  if (presence === null) return <Screen title={t('nav.today')}>{null}</Screen>;
+  if (presence === null) {
+    return (
+      <Screen title={t('nav.today')} decorated>
+        {null}
+      </Screen>
+    );
+  }
   return showsWatchUi(presence) ? <WatchToday /> : <TodayNoWatch />;
 }
 

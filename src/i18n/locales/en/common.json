@@ -165,7 +165,7 @@
     },
     "sogan": {
       "name": "Sogan",
-      "tagline": "Batik sogan browns, indigo and gold, serif titles. Follows the phone."
+      "tagline": "Batik sogan browns, indigo and gold, a kawung motif in the header, serif titles. Follows the phone."
     },
     "retro": {
       "name": "Retro",
@@ -182,6 +182,30 @@
     "mono": {
       "name": "Mono",
       "tagline": "Black and white, square corners, mono numbers. Follows the phone."
+    },
+    "sakura": {
+      "name": "Sakura",
+      "tagline": "Blossom pink and deep rose, serif titles, petals in the header. Follows the phone."
+    },
+    "lavender": {
+      "name": "Lavender",
+      "tagline": "Pale lilac and plum with soft rounded titles. Follows the phone."
+    },
+    "peach": {
+      "name": "Peach",
+      "tagline": "Warm peach, a coral accent and serif titles. Always light."
+    },
+    "rosegold": {
+      "name": "Rose Gold",
+      "tagline": "Dark with blush text, rose-gold accents and a copper watch panel. Always dark."
+    },
+    "strawberry": {
+      "name": "Strawberry Milk",
+      "tagline": "Milky pink, cream cards and the roundest shapes. Always light."
+    },
+    "matcha": {
+      "name": "Matcha Latte",
+      "tagline": "Cream and matcha green with gentle rounded text. Always light."
     }
   },
   "notFound": {

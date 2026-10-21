@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/AppText';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { PressableScale } from '@/components/PressableScale';
+import { ThemeDecoration } from '@/components/ThemeDecoration';
 import { useTabBarInset } from '@/components/tabBarInset';
 import { useKeyboardOverlap } from '@/components/useKeyboardOverlap';
 import { spacing, useColors, useTheme, type Tint } from '@/theme';
@@ -85,10 +86,12 @@ interface ScreenProps {
   scrollRef?: RefObject<ScrollView | null>;
   /** A bar pinned under the scrolling content, lifted above the keyboard (a comment composer). */
   footer?: ReactNode;
+  /** Draws the theme's header decoration behind the title (Today). Only meaningful with a `title`. */
+  decorated?: boolean;
   children: ReactNode;
 }
 
-export function Screen({ title, caption, right, refresh, scrollEnabled = true, scrollRef, footer, children }: ScreenProps) {
+export function Screen({ title, caption, right, refresh, scrollEnabled = true, scrollRef, footer, decorated = false, children }: ScreenProps) {
   const colors = useColors();
   // With a footer the footer sits above the bar, so the content above it does not clear the bar again.
   const padding = useContentPadding(title !== undefined, footer === undefined);
@@ -104,6 +107,7 @@ export function Screen({ title, caption, right, refresh, scrollEnabled = true, s
       refreshControl={refreshControl}
       scrollEnabled={scrollEnabled}
       showsVerticalScrollIndicator={false}>
+      {decorated ? <ThemeDecoration /> : null}
       {title ? <PageHeader title={title} caption={caption} right={right} /> : null}
       {children}
     </ScrollView>

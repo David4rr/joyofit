@@ -159,7 +159,7 @@
     },
     "sogan": {
       "name": "Sogan",
-      "tagline": "Cokelat sogan batik, indigo, dan emas, judul berkait. Mengikuti HP."
+      "tagline": "Cokelat sogan batik, indigo, dan emas, motif kawung di header, judul berkait. Mengikuti HP."
     },
     "retro": {
       "name": "Retro",
@@ -176,6 +176,30 @@
     "mono": {
       "name": "Mono",
       "tagline": "Hitam putih, sudut tajam, angka monospasi. Mengikuti HP."
+    },
+    "sakura": {
+      "name": "Sakura",
+      "tagline": "Pink bunga sakura dan mawar tua, judul berkait, kelopak di header. Mengikuti HP."
+    },
+    "lavender": {
+      "name": "Lavender",
+      "tagline": "Lilac muda dan ungu plum dengan judul membulat lembut. Mengikuti HP."
+    },
+    "peach": {
+      "name": "Persik",
+      "tagline": "Persik hangat, aksen koral, dan judul berkait. Selalu terang."
+    },
+    "rosegold": {
+      "name": "Rose Gold",
+      "tagline": "Gelap dengan teks blush, aksen emas rosé, dan panel jam tembaga. Selalu gelap."
+    },
+    "strawberry": {
+      "name": "Susu Stroberi",
+      "tagline": "Pink susu, kartu krem, dan bentuk paling membulat. Selalu terang."
+    },
+    "matcha": {
+      "name": "Matcha Latte",
+      "tagline": "Krem dan hijau matcha dengan teks membulat lembut. Selalu terang."
     }
   },
   "notFound": {
