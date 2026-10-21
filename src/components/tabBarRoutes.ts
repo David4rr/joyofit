@@ -1,19 +1,25 @@
 /**
- * Which tab the bar marks as current. Pure, so the mapping is unit tested.
+ * Where the floating tab bar is shown. Pure, so the mapping is unit tested.
  *
- * "More" (`settings`, the Settings stack: account, goals and body, the Watch row, then the settings) is the tab for everything that is not Today,
- * Workouts or Social. Screens that are hidden tabs but are reached from it (the Watch hub and the watch's routes, Family, the
- * Today cards editor) keep it marked instead of leaving the bar with no current tab.
+ * "More" (`settings`, the Settings stack) is the fourth tab; the Watch hub and the other hidden tabs are details of a tab and have no bar.
  */
 
 /** The route name of the "More" tab. It is the Settings stack, so `/settings` and every `/settings/*` link keep working. */
 export const MORE_ROUTE = 'settings';
 
-/** Hidden tab routes that belong under "More": opened from its Watch row or its settings rows. */
-const MORE_CHILD_ROUTES: Record<string, true> = { watch: true, routes: true, family: true, 'home-cards': true };
+/** The tabs whose stack index is a top-level root: Today, Workouts, Social and More (the Settings stack). */
+const ROOT_TABS: Record<string, true> = { index: true, workouts: true, social: true, [MORE_ROUTE]: true };
 
-/** True when `routeName` is the tab to mark current while `focusedRoute` is the route on screen. */
-export function isTabCurrent(routeName: string, focusedRoute: string): boolean {
-  if (routeName === focusedRoute) return true;
-  return routeName === MORE_ROUTE && Object.hasOwn(MORE_CHILD_ROUTES, focusedRoute);
+/** The route name a stack's first screen has (`app/<tab>/index.tsx`). */
+const STACK_ROOT = 'index';
+
+/**
+ * True when the floating bar is shown: the focused tab is Today, Workouts, Social or More and the screen on top of its stack is
+ * that tab's root list (`focusedChild` is the stack's focused route name, undefined while the stack has not mounted: Today has no
+ * stack). Everything pushed on a tab's stack is a detail screen without the bar, and so are the hidden tabs (the Watch hub,
+ * Routes, Family, Coach, Strength, Sleep, ...), which are details of a tab.
+ */
+export function isTabRoot(focusedTab: string, focusedChild: string | undefined): boolean {
+  if (!Object.hasOwn(ROOT_TABS, focusedTab)) return false;
+  return focusedChild === undefined || focusedChild === STACK_ROOT;
 }

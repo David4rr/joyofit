@@ -18,8 +18,7 @@ const StartWorkoutContext = createContext<StartWorkoutValue>({ open: () => {} })
 
 /**
  * Owns the one "Start workout" sheet (record on the phone, strength logger, workout by hand, FIT file, Loop). The centre button of the
- * tab bar and the "Mulai latihan" button on the Workouts list both open it through `useStartWorkout`, so it is the same sheet from
- * every tab. Mounted above the tab navigator, inside the recorder provider.
+ * tab bar opens it through `useStartWorkout`, so it is the same sheet from every tab. Mounted above the tab navigator, inside the recorder provider.
  */
 export function StartWorkoutProvider({ children }: { children: ReactNode }) {
   const router = useRouter();

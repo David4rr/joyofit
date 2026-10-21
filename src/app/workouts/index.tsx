@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { ChipRow } from '@/components/ChipRow';
-import { Button } from '@/components/Button';
 import { HeaderIconButton } from '@/components/HeaderIconButton';
 import { IconChip } from '@/components/IconChip';
 import { showsWatchUi } from '@/features/device/presence';
@@ -48,7 +47,6 @@ import { workoutTimes } from '@/features/workouts/times';
 import { usePendingDelete } from '@/features/workouts/pendingDelete';
 import { DeleteWorkoutDialog, type DeleteTarget } from '@/features/workouts/ui/DeleteWorkoutDialog';
 import { ProgressCard } from '@/features/workouts/ui/ProgressCard';
-import { useStartWorkout } from '@/features/workouts/StartWorkoutProvider';
 import { useWorkoutStrain } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatCount, formatDateTime } from '@/format';
 import { fmtDate, fmtDecimal, useLocale } from '@/i18n';
@@ -174,7 +172,6 @@ export default function WorkoutsScreen() {
   const [view, setView] = useState<WorkoutView>(DEFAULT_VIEW);
   const [error, setError] = useState<string | null>(null);
   const [pulling, setPulling] = useState(false);
-  const { open: openStart } = useStartWorkout();
   const [deleting, setDeleting] = useState<DeleteTarget | null>(null);
   // A deleted workout leaves the list at once; it is really deleted when the 5 seconds of "Urungkan" are up.
   const pendingDelete = usePendingDelete();
@@ -293,7 +290,6 @@ export default function WorkoutsScreen() {
               }
             />
             <ActiveWorkoutBanner />
-            <Button label={t('list.start.button')} variant="primary" icon="add" onPress={openStart} />
             <LoopShortcut dismissible />
             {error ? <Notice tone="danger">{t('list.readError', { error })}</Notice> : null}
             {strengthOnlyCount > 0 ? (

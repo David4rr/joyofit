@@ -1,6 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Tabs } from 'expo-router';
+import { getFocusedRouteNameFromRoute } from 'expo-router/react-navigation';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
@@ -11,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { AppState, StyleSheet, Text, View, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
 
 import { FloatingTabBar } from '@/components/FloatingTabBar';
+import { isTabRoot } from '@/components/tabBarRoutes';
 import { TabBarInsetProvider, useReportTabBarInset } from '@/components/tabBarInset';
 import { TabIcon } from '@/components/TabIcon';
 import { TAB_LABEL_LINE, TAB_LABEL_MAX_SCALE, TAB_LABEL_MIN_SHRINK, TAB_LABEL_SIZE } from '@/components/tabBarMetrics';
@@ -98,9 +100,15 @@ function TabBarWithLive(props: BottomTabBarProps) {
   const { t } = useTranslation('common');
   const { open } = useStartWorkout();
   const focused = props.state.routes[props.state.index];
-  const hidden = StyleSheet.flatten(props.descriptors[focused.key].options.tabBarStyle as StyleProp<ViewStyle>)?.display === 'none';
+  const hiddenByRoute = StyleSheet.flatten(props.descriptors[focused.key].options.tabBarStyle as StyleProp<ViewStyle>)?.display === 'none';
+  // The bar is for the roots of the tabs only; anything pushed on a tab's stack is a detail screen without it.
+  const hidden = hiddenByRoute || !isTabRoot(focused.name, getFocusedRouteNameFromRoute(focused));
   const report = useReportTabBarInset();
   useEffect(() => () => report(0), [report]);
+  useEffect(() => {
+    if (hidden) report(0);
+  }, [hidden, report]);
+  if (hidden) return null;
   return (
     <View pointerEvents="box-none" style={styles.floating} onLayout={(event) => report(Math.ceil(event.nativeEvent.layout.height))}>
       <LivePill tabBarHidden={hidden} />

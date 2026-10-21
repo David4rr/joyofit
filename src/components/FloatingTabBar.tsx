@@ -21,7 +21,6 @@ import {
   tabBarRadius,
   tabItemRadius,
 } from '@/components/tabBarMetrics';
-import { isTabCurrent } from '@/components/tabBarRoutes';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { HIT, useTheme } from '@/theme';
 
@@ -109,7 +108,7 @@ export interface CenterAction {
  * action button (start a workout) in the middle. It is absolutely positioned over the screen (`TabBarWithLive`): content scrolls
  * behind and below it, and every scrolling screen pads the end of its content by the covered height (`tabBarInset`). Only the
  * visible tabs are drawn, split in two halves around the button's slot; routes hidden with `href: null` carry
- * `tabBarItemStyle.display === 'none'`, and a hidden route that belongs under a tab keeps that tab marked (`isTabCurrent`). The
+ * `tabBarItemStyle.display === 'none'`, and the focused tab is the current one. The
  * button sits in the strip, above the pill, not inside it: Android only delivers touches inside the parent's bounds, so the
  * raised half must lie within the strip, whose top padding is the rise. Draws nothing where the focused route hides the bar
  * (`tabBarStyle.display === 'none'`) and, on Android, while the keyboard is open.
@@ -133,7 +132,7 @@ export function FloatingTabBar({ state, descriptors, navigation, insets, center 
   );
   const items = visible.map((route) => {
     const { options } = descriptors[route.key];
-    const focused = isTabCurrent(route.name, focusedRoute.name);
+    const focused = route.name === focusedRoute.name;
     const color = focused ? colors.primary : colors.mutedForeground;
     const title = options.title ?? route.name;
     const onPress = () => {
