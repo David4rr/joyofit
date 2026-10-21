@@ -29,10 +29,10 @@ import {
   type PrKind,
 } from '@/features/strength/calc';
 import { buildCatalog, type Catalog } from '@/features/strength/catalog';
-import { routineExercisesOf } from '@/features/strength/draft';
+import { resolveTimed, routineExercisesOf } from '@/features/strength/draft';
 import { detachWorkoutRow } from '@/features/strength/link';
 import { DEFAULT_WEIGHT_KG, hasUserWeight } from '@/features/strength/profile';
-import { prValueText, previousLabel, rpeText, SET_BADGE } from '@/features/strength/logFormat';
+import { prValueText, previousLabel, rpeText, SET_BADGE, timerText } from '@/features/strength/logFormat';
 import { nextSortOrder } from '@/features/strength/routineEdit';
 import { startStrengthWorkout } from '@/features/strength/start';
 import {
@@ -219,7 +219,12 @@ export default function StrengthSummaryScreen() {
           </View>
           <View style={styles.tileRow}>
             <StatTile icon="layers-outline" tint="link" label={t('strength:summary.sets')} value={fmtInt(totals.sets)} sub={totals.warmupSets > 0 ? t('strength:summary.warmupSets', { count: totals.warmupSets }) : undefined} />
-            <StatTile icon="repeat" tint="sleep" label={t('strength:summary.reps')} value={fmtInt(totals.reps)} />
+            {/* A workout of holds only has no reps to show: its time takes the tile; with both, the time goes under the reps. */}
+            {totals.reps === 0 && totals.seconds > 0 ? (
+              <StatTile icon="timer-outline" tint="sleep" label={t('strength:summary.time')} value={timerText(totals.seconds)} />
+            ) : (
+              <StatTile icon="repeat" tint="sleep" label={t('strength:summary.reps')} value={fmtInt(totals.reps)} sub={totals.seconds > 0 ? timerText(totals.seconds) : undefined} />
+            )}
           </View>
           <View style={styles.tileRow}>
             <StatTile icon="list-outline" tint="workouts" label={t('strength:summary.exercises')} value={fmtInt(totals.exercises)} />
@@ -285,7 +290,7 @@ export default function StrengthSummaryScreen() {
                   key={set.id}
                   position={index + 1}
                   type={set.type}
-                  text={previousLabel(set, info?.timed ?? false) ?? t('strength:table.dash')}
+                  text={previousLabel(set, resolveTimed(exercise, info?.timed ?? null)) ?? t('strength:table.dash')}
                   rpe={set.rpe}
                   record={recordSets.has(set.id)}
                 />
