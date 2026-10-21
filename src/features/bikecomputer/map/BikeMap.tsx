@@ -49,6 +49,10 @@ export interface BikeMapProps {
   headingUp?: boolean;
   /** The map could not load its style or tiles (a missing file, no signal on the online source). */
   onLoadFailed?: () => void;
+  /** Square corners, for a map that fills the screen edge to edge instead of sitting in a rounded frame. */
+  flat?: boolean;
+  /** dp the overlays move in from the top and the bottom edge, where a bar or a sheet covers the map: the source label, the follow button and the credit. Default 0. */
+  inset?: { top?: number; bottom?: number };
 }
 
 /**
@@ -64,7 +68,7 @@ export function BikeMap(props: BikeMapProps) {
   const [failed, setFailed] = useState(false);
   const { height = 'fill', onLoadFailed } = props;
 
-  const frame = [styles.frame, height === 'fill' ? styles.fill : { height }, { borderRadius: radius.tile, backgroundColor: colors.muted }];
+  const frame = [styles.frame, height === 'fill' ? styles.fill : { height }, { borderRadius: props.flat ? 0 : radius.tile, backgroundColor: colors.muted }];
 
   if (!maplibre || failed) {
     return (
@@ -109,6 +113,7 @@ function LiveMap({
   colors: ink,
   onFollowChange,
   headingUp = false,
+  inset,
   onFail,
 }: LiveMapProps) {
   const { t } = useTranslation('bikemap');
@@ -202,7 +207,7 @@ function LiveMap({
       </MapView>
 
       {style.source !== 'offline' ? (
-        <View pointerEvents="none" style={[styles.chip, styles.chipTop]}>
+        <View pointerEvents="none" style={[styles.chip, styles.chipTop, { top: 6 + (inset?.top ?? 0) }]}>
           <AppText variant="caption" color={MAP_INK.chipText} style={styles.chipText}>
             {style.source === 'stream' ? t('map.stream') : t('map.online')}
           </AppText>
@@ -215,7 +220,7 @@ function LiveMap({
           accessibilityLabel={t('map.recenter')}
           scaleTo={0.96}
           onPress={() => onFollowChange(true)}
-          style={[styles.recenter, { backgroundColor: colors.card, borderColor: colors.hairline }]}>
+          style={[styles.recenter, { backgroundColor: colors.card, borderColor: colors.hairline, bottom: spacing.xl + (inset?.bottom ?? 0) }]}>
           <Ionicons name="locate" size={30} color={colors.foreground} />
         </PressableScale>
       ) : null}
@@ -225,7 +230,7 @@ function LiveMap({
         accessibilityLabel={t('map.attributionLabel')}
         hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
         onPress={() => void Linking.openURL(COPYRIGHT_URL)}
-        style={[styles.chip, styles.chipBottom]}>
+        style={[styles.chip, styles.chipBottom, { bottom: 6 + (inset?.bottom ?? 0) }]}>
         <AppText variant="caption" color={MAP_INK.chipText} style={styles.chipText}>
           {style.attribution}
         </AppText>
