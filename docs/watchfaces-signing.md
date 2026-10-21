@@ -84,10 +84,10 @@ the modded Huawei Health is also out (section 2).
 
 **Next test for the owner (Fit 4 Pro, firmware 6.1.0.117).** Do exactly one controlled test and keep JoyoFit's log:
 
-1. In Telegram open the channel and download `VAFBNBlue.watch4_pro.1.1.1.hwt`? No: that file is built for the Watch 4 Pro and the app
-   will refuse or mis-size it. Pick a **408 x 480** (`HWHD13`) face. None is visibly named for the Fit 4 Pro in the posts read, so
-   search the channel for `fit4` / `Fit 4` and use `Pop392.2.1.1.hwt` only if its `description.xml` says `<screen>HWHD13</screen>`
-   (unzip it first, 1 minute). Do not use any file that does not.
+1. In Telegram open the channel and pick a face for **408 x 480** (`HWHD13`). Do not use the `watch4_pro` files (`VAFBNBlue`,
+   `VAFElectroReV`): they are built for the Watch 4 Pro and the app will refuse or mis-size them. No post read is visibly named for the
+   Fit 4 Pro, so search the channel for `fit4` / `Fit 4`, unzip the candidate and check that `description.xml` says
+   `<screen>HWHD13</screen>` (for example `Pop392.2.1.1.hwt`, only if it does). Do not use any file that does not.
 2. Check the log first: JoyoFit logs `WatchfaceParams capability: watch face signature=true` for this watch. If `true`, the watch will
    ask for a signature.
 3. Import the `.hwt` with **Import .hwt file** and install. Expected, from our verified result: `100014` and the face deleted after
