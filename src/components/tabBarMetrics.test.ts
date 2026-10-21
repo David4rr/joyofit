@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'bun:test';
 
 import {
+  CENTER_OUTER,
+  CENTER_RAISE,
+  CENTER_RING,
+  CENTER_SIZE,
+  CENTER_SLOT,
   floatingTabBarFootprint,
   TAB_BAR_BORDER,
   TAB_BAR_GAP_BOTTOM,
-  TAB_BAR_GAP_TOP,
   TAB_BAR_PADDING,
   TAB_ICON_BOX,
   TAB_ITEM_PADDING,
@@ -69,8 +73,8 @@ describe('tabBarPillHeight', () => {
 });
 
 describe('floatingTabBarFootprint', () => {
-  it('is the gaps and the pill where there is no inset', () => {
-    expect(floatingTabBarFootprint(1, 0)).toBe(TAB_BAR_GAP_TOP + tabBarPillHeight(1) + TAB_BAR_GAP_BOTTOM);
+  it('is the centre button rise, the pill and the gap where there is no inset', () => {
+    expect(floatingTabBarFootprint(1, 0)).toBe(CENTER_RAISE + tabBarPillHeight(1) + TAB_BAR_GAP_BOTTOM);
   });
   it('keeps the pill and gaps the same for every kind of navigation', () => {
     const gesture = 16;
@@ -86,6 +90,20 @@ describe('floatingTabBarFootprint', () => {
   it('ignores a negative or missing inset', () => {
     expect(floatingTabBarFootprint(1, -4)).toBe(floatingTabBarFootprint(1, 0));
     expect(floatingTabBarFootprint(1, Number.NaN)).toBe(floatingTabBarFootprint(1, 0));
+  });
+});
+
+describe('centre button', () => {
+  it('is at least a 48 dp target', () => {
+    expect(CENTER_SIZE).toBeGreaterThanOrEqual(48);
+  });
+  it('sits in a ring, with room either side in its slot', () => {
+    expect(CENTER_OUTER).toBe(CENTER_SIZE + CENTER_RING * 2);
+    expect(CENTER_SLOT).toBeGreaterThan(CENTER_OUTER);
+  });
+  it('rises less than its own height, so most of it stays over the pill', () => {
+    expect(CENTER_RAISE).toBeGreaterThan(0);
+    expect(CENTER_RAISE).toBeLessThan(CENTER_OUTER / 2);
   });
 });
 

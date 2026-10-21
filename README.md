@@ -93,7 +93,7 @@ flowchart LR
 
 | Path | What |
 |---|---|
-| `src/app/` | Expo Router screens: tabs for Today, Workouts, Social, Watch, Settings, plus coach, strength, routes, family stacks |
+| `src/app/` | Expo Router screens: tabs for Today, Workouts, Social and More (the Watch hub and Settings) with a raised "Mulai latihan" button in the middle of the bar, plus coach, strength, routes, family stacks |
 | `src/features/` | Screen logic by feature (strength, coach, fitness, workouts/analysis, strava, gear, share, social, routes, ...) |
 | `src/db/`, `src/cloud/` | SQLite queries and migrations; JoyoRogo sign-in, cloud API client and uploaders |
 | `src/i18n/` | i18next setup and `locales/{id,en}/*.json` |

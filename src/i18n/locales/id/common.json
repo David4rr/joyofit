@@ -48,8 +48,8 @@
     "today": "Hari ini",
     "workouts": "Latihan",
     "social": "Sosial",
-    "watch": "Jam",
-    "settings": "Pengaturan"
+    "more": "Lainnya",
+    "start": "Mulai latihan"
   },
   "dbRecovery": {
     "inline": "Data di ponsel kamu sedang diperbaiki. Tunggu sebentar lalu coba lagi.",
@@ -101,7 +101,7 @@
     "dbNewer": "Skema database v{{current}} lebih baru dari yang didukung aplikasi ini (v{{max}})."
   },
   "strava": {
-    "stravaNotConnected": "Strava belum terhubung. Hubungkan lagi di Pengaturan.",
+    "stravaNotConnected": "Strava belum terhubung. Hubungkan lagi di Lainnya, Strava.",
     "refused": "Strava menolak berkasnya ({{status}}).",
     "rateLimit": "Batas permintaan Strava tercapai; akan dicoba lagi nanti.",
     "answered": "Strava menjawab {{status}}.",

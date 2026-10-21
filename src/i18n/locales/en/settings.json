@@ -30,7 +30,7 @@
     "homeCards": "Arrange Home cards"
   },
   "index": {
-    "title": "Settings",
+    "title": "More",
     "rows": {
       "notificationApps": {
         "title": "Notification apps",
@@ -637,7 +637,7 @@
   "joyorogo": {
     "title": "Exercise energy to JoyoRogo",
     "intro": "The energy of workouts from the watch, phone recordings and strength training goes to JoyoRogo's diary as burned calories. A workout JoyoRogo also reads from Health Connect or Apple Health is not counted twice.",
-    "signedOut": "Sign in with your JoyoRogo account (Settings, account) so your exercise energy reaches JoyoRogo.",
+    "signedOut": "Sign in with your JoyoRogo account (More, account) so your exercise energy reaches JoyoRogo.",
     "labels": {
       "lastSent": "Last sent",
       "sent": "Sent so far",
@@ -741,8 +741,12 @@
     "detailsAndroid": "This phone: uses the last known coarse location. In the background Android may not give a fresh one, so the last position is reused."
   },
   "hub": {
+    "watchHub": {
+      "subtitle": "Connect or switch watches, find my watch, satellite data"
+    },
     "groups": {
       "watch": "Watch",
+      "watchSettings": "Watch settings",
       "body": "Goals & body",
       "connections": "Connections",
       "app": "App"

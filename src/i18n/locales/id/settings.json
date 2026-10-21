@@ -30,7 +30,7 @@
     "homeCards": "Atur kartu Beranda"
   },
   "index": {
-    "title": "Pengaturan",
+    "title": "Lainnya",
     "rows": {
       "notificationApps": {
         "title": "Aplikasi notifikasi",
@@ -628,7 +628,7 @@
   "joyorogo": {
     "title": "Kalori olahraga ke JoyoRogo",
     "intro": "Kalori latihan dari jam, rekaman ponsel, dan angkat beban dikirim ke buku harian JoyoRogo sebagai kalori terbakar. Latihan yang sama yang JoyoRogo baca dari Health Connect atau Apple Health tidak dihitung dua kali.",
-    "signedOut": "Masuk dengan akun JoyoRogo (Pengaturan, akun) agar kalori olahragamu terkirim ke JoyoRogo.",
+    "signedOut": "Masuk dengan akun JoyoRogo (Lainnya, akun) agar kalori olahragamu terkirim ke JoyoRogo.",
     "labels": {
       "lastSent": "Terakhir terkirim",
       "sent": "Sudah terkirim",
@@ -729,8 +729,12 @@
     "detailsAndroid": "Ponsel ini: memakai lokasi kasar yang terakhir diketahui. Di latar belakang Android mungkin tidak memberi yang baru, jadi posisi terakhir dipakai ulang."
   },
   "hub": {
+    "watchHub": {
+      "subtitle": "Hubungkan atau ganti jam, cari jam, data satelit"
+    },
     "groups": {
       "watch": "Jam",
+      "watchSettings": "Pengaturan jam",
       "body": "Target & tubuh",
       "connections": "Koneksi",
       "app": "Aplikasi"

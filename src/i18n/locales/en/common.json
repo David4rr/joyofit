@@ -50,8 +50,8 @@
     "today": "Today",
     "workouts": "Workouts",
     "social": "Social",
-    "watch": "Watch",
-    "settings": "Settings"
+    "more": "More",
+    "start": "Start workout"
   },
   "dbRecovery": {
     "inline": "The data on your phone is being repaired. Wait a moment, then try again.",
@@ -103,7 +103,7 @@
     "dbNewer": "Database schema v{{current}} is newer than this app supports (v{{max}})."
   },
   "strava": {
-    "stravaNotConnected": "Strava is not connected. Connect it again in Settings.",
+    "stravaNotConnected": "Strava is not connected. Connect it again in More, Strava.",
     "refused": "Strava refused the file ({{status}}).",
     "rateLimit": "Strava rate limit reached; will retry later.",
     "answered": "Strava answered {{status}}.",

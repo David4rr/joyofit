@@ -2,6 +2,8 @@
 
 Detail for the Huawei and Honor watch side of JoyoFit: supported models, how the app talks to the watch, what works, and the watch-side features. The overview is in the [README](../README.md); app features that do not depend on a watch are in [app-reference.md](app-reference.md).
 
+> The Watch tab is now **More → Watch** (the Watch hub, route `/watch`; the tab bar is Today, Workouts, a centre "Start workout" button, Social, More: see the Tab bar section of [app-reference.md](app-reference.md)). "Watch tab" below means that screen.
+
 ## Supported watches
 
 JoyoFit talks to Huawei Watch models over Bluetooth Classic (RFCOMM), the link the Watch Fit 4 Pro uses, and to Huawei and Honor bands over Bluetooth LE (GATT). The model list comes from Gadgetbridge's Huawei support (see `WatchModels.kt`). **Only the Huawei Watch Fit 4 Pro has been tested with JoyoFit.** Everything else is a best guess until someone tries it.

@@ -20,8 +20,7 @@ import { PageHeader, useContentPadding, useRefreshControl } from '@/components/S
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { listWorkouts, type WorkoutRow } from '@/db/queries';
 import { LoopShortcut } from '@/features/loops/ui/LoopShortcut';
-import { pickFitFile } from '@/features/fitimport/useFitImport';
-import { hasLive, LIVE_ROUTE, OPEN_LIVE } from '@/features/record/liveRoute';
+import { hasLive } from '@/features/record/liveRoute';
 import { RecordingBanner } from '@/features/record/ui/RecordingBanner';
 import { useStrengthHistory } from '@/features/strength/history';
 import { workoutTotals } from '@/features/strength/calc';
@@ -49,7 +48,7 @@ import { workoutTimes } from '@/features/workouts/times';
 import { usePendingDelete } from '@/features/workouts/pendingDelete';
 import { DeleteWorkoutDialog, type DeleteTarget } from '@/features/workouts/ui/DeleteWorkoutDialog';
 import { ProgressCard } from '@/features/workouts/ui/ProgressCard';
-import { StartWorkoutSheet } from '@/features/workouts/ui/StartWorkoutSheet';
+import { useStartWorkout } from '@/features/workouts/StartWorkoutProvider';
 import { useWorkoutStrain } from '@/features/workouts/useWorkoutStrain';
 import { errorMessage, formatCount, formatDateTime } from '@/format';
 import { fmtDate, fmtDecimal, useLocale } from '@/i18n';
@@ -166,7 +165,6 @@ export default function WorkoutsScreen() {
   const padding = useContentPadding(false);
   const { linkState, device, dataVersion, sync } = useWatch();
   const { snapshot } = useRecorder();
-  const recording = snapshot.phase !== 'idle';
   const presence = useWatchPresence();
   // A phone that never had a watch gets no Sync button and no "connect your watch" nagging; the strength logger is the point of this tab.
   const watchUi = presence !== null && showsWatchUi(presence);
@@ -176,8 +174,7 @@ export default function WorkoutsScreen() {
   const [view, setView] = useState<WorkoutView>(DEFAULT_VIEW);
   const [error, setError] = useState<string | null>(null);
   const [pulling, setPulling] = useState(false);
-  const [pickError, setPickError] = useState<string | null>(null);
-  const [startOpen, setStartOpen] = useState(false);
+  const { open: openStart } = useStartWorkout();
   const [deleting, setDeleting] = useState<DeleteTarget | null>(null);
   // A deleted workout leaves the list at once; it is really deleted when the 5 seconds of "Urungkan" are up.
   const pendingDelete = usePendingDelete();
@@ -265,17 +262,6 @@ export default function WorkoutsScreen() {
   // Strength workouts that have no row in this list (imported from JoyoRogo): they live in the strength history.
   const strengthOnlyCount = useMemo(() => strengthWorkouts.filter((w) => w.workoutStart === null).length, [strengthWorkouts]);
 
-  /** The picker here, the import and its result on the FIT import screen. */
-  const importFit = async () => {
-    setPickError(null);
-    try {
-      const picked = await pickFitFile();
-      if (picked) router.push({ pathname: '/settings/import-fit', params: { uri: picked.uri } });
-    } catch (e) {
-      setPickError(errorMessage(e));
-    }
-  };
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Outside the list so it stays in view while the workouts scroll; the same page padding as the list. */}
@@ -307,9 +293,8 @@ export default function WorkoutsScreen() {
               }
             />
             <ActiveWorkoutBanner />
-            <Button label={t('list.start.button')} variant="primary" icon="add" onPress={() => setStartOpen(true)} />
+            <Button label={t('list.start.button')} variant="primary" icon="add" onPress={openStart} />
             <LoopShortcut dismissible />
-            {pickError ? <Notice tone="danger">{t('list.pickError', { error: pickError })}</Notice> : null}
             {error ? <Notice tone="danger">{t('list.readError', { error })}</Notice> : null}
             {strengthOnlyCount > 0 ? (
               <Notice icon="barbell-outline" action={{ label: lifts('list.history'), onPress: () => router.push('/strength/history') }}>
@@ -363,16 +348,6 @@ export default function WorkoutsScreen() {
         renderItem={({ item }) => <WorkoutCard workout={item} strength={strengthByStart.get(item.start)} onDelete={setDeleting} />}
       />
       <DeleteWorkoutDialog target={deleting} onClose={() => setDeleting(null)} />
-      <StartWorkoutSheet
-        visible={startOpen}
-        onClose={() => setStartOpen(false)}
-        recording={recording}
-        onRecord={() => router.navigate(LIVE_ROUTE, OPEN_LIVE)}
-        onStrength={() => router.push('/strength')}
-        onManual={() => router.push('/workouts/manual')}
-        onImportFit={() => void importFit()}
-        onLoop={() => router.push('/routes/loop')}
-      />
     </View>
   );
 }

@@ -69,7 +69,7 @@
       "notPaired": "Android has no Bluetooth pairing with this watch (it was removed, or the watch refused to pair again). Open Android's Bluetooth settings and pair the watch, then tap Try again. If the watch does not show up there, remove this phone once in the watch's own Bluetooth settings. JoyoFit deletes nothing."
     },
     "silent": {
-      "short": "The watch connected over Bluetooth but does not answer. What to try is on the Watch tab.",
+      "short": "The watch connected over Bluetooth but does not answer. What to try is under More, Watch.",
       "title": "The watch connected but does not answer",
       "intro": "JoyoFit reached the watch over Bluetooth, but the watch did not reply to the first request. Usually another app or phone is using it. Try these one at a time, then tap Retry.",
       "step": {
@@ -492,7 +492,7 @@
     "gateSet": "Huawei's gate: set",
     "gateNotSet": "Huawei's gate: not set",
     "unverified": "Unverified: the course format comes from static analysis of Huawei Health. The watch may refuse it.",
-    "disabled": "Running courses are switched off. Turn them on in Settings, Advanced.",
+    "disabled": "Running courses are switched off. Turn them on in More, Advanced.",
     "saveError": "The draft could not be saved on this phone: {{error}}",
     "title": "Course",
     "name": "Name",
