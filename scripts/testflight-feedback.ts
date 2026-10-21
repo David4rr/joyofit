@@ -8,15 +8,19 @@
 //
 // Flags: --app <ASC app id> (required) --name <slug, default = app id> --out <dir> (default ./tf-feedback/<name>;
 // state.json lives there) --atur --project <Atur project id> --workspace <slug, default joyodigitama> --all --dry
+// --repo <owner/name> (resolve each build to its commit through the repo's `release-ios.yml` runs, needs `gh`)
+// --since <ISO date> (first run only, when there is no state file yet: items created at or after it are new; without it
+// the first run is a baseline that records everything as seen and files nothing; env TF_FEEDBACK_SINCE does the same)
 //
 // Env (ASC): ASC_KEY_ID (default BUU2CPKLGM), ASC_ISSUER_ID (default the team issuer), and the .p8 as ASC_KEY_P8
 // (PEM text), ASC_KEY_P8_BASE64, or ASC_KEY_PATH (default ~/Downloads/AuthKey_<id>.p8).
 // Env (Atur): ATUR_API_KEY, else ATUR_API_KEY_FILE, else ~/.config/atur/crew-api-key; ATUR_BASE_URL (default
 // https://app.diatur.com).
 //
-// "Last seen" is tracked as the set of processed submission ids in state.json (ASC ids are opaque, not ordered).
-// Atur creation is additionally idempotent: the submission id is in the issue title and searched before creating,
-// so a CI runner with no persisted state never files duplicates.
+// "Last seen" is the set of processed submission ids in state.json (ASC ids are opaque and not ordered, so a set, not a
+// cursor). Atur creation is additionally idempotent: the submission id is in the issue title and searched before
+// creating, so a runner that lost its state file does not file the same item twice.
+import { execFileSync } from 'node:child_process';
 import { createSign } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -38,7 +42,7 @@ export type Item = {
   connectionType: string | null;
   batteryPercentage: number | null;
   appUptimeInMilliseconds: number | null;
-  build: { id: string; version: string | null; uploadedDate: string | null; preRelease: string | null } | null;
+  build: { id: string; version: string | null; uploadedDate: string | null; preRelease: string | null; commit?: string | null } | null;
   tester: { id: string; firstName: string | null; lastName: string | null; email: string | null } | null;
   screenshotFiles: string[];
   crashLogFile: string | null;
@@ -181,11 +185,52 @@ function crashSummary(file: string | null, out: string): string {
 
 function summarize(appName: string, item: Item, out: string): string {
   const who = item.tester ? [item.tester.firstName, item.tester.lastName].filter(Boolean).join(' ') || item.tester.id : 'unknown tester';
-  const head = `[${item.kind}] ${item.createdDate} ${appName} build ${item.build?.preRelease ?? '?'} (${item.build?.version ?? '?'}) ${item.deviceModel ?? '?'} iOS ${item.osVersion ?? '?'}`;
+  const commit = item.build?.commit ? ` commit ${item.build.commit.slice(0, 8)}` : '';
+  const head = `[${item.kind}] ${item.createdDate} ${appName} build ${item.build?.preRelease ?? '?'} (${item.build?.version ?? '?'})${commit} ${item.deviceModel ?? '?'} iOS ${item.osVersion ?? '?'}`;
   const lines = [head, `  tester: ${who}${item.email ? ` <${item.email}>` : ''}`, `  comment: ${item.comment ?? '(none)'}`];
   if (item.kind === 'crash') lines.push(...crashSummary(item.crashLogFile, out).split('\n').map((l) => `  | ${l}`));
   else lines.push(`  screenshots: ${item.screenshotFiles.join(', ') || '(none)'}`);
   return lines.join('\n');
+}
+
+// ---- build -> commit, new-item selection ----
+
+/**
+ * The workflow run that made a build. `CFBundleVersion` is `YYYYMMDDHHMM` in UTC taken when mac-build.sh starts, a
+ * minute or so after the run was created: the run created in the 20 minutes before that minute (and at most a minute
+ * after it) is the one.
+ */
+export function commitOfBuild(buildNumber: string, runs: { headSha: string; createdAt: string }[]): string | null {
+  const m = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(buildNumber);
+  if (!m) return null;
+  const at = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  const hits = runs
+    .map((r) => ({ sha: r.headSha, at: Date.parse(r.createdAt) }))
+    .filter((r) => r.at >= at - 20 * 60_000 && r.at <= at + 60_000)
+    .sort((a, b) => b.at - a.at);
+  return hits[0]?.sha ?? null;
+}
+
+function releaseRuns(repo: string): { headSha: string; createdAt: string }[] {
+  const out = execFileSync(
+    'gh',
+    ['run', 'list', '-R', repo, '--workflow', 'release-ios.yml', '--limit', '100', '--json', 'headSha,createdAt'],
+    { encoding: 'utf8' },
+  );
+  return JSON.parse(out);
+}
+
+export type FeedbackState = { seen: string[] } | null;
+
+/**
+ * The items to act on. `all` ignores the state. With a state: the ids it has not seen. Without one (first run): items
+ * created at or after `since`, or none when there is no `since` (a baseline).
+ */
+export function pickFresh(items: Item[], state: FeedbackState, opts: { all?: boolean; since?: string }): Item[] {
+  if (opts.all) return items;
+  if (state) return items.filter((i) => !state.seen.includes(i.id));
+  const since = opts.since;
+  return since ? items.filter((i) => i.createdDate >= since) : [];
 }
 
 // ---- Atur ----
@@ -208,7 +253,7 @@ export function issueBody(appName: string, appId: string, item: Item, out: strin
   const rows = [
     ['Submission', `${item.id} (${item.kind})`],
     ['Date', item.createdDate],
-    ['Build', `${item.build?.preRelease ?? '?'} (${item.build?.version ?? '?'}), uploaded ${item.build?.uploadedDate ?? '?'}`],
+    ['Build', `${item.build?.preRelease ?? '?'} (${item.build?.version ?? '?'}), uploaded ${item.build?.uploadedDate ?? '?'}${item.build?.commit ? `, commit ${item.build.commit}` : ''}`],
     ['Device', `${item.deviceModel ?? '?'}, iOS ${item.osVersion ?? '?'}, ${item.locale ?? '?'}, ${item.connectionType ?? '?'}`],
     ['Tester', item.tester ? [item.tester.firstName, item.tester.lastName].filter(Boolean).join(' ') || item.tester.id : '?'],
     ['Email', item.email ?? 'not shared'],
@@ -240,16 +285,17 @@ async function atur(method: string, path: string, body?: unknown): Promise<Json>
 async function fileAturIssue(workspace: string, project: string, title: string, html: string, id: string): Promise<string> {
   const base = `/api/workspaces/${workspace}/projects/${project}`;
   const existing = await atur('GET', `${base}/issues?q=${encodeURIComponent(id)}&limit=5`);
-  const rows: Json[] = existing.items ?? existing.issues ?? existing.data ?? (Array.isArray(existing) ? existing : []);
+  const rows: Json[] = existing.results ?? [];
   if (rows.some((r) => String(r.name ?? '').includes(id))) return 'exists';
   const states = await atur('GET', `${base}/states`);
-  const list: Json[] = Array.isArray(states) ? states : (states.items ?? states.states ?? []);
-  const todo = list.find((s) => /^todo$/i.test(s.name ?? '')) ?? list.find((s) => s.group_name === 'unstarted');
+  const list: Json[] = states.results ?? [];
+  const todo = list.find((s) => s.key === 'todo');
+  if (!todo) throw new Error(`project ${project} has no "todo" state`);
   const created = await atur('POST', `${base}/issues`, {
     name: title,
     description_html: html,
     priority: 'medium',
-    ...(todo ? { state_id: todo.id } : {}),
+    state_id: todo.id,
   });
   return `created ${created.sequence_id ?? created.id ?? ''}`.trim();
 }
@@ -263,18 +309,26 @@ async function main() {
   const out = arg('out') ?? join('tf-feedback', name);
   mkdirSync(out, { recursive: true });
   const statePath = join(out, 'state.json');
-  const state: { seen: string[] } = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { seen: [] };
-  const seen = new Set(flag('all') ? [] : state.seen);
+  const state: FeedbackState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : null;
 
   const { items, raw } = await collect(appId, out);
+  const repo = arg('repo');
+  if (repo) {
+    const runs = releaseRuns(repo);
+    for (const item of items) if (item.build?.version) item.build.commit = commitOfBuild(item.build.version, runs);
+  }
   writeFileSync(join(out, 'submissions.json'), JSON.stringify(raw, null, 2));
   writeFileSync(join(out, 'items.json'), JSON.stringify(items, null, 2));
 
-  const fresh = items.filter((i) => !seen.has(i.id));
-  console.log(`${name}: ${items.length} submissions total (${items.filter((i) => i.kind === 'screenshot').length} screenshot, ${items.filter((i) => i.kind === 'crash').length} crash), ${fresh.length} new`);
+  const fresh = pickFresh(items, state, { all: flag('all'), since: arg('since') ?? process.env.TF_FEEDBACK_SINCE });
+  const baseline = !state && !flag('all') && fresh.length === 0;
+  console.log(
+    `${name}: ${items.length} submissions total (${items.filter((i) => i.kind === 'screenshot').length} screenshot, ${items.filter((i) => i.kind === 'crash').length} crash), ${fresh.length} new${baseline ? ' (first run: baseline, nothing filed)' : ''}`,
+  );
   for (const item of [...fresh].reverse()) console.log(`\n${summarize(name, item, out)}`);
 
-  const done = new Set(state.seen);
+  const done = new Set(state?.seen ?? []);
+  if (!state) for (const item of items) if (!fresh.includes(item)) done.add(item.id);
   if (flag('atur') && fresh.length) {
     const workspace = arg('workspace') ?? 'joyodigitama';
     const project = arg('project') ?? process.env.ATUR_PROJECT_ID;
@@ -288,7 +342,7 @@ async function main() {
       console.log(`atur ${item.id}: ${result}`);
       done.add(item.id);
     }
-  } else if (!flag('dry')) {
+  } else {
     for (const item of fresh) done.add(item.id);
   }
   if (!flag('dry')) writeFileSync(statePath, JSON.stringify({ seen: [...done] }, null, 2));

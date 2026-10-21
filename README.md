@@ -157,6 +157,7 @@ Site (`site/`): `bun install`, `bun run dev`, `bun run build` (typecheck, Vite b
 | [docs/atur-reports.md](docs/atur-reports.md) | Watch reports into Atur: what is sent, the board and token, offline queue, follow-up |
 | [docs/ota.md](docs/ota.md), [docs/in-app-updates.md](docs/in-app-updates.md) | OTA and the Play update prompt |
 | [docs/ci-release.md](docs/ci-release.md) | CI and release workflows |
+| [docs/testflight-feedback.md](docs/testflight-feedback.md) | TestFlight feedback: what Apple gives, the pull script, running it daily |
 | [docs/play-store.md](docs/play-store.md), [docs/app-store.md](docs/app-store.md), [docs/ios.md](docs/ios.md), [docs/ios-mac.md](docs/ios-mac.md), [docs/ios-linux.md](docs/ios-linux.md) | Store listings and iOS builds |
 | [docs/brand-marks.md](docs/brand-marks.md) | Third-party brand artwork rules |
 | [protocol/README.md](protocol/README.md), [server/README.md](server/README.md), [web/README.md](web/README.md) | Protocol notes, Worker API, Studio |
