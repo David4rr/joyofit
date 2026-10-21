@@ -13,12 +13,13 @@ import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { PageHeader, useContentPadding } from '@/components/Screen';
 import { showsWatchUi } from '@/features/device/presence';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
-import { WatchStatusCard } from '@/features/device/WatchStatusCard';
+import { linkLabel } from '@/features/device/linkState';
 import { useAccountDialogs } from '@/features/settings/useAccountDialogs';
 import { t as tOther } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
 import { useOnboarding } from '@/state/OnboardingProvider';
 import { useStrava } from '@/state/StravaProvider';
+import { useWatch } from '@/state/WatchProvider';
 import { spacing, useTheme, type Tint } from '@/theme';
 
 interface HubRow {
@@ -50,6 +51,7 @@ export default function SettingsScreen() {
   const cloud = useCloud();
   const strava = useStrava();
   const presence = useWatchPresence();
+  const { device, linkState } = useWatch();
   const user = authClient.useSession().data?.user;
   const { askSignOut, askDelete, dialogs } = useAccountDialogs();
 
@@ -57,32 +59,17 @@ export default function SettingsScreen() {
   const withWatch = presence === null || showsWatchUi(presence);
   const go = (href: Href) => () => router.push(href);
 
-  // A phone that never had a watch gets the one prompt; one with watch data but no watch gets the Watch hub to pair; the rest get the hub's pages.
-  // While the database has not answered (null) the full list stays, so it does not jump.
+  // One row into the Watch hub (connected card, faces, alarms, routes live there); its subtitle is the watch's name and link state.
   const watchGroup: HubGroup = {
-    title: t('hub.groups.watch'),
-    data:
-      presence === 'none'
-        ? [
-            {
-              key: 'connect-watch',
-              title: t('hub.connectWatch.title'),
-              subtitle: t('hub.connectWatch.subtitle'),
-              icon: 'watch',
-              onPress: go('/watch'),
-            },
-          ]
-        : [
-            { key: 'watch', title: tOther('watch:title'), subtitle: t('hub.watchHub.subtitle'), icon: 'watch', onPress: go('/watch') },
-            ...(presence === 'data'
-              ? []
-              : [
-                  { key: 'faces', title: tOther('watch:hub.faces'), subtitle: tOther('watch:hub.facesSub'), icon: 'color-palette' as const, onPress: go('/watch/faces') },
-                  { key: 'photo', title: tOther('watch:hub.photo'), subtitle: tOther('watch:hub.photoSub'), icon: 'images' as const, onPress: go('/watch/photos') },
-                  { key: 'alarms', title: tOther('watch:hub.alarms'), subtitle: tOther('watch:hub.alarmsSub'), icon: 'alarm' as const, onPress: go('/watch/alarms') },
-                  { key: 'routes', title: tOther('routes:hub.title'), subtitle: tOther('routes:hub.subtitle'), icon: 'trail-sign' as const, onPress: go('/routes') },
-                ]),
-          ],
+    data: [
+      {
+        key: 'watch',
+        title: t('hub.groups.watch'),
+        subtitle: device ? `${device.name} · ${linkLabel(linkState)}` : t('hub.watchRow.none'),
+        icon: 'watch',
+        onPress: go('/watch'),
+      },
+    ],
   };
 
   const watchSettingsGroup: HubGroup = {
@@ -184,12 +171,12 @@ export default function SettingsScreen() {
     ],
   };
 
-  // The Watch section comes first (it is what the Watch tab was), then the account and the settings.
+  // Account on top, then goals and body, then the one Watch row, then the settings.
   const groups = [
-    watchGroup,
-    watchSettingsGroup,
     accountSummaryGroup,
     bodyGroup,
+    watchGroup,
+    watchSettingsGroup,
     connectionsGroup,
     appGroup,
     ...(cloud.signedIn ? [accountGroup] : []),
@@ -203,13 +190,7 @@ export default function SettingsScreen() {
       contentContainerStyle={padding}
       stickySectionHeadersEnabled={false}
       showsVerticalScrollIndicator={false}
-      ListHeaderComponent={
-        <>
-          <PageHeader title={t('index.title')} />
-          {/* The connected watch's status first; with no watch the Jam group below has the one prompt to connect. */}
-          {presence === 'watch' ? <WatchStatusCard /> : null}
-        </>
-      }
+      ListHeaderComponent={<PageHeader title={t('index.title')} />}
       ListFooterComponent={<>{dialogs}</>}
       renderSectionHeader={({ section }) =>
         section.title ? (

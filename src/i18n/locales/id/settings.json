@@ -729,8 +729,8 @@
     "detailsAndroid": "Ponsel ini: memakai lokasi kasar yang terakhir diketahui. Di latar belakang Android mungkin tidak memberi yang baru, jadi posisi terakhir dipakai ulang."
   },
   "hub": {
-    "watchHub": {
-      "subtitle": "Hubungkan atau ganti jam, cari jam, data satelit"
+    "watchRow": {
+      "none": "Belum ada jam"
     },
     "groups": {
       "watch": "Jam",
@@ -746,10 +746,6 @@
       "pro": "Pro aktif, sinkron cloud nyala",
       "free": "Gratis, sinkron cloud butuh Pro",
       "valuePro": "Pro"
-    },
-    "connectWatch": {
-      "title": "Sambungkan jam",
-      "subtitle": "Opsional. Pasang jam Huawei atau Honor untuk langkah, tidur, dan detak jantung."
     },
     "connected": "Terhubung"
   },

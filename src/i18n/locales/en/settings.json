@@ -741,8 +741,8 @@
     "detailsAndroid": "This phone: uses the last known coarse location. In the background Android may not give a fresh one, so the last position is reused."
   },
   "hub": {
-    "watchHub": {
-      "subtitle": "Connect or switch watches, find my watch, satellite data"
+    "watchRow": {
+      "none": "No watch yet"
     },
     "groups": {
       "watch": "Watch",
@@ -758,10 +758,6 @@
       "pro": "Pro active, cloud sync on",
       "free": "Free, cloud sync needs Pro",
       "valuePro": "Pro"
-    },
-    "connectWatch": {
-      "title": "Connect a watch",
-      "subtitle": "Optional. Pair a Huawei or Honor watch for steps, sleep and heart rate."
     },
     "connected": "Connected"
   },
