@@ -22,6 +22,80 @@ Research of 2026-10-21. Read-only: no code was changed, nothing was sent to Huaw
 Evidence labels used below: **VERIFIED** (seen on our Fit 4 Pro), **DOCUMENTED** (Huawei says so in a page linked here), **REPORTED**
 (users or Gadgetbridge contributors say so; not checked by us), **INFERENCE** (ours).
 
+## 0. Correction and open question (2026-10-21, after a contributor report)
+
+**Report.** Contributor David4rr (GitHub @David4rr; merged PRs #3 watchfaces and #15 smart replies) says JoyoFit installs already-signed
+free `.hwt` files found online, for example from the Telegram channel `t.me/s/gt_gt2_aut_whatchfaces`. The claim is **REPORTED, not
+reproduced here**. It is not written in any PR, issue or comment of the repository (PR #3 and #15 threads, issues #1 to #14 read
+2026-10-21), and nothing in the repository records which watch or firmware he used. It must be re-tested before the rest of this
+document is changed; nothing above is withdrawn yet.
+
+**What the channel is (VERIFIED by reading its public view, 25 posts, posts 6904 to 6928).** "GT / GT2 / GT3 / GT3 Pro / HWM2 / ES / Fit
+Author's Watchfaces - GAW". Files seen: `Pop391.2.1.1.hwt` (282 KB), `Pop392.2.1.1.hwt` (656 KB), `Pop BMW.2.1.1.hwt` (27 KB), `Pop393.hwt`
+(285 KB), `Pop394.hwt` (233 KB), all forwarded from user HPopov, and `VAFBNBlue.watch4_pro.1.1.1.hwt` (1.3 MB),
+`VAFElectroReV.watch4_pro.1.1.1.hwt` (3.1 MB). The `watch4_pro` suffix and the "Huawei Watch 4 Pro" captions mean the Huawei Watch 4
+Pro (a round 466 class watch), **not the Watch Fit 4 Pro**. No post says "signed", "unsigned" or names a firmware. The Fit 4 Pro is not
+named in any visible post. Also in the same feed, post 6907: **`Huawei_Health-14.1.6.310(mod).apk` (141.5 MB, 11.7K views)**, the modded
+Huawei Health that section 2 says must not be shipped or linked. The public `t.me/s` page lists file names and sizes but **no download
+link**; the `.hwt` files could not be fetched over plain HTTP (only Telegram clients can), so no sample was inspected.
+
+**Is there a universal signature inside a `.hwt`?** Evidence says no, but it was not tested on a store-downloaded file:
+
+- Every `.hwt` in `packages/hwt/fixtures` (4 for Fit 4 Pro, `FocusWGTru` GT 6, `Unnamed` HWHD02) is a ZIP of `com.huawei.watchface`,
+  `description.xml`, `preview/*` only (VERIFIED, `unzip -l`). `description.xml` has no face id, account or signature field. The only
+  integrity datum in any fixture family is the GT 3 era `hashCode` entry, a SHA-256 list, which is a hash, not a Huawei signature
+  (`packages/hwt/README.md`). The 8 bytes at the start of the face binary (`55 55 55 55 01 00 00 01`) are a format marker, not a signature.
+- The signature Huawei Health sends is a separate server response (`result.content.{huid, hitopId, version, deviceId, watchContentHash}` plus
+  `contentSign`), fetched at install time with the account token and sent in tag `08` of the `27/03` announcement
+  (`protocol/README.md` → *What the signature covers*; analysis of Huawei Health 17.0.8.300, REPORTED in GB #6005). It names the account
+  and a hash of the watch id. A file cannot carry it, and a copy made for one account/watch would not match another.
+- JoyoFit's installer sends **no** signature and installs under a **random** `<nine digits>_<version>` id (`WatchfacePackages.randomName`),
+  so even a store-signed face (whose signature names its own `hitopId`) would not match. `installWatchface(uri, signature, fileName)` takes
+  the signature only from the caller; nothing in the app supplies one.
+- The 100014 handling (`WatchfaceManager.kt` `refusedMessage`) fires only when the watch deletes the face after activation; the signature
+  hint is conditional on `screen.supportsSignature` (capability bit 8 of `27/01` tag `0x11`).
+
+**Most likely explanations for David's report, in order [all INFERENCE]:**
+
+1. **His watch or firmware does not enforce signatures.** The channel's faces target Watch 4 Pro, GT 2/3 and older; those, and any watch
+   whose capability word lacks bit 8, never ask for a signature (JoyoFit's own log line `watch face signature=false` shows it). GB
+   reports unsigned installs working on older Lite OS and pre-6.0.0.328 firmware (section 1.3). A pass on those watches says nothing
+   about a Fit 4 Pro on 6.1.0.117, which is VERIFIED to refuse unsigned faces.
+2. **Different file path.** The face was first installed through the channel's modded Huawei Health (which claims to be a designer) and
+   later seen in JoyoFit's installed list, or the face was already on the watch.
+3. **A true embedded or reusable signature.** Not found anywhere; would contradict the account/watch-bound `content`. Possible only if
+   the store package is a different container than a Theme Studio export (store downloads in Huawei Health are not saved as `.hwt`, so
+   their format is unknown here).
+
+**Does the answer hold on a Fit 4 Pro 6.1?** Our VERIFIED result is: unsigned (Facemaker-made) faces fail with 100014. David's claim is
+untested on that watch and firmware. Treat "channel faces install" as unproven for the Fit 4 Pro.
+
+**Consequence for 'publish via Huawei Themes, install via JoyoFit'.** Not viable on current evidence. The signature is generated by the
+server per install for the installing account and watch, so a face PT Joyo publishes is signed only when Huawei Health installs it for a
+user. The Themes console documents upload, review and sale, not a download of a signed package; the **only** documented copy of the
+file is the one PT Joyo uploads, which is unsigned (DOCUMENTED, Uploading Watch Face, Testing a Watch Face on a Device; absence of a
+"download signed package" feature is INFERENCE from not finding one). Shipping a store-downloaded `.hwt` inside JoyoFit would also
+break the licence terms of section 3. Path (a) in section 4 (publish, link, install in Huawei Health) stays the plan.
+
+**Legal.** A user installing a `.hwt` they chose and own the right to use is the user's act, as it is with any file picker. JoyoFit
+hosting, bundling, mirroring or deep-linking a catalogue of third-party faces (Telegram, Faces4Watch, store extracts) needs a licence from each
+designer and is not OK without one; the licence of the channel's faces is unknown (HPopov and VAF are named authors). Pointing users to
+the modded Huawei Health is also out (section 2).
+
+**Next test for the owner (Fit 4 Pro, firmware 6.1.0.117).** Do exactly one controlled test and keep JoyoFit's log:
+
+1. In Telegram open the channel and download `VAFBNBlue.watch4_pro.1.1.1.hwt`? No: that file is built for the Watch 4 Pro and the app
+   will refuse or mis-size it. Pick a **408 x 480** (`HWHD13`) face. None is visibly named for the Fit 4 Pro in the posts read, so
+   search the channel for `fit4` / `Fit 4` and use `Pop392.2.1.1.hwt` only if its `description.xml` says `<screen>HWHD13</screen>`
+   (unzip it first, 1 minute). Do not use any file that does not.
+2. Check the log first: JoyoFit logs `WatchfaceParams capability: watch face signature=true` for this watch. If `true`, the watch will
+   ask for a signature.
+3. Import the `.hwt` with **Import .hwt file** and install. Expected, from our verified result: `100014` and the face deleted after
+   about 3 s. If it **stays installed**, record the file's SHA-256, `description.xml`, the whole log of the attempt and the exact
+   firmware; then the claim is real for this watch and sections 1 and 2 need rewriting.
+4. Ask David for: watch model, firmware, whether `signature=true` was logged, the file name, and whether Huawei Health was ever used
+   on that watch before the install.
+
 ## 1. How Huawei signs watch faces
 
 ### 1.1 What is signed and by whom
