@@ -41,8 +41,6 @@ function ModelSection({ provider, onDone }: { provider: ProviderId; onDone: () =
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
     listProviderModels(provider)
       .then((list) => {
         if (!cancelled) setModels(list);
@@ -92,12 +90,13 @@ export function AiSettingsScreen() {
   const [pickModel, setPickModel] = useState(params.model === '1');
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [busy, setBusy] = useState(false);
-  const [, setTick] = useState(0);
+  const [snapshot, setSnapshot] = useState(() => ({ notes: aiNotes.list().length, usage: aiUsage.today(Math.floor(Date.now() / 1000)) }));
 
-  // Notes and today's use change on other screens: read them again when this one comes back.
-  useFocusEffect(useCallback(() => setTick((n) => n + 1), []));
-  const noteCount = aiNotes.list().length;
-  const usage = aiUsage.today(Math.floor(Date.now() / 1000));
+  // Notes and today's use change on other screens (and on this one after a delete): read them again when this one comes back.
+  const readSnapshot = useCallback(() => setSnapshot({ notes: aiNotes.list().length, usage: aiUsage.today(Math.floor(Date.now() / 1000)) }), []);
+  useFocusEffect(readSnapshot);
+  const noteCount = snapshot.notes;
+  const usage = snapshot.usage;
 
   if (access === null) {
     return (
@@ -152,7 +151,7 @@ export function AiSettingsScreen() {
     } finally {
       setBusy(false);
       setConfirm(null);
-      setTick((n) => n + 1);
+      readSnapshot();
     }
   };
 
@@ -191,7 +190,7 @@ export function AiSettingsScreen() {
           )}
         </Section>
 
-        {pickModel && configured && provider && !minor ? <ModelSection provider={provider} onDone={() => setPickModel(false)} /> : null}
+        {pickModel && configured && provider && !minor ? <ModelSection key={provider} provider={provider} onDone={() => setPickModel(false)} /> : null}
 
         {minor ? null : (
           <Section title={t('prefs.style.title')} icon="newspaper" tint="link">

@@ -41,7 +41,9 @@ function Insight({ coach, model, layout }: InsightProps) {
   const { signedIn } = useCloud();
   const settings = useAiSettings();
   const coachRef = useRef(coach);
-  coachRef.current = coach;
+  useEffect(() => {
+    coachRef.current = coach;
+  });
   const [result, setResult] = useState<{ kind: InsightKind; text: string } | null>(null);
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);

@@ -33,7 +33,9 @@ export function DataScreen() {
   const availability = useNightHrvAvailability(dataVersion);
   const coach = useCoach(dataVersion, availability);
   const coachRef = useRef(coach);
-  coachRef.current = coach;
+  useEffect(() => {
+    coachRef.current = coach;
+  });
   const ready = coach !== null;
   const [sent, setSent] = useState<{ json: string; pretty: string } | null>(null);
   const [failed, setFailed] = useState(false);

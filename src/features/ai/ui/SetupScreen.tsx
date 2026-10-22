@@ -108,12 +108,8 @@ function SetupForm() {
 
   // The saved key is shown masked, never in full: read it only to mask it.
   useEffect(() => {
+    if (!keySavedFlag) return;
     let cancelled = false;
-    setStored(null);
-    if (!keySavedFlag) {
-      setStored({ provider, mask: null });
-      return;
-    }
     aiVault
       .get(provider)
       .then((saved) => {
@@ -127,7 +123,7 @@ function SetupForm() {
     };
   }, [provider, keySavedFlag]);
 
-  const savedMask = stored?.provider === provider ? stored.mask : null;
+  const savedMask = keySavedFlag && stored?.provider === provider ? stored.mask : null;
   const usingSaved = savedMask !== null && !replacing;
   const typedKey = cleanPastedKey(key);
   const keyReady = usingSaved || typedKey.length > 0;

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View, type ScrollView } from 'react-native';
 
@@ -81,7 +81,7 @@ export function JoyoAiChat() {
   const [paywall, setPaywall] = useState(false);
   const [flagged, setFlagged] = useState(false);
   const [toolsOff, setToolsOff] = useState(false);
-  const [usageTick, setUsageTick] = useState(0);
+  const [usage, setUsage] = useState(() => aiUsage.today(Math.floor(Date.now() / 1000)));
 
   const engine = settings.engine;
   const [rogoUsage, setRogoUsage] = useRogoStatus(engine === 'rogo' && coachAccess === 'pro');
@@ -199,7 +199,7 @@ export function JoyoAiChat() {
       if (mounted.current && generation.current === mine) {
         setSending(false);
         setStatus(null);
-        setUsageTick((n) => n + 1);
+        setUsage(aiUsage.today(Math.floor(Date.now() / 1000)));
       }
     }
   };
@@ -234,8 +234,6 @@ export function JoyoAiChat() {
     writeChat(next);
     if (saved) show(t('notes.saved'));
   };
-
-  const usage = useMemo(() => aiUsage.today(Math.floor(Date.now() / 1000)), [usageTick, turns.length]);
 
   const chipLabel = own
     ? ownChipLabel(own, t)
