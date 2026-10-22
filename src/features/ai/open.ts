@@ -9,6 +9,9 @@ export interface ChatSeed {
   label: string;
 }
 
+/** Navigation options for every way into Joyo AI: `withAnchor` puts the history of chats under the chat when its stack is created by this call. */
+export const OPEN_JOYO_AI = { withAnchor: true } as const;
+
 export type JoyoAiDestination =
   | { pathname: '/joyo/chat'; params?: Record<string, string> }
   | { pathname: '/settings/ai-setup' }

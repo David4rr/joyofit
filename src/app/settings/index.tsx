@@ -17,7 +17,7 @@ import { linkLabel } from '@/features/device/linkState';
 import { HEALTH_STORE } from '@/features/sources/store';
 import { useAccountDialogs } from '@/features/settings/useAccountDialogs';
 import { useByokAccess } from '@/features/ai/hooks';
-import { joyoAiDestination } from '@/features/ai/open';
+import { joyoAiDestination, OPEN_JOYO_AI } from '@/features/ai/open';
 import { hubStatusLine } from '@/features/ai/ui/status';
 import { useCoachAccess } from '@/features/coach/useCoachAccess';
 import { t as tOther } from '@/i18n';
@@ -102,7 +102,7 @@ export default function SettingsScreen() {
         subtitle: hubStatusLine({ settings: ai.settings, access: ai.access, coachAccess }, ta),
         icon: 'chatbubbles',
         tint: 'link',
-        onPress: () => router.navigate(joyoAiDestination({ settings: ai.settings, access: ai.access, coachAccess })),
+        onPress: () => router.navigate(joyoAiDestination({ settings: ai.settings, access: ai.access, coachAccess }), OPEN_JOYO_AI),
       },
     ],
   };
