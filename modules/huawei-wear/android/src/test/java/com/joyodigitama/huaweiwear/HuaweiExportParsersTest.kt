@@ -18,7 +18,9 @@ class HuaweiExportParsersTest {
     val stress = ArrayList<ImportedStress>()
     val steps = ArrayList<Triple<Long, Int, Int>>()
     val unmapped = ArrayList<String>()
-    var rejected = 0
+    val weighIns = ArrayList<ImportedWeighIn>()
+    val rejectedKeys = ArrayList<Triple<String, String, String?>>()
+    val rejected get() = rejectedKeys.size
 
     override fun heartRate(tsSec: Long, bpm: Int) { heartRate.add(tsSec to bpm) }
     override fun restingHeartRate(tsSec: Long, bpm: Int) { resting.add(tsSec to bpm) }
@@ -26,8 +28,9 @@ class HuaweiExportParsersTest {
     override fun sleep(segment: ImportedSleep) { sleep.add(segment) }
     override fun stress(point: ImportedStress) { stress.add(point) }
     override fun steps(minuteSec: Long, steps: Int, distance: Int) { this.steps.add(Triple(minuteSec, steps, distance)) }
+    override fun weighIn(weighIn: ImportedWeighIn) { weighIns.add(weighIn) }
     override fun unmapped(key: String) { unmapped.add(key) }
-    override fun rejected() { rejected++ }
+    override fun rejected(key: String, reason: String, sample: String?) { rejectedKeys.add(Triple(key, reason, sample)) }
   }
 
   private val t0 = 1_750_000_020_000L // a whole minute
@@ -74,6 +77,17 @@ class HuaweiExportParsersTest {
     assertTrue(out.spo2.isEmpty())
     assertTrue(out.stress.isEmpty())
     assertEquals(5, out.rejected)
+    // Each drop says what and why, so the import summary can show it.
+    assertEquals(
+      listOf(
+        Triple("DATA_POINT_DYNAMIC_HEARTRATE", "out-of-range", "0"),
+        Triple("DATA_POINT_DYNAMIC_HEARTRATE", "out-of-range", "400"),
+        Triple("DATA_POINT_DYNAMIC_HEARTRATE", "no-number", "n/a"),
+        Triple("BLOOD_OXYGEN_SATURATION", "no-number", "{}"),
+        Triple("STRESS_DATA", "out-of-range", "0"),
+      ),
+      out.rejectedKeys,
+    )
   }
 
   @Test
@@ -115,7 +129,8 @@ class HuaweiExportParsersTest {
       healthRecord(point("WEIGHT_BODYFAT_BROAD", t0, t0, """{"bodyWeight":70}"""), point("EXERCISE_INTENSITY", t0, t0, "3")),
       out,
     )
-    assertEquals(listOf("WEIGHT_BODYFAT_BROAD", "EXERCISE_INTENSITY"), out.unmapped)
+    assertEquals(listOf("EXERCISE_INTENSITY"), out.unmapped)
+    assertEquals(1, out.weighIns.size)
   }
 
   @Test
@@ -284,5 +299,57 @@ class HuaweiExportParsersTest {
     val (gain, loss) = HuaweiMotionPathParser.elevationChange(listOf(10.0, 11.0, 9.5, 14.0, 20.0, 15.0, 15.5))
     assertEquals(10.0, gain, 1e-9)
     assertEquals(5.0, loss, 1e-9)
+  }
+
+  @Test
+  fun weighInsAreReadFromEmbeddedBodyCompositionFields() {
+    val out = Recorder()
+    HuaweiHealthDetailParser.parse(
+      healthRecord(
+        point(
+          "WEIGHT_BODYFAT_BROAD", t0 + 3_000, t0 + 3_000,
+          """{"bodyWeight":71.5,"bodyFatRate":0.213,"muscleMass":52.1,"bodyWaterRate":55.2,"boneSalt":3.1,"bmi":22.4,"visceralFatLevel":8,"basal":1600,"impedance":512}""",
+        ),
+        point("WEIGHT_BODYFAT_BROAD", t0 + 9_000, t0 + 9_000, """{"bodyFatRate":400}"""),
+      ),
+      out,
+    )
+    assertEquals(1, out.weighIns.size)
+    val w = out.weighIns[0]
+    assertEquals(t0 + 3_000, w.tsMs)
+    assertEquals(71.5, w.weightKg, 0.001)
+    assertEquals(512.0, w.impedanceOhm!!, 0.001)
+    val reported = JSONObject(w.reportedJson!!)
+    assertEquals(21.3, reported.getDouble("bodyFatPct"), 0.001)
+    assertEquals(52.1, reported.getDouble("muscleKg"), 0.001)
+    assertEquals(55.2, reported.getDouble("waterPct"), 0.001)
+    assertEquals(3.1, reported.getDouble("boneKg"), 0.001)
+    assertEquals(22.4, reported.getDouble("bmi"), 0.001)
+    assertEquals(8.0, reported.getDouble("visceralFat"), 0.001)
+    // The same minute holds a point without a weight: merged into the first weighing, whose weight stands.
+    assertEquals(0, out.rejected)
+  }
+
+  @Test
+  fun weighInWithoutAPlausibleWeightIsRejected() {
+    val out = Recorder()
+    HuaweiHealthDetailParser.parse(healthRecord(point("WEIGHT_BODYFAT_BROAD", t0, t0, """{"bodyWeight":7,"bodyFatRate":20}""")), out)
+    assertTrue(out.weighIns.isEmpty())
+    assertEquals(listOf(Triple("weight", "no-weight", null)), out.rejectedKeys.map { Triple(it.first, it.second, it.third?.takeIf { s -> s != "7.0" }) })
+  }
+
+  @Test
+  fun weightInGramsBecomesKilograms() {
+    val out = Recorder()
+    HuaweiHealthDetailParser.parse(healthRecord(point("BODY_WEIGHT", t0, t0, "70250")), out)
+    assertEquals(70.25, out.weighIns.single().weightKg, 0.001)
+  }
+
+  @Test
+  fun weightKeysAreRecognisedAndGoalKeysAreNot() {
+    assertTrue(HuaweiWeightParser.isWeightKey("WEIGHT_BODYFAT_BROAD"))
+    assertTrue(HuaweiWeightParser.isWeightKey("DATA_POINT_BODY_WEIGHT"))
+    assertFalse(HuaweiWeightParser.isWeightKey("WEIGHT_GOAL"))
+    assertFalse(HuaweiWeightParser.isWeightKey("DATA_POINT_DYNAMIC_HEARTRATE"))
   }
 }

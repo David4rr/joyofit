@@ -390,7 +390,7 @@
   },
   "huaweiImport": {
     "requestTitle": "Minta datamu dari Huawei",
-    "requestIntro": "Detak jantung, tidur, langkah, dan latihan dari akun Huawei Health kamu. Gratis, berjalan di ponsel ini, tidak mengirim apa pun.",
+    "requestIntro": "Detak jantung, tidur, langkah, latihan, dan berat badan dari akun Huawei Health kamu. Gratis, berjalan di ponsel ini, tidak mengirim apa pun.",
     "howTitle": "Cara memintanya (6 langkah)",
     "steps": {
       "1": "Ketuk tombol di bawah dan masuk dengan Huawei ID kamu.",
@@ -427,9 +427,24 @@
     "minutes": "Menit dengan data",
     "alreadyHere": "Latihan yang sudah ada",
     "sleepSkipped": "Tidur dilewati (data jam dipertahankan)",
+    "weighIns": "Penimbangan ditambahkan",
+    "keepOpen": "Biarkan JoyoFit tetap terbuka sampai selesai (bisa beberapa menit untuk file besar). Layar boleh redup, jangan pindah aplikasi.",
+    "unreadableTitle": "Yang tidak terbaca",
+    "unreadableLine": "{{key}}: {{reason}}, {{count}} kali (pertama: {{sample}})",
+    "unreadableLineNoSample": "{{key}}: {{reason}}, {{count}} kali",
+    "badRecordLine": "{{reason}}: {{count}} catatan",
+    "reasons": {
+      "no-time": "tanpa waktu",
+      "no-number": "tanpa angka",
+      "out-of-range": "nilai di luar rentang",
+      "bad-span": "rentang waktu tidak mungkin",
+      "no-weight": "tanpa berat yang bisa dipakai"
+    },
+    "leftOutTitle": "Ada di file tapi tidak disimpan JoyoFit",
+    "leftOutLine": "{{key}}: {{count}} bacaan",
     "unreadable": "Tak terbaca, dilewati",
     "filesFailed_other": "{{count}} file di dalam ZIP tidak bisa dibaca. Sisanya sudah diimpor; unduh ulang ekspornya untuk menutup celahnya.",
-    "summaryDetails": "Kalori per menit dan berat badan tidak diimpor. Kalori latihan ikut diimpor.",
+    "summaryDetails": "Berat badan dan komposisi tubuh masuk ke riwayat timbangan, ditandai tidak dikirim ke JoyoRogo. Kalori per menit tidak diimpor. Kalori latihan ikut diimpor.",
     "errors": {
       "password": "Kata sandi itu tidak bisa membuka ZIP. Pakai yang kamu atur saat meminta data dari Huawei.",
       "format": "File ini bukan ekspor Huawei Health. Pilih ZIP dari email Huawei, yang berisi data Health kamu.",

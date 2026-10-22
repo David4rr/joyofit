@@ -4,6 +4,7 @@ import java.io.FilterInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
+import android.util.Log
 
 /** Why an import could not start; the module turns [kind] into an error code for JS. */
 internal class HuaweiImportException(val kind: Kind, message: String, cause: Throwable? = null) : Exception(message, cause) {
@@ -30,6 +31,9 @@ internal enum class HuaweiExportKind {
   /** `Motion path detail data & description`: one object per tracked workout. */
   MOTION_PATH,
   ;
+
+  /** Short name for the unreadable-record counts. */
+  val label: String get() = name.lowercase()
 
   companion object {
     /** The kind of the archive member [name], or null for anything that is not one of the JSON data files. */
@@ -58,8 +62,17 @@ internal class HuaweiImportSummary {
   /** Sample points of a known kind whose value was missing or implausible. */
   var rejectedSamples = 0
 
-  /** Sample points of kinds the importer does not use (weight, exercise intensity ...). */
+  /** Sample points of kinds the importer does not use (exercise intensity ...). */
   var unmappedSamples = 0
+
+  /** Why readings were dropped: `key` + `reason` (see [HuaweiImportCollector.rejected]) with a count and the first offending value. */
+  val rejectedReasons = LinkedHashMap<String, RejectedCount>()
+
+  /** Which kinds of unreadable records there were (`health` / `sport` / `motion` + why), with a count. */
+  val badRecordReasons = LinkedHashMap<String, Int>()
+
+  /** Keys of unmapped sample points, with a count each, so the owner of a new export can see what JoyoFit leaves out. */
+  val unmappedKeys = LinkedHashMap<String, Int>()
 
   var heartRateReadings = 0
   var restingHeartRateReadings = 0
@@ -71,6 +84,8 @@ internal class HuaweiImportSummary {
   var minutesWritten = 0
   var sleepSegmentsAdded = 0
   var stressAdded = 0
+  var weighInsFound = 0
+  var weighInsAdded = 0
   var workoutsFound = 0
   var workoutsAdded = 0
   var workoutPointsAdded = 0
@@ -79,6 +94,23 @@ internal class HuaweiImportSummary {
   var oldestSec: Long? = null
   var newestSec: Long? = null
   var cancelled = false
+
+  fun reject(key: String, reason: String, sample: String?) {
+    rejectedSamples++
+    val entry = rejectedReasons.getOrPut("$key|$reason") { RejectedCount(key, reason, sample) }
+    entry.count++
+  }
+
+  fun badRecord(reason: String) {
+    badRecords++
+    badRecordReasons.merge(reason, 1, Int::plus)
+  }
+
+  fun unmapped(key: String) {
+    unmappedSamples++
+    // The export has a handful of keys; a cap keeps a corrupt one from growing the map without bound.
+    if (unmappedKeys.size < MAX_KEYS || key in unmappedKeys) unmappedKeys.merge(key, 1, Int::plus)
+  }
 
   fun seen(tsSec: Long) {
     if (oldestSec?.let { tsSec < it } != false) oldestSec = tsSec
@@ -100,6 +132,11 @@ internal class HuaweiImportSummary {
     "minutesWritten" to minutesWritten,
     "sleepSegmentsAdded" to sleepSegmentsAdded,
     "stressAdded" to stressAdded,
+    "weighInsFound" to weighInsFound,
+    "weighInsAdded" to weighInsAdded,
+    "rejectedReasons" to rejectedReasons.values.sortedByDescending { it.count }.take(MAX_REASONS).map { it.toJs() },
+    "badRecordReasons" to badRecordReasons.entries.sortedByDescending { it.value }.take(MAX_REASONS).map { mapOf("reason" to it.key, "count" to it.value) },
+    "unmappedKeys" to unmappedKeys.entries.sortedByDescending { it.value }.take(MAX_REASONS).map { mapOf("key" to it.key, "count" to it.value) },
     "workoutsFound" to workoutsFound,
     "workoutsAdded" to workoutsAdded,
     "workoutPointsAdded" to workoutPointsAdded,
@@ -108,6 +145,14 @@ internal class HuaweiImportSummary {
     "cancelled" to cancelled,
   )
 }
+
+/** How often a reading of [key] was dropped for [reason]; [sample] is the first offending value. */
+internal class RejectedCount(val key: String, val reason: String, val sample: String?, var count: Int = 0) {
+  fun toJs(): Map<String, Any?> = mapOf("key" to key, "reason" to reason, "sample" to sample, "count" to count)
+}
+
+private const val MAX_KEYS = 200
+private const val MAX_REASONS = 20
 
 /** A progress report: [phase] is `reading` while files are processed and `done` at the end. */
 internal class HuaweiImportProgress(
@@ -150,6 +195,7 @@ internal class HuaweiExportImporter(
   private val minutes = HashMap<Long, ImportedMinute>()
   private val sleep = ArrayList<ImportedSleep>()
   private val stress = ArrayList<ImportedStress>()
+  private val weighIns = ArrayList<ImportedWeighIn>()
 
   private var fileIndex = 0
   private var fileCount = 0
@@ -202,13 +248,15 @@ internal class HuaweiExportImporter(
       if (distance > m.distance) m.distance = distance
     }
 
-    override fun unmapped(key: String) {
-      summary.unmappedSamples++
+    override fun weighIn(weighIn: ImportedWeighIn) {
+      summary.weighInsFound++
+      summary.seen(weighIn.tsMs / 1000)
+      weighIns.add(weighIn)
     }
 
-    override fun rejected() {
-      summary.rejectedSamples++
-    }
+    override fun unmapped(key: String) = summary.unmapped(key)
+
+    override fun rejected(key: String, reason: String, sample: String?) = summary.reject(key, reason, sample)
   }
 
   fun run(source: HuaweiExportSource): HuaweiImportSummary {
@@ -250,6 +298,7 @@ internal class HuaweiExportImporter(
     fileName = null
     doneBytes = totalBytes
     report("done", force = true)
+    logSummary()
     return summary
   }
 
@@ -259,13 +308,22 @@ internal class HuaweiExportImporter(
     override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { if (it > 0) doneBytes += it }
   }
 
+  /** One line per fact in logcat (`adb logcat -s HuaweiImport`): counts and keys, never a health value but the first offending one per reason. */
+  private fun logSummary() {
+    Log.i(TAG, "files read=${summary.filesRead} failed=${summary.filesFailed} ignored=${summary.filesIgnored} bad=${summary.badRecords} rejected=${summary.rejectedSamples} unmapped=${summary.unmappedSamples}")
+    for (r in summary.rejectedReasons.values.sortedByDescending { it.count }.take(MAX_REASONS)) Log.i(TAG, "rejected ${r.key} ${r.reason} x${r.count} e.g. ${r.sample}")
+    for ((reason, n) in summary.badRecordReasons) Log.i(TAG, "bad record $reason x$n")
+    for ((key, n) in summary.unmappedKeys.entries.sortedByDescending { it.value }.take(MAX_REASONS)) Log.i(TAG, "unmapped $key x$n")
+    Log.i(TAG, "written minutes=${summary.minutesWritten} sleep=${summary.sleepSegmentsAdded} stress=${summary.stressAdded} weighIns=${summary.weighInsAdded}/${summary.weighInsFound} workouts=${summary.workoutsAdded}/${summary.workoutsFound}")
+  }
+
   private fun readFile(kind: HuaweiExportKind, stream: InputStream) {
     val reader = InputStreamReader(stream, Charsets.UTF_8)
     HuaweiExportJson.forEachRecord(
       reader,
       onRecord = { text -> handleRecord(kind, text) },
       onUnterminated = { text -> recover(kind, text) },
-      onOversized = { summary.badRecords++ },
+      onOversized = { summary.badRecord("${kind.label}/oversized") },
     )
   }
 
@@ -288,12 +346,12 @@ internal class HuaweiExportImporter(
         readable = false
       }
       if (!readable) {
-        summary.badRecords++
+        summary.badRecord("${kind.label}/parser-error")
       } else if (kind == HuaweiExportKind.MOTION_PATH) {
-        if (workout == null) summary.badRecords++ else writeWorkout(workout)
+        if (workout == null) summary.badRecord("${kind.label}/no-start-or-duration") else writeWorkout(workout)
       }
     }
-    if (minutes.size >= FLUSH_MINUTES || sleep.size >= FLUSH_ROWS || stress.size >= FLUSH_ROWS) flush()
+    if (minutes.size >= FLUSH_MINUTES || sleep.size >= FLUSH_ROWS || stress.size >= FLUSH_ROWS || weighIns.size >= FLUSH_ROWS) flush()
     report("reading", force = false)
   }
 
@@ -304,7 +362,7 @@ internal class HuaweiExportImporter(
    */
   private fun recover(kind: HuaweiExportKind, text: String) {
     if (kind != HuaweiExportKind.MOTION_PATH) {
-      summary.badRecords++
+      summary.badRecord("${kind.label}/invalid-json")
       return
     }
     val starts = ArrayList<Int>()
@@ -320,7 +378,7 @@ internal class HuaweiExportImporter(
       } catch (e: RuntimeException) {
         null
       }
-      if (workout == null) summary.badRecords++ else writeWorkout(workout)
+      if (workout == null) summary.badRecord("${kind.label}/unrecoverable") else writeWorkout(workout)
     }
   }
 
@@ -348,6 +406,10 @@ internal class HuaweiExportImporter(
       summary.stressAdded += store.writeStress(stress)
       stress.clear()
     }
+    if (weighIns.isNotEmpty()) {
+      summary.weighInsAdded += store.writeWeighIns(weighIns)
+      weighIns.clear()
+    }
   }
 
   private fun report(phase: String, force: Boolean) {
@@ -361,5 +423,6 @@ internal class HuaweiExportImporter(
     const val FLUSH_MINUTES = 20_000
     const val FLUSH_ROWS = 5_000
     const val PROGRESS_INTERVAL_MS = 250L
+    private const val TAG = "HuaweiImport"
   }
 }

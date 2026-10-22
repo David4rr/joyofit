@@ -15,6 +15,12 @@ internal class ImportedSleep(val start: Long, val end: Long, val type: Int, val 
 /** One stress reading for `health_metrics`. */
 internal class ImportedStress(val ts: Long, val score: Int)
 
+/**
+ * One weigh-in from the export for `scale_reading`: [tsMs] epoch milliseconds, [weightKg] kilograms, [reportedJson] the
+ * `ReportedBody` object (`src/features/scale/types.ts`) of what the scale measured, null when it sent only a weight.
+ */
+internal class ImportedWeighIn(val tsMs: Long, val weightKg: Double, val impedanceOhm: Double?, val reportedJson: String?)
+
 /** A `workouts` row with its `workout_points`. Times are unix seconds, distance metres, calories kcal. */
 internal class ImportedWorkout(
   val start: Long,
@@ -40,11 +46,16 @@ internal interface HuaweiImportCollector {
   fun stress(point: ImportedStress)
   fun steps(minuteSec: Long, steps: Int, distance: Int)
 
+  fun weighIn(weighIn: ImportedWeighIn)
+
   /** A sample point whose key the importer does not use. */
   fun unmapped(key: String)
 
-  /** A sample point of a known key whose value is missing or implausible. */
-  fun rejected()
+  /**
+   * A sample point of a known [key] that was dropped. [reason] is a short code (`no-time`, `no-number`, `out-of-range`,
+   * `bad-span`) and [sample] the offending value, clipped, so the import summary can say what was unreadable.
+   */
+  fun rejected(key: String, reason: String, sample: String?)
 }
 
 /** Result of writing one workout. */
@@ -63,6 +74,9 @@ internal interface HuaweiImportStore {
 
   /** Adds stress readings; returns the rows added. */
   fun writeStress(points: List<ImportedStress>): Int
+
+  /** Adds weigh-ins to `scale_reading` unless one of the same moment is there; returns the rows added. */
+  fun writeWeighIns(weighIns: List<ImportedWeighIn>): Int
 
   /** Adds the workout unless the database already has one starting within two minutes of it. */
   fun writeWorkout(workout: ImportedWorkout): WorkoutWrite

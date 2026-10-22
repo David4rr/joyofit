@@ -16,10 +16,10 @@ package com.joyodigitama.huaweiwear
  *
  * Calories of imported minutes stay 0: the export's per-minute `calorie` scale is not known.
  */
-internal class SqliteHuaweiImportStore(private val store: SyncStore) : HuaweiImportStore {
+internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) : HuaweiImportStore {
   override fun writeMinutes(rows: Collection<ImportedMinute>): Int {
     if (rows.isEmpty()) return 0
-    val db = store.db()
+    val db = openDb()
     var changed = 0
     db.beginTransaction()
     try {
@@ -61,7 +61,7 @@ internal class SqliteHuaweiImportStore(private val store: SyncStore) : HuaweiImp
 
   override fun writeSleep(segments: List<ImportedSleep>): Int {
     if (segments.isEmpty()) return 0
-    val db = store.db()
+    val db = openDb()
     var added = 0
     db.beginTransaction()
     try {
@@ -94,7 +94,7 @@ internal class SqliteHuaweiImportStore(private val store: SyncStore) : HuaweiImp
   /** Stress goes where the watch's own stress / emotion readings go, so the existing card and chart show it. */
   override fun writeStress(points: List<ImportedStress>): Int {
     if (points.isEmpty()) return 0
-    val db = store.db()
+    val db = openDb()
     var added = 0
     db.beginTransaction()
     try {
@@ -121,7 +121,7 @@ internal class SqliteHuaweiImportStore(private val store: SyncStore) : HuaweiImp
   }
 
   override fun writeWorkout(workout: ImportedWorkout): WorkoutWrite {
-    val db = store.db()
+    val db = openDb()
     db.beginTransaction()
     try {
       if (workoutExists(db, workout.start)) {
@@ -181,6 +181,53 @@ internal class SqliteHuaweiImportStore(private val store: SyncStore) : HuaweiImp
     }
   }
 
+  /**
+   * Weigh-ins go where the Bluetooth scale's go (`scale_reading`, `src/features/scale/store.ts`, created by JS when the
+   * database opens; the same statement runs here so an import before the first JS start still works), under the
+   * scale id [WEIGH_IN_SCALE_ID] and with `rogo_state = 'skipped'`: a history is not pushed to JoyoRogo as a burst of
+   * check-ins. Skipped when a weigh-in already sits within a minute at about the same weight (the same weighing from the
+   * scale and from Huawei Health, or this export imported twice).
+   */
+  override fun writeWeighIns(weighIns: List<ImportedWeighIn>): Int {
+    if (weighIns.isEmpty()) return 0
+    val db = openDb()
+    var added = 0
+    db.beginTransaction()
+    try {
+      db.execSQL(
+        """CREATE TABLE IF NOT EXISTS scale_reading (
+             id INTEGER PRIMARY KEY AUTOINCREMENT, scale_id TEXT NOT NULL, taken_at INTEGER NOT NULL, weight_kg REAL NOT NULL,
+             impedance_ohm REAL, reported TEXT, estimate TEXT, rogo_state TEXT NOT NULL DEFAULT 'pending', rogo_error TEXT)""",
+      )
+      db.execSQL("CREATE INDEX IF NOT EXISTS scale_reading_taken_at ON scale_reading (taken_at)")
+      val statement = db.compileStatement(
+        """INSERT INTO scale_reading (scale_id, taken_at, weight_kg, impedance_ohm, reported, rogo_state)
+           SELECT ?, ?, ?, ?, ?, 'skipped'
+           WHERE NOT EXISTS (SELECT 1 FROM scale_reading WHERE taken_at BETWEEN ? AND ? AND ABS(weight_kg - ?) < 0.3)""",
+      )
+      try {
+        for (w in weighIns) {
+          statement.clearBindings()
+          statement.bindString(1, WEIGH_IN_SCALE_ID)
+          statement.bindLong(2, w.tsMs)
+          statement.bindDouble(3, w.weightKg)
+          w.impedanceOhm?.let { statement.bindDouble(4, it) } ?: statement.bindNull(4)
+          w.reportedJson?.let { statement.bindString(5, it) } ?: statement.bindNull(5)
+          statement.bindLong(6, w.tsMs - 60_000)
+          statement.bindLong(7, w.tsMs + 60_000)
+          statement.bindDouble(8, w.weightKg)
+          added += statement.executeUpdateDelete()
+        }
+      } finally {
+        statement.close()
+      }
+      db.setTransactionSuccessful()
+    } finally {
+      db.endTransaction()
+    }
+    return added
+  }
+
   private fun workoutExists(db: WearDatabase, start: Long): Boolean =
     db.rawQuery(
       "SELECT 1 FROM workouts WHERE start BETWEEN ? AND ? LIMIT 1",
@@ -190,6 +237,9 @@ internal class SqliteHuaweiImportStore(private val store: SyncStore) : HuaweiImp
   companion object {
     /** The `health_metrics.type` of the stress / emotion card (`src/features/health/metrics.ts`). */
     const val STRESS_TYPE = "emotion"
+
+    /** `scale_reading.scale_id` of weigh-ins read from the export; no `scale` row belongs to it. */
+    const val WEIGH_IN_SCALE_ID = "huawei-health-export"
 
     /** The same workout seen by the watch and by the export differs by a second or two at most. */
     const val WORKOUT_MATCH_SEC = 120L

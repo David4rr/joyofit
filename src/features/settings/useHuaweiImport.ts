@@ -3,9 +3,13 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { useCallback, useState } from 'react';
 
+import { holdScreenOn, releaseScreen } from '@/features/strength/keepAwake';
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
+import { isIos } from '@/components/IosUnavailable';
 import { HuaweiWear, type HuaweiImportProgressEvent, type HuaweiImportSummary } from '@/wear';
+
+const KEEP_AWAKE_TAG = 'huawei-import';
 
 export interface PickedExport {
   uri: string;
@@ -58,7 +62,10 @@ export function useHuaweiImport() {
     }
   }, []);
 
-  /** Preselects a ZIP another app opened with or shared to JoyoFit; the password is still asked for. */
+  /**
+   * Preselects a ZIP another app opened with or shared to JoyoFit; the password is still asked for. A `content://` URI ends in an
+   * opaque id (`1ec426fd-...`), so the name the sender gave the file comes from the provider (`huaweiExportDisplayName`).
+   */
   const select = useCallback((uri: string) => {
     let name = 'Huawei export.zip'; // i18n-ok: fallback file name
     let size: number | null = null;
@@ -73,6 +80,16 @@ export function useHuaweiImport() {
     setError(null);
     setSummary(null);
     setProgress(null);
+    if (!isIos) {
+      const apply = (shown: string | null) => {
+        if (shown) setFile((current) => (current?.uri === uri ? { ...current, name: shown } : current));
+      };
+      try {
+        void HuaweiWear.huaweiExportDisplayName(uri).then(apply, () => undefined);
+      } catch {
+        // an older binary has no such call: the name above stays
+      }
+    }
   }, []);
 
   const start = useCallback(async () => {
@@ -81,6 +98,8 @@ export function useHuaweiImport() {
     setError(null);
     setSummary(null);
     setProgress(null);
+    // A large export takes minutes; a screen that turns off lets the system stop the app mid-import.
+    void holdScreenOn(KEEP_AWAKE_TAG);
     try {
       const result = await HuaweiWear.importHuaweiExport(file.uri, password);
       setSummary(result);
@@ -88,6 +107,7 @@ export function useHuaweiImport() {
     } catch (e) {
       setError(importErrorMessage(e));
     } finally {
+      void releaseScreen(KEEP_AWAKE_TAG);
       setRunning(false);
     }
   }, [file, password, running]);

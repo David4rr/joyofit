@@ -30,6 +30,7 @@ class HuaweiExportImporterTest {
     val minutes = ArrayList<MinuteCopy>()
     val sleep = ArrayList<ImportedSleep>()
     val stress = ArrayList<ImportedStress>()
+    val weighIns = ArrayList<ImportedWeighIn>()
     val workouts = ArrayList<ImportedWorkout>()
     var writeCalls = 0
 
@@ -47,6 +48,11 @@ class HuaweiExportImporterTest {
     override fun writeStress(points: List<ImportedStress>): Int {
       stress.addAll(points)
       return points.size
+    }
+
+    override fun writeWeighIns(weighIns: List<ImportedWeighIn>): Int {
+      this.weighIns.addAll(weighIns)
+      return weighIns.size
     }
 
     override fun writeWorkout(workout: ImportedWorkout): WorkoutWrite {
@@ -115,7 +121,9 @@ class HuaweiExportImporterTest {
     assertEquals(0x07, store.sleep.single().type)
     assertEquals(30, store.stress.single().score)
     assertEquals(2, summary.heartRateReadings)
-    assertEquals(1, summary.unmappedSamples)
+    assertEquals(0, summary.unmappedSamples)
+    assertEquals(1, summary.weighInsAdded)
+    assertEquals(70.0, store.weighIns.single().weightKg, 0.001)
     assertEquals(2, summary.minutesWritten)
     assertEquals(1, summary.sleepSegmentsAdded)
     assertEquals(2, summary.filesRead)

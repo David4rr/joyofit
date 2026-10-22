@@ -135,6 +135,11 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    */
   importHuaweiExport(uri: string, password: string): Promise<HuaweiImportSummary>;
   /**
+   * Android only (not defined on iOS): the name the sender gave the file at `uri` (`HUAWEI_HEALTH_20261022112019.zip`), read from the
+   * provider behind a `content://` URI whose own last segment is an opaque id. Null when the provider does not say.
+   */
+  huaweiExportDisplayName(uri: string): Promise<string | null>;
+  /**
    * iOS only (not defined on Android): the one-time import of the history Huawei Health wrote into Apple Health. Asks for READ
    * permission for steps, heart rate, resting heart rate, blood oxygen, sleep, workouts and active energy when called (the system sheet
    * shows the first time only), then reads window by window, oldest first, skipping samples JoyoFit wrote itself. Rows carry

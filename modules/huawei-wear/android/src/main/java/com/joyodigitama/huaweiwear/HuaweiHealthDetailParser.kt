@@ -5,8 +5,9 @@ import org.json.JSONObject
 
 /**
  * The JSON files of the `Health detail data & description` folder: records `{type, startTime, endTime, timeZone, deviceCode, recordId,
- * samplePoints:[{key, startTime, endTime, unit, value}]}`, times in milliseconds. The numeric `type` changes with the
- * firmware, so a point is recognised by its `key`. `value` is a number as a string (`"82.0"`) or an embedded JSON object.
+ * samplePoints:[{key, startTime, endTime, unit, value}]}`, times in milliseconds (UTC; `timeZone` is only the zone the
+ * phone was in, so nothing here shifts a time). The numeric `type` changes with the firmware, so a point is recognised
+ * by its `key`. `value` is a number as a string (`"82.0"`) or an embedded JSON object.
  *
  * | key                                                    | goes to                                  |
  * |--------------------------------------------------------|------------------------------------------|
@@ -15,8 +16,9 @@ import org.json.JSONObject
  * | BLOOD_OXYGEN_SATURATION (`avgSaturation`)              | step_samples.spo2                        |
  * | PROFESSIONAL_SLEEP_SHALLOW/DEEP/DREAM/WAKE/NOON        | sleep_segments                           |
  * | STRESS_DATA (`score`)                                  | health_metrics type `emotion`            |
+ * | WEIGHT_BODYFAT_BROAD and other weight / body keys      | scale_reading (see [HuaweiWeightParser]) |
  *
- * Everything else (weight, exercise intensity, water ...) is counted as unmapped and left alone.
+ * Everything else (exercise intensity, water ...) is counted per key as unmapped and left alone.
  */
 internal object HuaweiHealthDetailParser {
   const val KEY_HEART_RATE = "DATA_POINT_DYNAMIC_HEARTRATE"
@@ -39,25 +41,28 @@ internal object HuaweiHealthDetailParser {
     val points = record.optJSONArray("samplePoints") ?: return
     val recordStart = HuaweiExportJson.epochMs(record.opt("startTime"))
     val recordEnd = HuaweiExportJson.epochMs(record.opt("endTime"))
+    val weights = HuaweiWeightParser.Collected()
     for (i in 0 until points.length()) {
       val point = points.optJSONObject(i) ?: continue
       val key = point.optString("key", "")
       if (key.isEmpty()) continue
       val startMs = HuaweiExportJson.epochMs(point.opt("startTime")) ?: recordStart
       val endMs = HuaweiExportJson.epochMs(point.opt("endTime")) ?: recordEnd ?: startMs
-      parsePoint(key, point.opt("value"), startMs, endMs, out)
+      parsePoint(key, point.opt("value"), startMs, endMs, out, weights)
     }
+    weights.emit(out)
   }
 
-  private fun parsePoint(key: String, value: Any?, startMs: Long?, endMs: Long?, out: HuaweiImportCollector) {
+  private fun parsePoint(key: String, value: Any?, startMs: Long?, endMs: Long?, out: HuaweiImportCollector, weights: HuaweiWeightParser.Collected) {
     val sleepKind = SLEEP_KINDS[key]
-    val known = sleepKind != null || key == KEY_HEART_RATE || key == KEY_SPO2 || key == KEY_STRESS || key.endsWith(KEY_REST_SUFFIX)
+    val weightKey = HuaweiWeightParser.isWeightKey(key)
+    val known = sleepKind != null || weightKey || key == KEY_HEART_RATE || key == KEY_SPO2 || key == KEY_STRESS || key.endsWith(KEY_REST_SUFFIX)
     if (!known) {
       out.unmapped(key)
       return
     }
     if (startMs == null) {
-      out.rejected()
+      out.rejected(key, "no-time", null)
       return
     }
     val startSec = startMs / 1000
@@ -65,25 +70,36 @@ internal object HuaweiHealthDetailParser {
       sleepKind != null -> {
         val endSec = (endMs ?: startMs) / 1000
         if (endSec <= startSec || endSec - startSec > MAX_SLEEP_SPAN_SEC) {
-          out.rejected()
+          out.rejected(key, "bad-span", "${endSec - startSec}s")
         } else {
           out.sleep(ImportedSleep(startSec, endSec, sleepKind, SleepSync.stageForRawKind(sleepKind)))
         }
       }
-      key == KEY_HEART_RATE -> bpm(value, 20..250)?.let { out.heartRate(startSec, it) } ?: out.rejected()
-      key.endsWith(KEY_REST_SUFFIX) -> bpm(value, 20..200)?.let { out.restingHeartRate(startSec, it) } ?: out.rejected()
-      key == KEY_SPO2 -> embeddedNumber(value, "avgSaturation", "saturation", "value")
-        ?.roundToInt()?.takeIf { it in 50..100 }?.let { out.spo2(startSec, it) } ?: out.rejected()
-      key == KEY_STRESS -> embeddedNumber(value, "score", "stress", "value")
-        ?.roundToInt()?.takeIf { it in 1..100 }?.let { out.stress(ImportedStress(startSec, it)) } ?: out.rejected()
+      weightKey -> if (!weights.add(key, value, startMs)) out.rejected(key, "no-weight", sampleOf(value))
+      key == KEY_HEART_RATE -> number(key, value, 20..250, out) { out.heartRate(startSec, it) }
+      key.endsWith(KEY_REST_SUFFIX) -> number(key, value, 20..200, out) { out.restingHeartRate(startSec, it) }
+      key == KEY_SPO2 -> number(key, value, 50..100, out, "avgSaturation", "averageSaturation", "saturation", "spo2", "value") { out.spo2(startSec, it) }
+      key == KEY_STRESS -> number(key, value, 1..100, out, "score", "stress", "value") { out.stress(ImportedStress(startSec, it)) }
     }
   }
 
-  private fun bpm(value: Any?, range: IntRange): Int? = HuaweiExportJson.number(value)?.roundToInt()?.takeIf { it in range }
+  /** Reads [value] (a plain number or the first of [names] in an embedded object) and hands it over or says why not. */
+  private inline fun number(key: String, value: Any?, range: IntRange, out: HuaweiImportCollector, vararg names: String, accept: (Int) -> Unit) {
+    val n = embeddedNumber(value, *names)
+    if (n == null) {
+      out.rejected(key, "no-number", sampleOf(value))
+      return
+    }
+    val rounded = n.roundToInt()
+    if (rounded in range) accept(rounded) else out.rejected(key, "out-of-range", rounded.toString())
+  }
+
+  internal fun sampleOf(value: Any?): String? = value?.toString()?.replace(Regex("\\s+"), "")?.take(40)?.ifEmpty { null }
 
   /** The plain number in [value], or the first of [names] found in the JSON object [value] carries. */
   private fun embeddedNumber(value: Any?, vararg names: String): Double? {
     HuaweiExportJson.number(value)?.let { return it }
+    if (names.isEmpty()) return null
     val obj = HuaweiExportJson.embeddedObject(value) ?: return null
     for (name in names) HuaweiExportJson.number(obj.opt(name))?.let { return it }
     return null
@@ -109,7 +125,7 @@ internal object HuaweiSportPerMinuteParser {
       val infos = entry.optJSONArray("sportBasicInfos") ?: continue
       val firstMinuteMs = HuaweiExportJson.epochMs(entry.opt("startTime"))
       if (firstMinuteMs == null) {
-        out.rejected()
+        out.rejected("sportDataUserData", "no-time", null)
         continue
       }
       var minuteMs: Long = firstMinuteMs
@@ -120,7 +136,7 @@ internal object HuaweiSportPerMinuteParser {
         if (steps in 0..MAX_STEPS_PER_MINUTE && distance in 0..MAX_METRES_PER_MINUTE) {
           if (steps > 0 || distance > 0) out.steps(minuteMs / 60_000 * 60, steps, distance)
         } else {
-          out.rejected()
+          out.rejected("sportBasicInfos", "out-of-range", "$steps steps/$distance m")
         }
         val minutes = HuaweiExportJson.number(info.opt("duration"))?.roundToInt()?.coerceIn(1, 60) ?: 1
         minuteMs += minutes * 60_000L

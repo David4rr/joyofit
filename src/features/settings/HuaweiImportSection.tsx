@@ -88,6 +88,7 @@ export function HuaweiImportSection() {
           editable={!running}
         />
         {error ? <Notice tone="danger">{error}</Notice> : null}
+        <Notice icon="information-circle">{t('huaweiImport.keepOpen')}</Notice>
         {running ? (
           <>
             <ProgressBar fraction={progress?.fraction ?? 0} />
@@ -188,6 +189,7 @@ function Summary({ summary }: { summary: HuaweiImportSummary }) {
         <Pair label={t('huaweiImport.restingHr')} value={formatCount(summary.restingHeartRateReadings)} />
         <Pair label={t('huaweiImport.spo2')} value={formatCount(summary.spo2Readings)} />
         <Pair label={t('huaweiImport.stressAdded')} value={formatCount(summary.stressAdded)} />
+        {summary.weighInsFound ? <Pair label={t('huaweiImport.weighIns')} value={formatCount(summary.weighInsAdded ?? 0)} /> : null}
         <Pair label={t('huaweiImport.minutes')} value={formatCount(summary.minutesWritten)} />
         {skippedWorkouts > 0 ? <Pair label={t('huaweiImport.alreadyHere')} value={formatCount(skippedWorkouts)} /> : null}
         {skippedSleep > 0 ? <Pair label={t('huaweiImport.sleepSkipped')} value={formatCount(skippedSleep)} /> : null}
@@ -200,8 +202,46 @@ function Summary({ summary }: { summary: HuaweiImportSummary }) {
           {t('huaweiImport.filesFailed', { count: summary.filesFailed })}
         </Notice>
       ) : null}
+      <Breakdown summary={summary} />
       <Details>{t('huaweiImport.summaryDetails')}</Details>
     </Section>
+  );
+}
+
+/** Why readings were skipped and which kinds the file has that JoyoFit does not store: what a user needs to report a gap. */
+function Breakdown({ summary }: { summary: HuaweiImportSummary }) {
+  const { t } = useTranslation('settings');
+  const rejected = summary.rejectedReasons ?? [];
+  const bad = summary.badRecordReasons ?? [];
+  const leftOut = summary.unmappedKeys ?? [];
+  if (rejected.length + bad.length + leftOut.length === 0) return null;
+  return (
+    <Details title={t('huaweiImport.unreadableTitle')}>
+      <View style={styles.steps}>
+        {rejected.map((r) => (
+          <AppText key={`${r.key}|${r.reason}`} variant="caption" muted>
+            {r.sample
+              ? t('huaweiImport.unreadableLine', { key: r.key, reason: t(`huaweiImport.reasons.${r.reason}`, { defaultValue: r.reason }), count: r.count, sample: r.sample })
+              : t('huaweiImport.unreadableLineNoSample', { key: r.key, reason: t(`huaweiImport.reasons.${r.reason}`, { defaultValue: r.reason }), count: r.count })}
+          </AppText>
+        ))}
+        {bad.map((b) => (
+          <AppText key={b.reason} variant="caption" muted>
+            {t('huaweiImport.badRecordLine', { reason: b.reason, count: b.count })}
+          </AppText>
+        ))}
+        {leftOut.length > 0 ? (
+          <AppText variant="label" muted>
+            {t('huaweiImport.leftOutTitle')}
+          </AppText>
+        ) : null}
+        {leftOut.map((k) => (
+          <AppText key={k.key} variant="caption" muted>
+            {t('huaweiImport.leftOutLine', { key: k.key, count: k.count })}
+          </AppText>
+        ))}
+      </View>
+    </Details>
   );
 }
 

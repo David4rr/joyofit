@@ -240,28 +240,61 @@ Shoes, bikes and other gear with a lifetime distance and time, a retirement dist
 A one-time import of the history Huawei Health holds in your Huawei account, so you do not start from an empty
 JoyoFit after switching. It reads Huawei's own **Privacy Centre export**, on the phone, and calls no Huawei server.
 
-1. At `privacy.consumer.huawei.com` (or Huawei Health → Me → your account → Privacy Center) choose **Request Your Data**,
-   tick **Health**, set a **ZIP password**, and wait for the email (up to 7 days; the link works 21 days).
+1. At `privacy.consumer.huawei.com` (South-East Asia accounts: `privacy-sg.consumer.huawei.com/privacycenter`; or Huawei Health →
+   Me → your account → Privacy Center) choose **Request Your Data** (the data copy), tick **Health**, set a **ZIP password**,
+   and wait for the email (up to 7 days; the link works 21 days). The file is `HUAWEI_HEALTH_<timestamp>.zip`.
 2. Before unbinding the watch from Huawei Health, sync it there once more (data only on the watch is lost on unbind).
-3. In JoyoFit pick the ZIP, type the password (kept in memory only), tap **Import**.
+3. In JoyoFit pick the ZIP (or open it from the email / Files app and choose JoyoFit), type the password (kept in memory
+   only), tap **Import**. **Keep JoyoFit open until it finishes** (minutes for a large export; the screen is held on during the
+   import and the screen says so). The ZIP is opened in place, never copied, and every file is streamed.
 
-What is read (`HuaweiExportImporter.kt` and the parsers beside it; the file is streamed, one bad record is skipped and
-counted, never fatal):
+The ZIP is AES-256 encrypted with that password (WinZip AES, all members); `HuaweiExportZip.kt` reads it with zip4j.
+Inside, as the Privacy Centre writes them (the folder names are matched case-insensitively, the typo
+`SportsHealth data & desciption` is Huawei's):
+
+| Folder | Content | JoyoFit |
+| --- | --- | --- |
+| `Health detail data & description/*.json` | records `{type, startTime, endTime, timeZone, samplePoints:[{key, startTime, endTime, value}]}`, times in epoch ms | below |
+| `Sport per minute merged data & description/*.json` | one record per day, per-minute `steps`, `distance`, `calorie` | `step_samples` |
+| `Motion path detail data & description/*.json` | one object per tracked workout with GPS / heart-rate / altitude / cadence lines | `workouts`, `workout_points` |
+| `Sample sequence data`, `SportsHealth data` (`.xls`), `User int run plan data`, `User route data`, `User run plan data`, `HUAWEI_HEALTH-Agreement Signing-Data`, every `Data Field Description` spreadsheet | not read (see "Not imported") | n/a |
+
+`Health detail data` keys (the numeric `type` changes with the firmware, so a point is recognised by its `key`):
 
 | Huawei export | JoyoFit |
 | --- | --- |
-| `Health detail data`: `DATA_POINT_DYNAMIC_HEARTRATE` | `step_samples.heart_rate` of that minute |
+| `DATA_POINT_DYNAMIC_HEARTRATE` | `step_samples.heart_rate` of that minute |
 | `DATA_POINT_REST_HEARTRATE`, `DATA_POINT_NEW_REST_HEARTRATE` | `step_samples.resting_heart_rate` |
 | `BLOOD_OXYGEN_SATURATION` (`avgSaturation`) | `step_samples.spo2` |
 | `PROFESSIONAL_SLEEP_SHALLOW`/`DEEP`/`DREAM`/`WAKE`/`NOON` | `sleep_segments` (raw kinds 0x06, 0x07, 0x5656, 0x5658, 0x5659) |
 | `STRESS_DATA` (`score`) | `health_metrics` type `emotion` |
-| `Sport per minute merged data`: `steps`, `distance` | `step_samples.steps` / `distance` (largest value per minute) |
-| `Motion path detail data`: one object per workout, `attribute` track (`lbs` GPS, `h-r` heart rate, `alti` altitude) | `workouts` (`complete = 1`) and `workout_points` |
+| `WEIGHT_BODYFAT_BROAD` and any key naming weight, body fat, body composition or BMI (`HuaweiWeightParser.kt`) | `scale_reading`: `scale_id = 'huawei-health-export'`, `weight_kg`, `impedance_ohm`, `reported` = the `ReportedBody` JSON (body fat %, water %, muscle kg / %, bone kg, BMI, visceral fat, BMR, protein %, lean kg, body age) |
+| `Sport per minute`: `steps`, `distance` | `step_samples.steps` / `distance` (largest value per minute) |
+| `Motion path detail data`: `attribute` track (`lbs` GPS, `h-r` heart rate, `alti` altitude, `s-r` cadence) | `workouts` (`complete = 1`) and `workout_points` |
 
-Not imported: per-minute calories (the scale differs by firmware, so imported minutes keep `calories = 0`), weight and
-body composition, exercise intensity, water, anything else. Workout calories are imported (kcal; a total that cannot be
+Weigh-in field names are matched by what they say (`bodyWeight`, `bodyFatRate`, `muscleMass`, ...), a value that cannot be
+what its name says is dropped, a fraction (0.21) is read as a percentage, a weight of 10 000-500 000 as grams, and a weigh-in
+without a plausible weight (10-500 kg) is not stored. They show in the scale history as "Not sent to JoyoRogo": a history is
+not pushed to JoyoRogo as a burst of check-ins. A weigh-in within a minute and 0.3 kg of one already in `scale_reading`
+(the Bluetooth scale delivered it too, or this file was imported before) is skipped.
+
+**Times.** Every Huawei timestamp is epoch milliseconds, so nothing is shifted: a record's `timeZone` (`+0700`) is only the
+zone the phone was in, and JoyoFit shows times in the phone's zone like for watch data.
+
+**When something shows as unreadable.** The summary's *Unreadable skipped* count has a *What was unreadable* breakdown: the
+key, why (no time, no number, value out of range, impossible time span, no usable weight), how often and the first
+offending value, plus which kinds of unreadable records there were and which sample keys the file has that JoyoFit does not
+store (*In the file but not stored by JoyoFit*). The same lines go to logcat under the tag `HuaweiImport`
+(`adb logcat -s HuaweiImport`). Only keys, reasons and counts are logged, plus the first offending value per reason.
+
+Not imported: per-minute calories (the scale differs by firmware, so imported minutes keep `calories = 0`), exercise intensity,
+water, run plans, route plans, the `.xls` summaries and sample sequences (their field layout is not verified against a real
+export yet; the *left out* list of an import names the keys). Workout calories are imported (kcal; a total that cannot be
 kcal is read as small calories and divided by 1000). Only sport ids 3 (cycling), 4 (running) and 5 (walking) are named;
 other workouts import as unnamed workouts with the Huawei id in `summary_json`.
+
+The import screen shows the file's own name (`OpenableColumns.DISPLAY_NAME` through `huaweiExportDisplayName`), not the
+opaque id of the `content://` URI a share from another app arrives with.
 
 How imported data is kept apart: migration `imported` adds `imported INTEGER NOT NULL DEFAULT 0` to `step_samples`,
 `sleep_segments` and `workouts`; the importer inserts with `imported = 1`.
@@ -274,8 +307,11 @@ How imported data is kept apart: migration `imported` adds `imported INTEGER NOT
   a minute, sleep segment or workout the watch later syncs travels like a watch row. `WorkoutStore.syncStart` ignores
   imported workouts when it decides what to ask the watch for.
 
-The format is undocumented and was written from what community converters report (`NOTICE` credits them); it has not
-been checked against a real export yet. The first real file may need field-name or scale adjustments.
+The format is undocumented and was written from what community converters report (`NOTICE` credits them). A first real
+export (Oct 2026, 181 files, Nov 2020 to Oct 2026) imported 103 workouts, 54 226 sleep stages, 125 317 heart-rate readings,
+966 resting-HR, 5 520 SpO2 and 948 stress readings, but also reported 5 521 unreadable readings: the cause is not yet known, which is
+why the summary now breaks them down (see above) and the next import of that file will name it. The weigh-in keys are matched by
+name and have not yet been confirmed against that file either.
 
 ## Workout analysis (Workouts → a workout)
 
