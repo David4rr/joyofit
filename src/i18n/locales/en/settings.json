@@ -932,7 +932,9 @@
       "max": "% max HR",
       "hrr": "HR reserve (HRR)",
       "maxBody": "Zones 1 to 5 start at 50, 60, 70, 80 and 90 percent of your maximum heart rate. This is Huawei Health's default.",
-      "hrrBody": "Warm-up starts at 50 percent of your heart rate reserve (max HR minus resting HR), then zones 2 to 6 start at 59, 74, 84, 88 and 95 percent, all added to your resting HR. The zone order and names match the watch and Huawei Health. A better fit when your resting HR is low."
+      "hrrBody": "Warm-up starts at 50 percent of your heart rate reserve (max HR minus resting HR), then zones 2 to 6 start at 59, 74, 84, 88 and 95 percent, all added to your resting HR. The zone order and names match the watch and Huawei Health. A better fit when your resting HR is low.",
+      "lthr": "LTHR",
+      "lthrBody": "Friel zones from your lactate threshold heart rate (LTHR): zone 1 starts at 67 percent of LTHR, zone 2 at 85, zone 3 at 90, zone 4 at 95 and zone 5 at 100 percent. Works best when your LTHR comes from a test, not an estimate."
     },
     "rates": {
       "title": "Max and resting HR",
@@ -962,7 +964,12 @@
         "aerobicAdvance": "Advanced aerobic",
         "lacticAcid": "Lactic acid",
         "anaerobicBase": "Basic anaerobic",
-        "anaerobicAdvance": "Advanced anaerobic"
+        "anaerobicAdvance": "Advanced anaerobic",
+        "lthrRecovery": "Recovery",
+        "lthrAerobic": "Aerobic",
+        "lthrTempo": "Tempo",
+        "lthrSubThreshold": "Sub-threshold",
+        "lthrSuperThreshold": "Super-threshold"
       },
       "range": "{{from}} to {{to}} bpm",
       "top": "From {{from}}, up to max HR {{to}} bpm",
@@ -1009,7 +1016,18 @@
     "save": "Save",
     "reset": "Reset",
     "less": "1 bpm less",
-    "more": "1 bpm more"
+    "more": "1 bpm more",
+    "lthr": {
+      "title": "LTHR",
+      "label": "Lactate threshold heart rate",
+      "estimate": "Huawei Health estimate (85 percent of the reserve)",
+      "set": "Set by you",
+      "fromTest": "From the JoyoFit test ({{bpm}})",
+      "fromWatch": "From the watch ({{bpm}})",
+      "estimateChip": "Estimate ({{bpm}})",
+      "runTest": "Measure it with the lactate threshold test",
+      "details": "These zones use Joe Friel's percentages of LTHR. The watch takes them as ordinary heart-rate zones (five bpm limits)."
+    }
   },
   "sources": {
     "title": "Sources & connections",

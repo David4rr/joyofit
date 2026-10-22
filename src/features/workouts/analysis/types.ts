@@ -79,7 +79,7 @@ export interface AnalysisLap {
  */
 export interface AnalysisHrZones {
   /** The calculation method, which names the zones. Absent in analyses made before the reserve method had its warm-up zone (read as 'max'). */
-  method?: 'max' | 'hrr';
+  method?: 'max' | 'hrr' | 'lthr';
   maxHr: number;
   /** Where the maximum comes from: the profile's age formula or an explicit setting. */
   source: "age" | "setting";

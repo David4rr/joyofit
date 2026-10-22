@@ -19,6 +19,7 @@ import { Sparkline } from '@/features/fitness/Sparkline';
 import { raceLabel } from '@/features/fitness/racePredictor';
 import { CHRONIC_DAYS, MIN_LOAD_DAYS } from '@/features/fitness/trainingLoad';
 import { useFitnessData } from '@/features/fitness/useFitnessData';
+import { LactateCard } from '@/features/lactate/ui/LactateCard';
 import { availabilityText } from '@/features/today/nightHrv';
 import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
 import { TrendChart } from '@/features/trends/TrendChart';
@@ -100,6 +101,10 @@ export function FitnessScreen() {
                 {t('fitness.screen.vo2.how')}
               </Details>
             </Section>
+          </FadeIn>
+
+          <FadeIn delay={20}>
+            <LactateCard workouts={data.workouts} />
           </FadeIn>
 
           <FadeIn delay={40}>

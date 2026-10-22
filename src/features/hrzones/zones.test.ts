@@ -8,7 +8,10 @@ import { dailyStrain, strainFromLoads, workoutStrain } from '@/features/today/st
 
 import {
   DEFAULT_HR_ZONE_SETTINGS,
+  estimateLthr,
   HR_ZONE_COUNT,
+  intensityZones,
+  LTHR_MIN,
   MAX_HR_MAX,
   MAX_HR_MIN,
   REST_HR_GAP,
@@ -215,6 +218,7 @@ describe('stored settings', () => {
       method: 'hrr',
       maxHr: 190,
       restingHr: 52,
+      lthr: null,
       limits: [95, 114, 133, 152, 171],
       warningEnabled: false,
       warningLimit: 180,
@@ -313,5 +317,54 @@ describe('zone names follow Huawei Health', () => {
     expect(hrZoneName('hrr', 6)).not.toBe('');
     expect(new Set([1, 2, 3, 4, 5, 6].map((z) => hrZoneName('hrr', z))).size).toBe(6);
     expect(hrZoneName('hrr', 2)).not.toBe(hrZoneName('max', 2));
+  });
+});
+
+describe('lthr method (Friel zones from the lactate threshold heart rate)', () => {
+  it('starts the zones at 67, 85, 90, 95 and 100 percent of the LTHR, to the whole bpm at or above', () => {
+    // 168 x .67 = 112.56, x .85 = 142.8, x .90 = 151.2, x .95 = 159.6, x 1.0 = 168
+    expect(methodLimits('lthr', 190, 55, 168)).toEqual([113, 143, 152, 160, 168]);
+    const zones = resolveHrZones(settings({ method: 'lthr', lthr: 168, maxHr: 190 }), 35);
+    expect(zones).toMatchObject({ method: 'lthr', lthr: 168, custom: false });
+    expect(zones.bounds).toEqual([113, 143, 152, 160, 168]);
+    expect(zoneCount('lthr')).toBe(5);
+  });
+
+  it('falls back to Huawei Health\'s estimate (85 percent of the reserve over rest) until a threshold is set', () => {
+    expect(estimateLthr(190, 55)).toBe(170);
+    const zones = resolveHrZones(settings({ method: 'lthr', maxHr: 190, restingHr: 55 }), 35);
+    expect(zones.lthr).toBe(170);
+    expect(resolveHrZones(settings({ method: 'max' }), 35).lthr).toBeNull();
+  });
+
+  it('keeps the threshold under the maximum and stays strictly rising for every threshold allowed', () => {
+    for (let lthr = LTHR_MIN; lthr <= 189; lthr++) {
+      const zones = resolveHrZones(settings({ method: 'lthr', lthr, maxHr: 190 }), 35);
+      expect(zones.lthr).toBe(lthr);
+      for (let i = 1; i < 5; i++) expect(zones.limits[i]).toBeGreaterThan(zones.limits[i - 1] as number);
+      expect(zones.limits[4]).toBeLessThan(190);
+    }
+    expect(resolveHrZones(settings({ method: 'lthr', lthr: 215, maxHr: 190 }), 35).lthr).toBe(189);
+  });
+
+  it('sorts a run into the zones by the threshold, and names them with Friel\'s words', () => {
+    const zones = resolveHrZones(settings({ method: 'lthr', lthr: 168, maxHr: 190 }), 35);
+    expect([100, 120, 145, 155, 165, 175].map((hr) => zoneIndex(hr, zones))).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(new Set([1, 2, 3, 4, 5].map((z) => hrZoneName('lthr', z))).size).toBe(5);
+    expect(intensityZones('lthr')).toEqual(intensityZones('max'));
+  });
+
+  it('goes to the watch as the maximum-heart-rate set with the zones as computed', () => {
+    const zones = resolveHrZones(settings({ method: 'lthr', lthr: 168, maxHr: 190 }), 35);
+    expect(watchConfig(zones)).toMatchObject({ method: 'max', maxHr: 190, zones: [113, 143, 152, 160, 168] });
+    expect(watchConfig(resolveHrZones(settings({ method: 'hrr', maxHr: 190, restingHr: 55 }), 35)).method).toBe('hrr');
+  });
+
+  it('is stored and read back, and an unknown method reads as the maximum', () => {
+    const parsed = parseHrZoneSettings({ method: 'lthr', lthr: 168 });
+    expect(parsed).toMatchObject({ method: 'lthr', lthr: 168 });
+    expect(parseHrZoneSettings({ method: 'lthr', lthr: 5 })?.lthr).toBeNull();
+    expect(parseHrZoneSettings({ method: 'x' })?.method).toBe('max');
+    expect(isDefaultSettings(settings({ lthr: 168 }))).toBe(false);
   });
 });

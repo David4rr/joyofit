@@ -29,7 +29,7 @@ resources `IDS_rate_zone_*`, `IDS_hrr_heart_rate_description`). Notes: `~/re/hua
 
 | | |
 | --- | --- |
-| Methods | `max` (default) and `hrr`. LTHR is not offered yet (see "Limits"). |
+| Methods | `max` (default), `hrr` and `lthr`. |
 | Zones | `max`: five zones (warm-up, fat burning, aerobic, anaerobic, extreme). `hrr`: **six** zones, Huawei's names: Pemanasan / Warm-up from 50 % of the reserve plus rest up to the first limit (fixed start, pulled down only if a hand-edited first limit falls under it), then Aerobik dasar, Aerobik lanjutan, Asam laktat, Anaerobik dasar, Anaerobik lanjutan. `HrZones.limits` stays Huawei's five limits (what the steppers edit and what the watch gets); `HrZones.bounds` is the lowest bpm of every zone (five or six) and is what every consumer counts with. |
 | Maximum heart rate | Default `220 - age` from the profile's birth year (35 years without one), as before. One tap on "Tanaka" fills `208 - 0.7 x age`. Editable from 100 to 219 (the watch protocol, like Gadgetbridge, takes values below 220). |
 | Resting heart rate | Default 60 (Huawei Health's), 30 to `min(110, max - 15)`; only the HRR method uses it. |
@@ -62,6 +62,18 @@ analysis again.
 Preference `hrzones` (`registerSyncedPref` in `src/cloud/syncInventory.ts`): the settings object `{method, maxHr, restingHr, limits, warningEnabled,
 warningLimit}`; all defaults is "absent" and is never uploaded. A value pulled from another phone is stored and handed to the watch.
 
+### LTHR method and the lactate threshold test
+
+`lthr`: Friel's running zones as shares of the lactate threshold heart rate: zones 1 to 5 start at 67 % (the start of Huawei Health's own LTHR set), 85, 90, 95 and 100 % of the LTHR; names Pemulihan, Aerobik, Tempo, Sub-ambang, Super-ambang (`src/features/hrzones/zones.ts`). The LTHR is the person's (typed, or taken from the test or the watch with a chip), or Huawei Health's estimate (rest + 85 % of the reserve) while none is set. The watch has no LTHR method over this protocol path, so the zones go as the maximum-HR set carrying the computed limits (`watchConfig`); JS only.
+
+Where the number comes from, never from a personal best (`src/features/lactate/`):
+
+- **Time trial** (`trial.ts`, `ui/LactateTestScreen.tsx`, route `/lactate-test`, entry on Kebugaran): 15 min easy, 30 min alone as hard as can be held evenly, 10 min easy. LTHR = time-weighted mean heart rate of the last 20 minutes of the 30 (the first 10 are left out), threshold pace = distance over the same 20 minutes (speed column, else GPS fixes). The guide (`guide.ts`, `guideStore.ts`) is wall-clock based and schedules three local notifications (effort start, 10 minutes in, effort end); it does not record, the watch or JoyoFit's recorder does, and its effort start is where the analysis looks first, otherwise the hardest 30 minutes of the run (`findEffortStart`), movable by minutes. Checks: blocking when the run ends before the 30 minutes or heart rate covers under 90 % of the measured 20; warnings when the heart rate drifts more than 5 % between the halves, the minute speeds vary more than 12 %, the average is under 78 % of the maximum (too easy) or above it (maximum too low). The result is kept in the kv store (`joyofit.lactateTest`, local to the phone, not synced) and can be applied to the zones in one tap.
+- **The watch's own value**: Huawei Health's workout totals carry the extension ids 300010035 `lthrHr` and 300010036 `lthrPace` (`DicDataTypeUtil.NonDictDataTransUtil`). The native part keeps them in the record's `additional` values (separate native commit, needs a store build); `watchLactate` takes the newest workout that has a plausible one. The unit of `lthrPace` is unverified: it is kept only when it is a plausible seconds-per-km figure. **No capture of a watch sending these exists in the notes**; whether a Watch Fit 4 Pro sends them is unknown until a log shows it.
+- Kebugaran shows the newer of the two (and the other one beside it).
+
+Not built: a stepped (progressive) test. The time trial needs no lab protocol and one run; a ramp test needs live control of pace and a lactate or ventilatory marker JoyoFit does not have.
+
 ## The watch
 
 Native module `huawei-wear`: `setHeartRateZones(config | null)` and `getHeartRateZonesStatus()` (`HuaweiWear.types.ts`). JS sends the zones **as
@@ -91,7 +103,7 @@ the capability line and a look at the workout screen says otherwise.
 
 ## Limits
 
-- One zone set for every sport (the watch's four postures all get it). Huawei Health's per-posture sets are not offered.
+- One zone set for every sport (the watch's four postures all get it). Huawei Health's per-posture sets are not offered, and neither is its LTHR set (67, 80, 89, 97, 102 %): the LTHR method uses Friel's percentages.
 - The warm-up zone of the reserve method is JoyoFit's reading of the tester's report: the watch payload carries only Huawei's five limits, so the warm-up is a phone-side band.
 - The suggestion cannot find a true maximum: it only sees what the workouts reached.
 - Cached cloud analyses (see above) and the Huawei Health app's own zones are not touched; the watch shows whichever was sent last.

@@ -8,7 +8,7 @@
  * Health rounds to the nearest bpm instead, up to one bpm apart). The last zone runs up to the maximum, below zone 1 is no zone.
  */
 
-export type HrZoneMethod = 'max' | 'hrr';
+export type HrZoneMethod = 'max' | 'hrr' | 'lthr';
 
 export const HR_ZONE_COUNT = 5;
 /** Huawei Health's range for the maximum heart rate (100 to 220); the watch protocol (Gadgetbridge `isValid`) takes values below 220. */
@@ -32,6 +32,14 @@ const WARMUP_RESERVE_PERCENT = 50;
 
 const MAX_PERCENT: readonly number[] = [50, 60, 70, 80, 90];
 const RESERVE_PERCENT: readonly number[] = [59, 74, 84, 88, 95];
+/**
+ * Friel's running zones as shares of the lactate threshold heart rate (LTHR): Z1 recovery up to 85 %, Z2 aerobic 85-89, Z3 tempo 90-94, Z4 sub-threshold
+ * 95-99, Z5 super-threshold from 100 (Friel, "The Triathlete's Training Bible"; Z5 splits into 5a-5c above 102 and 106, left as one). The first limit,
+ * 67 %, is where Huawei Health's LTHR set starts (`mLthrRecoveryInterval`), so a reading under it is in no zone like under the other methods' Z1.
+ */
+const LTHR_PERCENT: readonly number[] = [67, 85, 90, 95, 100];
+/** Where the LTHR may sit: Huawei Health's own estimate is 85 % of the reserve above rest, so well under the maximum. */
+export const LTHR_MIN = 80;
 
 /** What a person chose; every `null` follows the default (age for the maximum, 60 for rest, the method for the limits). */
 export interface HrZoneSettings {
@@ -40,6 +48,8 @@ export interface HrZoneSettings {
   restingHr: number | null;
   /** The lowest bpm of zones 1..5 edited by hand; null follows the method. */
   limits: number[] | null;
+  /** The lactate threshold heart rate the `lthr` method works from; null follows Huawei Health's estimate (`estimateLthr`). */
+  lthr: number | null;
   /** The watch's heart-rate limit alert during a workout. On by default: Gadgetbridge's defaults, which JoyoFit sent before this setting existed. */
   warningEnabled: boolean;
   /** Null follows the maximum heart rate. */
@@ -51,6 +61,7 @@ export const DEFAULT_HR_ZONE_SETTINGS: HrZoneSettings = {
   maxHr: null,
   restingHr: null,
   limits: null,
+  lthr: null,
   warningEnabled: true,
   warningLimit: null,
 };
@@ -66,6 +77,8 @@ export interface HrZones {
   limits: Readonly<ZoneLimits>;
   /** The lowest bpm of every zone, strictly rising: `limits` for the max-HR method (five zones), the warm-up start plus `limits` for the reserve method (six). A reading under `bounds[0]` is in no zone. */
   bounds: readonly number[];
+  /** The lactate threshold heart rate behind the `lthr` method's limits (the person's, or Huawei Health's estimate); null for the other methods. */
+  lthr: number | null;
   /** True when the limits were edited by hand. */
   custom: boolean;
   warningEnabled: boolean;
@@ -108,12 +121,17 @@ export function normalizeLimits(limits: readonly number[], maxHr: number): ZoneL
   return out as ZoneLimits;
 }
 
-/** The limits of `method`: `ceil(max x p / 100)`, or `ceil(reserve x p / 100) + rest`. */
-export function methodLimits(method: HrZoneMethod, maxHr: number, restingHr: number): ZoneLimits {
-  const raw =
-    method === 'max'
-      ? MAX_PERCENT.map((percent) => Math.ceil((maxHr * percent) / 100))
-      : RESERVE_PERCENT.map((percent) => Math.ceil(((maxHr - restingHr) * percent) / 100) + restingHr);
+/** Huawei Health's LTHR before any test (`resetLthrHeartRateZoneThreshold`): 85 % of the reserve above the resting rate. */
+export function estimateLthr(maxHr: number, restingHr: number): number {
+  return Math.round(restingHr + ((maxHr - restingHr) * 85) / 100);
+}
+
+/** The limits of `method`: `ceil(max x p / 100)`, `ceil(reserve x p / 100) + rest`, or `ceil(lthr x p / 100)`. */
+export function methodLimits(method: HrZoneMethod, maxHr: number, restingHr: number, lthr: number = estimateLthr(maxHr, restingHr)): ZoneLimits {
+  let raw: number[];
+  if (method === 'max') raw = MAX_PERCENT.map((percent) => Math.ceil((maxHr * percent) / 100));
+  else if (method === 'hrr') raw = RESERVE_PERCENT.map((percent) => Math.ceil(((maxHr - restingHr) * percent) / 100) + restingHr);
+  else raw = LTHR_PERCENT.map((percent) => Math.ceil((lthr * percent) / 100));
   return normalizeLimits(raw, maxHr);
 }
 
@@ -123,12 +141,12 @@ export function methodLimits(method: HrZoneMethod, maxHr: number, restingHr: num
  * limit under the warm-up's start pulls the start down with it.
  */
 export function zoneBounds(method: HrZoneMethod, limits: Readonly<ZoneLimits>, maxHr: number, restingHr: number): number[] {
-  if (method === 'max') return [...limits];
+  if (method !== 'hrr') return [...limits];
   const warmUp = Math.ceil(((maxHr - restingHr) * WARMUP_RESERVE_PERCENT) / 100) + restingHr;
   return [Math.max(Math.min(warmUp, limits[0] - 1), ZONE_MIN_BPM - 1), ...limits];
 }
 
-/** How many zones a method has: five for the maximum, six for the reserve (warm-up and Huawei's five). */
+/** How many zones a method has: five for the maximum and the LTHR, six for the reserve (warm-up and Huawei's five). */
 export function zoneCount(method: HrZoneMethod): number {
   return method === 'hrr' ? HR_ZONE_COUNT + 1 : HR_ZONE_COUNT;
 }
@@ -137,6 +155,7 @@ export function zoneCount(method: HrZoneMethod): number {
 export const ZONE_NAME_KEYS = {
   max: ['warmup', 'fatBurning', 'aerobic', 'anaerobic', 'extreme'],
   hrr: ['warmup', 'aerobicBase', 'aerobicAdvance', 'lacticAcid', 'anaerobicBase', 'anaerobicAdvance'],
+  lthr: ['lthrRecovery', 'lthrAerobic', 'lthrTempo', 'lthrSubThreshold', 'lthrSuperThreshold'],
 } as const satisfies Record<HrZoneMethod, readonly string[]>;
 
 /**
@@ -146,7 +165,7 @@ export const ZONE_NAME_KEYS = {
  * the aerobic advance up (zones 3 to 6) is vigorous. Indexes are zero-based.
  */
 export function intensityZones(method: HrZoneMethod): { moderate: readonly number[]; vigorous: readonly number[] } {
-  return method === 'hrr' ? { moderate: [0, 1], vigorous: [2, 3, 4, 5] } : { moderate: [1, 2], vigorous: [3, 4] };
+  return method === 'hrr' ? { moderate: [0, 1], vigorous: [2, 3, 4, 5] } : { moderate: [1, 2], vigorous: [3, 4] }; // the LTHR zones read like the maximum's: 85-94 % of the threshold moderate, from 95 % vigorous
 }
 
 function validLimits(value: unknown): value is number[] {
@@ -157,7 +176,8 @@ function validLimits(value: unknown): value is number[] {
 export function resolveHrZones(settings: HrZoneSettings, age: number): HrZones {
   const maxHr = settings.maxHr === null ? maxHrFromAge(age) : clamp(Math.round(settings.maxHr), MAX_HR_MIN, MAX_HR_MAX);
   const restingHr = clampRest(settings.restingHr ?? DEFAULT_REST_HR, maxHr);
-  const derived = methodLimits(settings.method, maxHr, restingHr);
+  const lthr = settings.method === 'lthr' ? clamp(Math.round(settings.lthr ?? estimateLthr(maxHr, restingHr)), LTHR_MIN, maxHr - 1) : null;
+  const derived = methodLimits(settings.method, maxHr, restingHr, lthr ?? undefined);
   const edited = validLimits(settings.limits) ? normalizeLimits(settings.limits, maxHr) : null;
   const custom = edited !== null && edited.some((value, i) => value !== derived[i]);
   const limits = custom && edited ? edited : derived;
@@ -168,6 +188,7 @@ export function resolveHrZones(settings: HrZoneSettings, age: number): HrZones {
     restingHr,
     limits,
     bounds: zoneBounds(settings.method, limits, maxHr, restingHr),
+    lthr,
     custom,
     warningEnabled: settings.warningEnabled,
     warningLimit: clamp(Math.round(settings.warningLimit ?? maxHr), WARNING_MIN, MAX_HR_MAX),
@@ -220,6 +241,7 @@ export function sameSettings(a: HrZoneSettings, b: HrZoneSettings): boolean {
     a.method === b.method &&
     a.maxHr === b.maxHr &&
     a.restingHr === b.restingHr &&
+    a.lthr === b.lthr &&
     a.warningEnabled === b.warningEnabled &&
     a.warningLimit === b.warningLimit &&
     limitsA.length === limitsB.length &&
@@ -233,9 +255,10 @@ export function parseHrZoneSettings(value: unknown): HrZoneSettings | null {
   const doc = value as Record<string, unknown>;
   const whole = (v: unknown, min: number, max: number): number | null => (isWholeNumber(v) && v >= min && v <= max ? v : null);
   return {
-    method: doc.method === 'hrr' ? 'hrr' : 'max',
+    method: doc.method === 'hrr' ? 'hrr' : doc.method === 'lthr' ? 'lthr' : 'max',
     maxHr: whole(doc.maxHr, MAX_HR_MIN, MAX_HR_MAX),
     restingHr: whole(doc.restingHr, REST_HR_MIN, REST_HR_MAX),
+    lthr: whole(doc.lthr, LTHR_MIN, MAX_HR_MAX),
     limits: validLimits(doc.limits) ? doc.limits : null,
     warningEnabled: typeof doc.warningEnabled === 'boolean' ? doc.warningEnabled : DEFAULT_HR_ZONE_SETTINGS.warningEnabled,
     warningLimit: whole(doc.warningLimit, WARNING_MIN, MAX_HR_MAX),
@@ -244,7 +267,7 @@ export function parseHrZoneSettings(value: unknown): HrZoneSettings | null {
 
 /** What the watch gets (`HeartRateZonesConfig` in the native module): the zones as computed here, nothing left for the watch to recompute. */
 export function watchConfig(zones: HrZones): {
-  method: HrZoneMethod;
+  method: 'max' | 'hrr';
   maxHr: number;
   restingHr: number;
   zones: number[];
@@ -252,7 +275,8 @@ export function watchConfig(zones: HrZones): {
   warningLimit: number;
 } {
   return {
-    method: zones.method,
+    // The watch takes the zones as the lowest bpm of five zones under a maximum-heart-rate or a reserve set; the LTHR zones travel as the maximum's set.
+    method: zones.method === 'hrr' ? 'hrr' : 'max',
     maxHr: zones.maxHr,
     restingHr: zones.restingHr,
     zones: [...zones.limits],

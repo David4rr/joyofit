@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
@@ -16,6 +16,10 @@ import { SwitchRow } from '@/components/SwitchRow';
 import { useToast } from '@/components/Toast';
 import { showsWatchUi } from '@/features/device/presence';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
+import { listWorkoutsSince } from '@/db/queries';
+import { useLactateTest } from '@/features/lactate/lactate';
+import { watchLactate, type LactateValue } from '@/features/lactate/values';
+import { parseSummary } from '@/features/workouts/summary';
 import { useAnalysisPalette } from '@/features/workouts/analysis/palette';
 import { hrZoneColor } from '@/features/workouts/analysis/ui';
 import { fmtInt } from '@/i18n';
@@ -32,8 +36,10 @@ import {
   REST_HR_GAP,
   REST_HR_MAX,
   REST_HR_MIN,
+  LTHR_MIN,
   WARNING_MIN,
   ZONE_NAME_KEYS,
+  estimateLthr,
   clampRest,
   maxHrFromAge,
   maxHrTanaka,
@@ -46,6 +52,29 @@ import {
   type HrZoneSuggestion,
 } from '../zones';
 import { BpmStepper } from './BpmStepper';
+
+const WATCH_LTHR_DAYS = 120;
+
+/** The lactate thresholds worth offering: the saved time trial and the newest one the watch sent with a workout. */
+function useLthrSources(): { test: LactateValue | null; watch: LactateValue | null } {
+  const db = useSQLiteContext();
+  const test = useLactateTest();
+  const [watch, setWatch] = useState<LactateValue | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const nowSec = Math.floor(Date.now() / 1000);
+    listWorkoutsSince(db, nowSec - WATCH_LTHR_DAYS * 86_400, nowSec + 60, -1).then(
+      (rows) => {
+        if (!cancelled) setWatch(watchLactate(rows.map(({ workout, summaryJson }) => ({ workout, summary: parseSummary(summaryJson) }))));
+      },
+      () => undefined,
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [db]);
+  return { test, watch };
+}
 
 type Suggestion = { status: 'idle' } | { status: 'loading' } | { status: 'done'; value: HrZoneSuggestion } | { status: 'failed' };
 
@@ -91,6 +120,7 @@ export function HrZonesSettings() {
   const hasProfile = useMemo(() => (HuaweiWear.getUserProfile()?.birthYear ?? 0) > 0, []);
 
   const zones = useMemo(() => resolveHrZones(draft, age), [draft, age]);
+  const measured = useLthrSources();
   const dirty = !sameSettings(draft, stored);
   const isDefault = sameSettings(draft, DEFAULT_HR_ZONE_SETTINGS);
   const formulaMax = maxHrFromAge(age);
@@ -101,7 +131,8 @@ export function HrZonesSettings() {
   // Editing the maximum, the resting rate or the method derives the limits again: hand-edited limits belong to the numbers they were set against.
   const setMethod = (method: HrZoneMethod) => edit({ method, limits: null });
   const setMaxHr = (maxHr: number | null) => edit({ maxHr, limits: null, restingHr: draft.restingHr === null ? null : clampRest(draft.restingHr, maxHr ?? formulaMax) });
-  const setRestingHr = (restingHr: number) => edit({ restingHr, limits: draft.method === 'hrr' ? null : draft.limits });
+  const setRestingHr = (restingHr: number) => edit({ restingHr, limits: draft.method === 'max' ? draft.limits : null });
+  const setLthr = (lthr: number | null) => edit({ lthr, limits: null });
   const setLimit = (index: number, value: number) => edit({ limits: moveLimit(zones.limits, index, value, zones.maxHr) });
 
   const outcomeText = (outcome: WatchZonesOutcome): string => {
@@ -162,10 +193,11 @@ export function HrZonesSettings() {
           options={[
             { value: 'max', label: t('hrZones.method.max') },
             { value: 'hrr', label: t('hrZones.method.hrr') },
+            { value: 'lthr', label: t('hrZones.method.lthr') },
           ]}
         />
         <AppText variant="caption" muted>
-          {t(draft.method === 'max' ? 'hrZones.method.maxBody' : 'hrZones.method.hrrBody')}
+          {t(draft.method === 'max' ? 'hrZones.method.maxBody' : draft.method === 'hrr' ? 'hrZones.method.hrrBody' : 'hrZones.method.lthrBody')}
         </AppText>
       </Section>
 
@@ -190,7 +222,7 @@ export function HrZonesSettings() {
             {t('hrZones.rates.noProfile', { age: fmtInt(age) })}
           </Notice>
         ) : null}
-        {draft.method === 'hrr' ? (
+        {draft.method === 'hrr' || (draft.method === 'lthr' && draft.lthr === null) ? (
           <>
             <Divider />
             <StepperRow title={t('hrZones.rates.rest')} caption={draft.restingHr === null ? t('hrZones.rates.restDefault') : t('hrZones.rates.restSet')}>
@@ -208,6 +240,29 @@ export function HrZonesSettings() {
         ) : null}
         <Details>{t('hrZones.rates.details', { max: fmtInt(MAX_HR_MAX), restMin: fmtInt(REST_HR_MIN), restMax: fmtInt(REST_HR_MAX), gap: fmtInt(REST_HR_GAP) })}</Details>
       </Section>
+
+      {draft.method === 'lthr' && zones.lthr !== null ? (
+        <Section title={t('hrZones.lthr.title')} icon="speedometer" tint="heart">
+          <StepperRow title={t('hrZones.lthr.label')} caption={draft.lthr === null ? t('hrZones.lthr.estimate') : t('hrZones.lthr.set')}>
+            <BpmStepper
+              label={t('hrZones.lthr.label')}
+              lessLabel={t('hrZones.less')}
+              moreLabel={t('hrZones.more')}
+              value={zones.lthr}
+              min={LTHR_MIN}
+              max={zones.maxHr - 1}
+              onChange={setLthr}
+            />
+          </StepperRow>
+          <View style={styles.chips}>
+            {measured.test ? <Chip label={t('hrZones.lthr.fromTest', { bpm: fmtInt(measured.test.lthr) })} selected={draft.lthr === measured.test.lthr} onPress={() => setLthr(measured.test!.lthr)} /> : null}
+            {measured.watch ? <Chip label={t('hrZones.lthr.fromWatch', { bpm: fmtInt(measured.watch.lthr) })} selected={draft.lthr === measured.watch.lthr} onPress={() => setLthr(measured.watch!.lthr)} /> : null}
+            <Chip label={t('hrZones.lthr.estimateChip', { bpm: fmtInt(estimateLthr(zones.maxHr, zones.restingHr)) })} selected={draft.lthr === null} onPress={() => setLthr(null)} />
+          </View>
+          <Button label={t('hrZones.lthr.runTest')} variant="secondary" icon="speedometer" onPress={() => router.push('/lactate-test')} />
+          <Details>{t('hrZones.lthr.details')}</Details>
+        </Section>
+      ) : null}
 
       <Section title={t('hrZones.zones.title')} icon="stats-chart">
         <AppText variant="caption" muted>

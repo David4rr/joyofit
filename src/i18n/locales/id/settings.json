@@ -916,7 +916,9 @@
       "max": "% HR maks",
       "hrr": "Cadangan HR (HRR)",
       "maxBody": "Zona 1 sampai 5 mulai di 50, 60, 70, 80, dan 90 persen dari HR maksimal. Ini bawaan Huawei Health.",
-      "hrrBody": "Pemanasan mulai di 50 persen cadangan HR (HR maks dikurangi HR istirahat), lalu zona 2 sampai 6 mulai di 59, 74, 84, 88, dan 95 persen, semuanya ditambah HR istirahat. Urutan dan nama zona sama seperti di jam dan Huawei Health. Lebih pas kalau HR istirahatmu rendah."
+      "hrrBody": "Pemanasan mulai di 50 persen cadangan HR (HR maks dikurangi HR istirahat), lalu zona 2 sampai 6 mulai di 59, 74, 84, 88, dan 95 persen, semuanya ditambah HR istirahat. Urutan dan nama zona sama seperti di jam dan Huawei Health. Lebih pas kalau HR istirahatmu rendah.",
+      "lthr": "LTHR",
+      "lthrBody": "Zona Friel dari detak jantung ambang laktatmu (LTHR): zona 1 mulai di 67 persen LTHR, zona 2 di 85, zona 3 di 90, zona 4 di 95, dan zona 5 di 100 persen. Paling pas kalau LTHR-mu hasil tes, bukan perkiraan."
     },
     "rates": {
       "title": "HR maks dan istirahat",
@@ -946,7 +948,12 @@
         "aerobicAdvance": "Aerobik lanjutan",
         "lacticAcid": "Asam laktat",
         "anaerobicBase": "Anaerobik dasar",
-        "anaerobicAdvance": "Anaerobik lanjutan"
+        "anaerobicAdvance": "Anaerobik lanjutan",
+        "lthrRecovery": "Pemulihan",
+        "lthrAerobic": "Aerobik",
+        "lthrTempo": "Tempo",
+        "lthrSubThreshold": "Sub-ambang",
+        "lthrSuperThreshold": "Super-ambang"
       },
       "range": "{{from}} sampai {{to}} bpm",
       "top": "Mulai {{from}}, sampai HR maks {{to}} bpm",
@@ -993,7 +1000,18 @@
     "save": "Simpan",
     "reset": "Atur ulang",
     "less": "Kurangi 1 bpm",
-    "more": "Tambah 1 bpm"
+    "more": "Tambah 1 bpm",
+    "lthr": {
+      "title": "LTHR",
+      "label": "Detak jantung ambang laktat",
+      "estimate": "Perkiraan Huawei Health (85 persen cadangan HR)",
+      "set": "Kamu yang atur",
+      "fromTest": "Dari tes JoyoFit ({{bpm}})",
+      "fromWatch": "Dari jam ({{bpm}})",
+      "estimateChip": "Perkiraan ({{bpm}})",
+      "runTest": "Ukur dengan tes ambang laktat",
+      "details": "Zona ini memakai persentase Joe Friel dari LTHR. Jam menerimanya sebagai zona detak jantung biasa (lima batas bpm)."
+    }
   },
   "sources": {
     "title": "Sumber & koneksi",
