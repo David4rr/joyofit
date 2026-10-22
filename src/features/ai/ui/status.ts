@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 
 import type { CoachAccess } from '@/features/coach/useCoachAccess';
 import type { ByokAccess } from '../access';
+import { hostOf } from '../providers';
 import type { AiSettings } from '../settings';
 
 type AiT = TFunction<'ai'>;
@@ -20,7 +21,7 @@ export function hubStatusLine(args: { settings: AiSettings; access: ByokAccess |
   const { settings, access, coachAccess } = args;
   const provider = settings.provider;
   if (settings.engine === 'byok') {
-    if (access?.ok) return t('status.own', { provider: t(`provider.${access.provider}`) });
+    if (access?.ok) return t('status.own', { provider: access.provider === 'custom' ? hostOf(access.baseUrl) : t(`provider.${access.provider}`), model: modelShort(access.model) });
     if (access && !access.ok && access.reason === 'minor') return t('status.minor');
     if (provider) return t('status.ownCheck', { provider: t(`provider.${provider}`) });
   }

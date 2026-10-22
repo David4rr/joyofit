@@ -1,19 +1,20 @@
-import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View, type ScrollView } from 'react-native';
+import { StyleSheet, View, type TextInput } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { ChipRow } from '@/components/ChipRow';
 import { Details } from '@/components/Details';
-import { Input } from '@/components/Input';
+import { HeaderIconButton } from '@/components/HeaderIconButton';
+import { PressableScale } from '@/components/PressableScale';
 import { Card, Screen } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
 import { useToast } from '@/components/Toast';
 import { chatFailure, coachChat, MAX_MESSAGE_CHARS } from '@/features/coach/chat/api';
-import { chatLines, clearChat, readChat, writeChat, type StoredTurn } from '@/features/coach/chat/history';
 import { buildSnapshot } from '@/features/coach/chat/snapshot';
 import { CoachSignIn } from '@/features/coach/ui/CoachGate';
 import { useCoach } from '@/features/coach/useCoach';
@@ -23,44 +24,66 @@ import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailabilit
 import { fmtInt, useLocale } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
 import { useWatch } from '@/state/WatchProvider';
-import { spacing, useColors, useTheme } from '@/theme';
+import { radius as radii, spacing, useColors } from '@/theme';
+import { chatLines, type ChatMessage } from '../conversations';
 import { askJoyoAi } from '../engine';
 import { hostOf } from '../providers';
 import { useByokAccess } from '../hooks';
-import type { SafetyText } from '../safety';
-import { aiUsage } from '../stores';
+import { finishReply, type SafetyText } from '../safety';
+import { aiChats, aiUsage } from '../stores';
 import { AiError } from '../types';
-import { AiBasis } from './AiBasis';
 import { AiErrorNotice } from './AiErrorNotice';
-import { workingText } from './basis';
+import {
+  assistantMessage,
+  createCoalescer,
+  displayTitle,
+  initialLive,
+  lastIndexOfRole,
+  parseSeed,
+  partialOnStop,
+  reduceLive,
+  seedText,
+  type LiveState,
+} from './chatState';
+import { Composer } from './Composer';
 import { EngineChip } from './EngineChip';
 import { GateCard } from './GateCard';
 import { viewAiError, type AiErrorView } from './errors';
-import { ProposedNotes } from './ProposedNotes';
+import { LiveMessage } from './LiveMessage';
+import { MessageView } from './MessageView';
 import { ownChipLabel } from './status';
+import { useChatScroll } from './useChatScroll';
 import { useRogoStatus } from './useRogoStatus';
 
-const SUGGESTIONS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6'] as const;
+/** How often the growing text is shown: a fast stream is read into a ref at full speed and committed at most this often. */
+const COMMIT_MS = 50;
 
-function Bubble({ turn }: { turn: StoredTurn }) {
-  const { colors, radius } = useTheme();
-  const mine = turn.role === 'user';
-  return (
-    <View style={[styles.bubble, { backgroundColor: mine ? colors.primary : colors.muted, borderRadius: radius.card }]}>
-      <AppText variant="body" color={mine ? colors.primaryForeground : undefined} selectable>
-        {turn.content}
-      </AppText>
-    </View>
-  );
+/** A callback with a stable identity that always calls the latest closure (so memoised messages are not re-rendered by every token). */
+function useStable<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
+  const ref = useRef(fn);
+  useLayoutEffect(() => {
+    ref.current = fn;
+  });
+  return useCallback((...args: A) => ref.current(...args), []);
 }
 
-/** Joyo AI: the chat. Answers come from the person's own key (on the phone) or from JoyoRogo's hosted coach (Pro), whichever Settings, Joyo AI says. */
+const loadCurrent = (): { id: string | null; messages: ChatMessage[] } => {
+  const id = aiChats.current();
+  const conversation = id ? aiChats.get(id) : null;
+  return conversation ? { id: conversation.id, messages: conversation.messages } : { id: null, messages: [] };
+};
+
+/**
+ * Joyo AI: the chat. Answers come from the person's own key (on the phone, streamed, with the tools it read shown as steps) or from
+ * JoyoRogo's hosted coach (Pro, the whole reply at once), whichever Settings, Joyo AI says. Both write the same conversations.
+ */
 export function JoyoAiChat() {
   const { t } = useTranslation('ai');
   const { t: tc } = useTranslation('coach');
   useLocale();
   const colors = useColors();
   const router = useRouter();
+  const params = useLocalSearchParams<{ seed?: string; ref?: string; label?: string }>();
   const db = useSQLiteContext();
   const cloud = useCloud();
   const { dataVersion } = useWatch();
@@ -69,43 +92,108 @@ export function JoyoAiChat() {
   const coachAccess = useCoachAccess();
   const { access, settings } = useByokAccess();
   const { toast, show } = useToast();
-  const scrollRef = useRef<ScrollView>(null);
+  const scroll = useChatScroll();
+  const follow = scroll.follow;
+  const inputRef = useRef<TextInput>(null);
 
-  const [turns, setTurns] = useState<StoredTurn[]>(readChat);
+  const seed = parseSeed(params);
+  const seedKey = seed ? `${seed.kind}|${seed.ref}` : null;
+
+  const [initial] = useState(() => (seedKey ? { id: null, messages: [] as ChatMessage[] } : loadCurrent()));
+  const [conversationId, setConversationId] = useState<string | null>(initial.id);
+  const [messages, setMessages] = useState<ChatMessage[]>(initial.messages);
+  const idRef = useRef<string | null>(initial.id);
+  const messagesRef = useRef<ChatMessage[]>(initial.messages);
+
   const [text, setText] = useState('');
+  const [editing, setEditing] = useState<ChatMessage | null>(null);
   const [sending, setSending] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const sendingRef = useRef(false);
+  const [live, setLive] = useState<LiveState | null>(null);
+  const liveRef = useRef<LiveState>(initialLive());
   const [aiError, setAiError] = useState<AiErrorView | null>(null);
   const [hostedError, setHostedError] = useState<string | null>(null);
   // The server refused the hosted chat because the account is not Pro (the phone's last known answer said it was).
   const [paywall, setPaywall] = useState(false);
-  const [flagged, setFlagged] = useState(false);
   const [toolsOff, setToolsOff] = useState(false);
   const [usage, setUsage] = useState(() => aiUsage.today(Math.floor(Date.now() / 1000)));
+  const [focusTick, setFocusTick] = useState(0);
 
   const engine = settings.engine;
   const [rogoUsage, setRogoUsage] = useRogoStatus(engine === 'rogo' && coachAccess === 'pro');
 
   const mounted = useRef(true);
   const controller = useRef<AbortController | null>(null);
-  // Why the request was aborted: "user" puts the question back in the box; a cleared chat or a closed screen ends quietly.
-  const stopped = useRef<'user' | 'clear' | null>(null);
-  // A cleared conversation must not receive the answer of a request that was still running.
+  // Why the request was aborted: "user" keeps what arrived; "switch" (another chat opened) and a closed screen end quietly.
+  const stopped = useRef<'user' | 'switch' | null>(null);
+  // An answer that finishes after another chat was opened must not touch the screen.
   const generation = useRef(0);
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
-      stopped.current = 'clear';
+      stopped.current = 'switch';
       controller.current?.abort();
     };
   }, []);
 
+  const setChat = useCallback((id: string | null, next: ChatMessage[]) => {
+    idRef.current = id;
+    messagesRef.current = next;
+    setConversationId(id);
+    setMessages(next);
+  }, []);
+  const setList = useCallback((next: ChatMessage[]) => {
+    messagesRef.current = next;
+    setMessages(next);
+  }, []);
+
+  /** Shows a saved conversation, or an empty new one for null. A running answer is dropped quietly. */
+  const open = useCallback(
+    (id: string | null) => {
+      generation.current += 1;
+      stopped.current = 'switch';
+      controller.current?.abort();
+      const conversation = id ? aiChats.get(id) : null;
+      setChat(conversation ? conversation.id : null, conversation?.messages ?? []);
+      sendingRef.current = false;
+      setSending(false);
+      setLive(null);
+      setText('');
+      setEditing(null);
+      setAiError(null);
+      setHostedError(null);
+      setPaywall(false);
+      setToolsOff(false);
+      follow();
+    },
+    [setChat, follow],
+  );
+
+  // Coming back from the history (or from Settings after the chats were deleted): show the chat the store says is open.
+  useFocusEffect(
+    useCallback(() => {
+      if (seedKey) return;
+      const current = aiChats.current();
+      if (current !== idRef.current) open(current);
+    }, [seedKey, open]),
+  );
+
+  // An entry point ("debrief this workout", "this night") opens a new chat with the question typed in, once per navigation, and leaves the sending to the person.
+  const appliedSeed = useRef<string | null>(null);
   useEffect(() => {
-    if (turns.length === 0 && !sending) return;
-    const id = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
-    return () => clearTimeout(id);
-  }, [turns.length, sending, aiError, hostedError]);
+    if (seedKey === null || seed === null) {
+      appliedSeed.current = null;
+      return;
+    }
+    if (appliedSeed.current === seedKey) return;
+    appliedSeed.current = seedKey;
+    aiChats.setCurrent(null);
+    open(null);
+    setText(seedText(seed, t));
+    setFocusTick((n) => n + 1);
+    router.setParams({ seed: undefined, ref: undefined, label: undefined });
+  }, [seedKey, seed, open, router, t]);
 
   const gate: 'checking' | 'rogoSignIn' | 'rogoUpsell' | 'blocked' | 'ready' =
     engine === 'rogo'
@@ -122,6 +210,13 @@ export function JoyoAiChat() {
           ? 'ready'
           : 'blocked';
   const own = engine === 'byok' && access?.ok ? access : null;
+  const composerReady = gate === 'ready' && coach !== null;
+
+  useEffect(() => {
+    if (focusTick === 0 || !composerReady) return;
+    const id = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [focusTick, composerReady]);
 
   const safetyText: SafetyText = {
     disclaimer: t('disclaimerLine'),
@@ -129,110 +224,179 @@ export function JoyoAiChat() {
     safe: { injury: t('safe.injury'), medical: t('safe.medical'), eatingDisorder: t('safe.eatingDisorder'), minorDiet: t('safe.minorDiet') },
   };
 
-  const send = async (content: string) => {
-    const message = content.trim();
-    if (!message || sending || !coach || gate !== 'ready') return;
-    const before = turns;
-    const next: StoredTurn[] = [...before, { role: 'user', content: message.slice(0, MAX_MESSAGE_CHARS) }];
+  /** Writes the answer to `history` (which ends with the question) into conversation `id`: streamed for the own key, whole for the hosted coach. */
+  const answerFor = async (id: string, history: ChatMessage[]) => {
+    if (!coach) return;
     const mine = generation.current;
-    setTurns(next);
-    setText('');
+    const current = (): boolean => mounted.current && generation.current === mine;
+    const ctl = new AbortController();
+    controller.current = ctl;
+    stopped.current = null;
+    sendingRef.current = true;
     setSending(true);
-    setStatus(null);
     setAiError(null);
     setHostedError(null);
     setPaywall(false);
-    setFlagged(false);
     setToolsOff(false);
-    stopped.current = null;
+    liveRef.current = initialLive();
+    setLive(liveRef.current);
+    const commit = createCoalescer(
+      () => {
+        if (current()) setLive(liveRef.current);
+      },
+      COMMIT_MS,
+      { now: Date.now, setTimer: (run, ms) => setTimeout(run, ms), clearTimer: (h) => clearTimeout(h as never) },
+    );
+    const finish = (messagesNow: ChatMessage[]) => {
+      setList(messagesNow);
+      aiChats.setMessages(id, messagesNow);
+    };
     try {
-      let reply: StoredTurn;
+      let reply: ChatMessage;
       if (own) {
-        const ctl = new AbortController();
-        controller.current = ctl;
-        const answer = await askJoyoAi({
+        const result = await askJoyoAi({
           db,
           coach,
           signedIn: cloud.signedIn,
-          history: chatLines(next),
+          history: chatLines(history),
           text: safetyText,
           signal: ctl.signal,
-          onStatus: (s) => {
-            if (mounted.current && generation.current === mine) setStatus(workingText(s, t));
+          onEvent: (event) => {
+            liveRef.current = reduceLive(liveRef.current, event);
+            if (event.type === 'text' || event.type === 'reasoning') commit.schedule();
+            else commit.flush();
           },
         });
-        if (!mounted.current || generation.current !== mine) return;
-        reply = {
-          role: 'assistant',
-          content: answer.reply,
-          ...(answer.fixed ? {} : { trace: answer.trace, provider: own.provider, model: own.model }),
-          ...(answer.proposedNotes.length > 0 ? { proposed: answer.proposedNotes } : {}),
-        };
-        setFlagged(answer.fixed);
-        setToolsOff(answer.toolsUnsupported);
+        if (!current()) return;
+        reply = assistantMessage({
+          id: aiChats.newMessageId(),
+          at: Date.now(),
+          content: result.reply,
+          engine: 'byok',
+          ...(result.fixed ? {} : { provider: own.provider, model: own.model }),
+          steps: result.fixed ? [] : result.steps,
+          reasoning: result.fixed ? '' : result.reasoning,
+          proposed: result.proposedNotes,
+          fixed: result.fixed,
+          tokens: { input: result.usage.inputTokens, output: result.usage.outputTokens },
+        });
+        setToolsOff(result.toolsUnsupported);
       } else {
-        const answer = await coachChat(chatLines(next), buildSnapshot(coach));
-        if (!mounted.current || generation.current !== mine) return;
-        reply = { role: 'assistant', content: answer.reply };
-        setRogoUsage({ used: answer.used, cap: answer.cap });
-        setFlagged(answer.flagged !== null);
+        // The hosted call cannot be cancelled on the wire: Stop stops waiting for it.
+        const aborted = new Promise<never>((_, reject) => ctl.signal.addEventListener('abort', () => reject(new AiError('aborted')), { once: true }));
+        const turns = chatLines(history).map((turn) => ({ ...turn, content: turn.content.slice(0, MAX_MESSAGE_CHARS) }));
+        const result = await Promise.race([coachChat(turns, buildSnapshot(coach)), aborted]);
+        if (!current()) return;
+        reply = assistantMessage({ id: aiChats.newMessageId(), at: Date.now(), content: result.reply, engine: 'rogo', fixed: result.flagged !== null });
+        setRogoUsage({ used: result.used, cap: result.cap });
       }
-      const done = [...next, reply];
-      setTurns(done);
-      writeChat(done);
+      commit.cancel();
+      finish([...history, reply]);
     } catch (e) {
-      if (!mounted.current || generation.current !== mine) return;
+      if (!current()) return;
       if (e instanceof AiError && e.kind === 'aborted') {
-        if (stopped.current !== 'user') return;
-      } else if (own) {
+        // Stop: what arrived stays as the answer, marked stopped; with nothing arrived only the question stays. No error either way.
+        const rawPartial = own && stopped.current === 'user' ? partialOnStop(liveRef.current) : null;
+        // The same cleaning and disclaimer rule as a finished answer, so a stopped answer about pain or medication still carries the line.
+        const cleaned = rawPartial ? finishReply(rawPartial.content, { text: safetyText, lastUserText: history.findLast((m) => m.role === 'user')?.content ?? '', mode: { conservative: false, minor: false } }) : null;
+        const partial = rawPartial && cleaned ? { ...rawPartial, content: cleaned } : null;
+        if (partial) {
+          commit.cancel();
+          finish([...history, assistantMessage({ id: aiChats.newMessageId(), at: Date.now(), engine: 'byok', provider: own?.provider, model: own?.model, ...partial })]);
+        }
+        return;
+      }
+      if (own) {
         setAiError(viewAiError(e, t, { provider: own.provider, ceiling: settings.dailyCeiling }));
       } else {
         const failure = chatFailure(e);
         setPaywall(failure.kind === 'paywall');
         setHostedError(failure.kind === 'cap' ? tc('chat.capReached') : failure.kind === 'other' ? tc('chat.error', { message: failure.message }) : null);
       }
-      // Keep the question in the box so it can be sent again.
-      setTurns(before);
-      setText(message);
     } finally {
-      controller.current = null;
-      if (mounted.current && generation.current === mine) {
+      commit.cancel();
+      if (controller.current === ctl) controller.current = null;
+      if (current()) {
+        sendingRef.current = false;
         setSending(false);
-        setStatus(null);
+        setLive(null);
         setUsage(aiUsage.today(Math.floor(Date.now() / 1000)));
       }
     }
   };
 
-  const cancel = () => {
+  /** Sends a question: a new one at the end, or (when editing) in place of an earlier one, dropping everything after it. */
+  const submit = (raw: string) => {
+    const content = raw.trim().slice(0, MAX_MESSAGE_CHARS);
+    if (!content || sendingRef.current || !composerReady) return;
+    let id = idRef.current;
+    let kept = messagesRef.current;
+    if (editing && id) kept = aiChats.truncateFrom(id, editing.id);
+    if (!id) id = aiChats.create(content).id;
+    const question: ChatMessage = { id: aiChats.newMessageId(), role: 'user', content, at: Date.now() };
+    const next = [...kept, question];
+    setChat(id, next);
+    aiChats.setMessages(id, next);
+    setText('');
+    setEditing(null);
+    scroll.follow();
+    void answerFor(id, next);
+  };
+
+  const stop = () => {
     stopped.current = 'user';
     controller.current?.abort();
   };
 
-  const clear = () => {
-    generation.current += 1;
-    stopped.current = 'clear';
-    controller.current?.abort();
-    clearChat();
-    setTurns([]);
-    setSending(false);
-    setStatus(null);
-    setAiError(null);
-    setHostedError(null);
-    setPaywall(false);
-    setFlagged(false);
-    setToolsOff(false);
+  const regenerate = useStable(() => {
+    const id = idRef.current;
+    const list = messagesRef.current;
+    const last = list.length - 1;
+    if (!id || sendingRef.current || last < 0 || list[last]!.role !== 'assistant') return;
+    const kept = aiChats.truncateFrom(id, list[last]!.id);
+    setList(kept);
+    void answerFor(id, kept);
+  });
+
+  const retry = useStable(() => {
+    const id = idRef.current;
+    const list = messagesRef.current;
+    if (!id || sendingRef.current || list.length === 0 || list[list.length - 1]!.role !== 'user') return;
+    void answerFor(id, list);
+  });
+
+  const edit = useStable((message: ChatMessage) => {
+    if (sendingRef.current) return;
+    setEditing(message);
+    setText(message.content);
+    setFocusTick((n) => n + 1);
+  });
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setText('');
   };
 
-  const resolveNote = (index: number, note: string, saved: boolean) => {
-    const next = turns.map((turn, i) => {
-      if (i !== index) return turn;
-      const rest = (turn.proposed ?? []).filter((n) => n !== note);
-      return { ...turn, proposed: rest.length > 0 ? rest : undefined };
+  const copy = useStable((message: ChatMessage) => {
+    void Clipboard.setStringAsync(message.content).then(() => show(t('chat.copied')));
+  });
+
+  const resolveNote = useStable((messageId: string, note: string, saved: boolean) => {
+    const id = idRef.current;
+    const next = messagesRef.current.map((message) => {
+      if (message.id !== messageId) return message;
+      const { proposed, ...rest } = message;
+      const left = (proposed ?? []).filter((n) => n !== note);
+      return left.length > 0 ? { ...rest, proposed: left } : rest;
     });
-    setTurns(next);
-    writeChat(next);
+    setList(next);
+    if (id) aiChats.setMessages(id, next);
     if (saved) show(t('notes.saved'));
+  });
+
+  const startNew = () => {
+    aiChats.setCurrent(null);
+    open(null);
   };
 
   const chipLabel = own
@@ -244,39 +408,60 @@ export function JoyoAiChat() {
       : t('chip.ownOff');
 
   const providerName = own ? t(`provider.${own.provider}`) : '';
-  const composer =
-    gate === 'ready' && coach ? (
-      <View style={styles.footer}>
-        {text.length === 0 && !sending ? (
-          <ChipRow
-            items={SUGGESTIONS.map((key) => ({ key, label: tc(`chat.suggest.${key}`), selected: false, onPress: () => void send(tc(`chat.suggest.${key}`)) }))}
-            fadeColor={colors.background}
-          />
-        ) : null}
-        <View style={styles.inputRow}>
-          <View style={styles.grow}>
-            <Input
-              value={text}
-              onChangeText={setText}
-              placeholder={tc('chat.placeholder')}
-              multiline
-              maxLength={MAX_MESSAGE_CHARS}
-              editable={!sending}
-              accessibilityLabel={tc('chat.placeholder')}
-              style={styles.field}
-            />
-          </View>
-          <Button label={tc('chat.send')} variant="primary" icon="send" iconOnly onPress={() => void send(text)} disabled={text.trim().length === 0} loading={sending} />
-        </View>
-        <AppText variant="caption" muted style={styles.standing}>
-          {t('standing')}
-        </AppText>
-      </View>
-    ) : undefined;
+  const lastUser = lastIndexOfRole(messages, 'user');
+  const lastIndex = messages.length - 1;
+  const lastMessage = messages[lastIndex];
+  const flagged = !sending && lastMessage?.role === 'assistant' && lastMessage.fixed === true;
+  // The title is stored with the conversation (the first question); a chat that has not been sent yet has none.
+  const title = useMemo(
+    () => displayTitle(conversationId ? (aiChats.list().find((m) => m.id === conversationId)?.title ?? '') : '', t('chat.newTitle')),
+    // The first send fills the title in, so it is read again when the messages change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [conversationId, messages.length, t],
+  );
+
+  const composer = composerReady ? (
+    <Composer
+      text={text}
+      onChangeText={setText}
+      onSend={() => submit(text)}
+      onStop={stop}
+      sending={sending}
+      editing={editing !== null}
+      onCancelEdit={cancelEdit}
+      suggest={messages.length === 0 && text.length === 0 && !sending}
+      onSuggest={submit}
+      maxLength={MAX_MESSAGE_CHARS}
+      inputRef={inputRef}
+    />
+  ) : undefined;
+
+  const jump = scroll.away ? (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={t('chat.jump')}
+      onPress={scroll.follow}
+      scaleTo={0.96}
+      style={[styles.jump, { backgroundColor: colors.card, borderColor: colors.hairline, borderRadius: radii.pill }]}>
+      <Ionicons name="arrow-down" size={16} color={colors.foreground} />
+      <AppText variant="label">{t('chat.jump')}</AppText>
+    </PressableScale>
+  ) : undefined;
 
   return (
     <View style={styles.root}>
-      <Screen scrollRef={scrollRef} footer={composer}>
+      <Stack.Screen
+        options={{
+          title,
+          headerRight: () => (
+            <View style={styles.headerButtons}>
+              <HeaderIconButton icon="time-outline" label={t('chat.history')} onPress={() => router.push('/coach/chats')} />
+              <HeaderIconButton icon="add" label={t('chat.new')} onPress={startNew} />
+            </View>
+          ),
+        }}
+      />
+      <Screen scrollRef={scroll.ref} scrollProps={scroll.scrollProps} footer={composer} overlay={composerReady ? jump : undefined}>
         <View style={styles.head}>
           <EngineChip label={chipLabel} />
           {own ? (
@@ -310,42 +495,42 @@ export function JoyoAiChat() {
               </Notice>
             ) : null}
 
-            {turns.length === 0 ? (
-              <Card>
+            {messages.length === 0 ? (
+              <View style={styles.empty}>
                 <AppText variant="heading">{tc('chat.emptyTitle')}</AppText>
                 <AppText variant="caption" muted>
                   {own ? t('chat.emptyOwn', { model: own.model, provider: providerName }) : tc('chat.emptyBody')}
                 </AppText>
-              </Card>
+                <Details>
+                  <AppText variant="caption" muted>
+                    {own ? t('chat.privacyOwn', { provider: providerName, host: hostOf(own.baseUrl) }) : tc('chat.privacy')}
+                  </AppText>
+                  <AppText variant="caption" muted>
+                    {t('chat.disclaimer')}
+                  </AppText>
+                </Details>
+              </View>
             ) : (
               <View style={styles.list}>
-                {turns.map((turn, index) => (
-                  <View key={index} style={[styles.item, turn.role === 'user' ? styles.itemMine : styles.itemCoach]}>
-                    <Bubble turn={turn} />
-                    {turn.role === 'assistant' && turn.trace ? (
-                      <AiBasis trace={turn.trace} provider={turn.provider ? t(`provider.${turn.provider}`) : null} model={turn.model ?? null} />
-                    ) : null}
-                    {turn.proposed ? (
-                      <ProposedNotes
-                        notes={turn.proposed}
-                        disabled={sending}
-                        onSaved={(note) => resolveNote(index, note, true)}
-                        onDismiss={(note) => resolveNote(index, note, false)}
-                      />
-                    ) : null}
-                  </View>
+                {messages.map((message, index) => (
+                  <MessageView
+                    key={message.id}
+                    message={message}
+                    canEdit={index === lastUser}
+                    canRegenerate={index === lastIndex && message.role === 'assistant'}
+                    canRetry={index === lastIndex && message.role === 'user' && !sending}
+                    busy={sending}
+                    onCopy={copy}
+                    onRegenerate={regenerate}
+                    onEdit={edit}
+                    onRetry={retry}
+                    onNote={resolveNote}
+                  />
                 ))}
+                {sending && live ? <LiveMessage live={live} hosted={own === null} /> : null}
               </View>
             )}
 
-            {sending ? (
-              <View style={styles.working}>
-                <AppText variant="caption" muted style={styles.grow}>
-                  {own ? (status ?? t('working.thinking')) : tc('chat.thinking')}
-                </AppText>
-                {own ? <Button label={t('chat.cancel')} variant="ghost" onPress={cancel} /> : null}
-              </View>
-            ) : null}
             {flagged ? <Notice icon="medkit">{tc('chat.flagged')}</Notice> : null}
             {toolsOff ? (
               <Notice icon="construct" action={{ label: t('errors.action.model'), onPress: () => router.push({ pathname: '/settings/ai', params: { model: '1' } }) }}>
@@ -355,15 +540,6 @@ export function JoyoAiChat() {
             {paywall ? <UpgradeCard moment="coach-chat" /> : null}
             {hostedError ? <Notice tone="danger">{hostedError}</Notice> : null}
             {aiError ? <AiErrorNotice view={aiError} provider={own?.provider ?? null} /> : null}
-            {turns.length > 0 ? <Button label={tc('chat.clear')} variant="ghost" icon="trash" onPress={clear} /> : null}
-            <Details>
-              <AppText variant="caption" muted>
-                {own ? t('chat.privacyOwn', { provider: providerName, host: hostOf(own.baseUrl) }) : tc('chat.privacy')}
-              </AppText>
-              <AppText variant="caption" muted>
-                {t('chat.disclaimer')}
-              </AppText>
-            </Details>
           </>
         ) : null}
       </Screen>
@@ -375,15 +551,8 @@ export function JoyoAiChat() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   head: { gap: spacing.xs },
-  list: { gap: spacing.md },
-  item: { gap: spacing.xs },
-  itemMine: { alignItems: 'flex-end' },
-  itemCoach: { alignItems: 'flex-start' },
-  bubble: { maxWidth: '85%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  working: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm, gap: spacing.sm },
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
-  grow: { flex: 1 },
-  field: { maxHeight: 120 },
-  standing: { textAlign: 'center' },
+  empty: { gap: spacing.sm },
+  list: { gap: spacing.lg },
+  headerButtons: { flexDirection: 'row', gap: spacing.sm },
+  jump: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, borderWidth: StyleSheet.hairlineWidth },
 });

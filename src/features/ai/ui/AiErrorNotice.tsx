@@ -25,7 +25,7 @@ export function useErrorTarget(provider: ProviderId | null): (target: ErrorTarge
   };
 }
 
-/** A failed provider call: the cause and the one next step as a danger notice, with the provider's own words collapsed under it. */
+/** A failed provider call: the cause and the one next step as a danger notice, with the kind, HTTP status and the provider's own words collapsed under it. */
 export function AiErrorNotice({ view, provider }: { view: AiErrorView; provider: ProviderId | null }) {
   const { t } = useTranslation('ai');
   const open = useErrorTarget(provider);
@@ -35,15 +35,27 @@ export function AiErrorNotice({ view, provider }: { view: AiErrorView; provider:
       <Notice tone="danger" action={action ? { label: action.label, onPress: () => open(action.target) } : undefined}>
         {view.message}
       </Notice>
-      {view.detail ? (
-        <Details title={t('errors.detail')}>
-          <AppText variant="caption" muted selectable>
-            {view.detail}
-          </AppText>
+      {view.kind !== 'unknown' && (view.detail || view.status !== null) ? (
+        <Details title={t('errors.techTitle')}>
+          <View style={styles.tech}>
+            <AppText variant="caption" muted selectable>
+              {t('errors.techKind', { kind: view.kind })}
+            </AppText>
+            {view.status !== null ? (
+              <AppText variant="caption" muted selectable>
+                {t('errors.techStatus', { status: view.status })}
+              </AppText>
+            ) : null}
+            {view.detail ? (
+              <AppText variant="caption" muted selectable>
+                {t(view.detailFrom === 'provider' ? 'errors.techProvider' : 'errors.techLine', { text: view.detail })}
+              </AppText>
+            ) : null}
+          </View>
         </Details>
       ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({ wrap: { gap: spacing.xs } });
+const styles = StyleSheet.create({ wrap: { gap: spacing.xs }, tech: { gap: 2 } });

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, type Ref } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -9,10 +9,12 @@ import { fontSize, HIT, spacing, useTheme } from '@/theme';
 interface InputProps extends TextInputProps {
   /** Leading glyph, e.g. a magnifier for search boxes. */
   icon?: IconName;
+  /** The text input itself, for `focus()`. */
+  inputRef?: Ref<TextInput>;
 }
 
 /** 48 dp borderless input on the muted fill; a primary ring marks focus. */
-export function Input({ icon, style, onFocus, onBlur, ...rest }: InputProps) {
+export function Input({ icon, inputRef, style, onFocus, onBlur, ...rest }: InputProps) {
   const { colors, fonts, radius } = useTheme();
   const [focused, setFocused] = useState(false);
   return (
@@ -23,6 +25,7 @@ export function Input({ icon, style, onFocus, onBlur, ...rest }: InputProps) {
       ]}>
       {icon ? <Ionicons name={icon} size={18} color={colors.mutedForeground} /> : null}
       <TextInput
+        ref={inputRef}
         placeholderTextColor={colors.mutedForeground}
         selectionColor={colors.primary}
         {...rest}

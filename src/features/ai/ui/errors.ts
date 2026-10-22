@@ -15,6 +15,10 @@ export interface AiErrorView {
   action: { label: string; target: ErrorTarget } | null;
   /** The provider's own words, for a collapsed "message from the provider" line. Never contains the key. */
   detail: string | null;
+  /** The HTTP status the provider answered with, when it did. */
+  status: number | null;
+  /** Whose words `detail` is: the provider's, or the engine's own technical line (finish reason, lengths). */
+  detailFrom: 'provider' | 'engine';
 }
 
 const BLOCK_REASONS = ['ceiling', 'noKey', 'noConsent', 'noProvider', 'minor', 'badUrl'] as const;
@@ -23,11 +27,8 @@ const isBlockReason = (v: string | null): v is BlockReason => v !== null && (BLO
 
 const DETAIL_CHARS = 300;
 
-/**
- * Words an error for the person: what happened (the cause), and the one next step. `provider` is the provider in use (for the link to its
- * key page); `ceiling` is the daily call limit set on this phone.
- */
-export function viewAiError(error: unknown, t: AiT, ctx: { provider: ProviderId | null; ceiling: number }): AiErrorView {
+/** The cause and next step of an error; `viewAiError` adds the technical fields. */
+function describe(error: unknown, t: AiT, ctx: { provider: ProviderId | null; ceiling: number }): Omit<AiErrorView, 'status' | 'detailFrom'> {
   if (!(error instanceof AiError)) return { kind: 'unknown', message: t('errors.unknown'), action: null, detail: null };
   const detail = error.kind === 'blocked' || !error.detail ? null : error.detail.slice(0, DETAIL_CHARS);
   const go = (label: string, target: ErrorTarget) => ({ label, target });
@@ -59,5 +60,19 @@ export function viewAiError(error: unknown, t: AiT, ctx: { provider: ProviderId 
     case 'empty':
     case 'aborted':
       return { kind: error.kind, message: t(`errors.${error.kind}`), action: null, detail };
+    case 'truncated':
+      return { kind: 'truncated', message: t('errors.truncated'), action: go(t('errors.action.model'), 'model'), detail };
   }
+}
+
+/**
+ * Words an error for the person: what happened (the cause), and the one next step, plus what a bug report needs: the kind, the HTTP
+ * status and the detail line, for the collapsed "technical details" under the notice. `provider` is the provider in use (for the link
+ * to its key page); `ceiling` is the daily call limit set on this phone.
+ */
+export function viewAiError(error: unknown, t: AiT, ctx: { provider: ProviderId | null; ceiling: number }): AiErrorView {
+  const view = describe(error, t, ctx);
+  if (!(error instanceof AiError) || error.kind === 'blocked') return { ...view, status: null, detailFrom: 'provider' };
+  // `empty` and `truncated` carry the engine's own line (finish reason, character counts); the others carry the provider's words.
+  return { ...view, status: error.status, detailFrom: error.kind === 'empty' || error.kind === 'truncated' ? 'engine' : 'provider' };
 }

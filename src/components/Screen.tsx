@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode, RefObject } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
@@ -88,12 +88,16 @@ interface ScreenProps {
   scrollRef?: RefObject<ScrollView | null>;
   /** A bar pinned under the scrolling content, lifted above the keyboard (a comment composer). */
   footer?: ReactNode;
+  /** Scroll reports for a screen that follows its content (a chat): position, size and layout of the scroll view. */
+  scrollProps?: Pick<ScrollViewProps, 'onScroll' | 'onContentSizeChange' | 'onLayout' | 'scrollEventThrottle'>;
+  /** Drawn over the bottom of the scrolling area, above the footer (a "jump to latest" button). Only with a `footer`. */
+  overlay?: ReactNode;
   /** Draws the theme's header decoration behind the title (Today). Only meaningful with a `title`. */
   decorated?: boolean;
   children: ReactNode;
 }
 
-export function Screen({ title, caption, right, refresh, scrollEnabled = true, scrollRef, footer, decorated = false, children }: ScreenProps) {
+export function Screen({ title, caption, right, refresh, scrollEnabled = true, scrollRef, scrollProps, footer, overlay, decorated = false, children }: ScreenProps) {
   const colors = useColors();
   // With a footer the footer sits above the bar, so the content above it does not clear the bar again.
   const padding = useContentPadding(title !== undefined, footer === undefined);
@@ -104,6 +108,7 @@ export function Screen({ title, caption, right, refresh, scrollEnabled = true, s
   const scroll = (
     <ScrollView
       ref={scrollRef}
+      {...scrollProps}
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, padding]}
       keyboardShouldPersistTaps="handled"
@@ -116,9 +121,20 @@ export function Screen({ title, caption, right, refresh, scrollEnabled = true, s
     </ScrollView>
   );
   if (!footer) return scroll;
+  // Under the keyboard the keyboard is the bottom edge; otherwise the footer clears the tab bar or, where there is none, the gesture bar / home indicator.
+  const bottom = keyboard.lift > 0 ? keyboard.lift : Math.max(tabBar, insets.bottom);
   return (
-    <View ref={keyboard.ref} collapsable={false} style={[styles.fill, { backgroundColor: colors.background, paddingBottom: Math.max(keyboard.lift, tabBar) }]}>
-      {scroll}
+    <View ref={keyboard.ref} collapsable={false} style={[styles.fill, { backgroundColor: colors.background, paddingBottom: bottom }]}>
+      {overlay ? (
+        <View style={styles.fill}>
+          {scroll}
+          <View pointerEvents="box-none" style={styles.overlay}>
+            {overlay}
+          </View>
+        </View>
+      ) : (
+        scroll
+      )}
       {footer}
     </View>
   );
@@ -174,6 +190,7 @@ export function Divider() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  overlay: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: spacing.md },
   content: { gap: spacing.lg },
   pageHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 40 },
   pageHeaderText: { flex: 1, gap: 2 },
