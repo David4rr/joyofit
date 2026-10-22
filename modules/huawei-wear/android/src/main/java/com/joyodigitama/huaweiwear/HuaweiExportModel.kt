@@ -4,6 +4,9 @@ package com.joyodigitama.huaweiwear
 internal class ImportedMinute(val ts: Long) {
   var steps = 0
   var distance = 0
+
+  /** Small calories (cal, 1/1000 kcal), the unit of `step_samples.calories`. */
+  var calories = 0
   var heartRate: Int? = null
   var spo2: Int? = null
   var restingHeartRate: Int? = null
@@ -12,8 +15,21 @@ internal class ImportedMinute(val ts: Long) {
 /** A `sleep_segments` row: [type] is the raw kind the watch uses (see [SleepSync]), [stage] its stage name. */
 internal class ImportedSleep(val start: Long, val end: Long, val type: Int, val stage: String?)
 
-/** One stress reading for `health_metrics`. */
-internal class ImportedStress(val ts: Long, val score: Int)
+/**
+ * One `health_metrics` row ([type] is the id the Health screen knows: `emotion`, `hrv`, `sleep_apnea`, `skin_temperature`,
+ * `arterial_stiffness`, `arrhythmia`). [ts] is unix seconds, [json] the `values_json` text.
+ */
+internal class ImportedMetric(val type: String, val ts: Long, val value: Double, val json: String)
+
+/** A night's score for `sleep_scores`; times are unix seconds. */
+internal class ImportedSleepScore(val start: Long, val end: Long, val score: Int, val efficiency: Int?)
+
+/**
+ * A day's totals from the `SportsHealth-Data.xls` summary: [noonSec] is 12:00 of that day in the zone the export names (unix
+ * seconds), [dayStartSec] / [dayEndSec] the day's own bounds, calories in small calories. What the day's minute rows do not add
+ * up to is written back (see [HuaweiImportStore.writeDayTotals]).
+ */
+internal class ImportedDayTotal(val dayStartSec: Long, val dayEndSec: Long, val noonSec: Long, val steps: Int, val distance: Int, val calories: Int)
 
 /**
  * One weigh-in from the export for `scale_reading`: [tsMs] epoch milliseconds, [weightKg] kilograms, [reportedJson] the
@@ -43,8 +59,10 @@ internal interface HuaweiImportCollector {
   fun restingHeartRate(tsSec: Long, bpm: Int)
   fun spo2(tsSec: Long, percent: Int)
   fun sleep(segment: ImportedSleep)
-  fun stress(point: ImportedStress)
-  fun steps(minuteSec: Long, steps: Int, distance: Int)
+  fun metric(point: ImportedMetric)
+  fun sleepScore(score: ImportedSleepScore)
+  fun dayTotal(total: ImportedDayTotal)
+  fun steps(minuteSec: Long, steps: Int, distance: Int, calories: Int)
 
   fun weighIn(weighIn: ImportedWeighIn)
 
@@ -58,8 +76,8 @@ internal interface HuaweiImportCollector {
   fun rejected(key: String, reason: String, sample: String?)
 }
 
-/** Result of writing one workout. */
-internal class WorkoutWrite(val added: Boolean, val points: Int)
+/** Result of writing one workout; [updated] when an earlier import stored it without its track and it was filled in now. */
+internal class WorkoutWrite(val added: Boolean, val points: Int, val updated: Boolean = false)
 
 /**
  * Where the importer writes. Every method is insert-or-ignore in spirit: watch data already in the database is never
@@ -72,8 +90,14 @@ internal interface HuaweiImportStore {
   /** Adds sleep segments that no watch-synced segment overlaps; returns the rows added. */
   fun writeSleep(segments: List<ImportedSleep>): Int
 
-  /** Adds stress readings; returns the rows added. */
-  fun writeStress(points: List<ImportedStress>): Int
+  /** Adds `health_metrics` rows that are not there yet; returns the rows added per type. */
+  fun writeMetrics(points: List<ImportedMetric>): Map<String, Int>
+
+  /** Adds night scores that no score starting at the same moment exists for; returns the rows added. */
+  fun writeSleepScores(scores: List<ImportedSleepScore>): Int
+
+  /** Adds, per day, the part of its total the `step_samples` rows of that day do not add up to, as one row from noon; returns the rows added. */
+  fun writeDayTotals(totals: List<ImportedDayTotal>): Int
 
   /** Adds weigh-ins to `scale_reading` unless one of the same moment is there; returns the rows added. */
   fun writeWeighIns(weighIns: List<ImportedWeighIn>): Int

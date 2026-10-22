@@ -190,6 +190,10 @@ function Summary({ summary }: { summary: HuaweiImportSummary }) {
         <Pair label={t('huaweiImport.spo2')} value={formatCount(summary.spo2Readings)} />
         <Pair label={t('huaweiImport.stressAdded')} value={formatCount(summary.stressAdded)} />
         {summary.weighInsFound ? <Pair label={t('huaweiImport.weighIns')} value={formatCount(summary.weighInsAdded ?? 0)} /> : null}
+        {summary.sleepScoresFound ? <Pair label={t('huaweiImport.sleepScores')} value={formatCount(summary.sleepScoresAdded ?? 0)} /> : null}
+        {summary.metricsFound ? <Pair label={t('huaweiImport.metrics')} value={formatCount(summary.metricsAdded ?? 0)} /> : null}
+        {summary.dayTotalsFound ? <Pair label={t('huaweiImport.dayTotals')} value={formatCount(summary.dayTotalsAdded ?? 0)} /> : null}
+        {summary.workoutsUpdated ? <Pair label={t('huaweiImport.workoutsUpdated')} value={formatCount(summary.workoutsUpdated)} /> : null}
         <Pair label={t('huaweiImport.minutes')} value={formatCount(summary.minutesWritten)} />
         {skippedWorkouts > 0 ? <Pair label={t('huaweiImport.alreadyHere')} value={formatCount(skippedWorkouts)} /> : null}
         {skippedSleep > 0 ? <Pair label={t('huaweiImport.sleepSkipped')} value={formatCount(skippedSleep)} /> : null}

@@ -14,7 +14,7 @@ package com.joyodigitama.huaweiwear
  *   row travels like any watch row.
  * - **Idempotent.** The second import of the same file changes nothing.
  *
- * Calories of imported minutes stay 0: the export's per-minute `calorie` scale is not known.
+ * Minute calories are small calories (cal), like the watch's own.
  */
 internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) : HuaweiImportStore {
   override fun writeMinutes(rows: Collection<ImportedMinute>): Int {
@@ -25,28 +25,31 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
     try {
       val statement = db.compileStatement(
         """INSERT INTO step_samples (timestamp, steps, calories, distance, heart_rate, spo2, resting_heart_rate, imported)
-           VALUES (?, ?, 0, ?, ?, ?, ?, 1)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 1)
            ON CONFLICT(timestamp) DO UPDATE SET
              heart_rate = COALESCE(heart_rate, excluded.heart_rate),
              spo2 = COALESCE(spo2, excluded.spo2),
              resting_heart_rate = COALESCE(resting_heart_rate, excluded.resting_heart_rate),
              steps = CASE WHEN imported = 1 AND steps = 0 THEN excluded.steps ELSE steps END,
-             distance = CASE WHEN imported = 1 AND distance = 0 THEN excluded.distance ELSE distance END
+             distance = CASE WHEN imported = 1 AND distance = 0 THEN excluded.distance ELSE distance END,
+             calories = CASE WHEN imported = 1 AND calories = 0 THEN excluded.calories ELSE calories END
            WHERE (heart_rate IS NULL AND excluded.heart_rate IS NOT NULL)
               OR (spo2 IS NULL AND excluded.spo2 IS NOT NULL)
               OR (resting_heart_rate IS NULL AND excluded.resting_heart_rate IS NOT NULL)
               OR (imported = 1 AND steps = 0 AND excluded.steps > 0)
-              OR (imported = 1 AND distance = 0 AND excluded.distance > 0)""",
+              OR (imported = 1 AND distance = 0 AND excluded.distance > 0)
+              OR (imported = 1 AND calories = 0 AND excluded.calories > 0)""",
       )
       try {
         for (m in rows) {
           statement.clearBindings()
           statement.bindLong(1, m.ts)
           statement.bindLong(2, m.steps.toLong())
-          statement.bindLong(3, m.distance.toLong())
-          m.heartRate?.let { statement.bindLong(4, it.toLong()) } ?: statement.bindNull(4)
-          m.spo2?.let { statement.bindLong(5, it.toLong()) } ?: statement.bindNull(5)
-          m.restingHeartRate?.let { statement.bindLong(6, it.toLong()) } ?: statement.bindNull(6)
+          statement.bindLong(3, m.calories.toLong())
+          statement.bindLong(4, m.distance.toLong())
+          m.heartRate?.let { statement.bindLong(5, it.toLong()) } ?: statement.bindNull(5)
+          m.spo2?.let { statement.bindLong(6, it.toLong()) } ?: statement.bindNull(6)
+          m.restingHeartRate?.let { statement.bindLong(7, it.toLong()) } ?: statement.bindNull(7)
           changed += statement.executeUpdateDelete()
         }
       } finally {
@@ -68,7 +71,7 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
       val statement = db.compileStatement(
         """INSERT OR IGNORE INTO sleep_segments (start, end, type, stage, imported)
            SELECT ?, ?, ?, ?, 1
-           WHERE NOT EXISTS (SELECT 1 FROM sleep_segments WHERE imported = 0 AND start < ? AND end > ?)""",
+           WHERE NOT EXISTS (SELECT 1 FROM sleep_segments WHERE start > ? AND start < ? AND end > ? AND imported = 0)""",
       )
       try {
         for (s in segments) {
@@ -77,8 +80,10 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
           statement.bindLong(2, s.end)
           statement.bindLong(3, s.type.toLong())
           s.stage?.let { statement.bindString(4, it) } ?: statement.bindNull(4)
-          statement.bindLong(5, s.end)
-          statement.bindLong(6, s.start)
+          // The primary key leads with `start`, so a window of the longest stage keeps this lookup off a scan of the table.
+          statement.bindLong(5, s.start - MAX_SEGMENT_SEC)
+          statement.bindLong(6, s.end)
+          statement.bindLong(7, s.start)
           added += statement.executeUpdateDelete()
         }
       } finally {
@@ -91,27 +96,109 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
     return added
   }
 
-  /** Stress goes where the watch's own stress / emotion readings go, so the existing card and chart show it. */
-  override fun writeStress(points: List<ImportedStress>): Int {
-    if (points.isEmpty()) return 0
+  /**
+   * Metrics go where the watch's own go (`health_metrics`, the types of `src/features/health/metrics.ts`), so the Health
+   * screen shows them: stress / emotion, HRV, sleep apnea, skin temperature, arterial stiffness, arrhythmia. A row the watch
+   * already stored for the same type and second stays.
+   */
+  override fun writeMetrics(points: List<ImportedMetric>): Map<String, Int> {
+    if (points.isEmpty()) return emptyMap()
     val db = openDb()
-    var added = 0
+    val added = HashMap<String, Int>()
     db.beginTransaction()
     try {
       val statement = db.compileStatement(
-        "INSERT OR IGNORE INTO health_metrics (type, ts, last_ts, value, values_json) VALUES ('$STRESS_TYPE', ?, ?, ?, ?)",
+        "INSERT OR IGNORE INTO health_metrics (type, ts, last_ts, value, values_json) VALUES (?, ?, ?, ?, ?)",
       )
       try {
         for (p in points) {
           statement.clearBindings()
-          statement.bindLong(1, p.ts)
+          statement.bindString(1, p.type)
           statement.bindLong(2, p.ts)
-          statement.bindDouble(3, p.score.toDouble())
-          statement.bindString(4, """{"score":${p.score},"source":"huawei-export"}""")
+          statement.bindLong(3, p.ts)
+          statement.bindDouble(4, p.value)
+          statement.bindString(5, p.json)
+          val n = statement.executeUpdateDelete()
+          if (n > 0) added.merge(p.type, n, Int::plus)
+        }
+      } finally {
+        statement.close()
+      }
+      db.setTransactionSuccessful()
+    } finally {
+      db.endTransaction()
+    }
+    return added
+  }
+
+  /** A night's score where the watch has none starting at the same second; the watch's own row is never replaced. */
+  override fun writeSleepScores(scores: List<ImportedSleepScore>): Int {
+    if (scores.isEmpty()) return 0
+    val db = openDb()
+    var added = 0
+    db.beginTransaction()
+    try {
+      val statement = db.compileStatement("INSERT OR IGNORE INTO sleep_scores (start, end, score, efficiency) VALUES (?, ?, ?, ?)")
+      try {
+        for (s in scores) {
+          statement.clearBindings()
+          statement.bindLong(1, s.start)
+          statement.bindLong(2, s.end)
+          statement.bindLong(3, s.score.toLong())
+          s.efficiency?.let { statement.bindLong(4, it.toLong()) } ?: statement.bindNull(4)
           added += statement.executeUpdateDelete()
         }
       } finally {
         statement.close()
+      }
+      db.setTransactionSuccessful()
+    } finally {
+      db.endTransaction()
+    }
+    return added
+  }
+
+  /**
+   * The day's totals are authoritative where the per-minute rows fall short of them (a real export: 319 days with no per-minute
+   * file at all, and days where the minutes add up to less). The shortfall, steps / distance / calories the minutes of that
+   * day do not account for, goes into one row at the first free minute from noon, marked `imported = 1`. Day sums, the steps
+   * card and the calories total are then the day's own; an hour-by-hour chart shows the shortfall at 12:00, which is all the
+   * summary knows. A day whose rows already add up to its total is left alone, which also makes a second run add nothing.
+   */
+  override fun writeDayTotals(totals: List<ImportedDayTotal>): Int {
+    if (totals.isEmpty()) return 0
+    val db = openDb()
+    var added = 0
+    db.beginTransaction()
+    try {
+      val insert = db.compileStatement("INSERT OR IGNORE INTO step_samples (timestamp, steps, calories, distance, imported) VALUES (?, ?, ?, ?, 1)")
+      try {
+        for (t in totals) {
+          val args = arrayOf(t.dayStartSec.toString(), t.dayEndSec.toString())
+          val have = db.rawQuery(
+            "SELECT COALESCE(SUM(steps), 0), COALESCE(SUM(calories), 0), COALESCE(SUM(distance), 0) FROM step_samples WHERE timestamp >= ? AND timestamp < ?",
+            args,
+          ).use { if (it.moveToFirst()) longArrayOf(it.getLong(0), it.getLong(1), it.getLong(2)) else longArrayOf(0, 0, 0) }
+          val steps = maxOf(0L, t.steps - have[0])
+          val calories = maxOf(0L, t.calories - have[1])
+          val distance = maxOf(0L, t.distance - have[2])
+          if (steps == 0L && calories == 0L && distance == 0L) continue
+          val taken = HashSet<Long>()
+          db.rawQuery("SELECT timestamp FROM step_samples WHERE timestamp >= ? AND timestamp < ?", arrayOf(t.noonSec.toString(), t.dayEndSec.toString())).use {
+            while (it.moveToNext()) taken.add(it.getLong(0))
+          }
+          var at = t.noonSec / 60 * 60
+          while (at in taken && at < t.dayEndSec) at += 60
+          if (at >= t.dayEndSec) continue
+          insert.clearBindings()
+          insert.bindLong(1, at)
+          insert.bindLong(2, steps)
+          insert.bindLong(3, calories)
+          insert.bindLong(4, distance)
+          added += insert.executeUpdateDelete()
+        }
+      } finally {
+        insert.close()
       }
       db.setTransactionSuccessful()
     } finally {
@@ -124,9 +211,39 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
     val db = openDb()
     db.beginTransaction()
     try {
-      if (workoutExists(db, workout.start)) {
+      val existing = findWorkout(db, workout.start)
+      if (existing != null) {
+        // An earlier import of an export read by an older version stored the workout without its track and totals: fill it in.
+        // A watch-synced workout, or one that already has points, is never touched.
+        val upgrade = existing.imported && existing.points == 0 &&
+          (workout.points.isNotEmpty() || existing.calories != workout.calories || existing.distance != workout.distance)
+        if (!upgrade) {
+          db.setTransactionSuccessful()
+          return WorkoutWrite(added = false, points = 0)
+        }
+        val update = db.compileStatement(
+          """UPDATE workouts SET end = ?, sport_type = ?, sport_name = ?, duration = ?, distance = ?, calories = ?, avg_hr = ?,
+               max_hr = ?, steps = ?, summary_json = ? WHERE id = ?""",
+        )
+        try {
+          update.bindLong(1, workout.end)
+          update.bindLong(2, workout.sportType.toLong())
+          update.bindString(3, workout.sportName)
+          update.bindLong(4, workout.duration.toLong())
+          update.bindLong(5, workout.distance.toLong())
+          update.bindLong(6, workout.calories.toLong())
+          workout.avgHr?.let { update.bindLong(7, it.toLong()) } ?: update.bindNull(7)
+          workout.maxHr?.let { update.bindLong(8, it.toLong()) } ?: update.bindNull(8)
+          update.bindLong(9, workout.steps.toLong())
+          update.bindString(10, workout.summaryJson)
+          update.bindLong(11, existing.id)
+          update.executeUpdateDelete()
+        } finally {
+          update.close()
+        }
+        insertPoints(db, existing.id, workout.points)
         db.setTransactionSuccessful()
-        return WorkoutWrite(added = false, points = 0)
+        return WorkoutWrite(added = false, points = workout.points.size, updated = true)
       }
       val insert = db.compileStatement(
         """INSERT OR IGNORE INTO workouts
@@ -153,27 +270,7 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
         db.setTransactionSuccessful()
         return WorkoutWrite(added = false, points = 0)
       }
-      val point = db.compileStatement(
-        "INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      )
-      try {
-        for (p in workout.points) {
-          point.clearBindings()
-          point.bindLong(1, id)
-          point.bindLong(2, p.ts)
-          p.lat?.let { point.bindDouble(3, it) } ?: point.bindNull(3)
-          p.lon?.let { point.bindDouble(4, it) } ?: point.bindNull(4)
-          p.alt?.let { point.bindDouble(5, it) } ?: point.bindNull(5)
-          p.hr?.let { point.bindLong(6, it.toLong()) } ?: point.bindNull(6)
-          p.speed?.let { point.bindDouble(7, it) } ?: point.bindNull(7)
-          p.cadence?.let { point.bindLong(8, it.toLong()) } ?: point.bindNull(8)
-          p.stride?.let { point.bindDouble(9, it) } ?: point.bindNull(9)
-          p.power?.let { point.bindLong(10, it.toLong()) } ?: point.bindNull(10)
-          point.executeInsert()
-        }
-      } finally {
-        point.close()
-      }
+      insertPoints(db, id, workout.points)
       db.setTransactionSuccessful()
       return WorkoutWrite(added = true, points = workout.points.size)
     } finally {
@@ -228,18 +325,45 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
     return added
   }
 
-  private fun workoutExists(db: WearDatabase, start: Long): Boolean =
+  private class ExistingWorkout(val id: Long, val imported: Boolean, val points: Int, val calories: Int, val distance: Int)
+
+  private fun findWorkout(db: WearDatabase, start: Long): ExistingWorkout? =
     db.rawQuery(
-      "SELECT 1 FROM workouts WHERE start BETWEEN ? AND ? LIMIT 1",
+      """SELECT id, imported, (SELECT COUNT(*) FROM workout_points WHERE workout_id = workouts.id), calories, distance
+         FROM workouts WHERE start BETWEEN ? AND ? LIMIT 1""",
       arrayOf((start - WORKOUT_MATCH_SEC).toString(), (start + WORKOUT_MATCH_SEC).toString()),
-    ).use { it.moveToFirst() }
+    ).use { if (it.moveToFirst()) ExistingWorkout(it.getLong(0), it.getInt(1) == 1, it.getInt(2), it.getInt(3), it.getInt(4)) else null }
+
+  private fun insertPoints(db: WearDatabase, workoutId: Long, points: List<WorkoutPoint>) {
+    val point = db.compileStatement(
+      "INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    try {
+      for (p in points) {
+        point.clearBindings()
+        point.bindLong(1, workoutId)
+        point.bindLong(2, p.ts)
+        p.lat?.let { point.bindDouble(3, it) } ?: point.bindNull(3)
+        p.lon?.let { point.bindDouble(4, it) } ?: point.bindNull(4)
+        p.alt?.let { point.bindDouble(5, it) } ?: point.bindNull(5)
+        p.hr?.let { point.bindLong(6, it.toLong()) } ?: point.bindNull(6)
+        p.speed?.let { point.bindDouble(7, it) } ?: point.bindNull(7)
+        p.cadence?.let { point.bindLong(8, it.toLong()) } ?: point.bindNull(8)
+        p.stride?.let { point.bindDouble(9, it) } ?: point.bindNull(9)
+        p.power?.let { point.bindLong(10, it.toLong()) } ?: point.bindNull(10)
+        point.executeInsert()
+      }
+    } finally {
+      point.close()
+    }
+  }
 
   companion object {
-    /** The `health_metrics.type` of the stress / emotion card (`src/features/health/metrics.ts`). */
-    const val STRESS_TYPE = "emotion"
-
     /** `scale_reading.scale_id` of weigh-ins read from the export; no `scale` row belongs to it. */
     const val WEIGH_IN_SCALE_ID = "huawei-health-export"
+
+    /** No stored sleep stage is longer than this ([HuaweiHealthDetailParser] refuses longer ones, the watch never writes them). */
+    const val MAX_SEGMENT_SEC = 24 * 3600L
 
     /** The same workout seen by the watch and by the export differs by a second or two at most. */
     const val WORKOUT_MATCH_SEC = 120L

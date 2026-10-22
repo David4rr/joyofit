@@ -23,6 +23,19 @@ export interface HuaweiImportSummary {
   sleepSegmentsAdded: number;
   stressAdded: number;
   /**
+   * Other `health_metrics` readings (HRV, sleep apnea, skin temperature, arterial stiffness, arrhythmia) found and added; night
+   * scores found and added to `sleep_scores`; days of the `.xls` summary found and added as a noon row where the per-minute
+   * files had nothing for that day. Absent from the iOS Apple Health import.
+   */
+  metricsFound?: number;
+  metricsAdded?: number;
+  sleepScoresFound?: number;
+  sleepScoresAdded?: number;
+  dayTotalsFound?: number;
+  dayTotalsAdded?: number;
+  /** Workouts of an earlier import that had no track or totals and got them now. */
+  workoutsUpdated?: number;
+  /**
    * Weigh-ins found and added to the scale history (`scale_reading`, with body composition when the export has it). Absent
    * from the iOS Apple Health import, which does not read weight.
    */

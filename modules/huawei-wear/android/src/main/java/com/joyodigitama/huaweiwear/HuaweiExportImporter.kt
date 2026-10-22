@@ -22,7 +22,7 @@ internal interface HuaweiExportSource {
 
 /** Which kind of data a file holds, decided by the folder it sits in. */
 internal enum class HuaweiExportKind {
-  /** `Health detail data & description`: heart rate, SpO2, sleep, stress. */
+  /** `Health detail data & description`: heart rate, SpO2, sleep, stress, HRV, weigh-ins ... */
   HEALTH_DETAIL,
 
   /** `Sport per minute merged data & description`: steps and distance per minute. */
@@ -30,6 +30,12 @@ internal enum class HuaweiExportKind {
 
   /** `Motion path detail data & description`: one object per tracked workout. */
   MOTION_PATH,
+
+  /** `Sample sequence data & description`: sleep summaries (score) and raw sequences JoyoFit does not store. */
+  SAMPLE_SEQUENCE,
+
+  /** `SportsHealth data & desciption/SportsHealth-Data.xls`: daily totals. Last, so the per-minute rows are in first. */
+  SPORTS_HEALTH,
   ;
 
   /** Short name for the unreadable-record counts. */
@@ -39,11 +45,13 @@ internal enum class HuaweiExportKind {
     /** The kind of the archive member [name], or null for anything that is not one of the JSON data files. */
     fun of(name: String): HuaweiExportKind? {
       val path = name.replace('\\', '/').lowercase()
+      if (path.endsWith(".xls")) return if ("sportshealth" in path && "field description" !in path) SPORTS_HEALTH else null
       if (!path.endsWith(".json")) return null
       return when {
         "health detail data" in path -> HEALTH_DETAIL
         "sport per minute" in path -> SPORT_PER_MINUTE
         "motion path detail" in path -> MOTION_PATH
+        "sample sequence data" in path -> SAMPLE_SEQUENCE
         else -> null
       }
     }
@@ -84,10 +92,23 @@ internal class HuaweiImportSummary {
   var minutesWritten = 0
   var sleepSegmentsAdded = 0
   var stressAdded = 0
+
+  /** Readings of the other `health_metrics` types (HRV, sleep apnea, skin temperature ...) found and added. */
+  var metricsFound = 0
+  var metricsAdded = 0
+  var sleepScoresFound = 0
+  var sleepScoresAdded = 0
+
+  /** Days of the `.xls` summary found, and those added as a noon row (the per-minute files had no row for them). */
+  var dayTotalsFound = 0
+  var dayTotalsAdded = 0
   var weighInsFound = 0
   var weighInsAdded = 0
   var workoutsFound = 0
   var workoutsAdded = 0
+
+  /** Workouts of an earlier import that had no track or totals and got them now. */
+  var workoutsUpdated = 0
   var workoutPointsAdded = 0
 
   /** Earliest and latest time (unix seconds) of anything read, for "your history reaches back to ...". */
@@ -132,6 +153,12 @@ internal class HuaweiImportSummary {
     "minutesWritten" to minutesWritten,
     "sleepSegmentsAdded" to sleepSegmentsAdded,
     "stressAdded" to stressAdded,
+    "metricsFound" to metricsFound,
+    "metricsAdded" to metricsAdded,
+    "sleepScoresFound" to sleepScoresFound,
+    "sleepScoresAdded" to sleepScoresAdded,
+    "dayTotalsFound" to dayTotalsFound,
+    "dayTotalsAdded" to dayTotalsAdded,
     "weighInsFound" to weighInsFound,
     "weighInsAdded" to weighInsAdded,
     "rejectedReasons" to rejectedReasons.values.sortedByDescending { it.count }.take(MAX_REASONS).map { it.toJs() },
@@ -139,6 +166,7 @@ internal class HuaweiImportSummary {
     "unmappedKeys" to unmappedKeys.entries.sortedByDescending { it.value }.take(MAX_REASONS).map { mapOf("key" to it.key, "count" to it.value) },
     "workoutsFound" to workoutsFound,
     "workoutsAdded" to workoutsAdded,
+    "workoutsUpdated" to workoutsUpdated,
     "workoutPointsAdded" to workoutPointsAdded,
     "oldestSec" to oldestSec,
     "newestSec" to newestSec,
@@ -194,7 +222,14 @@ internal class HuaweiExportImporter(
   private val summary = HuaweiImportSummary()
   private val minutes = HashMap<Long, ImportedMinute>()
   private val sleep = ArrayList<ImportedSleep>()
-  private val stress = ArrayList<ImportedStress>()
+  private val heartRateMinutes = HashSet<Long>()
+  private val restingMinutes = HashSet<Long>()
+  private val spo2Minutes = HashSet<Long>()
+  private val weighInMinutes = HashSet<Long>()
+  private val metrics = ArrayList<ImportedMetric>()
+  private val metricKeys = HashSet<String>()
+  private val sleepScores = ArrayList<ImportedSleepScore>()
+  private val dayTotals = ArrayList<ImportedDayTotal>()
   private val weighIns = ArrayList<ImportedWeighIn>()
 
   private var fileIndex = 0
@@ -211,22 +246,24 @@ internal class HuaweiExportImporter(
       return minutes.getOrPut(key) { ImportedMinute(key) }
     }
 
+    // The export writes most readings twice, under two numeric types and in different files: only the first reading of a
+    // minute counts, over the whole run (the minute buffer is flushed between files).
     override fun heartRate(tsSec: Long, bpm: Int) {
-      summary.heartRateReadings++
       val m = minute(tsSec)
       if (m.heartRate == null) m.heartRate = bpm
+      if (heartRateMinutes.add(m.ts)) summary.heartRateReadings++
     }
 
     override fun restingHeartRate(tsSec: Long, bpm: Int) {
-      summary.restingHeartRateReadings++
       val m = minute(tsSec)
       if (m.restingHeartRate == null) m.restingHeartRate = bpm
+      if (restingMinutes.add(m.ts)) summary.restingHeartRateReadings++
     }
 
     override fun spo2(tsSec: Long, percent: Int) {
-      summary.spo2Readings++
       val m = minute(tsSec)
       if (m.spo2 == null) m.spo2 = percent
+      if (spo2Minutes.add(m.ts)) summary.spo2Readings++
     }
 
     override fun sleep(segment: ImportedSleep) {
@@ -236,19 +273,35 @@ internal class HuaweiExportImporter(
       sleep.add(segment)
     }
 
-    override fun stress(point: ImportedStress) {
-      summary.stressReadings++
+    override fun metric(point: ImportedMetric) {
+      if (!metricKeys.add("${point.type}|${point.ts}")) return
+      if (point.type == HuaweiMetricTypes.STRESS) summary.stressReadings++ else summary.metricsFound++
       summary.seen(point.ts)
-      stress.add(point)
+      metrics.add(point)
     }
 
-    override fun steps(minuteSec: Long, steps: Int, distance: Int) {
+    override fun sleepScore(score: ImportedSleepScore) {
+      summary.sleepScoresFound++
+      summary.seen(score.start)
+      sleepScores.add(score)
+    }
+
+    override fun dayTotal(total: ImportedDayTotal) {
+      summary.dayTotalsFound++
+      summary.seen(total.noonSec)
+      dayTotals.add(total)
+    }
+
+    override fun steps(minuteSec: Long, steps: Int, distance: Int, calories: Int) {
       val m = minute(minuteSec)
       if (steps > m.steps) m.steps = steps
       if (distance > m.distance) m.distance = distance
+      if (calories > m.calories) m.calories = calories
     }
 
     override fun weighIn(weighIn: ImportedWeighIn) {
+      // Weigh-ins come under two numeric types too; a weighing is one per minute.
+      if (!weighInMinutes.add(weighIn.tsMs / 60_000)) return
       summary.weighInsFound++
       summary.seen(weighIn.tsMs / 1000)
       weighIns.add(weighIn)
@@ -314,10 +367,14 @@ internal class HuaweiExportImporter(
     for (r in summary.rejectedReasons.values.sortedByDescending { it.count }.take(MAX_REASONS)) Log.i(TAG, "rejected ${r.key} ${r.reason} x${r.count} e.g. ${r.sample}")
     for ((reason, n) in summary.badRecordReasons) Log.i(TAG, "bad record $reason x$n")
     for ((key, n) in summary.unmappedKeys.entries.sortedByDescending { it.value }.take(MAX_REASONS)) Log.i(TAG, "unmapped $key x$n")
-    Log.i(TAG, "written minutes=${summary.minutesWritten} sleep=${summary.sleepSegmentsAdded} stress=${summary.stressAdded} weighIns=${summary.weighInsAdded}/${summary.weighInsFound} workouts=${summary.workoutsAdded}/${summary.workoutsFound}")
+    Log.i(TAG, "written minutes=${summary.minutesWritten} sleep=${summary.sleepSegmentsAdded} stress=${summary.stressAdded} metrics=${summary.metricsAdded}/${summary.metricsFound} sleepScores=${summary.sleepScoresAdded}/${summary.sleepScoresFound} dayTotals=${summary.dayTotalsAdded}/${summary.dayTotalsFound} weighIns=${summary.weighInsAdded}/${summary.weighInsFound} workouts=${summary.workoutsAdded}+${summary.workoutsUpdated}/${summary.workoutsFound}")
   }
 
   private fun readFile(kind: HuaweiExportKind, stream: InputStream) {
+    if (kind == HuaweiExportKind.SPORTS_HEALTH) {
+      readSpreadsheet(stream)
+      return
+    }
     val reader = InputStreamReader(stream, Charsets.UTF_8)
     HuaweiExportJson.forEachRecord(
       reader,
@@ -325,6 +382,17 @@ internal class HuaweiExportImporter(
       onUnterminated = { text -> recover(kind, text) },
       onOversized = { summary.badRecord("${kind.label}/oversized") },
     )
+  }
+
+  /** The `.xls` summary is read whole (under a megabyte); a file that is not readable costs that file only. */
+  private fun readSpreadsheet(stream: InputStream) {
+    val bytes = stream.readBytes()
+    try {
+      HuaweiSportsHealthParser.parse(bytes, collector)
+    } catch (e: HuaweiXlsReader.XlsException) {
+      summary.badRecord("${HuaweiExportKind.SPORTS_HEALTH.label}/${e.message}")
+    }
+    report("reading", force = false)
   }
 
   private fun handleRecord(kind: HuaweiExportKind, text: String) {
@@ -340,6 +408,8 @@ internal class HuaweiExportImporter(
         when (kind) {
           HuaweiExportKind.HEALTH_DETAIL -> HuaweiHealthDetailParser.parse(record, collector)
           HuaweiExportKind.SPORT_PER_MINUTE -> HuaweiSportPerMinuteParser.parse(record, collector)
+          HuaweiExportKind.SAMPLE_SEQUENCE -> HuaweiSampleSequenceParser.parse(record, collector)
+          HuaweiExportKind.SPORTS_HEALTH -> Unit
           HuaweiExportKind.MOTION_PATH -> workout = HuaweiMotionPathParser.build(HuaweiMotionPathParser.fromJson(record))
         }
       } catch (e: RuntimeException) {
@@ -351,7 +421,7 @@ internal class HuaweiExportImporter(
         if (workout == null) summary.badRecord("${kind.label}/no-start-or-duration") else writeWorkout(workout)
       }
     }
-    if (minutes.size >= FLUSH_MINUTES || sleep.size >= FLUSH_ROWS || stress.size >= FLUSH_ROWS || weighIns.size >= FLUSH_ROWS) flush()
+    if (minutes.size >= FLUSH_MINUTES || sleep.size >= FLUSH_ROWS || metrics.size >= FLUSH_ROWS || weighIns.size >= FLUSH_ROWS) flush()
     report("reading", force = false)
   }
 
@@ -387,10 +457,9 @@ internal class HuaweiExportImporter(
     summary.seen(workout.start)
     summary.seen(workout.end)
     val result = store.writeWorkout(workout)
-    if (result.added) {
-      summary.workoutsAdded++
-      summary.workoutPointsAdded += result.points
-    }
+    if (result.added) summary.workoutsAdded++
+    if (result.updated) summary.workoutsUpdated++
+    if (result.added || result.updated) summary.workoutPointsAdded += result.points
   }
 
   private fun flush() {
@@ -402,13 +471,24 @@ internal class HuaweiExportImporter(
       summary.sleepSegmentsAdded += store.writeSleep(sleep)
       sleep.clear()
     }
-    if (stress.isNotEmpty()) {
-      summary.stressAdded += store.writeStress(stress)
-      stress.clear()
+    if (metrics.isNotEmpty()) {
+      for ((type, added) in store.writeMetrics(metrics)) {
+        if (type == HuaweiMetricTypes.STRESS) summary.stressAdded += added else summary.metricsAdded += added
+      }
+      metrics.clear()
+    }
+    if (sleepScores.isNotEmpty()) {
+      summary.sleepScoresAdded += store.writeSleepScores(sleepScores)
+      sleepScores.clear()
     }
     if (weighIns.isNotEmpty()) {
       summary.weighInsAdded += store.writeWeighIns(weighIns)
       weighIns.clear()
+    }
+    // After the minutes: a day total only fills a day the per-minute rows left empty.
+    if (dayTotals.isNotEmpty()) {
+      summary.dayTotalsAdded += store.writeDayTotals(dayTotals)
+      dayTotals.clear()
     }
   }
 

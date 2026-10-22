@@ -21,25 +21,33 @@ internal object HuaweiWeightParser {
 
   private fun normalize(name: String) = name.lowercase().filter { it.isLetterOrDigit() }
 
-  /** The [ReportedBody] field (or `weight` / `impedance`) a numeric field called [name] holds, null when it is none of them. */
+  /**
+   * The [ReportedBody] field (or `weight` / `impedance`) a numeric field called [name] holds, null when it is none of them.
+   * The names are those of Huawei's `BroadBodyFat` description: `bodyWeight`, `bodyFat` (kilograms of fat: not used),
+   * `bodyFatRate`, `impedance`, `bmi`, `muscleMass`, `basalMetabolism`, `moisture` (kilograms of water: not used),
+   * `moistureRate`, `visceralFatLevel`, `boneSalt`, `proteinRate`, `bodyAge`; per-limb, per-frequency and skeletal values are left out.
+   */
   fun classify(name: String): String? {
     val n = normalize(name)
+    if (listOf("skeletal", "arm", "leg", "trunk", "hf", "balance", "ratio", "shape", "score", "healthy").any { it in n } && !("proteinratio" in n)) return null
     return when {
-      "impedance" in n || "resistance" in n -> "impedance"
+      n == "impedance" || n == "resistance" -> "impedance"
       "bmi" in n -> "bmi"
       "visceral" in n -> "visceralFat"
       "bmr" in n || "basalmetab" in n -> "bmrKcal"
       "bodyage" in n -> "bodyAge"
       "protein" in n -> "proteinPct"
       "bone" in n -> "boneKg"
-      "water" in n || "moisture" in n -> "waterPct"
+      "water" in n || "moisture" in n -> if (isRate(n)) "waterPct" else null
       "fatfree" in n || "leanbody" in n || "leanmass" in n || "bodyfatfree" in n -> "leanKg"
-      "muscle" in n -> if (listOf("rate", "percent", "ratio", "pct").any { it in n }) "musclePct" else "muscleKg"
-      "fat" in n -> if ("mass" in n || "kg" in n) null else "bodyFatPct"
-      "weight" in n -> if ("unit" in n) null else "weight"
+      "muscle" in n -> if (isRate(n)) "musclePct" else "muscleKg"
+      "fat" in n -> if (isRate(n)) "bodyFatPct" else null
+      "weight" in n -> if ("unit" in n || "division" in n) null else "weight"
       else -> null
     }
   }
+
+  private fun isRate(normalised: String) = listOf("rate", "percent", "pct").any { it in normalised }
 
   private val PCT_FIELDS = setOf("bodyFatPct", "waterPct", "musclePct", "proteinPct")
 

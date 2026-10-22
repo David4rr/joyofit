@@ -24,19 +24,21 @@ class HuaweiExportImporterTest {
     tempFiles.forEach { it.delete() }
   }
 
-  private class MinuteCopy(val ts: Long, val steps: Int, val distance: Int, val heartRate: Int?, val spo2: Int?, val resting: Int?)
+  private class MinuteCopy(val ts: Long, val steps: Int, val distance: Int, val heartRate: Int?, val spo2: Int?, val resting: Int?, val calories: Int = 0)
 
   private class FakeStore : HuaweiImportStore {
     val minutes = ArrayList<MinuteCopy>()
     val sleep = ArrayList<ImportedSleep>()
-    val stress = ArrayList<ImportedStress>()
+    val metrics = ArrayList<ImportedMetric>()
+    val sleepScores = ArrayList<ImportedSleepScore>()
+    val dayTotals = ArrayList<ImportedDayTotal>()
     val weighIns = ArrayList<ImportedWeighIn>()
     val workouts = ArrayList<ImportedWorkout>()
     var writeCalls = 0
 
     override fun writeMinutes(rows: Collection<ImportedMinute>): Int {
       writeCalls++
-      rows.forEach { minutes.add(MinuteCopy(it.ts, it.steps, it.distance, it.heartRate, it.spo2, it.restingHeartRate)) }
+      rows.forEach { minutes.add(MinuteCopy(it.ts, it.steps, it.distance, it.heartRate, it.spo2, it.restingHeartRate, it.calories)) }
       return rows.size
     }
 
@@ -45,9 +47,19 @@ class HuaweiExportImporterTest {
       return segments.size
     }
 
-    override fun writeStress(points: List<ImportedStress>): Int {
-      stress.addAll(points)
-      return points.size
+    override fun writeMetrics(points: List<ImportedMetric>): Map<String, Int> {
+      metrics.addAll(points)
+      return points.groupingBy { it.type }.eachCount()
+    }
+
+    override fun writeSleepScores(scores: List<ImportedSleepScore>): Int {
+      sleepScores.addAll(scores)
+      return scores.size
+    }
+
+    override fun writeDayTotals(totals: List<ImportedDayTotal>): Int {
+      dayTotals.addAll(totals)
+      return totals.size
     }
 
     override fun writeWeighIns(weighIns: List<ImportedWeighIn>): Int {
@@ -116,11 +128,13 @@ class HuaweiExportImporterTest {
     assertEquals(97, health.spo2)
     assertEquals(58, health.resting)
     assertEquals(12, sport.steps)
+    assertEquals(5, sport.calories)
     assertEquals(9, sport.distance)
     assertEquals(1, store.sleep.size)
     assertEquals(0x07, store.sleep.single().type)
-    assertEquals(30, store.stress.single().score)
-    assertEquals(2, summary.heartRateReadings)
+    assertEquals(30.0, store.metrics.single().value, 0.0)
+    // Two readings in one minute are one reading: the export repeats them under a second numeric type.
+    assertEquals(1, summary.heartRateReadings)
     assertEquals(0, summary.unmappedSamples)
     assertEquals(1, summary.weighInsAdded)
     assertEquals(70.0, store.weighIns.single().weightKg, 0.001)
@@ -177,12 +191,13 @@ class HuaweiExportImporterTest {
     val summary = run(
       mapOf(
         healthFile to "[" + healthRecord(sample("DATA_POINT_DYNAMIC_HEARTRATE", t0, t0, "70")) + "]",
-        "Sample sequence data & description/readme.json" to "[]",
-        "SportsHealth/summary.xls" to "binary",
+        "User run plan data & description/user run plan data.json" to "[]",
+        "Health detail data & description/Health detail data-Data Field Description.xlsx" to "binary",
+        "SportsHealth data & desciption/SportsHealth-Data Field Description.xls" to "binary",
       ),
       store,
     )
-    assertEquals(2, summary.filesIgnored)
+    assertEquals(3, summary.filesIgnored)
     assertEquals(1, summary.filesRead)
     try {
       run(mapOf("somewhere/else.json" to "[]"))
@@ -190,6 +205,48 @@ class HuaweiExportImporterTest {
     } catch (e: HuaweiImportException) {
       assertEquals(HuaweiImportException.Kind.NOT_AN_EXPORT, e.kind)
     }
+  }
+
+  @Test
+  fun aSpreadsheetThatIsNotAWorkbookCostsOnlyThatFile() {
+    val summary = run(
+      mapOf(
+        healthFile to "[" + healthRecord(sample("DATA_POINT_DYNAMIC_HEARTRATE", t0, t0, "70")) + "]",
+        "SportsHealth data & desciption/SportsHealth-Data.xls" to "this is not an xls file".repeat(100),
+      ),
+    )
+    assertEquals(2, summary.filesRead)
+    assertEquals(1, summary.badRecords)
+    assertEquals(listOf("sports_health/not an OLE2 file"), summary.badRecordReasons.keys.toList())
+    assertEquals(1, summary.heartRateReadings)
+  }
+
+  @Test
+  fun daysSheetAndScoresGoThroughTheStoreAfterTheMinutes() {
+    val xls = File("src/test/resources/huawei/sports-health-synthetic.xls").readBytes()
+    val store = FakeStore()
+    val source = object : HuaweiExportSource {
+      private val names = listOf(
+        "SportsHealth data & desciption/SportsHealth-Data.xls",
+        "Sport per minute merged data & description/Sport per minute1.json",
+        "Sample sequence data & description/sample sequence data1.json",
+      )
+      override fun entries() = names.map { HuaweiExportEntry(it, 1) }
+      override fun open(entry: HuaweiExportEntry): InputStream = when {
+        entry.name.endsWith(".xls") -> ByteArrayInputStream(xls)
+        entry.name.contains("Sport per minute") -> ByteArrayInputStream(("[" + sportRecord(sportEntry(10, 8)) + "]").toByteArray())
+        else -> ByteArrayInputStream(
+          ("""[{"type":"700013","startTime":"$t0","endTime":"${t0 + 30_000_000}","summaryData":"{\"sleepScore\":85}"}]""").toByteArray(),
+        )
+      }
+    }
+    val summary = HuaweiExportImporter(store, onProgress = {}).run(source)
+    assertEquals(4, summary.dayTotalsFound)
+    assertEquals(4, summary.dayTotalsAdded)
+    assertEquals(1, summary.sleepScoresAdded)
+    assertEquals(1, summary.minutesWritten)
+    // The minute is written before the day totals that may only fill days without rows.
+    assertEquals(1, store.writeCalls)
   }
 
   @Test
