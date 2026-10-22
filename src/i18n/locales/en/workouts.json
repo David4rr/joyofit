@@ -313,6 +313,21 @@
       "bpm": "bpm"
     },
     "gpsFailed": "The watch did not provide a GPS file for this workout.",
+    "dynamics": {
+      "title": "Running dynamics",
+      "gct": "Ground contact time",
+      "gctValue": "{{value}} ms",
+      "vo": "Vertical oscillation",
+      "voValue": "{{value}} cm",
+      "vr": "Vertical ratio",
+      "vrValue": "{{value}} %",
+      "gtb": "Left/right balance",
+      "gtbValue": "{{left}} / {{right}} %",
+      "chartLabel": "{{metric}}, average per minute",
+      "minute": "Minute {{n}}",
+      "how": "Where do these numbers come from?",
+      "explain": "The watch sends these while you run, and JoyoFit averages them per minute. They only show when your watch sends them, and only for workouts synced after this feature. Balance: the first figure is the left side as the watch sends it; we have not matched it against Huawei Health yet."
+    },
     "effect": {
       "title": "Training effect",
       "aerobic": "Aerobic effect",

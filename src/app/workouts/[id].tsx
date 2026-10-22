@@ -45,6 +45,7 @@ import { workoutElevation } from '@/features/workouts/analysis/elevation';
 import type { SportKind, WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import { WorkoutAnalysisView, useAnalysisT, type ExtraStat } from '@/features/workouts/analysis/ui';
 import { DeleteWorkoutDialog } from '@/features/workouts/ui/DeleteWorkoutDialog';
+import { RunningDynamicsSection } from '@/features/workouts/ui/RunningDynamicsSection';
 import { MenuSheet, type MenuItem } from '@/features/strength/ui/Sheet';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import { sportLabel } from '@/features/workouts/sportLabel';
@@ -472,6 +473,7 @@ export default function WorkoutDetailScreen() {
         <Skeleton width="100%" height={320} radius="card" />
       )}
       {summary.gps === 'failed' ? <Notice icon="location-outline">{t('detail.gpsFailed')}</Notice> : null}
+      {kind === 'run' || kind === 'walk' ? <RunningDynamicsSection summary={summary} /> : null}
       <CoachFeedbackSection workoutStart={workout.start} analysis={sharedAnalysis} />
 
       {effectShown ? (

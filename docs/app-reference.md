@@ -434,6 +434,15 @@ file (`strava/cadenceFields.ts`: session and lap cadence, `avg_step_length`, per
   covers a workout without samples.
 - **Phone recording.** Cadence and steps come from a paired running pod, else from the phone's own step counter (docs/sensors.md); never a per-sample step
   length (derived on the card).
+- **Running dynamics (watch runs and walks).** The inner part of a workout data sample (service `0x17`, `WorkoutData`, inner bitmap bits 2, 9, 13, 14, 15) carries ground
+  contact time (ms), hang time (ms), vertical oscillation (`vo`, wire / 10), ground contact balance (`gtb`, wire / 100) and vertical ratio (`vr`, wire / 10); the
+  sync used to parse them and drop all but the contact time. `RunDynamics` (`RunDynamics.kt`, `RunDynamics.swift`) now stores the means of the readings that exist
+  under `summary.samples` (`avgGroundContactTime`, `avgVerticalOscillation`, `avgVerticalRatio`, `avgGroundContactBalance`, `avgHangTimeMs`) and a per-minute series in
+  `summary.dynamics` (`start`, `stepSec: 60`, `gct`, `vo`, `vr`, `gtb`, `hang`, null for a gap). The workout screen's "Dinamika lari" card
+  (`ui/RunningDynamicsSection.tsx`, `dynamics.ts`) shows the means and one line per metric with at least 3 minutes of readings, and nothing when the watch sent none.
+  Phone-only in the screens: the shared (JoyoRogo) analysis, its strict server schema and the share card carry none of it; the values only travel inside `summary_json`, an opaque string to the JoyoFit sync server. Units and the side of `gtb` are read from Gadgetbridge's decoder, not checked
+  against Huawei Health [INFERENCE]; impact, swing angle and eversion are averaged natively but not shown (unit unknown). Needs a build with the native change for
+  everything but contact time: a workout synced before it has only the old contact-time mean (that mean may include zero readings), so its card shows that one figure.
 - **Cloud and share.** The cloud document carries the samples (`cadence`, `stride`) and `summary_json` verbatim, so a restore recomputes the same figures; the
   shared analysis carries `stats.avgCad`, `maxCad`, `avgStrideM` and the cadence series, which JoyoRogo's web feed and fit viewer show in the summary.
 - **Not recoverable.** The raw FIT file is not kept. A file imported before per-sample cadence existed has none, and one whose only step length was the

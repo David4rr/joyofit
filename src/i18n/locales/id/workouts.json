@@ -310,6 +310,21 @@
       "bpm": "bpm"
     },
     "gpsFailed": "Jam tidak menyediakan file GPS untuk latihan ini.",
+    "dynamics": {
+      "title": "Dinamika lari",
+      "gct": "Waktu kontak tanah",
+      "gctValue": "{{value}} ms",
+      "vo": "Osilasi vertikal",
+      "voValue": "{{value}} cm",
+      "vr": "Rasio vertikal",
+      "vrValue": "{{value}} %",
+      "gtb": "Keseimbangan kiri/kanan",
+      "gtbValue": "{{left}} / {{right}} %",
+      "chartLabel": "{{metric}}, rata-rata per menit",
+      "minute": "Menit {{n}}",
+      "how": "Dari mana angka ini?",
+      "explain": "Jam mengirim angka ini saat kamu berlari, dan JoyoFit merata-ratakannya per menit. Hanya tampil kalau jam kamu mengirimnya, dan hanya untuk latihan yang disinkronkan setelah fitur ini ada. Keseimbangan: angka pertama adalah sisi kiri sesuai kiriman jam; belum kami cocokkan dengan Huawei Health."
+    },
     "effect": {
       "title": "Efek latihan",
       "aerobic": "Efek aerobik",
