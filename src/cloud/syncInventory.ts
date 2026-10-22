@@ -43,6 +43,9 @@ import { HuaweiWear, type CycleSwitches, type UserSex } from '@/wear';
  *  - Android-only phone features: morning summary notification, notification forwarding and its app list, calls, find my phone,
  *    SOS relay (iOS cannot switch them on, and they act through this phone's permissions and SIM)
  *  - watch-held state: alarms, fall detection, automatic stress, heart-rate sensors and alerts, watch faces, photo face
+ *  - the iOS per-app notification switches and the encoding their test proved (native defaults `watch_notification_filter_*`, `NotificationAppFilter.swift`):
+ *    the list is applied by one watch's firmware and the encoding was proven with that watch and phone only, so another phone's choices would be sent
+ *    to a watch nobody tested them on
  *  - experimental `courses` switch (Huawei-gated), the weather push switch / location mode / interval (they steer this phone's watch link)
  *  - family monitoring: `family_enabled` and `family_scope_*` are written by the app from the consents on the server, next to a
  *    device token and base URL that are per device

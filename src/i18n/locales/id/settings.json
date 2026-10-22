@@ -39,7 +39,8 @@
       "notificationApps": {
         "title": "Aplikasi notifikasi",
         "subtitleIos": "Dipilih di Pengaturan iPhone",
-        "subtitle": "Pilih aplikasi yang boleh mengirim notifikasi ke jam"
+        "subtitle": "Pilih aplikasi yang boleh mengirim notifikasi ke jam",
+        "subtitleIosFilter": "Saklar per aplikasi di jam"
       },
       "importHuawei": {
         "title": "Impor dari Huawei Health",
@@ -481,7 +482,52 @@
     "noMatchTitle": "Tidak ada aplikasi yang cocok",
     "noMatch": "Tidak ada yang cocok dengan \"{{query}}\".",
     "noApps": "Tidak ada aplikasi untuk ditampilkan.",
-    "clear": "Hapus saringan"
+    "clear": "Hapus saringan",
+    "ios": {
+      "intro": "Jam menyaring notifikasi iPhone sendiri, per aplikasi. Daftarnya tetap: aplikasi yang umum dan satu saklar Lainnya untuk semua aplikasi lain. Pengaturan iPhone, Notifikasi, tetap menentukan apa yang sampai ke jam sama sekali.",
+      "filterTitle": "Uji filter",
+      "appsTitle": "Aplikasi",
+      "unproven": "Saklar per aplikasi belum terbukti bekerja di jam ini, jadi masih mati. Uji filter mematikan satu aplikasi di jam dengan beberapa cara penulisan. Kamu cek apakah pesannya masih muncul, dan cara yang berhasil dipakai untuk semua saklar.",
+      "proven": "Filter terbukti di jam ini: {{how}}.",
+      "encoding": {
+        "a": "id aplikasi iOS, 1 = mati",
+        "b": "id aplikasi iOS, 0 = mati",
+        "c1": "nomor aplikasi Huawei, 1 = mati",
+        "c2": "nomor aplikasi Huawei, 0 = mati"
+      },
+      "pickApp": "Aplikasi yang diuji",
+      "start": "Uji filter",
+      "retest": "Uji ulang filter",
+      "block": {
+        "disconnected": "Hubungkan jam dulu.",
+        "noGate": "Jam ini tidak menyebut dukungan saklar per aplikasi, jadi tidak bisa diuji."
+      },
+      "probe": "Langkah {{step}} dari {{steps}}. {{app}} sedang dimatikan di jam. Kirim satu pesan ke {{app}} sekarang dari ponsel atau orang lain, bukan dari iPhone ini, dan biarkan JoyoFit terbuka: pindah aplikasi atau layar membatalkan uji. Apakah pesannya masih muncul di jam?",
+      "stillShown": "Masih muncul",
+      "hidden": "Tidak muncul",
+      "confirm": "{{app}} sudah dinyalakan lagi di jam. Kirim satu pesan lagi. Apakah sekarang muncul?",
+      "confirmYes": "Muncul",
+      "confirmNo": "Tidak muncul",
+      "cancel": "Batalkan uji",
+      "outcome": {
+        "winner": "Berhasil: jam menyaring dengan cara \"{{how}}\". Semua aplikasi dinyalakan lagi dan saklar di bawah sekarang aktif.",
+        "none": "Tidak ada cara yang menyembunyikan {{app}} di jam. Jam ini mungkin tidak menyaring dengan id aplikasi iOS. Saklar tetap mati.",
+        "inconclusive": "{{app}} tidak muncul, tetapi tidak kembali setelah dinyalakan lagi, jadi mungkin bukan karena filter. Tidak ada yang disimpan. Coba lagi.",
+        "cancelled": "Uji dibatalkan dan {{app}} dinyalakan lagi di jam.",
+        "failed": "Uji gagal: jam tidak menerima perintah atau koneksi putus. {{app}} dinyalakan lagi begitu jam terhubung."
+      },
+      "restorePending": "Ada uji yang terputus. Aplikasi yang diuji dinyalakan lagi begitu jam terhubung. Kalau notifikasinya masih hilang, jalankan uji lagi.",
+      "resultLabel": "Hasil uji, tanpa isi pesan:",
+      "sendResult": "Kirim hasil ke tim",
+      "other": "Lainnya",
+      "rowHint": {
+        "unproven": "Jalankan Uji filter dulu",
+        "noId": "Tidak ada id untuk aplikasi ini pada cara yang terbukti",
+        "other": "Semua aplikasi lain. Belum diuji, mungkin tidak berpengaruh.",
+        "offline": "Dikirim ke jam saat terhubung"
+      },
+      "details": "Saklar ini bekerja di jam, bukan di iPhone: JoyoFit tidak pernah melihat notifikasimu. Uji hanya mengirim satu aplikasi, tidak pernah seluruh daftar, dan aplikasi itu dinyalakan lagi sesudahnya, saat uji dibatalkan, atau saat jam terhubung lagi. Hasil uji berisi cara yang dicoba dan jawabanmu, tanpa isi pesan."
+    }
   },
   "notifications": {
     "disclosure": "JoyoFit membaca notifikasi di ponsel ini (nama aplikasi, judul, dan teks) agar bisa menampilkannya di jam kamu. Notifikasi dikirim ke jam lewat Bluetooth saja. JoyoFit tidak menyimpannya dan tidak mengirimnya lewat internet. Kamu bisa memilih aplikasi mana yang diteruskan, dan mematikannya kapan saja.",

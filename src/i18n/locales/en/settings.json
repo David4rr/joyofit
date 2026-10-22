@@ -39,7 +39,8 @@
       "notificationApps": {
         "title": "Notification apps",
         "subtitleIos": "Chosen in iPhone Settings",
-        "subtitle": "Choose which apps notify the watch"
+        "subtitle": "Choose which apps notify the watch",
+        "subtitleIosFilter": "Per-app switches on the watch"
       },
       "importHuawei": {
         "title": "Import from Huawei Health",
@@ -487,7 +488,52 @@
     "noMatchTitle": "No apps match",
     "noMatch": "Nothing matches \"{{query}}\".",
     "noApps": "No apps to show.",
-    "clear": "Clear filter"
+    "clear": "Clear filter",
+    "ios": {
+      "intro": "The watch filters the iPhone's notifications itself, per app. The list is fixed: the common apps and one Other switch for every other app. iPhone Settings, Notifications, still decides what reaches the watch at all.",
+      "filterTitle": "Filter test",
+      "appsTitle": "Apps",
+      "unproven": "The per-app switches are not proven to work on this watch, so they stay off. The filter test turns one app off on the watch in a few ways of writing it. You check whether its message still shows up, and the way that works is used for all the switches.",
+      "proven": "Filter proven on this watch: {{how}}.",
+      "encoding": {
+        "a": "iOS app id, 1 = off",
+        "b": "iOS app id, 0 = off",
+        "c1": "Huawei app number, 1 = off",
+        "c2": "Huawei app number, 0 = off"
+      },
+      "pickApp": "App to test",
+      "start": "Test the filter",
+      "retest": "Test the filter again",
+      "block": {
+        "disconnected": "Connect the watch first.",
+        "noGate": "This watch does not list per-app switches, so it cannot be tested."
+      },
+      "probe": "Step {{step}} of {{steps}}. {{app}} is being turned off on the watch. Send one message to {{app}} now from another phone or person, not from this iPhone, and keep JoyoFit open: switching apps or screens cancels the test. Does the message still show up on the watch?",
+      "stillShown": "Still shows up",
+      "hidden": "Does not show up",
+      "confirm": "{{app}} is turned back on on the watch. Send one more message. Does it show up now?",
+      "confirmYes": "Shows up",
+      "confirmNo": "Does not show up",
+      "cancel": "Cancel the test",
+      "outcome": {
+        "winner": "It worked: the watch filters in the way \"{{how}}\". Every app was turned back on and the switches below are now active.",
+        "none": "No way hid {{app}} on the watch. This watch may not filter by iOS app id. The switches stay off.",
+        "inconclusive": "{{app}} did not show up, but did not come back after being turned on again, so it may not have been the filter. Nothing was saved. Try again.",
+        "cancelled": "The test was cancelled and {{app}} was turned back on on the watch.",
+        "failed": "The test failed: the watch did not take the command or the connection dropped. {{app}} is turned back on as soon as the watch connects."
+      },
+      "restorePending": "A test was cut off. The app that was tested is turned back on as soon as the watch connects. If its notifications are still missing, run the test again.",
+      "resultLabel": "Test result, without message content:",
+      "sendResult": "Send the result to the team",
+      "other": "Other",
+      "rowHint": {
+        "unproven": "Run the filter test first",
+        "noId": "No id for this app in the proven way",
+        "other": "Every other app. Not tested, it may have no effect.",
+        "offline": "Sent to the watch when it connects"
+      },
+      "details": "These switches work on the watch, not on the iPhone: JoyoFit never sees your notifications. The test sends one app only, never the whole list, and that app is turned back on afterwards, when the test is cancelled, or when the watch connects again. The test result holds the ways tried and your answers, no message content."
+    }
   },
   "notifications": {
     "disclosure": "JoyoFit reads the notifications on this phone (app name, title and text) so it can show them on your watch. They are sent to the watch over Bluetooth only. JoyoFit does not store them and does not send them over the internet. You can choose which apps are forwarded, and turn this off at any time.",
