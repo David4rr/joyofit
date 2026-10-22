@@ -343,6 +343,12 @@ export async function listRestingHeartRateByDay(db: SQLiteDatabase, bounds: read
   return new Map(rows.map((r) => [r.day, r.bpm]));
 }
 
+/** Workouts the watch recorded (not restored, FIT or Health imports) that started since `sinceSec`. */
+export async function countWatchWorkoutsSince(db: SQLiteDatabase, sinceSec: number): Promise<number> {
+  const row = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM workouts WHERE start >= ? AND imported = 0 AND complete = 1', sinceSec);
+  return row?.n ?? 0;
+}
+
 /** One `health_metrics` value of `type` (`ts` unix seconds); rows without a number are left out. */
 export function listMetricSince(db: SQLiteDatabase, type: string, sinceSec: number): Promise<{ ts: number; value: number }[]> {
   return db.getAllAsync<{ ts: number; value: number }>(

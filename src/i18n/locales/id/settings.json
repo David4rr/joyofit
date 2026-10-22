@@ -748,8 +748,7 @@
       "pro": "Pro aktif, sinkron cloud nyala",
       "free": "Gratis, sinkron cloud butuh Pro",
       "valuePro": "Pro"
-    },
-    "connected": "Terhubung"
+    }
   },
   "account": {
     "signOutTitle": "Keluar dari JoyoRogo?",
@@ -904,5 +903,75 @@
     "reset": "Atur ulang",
     "less": "Kurangi 1 bpm",
     "more": "Tambah 1 bpm"
+  },
+  "sources": {
+    "title": "Sumber & koneksi",
+    "entrySubtitle": "Jam, {{store}}, Strava, JoyoRogo, dan timbangan: lewat apa, kapan terakhir sinkron, apa yang dibawa",
+    "lead": "Dari mana datamu datang dan ke mana perginya, kapan terakhir bergerak, dan apa yang dibawanya.",
+    "connected": "Terhubung",
+    "available": "Belum terhubung",
+    "permissions": "Izin",
+    "manage": "Atur izin {{store}}",
+    "manageSubtitle": "Membuka layar sistem untuk mengizinkan atau mencabut akses.",
+    "state": {
+      "on": "Aktif",
+      "attention": "Perlu dicek",
+      "off": "Belum diatur"
+    },
+    "lastSync": "Sinkron terakhir {{time}}",
+    "week": "7 hari terakhir: {{what}}",
+    "nothing": "belum ada yang tersimpan",
+    "nothingNew": "tidak ada yang baru",
+    "watch": {
+      "title": "Jam",
+      "via": "Bluetooth, langsung dari jam",
+      "none": "Belum ada jam terpasang. Pasangkan satu untuk mengisi Hari ini.",
+      "neverSynced": "Belum pernah sinkron",
+      "stale": "Belum sinkron lebih dari 2 hari. Buka layar jam untuk sinkron.",
+      "stepDays_other": "{{count}} hari langkah",
+      "sleepNights_other": "{{count}} malam tidur",
+      "workouts_other": "{{count}} latihan"
+    },
+    "health": {
+      "via": "JoyoFit menulis ke {{store}}; aplikasi lain membacanya dari sana",
+      "unavailable": "{{store}} tidak tersedia di ponsel ini.",
+      "off": "Penulisan mati. Nyalakan agar JoyoRogo dan aplikasi lain bisa membaca data jammu.",
+      "neverWritten": "Belum ada yang ditulis",
+      "lastWrite": "Terakhir ditulis {{time}}",
+      "lastCounts": "Tulisan terakhir: {{what}}",
+      "steps": "{{value}} langkah",
+      "hr": "{{value}} bacaan detak jantung",
+      "sleep": "{{value}} catatan tidur",
+      "workouts_other": "{{count}} latihan",
+      "failed": "Penulisan terakhir gagal: {{error}}",
+      "permissions": "Izin tulis untuk {{granted}} dari {{total}} jenis; sisanya dilewati."
+    },
+    "strava": {
+      "via": "JoyoFit mengunggah latihanmu ke Strava; tidak ada yang dibaca balik",
+      "off": "Belum terhubung. Hubungkan agar latihan selesai terkirim otomatis.",
+      "never": "Belum ada yang diunggah",
+      "lastUpload": "Terakhir diunggah {{time}}",
+      "uploaded_other": "{{count}} latihan terunggah",
+      "failed_other": "{{count}} gagal",
+      "retry": "Buka Strava untuk mencoba ulang unggahan yang gagal."
+    },
+    "joyorogo": {
+      "via": "Akun JoyoRogo-mu",
+      "viaAccount": "Akun {{email}}",
+      "off": "Belum masuk. Masuk untuk mengirim energi latihan dan skor ke diary JoyoRogo.",
+      "never": "Belum ada yang terkirim",
+      "lastSent": "Terakhir terkirim {{time}}",
+      "counts": "{{sent}} terkirim seluruhnya, {{waiting}} menunggu sinkron berikutnya",
+      "failed": "Pengiriman terakhir gagal: {{error}}"
+    },
+    "scale": {
+      "via": "Timbangan Bluetooth",
+      "viaName": "Bluetooth, {{name}}",
+      "off": "Belum ada timbangan. Tambahkan agar menimbang tanpa mengetik.",
+      "never": "Belum pernah menimbang",
+      "lastWeigh": "Terakhir menimbang {{time}}",
+      "weighIns_other": "{{count}} timbangan",
+      "waiting_other": "{{count}} menunggu JoyoRogo"
+    }
   }
 }

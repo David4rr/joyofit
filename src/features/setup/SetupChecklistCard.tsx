@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
-import { isIos } from '@/components/IosUnavailable';
 import { AppText } from '@/components/AppText';
 import { FadeIn } from '@/components/motion';
 import { InfoPill } from '@/components/InfoPill';
@@ -12,10 +11,9 @@ import { Card } from '@/components/Screen';
 import { isLinkUp } from '@/features/device/linkState';
 import type { SetupStepId } from '@/features/setup/checklist';
 import { useSetupChecklist } from '@/features/setup/useSetupChecklist';
+import { HEALTH_STORE } from '@/features/sources/store';
 import { useWatch } from '@/state/WatchProvider';
 import { HIT, spacing, useColors } from '@/theme';
-
-const HEALTH_STORE = isIos ? 'Apple Health' : 'Health Connect'; // i18n-ok: platform brand names
 
 /**
  * Today: what is still missing for JoyoFit to work fully, detected from the app's own state (watch paired, first sync, the

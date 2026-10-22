@@ -8,19 +8,17 @@ import { SectionList, StyleSheet, View } from 'react-native';
 import { authClient } from '@/cloud/auth';
 import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
-import { BrandMark } from '@/components/BrandMark';
 import { IconChip, type IconName } from '@/components/IconChip';
-import { isIos } from '@/components/IosUnavailable';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { PageHeader, useContentPadding } from '@/components/Screen';
 import { showsWatchUi } from '@/features/device/presence';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { linkLabel } from '@/features/device/linkState';
+import { HEALTH_STORE } from '@/features/sources/store';
 import { useAccountDialogs } from '@/features/settings/useAccountDialogs';
 import { t as tOther } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
 import { useOnboarding } from '@/state/OnboardingProvider';
-import { useStrava } from '@/state/StravaProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useTheme, type Tint } from '@/theme';
 
@@ -51,7 +49,6 @@ export default function SettingsScreen() {
   const padding = useContentPadding(true);
   const guide = useOnboarding();
   const cloud = useCloud();
-  const strava = useStrava();
   const presence = useWatchPresence();
   const { device, linkState, watches } = useWatch();
   const user = authClient.useSession().data?.user;
@@ -101,27 +98,18 @@ export default function SettingsScreen() {
     ],
   };
 
+  // One row for the sources (watch, health store, Strava, JoyoRogo, scale) with their status; the deep screens open from there.
   const connectionsGroup: HubGroup = {
     title: t('hub.groups.connections'),
     data: [
       {
-        key: 'strava',
-        title: 'Strava', // i18n-ok: product name
-        value: strava.settings.connectedAt !== null ? t('hub.connected') : undefined,
-        leading: <BrandMark brand="strava" />,
-        onPress: go('/settings/strava'),
+        key: 'sources',
+        title: t('sources.title'),
+        subtitle: t('sources.entrySubtitle', { store: HEALTH_STORE }),
+        icon: 'swap-horizontal',
+        tint: 'link',
+        onPress: go('/settings/sources'),
       },
-      ...(withWatch
-        ? [
-            {
-              key: 'health',
-              title: isIos ? t('screens.healthIos') : t('screens.health'),
-              leading: <BrandMark brand={isIos ? 'apple-health' : 'health-connect'} />,
-              onPress: go('/settings/health'),
-            },
-          ]
-        : []),
-      { key: 'joyorogo', title: t('screens.joyorogo'), icon: 'restaurant', tint: 'link', onPress: go('/settings/joyorogo') },
       { key: 'koneksi', title: t('screens.koneksi'), icon: 'sparkles', tint: 'link', onPress: go('/settings/koneksi') },
       { key: 'family', title: tOther('family:title.family'), icon: 'people', tint: 'link', onPress: go('/family') },
       { key: 'import', title: t('screens.importAll'), icon: 'cloud-download', tint: 'heart', onPress: go('/settings/import') },
