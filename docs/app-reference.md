@@ -378,7 +378,8 @@ in the zones card (the burn section only adds the fat and carbohydrate grams) an
 for a session that has no analysis card (a logged strength session, or an analysis that failed). Sections, each only when the data exists:
 
 - **Summary strip and map.** Distance, time, moving time, pace or speed, elevation. A tile map of the route (OpenFreeMap vector tiles drawn with
-  react-native-svg, no native module, `src/features/map/`; cached on the phone) with a km marker per kilometre.
+  react-native-svg, no native module, `src/features/map/`; cached on the phone) with km markers: the smallest of every 1, 2, 5, 10, 20, 50 ... km that leaves at most 12
+  on screen and none overlapping (`pickKmPills`), so zooming in brings the in-between kilometres back.
 - **Scrubber charts.** Pace or speed, heart rate, elevation, cadence, step length and power on one shared time grid; touching a chart moves a dot on the map and fills a
   readout. The screen's scroll freezes while a chart is touched.
 - **Splits and laps.** Per kilometre (pace, heart rate, climb, cadence, and step length when the row has room) and the watch's or FIT file's laps.
