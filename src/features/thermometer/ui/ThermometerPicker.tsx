@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Divider, Section } from '@/components/Screen';
-import { fmtDecimal, fmtInt } from '@/i18n/format';
+import { fmtDecimal } from '@/i18n/format';
 import type { Granted } from '@/features/sensors/permissions';
 import { Signal } from '@/features/sensors/ui/parts';
 import { spacing } from '@/theme';
@@ -79,7 +79,7 @@ export function ThermometerPicker({ discovery, currentId, onPermission, onPick, 
                       <AppText variant="bodyStrong">{device.name ?? t('picker.unnamed')}</AppText>
                       {device.reading ? (
                         <AppText variant="caption">
-                          {t('picker.reading', { temp: fmtDecimal(device.reading.tempC, 1), rh: fmtInt(device.reading.rhPct) })}
+                          {t('picker.reading', { temp: fmtDecimal(device.reading.tempC, 1), rh: fmtDecimal(device.reading.rhPct, 1) })}
                         </AppText>
                       ) : (
                         <AppText variant="caption" muted>

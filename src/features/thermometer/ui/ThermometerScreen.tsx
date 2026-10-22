@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Metric } from '@/components/Metric';
 import { Button } from '@/components/Button';
 import { Details } from '@/components/Details';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Screen, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
-import { fmtAgo, fmtDecimal, fmtInt } from '@/i18n/format';
+import { fmtAgo, fmtDecimal } from '@/i18n/format';
 import type { Granted } from '@/features/sensors/permissions';
 import type { GattFailure } from '../gattRead';
 import { sensorLabel } from '@/features/sensors/store';
@@ -76,21 +77,36 @@ export function ThermometerScreen() {
           <View style={styles.reading} accessibilityLiveRegion="polite">
             {last ? (
               <>
-                <AppText variant="display">{t('card.reading', { temp: fmtDecimal(last.tempC, 1), rh: fmtInt(last.rhPct) })}</AppText>
-                <AppText variant="caption" muted>
-                  {t('card.lastAt', { ago: fmtAgo(Math.floor(last.ts / 1000), Math.floor(Date.now() / 1000)) })}
+                <View
+                  style={styles.figures}
+                  accessible
+                  accessibilityLabel={t('card.short', { temp: fmtDecimal(last.tempC, 1), rh: fmtDecimal(last.rhPct, 1) })}>
+                  <View style={styles.figure}>
+                    <Metric value={fmtDecimal(last.tempC, 1)} unit={t('card.tempUnit')} size="hero" />
+                  </View>
+                  <View style={styles.figure}>
+                    <Metric value={fmtDecimal(last.rhPct, 1)} unit={t('card.rhUnit')} size="hero" />
+                  </View>
+                </View>
+                <AppText variant="caption" muted numberOfLines={1}>
+                  {t(battery ? 'card.lastAtBattery' : 'card.lastAt', {
+                    ago: fmtAgo(Math.floor(last.ts / 1000), Math.floor(Date.now() / 1000)),
+                    battery,
+                  })}
                 </AppText>
               </>
             ) : (
-              <AppText variant="caption" muted>
-                {t(link === 'bindkey' ? 'card.noReadingKey' : link === 'gatt' ? 'card.noReadingGatt' : 'card.noReading')}
-              </AppText>
+              <>
+                <AppText variant="caption" muted>
+                  {t(link === 'bindkey' ? 'card.noReadingKey' : link === 'gatt' ? 'card.noReadingGatt' : 'card.noReading')}
+                </AppText>
+                {battery ? (
+                  <AppText variant="caption" muted numberOfLines={1}>
+                    {battery}
+                  </AppText>
+                ) : null}
+              </>
             )}
-            {battery ? (
-              <AppText variant="caption" muted>
-                {battery}
-              </AppText>
-            ) : null}
           </View>
           {link !== 'advert' ? (
             <AppText variant="caption" muted>
@@ -146,4 +162,6 @@ export function ThermometerScreen() {
 
 const styles = StyleSheet.create({
   reading: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
+  figures: { flexDirection: 'row', alignSelf: 'stretch', alignItems: 'flex-end', justifyContent: 'center', gap: spacing.lg },
+  figure: { flexShrink: 1, alignItems: 'center' },
 });

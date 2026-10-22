@@ -9,9 +9,12 @@
   },
   "card": {
     "empty": "No thermometer yet. Find yours below.",
-    "reading": "{{temp}} °C, humidity {{rh}}%",
+    "short": "{{temp}} °C · {{rh}}% RH",
+    "tempUnit": "°C",
+    "rhUnit": "% RH",
     "noReading": "No reading yet. Bring your phone close to the thermometer and keep JoyoFit open for a moment.",
     "lastAt": "Last reading {{ago}}",
+    "lastAtBattery": "Last reading {{ago}} · {{battery}}",
     "forget": "Forget",
     "forgetTitle": "Forget this thermometer?",
     "forgetMessage": "The temperature and humidity readings kept on this phone are deleted too. Nightly averages already sent to Sleep insights stay as they are.",
@@ -35,7 +38,7 @@
     "pick": "Use this one",
     "chosen": "In use",
     "unnamed": "No name",
-    "reading": "Reads {{temp}} °C, {{rh}}%",
+    "reading": "Reads {{temp}} °C · {{rh}}% RH",
     "unreadable": "Stock Xiaomi firmware: its numbers are not broadcast openly. Pick a way below, or flash the community firmware."
   },
   "firmware": {
