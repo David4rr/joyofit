@@ -183,7 +183,7 @@ export default function WorkoutDetailScreen() {
           }
           try {
             const zones = userHrZones();
-            const history = await loadAnalysisHistory(db, value.workout, value.summary, zones);
+            const history = await loadAnalysisHistory(db, value.workout, value.summary, zones.maxHr);
             // Let the summary paint before the analysis blocks the JS thread.
             await new Promise<void>((resolve) => setTimeout(resolve, 0));
             if (cancelled) return;
@@ -214,8 +214,8 @@ export default function WorkoutDetailScreen() {
   }, [loaded, zones]);
   const strain = useMemo(() => {
     if (!loaded) return null;
-    return workoutStrain(loaded.points, zones);
-  }, [loaded, zones]);
+    return workoutStrain(loaded.points, zones.maxHr);
+  }, [loaded, zones.maxHr]);
   const effect = useMemo(() => trainingEffect(loaded?.summary ?? {}, strain?.trimp ?? null), [loaded, strain]);
   const vo2 = plausibleVo2(loaded?.summary.vo2max);
   const effectShown =
