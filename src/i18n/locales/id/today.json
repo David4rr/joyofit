@@ -76,7 +76,17 @@
     "recovery": "Pemulihan",
     "readiness": "Kesiapan",
     "strain": "Strain",
-    "sleep": "Tidur"
+    "sleep": "Tidur",
+    "hint": {
+      "nights_other": "butuh {{count}} malam lagi",
+      "readings_other": "butuh {{count}} pengukuran lagi",
+      "hrvOff": "HRV malam mati",
+      "spot": "Butuh pengukuran HRV 1 menit",
+      "recoveryNone": "Belum ada HRV semalam",
+      "recoveryPrefix": "Pemulihan: {{hint}}",
+      "strainNone": "Belum ada detak jantung hari ini",
+      "sleepNone": "Tidur semalam belum tercatat"
+    }
   },
   "readiness": {
     "title": "Kesiapan",

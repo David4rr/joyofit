@@ -79,7 +79,19 @@
     "recovery": "Recovery",
     "readiness": "Readiness",
     "strain": "Strain",
-    "sleep": "Sleep"
+    "sleep": "Sleep",
+    "hint": {
+      "nights_one": "{{count}} more night needed",
+      "nights_other": "{{count}} more nights needed",
+      "readings_one": "{{count}} more reading needed",
+      "readings_other": "{{count}} more readings needed",
+      "hrvOff": "Night HRV is off",
+      "spot": "Needs a 1-minute HRV reading",
+      "recoveryNone": "No HRV from last night yet",
+      "recoveryPrefix": "Recovery: {{hint}}",
+      "strainNone": "No heart rate yet today",
+      "sleepNone": "No sleep stored for last night"
+    }
   },
   "readiness": {
     "title": "Readiness",
