@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { anthropicAdapter, parseAnthropicReply } from './adapters/anthropic';
-import { openAiAdapter, parseOpenAiReply, reasoningOf } from './adapters/openai';
+import { openAiAdapter, parseOpenAiReply, reasoningOf, resetStreamMemory } from './adapters/openai';
 import { splitThink } from './adapters/sse';
 import { PROVIDERS } from './providers';
 import { TOOL_SPECS } from './tools';
@@ -149,5 +149,47 @@ describe('Anthropic thinking and limits', () => {
     expect(calls[0]!.body).toMatchObject({ stream: true });
     expect(calls[1]!.body).not.toHaveProperty('stream');
     expect(seen).toEqual(['Halo']);
+  });
+});
+
+describe('fast mode (ask the model not to think at length)', () => {
+  const custom = { baseUrl: 'https://gateway.example.com/v1', apiKey: KEY, model: 'glm-5.3-flash' };
+  const plain = () => json({ choices: [{ finish_reason: 'stop', message: { content: 'Halo' } }] });
+
+  test('a custom server gets the thinking switches; OpenAI proper and Gemini get nothing extra; off sends nothing', async () => {
+    resetStreamMemory();
+    const on = mockFetch([plain()]);
+    await openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl: on.fetchImpl });
+    expect(on.calls[0]!.body).toMatchObject({ thinking: { type: 'disabled' }, enable_thinking: false, reasoning_effort: 'low' });
+    const off = mockFetch([plain()]);
+    await openAiAdapter.complete(custom, ask, { fetchImpl: off.fetchImpl });
+    expect(off.calls[0]!.body).not.toHaveProperty('thinking');
+    const openai = mockFetch([plain()]);
+    await openAiAdapter.complete({ baseUrl: PROVIDERS.openai.baseUrl, apiKey: KEY, model: 'gpt-6-luna' }, { ...ask, fast: true }, { fetchImpl: openai.fetchImpl });
+    expect(openai.calls[0]!.body).not.toHaveProperty('thinking');
+    expect(openai.calls[0]!.body).not.toHaveProperty('reasoning');
+    const router = mockFetch([plain()]);
+    await openAiAdapter.complete({ baseUrl: PROVIDERS.openrouter.baseUrl, apiKey: KEY, model: 'm' }, { ...ask, fast: true }, { fetchImpl: router.fetchImpl });
+    expect(router.calls[0]!.body).toMatchObject({ reasoning: { effort: 'low' } });
+  });
+
+  test('a server that rejects the fields is asked again without them, and remembered', async () => {
+    resetStreamMemory();
+    const first = mockFetch([json({ error: { message: 'Unrecognized request argument: enable_thinking' } }, 400), plain()]);
+    const reply = await openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl: first.fetchImpl });
+    expect(reply.text).toBe('Halo');
+    expect(first.calls).toHaveLength(2);
+    expect(first.calls[0]!.body).toHaveProperty('enable_thinking');
+    expect(first.calls[1]!.body).not.toHaveProperty('enable_thinking');
+    const next = mockFetch([plain()]);
+    await openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl: next.fetchImpl });
+    expect(next.calls[0]!.body).not.toHaveProperty('enable_thinking');
+  });
+
+  test('another kind of failure (a bad key) is not retried', async () => {
+    resetStreamMemory();
+    const { fetchImpl, calls } = mockFetch([json({ error: { message: 'Incorrect API key' } }, 401)]);
+    await expect(openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl })).rejects.toMatchObject({ kind: 'badKey' });
+    expect(calls).toHaveLength(1);
   });
 });

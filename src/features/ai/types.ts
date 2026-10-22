@@ -43,6 +43,8 @@ export interface ModelRequest {
   messages: readonly NeutralMessage[];
   tools?: readonly ToolSpec[];
   maxTokens: number;
+  /** Ask the model not to think at length (a faster, shorter-thinking answer) where the server understands it. */
+  fast?: boolean;
 }
 
 export interface Usage {

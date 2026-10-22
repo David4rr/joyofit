@@ -332,7 +332,9 @@
         "badUrl": "Fix the server address first.",
         "noKey": "The key is not on this phone.",
         "noConsent": "Agree to sending data in the key settings first."
-      }
+      },
+      "fast": "Fast answers",
+      "fastHint": "Asks the model not to think at length. Quicker and cheaper, sometimes less thorough. Only has an effect where the provider supports it (OpenRouter and your own address)."
     },
     "data": {
       "title": "Data",

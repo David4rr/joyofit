@@ -39,21 +39,24 @@ export interface AskInput {
 
 /** One answer with the person's own key, with everything bound to the phone's stores. */
 export async function askJoyoAi(input: AskInput): Promise<Answer> {
+  const mark = startTiming('ask');
+  mark('person-read');
   const person = await readPerson(aiKv, input.signedIn);
+  mark('person-done');
   const tools = createToolData(input.db, input.coach);
   return answer(input.history, {
     settings: aiSettings,
     usage: aiUsage,
     getKey: aiVault.get,
     person,
-    source: () => gatherDigestSource({ db: input.db, coach: input.coach, person, notes: aiNotes.list(), signedIn: input.signedIn, locale: locale(), tools }),
+    source: () => gatherDigestSource({ db: input.db, coach: input.coach, person, notes: aiNotes.list(), signedIn: input.signedIn, locale: locale(), tools, mark }),
     data: tools,
     text: input.text,
     locale: locale(),
     nowSec,
     signal: input.signal,
     onEvent: input.onEvent,
-    mark: startTiming('ask'),
+    mark,
   });
 }
 

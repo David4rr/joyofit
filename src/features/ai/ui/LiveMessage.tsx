@@ -42,11 +42,12 @@ export const LiveMessage = memo(function LiveMessage({ live, hosted }: { live: L
           <Markdown text={tail} streaming color={colors.foreground} />
           <View style={[styles.marker, { backgroundColor: colors.mutedForeground }]} />
         </>
-      ) : (
+      ) : live.reasoning === '' || hosted ? (
+        // With reasoning on screen the "Berpikir" row already says it; a second line would repeat it.
         <AppText variant="caption" muted accessibilityLiveRegion="polite">
           {line}
         </AppText>
-      )}
+      ) : null}
     </View>
   );
 });

@@ -238,7 +238,7 @@ export async function insightFor(slot: { kind: InsightKind; key: string }, deps:
       const prompt = insightPrompt(facts, deps.locale, cautious, strict);
       const reply = await adapter.complete(
         { baseUrl: gate.baseUrl, apiKey: key, model: gate.model },
-        { model: gate.model, system: prompt.system, messages: [{ role: 'user', content: prompt.user }], maxTokens: slot.kind === 'weekly' ? 400 : 220 },
+        { model: gate.model, system: prompt.system, messages: [{ role: 'user', content: prompt.user }], maxTokens: slot.kind === 'weekly' ? 400 : 220, fast: settings.fastMode },
         { signal: deps.signal, fetchImpl: deps.fetchImpl },
       );
       deps.usage.record(deps.nowSec(), reply.usage);

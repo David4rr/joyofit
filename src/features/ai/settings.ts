@@ -26,6 +26,8 @@ export interface AiSettings {
   consents: Partial<Record<ProviderId, ConsentRecord>>;
   insightDaily: boolean;
   insightWeekly: boolean;
+  /** Ask thinking models to answer without long reasoning: faster and cheaper, sometimes less thorough. */
+  fastMode: boolean;
   /** Provider calls per day the phone allows itself (tool rounds count). */
   dailyCeiling: number;
   /** `provider:model` pairs that answered "no tool calling": they run on the digest alone. */
@@ -45,6 +47,7 @@ export const DEFAULT_SETTINGS: AiSettings = {
   consents: {},
   insightDaily: false,
   insightWeekly: false,
+  fastMode: false,
   dailyCeiling: DEFAULT_CEILING,
   noTools: [],
 };
@@ -77,6 +80,7 @@ export function parseSettings(value: unknown): AiSettings {
     consents,
     insightDaily: value.insightDaily === true,
     insightWeekly: value.insightWeekly === true,
+    fastMode: value.fastMode === true,
     dailyCeiling: Math.min(MAX_CEILING, Math.max(MIN_CEILING, ceiling)),
     noTools: Array.isArray(value.noTools) ? value.noTools.filter((x): x is string => typeof x === 'string').slice(-50) : [],
   };

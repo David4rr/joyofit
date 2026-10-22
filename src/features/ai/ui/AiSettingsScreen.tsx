@@ -208,6 +208,13 @@ export function AiSettingsScreen() {
               disabled={!ownReady}
               onValueChange={(value) => aiSettings.update({ insightWeekly: value })}
             />
+            <SwitchRow
+              label={t('prefs.style.fast')}
+              hint={t('prefs.style.fastHint')}
+              value={settings.fastMode}
+              disabled={!ownReady}
+              onValueChange={(value) => aiSettings.update({ fastMode: value })}
+            />
             <AppText variant="caption" muted>
               {t('prefs.style.where')}
             </AppText>

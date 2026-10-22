@@ -1,5 +1,6 @@
 import { isRecord, type Json } from '../json';
 import { PROVIDERS } from '../providers';
+import type { ProviderId } from '../types';
 import type { Adapter, CallOptions, ModelInfo, ModelReply, ModelRequest, NeutralMessage, ProviderConnection, StreamDelta, ToolCall, Usage } from '../types';
 import { AiError } from '../types';
 import { CALL_TIMEOUT_MS, LIST_TIMEOUT_MS, postJson, postStream } from './http';
@@ -38,6 +39,17 @@ function toWire(message: NeutralMessage): Json {
   return wire;
 }
 
+/**
+ * What "fast" adds per provider. A custom server gets the switches the Chinese and open-source servers read (GLM, Kimi and DeepSeek
+ * take `thinking: {type: disabled}`, Qwen `enable_thinking: false`; servers that do not know a field ignore it, and one that rejects
+ * it is asked again without, see `refusedFast`). OpenRouter normalises `reasoning.effort`. OpenAI and Gemini already run at their
+ * defaults here and are left alone.
+ */
+const FAST_FIELDS: Partial<Record<ProviderId, Json>> = {
+  custom: { thinking: { type: 'disabled' }, enable_thinking: false, reasoning_effort: 'low' },
+  openrouter: { reasoning: { effort: 'low' } },
+};
+
 /** The body of `POST {baseUrl}/chat/completions`. Exported for the request-mapping tests. */
 export function buildOpenAiBody(baseUrl: string, request: ModelRequest, opts: { stream?: boolean; usage?: boolean } = {}): Json {
   const q = quirks(baseUrl);
@@ -50,6 +62,7 @@ export function buildOpenAiBody(baseUrl: string, request: ModelRequest, opts: { 
     body.tools = request.tools.map((tool) => ({ type: 'function', function: { name: tool.name, description: tool.description, parameters: tool.parameters } }));
   }
   if (q.reasoningEffort) body.reasoning_effort = q.reasoningEffort;
+  if (request.fast) Object.assign(body, FAST_FIELDS[q.id] ?? {});
   if (opts.stream) {
     body.stream = true;
     // Every compatible server that streams is asked for the token count; one that refuses is remembered (`refusedUsage`) and asked without.
@@ -259,11 +272,29 @@ function hostKey(baseUrl: string): string {
 export function resetStreamMemory(): void {
   refusedUsage.clear();
   refusedStream.clear();
+  refusedFast.clear();
+}
+
+/** Hosts that answered 400 or 422 to the fast-mode fields: asked without them from then on. */
+const refusedFast = new Set<string>();
+
+async function complete(conn: ProviderConnection, request: ModelRequest, options: CallOptions = {}): Promise<ModelReply> {
+  const host = hostKey(conn.baseUrl);
+  if (request.fast && FAST_FIELDS[quirks(conn.baseUrl).id] && !refusedFast.has(host)) {
+    try {
+      return await completeOnce(conn, request, options);
+    } catch (error) {
+      if (!refusal(error)) throw error;
+      options.mark?.('fast-refused');
+      refusedFast.add(host);
+    }
+  }
+  return completeOnce(conn, { ...request, fast: false }, options);
 }
 
 const refusal = (error: unknown): boolean => error instanceof AiError && error.kind === 'badRequest' && error.status !== null;
 
-async function complete(conn: ProviderConnection, request: ModelRequest, options: CallOptions = {}): Promise<ModelReply> {
+async function completeOnce(conn: ProviderConnection, request: ModelRequest, options: CallOptions = {}): Promise<ModelReply> {
   const url = `${conn.baseUrl}/chat/completions`;
   const headers = { Authorization: `Bearer ${conn.apiKey}` };
   const host = hostKey(conn.baseUrl);

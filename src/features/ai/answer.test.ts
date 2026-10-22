@@ -223,3 +223,23 @@ describe('answer loop', () => {
     await expect(answer(ask('tidur?'), t.deps)).rejects.toMatchObject({ kind: 'empty' });
   });
 });
+
+describe('history sent to the model', () => {
+  test('older answers are cut, the last two turns are whole', async () => {
+    const t = await setup();
+    const long = 'x'.repeat(1500);
+    await answer(
+      [
+        { role: 'user', content: 'q1' },
+        { role: 'assistant', content: long },
+        { role: 'user', content: 'q2' },
+        { role: 'assistant', content: long },
+        { role: 'user', content: 'q3' },
+      ],
+      t.deps,
+    );
+    const sent = t.adapter.requests[0]!.messages.map((m) => (m.role === 'assistant' ? m.content.length : 0));
+    expect(sent[1]).toBe(ANSWER_LIMITS.oldAnswerChars + 3);
+    expect(sent[3]).toBe(1500);
+  });
+});

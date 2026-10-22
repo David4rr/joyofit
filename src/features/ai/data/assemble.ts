@@ -12,6 +12,7 @@ import { DIGEST_DAYS, type DigestSource, type DigestState, type DigestWorkout } 
 import type { CoachNote } from '../memory';
 import type { Person } from '../person';
 import type { PlanInfo, ToolData } from '../tools';
+import { noMark, type Mark } from '../timing';
 import { DEFAULT_STEP_GOAL } from '@/features/today/useStepGoal';
 import { HuaweiWear } from '@/wear';
 import { readDailyRows, readSleepNight, readWorkoutDetail, readWorkouts } from './localData';
@@ -96,6 +97,7 @@ export interface GatherInput {
   signedIn: boolean;
   locale: 'id' | 'en';
   tools: ToolData;
+  mark?: Mark;
 }
 
 /**
@@ -108,14 +110,32 @@ export async function gatherDigestSource(input: GatherInput): Promise<DigestSour
   const today = coach.today;
   const from = addDays(today, -(DIGEST_DAYS - 1));
   const missing: string[] = [];
-  const rows = await tools.daily(from, today);
+  const mark = input.mark ?? noMark;
+  // The phone's database and JoyoRogo are read at the same time; the question waits for the slower of the two.
+  const rogoPart = input.signedIn
+    ? Promise.all([tools.food(from, today).catch(() => null), tools.weights(from, today).catch(() => null)]).then((r) => {
+        mark('gather-rogo');
+        return r;
+      })
+    : Promise.resolve(null);
+  const [rows, rogo, workoutRows] = await Promise.all([
+    tools.daily(from, today).then((r) => {
+      mark('gather-days');
+      return r;
+    }),
+    rogoPart,
+    tools.workouts(addDays(today, -13), today, null).then((r) => {
+      mark('gather-workouts');
+      return r;
+    }),
+  ]);
 
   let foodDays = 0;
   let weighIns = 0;
-  if (!input.signedIn) {
+  if (!input.signedIn || rogo === null) {
     missing.push('food and weight: not signed in to JoyoRogo');
   } else {
-    const [food, weights] = await Promise.all([tools.food(from, today).catch(() => null), tools.weights(from, today).catch(() => null)]);
+    const [food, weights] = rogo;
     const byDay = new Map(rows.map((r) => [r.d, r]));
     if (food === null) missing.push('food: JoyoRogo did not answer');
     else if (food !== 'not_connected') {
@@ -141,7 +161,7 @@ export async function gatherDigestSource(input: GatherInput): Promise<DigestSour
   }
 
   const profile = HuaweiWear.getUserProfile();
-  const workouts: DigestWorkout[] = (await tools.workouts(addDays(today, -13), today, null)).slice(0, 10);
+  const workouts: DigestWorkout[] = workoutRows.slice(0, 10);
   const plan = planInfo(coach);
   return {
     now: localIso(new Date()),

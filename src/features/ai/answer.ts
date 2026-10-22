@@ -10,7 +10,7 @@ import { isToolName, runTool, TOOL_SPECS, type ToolData, type ToolSummary, type 
 import type { UsageStore } from './usage';
 import { AiError, type Adapter, type AdapterKind, type NeutralMessage, type ProviderId, type ToolCall, type Usage } from './types';
 
-export const ANSWER_LIMITS = { toolRounds: 4, toolCallsPerRound: 4, maxTokens: 800, maxTokensRetry: 2_400, turns: 12, reasoningChars: 6_000 } as const;
+export const ANSWER_LIMITS = { toolRounds: 4, toolCallsPerRound: 4, maxTokens: 800, maxTokensRetry: 2_400, turns: 12, reasoningChars: 6_000, oldAnswerChars: 500 } as const;
 
 export interface AnswerDeps {
   settings: SettingsStore;
@@ -83,7 +83,12 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
   const gate = byokAccess(settings, deps.person.ageYears);
   if (!gate.ok) throw blocked(gate.reason);
 
-  const turns = history.slice(-ANSWER_LIMITS.turns).map((t) => ({ role: t.role, content: t.content.slice(0, SAFETY_LIMITS.maxMessageChars) }));
+  // Older answers are cut: they were already read, and every token of them is paid for and waited for again in each question.
+  const recent = history.slice(-ANSWER_LIMITS.turns);
+  const turns = recent.map((t, i) => ({
+    role: t.role,
+    content: t.role === 'assistant' && i < recent.length - 2 && t.content.length > ANSWER_LIMITS.oldAnswerChars ? `${t.content.slice(0, ANSWER_LIMITS.oldAnswerChars)}...` : t.content.slice(0, SAFETY_LIMITS.maxMessageChars),
+  }));
   // Anthropic wants the first message from the user; cutting to the last turns can leave an answer in front.
   while (turns.length > 0 && turns[0]!.role !== 'user') turns.shift();
   const lastUser = [...turns].reverse().find((t) => t.role === 'user');
@@ -132,7 +137,7 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
     try {
       const reply = await adapter.complete(
         conn,
-        { model: gate.model, system, messages, tools: withTools ? TOOL_SPECS : undefined, maxTokens },
+        { model: gate.model, system, messages, tools: withTools ? TOOL_SPECS : undefined, maxTokens, fast: settings.fastMode },
         {
           signal: deps.signal,
           fetchImpl: deps.fetchImpl,

@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, StyleSheet, useWindowDimensions, View, type ListRenderItemInfo, type TextInput } from 'react-native';
+import { FlatList, StyleSheet, View, type ListRenderItemInfo, type TextInput } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -51,6 +52,7 @@ import { EngineChip } from './EngineChip';
 import { GateCard } from './GateCard';
 import { viewAiError, type AiErrorView } from './errors';
 import { LiveMessage } from './LiveMessage';
+import { HeaderBackButton } from '@/components/HiddenTabHeader';
 import { MarqueeTitle } from './MarqueeTitle';
 import { MessageView } from './MessageView';
 import { RenameDialog } from './RenameDialog';
@@ -124,7 +126,7 @@ export function JoyoAiChat() {
   const [focusTick, setFocusTick] = useState(0);
   const [renaming, setRenaming] = useState(false);
   const [titleTick, setTitleTick] = useState(0);
-  const { width: windowWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   const engine = settings.engine;
   const [rogoUsage, setRogoUsage] = useRogoStatus(engine === 'rogo' && coachAccess === 'pro');
@@ -504,7 +506,8 @@ export function JoyoAiChat() {
   );
 
   // At the bottom of the list (below the newest message): what the last answer left to say.
-  const bottom = listReady ? (
+  const hasNotices = flagged || toolsOff || paywall || hostedError !== null || aiError !== null;
+  const bottom = listReady && hasNotices ? (
     <View style={styles.notices}>
       {flagged ? <Notice icon="medkit">{tc('chat.flagged')}</Notice> : null}
       {toolsOff ? (
@@ -588,30 +591,21 @@ export function JoyoAiChat() {
       initialNumToRender={10}
       windowSize={9}
       // In an inverted list the native top is the bottom of the screen: swap the padding, and push a short chat to the top.
-      contentContainerStyle={[styles.listContent, { paddingHorizontal: padding.paddingHorizontal, paddingTop: padding.paddingBottom, paddingBottom: padding.paddingTop }]}
+      contentContainerStyle={[styles.listContent, { paddingHorizontal: padding.paddingHorizontal, paddingTop: spacing.sm, paddingBottom: spacing.sm }]}
     />
   );
 
   return (
     <View style={styles.root}>
-      <Stack.Screen
-        options={{
-          title,
-          // Room for the back arrow and the two buttons; a title longer than this slides (see MarqueeTitle).
-          headerTitle: () => (
-            <View style={{ width: Math.max(120, windowWidth - 200) }}>
-              <MarqueeTitle title={title} hint={t('chat.renameHint')} onPress={conversationId ? () => setRenaming(true) : undefined} />
-            </View>
-          ),
-          headerTitleAlign: 'left',
-          headerRight: () => (
-            <View style={styles.headerButtons}>
-              <HeaderIconButton icon="time-outline" label={t('chat.history')} onPress={() => router.push('/coach/chats')} />
-              <HeaderIconButton icon="add" label={t('chat.new')} onPress={startNew} />
-            </View>
-          ),
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={[styles.header, { paddingTop: insets.top + spacing.xs, backgroundColor: colors.background }]}>
+        <HeaderBackButton />
+        <View style={styles.headerTitle}>
+          <MarqueeTitle title={title} hint={t('chat.renameHint')} onPress={conversationId ? () => setRenaming(true) : undefined} />
+        </View>
+        <HeaderIconButton icon="time-outline" label={t('chat.history')} onPress={() => router.push('/coach/chats')} />
+        <HeaderIconButton icon="add" label={t('chat.new')} onPress={startNew} />
+      </View>
       <Screen footer={composer} overlay={composerReady ? jump : undefined} list={renderList}>
         {null}
       </Screen>
@@ -645,6 +639,7 @@ const styles = StyleSheet.create({
   empty: { gap: spacing.sm },
   gap: { height: spacing.lg },
   listContent: { flexGrow: 1, justifyContent: 'flex-end' },
-  headerButtons: { flexDirection: 'row', gap: spacing.sm },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.xs },
+  headerTitle: { flex: 1, minWidth: 0 },
   jump: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, borderWidth: StyleSheet.hairlineWidth },
 });

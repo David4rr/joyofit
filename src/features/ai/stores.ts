@@ -2,6 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import Storage from 'expo-sqlite/kv-store';
 
 import { createChatStore } from './conversations';
+import { clearRogoCache } from './data/rogoData';
 import { createInsightStore } from './insight';
 import { createKeyVault } from './keyVault';
 import type { KvStore, SecretStore } from './kv';
@@ -40,4 +41,7 @@ export const aiRemoveProvider = (provider: ProviderId): Promise<void> => removeP
 /** "Hapus catatan dan percakapan". */
 export const aiDeleteMemory = (): void => deleteMemory(resetDeps);
 /** Everything Joyo AI keeps on the phone. */
-export const aiDeleteEverything = (): Promise<void> => deleteEverything(resetDeps);
+export const aiDeleteEverything = async (): Promise<void> => {
+  clearRogoCache();
+  await deleteEverything(resetDeps);
+};

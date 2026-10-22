@@ -8,6 +8,7 @@ describe('durations read as hours and minutes', () => {
     expect(formatDurations('utang tidur 684 menit', 'id')).toBe('utang tidur 11 jam 24 menit');
     expect(formatDurations('402 min tidur, 311 mins', 'en')).toBe('6h 42m tidur, 5h 11m');
     expect(formatDurations('120 menit latihan', 'id')).toBe('2 jam latihan');
+    expect(formatDurations('a 311-minute sleep night', 'en')).toBe('a 5h 11m sleep night');
   });
   test('short ones, other numbers and words stay as written', () => {
     expect(formatDurations('45 minutes of walking, 89 menit', 'en')).toBe('45 minutes of walking, 89 menit');

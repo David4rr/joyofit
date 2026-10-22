@@ -327,7 +327,9 @@
         "badUrl": "Perbaiki alamat server dulu.",
         "noKey": "Kunci tidak ada di ponsel ini.",
         "noConsent": "Setujui dulu pengiriman data di pengaturan kunci."
-      }
+      },
+      "fast": "Jawaban cepat",
+      "fastHint": "Meminta model tidak berpikir panjang. Lebih cepat dan hemat token, kadang kurang dalam. Hanya berpengaruh bila server penyedia mendukungnya (OpenRouter dan alamat sendiri)."
     },
     "data": {
       "title": "Data",
