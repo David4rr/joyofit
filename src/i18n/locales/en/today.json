@@ -412,5 +412,32 @@
     "goalValue": "{{value}} steps",
     "goalDefault": "Default. Tap to set your own.",
     "about": "Steps are summed from the minutes the watch stored; a day with no stored minute is no data, not zero steps. Weeks start on Monday. The goal line is today's goal applied to every day, because goal changes are not stored."
+  },
+  "setup": {
+    "title": "Finish setting up",
+    "dismiss": "Hide the setup checklist",
+    "done": "done",
+    "rows": {
+      "pair": {
+        "title": "Pair your watch",
+        "hint": "Without a watch there is no daily data to show."
+      },
+      "sync": {
+        "title": "Run the first sync",
+        "hint": "Pulls steps, sleep and heart rate from the watch."
+      },
+      "health": {
+        "title": "Write to {{store}}",
+        "hint": "Lets JoyoRogo and other apps read your watch data."
+      },
+      "account": {
+        "title": "Sign in to JoyoRogo",
+        "hint": "Sends workout energy and scores to your JoyoRogo diary."
+      },
+      "profile": {
+        "title": "Set your profile and goal",
+        "hint": "Height, weight and birth year fit heart-rate zones and calories to you."
+      }
+    }
   }
 }

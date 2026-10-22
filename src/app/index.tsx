@@ -13,6 +13,7 @@ import { Notice, Skeleton } from '@/components/States';
 import { StatTile } from '@/components/StatTile';
 import { elapsedSec, formatGrams, isActive, livePhase } from '@/features/live/liveWorkout';
 import { scoreFor } from '@/features/sleep/nights';
+import { SetupChecklistCard } from '@/features/setup/SetupChecklistCard';
 import { StepsWeekCard } from '@/features/steps/StepsWeekCard';
 import { SleepSummaryView } from '@/features/today/SleepSummaryView';
 import { ownTotalsOf } from '@/features/device/watchDayTotals';
@@ -244,6 +245,7 @@ function WatchToday() {
           </Card>
         ) : null}
         {error ? <Notice tone="danger">{error}</Notice> : null}
+        <SetupChecklistCard />
         {loadError ? <Notice tone="danger">{t('home.loadError', { error: loadError })}</Notice> : null}
       </View>
 
