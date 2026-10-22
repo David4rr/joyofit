@@ -16,6 +16,9 @@ import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { linkLabel } from '@/features/device/linkState';
 import { HEALTH_STORE } from '@/features/sources/store';
 import { useAccountDialogs } from '@/features/settings/useAccountDialogs';
+import { useByokAccess } from '@/features/ai/hooks';
+import { hubStatusLine } from '@/features/ai/ui/status';
+import { useCoachAccess } from '@/features/coach/useCoachAccess';
 import { t as tOther } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
 import { useOnboarding } from '@/state/OnboardingProvider';
@@ -49,6 +52,9 @@ export default function SettingsScreen() {
   const padding = useContentPadding(true);
   const guide = useOnboarding();
   const cloud = useCloud();
+  const { t: ta } = useTranslation('ai');
+  const ai = useByokAccess();
+  const coachAccess = useCoachAccess();
   const presence = useWatchPresence();
   const { device, linkState, watches } = useWatch();
   const user = authClient.useSession().data?.user;
@@ -109,6 +115,14 @@ export default function SettingsScreen() {
         icon: 'swap-horizontal',
         tint: 'link',
         onPress: go('/settings/sources'),
+      },
+      {
+        key: 'joyo-ai',
+        title: t('screens.joyoAi'),
+        subtitle: hubStatusLine({ settings: ai.settings, access: ai.access, coachAccess }, ta),
+        icon: 'chatbubbles',
+        tint: 'link',
+        onPress: go('/settings/ai'),
       },
       { key: 'koneksi', title: t('screens.koneksi'), icon: 'sparkles', tint: 'link', onPress: go('/settings/koneksi') },
       { key: 'family', title: tOther('family:title.family'), icon: 'people', tint: 'link', onPress: go('/family') },
