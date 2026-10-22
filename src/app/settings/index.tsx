@@ -102,7 +102,7 @@ export default function SettingsScreen() {
         subtitle: hubStatusLine({ settings: ai.settings, access: ai.access, coachAccess }, ta),
         icon: 'chatbubbles',
         tint: 'link',
-        onPress: () => router.push(joyoAiDestination({ settings: ai.settings, access: ai.access, coachAccess })),
+        onPress: () => router.navigate(joyoAiDestination({ settings: ai.settings, access: ai.access, coachAccess })),
       },
     ],
   };

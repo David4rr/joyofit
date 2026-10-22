@@ -14,11 +14,11 @@ describe('where a Joyo AI shortcut leads', () => {
     expect(joyoAiDestination(state({ coachAccess: 'signedOut' }), seed)).toEqual({ pathname: '/settings/ai-setup' });
   });
   test('Pro on the hosted engine: the chat, seed passed as params', () => {
-    expect(joyoAiDestination(state({ coachAccess: 'pro' }))).toEqual({ pathname: '/coach/chat' });
-    expect(joyoAiDestination(state({ coachAccess: 'pro' }), seed)).toEqual({ pathname: '/coach/chat', params: { seed: 'workout', ref: 'w:1729500000', label: 'Lari 21 Okt' } });
+    expect(joyoAiDestination(state({ coachAccess: 'pro' }))).toEqual({ pathname: '/joyo/chat' });
+    expect(joyoAiDestination(state({ coachAccess: 'pro' }), seed)).toEqual({ pathname: '/joyo/chat', params: { seed: 'workout', ref: 'w:1729500000', label: 'Lari 21 Okt' } });
   });
   test('own key ready and chosen: the chat even without Pro', () => {
-    expect(joyoAiDestination(state({ settings: { engine: 'byok', provider: 'openrouter' }, access: ready }))).toEqual({ pathname: '/coach/chat' });
+    expect(joyoAiDestination(state({ settings: { engine: 'byok', provider: 'openrouter' }, access: ready }))).toEqual({ pathname: '/joyo/chat' });
   });
   test('own key ready but the hosted engine is chosen and the account is not Pro: the settings, to switch engine', () => {
     expect(joyoAiDestination(state({ access: ready }))).toEqual({ pathname: '/settings/ai' });
@@ -27,10 +27,10 @@ describe('where a Joyo AI shortcut leads', () => {
     expect(joyoAiDestination(state({ settings: { engine: 'byok', provider: 'openai' }, access: { ok: false, reason: 'minor' } }))).toEqual({ pathname: '/settings/ai-setup' });
   });
   test('own key chosen but blocked while the account is Pro: the chat shows the reason', () => {
-    expect(joyoAiDestination(state({ settings: { engine: 'byok', provider: 'openai' }, access: { ok: false, reason: 'noConsent' }, coachAccess: 'pro' }))).toEqual({ pathname: '/coach/chat' });
+    expect(joyoAiDestination(state({ settings: { engine: 'byok', provider: 'openai' }, access: { ok: false, reason: 'noConsent' }, coachAccess: 'pro' }))).toEqual({ pathname: '/joyo/chat' });
   });
   test('still reading the age or the account: the chat opens and shows its own checking state', () => {
-    expect(joyoAiDestination(state({ access: null }))).toEqual({ pathname: '/coach/chat' });
-    expect(joyoAiDestination(state({ coachAccess: 'checking' }))).toEqual({ pathname: '/coach/chat' });
+    expect(joyoAiDestination(state({ access: null }))).toEqual({ pathname: '/joyo/chat' });
+    expect(joyoAiDestination(state({ coachAccess: 'checking' }))).toEqual({ pathname: '/joyo/chat' });
   });
 });

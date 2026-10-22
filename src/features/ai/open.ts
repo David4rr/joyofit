@@ -10,7 +10,7 @@ export interface ChatSeed {
 }
 
 export type JoyoAiDestination =
-  | { pathname: '/coach/chat'; params?: Record<string, string> }
+  | { pathname: '/joyo/chat'; params?: Record<string, string> }
   | { pathname: '/settings/ai-setup' }
   | { pathname: '/settings/ai' };
 
@@ -32,7 +32,7 @@ export function joyoAiDestination(state: OpenState, seed?: ChatSeed): JoyoAiDest
   const { settings, access, coachAccess } = state;
   const ownReady = access?.ok === true;
   const hostedReady = coachAccess === 'pro';
-  const chat: JoyoAiDestination = { pathname: '/coach/chat', ...(seed ? { params: { seed: seed.seed, ref: seed.ref, label: seed.label } } : {}) };
+  const chat: JoyoAiDestination = { pathname: '/joyo/chat', ...(seed ? { params: { seed: seed.seed, ref: seed.ref, label: seed.label } } : {}) };
   if (access === null || coachAccess === 'checking') return chat;
   if (settings.engine === 'byok') return ownReady ? chat : hostedReady ? chat : { pathname: '/settings/ai-setup' };
   if (hostedReady) return chat;

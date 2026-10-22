@@ -44,10 +44,10 @@ export function ChatsScreen() {
   const [pending, setPending] = useState<ConversationMeta | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
 
-  const back = () => (router.canGoBack() ? router.back() : router.replace('/coach/chat'));
   const openChat = (id: string | null) => {
     aiChats.setCurrent(id);
-    back();
+    // The chat is on top of this list in the same stack: going to it again shows the existing one (Back from it comes here).
+    router.navigate('/joyo/chat');
   };
 
   return (

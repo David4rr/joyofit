@@ -12,7 +12,7 @@ function useOpenJoyoAi(seed?: ChatSeed): () => void {
   const router = useRouter();
   const { access, settings } = useByokAccess();
   const coachAccess = useCoachAccess();
-  return () => router.push(joyoAiDestination({ settings, access, coachAccess }, seed));
+  return () => router.navigate(joyoAiDestination({ settings, access, coachAccess }, seed));
 }
 
 /** The round "Tanya Joyo AI" button of a page header (Today, Workouts). The sparkle is the owner's choice for AI entry points. */

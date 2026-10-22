@@ -270,6 +270,8 @@ function RootNavigator() {
                     <Tabs.Screen name="routes" options={{ href: null }} />
                     {/* Coach (Pro): plan, session details and setup; its stack draws its own headers. */}
                     <Tabs.Screen name="coach" options={{ href: null }} />
+                    {/* Joyo AI: the history of chats with the chat on top of it, so Back from a chat shows the history first; its own stack so the Coach screen is never underneath. */}
+                    <Tabs.Screen name="joyo" options={{ href: null }} />
                     {/* "Main di web": the phone as the sensor bridge of the browser game; its stack draws its own headers. */}
                     <Tabs.Screen name="ride" options={{ href: null }} />
                     {/* Strength logger (workout, routines, history); its stack draws its own headers. */}
