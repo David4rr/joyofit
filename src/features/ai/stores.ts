@@ -32,7 +32,7 @@ export const aiNotes = createNotesStore(kv);
 export const aiUsage = createUsageStore(kv);
 export const aiInsights = createInsightStore(kv);
 
-const resetDeps: ResetDeps = { settings: aiSettings, vault: aiVault, notes: aiNotes, insights: aiInsights, usage: aiUsage, clearChat };
+const resetDeps: ResetDeps = { kv, settings: aiSettings, vault: aiVault, notes: aiNotes, insights: aiInsights, usage: aiUsage, clearChat };
 
 /** "Hapus kunci" for one provider (also withdraws its consent and clears cached insights). */
 export const aiRemoveProvider = (provider: ProviderId): Promise<void> => removeProvider(provider, resetDeps);

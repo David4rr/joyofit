@@ -5,6 +5,7 @@ import { createInsightStore } from './insight';
 import { cleanPastedKey, createKeyVault, keyName, maskKey } from './keyVault';
 import { memoryKv, memorySecrets } from './kv';
 import { createNotesStore } from './memory';
+import { PERSON_CACHE_KEY } from './person';
 import { deleteEverything, deleteMemory, removeProvider, type ResetDeps } from './reset';
 import { createSettingsStore } from './settings';
 import { PROVIDER_IDS } from './types';
@@ -17,6 +18,7 @@ function world() {
   const secrets = memorySecrets();
   const chat: string[] = ['turn'];
   const deps: ResetDeps = {
+    kv,
     settings: createSettingsStore(kv),
     vault: createKeyVault(secrets),
     notes: createNotesStore(kv),
@@ -104,6 +106,14 @@ describe('key handling', () => {
     expect(w.secrets.dump()).toEqual({});
     expect(w.kv.dump()).toEqual({});
     expect(w.deps.settings.get().engine).toBe('rogo');
+  });
+
+  test('delete everything also drops the cached JoyoRogo profile (age, goal, pregnancy mode)', async () => {
+    const w = world();
+    await connect(w);
+    w.kv.setItem(PERSON_CACHE_KEY, '{"birthYear":1990,"maternal":"none"}');
+    await deleteEverything(w.deps);
+    expect(w.kv.getItem(PERSON_CACHE_KEY)).toBeNull();
   });
 });
 

@@ -37,3 +37,6 @@ export function lowestAge(...ages: (number | null)[]): number | null {
   const known = ages.filter((a): a is number => a !== null);
   return known.length === 0 ? null : Math.min(...known);
 }
+
+/** The kv-store entry that caches the last JoyoRogo profile read (birth year, goal, pregnancy mode) so the age gate works offline. */
+export const PERSON_CACHE_KEY = 'joyofit.ai.person';

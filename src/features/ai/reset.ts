@@ -1,12 +1,15 @@
 import type { KeyVault } from './keyVault';
+import type { KvStore } from './kv';
 import type { NotesStore } from './memory';
 import { revokeConsent } from './consent';
 import type { InsightStore } from './insight';
+import { PERSON_CACHE_KEY } from './person';
 import type { SettingsStore } from './settings';
 import { PROVIDER_IDS, type ProviderId } from './types';
 import type { UsageStore } from './usage';
 
 export interface ResetDeps {
+  kv: KvStore;
   settings: SettingsStore;
   vault: KeyVault;
   notes: NotesStore;
@@ -41,10 +44,11 @@ export function deleteMemory(deps: Pick<ResetDeps, 'notes' | 'insights' | 'clear
   deps.clearChat();
 }
 
-/** Everything Joyo AI keeps on this phone: every key, consent, setting, note, conversation, insight and counter. */
+/** Everything Joyo AI keeps on this phone: every key, consent, setting, note, conversation, insight, counter and the cached JoyoRogo profile. */
 export async function deleteEverything(deps: ResetDeps): Promise<void> {
   await Promise.all(PROVIDER_IDS.map((p) => deps.vault.delete(p)));
   deleteMemory(deps);
   deps.usage.clear();
+  deps.kv.removeItem(PERSON_CACHE_KEY);
   deps.settings.reset();
 }

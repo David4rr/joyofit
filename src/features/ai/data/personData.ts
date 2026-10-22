@@ -3,9 +3,7 @@ import { HuaweiWear } from '@/wear';
 import { NotSignedInError } from '@/cloud/api';
 import type { KvStore } from '../kv';
 import { readJson } from '../kv';
-import { ageFromBirthYear, EMPTY_PERSON, lowestAge, type Maternal, type Person } from '../person';
-
-const KEY = 'joyofit.ai.person';
+import { ageFromBirthYear, EMPTY_PERSON, lowestAge, PERSON_CACHE_KEY as KEY, type Maternal, type Person } from '../person';
 
 /** What the last JoyoRogo profile read said; kept so the age gate and the maternal block still work offline. Cleared on sign-out. */
 interface CachedProfile {
