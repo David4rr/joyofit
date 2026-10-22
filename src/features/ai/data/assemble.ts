@@ -13,7 +13,7 @@ import type { CoachNote } from '../memory';
 import type { Person } from '../person';
 import type { PlanInfo, ToolData } from '../tools';
 import { noMark, type Mark } from '../timing';
-import { DEFAULT_STEP_GOAL } from '@/features/today/useStepGoal';
+import { DEFAULT_STEP_GOAL } from '@/features/today/stepGoal';
 import { HuaweiWear } from '@/wear';
 import { readDailyRows, readSleepNight, readWorkoutDetail, readWorkouts } from './localData';
 import { createRogoData } from './rogoData';

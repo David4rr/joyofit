@@ -6,7 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
 import { AppText } from '@/components/AppText';
-import { bucketAt, labelLeft, labelledBars, LABEL_CHAR_WIDTH, nextSelection, pointAt, slotCenter } from '@/components/barScrub';
+import { bucketAt, labelLeft, barHeight as heightOf, chartPeak, labelledBars, labelWidth, nextSelection, pointAt, slotCenter } from '@/components/barScrub';
 import { spacing, useColors } from '@/theme';
 
 const LABEL_HEIGHT = 16;
@@ -154,7 +154,7 @@ interface BarValueProps {
  */
 function BarValue({ text, center, chartWidth, bottom }: BarValueProps) {
   const [measured, setMeasured] = useState<number | null>(null);
-  const width = measured ?? text.length * LABEL_CHAR_WIDTH;
+  const width = measured ?? labelWidth(text);
   return (
     <View pointerEvents="none" importantForAccessibility="no-hide-descendants" style={[styles.valueRow, { bottom }]}>
       <AppText
@@ -195,12 +195,12 @@ const MIN_HIT_SLOT = 22;
 export function BarChart({ data, color, height, gap, tick, tickWidth, current, goal }: BarChartProps) {
   const colors = useColors();
   const scrub = useBarScrub(data.length, data);
-  const peak = Math.max(0, goal ?? 0, ...data.map((d) => d.value));
+  const peak = chartPeak(data.map((d) => d.value), goal);
   const slotWidth = data.length > 0 && scrub.width > 0 ? (scrub.width - gap * (data.length - 1)) / data.length : 0;
   const highlighted = scrub.selected === null ? (current === undefined ? data.length - 1 : current) : null;
   const labelled = labelledBars(data.length, scrub.width, data.map((d) => d.short), highlighted, scrub.selected);
   const picked = scrub.selected !== null ? data[scrub.selected]! : null;
-  const barHeight = (d: BarDatum) => (d.value > 0 ? Math.max(MIN_BAR, (d.value / peak) * height) : MIN_BAR);
+  const barHeight = (d: BarDatum) => heightOf(d.value, peak, height, MIN_BAR);
 
   return (
     <View style={styles.wrap}>
@@ -226,7 +226,7 @@ export function BarChart({ data, color, height, gap, tick, tickWidth, current, g
             </View>
           );
         })}
-        {goal !== undefined && goal > 0 && scrub.width > 0 ? (
+        {goal !== undefined && Number.isFinite(goal) && goal > 0 && scrub.width > 0 ? (
           <Svg pointerEvents="none" width={scrub.width} height={3} style={[styles.goal, { bottom: (goal / peak) * height - 1.5 }]}>
             <Line x1={0} x2={scrub.width} y1={1.5} y2={1.5} stroke={colors.foreground} strokeWidth={1.5} strokeDasharray="4 3" opacity={0.7} />
           </Svg>

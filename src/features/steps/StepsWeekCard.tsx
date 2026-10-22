@@ -12,6 +12,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Section } from '@/components/Screen';
 import { Skeleton } from '@/components/States';
 import { useDailySteps } from '@/features/steps/useStepsData';
+import { stepsLeft, weekSteps } from '@/features/steps/weekView';
 import { dayStarts } from '@/features/trends/series';
 import { fmtDate, fmtInt } from '@/i18n';
 import { spacing, useColors } from '@/theme';
@@ -44,11 +45,7 @@ export function StepsWeekCard({ dayStart, todaySteps, goal, goalIsDefault, dataV
 
   const view = useMemo(() => {
     if (!daily || dayStart === null) return null;
-    const values = days.map((day) => {
-      const stored = daily.get(day) ?? 0;
-      return day === dayStart ? Math.max(stored, todaySteps) : stored;
-    });
-    const total = values.reduce((a, b) => a + b, 0);
+    const { values, total, today } = weekSteps(days, daily, dayStart, todaySteps);
     const data: BarDatum[] = days.map((day, i) => ({
       key: day,
       value: values[i],
@@ -57,12 +54,12 @@ export function StepsWeekCard({ dayStart, todaySteps, goal, goalIsDefault, dataV
       short: fmtInt(values[i]),
       hit: values[i] >= goal,
     }));
-    return { data, total, today: values[values.length - 1] };
+    return { data, total, today };
   }, [daily, days, dayStart, todaySteps, goal, t]);
 
   if (!view) return <Skeleton width="100%" height={210} radius="card" />;
 
-  const left = Math.max(0, goal - view.today);
+  const left = stepsLeft(goal, view.today);
 
   return (
     <FadeIn>

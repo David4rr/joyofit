@@ -11,7 +11,7 @@ import { Section } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { Notice } from '@/components/States';
 import { syncHrZonesToWatch } from '@/features/hrzones/settings';
-import { DEFAULT_STEP_GOAL } from '@/features/today/useStepGoal';
+import { DEFAULT_STEP_GOAL, parseStepGoal } from '@/features/today/stepGoal';
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
 import { HuaweiWear, type UserProfile, type UserSex } from '@/wear';
@@ -49,8 +49,8 @@ function parseFields(fields: Fields, sex: UserSex): UserProfile | string {
   if (!Number.isInteger(birthYear) || birthYear < 1900 || birthYear > currentYear) {
     return t('settings:profile.errors.birthYear', { year: currentYear });
   }
-  const dailyStepGoal = Number(fields.steps.trim());
-  if (!Number.isInteger(dailyStepGoal) || dailyStepGoal < 1000 || dailyStepGoal > 100000) {
+  const dailyStepGoal = parseStepGoal(fields.steps);
+  if (dailyStepGoal === null) {
     return t('settings:profile.errors.steps');
   }
   return { heightCm: height, weightKg: Math.round(weight * 10) / 10, birthYear, sex, dailyStepGoal };

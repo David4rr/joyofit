@@ -25,6 +25,7 @@ import {
 import { RangeHeader } from '@/features/metric/RangeHeader';
 import { stepBars, summarizeSteps, type StepBar } from '@/features/steps/series';
 import { useStepsPeriod } from '@/features/steps/useStepsData';
+import { stepsLeft } from '@/features/steps/weekView';
 import { ownTotalsOf } from '@/features/device/watchDayTotals';
 import { useStepGoal } from '@/features/today/useStepGoal';
 import { startOfLocalDay } from '@/features/today/stats';
@@ -149,7 +150,7 @@ export function StepsScreen() {
   const current = view?.period ?? period;
   const todayInside = holdsToday(period, todayStart);
   const busiest = view && view.period.range === 'D' ? view.bars.reduce((best, b, i) => (b.value > view.bars[best].value ? i : best), 0) : -1;
-  const left = Math.max(0, goal - (view?.summary.total ?? 0));
+  const left = stepsLeft(goal, view?.summary.total ?? 0);
 
   return (
     <Screen refresh={{ refreshing: linkState === 'syncing', onRefresh: () => void sync(), enabled: canSync }}>
@@ -169,17 +170,19 @@ export function StepsScreen() {
         <View style={[styles.body, stale ? styles.stale : null]}>
           <Card>
             <View style={styles.headline}>
-              {view.summary.headline !== null ? (
-                <Metric
-                  value={fmtInt(Math.round(view.summary.headline))}
-                  unit={current.range === 'D' ? t('steps.unit') : t('steps.unitPerDay')}
-                  size="lg"
-                  color={colors.stepsText}
-                  unitColor={colors.mutedForeground}
-                />
-              ) : (
-                <Metric value="--" unit={current.range === 'D' ? t('steps.unit') : t('steps.unitPerDay')} size="lg" unitColor={colors.mutedForeground} />
-              )}
+              <View style={styles.figure}>
+                {view.summary.headline !== null ? (
+                  <Metric
+                    value={fmtInt(Math.round(view.summary.headline))}
+                    unit={current.range === 'D' ? t('steps.unit') : t('steps.unitPerDay')}
+                    size="lg"
+                    color={colors.stepsText}
+                    unitColor={colors.mutedForeground}
+                  />
+                ) : (
+                  <Metric value="--" unit={current.range === 'D' ? t('steps.unit') : t('steps.unitPerDay')} size="lg" unitColor={colors.mutedForeground} />
+                )}
+              </View>
               {current.range === 'D' ? (
                 current.from === todayStart && view.summary.headline !== null ? (
                   <InfoPill label={left === 0 ? t('week.reached') : t('week.left', { value: fmtInt(left) })} tint={left === 0 ? 'steps' : undefined} />
@@ -229,6 +232,8 @@ export function StepsScreen() {
 const styles = StyleSheet.create({
   body: { gap: spacing.lg },
   stale: { opacity: 0.55 },
-  headline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  // A five or six digit figure in a dot-matrix face is wide: the pill drops under it instead of squeezing it, and the figure itself shrinks to the card.
+  headline: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: spacing.md, rowGap: spacing.sm },
+  figure: { flexShrink: 1, maxWidth: '100%' },
   goalCard: { padding: 0 },
 });

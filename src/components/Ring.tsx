@@ -4,6 +4,7 @@ import Svg, { Circle, Defs, Mask } from 'react-native-svg';
 
 import { FILL_MS } from '@/components/motion';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { dotGeometry, litDots, ringA11yValue, ringRatio } from '@/components/ringMath';
 import { useTheme } from '@/theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -20,43 +21,44 @@ interface RingProps {
   children?: ReactNode;
 }
 
-/** Gap between dots of a dotted ring, in stroke widths from center to center. */
-const DOT_PITCH = 2;
-
-/** Progress ring. Fills once on mount and when the value changes (`FILL_MS`); static under reduced motion. A dotted theme draws it as dots. */
+/**
+ * Progress ring. Fills once on mount and when the value changes (`FILL_MS`); static under reduced motion. A dotted theme draws it as dots,
+ * whole dots only (`litDots`). A value past `max` is a full ring; no value, no goal or a NaN draws an empty one (`ringRatio`).
+ */
 export function Ring({ size, stroke, value, max, color, track, accessibilityLabel, children }: RingProps) {
   const reduced = useReducedMotion();
   const dotted = useTheme().theme.dottedRings === true;
   const maskId = useId();
-  const ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
+  const { r, circumference, count, pitch } = dotGeometry(size, stroke);
+  const ratio = ringRatio(value, max);
+  // A dotted ring fills in whole dots; the arc under the dot mask starts half a pitch early so the first dot is covered whole, not half.
+  const filled = dotted ? litDots(ratio, count) / count : ratio;
   const [progress] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (reduced) {
-      progress.setValue(ratio);
+      progress.setValue(filled);
       return;
     }
     Animated.timing(progress, {
-      toValue: ratio,
+      toValue: filled,
       duration: FILL_MS,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [progress, ratio, reduced]);
+  }, [progress, filled, reduced]);
 
-  const r = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * r;
   const half = size / 2;
-  // Whole number of dots around the ring so the pattern closes without a short gap. A near-zero dash with a round cap is one dot.
-  const dotCount = Math.max(12, Math.round(circumference / (stroke * DOT_PITCH)));
-  const dotDash = [0.01, circumference / dotCount - 0.01];
+  // A near-zero dash with a round cap is one dot.
+  const dotDash = [0.01, pitch - 0.01];
+  const fillTurn = -90 - 180 / count;
 
   return (
     <View
       accessible
       accessibilityRole="progressbar"
       accessibilityLabel={accessibilityLabel}
-      accessibilityValue={{ min: 0, max: Math.round(max), now: Math.round(Math.min(value, max)) }}
+      accessibilityValue={ringA11yValue(value, max)}
       style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
         {dotted ? (
@@ -97,7 +99,7 @@ export function Ring({ size, stroke, value, max, color, track, accessibilityLabe
               mask={`url(#${maskId})`}
               strokeDasharray={circumference}
               strokeDashoffset={progress.interpolate({ inputRange: [0, 1], outputRange: [circumference, 0] })}
-              transform={`rotate(-90 ${half} ${half})`}
+              transform={`rotate(${fillTurn} ${half} ${half})`}
             />
           </>
         ) : (

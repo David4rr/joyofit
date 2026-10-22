@@ -8,7 +8,7 @@ import { NotSignedInError } from '@/cloud/api';
 import { RogoError, rogo } from '@/cloud/rogo';
 import { pendingImportCounts, pushImportedToRogo, type ImportPushOutcome } from '@/features/huaweiimport/rogoQueue';
 import { profileFromExport } from '@/features/huaweiimport/profileFromExport';
-import { DEFAULT_STEP_GOAL } from '@/features/today/useStepGoal';
+import { DEFAULT_STEP_GOAL } from '@/features/today/stepGoal';
 import { holdScreenOn, releaseScreen } from '@/features/strength/keepAwake';
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
