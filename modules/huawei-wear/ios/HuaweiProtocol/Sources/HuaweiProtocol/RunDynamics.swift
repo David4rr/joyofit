@@ -82,4 +82,54 @@ enum RunDynamics {
         }
         return Result(averages: averages, series: series)
     }
+
+    /// The summary with the running form replaced; `changed` is false when the watch's readings give what the summary already had.
+    struct Merged {
+        let json: String
+        let changed: Bool
+    }
+
+    private static let averageKeys = [
+        "avgGroundContactTime", "avgVerticalOscillation", "avgVerticalRatio", "avgGroundContactBalance", "avgHangTimeMs",
+    ]
+
+    /// Puts `result` into a stored `summary_json` and leaves every other field as it was: the five means under `samples` are replaced (an
+    /// older sync's contact-time mean, which also counted zero readings, goes with them) and `dynamics` is replaced or dropped as the new
+    /// series says. Nil when `summaryJson` is not a JSON object. Running it again with the same readings changes nothing. Mirrors
+    /// `RunDynamics.merge` in Kotlin; the keys come out sorted, which no reader depends on.
+    static func merge(summaryJson: String, result: Result) -> Merged? {
+        guard var summary = (try? JSONSerialization.jsonObject(with: Data(summaryJson.utf8))) as? [String: Any] else { return nil }
+        var samples = summary["samples"] as? [String: Any] ?? [:]
+        let before = form(samples, summary)
+        for key in averageKeys { samples.removeValue(forKey: key) }
+        for (key, value) in result.averages { samples[key] = value }
+        summary["samples"] = samples
+        if let series = result.series, let tree = try? JSONSerialization.jsonObject(with: Data(series.serialized().utf8)) {
+            summary["dynamics"] = tree
+        } else {
+            summary.removeValue(forKey: "dynamics")
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: summary, options: [.sortedKeys, .withoutEscapingSlashes]),
+              let text = String(data: data, encoding: .utf8)
+        else { return nil }
+        return Merged(json: text, changed: before != form(samples, summary))
+    }
+
+    /// The running-form part of a summary as text with sorted keys, to tell a real change from the same readings again.
+    private static func form(_ samples: [String: Any], _ summary: [String: Any]) -> String {
+        averageKeys.sorted().map { "\($0)=\(canonical(samples[$0]))" }.joined(separator: ";") + ";" + canonical(summary["dynamics"])
+    }
+
+    private static func canonical(_ value: Any?) -> String {
+        switch value {
+        case nil, is NSNull: return "null"
+        case let s as String: return s
+        case let d as [String: Any]: return "{" + d.keys.sorted().map { "\($0):\(canonical(d[$0]))" }.joined(separator: ",") + "}"
+        case let a as [Any]: return "[" + a.map { canonical($0) }.joined(separator: ",") + "]"
+        case let n as NSNumber: return "\(n.doubleValue)"
+        case let d as Double: return "\(d)"
+        case let i as Int: return "\(Double(i))"
+        default: return "\(value!)"
+        }
+    }
 }

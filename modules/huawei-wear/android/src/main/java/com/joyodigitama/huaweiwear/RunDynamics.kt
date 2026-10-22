@@ -87,4 +87,43 @@ internal object RunDynamics {
     }
     return Result(averages, series)
   }
+
+  /** The summary with the running form replaced; [changed] is false when the watch's readings give what the summary already had. */
+  class Merged(val json: String, val changed: Boolean)
+
+  /**
+   * Puts [result] into a stored `summary_json` and leaves every other field as it was: the five means under `samples` are replaced
+   * (an older sync's contact-time mean, which also counted zero readings, goes with them) and `dynamics` is replaced or dropped
+   * as the new series says. Null when [summaryJson] is not a JSON object. Running it again with the same readings changes nothing.
+   */
+  fun merge(summaryJson: String, result: Result): Merged? {
+    val summary = try {
+      JSONObject(summaryJson)
+    } catch (e: org.json.JSONException) {
+      return null
+    }
+    val samples = summary.optJSONObject("samples") ?: JSONObject()
+    val before = form(samples, summary)
+    for (key in averageKeys.values) samples.remove(key)
+    for ((key, value) in result.averages) samples.put(key, value)
+    summary.put("samples", samples)
+    if (result.series != null) summary.put("dynamics", result.series) else summary.remove("dynamics")
+    return Merged(summary.toString(), before != form(samples, summary))
+  }
+
+  /** The running-form part of a summary as text with sorted keys, to tell a real change from the same readings again. */
+  private fun form(samples: JSONObject, summary: JSONObject): String {
+    val out = StringBuilder()
+    for (key in averageKeys.values.sorted()) out.append(key).append('=').append(canonical(samples.opt(key))).append(';')
+    out.append(canonical(summary.opt("dynamics")))
+    return out.toString()
+  }
+
+  private fun canonical(value: Any?): String = when (value) {
+    is JSONObject -> value.keys().asSequence().sorted().joinToString(",", "{", "}") { "$it:${canonical(value.opt(it))}" }
+    is JSONArray -> (0 until value.length()).joinToString(",", "[", "]") { canonical(value.opt(it)) }
+    JSONObject.NULL, null -> "null"
+    is Number -> value.toDouble().toString()
+    else -> value.toString()
+  }
 }

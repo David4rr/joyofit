@@ -253,6 +253,11 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.link.syncActivity(fullHistory: true).toJS() }
         }
 
+        // The running form of stored runs read from the watch again, merged into their summaries (WorkoutSync.refetchDynamics).
+        AsyncFunction("refetchWorkoutData") { (starts: [Double]) async throws -> [String: Any] in
+            try await wearCall { try await runtime.link.refetchWorkoutData(starts.map { Int64($0) }).toJS() }
+        }
+
         AsyncFunction("forgetDevice") { (address: String) async throws -> Void in
             runtime.forget(address)
         }

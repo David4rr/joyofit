@@ -446,6 +446,16 @@ file (`strava/cadenceFields.ts`: session and lap cadence, `avg_step_length`, per
   Phone-only in the screens: the shared (JoyoRogo) analysis, its strict server schema and the share card carry none of it; the values only travel inside `summary_json`, an opaque string to the JoyoFit sync server. Units and the side of `gtb` are read from Gadgetbridge's decoder, not checked
   against Huawei Health [INFERENCE]; impact, swing angle and eversion are averaged natively but not shown (unit unknown). Needs a build with the native change for
   everything but contact time: a workout synced before it has only the old contact-time mean (that mean may include zero readings), so its card shows that one figure.
+- **Ambil ulang dari jam (runs synced before the dynamics were kept).** A run or walk the connected watch recorded whose summary has no `dynamics` series and none of the four newer
+  means (`lacksDynamics`, `refetchDynamics.ts`) can ask the watch for its sample data again: `HuaweiWear.refetchWorkoutData(starts)` (Kotlin `WorkoutSync.refetchDynamics`, Swift
+  port; the protocol is in `protocol/README.md`, "Reading a stored workout again") reads only the `17/0A` frames of each listed workout and merges the running form into
+  `summary.samples` and `summary.dynamics`, nothing else (`RunDynamics.merge`, the row is written only when the figures differ). The workout screen shows a small notice with the
+  action above the Dinamika lari card (`ui/RefetchDynamics.tsx`) only when the binary has the native function (`hasNative('refetchWorkoutData')`, so an older build hides it), the link is
+  connected and idle, and the workout's `device` is the connected watch; Settings > Riwayat jam has the same for every such run ("3 dari 12" while it runs, then `3 lari diperbarui,
+  5 sudah tidak ada di jam`). One workout is asked at a time, so a dropped link keeps what was merged. A workout the watch answered `no_dynamics` or `gone` for is remembered in the
+  kv-store (`workouts.dynamicsRefetchSettled`) and not offered again; a `failed` one is. Only the summaries that changed move their `rev`, so the cloud upload re-sends exactly those
+  workouts, and nothing triggers a full re-upload. How far back the watch keeps workouts is not known (protocol/README.md); runs it rolled off are counted as gone. Tests: Kotlin
+  `WorkoutRefetchMergeTest`, `WorkoutSyncTest` (refetch cases), Swift `RunDynamicsMergeTests`, `WorkoutSyncTests` (refetch), `WorkoutStoreTests` (mergeSummary), bun `refetchDynamics.test.ts`.
 - **Cloud and share.** The cloud document carries the samples (`cadence`, `stride`) and `summary_json` verbatim, so a restore recomputes the same figures; the
   shared analysis carries `stats.avgCad`, `maxCad`, `avgStrideM` and the cadence series, which JoyoRogo's web feed and fit viewer show in the summary.
 - **Not recoverable.** The raw FIT file is not kept. A file imported before per-sample cadence existed has none, and one whose only step length was the

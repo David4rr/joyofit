@@ -45,6 +45,7 @@ import { workoutElevation } from '@/features/workouts/analysis/elevation';
 import type { SportKind, WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import { WorkoutAnalysisView, useAnalysisT, type ExtraStat } from '@/features/workouts/analysis/ui';
 import { DeleteWorkoutDialog } from '@/features/workouts/ui/DeleteWorkoutDialog';
+import { RefetchDynamicsAction } from '@/features/workouts/ui/RefetchDynamics';
 import { RunningDynamicsSection } from '@/features/workouts/ui/RunningDynamicsSection';
 import { MenuSheet, type MenuItem } from '@/features/strength/ui/Sheet';
 import { sportIcon } from '@/features/workouts/sportIcon';
@@ -149,6 +150,11 @@ export default function WorkoutDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: 'pending' });
   const [scrubbing, setScrubbing] = useState(false);
+  // After a refetch from the watch changed the stored summary: read just the summary again (the analysis does not use the running form).
+  const refreshSummary = useCallback(async () => {
+    const found = await getWorkout(db, Number(id));
+    if (found) setLoaded((prev) => (prev ? { ...prev, summary: parseSummary(found.summaryJson) } : prev));
+  }, [db, id]);
   const palette = useAnalysisPalette();
   const mapTheme = useMapTheme();
   const { t } = useTranslation('workouts');
@@ -473,7 +479,17 @@ export default function WorkoutDetailScreen() {
         <Skeleton width="100%" height={320} radius="card" />
       )}
       {summary.gps === 'failed' ? <Notice icon="location-outline">{t('detail.gpsFailed')}</Notice> : null}
-      {kind === 'run' || kind === 'walk' ? <RunningDynamicsSection summary={summary} /> : null}
+      {kind === 'run' || kind === 'walk' ? (
+        <>
+          <RefetchDynamicsAction
+            start={workout.start}
+            sportName={workout.sportName}
+            summary={summary}
+            onChanged={() => void refreshSummary()}
+          />
+          <RunningDynamicsSection summary={summary} />
+        </>
+      ) : null}
       <CoachFeedbackSection workoutStart={workout.start} analysis={sharedAnalysis} />
 
       {effectShown ? (
