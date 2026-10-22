@@ -1,55 +1,35 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
+import type { FlatList, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
-import { isNearBottom, type ScrollMetrics } from './chatState';
+import { AWAY_PX } from './chatState';
 
 /**
- * Keeps a chat at its end while it grows, but only for a person who is at the end: scrolling up stops the following and shows
- * `away` (for the "Ke terbaru" button) until they come back to the bottom or jump there. Feed `scrollProps` to `Screen`.
- * Scrolls are not animated: a smooth scroll reports positions far from the end on its way and would read as "scrolled away".
+ * Scrolling of the chat list, an inverted `FlatList` (offset 0 is the newest message). Nothing here moves the list while text streams:
+ * the list keeps the person at the end by itself (`maintainVisibleContentPosition` with an auto-scroll threshold, native), and keeps
+ * what they are reading in place when they have scrolled up. This hook only knows whether they are away from the end (for the "Ke
+ * terbaru" button) and how to jump back. The `away` state flips at most when the person crosses the threshold, never per token.
  */
 export function useChatScroll() {
-  const ref = useRef<ScrollView>(null);
-  const metrics = useRef<ScrollMetrics>({ offsetY: 0, viewportH: 0, contentH: 0 });
-  const following = useRef(true);
+  const ref = useRef<FlatList>(null);
   const [away, setAway] = useState(false);
+  const awayRef = useRef(false);
 
-  const sync = useCallback(() => {
-    const near = isNearBottom(metrics.current);
-    following.current = near;
-    setAway((prev) => (prev === !near ? prev : !near));
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const next = e.nativeEvent.contentOffset.y > AWAY_PX;
+    if (next !== awayRef.current) {
+      awayRef.current = next;
+      setAway(next);
+    }
   }, []);
 
-  const toEnd = useCallback(() => ref.current?.scrollToEnd({ animated: false }), []);
+  const scrollProps = useMemo(() => ({ onScroll, scrollEventThrottle: 64 }), [onScroll]);
 
-  const scrollProps = useMemo(
-    () => ({
-      scrollEventThrottle: 16,
-      onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
-        metrics.current = { offsetY: contentOffset.y, viewportH: layoutMeasurement.height, contentH: contentSize.height };
-        sync();
-      },
-      onContentSizeChange: (_w: number, h: number) => {
-        metrics.current = { ...metrics.current, contentH: h };
-        if (following.current) toEnd();
-        else sync();
-      },
-      onLayout: (e: LayoutChangeEvent) => {
-        metrics.current = { ...metrics.current, viewportH: e.nativeEvent.layout.height };
-        if (following.current) toEnd();
-        else sync();
-      },
-    }),
-    [sync, toEnd],
-  );
-
-  /** The person sent something or opened a chat: show its end and follow again. */
+  /** The person sent something, opened a chat or pressed "Ke terbaru": show the newest message. */
   const follow = useCallback(() => {
-    following.current = true;
+    awayRef.current = false;
     setAway(false);
-    toEnd();
-  }, [toEnd]);
+    ref.current?.scrollToOffset({ offset: 0, animated: false });
+  }, []);
 
   return { ref, away, scrollProps, follow };
 }

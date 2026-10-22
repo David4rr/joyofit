@@ -56,7 +56,12 @@
     "tokens": "{{tokens}} tokens",
     "hosted": "JoyoRogo",
     "privacyOwn": "Your message, a summary of your data and the data the AI reads go straight from this phone to {{provider}} ({{host}}), not through JoyoRogo's servers. The key only exists on this phone. The chat is kept only on this phone.",
-    "disclaimer": "Joyo AI gives general guidance on training, sleep and food. It is not medical advice. If you have pain, dizziness or other symptoms, stop and see a doctor."
+    "disclaimer": "Joyo AI gives general guidance on training, sleep and food. It is not medical advice. If you have pain, dizziness or other symptoms, stop and see a doctor.",
+    "renameTitle": "Chat name",
+    "renameHint": "Tap to see the full title and rename it",
+    "renameSave": "Save",
+    "renameCancel": "Cancel",
+    "renameBody": "Leave empty to use the first question as the name."
   },
   "steps": {
     "running": "{{what}}...",

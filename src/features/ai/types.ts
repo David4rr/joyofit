@@ -120,6 +120,8 @@ export interface CallOptions {
    * runtime that cannot stream makes the adapter answer without streaming, and then the whole answer comes in one call.
    */
   onDelta?: (delta: StreamDelta) => void;
+  /** Timing marks of this call (`request`, `first-byte`, ...), for finding where a slow answer spends its time. */
+  mark?: (name: string, extra?: Record<string, number | string>) => void;
 }
 
 export interface Adapter {

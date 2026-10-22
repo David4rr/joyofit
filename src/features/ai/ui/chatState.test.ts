@@ -8,6 +8,7 @@ import {
   createCoalescer,
   displayTitle,
   distanceFromBottom,
+  splitStable,
   initialLive,
   isNearBottom,
   lastIndexOfRole,
@@ -331,5 +332,34 @@ describe('seed', () => {
     expect(seed?.label.includes('\n')).toBe(false);
     expect(seed?.label.length).toBe(80);
     expect(seed?.label.startsWith('Lari pagi')).toBe(true);
+  });
+});
+
+describe('splitStable (the settled part of streaming text)', () => {
+  test('splits at the last blank line; the tail is the paragraph still being written', () => {
+    expect(splitStable('Satu.\n\nDua.\n\nTiga sedang')).toEqual({ head: 'Satu.\n\nDua.', tail: 'Tiga sedang' });
+    expect(splitStable('Satu saja')).toEqual({ head: '', tail: 'Satu saja' });
+    expect(splitStable('')).toEqual({ head: '', tail: '' });
+    expect(splitStable('\n\nawal')).toEqual({ head: '', tail: '\n\nawal' });
+  });
+  test('a blank line inside an open code fence is not a split point', () => {
+    expect(splitStable('Intro\n\n```\nkode\n\nlagi')).toEqual({ head: 'Intro', tail: '```\nkode\n\nlagi' });
+    expect(splitStable('Intro\n\n```\nkode\n```\n\nSesudah')).toEqual({ head: 'Intro\n\n```\nkode\n```', tail: 'Sesudah' });
+  });
+  test('head and tail together always hold every character apart from the blank lines between them', () => {
+    const text = '# Judul\n\n- a\n- b\n\n1. satu\n\n2. dua\n\n| x | y |\n|---|---|\n| 1 | 2 |\n\nAkhir';
+    for (let n = 1; n <= text.length; n++) {
+      const { head, tail } = splitStable(text.slice(0, n));
+      expect((head + tail).replace(/\n/g, '')).toBe(text.slice(0, n).replace(/\n/g, ''));
+    }
+  });
+  test('the split point only moves forward as text grows (so the settled part is never redrawn)', () => {
+    const text = 'A.\n\nB.\n\nC.\n\nD sedang ditulis';
+    let last = 0;
+    for (let n = 1; n <= text.length; n++) {
+      const { head } = splitStable(text.slice(0, n));
+      expect(head.length).toBeGreaterThanOrEqual(last);
+      last = head.length;
+    }
   });
 });

@@ -19,7 +19,7 @@ import { modelShort } from './status';
 export function ActionButton({ icon, label, onPress, disabled }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean }) {
   const colors = useColors();
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} scaleTo={0.92} style={styles.action}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} scaleTo={0.92} hitSlop={{ top: 4, bottom: 4 }} style={styles.action}>
       <Ionicons name={icon} size={18} color={colors.mutedForeground} />
     </PressableScale>
   );
@@ -98,12 +98,12 @@ export const MessageView = memo(function MessageView(props: MessageViewProps) {
 });
 
 const styles = StyleSheet.create({
-  mine: { alignItems: 'flex-end', gap: 2 },
+  mine: { alignItems: 'flex-end' },
   bubble: { maxWidth: '85%', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   actions: { flexDirection: 'row' },
   theirs: { gap: spacing.sm },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: -spacing.xs },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: -spacing.sm },
   actionsStart: { flexDirection: 'row', marginLeft: -spacing.sm },
   meta: { flex: 1, textAlign: 'right' },
-  action: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  action: { width: 44, height: 36, alignItems: 'center', justifyContent: 'center' },
 });

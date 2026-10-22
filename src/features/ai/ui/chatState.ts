@@ -268,6 +268,9 @@ export const distanceFromBottom = (m: ScrollMetrics): number => Math.max(0, m.co
 
 export const NEAR_BOTTOM_PX = 64;
 
+/** Further than this from the newest message (in an inverted list: the offset) counts as scrolled away; the "Ke terbaru" button shows. */
+export const AWAY_PX = 160;
+
 /** True when the person is at the end of the chat (or close enough that new text should keep it in view). */
 export const isNearBottom = (m: ScrollMetrics, threshold: number = NEAR_BOTTOM_PX): boolean => distanceFromBottom(m) <= threshold;
 
@@ -296,3 +299,26 @@ export function parseSeed(params: { seed?: string | string[]; ref?: string | str
 
 /** The text put in the box for a seed (never sent by itself): it carries the ref so the model reads that workout or night. */
 export const seedText = (seed: Seed, t: AiT): string => t(`seed.${seed.kind}`, { label: seed.label, ref: seed.ref });
+
+// ---- streaming text: a settled part and a growing tail ----
+
+/**
+ * Splits streamed text at its last blank line that is not inside a code fence: everything before it is finished paragraphs (parsed and
+ * drawn once, then left alone), the rest is the paragraph still being written (the only part that is parsed and drawn again on each
+ * update). A long answer therefore costs the same per update as a short one.
+ */
+export function splitStable(text: string): { head: string; tail: string } {
+  let open = false;
+  let cut = -1;
+  let pos = 0;
+  for (const line of text.split('\n')) {
+    if (/^\s*(```|~~~)/.test(line)) open = !open;
+    else if (line.trim() === '' && !open && pos > 0) cut = pos;
+    pos += line.length + 1;
+  }
+  // `cut` is the start of the last blank line; the head ends before it and the tail starts after it.
+  if (cut <= 0) return { head: '', tail: text };
+  const head = text.slice(0, cut).replace(/\n+$/, '');
+  const tail = text.slice(cut).replace(/^\n+/, '');
+  return head === '' ? { head: '', tail: text } : { head, tail };
+}

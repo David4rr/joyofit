@@ -92,12 +92,18 @@ interface ScreenProps {
   scrollProps?: Pick<ScrollViewProps, 'onScroll' | 'onContentSizeChange' | 'onLayout' | 'scrollEventThrottle'>;
   /** Drawn over the bottom of the scrolling area, above the footer (a "jump to latest" button). Only with a `footer`. */
   overlay?: ReactNode;
+  /**
+   * Replaces the scroll view with the screen's own list (a chat's inverted `FlatList`): called with the padding the content needs
+   * (horizontal, and the top and bottom a scroll view would get), which the list puts in its `contentContainerStyle`. `children`
+   * are then not drawn. Only with a `footer`.
+   */
+  list?: (padding: { paddingHorizontal: number; paddingTop: number; paddingBottom: number }) => ReactNode;
   /** Draws the theme's header decoration behind the title (Today). Only meaningful with a `title`. */
   decorated?: boolean;
   children: ReactNode;
 }
 
-export function Screen({ title, caption, right, refresh, scrollEnabled = true, scrollRef, scrollProps, footer, overlay, decorated = false, children }: ScreenProps) {
+export function Screen({ title, caption, right, refresh, scrollEnabled = true, scrollRef, scrollProps, footer, overlay, list, decorated = false, children }: ScreenProps) {
   const colors = useColors();
   // With a footer the footer sits above the bar, so the content above it does not clear the bar again.
   const padding = useContentPadding(title !== undefined, footer === undefined);
@@ -105,7 +111,9 @@ export function Screen({ title, caption, right, refresh, scrollEnabled = true, s
   const refreshControl = useRefreshControl(refresh, refreshSpinnerOffset(title !== undefined, insets.top));
   const keyboard = useKeyboardOverlap();
   const tabBar = useTabBarInset();
-  const scroll = (
+  const scroll = list ? (
+    list({ paddingHorizontal: spacing.lg, paddingTop: Number(padding.paddingTop ?? 0), paddingBottom: Number(padding.paddingBottom ?? 0) })
+  ) : (
     <ScrollView
       ref={scrollRef}
       {...scrollProps}

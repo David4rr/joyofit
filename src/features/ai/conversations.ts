@@ -59,6 +59,8 @@ export interface ConversationMeta {
   createdAt: number;
   updatedAt: number;
   messageCount: number;
+  /** The person named it themselves: the first question no longer sets the title. */
+  custom?: boolean;
 }
 
 export interface Conversation extends ConversationMeta {
@@ -134,6 +136,7 @@ function toMeta(raw: unknown): ConversationMeta | null {
     createdAt: typeof raw.createdAt === 'number' ? raw.createdAt : 0,
     updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : 0,
     messageCount: typeof raw.messageCount === 'number' ? raw.messageCount : 0,
+    ...(raw.custom === true ? { custom: true } : {}),
   };
 }
 
@@ -192,7 +195,7 @@ export function createChatStore(kv: KvStore, deps: ChatStoreDeps = {}): ChatStor
 
   const save = (conversation: Conversation): Conversation => {
     const messages = conversation.messages.slice(-CHAT_LIMITS.messages);
-    const meta: ConversationMeta = { id: conversation.id, title: conversation.title, createdAt: conversation.createdAt, updatedAt: now(), messageCount: messages.length };
+    const meta: ConversationMeta = { id: conversation.id, title: conversation.title, createdAt: conversation.createdAt, updatedAt: now(), messageCount: messages.length, ...(conversation.custom ? { custom: true } : {}) };
     kv.setItem(chatKey(conversation.id), JSON.stringify({ messages }));
     let index = [...readIndex().filter((m) => m.id !== meta.id), meta].sort((a, b) => b.updatedAt - a.updatedAt);
     for (const dropped of index.slice(CHAT_LIMITS.conversations)) kv.removeItem(chatKey(dropped.id));
@@ -257,12 +260,17 @@ export function createChatStore(kv: KvStore, deps: ChatStoreDeps = {}): ChatStor
       const conversation = read(id);
       if (!conversation) return null;
       const firstUser = messages.find((m) => m.role === 'user');
-      const title = conversation.title === '' && firstUser ? titleOf(firstUser.content) : conversation.title;
+      // The first question names the chat (also after it was edited), unless the person gave it a name.
+      const title = conversation.custom ? conversation.title : firstUser ? titleOf(firstUser.content) : conversation.title;
       return save({ ...conversation, title, messages: messages.map((m) => ({ ...m, content: m.content.slice(0, CHAT_LIMITS.contentChars) })) });
     },
     rename(id: string, title: string): void {
       const conversation = read(id);
-      if (conversation) save({ ...conversation, title: titleOf(title) });
+      if (!conversation) return;
+      // An empty name goes back to the first question.
+      const clean = titleOf(title);
+      const first = conversation.messages.find((m) => m.role === 'user');
+      save({ ...conversation, title: clean !== '' ? clean : titleOf(first?.content ?? ''), custom: clean !== '' });
     },
     /** Drops `messageId` and every message after it: the base of "edit and resend" and "regenerate". Returns the messages that were kept. */
     truncateFrom(id: string, messageId: string): ChatMessage[] {

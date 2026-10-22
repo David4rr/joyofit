@@ -1,10 +1,12 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { spacing, useColors } from '@/theme';
-import { liveStatus, runningPhrase, type LiveState } from './chatState';
+import { getLocale } from '@/i18n';
+import { formatDurations } from '../durations';
+import { liveStatus, runningPhrase, splitStable, type LiveState } from './chatState';
 import { Markdown } from './Markdown';
 import { ReasoningBlock, StepsCard } from './Steps';
 
@@ -26,13 +28,18 @@ export const LiveMessage = memo(function LiveMessage({ live, hosted }: { live: L
         ? t('chat.reasoningLive')
         : t('chat.writing');
   const writing = live.text !== '';
+  // Finished paragraphs are drawn once and left alone; only the paragraph being written is parsed and drawn on each update.
+  const locale = getLocale() === 'en' ? 'en' : 'id';
+  const shown = useMemo(() => formatDurations(live.text, locale), [live.text, locale]);
+  const { head, tail } = useMemo(() => splitStable(shown), [shown]);
   return (
     <View style={styles.wrap}>
       {hosted ? null : <StepsCard steps={live.steps} defaultOpen />}
       {hosted ? null : <ReasoningBlock text={live.reasoning} live />}
       {writing ? (
         <>
-          <Markdown text={live.text} streaming color={colors.foreground} />
+          {head === '' ? null : <Markdown text={head} color={colors.foreground} />}
+          <Markdown text={tail} streaming color={colors.foreground} />
           <View style={[styles.marker, { backgroundColor: colors.mutedForeground }]} />
         </>
       ) : (

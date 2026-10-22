@@ -4,7 +4,7 @@ import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-rou
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View, type TextInput } from 'react-native';
+import { FlatList, StyleSheet, useWindowDimensions, View, type ListRenderItemInfo, type TextInput } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -34,6 +34,7 @@ import { aiChats, aiUsage } from '../stores';
 import { AiError } from '../types';
 import { AiErrorNotice } from './AiErrorNotice';
 import {
+  AWAY_PX,
   assistantMessage,
   createCoalescer,
   displayTitle,
@@ -50,7 +51,9 @@ import { EngineChip } from './EngineChip';
 import { GateCard } from './GateCard';
 import { viewAiError, type AiErrorView } from './errors';
 import { LiveMessage } from './LiveMessage';
+import { MarqueeTitle } from './MarqueeTitle';
 import { MessageView } from './MessageView';
+import { RenameDialog } from './RenameDialog';
 import { ownChipLabel } from './status';
 import { useChatScroll } from './useChatScroll';
 import { useRogoStatus } from './useRogoStatus';
@@ -111,6 +114,7 @@ export function JoyoAiChat() {
   const sendingRef = useRef(false);
   const [live, setLive] = useState<LiveState | null>(null);
   const liveRef = useRef<LiveState>(initialLive());
+  const liveId = useRef('live');
   const [aiError, setAiError] = useState<AiErrorView | null>(null);
   const [hostedError, setHostedError] = useState<string | null>(null);
   // The server refused the hosted chat because the account is not Pro (the phone's last known answer said it was).
@@ -118,6 +122,9 @@ export function JoyoAiChat() {
   const [toolsOff, setToolsOff] = useState(false);
   const [usage, setUsage] = useState(() => aiUsage.today(Math.floor(Date.now() / 1000)));
   const [focusTick, setFocusTick] = useState(0);
+  const [renaming, setRenaming] = useState(false);
+  const [titleTick, setTitleTick] = useState(0);
+  const { width: windowWidth } = useWindowDimensions();
 
   const engine = settings.engine;
   const [rogoUsage, setRogoUsage] = useRogoStatus(engine === 'rogo' && coachAccess === 'pro');
@@ -239,6 +246,9 @@ export function JoyoAiChat() {
     setPaywall(false);
     setToolsOff(false);
     liveRef.current = initialLive();
+    // The finished answer takes the id of the live one, so the list keeps the same cell when the live text becomes the message.
+    const replyId = aiChats.newMessageId();
+    liveId.current = replyId;
     setLive(liveRef.current);
     const commit = createCoalescer(
       () => {
@@ -269,7 +279,7 @@ export function JoyoAiChat() {
         });
         if (!current()) return;
         reply = assistantMessage({
-          id: aiChats.newMessageId(),
+          id: replyId,
           at: Date.now(),
           content: result.reply,
           engine: 'byok',
@@ -287,7 +297,7 @@ export function JoyoAiChat() {
         const turns = chatLines(history).map((turn) => ({ ...turn, content: turn.content.slice(0, MAX_MESSAGE_CHARS) }));
         const result = await Promise.race([coachChat(turns, buildSnapshot(coach)), aborted]);
         if (!current()) return;
-        reply = assistantMessage({ id: aiChats.newMessageId(), at: Date.now(), content: result.reply, engine: 'rogo', fixed: result.flagged !== null });
+        reply = assistantMessage({ id: replyId, at: Date.now(), content: result.reply, engine: 'rogo', fixed: result.flagged !== null });
         setRogoUsage({ used: result.used, cap: result.cap });
       }
       commit.cancel();
@@ -302,7 +312,7 @@ export function JoyoAiChat() {
         const partial = rawPartial && cleaned ? { ...rawPartial, content: cleaned } : null;
         if (partial) {
           commit.cancel();
-          finish([...history, assistantMessage({ id: aiChats.newMessageId(), at: Date.now(), engine: 'byok', provider: own?.provider, model: own?.model, ...partial })]);
+          finish([...history, assistantMessage({ id: replyId, at: Date.now(), engine: 'byok', provider: own?.provider, model: own?.model, ...partial })]);
         }
         return;
       }
@@ -417,7 +427,7 @@ export function JoyoAiChat() {
     () => displayTitle(conversationId ? (aiChats.list().find((m) => m.id === conversationId)?.title ?? '') : '', t('chat.newTitle')),
     // The first send fills the title in, so it is read again when the messages change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [conversationId, messages.length, t],
+    [conversationId, messages.length, titleTick, t],
   );
 
   const composer = composerReady ? (
@@ -448,11 +458,152 @@ export function JoyoAiChat() {
     </PressableScale>
   ) : undefined;
 
+  // Newest first: the list is inverted, so the newest message is at the bottom and growing text never moves what is above it.
+  const rows = useMemo<Row[]>(() => {
+    const out: Row[] = [];
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i]!;
+      out.push({
+        kind: 'msg',
+        key: message.id,
+        message,
+        canEdit: i === lastUser,
+        canRegenerate: i === lastIndex && message.role === 'assistant',
+        canRetry: i === lastIndex && message.role === 'user' && !sending,
+        busy: sending,
+      });
+    }
+    return out;
+  }, [messages, lastUser, lastIndex, sending]);
+  const listReady = gate === 'ready' && coach !== null;
+  const hosted = own === null;
+  const data = useMemo<Row[]>(() => {
+    if (!listReady) return [];
+    return sending && live ? [{ kind: 'live', key: liveId.current, live, hosted }, ...rows] : rows;
+  }, [listReady, sending, live, hosted, rows]);
+
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<Row>) =>
+      item.kind === 'live' ? (
+        <LiveMessage live={item.live} hosted={item.hosted} />
+      ) : (
+        <MessageView
+          message={item.message}
+          canEdit={item.canEdit}
+          canRegenerate={item.canRegenerate}
+          canRetry={item.canRetry}
+          busy={item.busy}
+          onCopy={copy}
+          onRegenerate={regenerate}
+          onEdit={edit}
+          onRetry={retry}
+          onNote={resolveNote}
+        />
+      ),
+    [copy, regenerate, edit, retry, resolveNote],
+  );
+
+  // At the bottom of the list (below the newest message): what the last answer left to say.
+  const bottom = listReady ? (
+    <View style={styles.notices}>
+      {flagged ? <Notice icon="medkit">{tc('chat.flagged')}</Notice> : null}
+      {toolsOff ? (
+        <Notice icon="construct" action={{ label: t('errors.action.model'), onPress: () => router.push({ pathname: '/settings/ai', params: { model: '1' } }) }}>
+          {t('chat.toolsOff')}
+        </Notice>
+      ) : null}
+      {paywall ? <UpgradeCard moment="coach-chat" /> : null}
+      {hostedError ? <Notice tone="danger">{hostedError}</Notice> : null}
+      {aiError ? <AiErrorNotice view={aiError} provider={own?.provider ?? null} /> : null}
+    </View>
+  ) : null;
+
+  // At the top of the list (above the oldest message): which engine answers, why nothing can, or the empty chat.
+  const top = (
+    <View style={styles.top}>
+      <View style={styles.head}>
+        <EngineChip label={chipLabel} />
+        {own ? (
+          <AppText variant="caption" muted>
+            {t('chat.usageToday', { tokens: fmtInt(usage.inputTokens + usage.outputTokens), calls: fmtInt(usage.calls), ceiling: fmtInt(settings.dailyCeiling) })}
+          </AppText>
+        ) : null}
+      </View>
+
+      {gate === 'checking' ? <Skeleton width="100%" height={140} radius="card" /> : null}
+      {gate === 'rogoSignIn' || gate === 'rogoUpsell' ? (
+        <>
+          {gate === 'rogoSignIn' ? <CoachSignIn /> : <UpgradeCard moment="coach-chat" />}
+          <Card>
+            <AppText variant="heading">{t('chat.ownTitle')}</AppText>
+            <AppText variant="caption" muted>
+              {t('chat.ownBody')}
+            </AppText>
+            <Button label={t('chat.ownCta')} variant="secondary" icon="key" onPress={() => router.push('/settings/ai-setup')} />
+          </Card>
+        </>
+      ) : null}
+      {gate === 'blocked' && access && !access.ok ? <GateCard reason={access.reason} provider={settings.provider} /> : null}
+      {gate === 'ready' && !coach ? <Skeleton width="100%" height={220} radius="card" /> : null}
+      {listReady && own && !cloud.signedIn ? (
+        <Notice icon="restaurant" action={{ label: t('chat.signIn'), onPress: () => router.push('/settings/akun') }}>
+          {t('chat.noFood')}
+        </Notice>
+      ) : null}
+      {listReady && messages.length === 0 ? (
+        <View style={styles.empty}>
+          <AppText variant="heading">{tc('chat.emptyTitle')}</AppText>
+          <AppText variant="caption" muted>
+            {own ? t('chat.emptyOwn', { model: own.model, provider: providerName }) : tc('chat.emptyBody')}
+          </AppText>
+          <Details>
+            <AppText variant="caption" muted>
+              {own ? t('chat.privacyOwn', { provider: providerName, host: hostOf(own.baseUrl) }) : tc('chat.privacy')}
+            </AppText>
+            <AppText variant="caption" muted>
+              {t('chat.disclaimer')}
+            </AppText>
+          </Details>
+        </View>
+      ) : null}
+    </View>
+  );
+
+  const renderList = (padding: { paddingHorizontal: number; paddingTop: number; paddingBottom: number }) => (
+    <FlatList
+      ref={scroll.ref}
+      data={data}
+      renderItem={renderItem}
+      keyExtractor={rowKey}
+      inverted
+      ItemSeparatorComponent={Gap}
+      ListHeaderComponent={bottom}
+      ListFooterComponent={top}
+      // Native: keep what the person reads in place while text grows below it, and stay at the newest message when they are there.
+      maintainVisibleContentPosition={{ minIndexForVisible: 0, autoscrollToTopThreshold: AWAY_PX / 2 }}
+      onScroll={scroll.scrollProps.onScroll}
+      scrollEventThrottle={scroll.scrollProps.scrollEventThrottle}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      initialNumToRender={10}
+      windowSize={9}
+      // In an inverted list the native top is the bottom of the screen: swap the padding, and push a short chat to the top.
+      contentContainerStyle={[styles.listContent, { paddingHorizontal: padding.paddingHorizontal, paddingTop: padding.paddingBottom, paddingBottom: padding.paddingTop }]}
+    />
+  );
+
   return (
     <View style={styles.root}>
       <Stack.Screen
         options={{
           title,
+          // Room for the back arrow and the two buttons; a title longer than this slides (see MarqueeTitle).
+          headerTitle: () => (
+            <View style={{ width: Math.max(120, windowWidth - 200) }}>
+              <MarqueeTitle title={title} hint={t('chat.renameHint')} onPress={conversationId ? () => setRenaming(true) : undefined} />
+            </View>
+          ),
+          headerTitleAlign: 'left',
           headerRight: () => (
             <View style={styles.headerButtons}>
               <HeaderIconButton icon="time-outline" label={t('chat.history')} onPress={() => router.push('/coach/chats')} />
@@ -461,98 +612,39 @@ export function JoyoAiChat() {
           ),
         }}
       />
-      <Screen scrollRef={scroll.ref} scrollProps={scroll.scrollProps} footer={composer} overlay={composerReady ? jump : undefined}>
-        <View style={styles.head}>
-          <EngineChip label={chipLabel} />
-          {own ? (
-            <AppText variant="caption" muted>
-              {t('chat.usageToday', { tokens: fmtInt(usage.inputTokens + usage.outputTokens), calls: fmtInt(usage.calls), ceiling: fmtInt(settings.dailyCeiling) })}
-            </AppText>
-          ) : null}
-        </View>
-
-        {gate === 'checking' ? <Skeleton width="100%" height={140} radius="card" /> : null}
-        {gate === 'rogoSignIn' || gate === 'rogoUpsell' ? (
-          <>
-            {gate === 'rogoSignIn' ? <CoachSignIn /> : <UpgradeCard moment="coach-chat" />}
-            <Card>
-              <AppText variant="heading">{t('chat.ownTitle')}</AppText>
-              <AppText variant="caption" muted>
-                {t('chat.ownBody')}
-              </AppText>
-              <Button label={t('chat.ownCta')} variant="secondary" icon="key" onPress={() => router.push('/settings/ai-setup')} />
-            </Card>
-          </>
-        ) : null}
-        {gate === 'blocked' && access && !access.ok ? <GateCard reason={access.reason} provider={settings.provider} /> : null}
-
-        {gate === 'ready' && !coach ? <Skeleton width="100%" height={220} radius="card" /> : null}
-        {gate === 'ready' && coach ? (
-          <>
-            {own && !cloud.signedIn ? (
-              <Notice icon="restaurant" action={{ label: t('chat.signIn'), onPress: () => router.push('/settings/akun') }}>
-                {t('chat.noFood')}
-              </Notice>
-            ) : null}
-
-            {messages.length === 0 ? (
-              <View style={styles.empty}>
-                <AppText variant="heading">{tc('chat.emptyTitle')}</AppText>
-                <AppText variant="caption" muted>
-                  {own ? t('chat.emptyOwn', { model: own.model, provider: providerName }) : tc('chat.emptyBody')}
-                </AppText>
-                <Details>
-                  <AppText variant="caption" muted>
-                    {own ? t('chat.privacyOwn', { provider: providerName, host: hostOf(own.baseUrl) }) : tc('chat.privacy')}
-                  </AppText>
-                  <AppText variant="caption" muted>
-                    {t('chat.disclaimer')}
-                  </AppText>
-                </Details>
-              </View>
-            ) : (
-              <View style={styles.list}>
-                {messages.map((message, index) => (
-                  <MessageView
-                    key={message.id}
-                    message={message}
-                    canEdit={index === lastUser}
-                    canRegenerate={index === lastIndex && message.role === 'assistant'}
-                    canRetry={index === lastIndex && message.role === 'user' && !sending}
-                    busy={sending}
-                    onCopy={copy}
-                    onRegenerate={regenerate}
-                    onEdit={edit}
-                    onRetry={retry}
-                    onNote={resolveNote}
-                  />
-                ))}
-                {sending && live ? <LiveMessage live={live} hosted={own === null} /> : null}
-              </View>
-            )}
-
-            {flagged ? <Notice icon="medkit">{tc('chat.flagged')}</Notice> : null}
-            {toolsOff ? (
-              <Notice icon="construct" action={{ label: t('errors.action.model'), onPress: () => router.push({ pathname: '/settings/ai', params: { model: '1' } }) }}>
-                {t('chat.toolsOff')}
-              </Notice>
-            ) : null}
-            {paywall ? <UpgradeCard moment="coach-chat" /> : null}
-            {hostedError ? <Notice tone="danger">{hostedError}</Notice> : null}
-            {aiError ? <AiErrorNotice view={aiError} provider={own?.provider ?? null} /> : null}
-          </>
-        ) : null}
+      <Screen footer={composer} overlay={composerReady ? jump : undefined} list={renderList}>
+        {null}
       </Screen>
       {toast}
+      <RenameDialog
+        visible={renaming}
+        title={title === t('chat.newTitle') ? '' : title}
+        onClose={() => setRenaming(false)}
+        onSave={(next) => {
+          if (conversationId) aiChats.rename(conversationId, next);
+          setTitleTick((n) => n + 1);
+          setRenaming(false);
+        }}
+      />
     </View>
   );
 }
 
+type Row =
+  | { kind: 'live'; key: string; live: LiveState; hosted: boolean }
+  | { kind: 'msg'; key: string; message: ChatMessage; canEdit: boolean; canRegenerate: boolean; canRetry: boolean; busy: boolean };
+
+const rowKey = (row: Row): string => row.key;
+const Gap = () => <View style={styles.gap} />;
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   head: { gap: spacing.xs },
+  top: { gap: spacing.lg, paddingBottom: spacing.lg },
+  notices: { gap: spacing.md, paddingTop: spacing.md },
   empty: { gap: spacing.sm },
-  list: { gap: spacing.lg },
+  gap: { height: spacing.lg },
+  listContent: { flexGrow: 1, justifyContent: 'flex-end' },
   headerButtons: { flexDirection: 'row', gap: spacing.sm },
   jump: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, borderWidth: StyleSheet.hairlineWidth },
 });

@@ -5,11 +5,12 @@ import type { Person } from './person';
 import { PROVIDERS } from './providers';
 import { assessMessages, buildSystemPrompt, finishReply, notesMentionInjury, personMode, safeReply, SAFETY_LIMITS, type ChatLine, type CoachFlag, type SafetyText } from './safety';
 import { toolKey, type SettingsStore } from './settings';
+import { noMark, type Mark } from './timing';
 import { isToolName, runTool, TOOL_SPECS, type ToolData, type ToolSummary, type ToolTrace } from './tools';
 import type { UsageStore } from './usage';
 import { AiError, type Adapter, type AdapterKind, type NeutralMessage, type ProviderId, type ToolCall, type Usage } from './types';
 
-export const ANSWER_LIMITS = { toolRounds: 6, toolCallsPerRound: 4, maxTokens: 800, maxTokensRetry: 2_400, turns: 12, reasoningChars: 6_000 } as const;
+export const ANSWER_LIMITS = { toolRounds: 4, toolCallsPerRound: 4, maxTokens: 800, maxTokensRetry: 2_400, turns: 12, reasoningChars: 6_000 } as const;
 
 export interface AnswerDeps {
   settings: SettingsStore;
@@ -26,6 +27,8 @@ export interface AnswerDeps {
   nowSec: () => number;
   signal?: AbortSignal;
   fetchImpl?: typeof fetch;
+  /** Timing marks for this question (numbers only); see `timing.ts`. */
+  mark?: Mark;
   /** Live events of the answer being written: a provider call starts, text and reasoning arrive, a tool starts and ends. */
   onEvent?: (event: AnswerEvent) => void;
 }
@@ -98,8 +101,12 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
   const ceiling = settings.dailyCeiling;
   if (deps.usage.today(deps.nowSec()).calls >= ceiling) throw blocked('ceiling');
 
+  const mark = deps.mark ?? noMark;
+  mark('start');
   const source = await deps.source();
+  mark('digest-gathered');
   const digest = buildDigest(source);
+  mark('digest-built', { chars: digestJson(digest).length });
   const mode = personMode(deps.person, safety.maternalMention);
   const notesFlag = notesMentionInjury(digest.notes);
   const adapter = (deps.adapters ?? ADAPTERS)[PROVIDERS[gate.provider].adapter];
@@ -120,6 +127,7 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
     if (deps.usage.today(deps.nowSec()).calls >= ceiling) throw blocked('ceiling');
     deps.onEvent?.({ type: 'round', round: rounds });
     rounds += 1;
+    let seenToken = false;
     const system = buildSystemPrompt({ locale: deps.locale, digestJson: digestJson(digest), safety, mode, notesFlag, tools: withTools });
     try {
       const reply = await adapter.complete(
@@ -128,12 +136,18 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
         {
           signal: deps.signal,
           fetchImpl: deps.fetchImpl,
+          mark: (name, extra) => mark(`r${rounds}-${name}`, extra),
           onDelta: (delta) => {
+            if (!seenToken && (delta.text || delta.thinking)) {
+              seenToken = true;
+              mark(`r${rounds}-first-${delta.text ? 'text' : 'reasoning'}`);
+            }
             if (delta.thinking) deps.onEvent?.({ type: 'reasoning', delta: delta.thinking });
             if (delta.text) deps.onEvent?.({ type: 'text', delta: delta.text });
           },
         },
       );
+      mark(`r${rounds}-done`, { in: reply.usage?.inputTokens ?? 0, out: reply.usage?.outputTokens ?? 0, tools: reply.toolCalls.length, think: reply.thinking.length, text: reply.text.length, finish: reply.finish ?? '' });
       deps.usage.record(deps.nowSec(), reply.usage);
       spent.calls += 1;
       spent.inputTokens += reply.usage?.inputTokens ?? 0;
@@ -179,16 +193,24 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
     }
     const calls: ToolCall[] = reply.toolCalls.slice(0, ANSWER_LIMITS.toolCallsPerRound);
     messages.push({ role: 'assistant', content: reply.text, toolCalls: calls, ...(reply.thinking ? { reasoning: reply.thinking } : {}) });
-    for (const toolCall of calls) {
-      deps.onEvent?.({ type: 'toolStart', id: toolCall.id, trace: { tool: isToolName(toolCall.name) ? toolCall.name : 'get_daily', args: {} } });
-      const outcome = await runTool(toolCall, deps.data);
+    // All calls of a round start together (they only read the phone and JoyoRogo): the round takes as long as the slowest one.
+    for (const toolCall of calls) deps.onEvent?.({ type: 'toolStart', id: toolCall.id, trace: { tool: isToolName(toolCall.name) ? toolCall.name : 'get_daily', args: {} } });
+    const outcomes = await Promise.all(
+      calls.map(async (toolCall) => {
+        const outcome = await runTool(toolCall, deps.data);
+        deps.onEvent?.({ type: 'toolDone', id: toolCall.id, trace: outcome.trace, summary: outcome.summary });
+        return outcome;
+      }),
+    );
+    mark('tools-done', { n: calls.length });
+    calls.forEach((toolCall, i) => {
+      const outcome = outcomes[i]!;
       trace.push(outcome.trace);
       steps.push({ id: toolCall.id, trace: outcome.trace, summary: outcome.summary });
-      deps.onEvent?.({ type: 'toolDone', id: toolCall.id, trace: outcome.trace, summary: outcome.summary });
       if (outcome.proposedNote) proposedNotes.push(outcome.proposedNote);
       messages.push({ role: 'tool', callId: toolCall.id, name: toolCall.name, content: outcome.content });
-      if (deps.signal?.aborted) throw new AiError('aborted');
-    }
+    });
+    if (deps.signal?.aborted) throw new AiError('aborted');
     if (round + 1 >= ANSWER_LIMITS.toolRounds) {
       // The round limit is reached: ask for the answer without tools.
       toolsOn = false;
@@ -196,7 +218,8 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
     }
   }
 
-  const finished = finishReply(text, { text: deps.text, lastUserText: lastUser.content, mode });
+  const finished = finishReply(text, { text: deps.text, lastUserText: lastUser.content, mode, locale: deps.locale });
+  mark('finished', { chars: finished?.length ?? 0, rounds, calls: spent.calls });
   if (finished === null) throw new AiError('empty', null, `finish_reason=${finish ?? 'none'}; the answer held only reasoning tags or markup (${text.length} chars)`);
   return { reply: finished, fixed: false, flagged: null, trace, steps, reasoning, proposedNotes, usage: spent, toolsUnsupported, digest };
 }

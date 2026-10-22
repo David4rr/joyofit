@@ -3,6 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { getLocale } from '@/i18n';
 import type { CoachState } from '@/features/coach/useCoach';
 import { ADAPTERS } from './adapters';
+import { startTiming } from './timing';
 import { baseUrlFor, byokAccess, modelFor, type ByokAccess } from './access';
 import { answer, type Answer, type AnswerDeps } from './answer';
 import { grantConsent } from './consent';
@@ -52,6 +53,7 @@ export async function askJoyoAi(input: AskInput): Promise<Answer> {
     nowSec,
     signal: input.signal,
     onEvent: input.onEvent,
+    mark: startTiming('ask'),
   });
 }
 

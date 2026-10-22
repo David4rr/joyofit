@@ -39,7 +39,7 @@ function toWire(message: NeutralMessage): Json {
 }
 
 /** The body of `POST {baseUrl}/chat/completions`. Exported for the request-mapping tests. */
-export function buildOpenAiBody(baseUrl: string, request: ModelRequest, opts: { stream?: boolean } = {}): Json {
+export function buildOpenAiBody(baseUrl: string, request: ModelRequest, opts: { stream?: boolean; usage?: boolean } = {}): Json {
   const q = quirks(baseUrl);
   const body: Json = {
     model: request.model,
@@ -52,7 +52,8 @@ export function buildOpenAiBody(baseUrl: string, request: ModelRequest, opts: { 
   if (q.reasoningEffort) body.reasoning_effort = q.reasoningEffort;
   if (opts.stream) {
     body.stream = true;
-    if (q.streamUsage) body.stream_options = { include_usage: true };
+    // Every compatible server that streams is asked for the token count; one that refuses is remembered (`refusedUsage`) and asked without.
+    if (opts.usage ?? q.streamUsage) body.stream_options = { include_usage: true };
   }
   return body;
 }
@@ -241,17 +242,47 @@ export function createOpenAiStream(onDelta: ((delta: StreamDelta) => void) | und
   };
 }
 
+/** Hosts that answered 400 or 422 to `stream_options`: asked without it from then on (until the app restarts). */
+const refusedUsage = new Set<string>();
+/** Hosts that refused `stream` itself: answered without streaming from then on. */
+const refusedStream = new Set<string>();
+
+function hostKey(baseUrl: string): string {
+  try {
+    return new URL(baseUrl).host;
+  } catch {
+    return baseUrl;
+  }
+}
+
+/** For tests: forget what servers refused. */
+export function resetStreamMemory(): void {
+  refusedUsage.clear();
+  refusedStream.clear();
+}
+
+const refusal = (error: unknown): boolean => error instanceof AiError && error.kind === 'badRequest' && error.status !== null;
+
 async function complete(conn: ProviderConnection, request: ModelRequest, options: CallOptions = {}): Promise<ModelReply> {
   const url = `${conn.baseUrl}/chat/completions`;
   const headers = { Authorization: `Bearer ${conn.apiKey}` };
-  if (options.onDelta) {
-    const stream = createOpenAiStream(options.onDelta);
-    try {
-      const outcome = await postStream(url, { headers, body: buildOpenAiBody(conn.baseUrl, request, { stream: true }) }, options, conn.apiKey, (event) => stream.push(event.data));
-      if (outcome === 'done') return stream.result();
-    } catch (error) {
-      // A server that refuses `stream` answers 400 or 422 before any data: ask again without streaming.
-      if (!(error instanceof AiError) || error.kind !== 'badRequest' || error.status === null) throw error;
+  const host = hostKey(conn.baseUrl);
+  if (options.onDelta && !refusedStream.has(host)) {
+    // First with token usage, then without it, then not streaming: each step only after the server said 400 or 422 to the one before.
+    for (const usage of refusedUsage.has(host) ? [false] : [true, false]) {
+      const stream = createOpenAiStream(options.onDelta);
+      try {
+        const outcome = await postStream(url, { headers, body: buildOpenAiBody(conn.baseUrl, request, { stream: true, usage }) }, options, conn.apiKey, (event) => stream.push(event.data));
+        if (outcome === 'done') return stream.result();
+        options.mark?.('no-stream-body');
+        refusedStream.add(host);
+        break;
+      } catch (error) {
+        if (!refusal(error)) throw error;
+        options.mark?.('stream-refused', { usage: usage ? 1 : 0 });
+        if (usage) refusedUsage.add(host);
+        else refusedStream.add(host);
+      }
     }
   }
   const body = await postJson(url, { method: 'POST', headers, body: buildOpenAiBody(conn.baseUrl, request) }, options, CALL_TIMEOUT_MS, conn.apiKey);

@@ -84,6 +84,8 @@ export async function postJson(
     }
     outer.addEventListener('abort', onAbort, { once: true });
   }
+  const mark = options.mark;
+  if (init.method === 'POST') mark?.('request-plain');
   try {
     let response: Response;
     let text: string;
@@ -95,7 +97,9 @@ export async function postJson(
         signal: controller.signal,
         credentials: 'omit',
       });
+      if (init.method === 'POST') mark?.('headers-plain', { status: response.status });
       text = (await response.text()).slice(0, MAX_BODY_CHARS);
+      if (init.method === 'POST') mark?.('body-plain', { bytes: text.length });
     } catch {
       if (outer?.aborted) throw new AiError('aborted');
       throw new AiError(timedOut ? 'timeout' : 'network');
@@ -162,6 +166,8 @@ export async function postStream(
     outer.addEventListener('abort', onAbort, { once: true });
   }
   arm();
+  const mark = options.mark;
+  mark?.('request');
   try {
     let response: Response;
     try {
@@ -176,6 +182,7 @@ export async function postStream(
       if (outer?.aborted) throw new AiError('aborted');
       throw new AiError(timedOut ? 'timeout' : 'network');
     }
+    mark?.('headers', { status: response.status, stream: response.body ? 1 : 0, type: response.headers?.get?.('content-type') ?? '' });
     if (!response.ok) {
       let text = '';
       try {
@@ -195,6 +202,7 @@ export async function postStream(
     const reader = response.body?.getReader?.();
     if (!reader || typeof TextDecoder === 'undefined') return 'unsupported';
     const decoder = new TextDecoder();
+    let chunks = 0;
     const parser = createSseParser(onEvent);
     // A runtime whose body does not end its pending read on abort would hang: cancel the reader ourselves.
     controller.signal.addEventListener('abort', () => void reader.cancel().catch(() => {}), { once: true });
@@ -203,11 +211,14 @@ export async function postStream(
         const { done, value } = await reader.read();
         if (done) break;
         arm();
+        if (chunks === 0) mark?.('first-chunk', { bytes: value?.length ?? 0 });
+        chunks += 1;
         if (value) parser.push(decoder.decode(value, { stream: true }));
       }
       if (controller.signal.aborted) throw new AiError(outer?.aborted ? 'aborted' : 'timeout');
       parser.push(decoder.decode());
       parser.flush();
+      mark?.('stream-end', { chunks });
     } catch (error) {
       if (error instanceof AiError) throw error;
       if (outer?.aborted) throw new AiError('aborted');

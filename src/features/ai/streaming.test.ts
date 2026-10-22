@@ -1,12 +1,14 @@
-import { describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 
 import { anthropicAdapter } from './adapters/anthropic';
-import { openAiAdapter } from './adapters/openai';
+import { openAiAdapter, resetStreamMemory } from './adapters/openai';
 import { createSseParser, createThinkSplitter, type SseEvent } from './adapters/sse';
 import { PROVIDERS } from './providers';
 import { TOOL_SPECS } from './tools';
 import type { StreamDelta } from './types';
 import { json, mockFetch } from './testFixtures';
+
+beforeEach(resetStreamMemory);
 
 const KEY = 'sk-test-0123456789abcdef';
 const request = { model: 'm', system: 'SYS', messages: [{ role: 'user' as const, content: 'hai' }], tools: TOOL_SPECS, maxTokens: 800 };
@@ -90,13 +92,6 @@ describe('OpenAI-compatible streaming', () => {
     expect(calls[0]!.headers.Authorization).toBe(`Bearer ${KEY}`);
   });
 
-  test('a custom server does not get stream_options', async () => {
-    const { fetchImpl, calls } = mockFetch([sse([chunk({ content: 'ok' }, 'stop'), frame('[DONE]')])]);
-    await openAiAdapter.complete({ baseUrl: 'https://gateway.example.com/v1', apiKey: KEY, model: 'glm-5.3-flash' }, request, { fetchImpl, onDelta: () => {} });
-    expect(calls[0]!.body).toMatchObject({ stream: true });
-    expect(calls[0]!.body).not.toHaveProperty('stream_options');
-  });
-
   test('GLM style: reasoning_content deltas first, then content; the two never mix', async () => {
     const { fetchImpl } = mockFetch([
       sse([chunk({ reasoning_content: 'Mari lihat ' }), chunk({ reasoning_content: 'datanya.' }), chunk({ content: 'Minggu ini ' }), chunk({ content: 'bagus.' }, 'stop'), frame('[DONE]')]),
@@ -169,13 +164,31 @@ describe('OpenAI-compatible streaming', () => {
     expect(JSON.stringify(error)).not.toContain('0123456789abcdef');
   });
 
-  test('a server that refuses `stream` (400) is asked again without it, and the answer reaches onDelta in one piece', async () => {
-    const { fetchImpl, calls } = mockFetch([json({ error: { message: 'stream is not supported' } }, 400), json({ choices: [{ finish_reason: 'stop', message: { content: 'Halo' } }] })]);
+  test('a server that refuses `stream_options` is asked again without it (and remembered); one that refuses `stream` too gets a plain call, and the answer reaches onDelta in one piece', async () => {
+    const custom = { baseUrl: 'https://gateway.example.com/v1', apiKey: KEY, model: 'glm-5.3-flash' };
+    const first = mockFetch([json({ error: { message: 'unknown field stream_options' } }, 400), sse([chunk({ content: 'Halo' }, 'stop'), frame('[DONE]')])]);
+    expect((await openAiAdapter.complete(custom, request, { fetchImpl: first.fetchImpl, onDelta: () => {} })).text).toBe('Halo');
+    expect(first.calls.map((c) => (c.body as { stream_options?: unknown }).stream_options !== undefined)).toEqual([true, false]);
+    // remembered: the next question does not try it again
+    const next = mockFetch([sse([chunk({ content: 'Lagi' }, 'stop')])]);
+    await openAiAdapter.complete(custom, request, { fetchImpl: next.fetchImpl, onDelta: () => {} });
+    expect(next.calls).toHaveLength(1);
+    expect(next.calls[0]!.body).not.toHaveProperty('stream_options');
+
+    resetStreamMemory();
+    const { fetchImpl, calls } = mockFetch([json({ error: { message: 'stream is not supported' } }, 400), json({ error: { message: 'stream is not supported' } }, 400), json({ choices: [{ finish_reason: 'stop', message: { content: 'Halo' } }] })]);
     const seen: StreamDelta[] = [];
     const reply = await openAiAdapter.complete(conn, request, { fetchImpl, onDelta: (d) => seen.push(d) });
     expect(reply.text).toBe('Halo');
-    expect(calls.map((c) => (c.body as { stream?: boolean }).stream === true)).toEqual([true, false]);
+    expect(calls.map((c) => (c.body as { stream?: boolean }).stream === true)).toEqual([true, true, false]);
     expect(seen).toEqual([{ text: 'Halo' }]);
+  });
+
+  test('a custom endpoint is asked for token usage like the others', async () => {
+    const { fetchImpl, calls } = mockFetch([sse([chunk({ content: 'ok' }, 'stop'), frame({ choices: [], usage: { prompt_tokens: 10, completion_tokens: 2 } })])]);
+    const reply = await openAiAdapter.complete({ baseUrl: 'https://gateway.example.com/v1', apiKey: KEY, model: 'm' }, request, { fetchImpl, onDelta: () => {} });
+    expect(calls[0]!.body).toMatchObject({ stream: true, stream_options: { include_usage: true } });
+    expect(reply.usage).toEqual({ inputTokens: 10, outputTokens: 2 });
   });
 
   test('a runtime whose response has no readable body falls back to a plain call', async () => {

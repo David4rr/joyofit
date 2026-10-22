@@ -56,7 +56,12 @@
     "tokens": "{{tokens}} token",
     "hosted": "JoyoRogo",
     "privacyOwn": "Pesanmu, ringkasan datamu, dan hasil data yang dibaca AI dikirim langsung dari ponsel ke {{provider}} ({{host}}), tidak lewat server JoyoRogo. Kunci hanya ada di ponsel ini. Obrolan hanya tersimpan di ponsel ini.",
-    "disclaimer": "Joyo AI memberi panduan umum tentang latihan, tidur, dan makan. Ini bukan saran medis. Kalau ada nyeri, pusing, atau keluhan lain, berhenti dan periksakan ke dokter."
+    "disclaimer": "Joyo AI memberi panduan umum tentang latihan, tidur, dan makan. Ini bukan saran medis. Kalau ada nyeri, pusing, atau keluhan lain, berhenti dan periksakan ke dokter.",
+    "renameTitle": "Nama percakapan",
+    "renameHint": "Ketuk untuk melihat judul lengkap dan mengganti namanya",
+    "renameSave": "Simpan",
+    "renameCancel": "Batal",
+    "renameBody": "Kosongkan untuk memakai pertanyaan pertama sebagai nama."
   },
   "steps": {
     "running": "{{what}}...",
