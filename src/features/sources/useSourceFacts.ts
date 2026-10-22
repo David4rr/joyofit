@@ -7,7 +7,7 @@ import { useDiaryStatus } from '@/cloud/useDiaryStatus';
 import { isIos } from '@/components/IosUnavailable';
 import { countWatchWorkoutsSince, listDailySteps, listSleepSince } from '@/db/queries';
 import { stravaUploadSummary, type StravaUploadSummary } from '@/db/strava';
-import { watchListName } from '@/features/device/watchName';
+import { activeWatchName, watchDisplayName } from '@/features/device/watchName';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { countNightsSince } from '@/features/today/nightHrv';
 import { startOfLocalDay } from '@/features/today/stats';
@@ -42,7 +42,7 @@ export interface SourceFactsState {
 /** Everything the Sources screen shows, read from the app's own state: stored rows for the last week, the providers, and the native Health Connect / Apple Health status. Null until the first read has finished. */
 export function useSourceFacts(): SourceFactsState {
   const db = useSQLiteContext();
-  const { dataVersion, lastSync, watches } = useWatch();
+  const { dataVersion, lastSync, watches, device } = useWatch();
   const presence = useWatchPresence();
   const cloud = useCloud();
   const strava = useStrava();
@@ -86,7 +86,8 @@ export function useSourceFacts(): SourceFactsState {
     return {
       nowSec,
       watch: {
-        name: primary ? watchListName({ name: primary.name, alias: primary.alias, model: primary.productModel }) : null,
+        // The name Today's card shows: the person's rename, else the model, never the Bluetooth codename.
+        name: device ? activeWatchName(device, watches) : primary ? watchDisplayName({ name: primary.name, alias: primary.alias, model: primary.productModel }) : null,
         paired: presence === 'watch',
         lastSyncSec: lastSync,
         stepDays: week.stepDays,
@@ -120,7 +121,7 @@ export function useSourceFacts(): SourceFactsState {
         waiting: scale.rogoWaiting,
       },
     };
-  }, [week, presence, watches, lastSync, health, strava.settings.connectedAt, cloud.signedIn, cloud.email, diary, scale.scale, scale.weighIns, scale.rogoWaiting, nowSec]);
+  }, [week, presence, watches, device, lastSync, health, strava.settings.connectedAt, cloud.signedIn, cloud.email, diary, scale.scale, scale.weighIns, scale.rogoWaiting, nowSec]);
 
   return { facts, health };
 }
