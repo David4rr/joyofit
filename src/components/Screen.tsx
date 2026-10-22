@@ -194,10 +194,11 @@ export function Screen({ title, caption, right, refresh, scrollEnabled = true, s
   );
 }
 
-/** Borderless white card, themed radius, padding 16. Sits flat: no border, no shadow. */
+/** Borderless white card, themed radius, padding 16. Sits flat: no border, no shadow (an outlined theme draws a thin hairline border instead). */
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  const { colors, radius } = useTheme();
-  return <View style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.card }, style]}>{children}</View>;
+  const { theme, colors, radius } = useTheme();
+  const outline = theme.outlined ? { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline } : null;
+  return <View style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.card }, outline, style]}>{children}</View>;
 }
 
 interface SectionProps {

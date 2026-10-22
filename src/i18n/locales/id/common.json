@@ -203,6 +203,10 @@
     "matcha": {
       "name": "Matcha Latte",
       "tagline": "Krem dan hijau matcha dengan teks membulat lembut. Selalu terang."
+    },
+    "titik": {
+      "name": "Titik",
+      "tagline": "Hitam dan putih tulang, garis tipis, angka dot-matrix dan satu warna merah untuk yang sedang aktif. Mengikuti HP."
     }
   },
   "notFound": {
