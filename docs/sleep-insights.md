@@ -22,7 +22,8 @@ nightly rows. Everything here is JS, so it ships over the air (`docs/ota.md`), e
 
 ## Room thermometer (bedroom temperature and humidity)
 
-The Xiaomi LYWSD03MMC thermometer is the room sensor. JoyoFit reads its Bluetooth **advertisements** (no connection, no bind key),
+The Xiaomi LYWSD03MMC thermometer is the room sensor. With the community firmware JoyoFit reads its Bluetooth **advertisements** (no
+connection, no bind key); a unit on the stock firmware is read with a bind key or over a short connection (see "Stock firmware"). It
 keeps the raw readings on the phone, and sends only per-night aggregates with the night row. Settings > Termometer kamar
 (`src/features/thermometer/ui/ThermometerScreen.tsx`) pairs it, shows the last reading and battery, runs the overnight scan and
 says what the sensor needs. The air purifier (PM2.5) is later: nothing here sends `pm25Mean`, the server column is reserved
@@ -44,12 +45,50 @@ Readings outside -20..60 C or 0..100 % are rejected, a repeat of the same counte
 the payload is exposed (`ThermometerReading.mac`) because on iOS the scan id is a peripheral UUID. The fixtures follow the layouts
 above; they are not captures from a unit [UNVERIFIED on a real sensor: nobody with a LYWSD03MMC ran this].
 
-**Stock Xiaomi firmware cannot be read.** It does not advertise a reading JoyoFit can decode: its `0xFE95` payload is encrypted
-with a per-device bind key that lives in the Xiaomi app (or the unit needs a GATT connection) [INFERENCE: from the firmware's
-documentation, not tested on a stock unit]. The picker still lists a unit named `LYWSD03MMC` / `MJ_HT_V1` but marks it
-"Belum bisa dibaca" and offers no Pair button. The sensor needs the community firmware, flashed from a browser over Bluetooth. Check
-the hardware version first: units sold since March 2025 (B1.5 and B1.6) are not recommended by the firmware author (the design
-doc, section 10). The pairing screen says the same.
+### Stock firmware (LYWSD03MMC, MHO-C401, CGG1 and siblings)
+
+A unit on the stock Xiaomi firmware is listed in the picker (by name, or by the MiBeacon product id in its `0xFE95` advertisement:
+`isMiThermometerAdvert`, so a band or a scale advertising under `0xFE95` is not) with two buttons. Both work from JavaScript, so they
+reach installed apps over the air; only the overnight bind-key scan needs a store build.
+
+**Pakai bindkey (passive, preferred).** `sensors/miBeacon.ts` decrypts MiBeacon v4/v5 frames: service data `0xFE95`, frame control
+(bit 3 encrypted, 4 MAC, 5 capability, 6 object), product id, frame counter, MAC (6 bytes as on the air), then the ciphertext, an extended
+counter (3) and a 4 byte MIC. AES-128-CCM, 4 byte tag, additional data `0x11`, nonce = MAC + product id + frame counter + extended counter
+(12 bytes), as ble_monitor (`ble_parser/xiaomi.py`, `decrypt_mibeacon_v4_v5`) implements it. The AES block is a 60 line own implementation
+(no dependency; checked against FIPS-197). MiBeacon v2/v3 encrypted frames (12 byte key) are not supported. Objects read: `0x1004`
+temperature (int16 LE, 0.1 C), `0x1006` humidity (u16 LE, 0.1 %), `0x100A` battery (u8 %), `0x100D` temperature and humidity
+together; the e-ink XMWSDJ04MMC family sends `0x4C01` temperature and `0x4C08` humidity as float32 (`0x4C02`, `0x4C03` u8). The
+LYWSD03MMC sends one object per advertisement, so `MiBeaconTracker` pairs a temperature and a humidity heard within 10 minutes into one
+reading (`format: 'mibeacon'`); `ThermometerSampler` applies the same 5-minute throttle and counter dedupe as for the community formats.
+Plaintext (unbound) MiBeacon frames decode without a key.
+
+The bind key is 32 hex digits (`parseBindkey`, separators and case ignored). It is checked **before** it is kept: the MIC makes a wrong
+key fail, so `checkBindkey` tries it on the last 8 distinct frames the picker heard from that unit and only a frame that opens counts
+(`wrongKey`, `noFrames` when the unit has not advertised an object yet, `unsupported` for MiBeacon v2/v3 or a frame with no MAC on iOS,
+where the scan id is no address). The key lives in the secure store (`joyofit.room.bindkey.<id>`, same place as the Tuya `local_key`),
+never in SQLite, the log, a sync or a backup; the way each paired unit is read is one kv-store value (`joyofit.room.link.<id>`:
+`bindkey` or `gatt`, absent = community firmware). Forgetting the thermometer deletes both. The in-app help (Details under the key field)
+explains how to get the key (Xiaomi Cloud Tokens Extractor, or the Telink flasher's "Get Mi Bind Key") and warns that the flasher unpairs
+the unit from Mi Home.
+
+Overnight: the foreground service keeps `fe95` service data too (`RoomScanLogic.KEPT_SERVICES`, **native: needs a store build**). One
+MiBeacon frame per five minutes would keep, say, only a battery frame, so `MiBeaconThrottle` keeps up to 6 distinct payloads per sensor per
+5-minute window (repeats of one frame are dropped). JS decrypts them when the app opens (`drainRoomAdverts` through the same sampler).
+`roomCaptureServices()` tells JS whether the installed build keeps `fe95` (`keepsMiBeacon`); on an older build a bind-key unit is heard
+only while the app is open and the screen says so.
+
+**Hubungkan langsung (no key).** `thermometer/gattRead.ts` connects through the scale transport (`scaleConnect`, `scaleSubscribe`, native
+only moves bytes), subscribes to `ebe0ccc1-7a0a-4b0c-8a1a-6ff2997da3a6` of service `ebe0ccb0-...`, takes the first valid notification and
+disconnects. The notification is 5 bytes: temperature int16 LE in 0.01 C, humidity u8 %, battery voltage u16 LE in mV (battery % is the
+community formula `(mV - 2100) / 10`, clamped). Nothing is written to the sensor: the "connection interval" write some projects use is
+not needed for one read. The sensor serves one connection at a time, so a unit held by Mi Home (or out of range) ends as `unreachable`
+and the screen says to close Mi Home; a unit without the service as `noService`. `GattPoller` reads once now (when the newest sample is
+older than 10 minutes), then every 10 minutes while the app is in the foreground, one read at a time, backing off 2, 4, 8 minutes after a
+failure; a "Baca sekarang" button reads out of turn. It stops with the app in the background: **no overnight reading in this mode**
+(the foreground service only scans). Pairing reads one sample first and pairs only when it worked.
+
+The picker, the card and `env_sample` do not tell the modes apart: a stock unit shows readings, battery and the room history like a
+flashed one.
 
 ### Storage and pairing
 
@@ -129,6 +168,12 @@ pushed again as a changed snapshot. Without consent nothing is read from `env_sa
 `thermometerAdvert.test.ts` (decoders, rejection, dedupe), `thermometer/sampler.test.ts` (paired filter, 5-minute throttle, counter
 dedupe), `store.test.ts` (spacing rule, 120-day prune), `aggregate.test.ts` (shape, 6 samples, 50 % coverage, window ends, two sensors,
 `buildRogoNights` integration), `drain.test.ts` (file to samples, no clear on failure, old-binary guard), `nightWindow.test.ts`
-(auto-start window), `discovery.test.ts` (picker); Kotlin `RoomScanLogicTest` and `RoomAdvertLogTest` (pure logic: service data
-choice, address filter, throttle, clock conversion, request round trip, the file log), run by CI's `:ble-sensors:testDebugUnitTest`.
-Not exercised: the service on a device, a real LYWSD03MMC, iOS.
+(auto-start window), `discovery.test.ts` (picker, bind key check); Kotlin `RoomScanLogicTest` and `RoomAdvertLogTest` (pure logic: service data
+choice, address filter, throttle, MiBeacon throttle, clock conversion, request round trip, the file log), run by CI's `:ble-sensors:testDebugUnitTest`.
+Stock firmware: `sensors/miBeacon.test.ts` (FIPS-197 AES; ble_monitor's published LYWSD03MMC, CGG1, CGDK2, LYWSD02MMC and XMWSDJ04MMC
+frames with their keys and values; plaintext LYWSD03MMC and LYWSDCGQ frames; objects; CCM against Node's own `aes-128-ccm`; wrong key,
+damaged frame, tampered tag), `thermometer/sampler.test.ts` (pairing two one-object frames), `gattRead.test.ts` (notification layout,
+a scripted native: connect, subscribe, timeouts, busy unit, no service), `gattPoller.test.ts` (schedule, backoff), `link.test.ts` (modes,
+bind key in the secret store only), `drain.test.ts` (overnight MiBeacon frames).
+Not exercised: the service on a device, a real LYWSD03MMC on either firmware, iOS. The GATT notification layout follows the MiTemperature2
+and LYWSD03MMC community notes, not a capture [UNVERIFIED on a stock unit].
