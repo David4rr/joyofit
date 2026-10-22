@@ -28,7 +28,8 @@
     "gear": "Sepatu & perlengkapan",
     "importAll": "Impor data",
     "akun": "Akun",
-    "homeCards": "Atur kartu Beranda"
+    "homeCards": "Atur kartu Beranda",
+    "hrZones": "Zona HR"
   },
   "index": {
     "title": "Lainnya",
@@ -824,5 +825,84 @@
     "sent": "Terkirim ke jam.",
     "stored": "Tersimpan. Dikirim ke jam saat tersambung.",
     "needsWatch": "Jam yang tersambung belum mendukung balasan cepat."
+  },
+  "hrZones": {
+    "method": {
+      "title": "Cara menghitung",
+      "max": "% HR maks",
+      "hrr": "Cadangan HR (HRR)",
+      "maxBody": "Awal zona 1 sampai 5 ada di 50, 60, 70, 80, dan 90 persen dari HR maksimal. Ini bawaan Huawei Health.",
+      "hrrBody": "Awal zona 1 sampai 5 ada di 59, 74, 84, 88, dan 95 persen dari cadangan HR (HR maks dikurangi HR istirahat), ditambah HR istirahat. Lebih pas kalau HR istirahatmu rendah."
+    },
+    "rates": {
+      "title": "HR maks dan istirahat",
+      "max": "HR maks",
+      "maxFromAge": "Dari usiamu ({{age}} tahun)",
+      "maxSet": "Kamu yang atur",
+      "formulaClassic": "220 - usia ({{bpm}})",
+      "formulaTanaka": "Tanaka ({{bpm}})",
+      "noProfile": "Usia belum diisi di profil, jadi dipakai {{age}} tahun.",
+      "openProfile": "Isi profil tubuh",
+      "rest": "HR istirahat",
+      "restDefault": "Bawaan Huawei Health",
+      "restSet": "Kamu yang atur",
+      "details": "HR maks dari 100 sampai {{max}} bpm. HR istirahat dari {{restMin}} sampai {{restMax}} bpm dan paling sedikit {{gap}} bpm di bawah HR maks, seperti di Huawei Health. Tanaka memakai 208 - 0,7 x usia; rumus 220 - usia agak kasar, terutama untuk yang sudah berumur atau terlatih."
+    },
+    "zones": {
+      "title": "Zona",
+      "body": "Angka di kanan adalah bpm tempat tiap zona mulai. Zona 5 berakhir di HR maks.",
+      "zone": "Z{{n}} {{name}}",
+      "names": {
+        "warmup": "Pemanasan",
+        "fatBurning": "Pembakaran lemak",
+        "aerobic": "Aerobik",
+        "anaerobic": "Anaerobik",
+        "extreme": "Ekstrem"
+      },
+      "range": "{{from}} sampai {{to}} bpm",
+      "top": "Mulai {{from}}, sampai HR maks {{to}} bpm",
+      "startLabel": "Zona {{n}} mulai di (bpm)",
+      "custom": "Batas zona kamu ubah sendiri. Mengganti metode, HR maks, atau HR istirahat menghitungnya ulang.",
+      "resetLimits": "Kembalikan",
+      "details": "Analisis latihan, strain, grafik detak jantung harian, Coach, dan layar latihan di jam memakai batas yang sama. Latihan yang sudah terunggah ke JoyoRogo tidak dihitung ulang."
+    },
+    "alert": {
+      "title": "Peringatan batas HR",
+      "switch": "Peringatan di jam",
+      "hint": "Jam memberi tahu saat detak jantung melewati batas di tengah latihan.",
+      "limit": "Batas peringatan",
+      "limitMax": "Mengikuti HR maks"
+    },
+    "suggest": {
+      "title": "Hitung dari data",
+      "body": "Mencari angka dari datamu sendiri. Ini hanya saran: tidak ada yang berubah sampai kamu memakainya dan menyimpan.",
+      "action": "Hitung dari data",
+      "nothing": "Belum ada latihan dengan detak jantung, dan belum ada HR istirahat dari jam.",
+      "peak": "Tertinggi di latihanmu: {{bpm}} bpm",
+      "peakAbove": "Di atas perkiraan usia ({{bpm}} bpm), jadi rumus usia mungkin terlalu rendah untukmu.",
+      "peakBelow": "Masih di bawah perkiraan usia ({{bpm}} bpm). Belum tentu itu batasmu, jadi tidak disarankan.",
+      "useMax": "Pakai",
+      "rest": "HR istirahat dari jam: {{bpm}} bpm",
+      "restBody": "Nilai tengah 14 hari terakhir. Dipakai metode HRR.",
+      "useRest": "Pakai",
+      "failed": "Data tidak bisa dibaca. Coba lagi."
+    },
+    "watch": {
+      "noNative": "Jam menerima zona setelah aplikasi diperbarui dari toko. Analisis di HP sudah memakai zona ini.",
+      "offline": "Zona dikirim ke jam saat tersambung, dan tiap kali tersambung lagi.",
+      "none": "Jam ini tidak menerima zona dari aplikasi. Zona hanya dipakai di analisis JoyoFit.",
+      "ok": "Jam ini menerima zona dari aplikasi."
+    },
+    "saved": {
+      "sent": "Tersimpan dan terkirim ke jam.",
+      "stored": "Tersimpan. Dikirim ke jam saat tersambung.",
+      "unsupported": "Tersimpan. Jam menerima zona setelah aplikasi diperbarui dari toko.",
+      "failed": "Tersimpan di HP, tapi gagal dikirim ke jam. Dicoba lagi saat tersambung.",
+      "none": "Tersimpan. Jam ini tidak menerima zona dari aplikasi."
+    },
+    "save": "Simpan",
+    "reset": "Atur ulang",
+    "less": "Kurangi 1 bpm",
+    "more": "Tambah 1 bpm"
   }
 }

@@ -72,7 +72,10 @@ export interface AnalysisLap {
   gainM: number | null;
 }
 
-/** Zones 1 to 5 are 50-60, 60-70, 70-80, 80-90 and 90-100 percent of the maximum heart rate. */
+/**
+ * The person's heart-rate zones for this workout: `bounds` are the limits they had when the analysis was made. By default zones 1 to 5 are
+ * 50-60, 60-70, 70-80, 80-90 and 90-100 percent of the maximum heart rate; the person may use the reserve method or their own limits.
+ */
 export interface AnalysisHrZones {
   maxHr: number;
   /** Where the maximum comes from: the profile's age formula or an explicit setting. */

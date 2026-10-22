@@ -1,3 +1,4 @@
+import { zoneIndex, type HrZones } from '@/features/hrzones/zones';
 import { fmtDecimal, fmtInt, t } from '@/i18n';
 import type { LiveWorkout } from '@/wear';
 
@@ -63,16 +64,11 @@ export function isActive(live: LiveWorkout | null): live is LiveWorkout {
   return live !== null && live.status !== 'ended';
 }
 
-/**
- * Huawei's five zones by share of maximum heart rate (50, 60, 70, 80, 90 %; `HeartRateThresholdConfig`), named the way
- * Huawei Health names them. Below 50 % is no zone.
- */
-export function heartZone(heartRate: number, maxHeartRate: number): { zone: number; label: string } | null {
-  const pct = heartRate / maxHeartRate;
-  if (pct < 0.5) return null;
-  if (pct < 0.6) return { zone: 1, label: t('sharing:live.zones.warmup') };
-  if (pct < 0.7) return { zone: 2, label: t('sharing:live.zones.fatBurning') };
-  if (pct < 0.8) return { zone: 3, label: t('sharing:live.zones.aerobic') };
-  if (pct < 0.9) return { zone: 4, label: t('sharing:live.zones.anaerobic') };
-  return { zone: 5, label: t('sharing:live.zones.extreme') };
+const ZONE_LABELS = ['warmup', 'fatBurning', 'aerobic', 'anaerobic', 'extreme'] as const;
+
+/** The person's zone (`@/features/hrzones`) of a reading, named the way Huawei Health names the five zones. Below zone 1 is no zone. */
+export function heartZone(heartRate: number, zones: HrZones): { zone: number; label: string } | null {
+  const zone = zoneIndex(heartRate, zones);
+  if (zone === 0) return null;
+  return { zone, label: t(`sharing:live.zones.${ZONE_LABELS[zone - 1]}`) };
 }

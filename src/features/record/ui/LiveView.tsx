@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Linking, StyleSheet, View } from 'react-native';
 
@@ -18,7 +18,7 @@ import { useAnalysisPalette } from '@/features/workouts/analysis/palette';
 import { SPORT_ROWS } from '@/features/workouts/manual';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { formatElapsed, workoutDistanceParts } from '@/features/workouts/summary';
-import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
+import { useHrZones } from '@/features/hrzones/settings';
 import { fmtDistance, fmtInt } from '@/i18n';
 import { useRecorder } from '@/state/RecorderProvider';
 import { useSensors } from '@/state/SensorsProvider';
@@ -46,7 +46,7 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
   const palette = useAnalysisPalette();
   const { snapshot, pause, resume, lap } = useRecorder();
   const { saved } = useSensors();
-  const maxHr = useMemo(() => userMaxHr(), []);
+  const zones = useHrZones();
   const { live, sport } = snapshot;
 
   if (!live || !sport) return null;
@@ -58,7 +58,7 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
     snapshot.sensorIds.flatMap((id) => kindChannels(saved.find((s) => s.id === id)?.kinds ?? [])),
   );
   const tiles = liveTiles(live, channels);
-  const zone = live.hr !== null ? heartZone(live.hr, maxHr) : null;
+  const zone = live.hr !== null ? heartZone(live.hr, zones) : null;
   const distance = workoutDistanceParts(live.distanceM);
   const speed = speedFigure(sport, live.speedMps);
   const foot = SPORT_ROWS[sport].foot;

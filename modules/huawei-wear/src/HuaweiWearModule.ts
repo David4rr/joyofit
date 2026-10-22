@@ -8,6 +8,8 @@ import type {
   HealthConnectStatus,
   HealthSensorsStatus,
   HealthSensorsUpdate,
+  HeartRateZonesConfig,
+  HeartRateZonesStatus,
   HrvReading,
   HuaweiWearModuleEvents,
   LinkState,
@@ -209,6 +211,17 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * this function lack it: check `typeof HuaweiWear.setWatchLanguage === 'function'` first.
    */
   setWatchLanguage(language: string | null): Promise<boolean>;
+
+  /**
+   * The heart-rate zones for the watch's workout screen. Stores `config` (null: back to Gadgetbridge's defaults for the profile's age, what
+   * was sent before this function) and, when a watch is connected, sends it now; it is sent again at every connect and when the profile's
+   * age changes. A set that applies to all four postures (standing, riding, swimming, other). Resolves true when the connected watch took it,
+   * false when stored only (not connected, or a watch that takes no zones). Rejects with ERR_INVALID_ARGUMENT for values outside the ranges
+   * of `HeartRateZonesConfig`. Builds from before this function lack it: check `hasNative('setHeartRateZones')` (`@/wear`) first.
+   */
+  setHeartRateZones(config: HeartRateZonesConfig | null): Promise<boolean>;
+  /** Whether a configuration is stored and how the connected watch would take it. */
+  getHeartRateZonesStatus(): HeartRateZonesStatus;
 
   /** The sensor switches as stored, plus what the connected watch supports (`supported` is null when none is connected). */
   getHealthSensors(): HealthSensorsStatus;

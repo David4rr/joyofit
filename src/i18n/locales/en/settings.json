@@ -28,7 +28,8 @@
     "gear": "Shoes & gear",
     "importAll": "Import data",
     "akun": "Account",
-    "homeCards": "Arrange Home cards"
+    "homeCards": "Arrange Home cards",
+    "hrZones": "HR zones"
   },
   "index": {
     "title": "More",
@@ -840,5 +841,84 @@
     "sent": "Sent to the watch.",
     "stored": "Saved. It goes to the watch when it connects.",
     "needsWatch": "The connected watch does not support quick replies."
+  },
+  "hrZones": {
+    "method": {
+      "title": "How zones are calculated",
+      "max": "% max HR",
+      "hrr": "HR reserve (HRR)",
+      "maxBody": "Zones 1 to 5 start at 50, 60, 70, 80 and 90 percent of your maximum heart rate. This is Huawei Health's default.",
+      "hrrBody": "Zones 1 to 5 start at 59, 74, 84, 88 and 95 percent of your heart rate reserve (max HR minus resting HR), added to your resting HR. A better fit when your resting HR is low."
+    },
+    "rates": {
+      "title": "Max and resting HR",
+      "max": "Max HR",
+      "maxFromAge": "From your age ({{age}} years)",
+      "maxSet": "Set by you",
+      "formulaClassic": "220 - age ({{bpm}})",
+      "formulaTanaka": "Tanaka ({{bpm}})",
+      "noProfile": "No age in your profile yet, so {{age}} years is used.",
+      "openProfile": "Fill in body profile",
+      "rest": "Resting HR",
+      "restDefault": "Huawei Health default",
+      "restSet": "Set by you",
+      "details": "Max HR runs from 100 to {{max}} bpm. Resting HR runs from {{restMin}} to {{restMax}} bpm and sits at least {{gap}} bpm under max HR, as in Huawei Health. Tanaka uses 208 - 0.7 x age; 220 - age is a rough rule, especially for older or well-trained people."
+    },
+    "zones": {
+      "title": "Zones",
+      "body": "The number on the right is the bpm where each zone starts. Zone 5 ends at your max HR.",
+      "zone": "Z{{n}} {{name}}",
+      "names": {
+        "warmup": "Warm-up",
+        "fatBurning": "Fat burning",
+        "aerobic": "Aerobic",
+        "anaerobic": "Anaerobic",
+        "extreme": "Extreme"
+      },
+      "range": "{{from}} to {{to}} bpm",
+      "top": "From {{from}}, up to max HR {{to}} bpm",
+      "startLabel": "Zone {{n}} starts at (bpm)",
+      "custom": "You changed the zone limits by hand. Changing the method, max HR or resting HR works them out again.",
+      "resetLimits": "Restore",
+      "details": "Workout analysis, strain, the daily heart-rate chart, Coach and the watch's workout screen use the same limits. Workouts already uploaded to JoyoRogo are not recalculated."
+    },
+    "alert": {
+      "title": "Heart-rate limit alert",
+      "switch": "Alert on the watch",
+      "hint": "The watch alerts you when your heart rate goes over the limit during a workout.",
+      "limit": "Alert limit",
+      "limitMax": "Follows max HR"
+    },
+    "suggest": {
+      "title": "Work out from data",
+      "body": "Looks for numbers in your own data. It is only a suggestion: nothing changes until you use it and save.",
+      "action": "Work out from data",
+      "nothing": "No workout with heart rate yet, and no resting HR from the watch yet.",
+      "peak": "Highest in your workouts: {{bpm}} bpm",
+      "peakAbove": "Above the age estimate ({{bpm}} bpm), so the age formula may be too low for you.",
+      "peakBelow": "Still under the age estimate ({{bpm}} bpm). That is not necessarily your limit, so it is not suggested.",
+      "useMax": "Use",
+      "rest": "Resting HR from the watch: {{bpm}} bpm",
+      "restBody": "The median of the last 14 days. Used by the HRR method.",
+      "useRest": "Use",
+      "failed": "The data could not be read. Try again."
+    },
+    "watch": {
+      "noNative": "The watch takes zones once the app is updated from the store. Analysis on the phone already uses these zones.",
+      "offline": "Zones go to the watch when it connects, and every time it connects again.",
+      "none": "This watch does not take zones from the app. They are used in JoyoFit's analysis only.",
+      "ok": "This watch takes zones from the app."
+    },
+    "saved": {
+      "sent": "Saved and sent to the watch.",
+      "stored": "Saved. Sent to the watch when it connects.",
+      "unsupported": "Saved. The watch takes zones once the app is updated from the store.",
+      "failed": "Saved on the phone, but sending to the watch failed. It tries again when connected.",
+      "none": "Saved. This watch does not take zones from the app."
+    },
+    "save": "Save",
+    "reset": "Reset",
+    "less": "1 bpm less",
+    "more": "1 bpm more"
   }
 }

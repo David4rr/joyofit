@@ -16,10 +16,11 @@ import {
 import { errorMessage } from '@/format';
 import { startOfLocalDay } from '@/features/today/stats';
 import { withRideLoad } from '@/features/cycling/load';
-import { strainFromLoads, zoneThresholds, type DayStrain } from '@/features/today/strain';
+import { strainFromLoads, type DayStrain } from '@/features/today/strain';
 import { addDays, dayBounds, dayStarts } from '@/features/trends/series';
 import { parseSummary, type WorkoutSummary } from '@/features/workouts/summary';
-import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
+import { userHrZones } from '@/features/hrzones/settings';
+import type { HrZones } from '@/features/hrzones/zones';
 import type { SleepSegment, StepSample } from '@/wear';
 
 /** `today` is what the Today cards need; `full` adds the longer history the Kebugaran screen works from. */
@@ -40,7 +41,8 @@ export interface FitnessWorkout {
 export interface FitnessData {
   nowSec: number;
   dayStart: number;
-  maxHr: number;
+  /** The person's heart-rate zones the strain below was computed with. */
+  zones: HrZones;
   /** Per day with heart rate, oldest first. */
   strain: DayStrain[];
   resting: Map<number, number>;
@@ -69,11 +71,11 @@ export function useFitnessData(dataVersion: number, scope: FitnessScope): Fitnes
       let cancelled = false;
       const nowSec = Math.floor(Date.now() / 1000);
       const dayStart = startOfLocalDay(nowSec);
-      const maxHr = userMaxHr();
+      const zones = userHrZones();
       const depth = DEPTH[scope];
       const bounds = dayBounds(dayStarts(dayStart, depth.strainDays + 1));
       Promise.all([
-        listDayHeartLoad(db, bounds, zoneThresholds(maxHr)),
+        listDayHeartLoad(db, bounds, zones.limits),
         listRestingHeartRateByDay(db, bounds),
         listWorkoutsSince(db, nowSec - depth.workoutDays * 86400, nowSec + 1, -1),
         listHrvReadingsSince(db, dayStart - depth.hrvDays * 86400),
@@ -88,7 +90,7 @@ export function useFitnessData(dataVersion: number, scope: FitnessScope): Fitnes
             data: {
               nowSec,
               dayStart,
-              maxHr,
+              zones,
               strain,
               resting,
               workouts: workouts.map(({ workout, summaryJson }) => ({ workout, summary: parseSummary(summaryJson) })),

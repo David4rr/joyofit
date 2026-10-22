@@ -73,7 +73,7 @@ JoyoFit works without an account: everything is in the phone's SQLite and KV. **
 
 ### Preferences that follow the account (JoyoFit, kind `pref`)
 
-`theme`, `locale`, `goals` (ring goals and reminders), `profile` (height, weight, birth year, sex, daily step goal), `cycle` (calendar switch and reminder switches), `weather` (unit and the city's name; the phone looks the place up again), `sleepreport`, `healthyliving`, `sync.cycle`. A preference is synced only if it reads and writes with no watch connected, on both platforms, and says the same thing on every phone. Written through the native module without a watch they persist locally and reach the watch on the next connection. The list and each exclusion with its reason is in `src/cloud/syncInventory.ts`.
+`theme`, `locale`, `goals` (ring goals and reminders), `profile` (height, weight, birth year, sex, daily step goal), `cycle` (calendar switch and reminder switches), `weather` (unit and the city's name; the phone looks the place up again), `hrzones` (heart-rate zones: method, maximum and resting heart rate, hand-edited limits, limit alert), `sleepreport`, `healthyliving`, `sync.cycle`. A preference is synced only if it reads and writes with no watch connected, on both platforms, and says the same thing on every phone. Written through the native module without a watch they persist locally and reach the watch on the next connection. The list and each exclusion with its reason is in `src/cloud/syncInventory.ts`.
 
 ### Sign-out, sign-in, account switch (JoyoFit)
 

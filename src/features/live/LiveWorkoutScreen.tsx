@@ -12,6 +12,7 @@ import { Metric } from '@/components/Metric';
 import { Card, Screen, Section } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
 import { EmptyState } from '@/components/States';
+import { useHrZones } from '@/features/hrzones/settings';
 import { BurnFigure, FuelBar } from '@/features/live/FuelBar';
 import {
   distanceParts,
@@ -110,10 +111,11 @@ function Pair({ label, value }: { label: string; value: string }) {
 function LiveBody({ live }: { live: LiveWorkout }) {
   const { t } = useTranslation('sharing');
   const colors = useColors();
+  const zones = useHrZones();
   const nowMs = useNow(TICK_MS);
   const seconds = elapsedSec(live, nowMs);
   const phase = livePhase(live);
-  const zone = live.heartRate !== null ? heartZone(live.heartRate, live.maxHeartRate) : null;
+  const zone = live.heartRate !== null ? heartZone(live.heartRate, zones) : null;
   const distance = live.distanceM !== null ? distanceParts(live.distanceM) : null;
   const speed = prefersSpeed(live);
   const statusColor = live.status === 'running' ? colors.link : live.status === 'paused' ? colors.warning : colors.mutedForeground;

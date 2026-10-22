@@ -10,6 +10,7 @@ import { Field } from '@/components/Input';
 import { Section } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { Notice } from '@/components/States';
+import { syncHrZonesToWatch } from '@/features/hrzones/settings';
 import { DEFAULT_STEP_GOAL } from '@/features/today/useStepGoal';
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
@@ -103,6 +104,8 @@ export function ProfileSection() {
     setMessage(null);
     try {
       const sent = await HuaweiWear.setUserProfile(parsed);
+      // The zones follow the age while the maximum heart rate is not set by hand.
+      void syncHrZonesToWatch();
       setMessage({
         text: sent ? t('profile.sent') : t('profile.saved'),
         danger: false,

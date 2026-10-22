@@ -9,6 +9,8 @@ import { getLocalePref, setLocalePref } from '@/i18n/native';
 import { defaultLayout } from '@/features/bikecomputer/fields/layout';
 import { applyPulledReplies, clearPulledReplies, getSavedReplies, QUICK_REPLIES_PREF } from '@/features/settings/quickReplies';
 import { getFtp, setFtp } from '@/features/cycling/settings';
+import { HR_ZONES_PREF, hrZoneSettingsDocument, storeHrZoneSettings, syncHrZonesToWatch } from '@/features/hrzones/settings';
+import { DEFAULT_HR_ZONE_SETTINGS, parseHrZoneSettings } from '@/features/hrzones/zones';
 import { bikeSettingsStore, DEFAULT_BIKE_SETTINGS } from '@/features/bikecomputer/settings';
 import { getWheelMm, setWheelMm } from '@/features/sensors/settings';
 import { THEME_KEY } from '@/theme/ThemeProvider';
@@ -25,6 +27,7 @@ import { HuaweiWear, type CycleSwitches, type UserSex } from '@/wear';
  *  - `locale`          kv `joyofit.locale`; absent = follow the phone. Kept by "delete this phone's data".
  *  - `goals`           ring goals and reminders (`getActivityGoals` / `setActivityGoals`).
  *  - `profile`         height, weight, birth year, sex, daily step goal (`getUserProfile` / `setUserProfile`).
+ *  - `hrzones`         heart-rate zones: method, maximum and resting heart rate, hand-edited limits, the limit alert (kv `joyofit.hrZones`); the watch gets them again when another phone's choice is applied.
  *  - `cycle`           the cycle calendar switch and its reminder switches (`getCycle()` overview / `setCycleEnabled`, `setCycleSwitches`).
  *  - `weather`         temperature unit and the chosen city's name (`getWeatherStatus` / `setWeatherUnit`, `setWeatherCity`).
  *  - `sleepreport`     the morning sleep report switch (`getSafety().sleepReportEnabled` / `setSleepReportEnabled`).
@@ -157,11 +160,28 @@ registerSyncedPref({
       sex,
       dailyStepGoal: int(doc, 'dailyStepGoal'),
     });
+    // The zones follow the age while the maximum heart rate is not set by hand.
+    void syncHrZonesToWatch();
   },
   // The native module cannot forget a profile (null means "never saved" and sends nothing to the watch), and a placeholder
   // profile would be sent to a watch on connect. So a reset leaves it; a sign-in never uploads it into another account
   // unless the person chose that (`baselinePrefs`).
   clear: async () => {},
+});
+
+registerSyncedPref({
+  key: HR_ZONES_PREF,
+  read: async () => hrZoneSettingsDocument(),
+  write: async (value) => {
+    const settings = parseHrZoneSettings(value);
+    if (!settings) throw new Error('not heart-rate zone settings');
+    storeHrZoneSettings(settings);
+    void syncHrZonesToWatch();
+  },
+  clear: async () => {
+    storeHrZoneSettings(DEFAULT_HR_ZONE_SETTINGS);
+    void syncHrZonesToWatch();
+  },
 });
 
 const CYCLE_DEFAULTS: CycleSwitches = { master: false, periodStart: true, periodEnd: true, fertileStart: true, fertileEnd: false, easyPregnancy: false };

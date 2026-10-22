@@ -23,6 +23,7 @@ import { serializeQueries } from '@/db/serialize';
 import { DatabaseGate } from '@/features/dbhealth/DatabaseGate';
 import { DbHealthNotice } from '@/features/dbhealth/DbHealthNotice';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
+import { syncHrZonesAtLaunch } from '@/features/hrzones/settings';
 import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
 import { flushSupportReports } from '@/features/device/aturReports';
@@ -49,6 +50,8 @@ import { ThemeProvider, useTheme } from '@/theme';
 
 // Stored language choice (or the phone's) applies before the first screen is drawn.
 initLocale();
+// Heart-rate zones the person set reach the native module (and a connected watch) once per launch.
+syncHrZonesAtLaunch();
 
 /**
  * The schema is built before this handle opens (`DatabaseGate`, which repairs a damaged file first); from here on one query at a

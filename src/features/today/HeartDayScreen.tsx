@@ -12,7 +12,6 @@ import { Notice, Skeleton } from '@/components/States';
 import { heartDaySeries, bucketStart, type HeartDay } from '@/features/today/heartDay';
 import { loadHeartDay, type HeartDayData } from '@/features/today/heartDayQuery';
 import { startOfLocalDay } from '@/features/today/stats';
-import { zoneThresholds } from '@/features/today/strain';
 import { addDays } from '@/features/trends/series';
 import { useAnalysisPalette } from '@/features/workouts/analysis/palette';
 import { shares } from '@/features/workouts/analysis/ui/chartMath';
@@ -22,7 +21,7 @@ import { AnalysisContext, useAnalysisContext, type AnalysisContextValue } from '
 import { Bar, MIN_HIT, Txt } from '@/features/workouts/analysis/ui/primitives';
 import { createScrubStore, useScrub } from '@/features/workouts/analysis/ui/scrub';
 import { useAnalysisT } from '@/features/workouts/analysis/ui/text';
-import { userMaxHr } from '@/features/workouts/useWorkoutStrain';
+import { useHrZones } from '@/features/hrzones/settings';
 import { errorMessage, formatDuration } from '@/format';
 import { useNow } from '@/hooks/useNow';
 import { fmtClock, fmtDate, useLocale, useTranslation } from '@/i18n';
@@ -228,15 +227,14 @@ export function HeartDayScreen() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [scrubbing, setScrubbing] = useState(false);
   const [store] = useState(createScrubStore);
-  const maxHr = useMemo(() => userMaxHr(), []);
-  const thresholds = useMemo(() => zoneThresholds(maxHr), [maxHr]);
-  const bounds = useMemo(() => [...thresholds, maxHr], [thresholds, maxHr]);
+  const zones = useHrZones();
+  const bounds = useMemo(() => [...zones.limits, zones.maxHr], [zones]);
   const context = useMemo<AnalysisContextValue>(() => ({ palette, t: at, store, setScrubActive: setScrubbing }), [palette, at, store]);
 
   useEffect(() => {
     let cancelled = false;
     store.set(null);
-    loadHeartDay(db, dayStart, addDays(dayStart, 1), thresholds).then(
+    loadHeartDay(db, dayStart, addDays(dayStart, 1), zones.limits).then(
       (data) => {
         if (!cancelled) setLoaded({ dayStart, data, error: null });
       },
@@ -247,7 +245,7 @@ export function HeartDayScreen() {
     return () => {
       cancelled = true;
     };
-  }, [db, dayStart, dataVersion, thresholds, store]);
+  }, [db, dayStart, dataVersion, zones, store]);
 
   const isToday = dayStart >= todayStart;
   const current = loaded?.dayStart === dayStart ? loaded : null;
@@ -309,7 +307,7 @@ export function HeartDayScreen() {
                   />
                 </Card>
                 <Card>
-                  <Zones zoneSeconds={current.data.zoneSeconds} bounds={bounds} maxHr={maxHr} />
+                  <Zones zoneSeconds={current.data.zoneSeconds} bounds={bounds} maxHr={zones.maxHr} />
                 </Card>
               </>
             ) : (

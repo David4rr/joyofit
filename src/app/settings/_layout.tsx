@@ -35,6 +35,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="scale" options={{ title: t('screens.scale') }} />
       <Stack.Screen name="thermometer" options={{ title: t('screens.thermometer') }} />
       <Stack.Screen name="cycling" options={{ title: tc('settings.title') }} />
+      <Stack.Screen name="hr-zones" options={{ title: t('screens.hrZones') }} />
       <Stack.Screen name="bikecomputer" options={{ title: tb('settings.title') }} />
       <Stack.Screen name="meals" options={{ title: t('screens.meals') }} />
       <Stack.Screen name="goals" options={{ title: t('screens.goals') }} />

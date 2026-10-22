@@ -330,7 +330,7 @@
     "zonesTitle": "Waktu di tiap zona",
     "zone": "Zona {{n}}",
     "zoneRange": "{{from}} bpm ke atas",
-    "zonesNote": "Warna garis di grafik mengikuti zona, dihitung dari detak jantung maksimal perkiraanmu ({{max}} bpm). Celah di grafik berarti jam tidak mencatat.",
+    "zonesNote": "Warna garis di grafik mengikuti zona detak jantungmu (HR maks {{max}} bpm; bisa diubah di Pengaturan > Zona HR). Celah di grafik berarti jam tidak mencatat.",
     "loadError": "Gagal membaca detak jantung: {{error}}",
     "chartLabel": "Grafik detak jantung {{day}}"
   },
