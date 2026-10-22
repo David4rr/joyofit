@@ -36,7 +36,7 @@
     "low": "Terendah",
     "high": "Tertinggi",
     "noHeart": "Belum ada detak jantung tersimpan hari ini.",
-    "stepsTitle": "Langkah per jam",
+    "stepsTitle": "Langkah",
     "sleepTitle": "Ringkasan tidur",
     "healthTitle": "Metrik kesehatan",
     "healthSubtitle": "Suhu kulit, HRV, stres, dan lainnya",
@@ -46,9 +46,7 @@
     "aboutNone": "Belum ada data tersimpan untuk hari ini. Sinkron untuk mengambil data hari ini dari jam. Tarik ke bawah untuk sinkron."
   },
   "hourly": {
-    "peak_other": "Jam tersibuk {{hour}}, {{steps}} langkah",
-    "empty": "Belum ada langkah tercatat hari ini.",
-    "bar_other": "{{steps}} langkah"
+    "peak_other": "Jam tersibuk {{hour}}, {{steps}} langkah"
   },
   "sleep": {
     "emptyTitle": "Tidak ada tidur tersimpan",
@@ -357,7 +355,7 @@
       "scores": "Pemulihan, strain, dan tidur",
       "activity": "Kalori dan jarak",
       "heart": "Detak jantung",
-      "steps": "Langkah per jam",
+      "steps": "Langkah, 7 hari terakhir",
       "sleep": "Ringkasan tidur",
       "energy": "Energi Tubuh",
       "fitness": "Intensitas mingguan dan Kebugaran",
@@ -367,5 +365,31 @@
       "loop": "Loop baru dari rumah",
       "health": "Metrik kesehatan"
     }
+  },
+  "week": {
+    "bar_other": "{{steps}} langkah",
+    "detail": "Detail",
+    "detailA11y": "Buka langkah per hari, minggu, bulan, dan tahun",
+    "left": "{{value}} lagi hari ini",
+    "reached": "Target hari ini tercapai",
+    "total": "{{value}} dalam 7 hari",
+    "legend": "Garis putus-putus: target langkah harianmu",
+    "legendDefault": "Garis putus-putus: target harian bawaan. Atur targetmu di Profil."
+  },
+  "steps": {
+    "title": "Langkah",
+    "unit": "langkah",
+    "unitPerDay": "langkah / hari",
+    "perDay": "{{value}} langkah / hari",
+    "steps_other": "{{value}} langkah",
+    "average_other": "Rata-rata per hari, dari {{count}} hari yang ada langkahnya",
+    "daysAtGoal_other": "{{hit}} dari {{days}} hari capai target",
+    "empty": "Belum ada langkah tersimpan untuk periode ini. Sinkronkan jam untuk mengisinya.",
+    "noData": "Tidak ada data",
+    "loadError": "Tidak bisa membaca langkah tersimpan: {{error}}",
+    "goalTitle": "Target harian",
+    "goalValue": "{{value}} langkah",
+    "goalDefault": "Bawaan. Ketuk untuk mengatur sendiri.",
+    "about": "Langkah dijumlahkan dari menit yang disimpan jam; hari tanpa menit tersimpan berarti tidak ada data, bukan nol langkah. Minggu mulai hari Senin. Garis target memakai target hari ini untuk semua hari, karena perubahan target tidak disimpan."
   }
 }

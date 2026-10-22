@@ -12,8 +12,8 @@ import { Card, Screen, Section } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
 import { StatTile } from '@/components/StatTile';
 import { elapsedSec, formatGrams, isActive, livePhase } from '@/features/live/liveWorkout';
-import { HourlyBars } from '@/features/today/HourlyBars';
 import { scoreFor } from '@/features/sleep/nights';
+import { StepsWeekCard } from '@/features/steps/StepsWeekCard';
 import { SleepSummaryView } from '@/features/today/SleepSummaryView';
 import { ownTotalsOf } from '@/features/device/watchDayTotals';
 import { isLinkUp } from '@/features/device/linkState';
@@ -21,7 +21,6 @@ import { activeWatchName } from '@/features/device/watchName';
 import { SyncButton } from '@/features/device/SyncButton';
 import {
   heartRateStats,
-  hourlySteps,
   lastSleepSession,
   pickHeartReading,
   sumTotals,
@@ -78,7 +77,7 @@ function WatchToday() {
   const { linkState, device, battery, lastSync, totals, watches, error, dataVersion, sync } = useWatch();
   const { data, error: loadError } = useTodayData(dataVersion);
   const nightHrv = useNightHrvAvailability(dataVersion);
-  const goal = useStepGoal();
+  const { goal, isDefault: goalIsDefault } = useStepGoal();
   const live = useLiveHeartRate(isLinkUp(linkState));
   const liveWorkout = useLiveWorkout();
   const liveSearching = liveWorkout !== null && livePhase(liveWorkout) === 'searching';
@@ -94,7 +93,6 @@ function WatchToday() {
       share: { steps: dayTotals.steps, sleep, readiness: scores.readiness, strain: scores.today },
       totalsFromWatch: watchTotals !== null,
       heart: heartRateStats(data.samples),
-      hourly: hourlySteps(data.samples),
       sleep,
       sleepScore: sleep ? scoreFor(sleep.start, sleep.end, data.sleepScores) : null,
       hasSamples: data.samples.length > 0,
@@ -164,9 +162,13 @@ function WatchToday() {
       </Section>
     ),
     steps: (
-      <Section title={t('home.stepsTitle')} icon="footsteps" tint="steps">
-        <HourlyBars steps={view?.hourly ?? new Array<number>(24).fill(0)} />
-      </Section>
+      <StepsWeekCard
+        dayStart={data?.dayStart ?? null}
+        todaySteps={view?.totals.steps ?? 0}
+        goal={goal}
+        goalIsDefault={goalIsDefault}
+        dataVersion={dataVersion}
+      />
     ),
     sleep: (
       <Section title={t('home.sleepTitle')} icon="moon" tint="sleep" onPress={() => router.push('/sleep')}>

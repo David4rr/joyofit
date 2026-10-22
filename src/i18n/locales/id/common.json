@@ -213,5 +213,17 @@
   "chart": {
     "hint": "Ketuk batang untuk melihat nilainya",
     "noValue": "Tidak ada nilai"
+  },
+  "metric": {
+    "range": {
+      "D": "Hari",
+      "W": "Minggu",
+      "M": "Bulan",
+      "3M": "3 bln",
+      "Y": "Tahun"
+    },
+    "previous": "Periode sebelumnya",
+    "next": "Periode berikutnya",
+    "backToToday": "Kembali ke hari ini"
   }
 }

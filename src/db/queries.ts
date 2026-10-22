@@ -46,6 +46,35 @@ export function listWatchCaloriesSince(db: SQLiteDatabase, sinceSec: number): Pr
   );
 }
 
+/**
+ * Steps per local day, summed in SQL (every stored minute, whichever watch or import it came from: the merged timeline Today adds up).
+ * `bounds` are consecutive local midnights; day `i` spans `bounds[i]` up to `bounds[i + 1]`. Days without a stored minute are absent.
+ */
+export async function listDailySteps(db: SQLiteDatabase, bounds: readonly number[]): Promise<Map<number, number>> {
+  const days: number[] = [];
+  for (let i = 0; i + 1 < bounds.length; i++) days.push(bounds[i], bounds[i + 1]);
+  if (days.length === 0) return new Map();
+  const rows = await db.getAllAsync<{ day: number; steps: number }>(
+    `WITH days(d0, d1) AS (VALUES ${Array.from({ length: days.length / 2 }, () => '(?, ?)').join(', ')})
+     SELECT d0 AS day, SUM(s.steps) AS steps
+     FROM days JOIN step_samples s ON s.timestamp >= d0 AND s.timestamp < d1
+     GROUP BY d0`,
+    days,
+  );
+  return new Map(rows.map((r) => [r.day, r.steps]));
+}
+
+/** Per-minute rows of `[fromSec, toSec)`, oldest first: one past day's steps by hour. */
+export function listStepSamplesBetween(db: SQLiteDatabase, fromSec: number, toSec: number): Promise<StepSample[]> {
+  return db.getAllAsync<StepSample>(
+    `SELECT timestamp, steps, calories, distance,
+            heart_rate AS heartRate, spo2, resting_heart_rate AS restingHeartRate
+     FROM step_samples WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp`,
+    fromSec,
+    toSec,
+  );
+}
+
 /** The newest stored heart-rate reading of any day, or null when the watch never recorded one. */
 export function getLatestHeartRate(db: SQLiteDatabase): Promise<{ bpm: number; timestamp: number } | null> {
   return db.getFirstAsync<{ bpm: number; timestamp: number }>(

@@ -36,7 +36,7 @@
     "low": "Low",
     "high": "High",
     "noHeart": "No heart rate stored today.",
-    "stepsTitle": "Steps per hour",
+    "stepsTitle": "Steps",
     "sleepTitle": "Sleep summary",
     "healthTitle": "Health metrics",
     "healthSubtitle": "Skin temp, HRV, stress and more",
@@ -47,10 +47,7 @@
   },
   "hourly": {
     "peak_one": "Busiest hour {{hour}}, {{steps}} step",
-    "peak_other": "Busiest hour {{hour}}, {{steps}} steps",
-    "empty": "No steps recorded yet today.",
-    "bar_one": "{{steps}} step",
-    "bar_other": "{{steps}} steps"
+    "peak_other": "Busiest hour {{hour}}, {{steps}} steps"
   },
   "sleep": {
     "emptyTitle": "No sleep stored",
@@ -375,7 +372,7 @@
       "scores": "Recovery, strain and sleep",
       "activity": "Calories and distance",
       "heart": "Heart rate",
-      "steps": "Steps per hour",
+      "steps": "Steps, last 7 days",
       "sleep": "Sleep summary",
       "energy": "Body Energy",
       "fitness": "Weekly intensity and Fitness",
@@ -385,5 +382,35 @@
       "loop": "New loop from home",
       "health": "Health metrics"
     }
+  },
+  "week": {
+    "bar_one": "{{steps}} step",
+    "bar_other": "{{steps}} steps",
+    "detail": "Details",
+    "detailA11y": "Open steps by day, week, month and year",
+    "left": "{{value}} to go today",
+    "reached": "Today's goal reached",
+    "total": "{{value}} in 7 days",
+    "legend": "Dashed line: your daily step goal",
+    "legendDefault": "Dashed line: the default daily goal. Set your own in Profile."
+  },
+  "steps": {
+    "title": "Steps",
+    "unit": "steps",
+    "unitPerDay": "steps / day",
+    "perDay": "{{value}} steps / day",
+    "steps_one": "{{value}} step",
+    "steps_other": "{{value}} steps",
+    "average_one": "Average per day, over {{count}} day with stored steps",
+    "average_other": "Average per day, over {{count}} days with stored steps",
+    "daysAtGoal_one": "{{hit}} of {{days}} day at goal",
+    "daysAtGoal_other": "{{hit}} of {{days}} days at goal",
+    "empty": "No steps stored for this period. Sync the watch to fill it.",
+    "noData": "No data",
+    "loadError": "Could not read stored steps: {{error}}",
+    "goalTitle": "Daily goal",
+    "goalValue": "{{value}} steps",
+    "goalDefault": "Default. Tap to set your own.",
+    "about": "Steps are summed from the minutes the watch stored; a day with no stored minute is no data, not zero steps. Weeks start on Monday. The goal line is today's goal applied to every day, because goal changes are not stored."
   }
 }

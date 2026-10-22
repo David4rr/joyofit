@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { FadeIn } from '@/components/motion';
+import { InfoPill } from '@/components/InfoPill';
 import { Metric } from '@/components/Metric';
 import { Section } from '@/components/Screen';
 import { Skeleton } from '@/components/States';
@@ -11,7 +12,7 @@ import { WeekPills, type WeekPill } from '@/components/WeekPills';
 import { ACTIVE_DAY_MIN, intensityMinutes, mondayOf } from '@/features/fitness/intensityMinutes';
 import type { FitnessData } from '@/features/fitness/useFitnessData';
 import { fmtDate, fmtInt, useTranslation } from '@/i18n';
-import { spacing, useColors, useTheme } from '@/theme';
+import { spacing } from '@/theme';
 
 /**
  * Today card: this week's intensity minutes against the 150-minute guideline (WHO 2020, ACSM 2018), Monday to Sunday, from the
@@ -22,8 +23,6 @@ import { spacing, useColors, useTheme } from '@/theme';
  */
 export function IntensityWeekCard({ data }: { data: FitnessData | null }) {
   const { t } = useTranslation('health');
-  const colors = useColors();
-  const { radius } = useTheme();
   const router = useRouter();
 
   const week = useMemo(() => {
@@ -72,11 +71,10 @@ export function IntensityWeekCard({ data }: { data: FitnessData | null }) {
             </AppText>
           </View>
           {hasHeartRate ? (
-            <View style={[styles.chip, { backgroundColor: left === 0 ? colors.linkSoft : colors.muted, borderRadius: Math.min(radius.control, 16) }]}>
-              <AppText variant="label" color={left === 0 ? colors.linkText : colors.foreground}>
-                {left === 0 ? t('fitness.today.intensity.done') : t('fitness.today.intensity.left', { value: fmtInt(left) })}
-              </AppText>
-            </View>
+            <InfoPill
+              label={left === 0 ? t('fitness.today.intensity.done') : t('fitness.today.intensity.left', { value: fmtInt(left) })}
+              tint={left === 0 ? 'link' : undefined}
+            />
           ) : null}
         </View>
         <WeekPills days={pills} tint="link" />
@@ -93,5 +91,4 @@ export function IntensityWeekCard({ data }: { data: FitnessData | null }) {
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   figure: { flexShrink: 1 },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: 6 },
 });
