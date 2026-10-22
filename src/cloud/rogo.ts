@@ -116,8 +116,6 @@ export interface RogoMyProfile {
     /** Birth year, as stored on the profile row (`profile.myProfile` returns the whole row). Joyo AI reads it for the age gate. */
     birthYear?: number;
     goal?: 'lose' | 'maintain' | 'gain';
-    /** Hamil / Menyusui mode; `none` for the normal plan. */
-    maternalMode?: 'none' | 'pregnant' | 'breastfeeding';
   } | null;
   targets: {
     /** Basal metabolic rate, kcal per day. */

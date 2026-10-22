@@ -7,7 +7,7 @@ import type { ProviderId } from './types';
  * number together: `digest.test.ts` pins the field list to the version, so a changed list without a new version fails the build,
  * and everyone is asked again (Apple 5.1.2(i), Google Play's AI user-data rules).
  */
-export const CONSENT_VERSION = 1;
+export const CONSENT_VERSION = 2;
 
 /** The kinds of data that leave the phone, in the order the consent screen lists them (`ai:consent.data.<id>`). */
 export const CONSENT_CATEGORIES = ['body', 'sleep', 'recovery', 'heart', 'workouts', 'plan', 'food', 'notes', 'chat'] as const;

@@ -6,7 +6,8 @@ import type { Person } from './person';
  * numbers Readiness and Coach show. Units are in the key names. Missing is `null`, never 0. Nothing identifying: no name, email,
  * GPS, photos or device serial; the birth year becomes an age; free text from imports is flattened and capped.
  *
- * NOT in it, on purpose: menstrual cycle data (the owner's rule: no AI path reads it, see `docs/coach.md`), Strava data, per-minute
+ * NOT in it, on purpose: menstrual cycle data and pregnancy / breastfeeding mode (the owner's rule: no AI path reads either, see
+ * `docs/coach.md`), Strava data, per-minute
  * heart rate, sleep stages, GPS. A test builds a digest from a source that carries cycle fields and checks they cannot appear.
  * Every key below is listed in `DIGEST_FIELDS`, and `digest.test.ts` ties that list to `CONSENT_VERSION`.
  */
@@ -31,7 +32,6 @@ export const DIGEST_FIELDS = [
   'person.sex',
   'person.heightCm',
   'person.goal',
-  'person.maternal',
   'goals.stepsPerDay',
   'goals.stepsIsDefault',
   'goals.sleepNeedMin',
@@ -89,7 +89,8 @@ export function fieldsHash(fields: readonly string[] = DIGEST_FIELDS): string {
   return h.toString(16).padStart(8, '0');
 }
 
-export const CONSENT_FIELDS_HASH: Record<number, string> = { 1: fieldsHash() };
+/** Frozen per version: never edit an old entry. 1 had `person.maternal`; 2 (2026-10-22) removed it, so everyone is asked again. */
+export const CONSENT_FIELDS_HASH: Record<number, string> = { 1: 'b83cc4df', 2: fieldsHash() };
 export const consentMatchesFields = (): boolean => CONSENT_FIELDS_HASH[CONSENT_VERSION] === fieldsHash();
 
 export interface DigestDay {
@@ -132,7 +133,7 @@ export interface Digest {
   now: string;
   locale: 'id' | 'en';
   units: { energy: 'kcal' | 'kkal'; weight: 'kg'; distance: 'km' };
-  person: { ageYears: number | null; sex: 'm' | 'f' | null; heightCm: number | null; goal: string | null; maternal: string };
+  person: { ageYears: number | null; sex: 'm' | 'f' | null; heightCm: number | null; goal: string | null };
   goals: {
     stepsPerDay: number | null;
     stepsIsDefault: boolean;
@@ -221,7 +222,7 @@ export function buildDigest(src: DigestSource): Digest {
     now: flat(src.now, 30),
     locale: src.locale,
     units: { energy: src.locale === 'id' ? 'kkal' : 'kcal', weight: 'kg', distance: 'km' },
-    person: { ageYears: num(p.ageYears), sex: p.sex, heightCm: num(p.heightCm), goal: p.goal, maternal: p.maternal },
+    person: { ageYears: num(p.ageYears), sex: p.sex, heightCm: num(p.heightCm), goal: p.goal },
     goals: {
       stepsPerDay: num(src.goals.stepsPerDay),
       stepsIsDefault: src.goals.stepsIsDefault,

@@ -136,7 +136,7 @@ Every question sends the digest (`digest.ts`, `joyofit.digest` v1, `DIGEST_VERSI
 
 | In the digest | Detail |
 | --- | --- |
-| Person | age (this year minus the birth year, the lower of the phone's profile and the JoyoRogo profile), sex, height, goal, pregnancy or breastfeeding mode if set in JoyoRogo |
+| Person | age (this year minus the birth year, the lower of the phone's profile and the JoyoRogo profile), sex, height, goal. **Not** pregnancy or breastfeeding mode: the owner's rule is that it is never read for the AI or sent to a provider |
 | Goals | daily step goal and whether it is the default, sleep need, eat target, weight goal and date |
 | State | readiness word (or calibrating), training load and ratio, HRV state and values, sleep debt, 7-day strain average, VO2max, recovery hours left |
 | 14 days | per day: sleep minutes and score, resting heart rate, overnight HRV, strain, steps, active kcal, exercise minutes; weight, eaten kcal and protein only when signed in to JoyoRogo |
@@ -145,7 +145,7 @@ Every question sends the digest (`digest.ts`, `joyofit.digest` v1, `DIGEST_VERSI
 | Notes | the person's coach notes (below) |
 | Coverage | counts of watch days, food days, weigh-ins, and what is missing and why |
 
-Not in it, on purpose: **menstrual cycle data** (the owner's rule: no AI path reads it. The daily rows read no cycle table, the digest has no cycle field, the hosted chat snapshot has none either, and a test builds a digest from a source that carries cycle fields and checks they cannot appear), **Strava data**, **GPS** (also not in the workout tool), **per-minute heart rate**, sleep stages (only the one-night tool reads them, on request), name, email, photos and device ids. `DIGEST_FIELDS` lists every field; it is tied to the consent version (see "Consent and withdrawing").
+Not in it, on purpose: **pregnancy and breastfeeding mode** (a JoyoRogo profile field; never read for the AI, `person.ts` has no field for it, and a test checks a source carrying it cannot reach the digest; consent version 2 removed it from the list, so everyone who agreed under version 1 is asked again), and **menstrual cycle data** (the owner's rule: no AI path reads it. The daily rows read no cycle table, the digest has no cycle field, the hosted chat snapshot has none either, and a test builds a digest from a source that carries cycle fields and checks they cannot appear), **Strava data**, **GPS** (also not in the workout tool), **per-minute heart rate**, sleep stages (only the one-night tool reads them, on request), name, email, photos and device ids. `DIGEST_FIELDS` lists every field; it is tied to the consent version (see "Consent and withdrawing").
 
 The person can see what would be sent (`previewDigest`, "Lihat data yang dikirim"). The conversation (last 12 turns, 2,000 characters each) and, for the answer, the tool results are sent as well.
 
@@ -193,7 +193,7 @@ Ported from JoyoRogo's `packages/api/src/lib/coach-chat.ts` so both engines trea
 4. The digest and system prompt, then at most 6 rounds of provider call and tool runs.
 5. The reply is cleaned (reasoning tags, code fences, headings and bold removed, capped), a reply that repeats the rules (the canary `JFC-RULES-7Q4` or the rules' first line) is replaced with `ai:refuseLeak`, and the disclaimer line is added **in code** when the exchange is medical-ish, whatever the model wrote.
 
-The shared test messages and expected answers are in `src/features/ai/safety.fixtures.json`; JoyoRogo's `coach-chat.test.ts` does not read that file today, so the two copies are kept equal by copying, **[NOT VERIFIED]** that they still match after the next change on either side. Earlier user messages and notes that mention a problem switch on a stricter prompt block; pregnancy or breastfeeding (the JoyoRogo mode, or said in the chat) switches on the conservative block; an unknown age switches on the no-dieting block. The keyword pass is Indonesian and English only and a paraphrase can slip past it, so the prompt rules and the disclaimer stay as the second line. The `minorDiet` answer exists for parity with the hosted engine; a known under-18 never reaches it because the gate comes first.
+The shared test messages and expected answers are in `src/features/ai/safety.fixtures.json`; JoyoRogo's `coach-chat.test.ts` does not read that file today, so the two copies are kept equal by copying, **[NOT VERIFIED]** that they still match after the next change on either side. Earlier user messages and notes that mention a problem switch on a stricter prompt block; pregnancy or breastfeeding **said in the chat** switches on the conservative block (the JoyoRogo profile mode is deliberately not read, so it cannot reach the prompt); an unknown age switches on the no-dieting block. The keyword pass is Indonesian and English only and a paraphrase can slip past it, so the prompt rules and the disclaimer stay as the second line. The `minorDiet` answer exists for parity with the hosted engine; a known under-18 never reaches it because the gate comes first.
 
 ### Who may use it
 
@@ -202,10 +202,10 @@ The shared test messages and expected answers are in `src/features/ai/safety.fix
 ### Consent and withdrawing
 
 - Consent is per provider **and endpoint host** (`ConsentRecord`: version, time, host, `adult`). A custom URL on another host is a different recipient and asks again.
-- The consent screen lists the data categories (`CONSENT_CATEGORIES`, `ai:consent.data.<id>`): body, sleep, recovery, heart, workouts, plan, food, notes, chat. `CONSENT_VERSION` (1) is pinned to `DIGEST_FIELDS` by a hash (`CONSENT_FIELDS_HASH`, `consentMatchesFields`): changing a digest field without a new version fails the test in `digest.test.ts`, and a new version asks everyone again (`noConsent`). Add the hash of the new list when raising the version.
+- The consent screen lists the data categories (`CONSENT_CATEGORIES`, `ai:consent.data.<id>`): body, sleep, recovery, heart, workouts, plan, food, notes, chat. `CONSENT_VERSION` (2; version 2 dropped pregnancy and breastfeeding mode from the data, so version-1 consents are asked again) is pinned to `DIGEST_FIELDS` by a hash (`CONSENT_FIELDS_HASH`, `consentMatchesFields`): changing a digest field without a new version fails the test in `digest.test.ts`, and a new version asks everyone again (`noConsent`). Add the hash of the new list when raising the version.
 - Gemini: the setup screen warns that Google's free tier uses what it receives to improve its products (`freeTierTrainsOnData`). That line comes from the owner brief and is **[NOT VERIFIED]** by us against Google's current terms.
 - Withdrawing (`removeProvider`, "Hapus kunci"): deletes the key, removes the consent, clears the cached insights, and when it was the provider in use sets `provider` to none, the engine back to hosted and both insight switches off. Notes and the saved conversation stay (they have their own delete, `deleteMemory`).
-- `deleteMemory` ("Hapus catatan dan percakapan"): notes, the saved conversation (`joyofit.coach.chat`) and cached insights; it leaves the key and the cached JoyoRogo profile (`joyofit.ai.person`: birth year, sex, height, goal, targets, pregnancy mode), because the age gate needs the profile. `deleteEverything` (`aiDeleteEverything`): every key, consent and setting, the memory, the usage counters and the cached profile. "Hapus dari HP ini" (`deleteAllLocalData`, `src/db/localData.ts`) calls `aiDeleteEverything` first, so it removes all of that too. Signing out alone deletes none of it; it only drops the cached profile at the next read while signed out.
+- `deleteMemory` ("Hapus catatan dan percakapan"): notes, the saved conversation (`joyofit.coach.chat`) and cached insights; it leaves the key and the cached JoyoRogo profile (`joyofit.ai.person`: birth year, sex, height, goal, targets), because the age gate needs the profile. `deleteEverything` (`aiDeleteEverything`): every key, consent and setting, the memory, the usage counters and the cached profile. "Hapus dari HP ini" (`deleteAllLocalData`, `src/db/localData.ts`) calls `aiDeleteEverything` first, so it removes all of that too. Signing out alone deletes none of it; it only drops the cached profile at the next read while signed out.
 - What the person is told: `site/src/Privasi.tsx` section `#joyo-ai`, and JoyoRogo's `/privasi` (`#coach-joyofit`).
 
 ### Insights (optional)
@@ -214,7 +214,7 @@ A short text on Today (`insight.ts`, `todaysInsight`): one **daily** summary and
 
 - The app computes a facts list (`dailyFacts`, `weeklyFacts`: readiness, last night's sleep, sleep debt, HRV, resting heart rate, strain, load, recovery; the week against the week before). **Only that list goes to the model**, not the digest, notes or conversation. A missing value is left out, never zero.
 - The model is told to use only numbers in the facts, copied exactly, no diagnosis, no markdown, no emoji. The reply is checked before it is shown (`validateInsight`): no number that is not in the facts (or the date), no emoji or markdown, no medical wording (the same keyword pass as the chat), at most 420 characters (daily) or 760 (weekly). A reply that fails gets one retry with a stricter prompt; failing twice, or a provider error, shows **nothing** and the card keeps the rules-based suggestion, and no new attempt is made for 30 minutes (`RETRY_AFTER_SEC`).
-- A text is cached per day (daily) or per Monday (weekly) and per language, so at most one of each is generated. It goes through the same gate, consent and call ceiling as the chat. For a pregnancy, breastfeeding, unknown or minor profile the prompt says to only describe, no advice about intensity or weight.
+- A text is cached per day (daily) or per Monday (weekly) and per language, so at most one of each is generated. It goes through the same gate, consent and call ceiling as the chat. For an unknown age the prompt says to only describe, no advice about intensity or weight.
 
 ### Errors
 
@@ -264,7 +264,7 @@ Run `bun test src/features/ai` (the repo's test runner; the wipe in `src/db/loca
 
 ## Not medical advice
 
-The suggestion, the plans and the chat are general training guidance. Every Coach screen shows the disclaimer line (`coach:disclaimer`). Both chat engines send injury, symptom, medication and eating-disorder messages to the "see a professional" answer without calling the model, and are conservative in Hamil mode; the own-key engine's version of this is described under "Joyo AI (own key)", "Safety pass".
+The suggestion, the plans and the chat are general training guidance. Every Coach screen shows the disclaimer line (`coach:disclaimer`). Both chat engines send injury, symptom, medication and eating-disorder messages to the "see a professional" answer without calling the model, and are conservative in Hamil mode (hosted engine only); the own-key engine's version of this is described under "Joyo AI (own key)", "Safety pass".
 
 ## Native / next store build
 

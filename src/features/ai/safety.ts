@@ -62,7 +62,7 @@ const EXTREME_DIET_RE = new RegExp(
 
 const MATERNAL_RE = /\b(hamil|kehamilan|menyusui|ibu\s+menyusui|asi\b|pregnan(t|cy)|breastfeeding|nursing\s+mother|postpartum|pasca\s+melahirkan)/i;
 
-/** The user says they are pregnant or breastfeeding in this message (the profile mode is read from the account). */
+/** The user says they are pregnant or breastfeeding in this message (the profile mode is never read for the AI). */
 export const mentionsMaternal = (text: string): boolean => MATERNAL_RE.test(text);
 
 /** Pure keyword pass over one user message; the same text always gives the same answer. */
@@ -125,9 +125,10 @@ export interface PersonMode {
   ageUnknown: boolean;
 }
 
+/** `maternalMention`: the person said in the chat that they are pregnant or breastfeeding. The profile mode is never read (owner's rule). */
 export function personMode(person: Person, maternalMention: boolean): PersonMode {
   return {
-    conservative: person.maternal !== 'none' || maternalMention,
+    conservative: maternalMention,
     minor: person.ageYears !== null && person.ageYears < 18,
     ageUnknown: person.ageYears === null,
   };

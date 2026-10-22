@@ -50,8 +50,8 @@ describe('keyword safety pass (shared fixtures with JoyoRogo)', () => {
 describe('system prompt', () => {
   const plain = assessMessages([{ role: 'user', content: 'latihan apa hari ini?' }]);
   const digest = digestJson(buildDigest(sampleSource()));
-  const prompt = (over: Partial<Parameters<typeof buildSystemPrompt>[0]> = {}, age: number | null = 30, maternal: 'none' | 'pregnant' | 'breastfeeding' = 'none') =>
-    buildSystemPrompt({ locale: 'id', digestJson: digest, safety: plain, mode: personMode({ ...EMPTY_PERSON, ageYears: age, maternal }, false), notesFlag: false, tools: true, ...over });
+  const prompt = (over: Partial<Parameters<typeof buildSystemPrompt>[0]> = {}, age: number | null = 30) =>
+    buildSystemPrompt({ locale: 'id', digestJson: digest, safety: plain, mode: personMode({ ...EMPTY_PERSON, ageYears: age }, false), notesFlag: false, tools: true, ...over });
 
   test('normal adult: rules, language, data, tools sentence, no extra blocks', () => {
     const p = prompt();
@@ -66,8 +66,9 @@ describe('system prompt', () => {
     expect(p).not.toContain('age is unknown');
     expect(p.length).toBeLessThan(SAFETY_LIMITS.maxReplyChars * 8);
   });
-  test('maternal mode, a mention, under 18 and an unknown age each add their block', () => {
-    expect(prompt({}, 30, 'pregnant')).toContain('Be conservative');
+  test('a mention in the chat, under 18 and an unknown age each add their block; the profile mode is not an input', () => {
+    expect('maternal' in EMPTY_PERSON).toBe(false);
+    expect(prompt({}, 30)).not.toContain('Be conservative');
     expect(prompt({ mode: personMode(EMPTY_PERSON, true) })).toContain('Be conservative');
     expect(prompt({}, 16)).toContain('under 18');
     expect(prompt({}, null)).toContain('age is unknown');

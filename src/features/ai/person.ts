@@ -1,12 +1,14 @@
-/** Who the chat is talking to, as far as the phone and the JoyoRogo profile say. Everything is optional: unknown is null, never a guess. */
-export type Maternal = 'none' | 'pregnant' | 'breastfeeding';
+/**
+ * Who the chat is talking to, as far as the phone and the JoyoRogo profile say. Everything is optional: unknown is null, never a guess.
+ * Pregnancy and breastfeeding mode (a JoyoRogo profile field) is deliberately NOT here: the owner's rule is that it is never read for
+ * the AI and never sent to a provider. Only what the person types in the chat can switch the conservative prompt block on.
+ */
 
 export interface Person {
   ageYears: number | null;
   sex: 'm' | 'f' | null;
   heightCm: number | null;
   goal: 'lose' | 'maintain' | 'gain' | null;
-  maternal: Maternal;
   weightGoalKg: number | null;
   weightGoalDate: string | null;
   eatKcal: number | null;
@@ -20,7 +22,6 @@ export const EMPTY_PERSON: Person = {
   sex: null,
   heightCm: null,
   goal: null,
-  maternal: 'none',
   weightGoalKg: null,
   weightGoalDate: null,
   eatKcal: null,
@@ -38,7 +39,7 @@ export function lowestAge(...ages: (number | null)[]): number | null {
   return known.length === 0 ? null : Math.min(...known);
 }
 
-/** The kv-store entry that caches the last JoyoRogo profile read (birth year, goal, pregnancy mode) so the age gate works offline. */
+/** The kv-store entry that caches the last JoyoRogo profile read (birth year, goal, targets) so the age gate works offline. */
 export const PERSON_CACHE_KEY = 'joyofit.ai.person';
 
 /** A cached JoyoRogo profile younger than this is used without asking the server, so a slow or missing connection never delays a question. */

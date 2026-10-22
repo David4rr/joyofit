@@ -12,7 +12,7 @@ export function useAiSettings(): AiSettings {
   return useSyncExternalStore(aiSettings.subscribe, aiSettings.get, aiSettings.get);
 }
 
-/** Who is asking (age, maternal mode) as far as the phone and JoyoRogo know; null until the first read. Re-read when the sign-in changes. */
+/** Who is asking (age) as far as the phone and JoyoRogo know; null until the first read. Re-read when the sign-in changes. */
 export function usePerson(): Person | null {
   const { signedIn } = useCloud();
   const [person, setPerson] = useState<Person | null>(null);

@@ -175,7 +175,7 @@
     "lead": "Setiap kamu bertanya, ponsel mengirim:",
     "noHost": "alamat belum diisi",
     "data": {
-      "body": "Profil dan target: usia, jenis kelamin, tinggi, tujuan, target langkah, kebutuhan tidur, target makan, dan target berat. Mode hamil atau menyusui ikut terkirim kalau kamu mengaturnya di JoyoRogo.",
+      "body": "Profil dan target: usia, jenis kelamin, tinggi, tujuan, target langkah, kebutuhan tidur, target makan, dan target berat.",
       "sleep": "Tidur: lama dan skor tidur 14 hari terakhir, dan utang tidur. Tahap tidur satu malam hanya dibaca kalau AI memintanya.",
       "recovery": "Pemulihan: kesiapan, beban latihan, HRV, strain, VO2max, dan sisa jam pemulihan.",
       "heart": "Detak jantung: detak istirahat dan HRV malam, satu angka per hari selama 14 hari. Detak per menit tidak dikirim.",
@@ -186,7 +186,7 @@
       "chat": "Percakapan: pertanyaan dan jawaban di chat ini, dan hasil data yang dibaca AI saat menjawab (sampai 90 hari tidur dan aktivitas, 14 hari makan, daftar latihan, rencana)."
     },
     "notSentTitle": "Tidak pernah dikirim",
-    "notSent": "Data siklus haid, nama, email, lokasi GPS, foto, ID perangkat, detak jantung per menit, dan data Strava.",
+    "notSent": "Data siklus haid, mode hamil atau menyusui, nama, email, lokasi GPS, foto, ID perangkat, detak jantung per menit, dan data Strava.",
     "terms": "Setelah sampai di {{provider}}, data diperlakukan menurut syarat dan kebijakan privasi mereka sendiri. Baca dulu syaratnya di situs {{provider}}.",
     "sample": "Lihat contoh data",
     "gemini": "Kunci gratis Google dipakai untuk memperbaiki produk Google. Pakai kunci berbayar atau OpenRouter.",

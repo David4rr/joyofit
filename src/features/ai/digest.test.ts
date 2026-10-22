@@ -54,6 +54,15 @@ describe('digest builder', () => {
     expect(json).not.toMatch(/cycle|menstru|period|ovulat|luteal|flow|fertil/i);
   });
 
+  test('no pregnancy or breastfeeding mode: not a digest field, and a source that carries it never sends it', () => {
+    expect(DIGEST_FIELDS.some((f) => /matern|pregnan|breastfeed|hamil|menyusui/i.test(f))).toBe(false);
+    const tainted = {
+      ...sampleSource(),
+      person: { ...sampleSource().person, maternal: 'pregnant', maternalMode: 'breastfeeding', pregnancy: true },
+    } as unknown as DigestSource;
+    expect(digestJson(buildDigest(tainted))).not.toMatch(/matern|pregnan|breastfeed|hamil|menyusui/i);
+  });
+
   test('every key of the output is a declared field (DIGEST_FIELDS is the consent list)', () => {
     const digest = buildDigest(sampleSource());
     const found = paths(digest);
@@ -117,7 +126,10 @@ describe('consent is tied to the digest field list', () => {
     expect(consentMatchesFields()).toBe(true);
     expect(CONSENT_FIELDS_HASH[CONSENT_VERSION]).toBe(fieldsHash());
     // Frozen value: if this line fails, the list of data sent changed. Bump CONSENT_VERSION, add a new entry, never edit an old one.
-    expect(CONSENT_FIELDS_HASH[1]).toBe(fieldsHash(DIGEST_FIELDS));
+    expect(CONSENT_FIELDS_HASH[2]).toBe(fieldsHash(DIGEST_FIELDS));
+    // Version 1 listed pregnancy and breastfeeding mode: its list is not the current one, and a version-1 yes no longer counts.
+    expect(CONSENT_FIELDS_HASH[1]).not.toBe(fieldsHash(DIGEST_FIELDS));
+    expect(CONSENT_VERSION).toBe(2);
   });
   test('the hash changes when a field is added', () => {
     expect(fieldsHash([...DIGEST_FIELDS, 'cycle.phase'])).not.toBe(fieldsHash());

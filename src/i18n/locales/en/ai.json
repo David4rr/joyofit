@@ -178,7 +178,7 @@
     "lead": "Every time you ask a question, the phone sends:",
     "noHost": "address not entered yet",
     "data": {
-      "body": "Profile and goals: age, sex, height, goal, step goal, sleep need, eating target and weight target. Pregnancy or breastfeeding mode is sent if you set it in JoyoRogo.",
+      "body": "Profile and goals: age, sex, height, goal, step goal, sleep need, eating target and weight target.",
       "sleep": "Sleep: length and score of the last 14 nights, and sleep debt. One night's sleep stages are only read if the AI asks for them.",
       "recovery": "Recovery: readiness, training load, HRV, strain, VO2max and hours of recovery left.",
       "heart": "Heart: resting heart rate and overnight HRV, one number a day for 14 days. Per-minute heart rate is not sent.",
@@ -189,7 +189,7 @@
       "chat": "Conversation: the questions and answers in this chat, and the data the AI reads to answer (up to 90 days of sleep and activity, 14 days of food, the workout list, the plan)."
     },
     "notSentTitle": "Never sent",
-    "notSent": "Menstrual cycle data, name, email, GPS location, photos, device IDs, per-minute heart rate and Strava data.",
+    "notSent": "Menstrual cycle data, pregnancy or breastfeeding mode, name, email, GPS location, photos, device IDs, per-minute heart rate and Strava data.",
     "terms": "Once it reaches {{provider}}, the data is handled under their own terms and privacy policy. Read their terms on {{provider}}'s site first.",
     "sample": "See sample data",
     "gemini": "Google's free key is used to improve Google products. Use a paid key or OpenRouter.",

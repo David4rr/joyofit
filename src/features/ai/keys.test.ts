@@ -108,10 +108,10 @@ describe('key handling', () => {
     expect(w.deps.settings.get().engine).toBe('rogo');
   });
 
-  test('delete everything also drops the cached JoyoRogo profile (age, goal, pregnancy mode)', async () => {
+  test('delete everything also drops the cached JoyoRogo profile (age, goal, targets)', async () => {
     const w = world();
     await connect(w);
-    w.kv.setItem(PERSON_CACHE_KEY, '{"birthYear":1990,"maternal":"none"}');
+    w.kv.setItem(PERSON_CACHE_KEY, '{"at":1,"birthYear":1990}');
     await deleteEverything(w.deps);
     expect(w.kv.getItem(PERSON_CACHE_KEY)).toBeNull();
   });
