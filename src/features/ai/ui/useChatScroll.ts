@@ -24,14 +24,9 @@ export function useChatScroll() {
   const contentH = useRef(0);
   const compensateUntil = useRef(0);
   const afterAway = useRef<(() => void) | null>(null);
-  const lastLogged = useRef(0);
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     offset.current = e.nativeEvent.contentOffset.y;
-    if (Math.abs(offset.current - lastLogged.current) > 300) {
-      lastLogged.current = offset.current;
-      console.log(`[joyoai-scroll] offset ${Math.round(offset.current)} away=${awayRef.current ? 1 : 0}`);
-    }
     const next = nextAway(awayRef.current, offset.current);
     if (next !== awayRef.current) {
       awayRef.current = next;
@@ -44,7 +39,6 @@ export function useChatScroll() {
   const onContentSizeChange = useCallback((_w: number, h: number) => {
     const delta = shiftOnGrowth({ prev: contentH.current, next: h, offset: offset.current, away: awayRef.current, windowOpen: Date.now() < compensateUntil.current });
     contentH.current = h;
-    console.log(`[joyoai-scroll] content ${Math.round(h)} delta ${delta}`);
     if (delta > 0) {
       offset.current += delta;
       ref.current?.scrollToOffset({ offset: offset.current, animated: false });
@@ -60,7 +54,6 @@ export function useChatScroll() {
 
   /** The person sent something, opened a chat or pressed "Ke terbaru": show the newest message. */
   const follow = useCallback(() => {
-    console.log('[joyoai-scroll] follow()');
     awayRef.current = false;
     offset.current = 0;
     compensateUntil.current = 0;
