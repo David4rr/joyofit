@@ -9,7 +9,7 @@
   },
   "card": {
     "empty": "Belum ada termometer. Cari termometermu di bawah.",
-    "short": "{{temp}} °C · {{rh}}% RH",
+    "a11y": "{{temp}} °C, {{tempStatus}}. {{rh}}% RH, {{rhStatus}}.",
     "tempUnit": "°C",
     "rhUnit": "% RH",
     "noReading": "Belum ada pembacaan. Dekatkan HP ke termometer dan biarkan JoyoFit terbuka sebentar.",
@@ -25,6 +25,23 @@
       "bindkey": "Dibaca dari siaran terenkripsi dengan bindkey-mu, tanpa menyambung.",
       "gatt": "Dibaca lewat sambungan singkat tiap 10 menit selama JoyoFit terbuka."
     }
+  },
+  "ideal": {
+    "temp": {
+      "cold": "Terlalu dingin untuk tidur",
+      "cool": "Agak dingin untuk tidur",
+      "ideal": "Pas untuk tidur",
+      "warm": "Agak hangat untuk tidur",
+      "hot": "Terlalu panas untuk tidur"
+    },
+    "humidity": {
+      "dry": "Terlalu kering",
+      "ideal": "Pas",
+      "damp": "Agak lembap",
+      "wet": "Terlalu lembap"
+    },
+    "tempRange": "Ideal {{from}}–{{to}} °C",
+    "humidityRange": "Ideal {{from}}–{{to}}% RH"
   },
   "picker": {
     "title": "Cari termometer",

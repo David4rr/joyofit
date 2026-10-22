@@ -163,9 +163,56 @@ Temperature and humidity are rounded to 0.1. `useSleepNightsPush` reads the samp
 `buildRogoNights(..., env)`; a night whose room summary appears later (the app opened in the morning, the overnight file drained) is
 pushed again as a changed snapshot. Without consent nothing is read from `env_sample` for the push. `pm25Mean` is never sent.
 
+### Ideal ranges and the bedroom row (JoyoFit only)
+
+The Termometer kamar screen shows each reading with a plain status for sleep and the ideal range under it (`ideal.ts`, `ui/ReadingFigure.tsx`,
+words in `thermometer:ideal.*`). The sleep night detail (`SleepScreen`, `thermometer/useNightRoom.ts`) shows that night's room as one caption
+line, `Kamar 27.0 °C (26.1–28.9) · 64.8% RH (60.0–70.2)` (mean, then min–max, one decimal), from `roomEnvByWakeDate`, so it is the very summary
+Wawasan tidur gets: at least 6 samples and half of the sleep window covered, from the sensor that heard most of the night. No row for a nap, for
+an uncovered night, or while it loads. Both only read `env_sample` on the phone; nothing here sends anything.
+
+| Reading | Status (id) | Range |
+| --- | --- | --- |
+| Temperature | Terlalu dingin untuk tidur | below 16 C |
+| | Agak dingin untuk tidur | 16 to below 18 C |
+| | Pas untuk tidur (ideal) | 18 to 25 C |
+| | Agak hangat untuk tidur | above 25 up to 29 C |
+| | Terlalu panas untuk tidur | above 29 C |
+| Humidity | Terlalu kering | below 30 % |
+| | Pas (ideal) | 30 to 50 % |
+| | Agak lembap | above 50 up to 60 % |
+| | Terlalu lembap | above 60 % |
+
+Both ends of a band are inclusive, and the reading is compared at the 0.1 the screen shows (25.0 is ideal, 25.1 is warm). Tests: `ideal.test.ts`.
+
+Where the numbers come from (checked 2026-10-22):
+
+- **Ideal temperature, 18 to 25 C.** The cool end is the Sleep Foundation's "Best Temperature for Sleep" (65 to 68 F, 18.3 to 20 C, "may vary by a
+  few degrees from person to person"; <https://www.sleepfoundation.org/bedroom-environment/best-temperature-for-sleep>). The warm end is where
+  studies with ordinary bedding put the optimum: 23 C was best of 17, 20 and 23 C (Pan et al., 3.12 clo bedding) and the neutral temperature of
+  Hong Kong dormitory sleepers was 23 to 24 C (Tsang, Mui and Wong, *Building and Environment*, 2020, <https://doi.org/10.1016/j.buildenv.2020.107406>,
+  which also reports Lan et al., *Building and Environment* 73, 2014: with light 1.64 clo bedding the neutral temperature for sleep was slightly above
+  26 C); a 2026 field study finds the best sleep at 23 to 25 C (*Building and Environment* 303, 114928,
+  <https://www.sciencedirect.com/science/article/pii/S0360132326007328>, from its highlights; the full text was not readable). The Sleep Foundation
+  band sits below those results, so the ideal band spans both instead of stopping at 20 C.
+- **Warm and hot, above 25 and above 29 C.** The review of Okamoto-Mizuno and Mizuno (*Journal of Physiological Anthropology* 31:14, 2012,
+  <https://doi.org/10.1186/1880-6805-31-14>) puts the thermoneutral temperature of semi-nude sleepers at 29 C: above or below it wakefulness rises
+  and REM and slow-wave sleep fall. It also finds no significant sleep difference between 13 and 23 C with bedding and clothing, which is why the
+  cold side is only a bit cool from 16 C and too cold below it (the Sleep Foundation's lower bound is 15.6 C).
+- **Ideal humidity, 30 to 50 %, never above 60 %.** The EPA says indoor relative humidity "should be kept below 60 percent -- ideally between 30
+  percent and 50 percent" (Mold Course, Chapter 2, Lesson 3, <https://www.epa.gov/mold/mold-course-chapter-2>; also *A Brief Guide to Mold, Moisture
+  and Your Home*, EPA-402-K-02-003). The Sleep Foundation's "Best Humidity Level for Sleeping" gives the same 30 to 50 % and calls 60 % the
+  agreed-upon ceiling (some studies prefer 40 to 60 %); it lists dry skin and airways below the range, and more wakefulness, less REM and slow-wave
+  sleep, mold and dust mites above it (<https://www.sleepfoundation.org/bedroom-environment/humidity-and-sleep>). The 50 to 60 % stretch is
+  therefore acceptable but above ideal.
+
+Bedrooms in Indonesia are often above these bands at night, so "Agak hangat", "Terlalu panas" and "Terlalu lembap" will be common. The screen
+states where the reading sits and nothing else: no advice, no score, no claim that a status changes how someone sleeps. The bands are general
+sleep-environment ranges, not medical advice.
+
 ### Tests
 
-`thermometerAdvert.test.ts` (decoders, rejection, dedupe), `thermometer/sampler.test.ts` (paired filter, 5-minute throttle, counter
+`ideal.test.ts` (status thresholds, band edges, the one-decimal rule), `thermometerAdvert.test.ts` (decoders, rejection, dedupe), `thermometer/sampler.test.ts` (paired filter, 5-minute throttle, counter
 dedupe), `store.test.ts` (spacing rule, 120-day prune), `aggregate.test.ts` (shape, 6 samples, 50 % coverage, window ends, two sensors,
 `buildRogoNights` integration), `drain.test.ts` (file to samples, no clear on failure, old-binary guard), `nightWindow.test.ts`
 (auto-start window), `discovery.test.ts` (picker, bind key check); Kotlin `RoomScanLogicTest` and `RoomAdvertLogTest` (pure logic: service data

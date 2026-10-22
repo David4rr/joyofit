@@ -90,6 +90,8 @@
     "noStages": "Tidak ada fase dari jam",
     "napsIncluded": "termasuk tidur siang {{duration}}",
     "needSummary": "butuh {{need}}, tercapai {{percent}}%",
+    "room": "Kamar {{temp}} °C ({{tempMin}}–{{tempMax}}) · {{rh}}% RH ({{rhMin}}–{{rhMax}})",
+    "roomA11y": "Kamar: suhu rata-rata {{temp}} derajat Celsius, {{tempMin}} sampai {{tempMax}}; kelembapan rata-rata {{rh}} persen, {{rhMin}} sampai {{rhMax}}",
     "detailsAsleep": "Waktu tidur tidak termasuk waktu terjaga.",
     "detailsScore": "Skor ini dari jam.",
     "detailsScoreEfficiency": "Skor ini dari jam; {{efficiency}}% waktu di tempat tidur kamu habiskan untuk tidur.",

@@ -25,6 +25,7 @@ import { userHrZones } from '@/features/hrzones/settings';
 import { errorMessage, formatClock, formatDuration } from '@/format';
 import { fmtDate, fmtDecimal, fmtInt, useTranslation } from '@/i18n';
 import { Paragraphs } from '@/features/fitness/Paragraphs';
+import { useNightRoom } from '@/features/thermometer/useNightRoom';
 import { AskJoyoAction } from '@/features/ai/ui/AskJoyoButton';
 import { ShareSleepButton } from '@/features/stickers/ui/ShareSleepButton';
 import { useWatch } from '@/state/WatchProvider';
@@ -74,6 +75,7 @@ export function SleepScreen() {
   const night = nights?.[index] ?? null;
   const hours = useMemo(() => (night ? hourlyStages(night) : []), [night]);
   const need = useNightNeed(night && !night.nap ? night.start : null);
+  const room = useNightRoom(night);
   // The need is met by the whole wake day, naps included.
   const daySleep = useMemo(() => (night && nights ? (sleepByDay(nights).get(startOfLocalDay(night.end)) ?? null) : null), [nights, night]);
   const dayAsleepSec = night && !night.nap && daySleep ? daySleep.asleepSeconds : (night?.asleepSeconds ?? 0);
@@ -131,6 +133,16 @@ export function SleepScreen() {
     return n.score ? t('sleep.historyA11yScore', { base, score: fmtInt(n.score.score) }) : base;
   };
   const dateLabel = fmtDate(night.end, 'weekday');
+  const roomValues = room
+    ? {
+        temp: fmtDecimal(room.tempCMean, 1),
+        tempMin: fmtDecimal(room.tempCMin, 1),
+        tempMax: fmtDecimal(room.tempCMax, 1),
+        rh: fmtDecimal(room.rhPctMean, 1),
+        rhMin: fmtDecimal(room.rhPctMin, 1),
+        rhMax: fmtDecimal(room.rhPctMax, 1),
+      }
+    : null;
 
   return (
     <Screen refresh={refresh}>
@@ -190,6 +202,14 @@ export function SleepScreen() {
             </View>
           ))}
         </View>
+        {roomValues ? (
+          <View style={styles.roomRow} accessible accessibilityLabel={t('sleep.roomA11y', roomValues)}>
+            <Ionicons name="thermometer-outline" size={16} color={colors.mutedForeground} />
+            <AppText variant="caption" muted style={styles.roomText}>
+              {t('sleep.room', roomValues)}
+            </AppText>
+          </View>
+        ) : null}
         {!hasStages && !night.nap ? <NoStagesNotice /> : null}
         <Details title={t('sleep.detailsTitle')}>
           <Paragraphs
@@ -329,6 +349,8 @@ const styles = StyleSheet.create({
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 24, width: '47%' },
   swatch: { width: 12, height: 12, borderRadius: 6 },
   legendLabel: { flex: 1 },
+  roomRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  roomText: { flex: 1, fontVariant: ['tabular-nums'] },
   tabular: { fontVariant: ['tabular-nums'] },
   changeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 34 },
   changeTime: { width: 48 },

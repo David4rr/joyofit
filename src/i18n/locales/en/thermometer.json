@@ -9,7 +9,7 @@
   },
   "card": {
     "empty": "No thermometer yet. Find yours below.",
-    "short": "{{temp}} °C · {{rh}}% RH",
+    "a11y": "{{temp}} °C, {{tempStatus}}. {{rh}}% RH, {{rhStatus}}.",
     "tempUnit": "°C",
     "rhUnit": "% RH",
     "noReading": "No reading yet. Bring your phone close to the thermometer and keep JoyoFit open for a moment.",
@@ -25,6 +25,23 @@
       "bindkey": "Read from its encrypted broadcasts with your bind key, without connecting.",
       "gatt": "Read over a short connection every 10 minutes while JoyoFit is open."
     }
+  },
+  "ideal": {
+    "temp": {
+      "cold": "Too cold for sleep",
+      "cool": "A bit cool for sleep",
+      "ideal": "Right for sleep",
+      "warm": "A bit warm for sleep",
+      "hot": "Too hot for sleep"
+    },
+    "humidity": {
+      "dry": "Too dry",
+      "ideal": "Right",
+      "damp": "A bit humid",
+      "wet": "Too humid"
+    },
+    "tempRange": "Ideal {{from}}–{{to}} °C",
+    "humidityRange": "Ideal {{from}}–{{to}}% RH"
   },
   "picker": {
     "title": "Find thermometer",

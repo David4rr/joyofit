@@ -3,13 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { Metric } from '@/components/Metric';
 import { Button } from '@/components/Button';
 import { Details } from '@/components/Details';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Screen, Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
-import { fmtAgo, fmtDecimal } from '@/i18n/format';
+import { fmtAgo } from '@/i18n/format';
 import type { Granted } from '@/features/sensors/permissions';
 import type { GattFailure } from '../gattRead';
 import { sensorLabel } from '@/features/sensors/store';
@@ -20,6 +19,7 @@ import { NightSection } from './NightSection';
 import { ThermometerPicker } from './ThermometerPicker';
 import { useThermometer } from '../useThermometer';
 import { useThermometerDiscovery } from './useThermometerDiscovery';
+import { ReadingFigures } from './ReadingFigure';
 
 type Problem = 'permission' | 'off' | 'unavailable' | 'notAllowed';
 
@@ -77,17 +77,7 @@ export function ThermometerScreen() {
           <View style={styles.reading} accessibilityLiveRegion="polite">
             {last ? (
               <>
-                <View
-                  style={styles.figures}
-                  accessible
-                  accessibilityLabel={t('card.short', { temp: fmtDecimal(last.tempC, 1), rh: fmtDecimal(last.rhPct, 1) })}>
-                  <View style={styles.figure}>
-                    <Metric value={fmtDecimal(last.tempC, 1)} unit={t('card.tempUnit')} size="hero" />
-                  </View>
-                  <View style={styles.figure}>
-                    <Metric value={fmtDecimal(last.rhPct, 1)} unit={t('card.rhUnit')} size="hero" />
-                  </View>
-                </View>
+                <ReadingFigures last={last} />
                 <AppText variant="caption" muted numberOfLines={1}>
                   {t(battery ? 'card.lastAtBattery' : 'card.lastAt', {
                     ago: fmtAgo(Math.floor(last.ts / 1000), Math.floor(Date.now() / 1000)),
@@ -161,7 +151,5 @@ export function ThermometerScreen() {
 }
 
 const styles = StyleSheet.create({
-  reading: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
-  figures: { flexDirection: 'row', alignSelf: 'stretch', alignItems: 'flex-end', justifyContent: 'center', gap: spacing.lg },
-  figure: { flexShrink: 1, alignItems: 'center' },
+  reading: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
 });

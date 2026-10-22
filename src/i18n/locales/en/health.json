@@ -93,6 +93,8 @@
     "noStages": "No stages from the watch",
     "napsIncluded": "includes naps, {{duration}}",
     "needSummary": "needed {{need}}, got {{percent}}%",
+    "room": "Room {{temp}} °C ({{tempMin}}–{{tempMax}}) · {{rh}}% RH ({{rhMin}}–{{rhMax}})",
+    "roomA11y": "Room: average temperature {{temp}} degrees Celsius, {{tempMin}} to {{tempMax}}; average humidity {{rh}} percent, {{rhMin}} to {{rhMax}}",
     "detailsAsleep": "Asleep time excludes time awake.",
     "detailsScore": "Score is the watch's.",
     "detailsScoreEfficiency": "Score is the watch's, {{efficiency}}% of the time in bed asleep.",
