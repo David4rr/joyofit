@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import Storage from 'expo-sqlite/kv-store';
 
-import { clearChat } from '@/features/coach/chat/history';
+import { createChatStore } from './conversations';
 import { createInsightStore } from './insight';
 import { createKeyVault } from './keyVault';
 import type { KvStore, SecretStore } from './kv';
@@ -31,8 +31,9 @@ export const aiVault = createKeyVault(secrets);
 export const aiNotes = createNotesStore(kv);
 export const aiUsage = createUsageStore(kv);
 export const aiInsights = createInsightStore(kv);
+export const aiChats = createChatStore(kv);
 
-const resetDeps: ResetDeps = { kv, settings: aiSettings, vault: aiVault, notes: aiNotes, insights: aiInsights, usage: aiUsage, clearChat };
+const resetDeps: ResetDeps = { kv, settings: aiSettings, vault: aiVault, notes: aiNotes, insights: aiInsights, usage: aiUsage, chats: aiChats };
 
 /** "Hapus kunci" for one provider (also withdraws its consent and clears cached insights). */
 export const aiRemoveProvider = (provider: ProviderId): Promise<void> => removeProvider(provider, resetDeps);

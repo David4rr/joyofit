@@ -1,3 +1,4 @@
+import type { ChatStore } from './conversations';
 import type { KeyVault } from './keyVault';
 import type { KvStore } from './kv';
 import type { NotesStore } from './memory';
@@ -15,8 +16,8 @@ export interface ResetDeps {
   notes: NotesStore;
   insights: InsightStore;
   usage: UsageStore;
-  /** Empties the saved conversation (the chat history store). */
-  clearChat: () => void;
+  /** Every saved conversation. */
+  chats: ChatStore;
 }
 
 /**
@@ -38,10 +39,10 @@ export async function removeProvider(provider: ProviderId, deps: ResetDeps): Pro
 export const deleteKey = removeProvider;
 
 /** The notes, the saved conversation and the cached insights, kept apart from the key so "forget my notes" does not log the person out of their provider. */
-export function deleteMemory(deps: Pick<ResetDeps, 'notes' | 'insights' | 'clearChat'>): void {
+export function deleteMemory(deps: Pick<ResetDeps, 'notes' | 'insights' | 'chats'>): void {
   deps.notes.clear();
   deps.insights.clear();
-  deps.clearChat();
+  deps.chats.clearAll();
 }
 
 /** Everything Joyo AI keeps on this phone: every key, consent, setting, note, conversation, insight, counter and the cached JoyoRogo profile. */

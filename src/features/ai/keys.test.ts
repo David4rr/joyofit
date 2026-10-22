@@ -4,6 +4,7 @@ import { grantConsent } from './consent';
 import { createInsightStore } from './insight';
 import { cleanPastedKey, createKeyVault, keyName, maskKey } from './keyVault';
 import { memoryKv, memorySecrets } from './kv';
+import { createChatStore } from './conversations';
 import { createNotesStore } from './memory';
 import { PERSON_CACHE_KEY } from './person';
 import { deleteEverything, deleteMemory, removeProvider, type ResetDeps } from './reset';
@@ -16,7 +17,6 @@ const KEY = 'sk-or-v1-SUPERSECRETKEY0123456789';
 function world() {
   const kv = memoryKv();
   const secrets = memorySecrets();
-  const chat: string[] = ['turn'];
   const deps: ResetDeps = {
     kv,
     settings: createSettingsStore(kv),
@@ -24,9 +24,10 @@ function world() {
     notes: createNotesStore(kv),
     insights: createInsightStore(kv),
     usage: createUsageStore(kv),
-    clearChat: () => void (chat.length = 0),
+    chats: createChatStore(kv),
   };
-  return { kv, secrets, deps, chat };
+  deps.chats.create('hai');
+  return { kv, secrets, deps };
 }
 
 async function connect(w: ReturnType<typeof world>, provider: 'openrouter' | 'openai' = 'openrouter') {
@@ -94,7 +95,7 @@ describe('key handling', () => {
     await connect(w);
     deleteMemory(w.deps);
     expect(w.deps.notes.list()).toEqual([]);
-    expect(w.chat).toEqual([]);
+    expect(w.deps.chats.list()).toEqual([]);
     expect(w.deps.insights.get('daily', '2026-10-22', 'id')).toBeNull();
     expect(await w.deps.vault.get('openrouter')).toBe(KEY);
   });
