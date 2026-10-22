@@ -929,30 +929,29 @@
   "hrZones": {
     "method": {
       "title": "How zones are calculated",
-      "max": "% max HR",
-      "hrr": "HR reserve (HRR)",
+      "max": "% Max",
+      "hrr": "Reserve",
       "maxBody": "Zones 1 to 5 start at 50, 60, 70, 80 and 90 percent of your maximum heart rate. This is Huawei Health's default.",
       "hrrBody": "Warm-up starts at 50 percent of your heart rate reserve (max HR minus resting HR), then zones 2 to 6 start at 59, 74, 84, 88 and 95 percent, all added to your resting HR. The zone order and names match the watch and Huawei Health. A better fit when your resting HR is low.",
       "lthr": "LTHR",
-      "lthrBody": "Friel zones from your lactate threshold heart rate (LTHR): zone 1 starts at 67 percent of LTHR, zone 2 at 85, zone 3 at 90, zone 4 at 95 and zone 5 at 100 percent. Works best when your LTHR comes from a test, not an estimate."
+      "lthrBody": "Friel zones from your lactate threshold heart rate (LTHR): zone 1 starts at 67 percent of LTHR, zone 2 at 85, zone 3 at 90, zone 4 at 95 and zone 5 at 100 percent. Works best when your LTHR comes from a test, not an estimate.",
+      "how": "How it works"
     },
     "rates": {
-      "title": "Max and resting HR",
-      "max": "Max HR",
+      "max": "Max heart rate",
       "maxFromAge": "From your age ({{age}} years)",
       "maxSet": "Set by you",
       "formulaClassic": "220 - age ({{bpm}})",
       "formulaTanaka": "Tanaka ({{bpm}})",
       "noProfile": "No age in your profile yet, so {{age}} years is used.",
       "openProfile": "Fill in body profile",
-      "rest": "Resting HR",
+      "rest": "Resting heart rate",
       "restDefault": "Huawei Health default",
       "restSet": "Set by you",
       "details": "Max HR runs from 100 to {{max}} bpm. Resting HR runs from {{restMin}} to {{restMax}} bpm and sits at least {{gap}} bpm under max HR, as in Huawei Health. Tanaka uses 208 - 0.7 x age; 220 - age is a rough rule, especially for older or well-trained people."
     },
     "zones": {
       "title": "Zones",
-      "body": "The number on the right is the bpm where each zone starts. The last zone ends at your max HR.",
       "zone": "Z{{n}} {{name}}",
       "names": {
         "warmup": "Warm-up",
@@ -971,24 +970,29 @@
         "lthrSubThreshold": "Sub-threshold",
         "lthrSuperThreshold": "Super-threshold"
       },
-      "range": "{{from}} to {{to}} bpm",
-      "top": "From {{from}}, up to max HR {{to}} bpm",
       "startLabel": "Zone {{n}} starts at (bpm)",
-      "custom": "You changed the zone limits by hand. Changing the method, max HR or resting HR works them out again.",
+      "custom": "You changed the zone limits by hand.",
       "resetLimits": "Restore",
-      "details": "Workout analysis, strain, the daily heart-rate chart, Coach and the watch's workout screen use the same limits. Workouts already uploaded to JoyoRogo are not recalculated.",
-      "warmupFixed": "Fixed: starts at 50 percent of the reserve"
+      "details": "The bpm and percent boxes are where each zone starts: tap a box and type to change it. Changing the method, max HR or resting HR works them out again. Workout analysis, strain, the daily heart-rate chart, Coach and the watch's workout screen use the same limits. Workouts already uploaded to JoyoRogo are not recalculated.",
+      "head": {
+        "zone": "Zone",
+        "bpm": "Heart rate (bpm)",
+        "percent": "Percentage (%)"
+      },
+      "maxLabel": "Max heart rate (bpm)",
+      "maxPercentLabel": "Max heart rate (percent)",
+      "startPercentLabel": "Zone {{n}} starts at (percent)"
     },
     "alert": {
       "title": "Heart-rate limit alert",
       "switch": "Alert on the watch",
-      "hint": "The watch alerts you when your heart rate goes over the limit during a workout.",
+      "hint": "The watch alerts you when HR goes over the limit.",
       "limit": "Alert limit",
       "limitMax": "Follows max HR"
     },
     "suggest": {
       "title": "Work out from data",
-      "body": "Looks for numbers in your own data. It is only a suggestion: nothing changes until you use it and save.",
+      "body": "Only a suggestion: nothing changes until you use it and save.",
       "action": "Work out from data",
       "nothing": "No workout with heart rate yet, and no resting HR from the watch yet.",
       "peak": "Highest in your workouts: {{bpm}} bpm",
@@ -1018,7 +1022,6 @@
     "less": "1 bpm less",
     "more": "1 bpm more",
     "lthr": {
-      "title": "LTHR",
       "label": "Lactate threshold heart rate",
       "estimate": "Huawei Health estimate (85 percent of the reserve)",
       "set": "Set by you",
@@ -1027,7 +1030,8 @@
       "estimateChip": "Estimate ({{bpm}})",
       "runTest": "Measure it with the lactate threshold test",
       "details": "These zones use Joe Friel's percentages of LTHR. The watch takes them as ordinary heart-rate zones (five bpm limits)."
-    }
+    },
+    "unit": "bpm"
   },
   "sources": {
     "title": "Sources & connections",

@@ -914,29 +914,28 @@
     "method": {
       "title": "Cara menghitung",
       "max": "% HR maks",
-      "hrr": "Cadangan HR (HRR)",
+      "hrr": "Cadangan HR",
       "maxBody": "Zona 1 sampai 5 mulai di 50, 60, 70, 80, dan 90 persen dari HR maksimal. Ini bawaan Huawei Health.",
       "hrrBody": "Pemanasan mulai di 50 persen cadangan HR (HR maks dikurangi HR istirahat), lalu zona 2 sampai 6 mulai di 59, 74, 84, 88, dan 95 persen, semuanya ditambah HR istirahat. Urutan dan nama zona sama seperti di jam dan Huawei Health. Lebih pas kalau HR istirahatmu rendah.",
       "lthr": "LTHR",
-      "lthrBody": "Zona Friel dari detak jantung ambang laktatmu (LTHR): zona 1 mulai di 67 persen LTHR, zona 2 di 85, zona 3 di 90, zona 4 di 95, dan zona 5 di 100 persen. Paling pas kalau LTHR-mu hasil tes, bukan perkiraan."
+      "lthrBody": "Zona Friel dari detak jantung ambang laktatmu (LTHR): zona 1 mulai di 67 persen LTHR, zona 2 di 85, zona 3 di 90, zona 4 di 95, dan zona 5 di 100 persen. Paling pas kalau LTHR-mu hasil tes, bukan perkiraan.",
+      "how": "Cara hitung"
     },
     "rates": {
-      "title": "HR maks dan istirahat",
-      "max": "HR maks",
+      "max": "Denyut jantung maksimum",
       "maxFromAge": "Dari usiamu ({{age}} tahun)",
       "maxSet": "Kamu yang atur",
       "formulaClassic": "220 - usia ({{bpm}})",
       "formulaTanaka": "Tanaka ({{bpm}})",
       "noProfile": "Usia belum diisi di profil, jadi dipakai {{age}} tahun.",
       "openProfile": "Isi profil tubuh",
-      "rest": "HR istirahat",
+      "rest": "Denyut jantung istirahat",
       "restDefault": "Bawaan Huawei Health",
       "restSet": "Kamu yang atur",
       "details": "HR maks dari 100 sampai {{max}} bpm. HR istirahat dari {{restMin}} sampai {{restMax}} bpm dan paling sedikit {{gap}} bpm di bawah HR maks, seperti di Huawei Health. Tanaka memakai 208 - 0,7 x usia; rumus 220 - usia agak kasar, terutama untuk yang sudah berumur atau terlatih."
     },
     "zones": {
       "title": "Zona",
-      "body": "Angka di kanan adalah bpm tempat tiap zona mulai. Zona terakhir berakhir di HR maks.",
       "zone": "Z{{n}} {{name}}",
       "names": {
         "warmup": "Pemanasan",
@@ -955,24 +954,29 @@
         "lthrSubThreshold": "Sub-ambang",
         "lthrSuperThreshold": "Super-ambang"
       },
-      "range": "{{from}} sampai {{to}} bpm",
-      "top": "Mulai {{from}}, sampai HR maks {{to}} bpm",
       "startLabel": "Zona {{n}} mulai di (bpm)",
-      "custom": "Batas zona kamu ubah sendiri. Mengganti metode, HR maks, atau HR istirahat menghitungnya ulang.",
+      "custom": "Batas zona kamu ubah sendiri.",
       "resetLimits": "Kembalikan",
-      "details": "Analisis latihan, strain, grafik detak jantung harian, Coach, dan layar latihan di jam memakai batas yang sama. Latihan yang sudah terunggah ke JoyoRogo tidak dihitung ulang.",
-      "warmupFixed": "Tetap: mulai di 50 persen cadangan HR"
+      "details": "Angka di kotak bpm dan persen adalah tempat tiap zona mulai: ketuk kotaknya dan ketik untuk mengubah. Mengganti metode, HR maks, atau HR istirahat menghitungnya ulang. Analisis latihan, strain, grafik detak jantung harian, Coach, dan layar latihan di jam memakai batas yang sama. Latihan yang sudah terunggah ke JoyoRogo tidak dihitung ulang.",
+      "head": {
+        "zone": "Zona",
+        "bpm": "Denyut jantung (bpm)",
+        "percent": "Persentase (%)"
+      },
+      "maxLabel": "HR maksimum (bpm)",
+      "maxPercentLabel": "HR maksimum (persen)",
+      "startPercentLabel": "Zona {{n}} mulai di (persen)"
     },
     "alert": {
       "title": "Peringatan batas HR",
       "switch": "Peringatan di jam",
-      "hint": "Jam memberi tahu saat detak jantung melewati batas di tengah latihan.",
+      "hint": "Jam memberi tahu saat HR melewati batas.",
       "limit": "Batas peringatan",
       "limitMax": "Mengikuti HR maks"
     },
     "suggest": {
       "title": "Hitung dari data",
-      "body": "Mencari angka dari datamu sendiri. Ini hanya saran: tidak ada yang berubah sampai kamu memakainya dan menyimpan.",
+      "body": "Hanya saran: tidak ada yang berubah sampai kamu memakainya dan menyimpan.",
       "action": "Hitung dari data",
       "nothing": "Belum ada latihan dengan detak jantung, dan belum ada HR istirahat dari jam.",
       "peak": "Tertinggi di latihanmu: {{bpm}} bpm",
@@ -1002,7 +1006,6 @@
     "less": "Kurangi 1 bpm",
     "more": "Tambah 1 bpm",
     "lthr": {
-      "title": "LTHR",
       "label": "Detak jantung ambang laktat",
       "estimate": "Perkiraan Huawei Health (85 persen cadangan HR)",
       "set": "Kamu yang atur",
@@ -1011,7 +1014,8 @@
       "estimateChip": "Perkiraan ({{bpm}})",
       "runTest": "Ukur dengan tes ambang laktat",
       "details": "Zona ini memakai persentase Joe Friel dari LTHR. Jam menerimanya sebagai zona detak jantung biasa (lima batas bpm)."
-    }
+    },
+    "unit": "bpm"
   },
   "sources": {
     "title": "Sumber & koneksi",

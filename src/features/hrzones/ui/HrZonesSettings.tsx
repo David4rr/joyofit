@@ -30,7 +30,6 @@ import { getHrZoneSettings, saveHrZoneSettings, userAge, type WatchZonesOutcome 
 import { loadZoneSuggestion } from '../suggest';
 import {
   DEFAULT_HR_ZONE_SETTINGS,
-  HR_ZONE_COUNT,
   MAX_HR_MAX,
   MAX_HR_MIN,
   REST_HR_GAP,
@@ -46,12 +45,14 @@ import {
   moveLimit,
   resolveHrZones,
   sameSettings,
-  zoneRange,
   type HrZoneMethod,
   type HrZoneSettings,
   type HrZoneSuggestion,
 } from '../zones';
 import { BpmStepper } from './BpmStepper';
+import { ValueRow } from './ValueRow';
+import { ZoneBand } from './ZoneBand';
+import { ZoneTable } from './ZoneTable';
 
 const WATCH_LTHR_DAYS = 120;
 
@@ -78,20 +79,18 @@ function useLthrSources(): { test: LactateValue | null; watch: LactateValue | nu
 
 type Suggestion = { status: 'idle' } | { status: 'loading' } | { status: 'done'; value: HrZoneSuggestion } | { status: 'failed' };
 
-/** One labelled row with a stepper on the right; the label and an optional second line take the rest of the width. */
-function StepperRow({ title, caption, color, children }: { title: string; caption?: string; color?: string; children: React.ReactNode }) {
+/** Which plain row has its editor open: one at a time. */
+type OpenRow = 'max' | 'rest' | 'lthr' | 'alert';
+
+/** A finding of "Hitung dari data": a title, one line under it and the button that uses it. */
+function FoundRow({ title, caption, children }: { title: string; caption: string; children?: React.ReactNode }) {
   return (
-    <View style={styles.stepperRow}>
-      {color ? <View style={[styles.swatch, { backgroundColor: color }]} /> : null}
-      <View style={styles.stepperText}>
-        <AppText variant="bodyStrong" numberOfLines={2}>
-          {title}
+    <View style={styles.found}>
+      <View style={styles.foundText}>
+        <AppText variant="bodyStrong">{title}</AppText>
+        <AppText variant="caption" muted>
+          {caption}
         </AppText>
-        {caption ? (
-          <AppText variant="caption" muted numberOfLines={1}>
-            {caption}
-          </AppText>
-        ) : null}
       </View>
       {children}
     </View>
@@ -99,9 +98,9 @@ function StepperRow({ title, caption, color, children }: { title: string; captio
 }
 
 /**
- * Settings > Zona HR: how heart-rate zones are calculated (maximum heart rate or heart rate reserve), the maximum and resting heart rate, the
- * five zone limits in bpm and the watch's heart-rate limit alert. The draft is applied with "Simpan": every screen that shows zones follows,
- * and the zones go to the watch (docs/hr-zones.md).
+ * Settings > Zona HR, laid out like Huawei Health's own: the method tabs, the maximum and resting heart rate as plain rows, one band that
+ * shows where the zones sit, and the zones with their boundaries as editable boxes (bpm and percent). Then the watch's heart-rate limit
+ * alert. The draft is applied with "Simpan": every screen that shows zones follows, and the zones go to the watch (docs/hr-zones.md).
  */
 export function HrZonesSettings() {
   const { t } = useTranslation('settings');
@@ -116,6 +115,7 @@ export function HrZonesSettings() {
   const [draft, setDraft] = useState(stored);
   const [saving, setSaving] = useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion>({ status: 'idle' });
+  const [open, setOpen] = useState<OpenRow | null>(null);
   const [age] = useState(userAge);
   const hasProfile = useMemo(() => (HuaweiWear.getUserProfile()?.birthYear ?? 0) > 0, []);
 
@@ -126,10 +126,15 @@ export function HrZonesSettings() {
   const formulaMax = maxHrFromAge(age);
   const tanakaMax = maxHrTanaka(age);
   const restMax = Math.min(REST_HR_MAX, zones.maxHr - REST_HR_GAP);
+  const showRest = draft.method === 'hrr' || (draft.method === 'lthr' && draft.lthr === null);
+  const toggle = (row: OpenRow) => setOpen((current) => (current === row ? null : row));
 
   const edit = (patch: Partial<HrZoneSettings>) => setDraft((current) => ({ ...current, ...patch }));
   // Editing the maximum, the resting rate or the method derives the limits again: hand-edited limits belong to the numbers they were set against.
-  const setMethod = (method: HrZoneMethod) => edit({ method, limits: null });
+  const setMethod = (method: HrZoneMethod) => {
+    setOpen(null);
+    edit({ method, limits: null });
+  };
   const setMaxHr = (maxHr: number | null) => edit({ maxHr, limits: null, restingHr: draft.restingHr === null ? null : clampRest(draft.restingHr, maxHr ?? formulaMax) });
   const setRestingHr = (restingHr: number) => edit({ restingHr, limits: draft.method === 'max' ? draft.limits : null });
   const setLthr = (lthr: number | null) => edit({ lthr, limits: null });
@@ -175,6 +180,13 @@ export function HrZonesSettings() {
   };
   const note = watchNote();
   const found = suggestion.status === 'done' ? suggestion.value : null;
+  const unit = t('hrZones.unit');
+  const names = ZONE_NAME_KEYS[zones.method].map((key) => t(`hrZones.zones.names.${key}`));
+  const methodBody = t(draft.method === 'max' ? 'hrZones.method.maxBody' : draft.method === 'hrr' ? 'hrZones.method.hrrBody' : 'hrZones.method.lthrBody');
+
+  const stepper = (label: string, value: number, min: number, max: number, onChange: (value: number) => void) => (
+    <BpmStepper label={label} lessLabel={t('hrZones.less')} moreLabel={t('hrZones.more')} value={value} min={min} max={max} onChange={onChange} />
+  );
 
   return (
     <Screen
@@ -196,108 +208,70 @@ export function HrZonesSettings() {
             { value: 'lthr', label: t('hrZones.method.lthr') },
           ]}
         />
-        <AppText variant="caption" muted>
-          {t(draft.method === 'max' ? 'hrZones.method.maxBody' : draft.method === 'hrr' ? 'hrZones.method.hrrBody' : 'hrZones.method.lthrBody')}
-        </AppText>
+        <Details title={t('hrZones.method.how')}>
+          <AppText variant="caption" muted>
+            {methodBody}
+          </AppText>
+          {draft.method === 'lthr' ? (
+            <AppText variant="caption" muted>
+              {t('hrZones.lthr.details')}
+            </AppText>
+          ) : null}
+          <AppText variant="caption" muted>
+            {t('hrZones.rates.details', { max: fmtInt(MAX_HR_MAX), restMin: fmtInt(REST_HR_MIN), restMax: fmtInt(REST_HR_MAX), gap: fmtInt(REST_HR_GAP) })}
+          </AppText>
+        </Details>
       </Section>
 
-      <Section title={t('hrZones.rates.title')} icon="heart">
-        <StepperRow title={t('hrZones.rates.max')} caption={draft.maxHr === null ? t('hrZones.rates.maxFromAge', { age: fmtInt(age) }) : t('hrZones.rates.maxSet')}>
-          <BpmStepper
-            label={t('hrZones.rates.max')}
-            lessLabel={t('hrZones.less')}
-            moreLabel={t('hrZones.more')}
-            value={zones.maxHr}
-            min={MAX_HR_MIN}
-            max={MAX_HR_MAX}
-            onChange={setMaxHr}
-          />
-        </StepperRow>
-        <View style={styles.chips}>
-          <Chip label={t('hrZones.rates.formulaClassic', { bpm: fmtInt(formulaMax) })} selected={draft.maxHr === null} onPress={() => setMaxHr(null)} />
-          <Chip label={t('hrZones.rates.formulaTanaka', { bpm: fmtInt(tanakaMax) })} selected={draft.maxHr === tanakaMax} onPress={() => setMaxHr(tanakaMax)} />
-        </View>
-        {!hasProfile ? (
+      <Section title={t('hrZones.zones.title')} icon="stats-chart">
+        <ValueRow title={t('hrZones.rates.max')} value={fmtInt(zones.maxHr)} unit={unit} open={open === 'max'} onPress={() => toggle('max')}>
+          <AppText variant="caption" muted>
+            {draft.maxHr === null ? t('hrZones.rates.maxFromAge', { age: fmtInt(age) }) : t('hrZones.rates.maxSet')}
+          </AppText>
+          {stepper(t('hrZones.rates.max'), zones.maxHr, MAX_HR_MIN, MAX_HR_MAX, setMaxHr)}
+          <View style={styles.chips}>
+            <Chip label={t('hrZones.rates.formulaClassic', { bpm: fmtInt(formulaMax) })} selected={draft.maxHr === null} onPress={() => setMaxHr(null)} />
+            <Chip label={t('hrZones.rates.formulaTanaka', { bpm: fmtInt(tanakaMax) })} selected={draft.maxHr === tanakaMax} onPress={() => setMaxHr(tanakaMax)} />
+          </View>
+        </ValueRow>
+        {!hasProfile && draft.maxHr === null ? (
           <Notice icon="person-outline" action={{ label: t('hrZones.rates.openProfile'), onPress: () => router.push('/settings/profile') }}>
             {t('hrZones.rates.noProfile', { age: fmtInt(age) })}
           </Notice>
         ) : null}
-        {draft.method === 'hrr' || (draft.method === 'lthr' && draft.lthr === null) ? (
+        {showRest ? (
           <>
             <Divider />
-            <StepperRow title={t('hrZones.rates.rest')} caption={draft.restingHr === null ? t('hrZones.rates.restDefault') : t('hrZones.rates.restSet')}>
-              <BpmStepper
-                label={t('hrZones.rates.rest')}
-                lessLabel={t('hrZones.less')}
-                moreLabel={t('hrZones.more')}
-                value={zones.restingHr}
-                min={REST_HR_MIN}
-                max={restMax}
-                onChange={setRestingHr}
-              />
-            </StepperRow>
+            <ValueRow title={t('hrZones.rates.rest')} value={fmtInt(zones.restingHr)} unit={unit} open={open === 'rest'} onPress={() => toggle('rest')}>
+              <AppText variant="caption" muted>
+                {draft.restingHr === null ? t('hrZones.rates.restDefault') : t('hrZones.rates.restSet')}
+              </AppText>
+              {stepper(t('hrZones.rates.rest'), zones.restingHr, REST_HR_MIN, restMax, setRestingHr)}
+            </ValueRow>
           </>
         ) : null}
-        <Details>{t('hrZones.rates.details', { max: fmtInt(MAX_HR_MAX), restMin: fmtInt(REST_HR_MIN), restMax: fmtInt(REST_HR_MAX), gap: fmtInt(REST_HR_GAP) })}</Details>
-      </Section>
+        {draft.method === 'lthr' && zones.lthr !== null ? (
+          <>
+            <Divider />
+            <ValueRow title={t('hrZones.lthr.label')} value={fmtInt(zones.lthr)} unit={unit} open={open === 'lthr'} onPress={() => toggle('lthr')}>
+              <AppText variant="caption" muted>
+                {draft.lthr === null ? t('hrZones.lthr.estimate') : t('hrZones.lthr.set')}
+              </AppText>
+              {stepper(t('hrZones.lthr.label'), zones.lthr, LTHR_MIN, zones.maxHr - 1, setLthr)}
+              <View style={styles.chips}>
+                {measured.test ? <Chip label={t('hrZones.lthr.fromTest', { bpm: fmtInt(measured.test.lthr) })} selected={draft.lthr === measured.test.lthr} onPress={() => setLthr(measured.test!.lthr)} /> : null}
+                {measured.watch ? <Chip label={t('hrZones.lthr.fromWatch', { bpm: fmtInt(measured.watch.lthr) })} selected={draft.lthr === measured.watch.lthr} onPress={() => setLthr(measured.watch!.lthr)} /> : null}
+                <Chip label={t('hrZones.lthr.estimateChip', { bpm: fmtInt(estimateLthr(zones.maxHr, zones.restingHr)) })} selected={draft.lthr === null} onPress={() => setLthr(null)} />
+              </View>
+              <Button label={t('hrZones.lthr.runTest')} variant="secondary" icon="speedometer" onPress={() => router.push('/lactate-test')} />
+            </ValueRow>
+          </>
+        ) : null}
 
-      {draft.method === 'lthr' && zones.lthr !== null ? (
-        <Section title={t('hrZones.lthr.title')} icon="speedometer" tint="heart">
-          <StepperRow title={t('hrZones.lthr.label')} caption={draft.lthr === null ? t('hrZones.lthr.estimate') : t('hrZones.lthr.set')}>
-            <BpmStepper
-              label={t('hrZones.lthr.label')}
-              lessLabel={t('hrZones.less')}
-              moreLabel={t('hrZones.more')}
-              value={zones.lthr}
-              min={LTHR_MIN}
-              max={zones.maxHr - 1}
-              onChange={setLthr}
-            />
-          </StepperRow>
-          <View style={styles.chips}>
-            {measured.test ? <Chip label={t('hrZones.lthr.fromTest', { bpm: fmtInt(measured.test.lthr) })} selected={draft.lthr === measured.test.lthr} onPress={() => setLthr(measured.test!.lthr)} /> : null}
-            {measured.watch ? <Chip label={t('hrZones.lthr.fromWatch', { bpm: fmtInt(measured.watch.lthr) })} selected={draft.lthr === measured.watch.lthr} onPress={() => setLthr(measured.watch!.lthr)} /> : null}
-            <Chip label={t('hrZones.lthr.estimateChip', { bpm: fmtInt(estimateLthr(zones.maxHr, zones.restingHr)) })} selected={draft.lthr === null} onPress={() => setLthr(null)} />
-          </View>
-          <Button label={t('hrZones.lthr.runTest')} variant="secondary" icon="speedometer" onPress={() => router.push('/lactate-test')} />
-          <Details>{t('hrZones.lthr.details')}</Details>
-        </Section>
-      ) : null}
-
-      <Section title={t('hrZones.zones.title')} icon="stats-chart">
-        <AppText variant="caption" muted>
-          {t('hrZones.zones.body')}
-        </AppText>
-        {zones.bounds.map((_, z) => {
-          const range = zoneRange(z + 1, zones);
-          const offset = zones.bounds.length - HR_ZONE_COUNT;
-          const i = z - offset;
-          const last = z === zones.bounds.length - 1;
-          const names = ZONE_NAME_KEYS[zones.method];
-          return (
-            <StepperRow
-              key={z}
-              color={hrZoneColor(palette, z + 1)}
-              title={t('hrZones.zones.zone', { n: z + 1, name: t(`hrZones.zones.names.${names[z]}`) })}
-              caption={last ? t('hrZones.zones.top', { from: fmtInt(range.from), to: fmtInt(range.to) }) : t('hrZones.zones.range', { from: fmtInt(range.from), to: fmtInt(range.to) })}>
-              {i < 0 ? (
-                <AppText variant="caption" muted>
-                  {t('hrZones.zones.warmupFixed')}
-                </AppText>
-              ) : (
-                <BpmStepper
-                  label={t('hrZones.zones.startLabel', { n: z + 1 })}
-                  lessLabel={t('hrZones.less')}
-                  moreLabel={t('hrZones.more')}
-                  value={zones.limits[i] ?? 0}
-                  min={i === 0 ? 30 : (zones.limits[i - 1] ?? 0) + 1}
-                  max={i === HR_ZONE_COUNT - 1 ? zones.maxHr - 1 : (zones.limits[i + 1] ?? zones.maxHr) - 1}
-                  onChange={(value) => setLimit(i, value)}
-                />
-              )}
-            </StepperRow>
-          );
-        })}
+        <View style={styles.band}>
+          <ZoneBand zones={zones} colorOf={(zone) => hrZoneColor(palette, zone + 1)} />
+        </View>
+        <ZoneTable zones={zones} names={names} colorOf={(zone) => hrZoneColor(palette, zone + 1)} onLimit={setLimit} />
         {zones.custom ? (
           <Notice icon="create-outline" action={{ label: t('hrZones.zones.resetLimits'), onPress: () => edit({ limits: null }) }}>
             {t('hrZones.zones.custom')}
@@ -310,17 +284,17 @@ export function HrZonesSettings() {
         <Section title={t('hrZones.alert.title')} icon="alert-circle">
           <SwitchRow label={t('hrZones.alert.switch')} hint={t('hrZones.alert.hint')} value={draft.warningEnabled} onValueChange={(warningEnabled) => edit({ warningEnabled })} />
           {draft.warningEnabled ? (
-            <StepperRow title={t('hrZones.alert.limit')} caption={draft.warningLimit === null ? t('hrZones.alert.limitMax') : undefined}>
-              <BpmStepper
-                label={t('hrZones.alert.limit')}
-                lessLabel={t('hrZones.less')}
-                moreLabel={t('hrZones.more')}
-                value={zones.warningLimit}
-                min={WARNING_MIN}
-                max={MAX_HR_MAX}
-                onChange={(warningLimit) => edit({ warningLimit })}
-              />
-            </StepperRow>
+            <>
+              <Divider />
+              <ValueRow title={t('hrZones.alert.limit')} value={fmtInt(zones.warningLimit)} unit={unit} open={open === 'alert'} onPress={() => toggle('alert')}>
+                {draft.warningLimit === null ? (
+                  <AppText variant="caption" muted>
+                    {t('hrZones.alert.limitMax')}
+                  </AppText>
+                ) : null}
+                {stepper(t('hrZones.alert.limit'), zones.warningLimit, WARNING_MIN, MAX_HR_MAX, (warningLimit) => edit({ warningLimit }))}
+              </ValueRow>
+            </>
           ) : null}
         </Section>
       ) : null}
@@ -341,18 +315,16 @@ export function HrZonesSettings() {
           <>
             {found.peak === null && found.restingHr === null ? <Notice>{t('hrZones.suggest.nothing')}</Notice> : null}
             {found.peak !== null ? (
-              <StepperRow
+              <FoundRow
                 title={t('hrZones.suggest.peak', { bpm: fmtInt(found.peak) })}
                 caption={found.maxHr === null ? t('hrZones.suggest.peakBelow', { bpm: fmtInt(formulaMax) }) : t('hrZones.suggest.peakAbove', { bpm: fmtInt(formulaMax) })}>
-                {found.maxHr !== null ? (
-                  <Button label={t('hrZones.suggest.useMax')} variant="primary" onPress={() => setMaxHr(found.maxHr)} />
-                ) : null}
-              </StepperRow>
+                {found.maxHr !== null ? <Button label={t('hrZones.suggest.useMax')} variant="primary" onPress={() => setMaxHr(found.maxHr)} /> : null}
+              </FoundRow>
             ) : null}
             {found.restingHr !== null ? (
-              <StepperRow title={t('hrZones.suggest.rest', { bpm: fmtInt(found.restingHr) })} caption={t('hrZones.suggest.restBody')}>
+              <FoundRow title={t('hrZones.suggest.rest', { bpm: fmtInt(found.restingHr) })} caption={t('hrZones.suggest.restBody')}>
                 <Button label={t('hrZones.suggest.useRest')} variant="primary" onPress={() => setRestingHr(clampRest(found.restingHr ?? 0, zones.maxHr))} />
-              </StepperRow>
+              </FoundRow>
             ) : null}
           </>
         ) : null}
@@ -365,9 +337,9 @@ export function HrZonesSettings() {
 }
 
 const styles = StyleSheet.create({
-  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 56 },
-  stepperText: { flex: 1, gap: 2 },
-  swatch: { width: 10, height: 10, borderRadius: 5 },
+  found: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 56 },
+  foundText: { flex: 1, gap: 2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  band: { paddingTop: spacing.xs },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
 });

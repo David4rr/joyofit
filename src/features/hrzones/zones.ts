@@ -151,6 +151,16 @@ export function zoneCount(method: HrZoneMethod): number {
   return method === 'hrr' ? HR_ZONE_COUNT + 1 : HR_ZONE_COUNT;
 }
 
+/**
+ * The share each zone starts at under `method`, in percent of what the method measures from (maximum heart rate, heart rate reserve above
+ * rest, or the LTHR), one per entry of `HrZones.bounds`: the reserve method's warm-up first, then the five limits' percentages.
+ */
+export function methodPercents(method: HrZoneMethod): readonly number[] {
+  if (method === 'max') return MAX_PERCENT;
+  if (method === 'lthr') return LTHR_PERCENT;
+  return [WARMUP_RESERVE_PERCENT, ...RESERVE_PERCENT];
+}
+
 /** Names of the zones, in order, as keys under `settings:hrZones.zones.names`: Huawei Health's own words for each method. */
 export const ZONE_NAME_KEYS = {
   max: ['warmup', 'fatBurning', 'aerobic', 'anaerobic', 'extreme'],
