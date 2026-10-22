@@ -9,6 +9,8 @@ import {
   displayTitle,
   distanceFromBottom,
   splitStable,
+  nextAway,
+  shiftOnGrowth,
   initialLive,
   isNearBottom,
   lastIndexOfRole,
@@ -361,5 +363,24 @@ describe('splitStable (the settled part of streaming text)', () => {
       expect(head.length).toBeGreaterThanOrEqual(last);
       last = head.length;
     }
+  });
+});
+
+describe('away from the newest message', () => {
+  test('hysteresis: away past 160 px, back only within 80 px', () => {
+    expect(nextAway(false, 100)).toBe(false);
+    expect(nextAway(false, 161)).toBe(true);
+    expect(nextAway(true, 120)).toBe(true);
+    expect(nextAway(true, 80)).toBe(false);
+    expect(nextAway(true, 0)).toBe(false);
+  });
+  test('the list moves for growth only when the person reads older text and the newest message is what changed', () => {
+    const base = { prev: 1000, next: 1400, offset: 600, away: true, windowOpen: true };
+    expect(shiftOnGrowth(base)).toBe(400);
+    expect(shiftOnGrowth({ ...base, away: false })).toBe(0);
+    expect(shiftOnGrowth({ ...base, windowOpen: false })).toBe(0);
+    expect(shiftOnGrowth({ ...base, offset: 0 })).toBe(0);
+    expect(shiftOnGrowth({ ...base, next: 900 })).toBe(0);
+    expect(shiftOnGrowth({ ...base, prev: 0 })).toBe(0);
   });
 });

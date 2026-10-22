@@ -268,8 +268,22 @@ export const distanceFromBottom = (m: ScrollMetrics): number => Math.max(0, m.co
 
 export const NEAR_BOTTOM_PX = 64;
 
-/** Further than this from the newest message (in an inverted list: the offset) counts as scrolled away; the "Ke terbaru" button shows. */
+/** Further than this from the newest message (in an inverted list: the offset) counts as scrolled away: the "Ke terbaru" button shows and the answer being written is held back. */
 export const AWAY_PX = 160;
+/** Back within this of the newest message counts as there again (smaller than {@link AWAY_PX} so the state does not flicker at the edge). */
+export const BACK_PX = 80;
+
+/** The next away state for a scroll offset, with hysteresis between {@link BACK_PX} and {@link AWAY_PX}. */
+export const nextAway = (was: boolean, offset: number): boolean => (was ? offset > BACK_PX : offset > AWAY_PX);
+
+/**
+ * How far to move the offset when the content height changed. Only while the person is away from the newest message and the change
+ * is the newest message changing (the compensation window is open): content that grows at the newest end pushes everything older
+ * away from offset 0, so the same offset would show different text. Returns 0 otherwise (never moves a list the person is not
+ * reading older text in, and never reacts to a shrink).
+ */
+export const shiftOnGrowth = (a: { prev: number; next: number; offset: number; away: boolean; windowOpen: boolean }): number =>
+  a.away && a.windowOpen && a.prev > 0 && a.next > a.prev && a.offset > 0 ? a.next - a.prev : 0;
 
 /** True when the person is at the end of the chat (or close enough that new text should keep it in view). */
 export const isNearBottom = (m: ScrollMetrics, threshold: number = NEAR_BOTTOM_PX): boolean => distanceFromBottom(m) <= threshold;

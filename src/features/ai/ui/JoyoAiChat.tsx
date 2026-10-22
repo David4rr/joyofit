@@ -35,7 +35,6 @@ import { aiChats, aiUsage } from '../stores';
 import { AiError } from '../types';
 import { AiErrorNotice } from './AiErrorNotice';
 import {
-  AWAY_PX,
   assistantMessage,
   createCoalescer,
   displayTitle,
@@ -99,6 +98,12 @@ export function JoyoAiChat() {
   const { toast, show } = useToast();
   const scroll = useChatScroll();
   const follow = scroll.follow;
+  // Back near the newest message during an answer: draw what has arrived meanwhile.
+  useEffect(() => {
+    scroll.onBack(() => {
+      if (sendingRef.current) setLive(liveRef.current);
+    });
+  }, [scroll.onBack]);
   const inputRef = useRef<TextInput>(null);
 
   const seed = parseSeed(params);
@@ -260,12 +265,14 @@ export function JoyoAiChat() {
     setLive(liveRef.current);
     const commit = createCoalescer(
       () => {
-        if (current()) setLive(liveRef.current);
+        // Away from the newest message the answer is not drawn (nothing under the person's eyes changes); it is drawn again when they come back.
+        if (current() && !scroll.awayRef.current) setLive(liveRef.current);
       },
       COMMIT_MS,
       { now: Date.now, setTimer: (run, ms) => setTimeout(run, ms), clearTimer: (h) => clearTimeout(h as never) },
     );
     const finish = (messagesNow: ChatMessage[]) => {
+      scroll.expectGrowth();
       setList(messagesNow);
       aiChats.setMessages(id, messagesNow);
     };
@@ -588,9 +595,9 @@ export function JoyoAiChat() {
       ItemSeparatorComponent={Gap}
       ListHeaderComponent={bottom}
       ListFooterComponent={top}
-      // Native: keep what the person reads in place while text grows below it, and stay at the newest message when they are there.
-      maintainVisibleContentPosition={{ minIndexForVisible: 0, autoscrollToTopThreshold: AWAY_PX / 2 }}
+      // No native anchoring: the list only moves for the person (see useChatScroll).
       onScroll={scroll.scrollProps.onScroll}
+      onContentSizeChange={scroll.scrollProps.onContentSizeChange}
       scrollEventThrottle={scroll.scrollProps.scrollEventThrottle}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
