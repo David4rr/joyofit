@@ -5,7 +5,7 @@ shipped: 2026-10-22
 available: code
 tier: free
 post: todo
-atur:
+atur: JRG-385
 ---
 
 **Apa:** Termometer Xiaomi LYWSD03MMC (dan sejenisnya) yang masih memakai firmware bawaan kini bisa dibaca JoyoFit tanpa memasang firmware komunitas: lewat bindkey (membaca siaran terenkripsi tanpa menyambung) atau lewat sambungan singkat tiap 10 menit.
