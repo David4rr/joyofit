@@ -129,9 +129,19 @@ export interface ToolTrace {
   args: Record<string, string | number>;
 }
 
+/** What a tool step shows after it ran: how many rows it found, or that it found nothing or failed. No health values. */
+export interface ToolSummary {
+  count: number | null;
+  empty: boolean;
+  failed: boolean;
+  /** The data is behind the JoyoRogo sign-in and the person is signed out. */
+  notConnected: boolean;
+}
+
 export interface ToolOutcome {
   content: string;
   trace: ToolTrace;
+  summary: ToolSummary;
   /** Set by `propose_note`: text for the confirm chip. Not stored. */
   proposedNote?: string;
 }
@@ -239,7 +249,7 @@ function cap(value: Record<string, unknown>, listKey: string | null, oldestFirst
 
 const text = (v: unknown, max: number): string => (typeof v === 'string' ? flat(v, max) : '');
 
-async function dispatch(call: ToolCall, data: ToolData): Promise<ToolOutcome> {
+async function dispatch(call: ToolCall, data: ToolData): Promise<Omit<ToolOutcome, 'summary'>> {
   const a = call.args;
   switch (call.name) {
     case 'get_daily': {
@@ -304,6 +314,29 @@ async function dispatch(call: ToolCall, data: ToolData): Promise<ToolOutcome> {
   }
 }
 
+const LIST_KEYS = ['rows', 'workouts', 'days'] as const;
+
+/** Reads the outcome of a tool from its own JSON result: the row count, an error, "not connected", "not found". Pure; exported for tests. */
+export function summarize(content: string): ToolSummary {
+  let body: unknown;
+  try {
+    body = JSON.parse(content);
+  } catch {
+    return { count: null, empty: false, failed: true, notConnected: false };
+  }
+  if (typeof body !== 'object' || body === null) return { count: null, empty: false, failed: true, notConnected: false };
+  const record = body as Record<string, unknown>;
+  if ('error' in record) return { count: null, empty: false, failed: true, notConnected: false };
+  if (record.not_connected === true) return { count: null, empty: true, failed: false, notConnected: true };
+  for (const key of LIST_KEYS) {
+    const list = record[key];
+    if (Array.isArray(list)) return { count: list.length, empty: list.length === 0, failed: false, notConnected: false };
+  }
+  const n = typeof record.n === 'number' ? record.n : null;
+  const missing = record.recorded === false || record.found === false || record.plan === null;
+  return { count: n, empty: missing || n === 0, failed: false, notConnected: false };
+}
+
 /**
  * Runs one tool call. A bad argument or a failing data source never throws: the model gets `{"error": "..."}` and can adjust,
  * and the loop stays bounded by its own round limit.
@@ -311,12 +344,14 @@ async function dispatch(call: ToolCall, data: ToolData): Promise<ToolOutcome> {
 export async function runTool(call: ToolCall, data: ToolData): Promise<ToolOutcome> {
   const known = (TOOL_NAMES as readonly string[]).includes(call.name);
   try {
-    return await dispatch(call, data);
+    const outcome = await dispatch(call, data);
+    return { ...outcome, summary: summarize(outcome.content) };
   } catch (error) {
     const message = error instanceof ToolInputError ? error.message : 'the data could not be read';
     return {
       content: JSON.stringify({ error: message }),
       trace: { tool: (known ? call.name : 'get_daily') as ToolName, args: {} },
+      summary: { count: null, empty: false, failed: true, notConnected: false },
     };
   }
 }

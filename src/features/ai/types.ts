@@ -21,7 +21,7 @@ export interface ToolCall {
 /** A conversation turn in neutral form; each adapter translates it. */
 export type NeutralMessage =
   | { role: 'user'; content: string }
-  | { role: 'assistant'; content: string; toolCalls?: ToolCall[] }
+  | { role: 'assistant'; content: string; toolCalls?: ToolCall[]; /** Reasoning text the provider sent with this turn; passed back only in tool rounds, as thinking models expect. */ reasoning?: string }
   | { role: 'tool'; callId: string; name: string; content: string };
 
 /** JSON Schema subset the tools use. */
@@ -52,9 +52,19 @@ export interface Usage {
 
 export interface ModelReply {
   text: string;
+  /** Reasoning the model wrote before answering (`reasoning_content`, `reasoning`, `<think>`, Anthropic thinking). Never the answer; empty when none. */
+  thinking: string;
   toolCalls: ToolCall[];
   usage: Usage | null;
   stop: 'end' | 'tools' | 'length' | 'other';
+  /** The provider's own stop word (`stop`, `length`, `tool_calls`, `end_turn`, `max_tokens`...), for the technical details line. */
+  finish: string | null;
+}
+
+/** A piece of an answer while it is being written (streaming). */
+export interface StreamDelta {
+  text?: string;
+  thinking?: string;
 }
 
 /** What went wrong with a provider call, worded for the person by the UI (`ai:errors.<kind>`). */
@@ -70,6 +80,8 @@ export type AiErrorKind =
   | 'network'
   | 'timeout'
   | 'empty'
+  /** The model used its whole output budget before writing an answer (a thinking model that kept thinking). */
+  | 'truncated'
   | 'aborted'
   /** Not allowed to call: no consent, no key, under 18, daily ceiling. Nothing was sent. */
   | 'blocked';
@@ -103,6 +115,11 @@ export interface CallOptions {
   timeoutMs?: number;
   /** Injected in tests. */
   fetchImpl?: typeof fetch;
+  /**
+   * Called with each piece of the answer as it arrives. Giving it asks the adapter to stream (server-sent events); a provider or
+   * runtime that cannot stream makes the adapter answer without streaming, and then the whole answer comes in one call.
+   */
+  onDelta?: (delta: StreamDelta) => void;
 }
 
 export interface Adapter {

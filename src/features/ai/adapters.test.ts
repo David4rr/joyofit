@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { ADAPTERS } from './adapters';
 import { anthropicAdapter, ANTHROPIC_VERSION, buildAnthropicBody, parseAnthropicReply, THINKING_HEADROOM } from './adapters/anthropic';
 import { kindForStatus } from './adapters/http';
-import { buildOpenAiBody, openAiAdapter, parseOpenAiModels, parseOpenAiReply } from './adapters/openai';
+import { buildOpenAiBody, OPENAI_HEADROOM, openAiAdapter, parseOpenAiModels, parseOpenAiReply } from './adapters/openai';
 import { PROVIDERS } from './providers';
 import { TOOL_SPECS } from './tools';
 import { AiError, type ModelRequest, type NeutralMessage } from './types';
@@ -29,15 +29,16 @@ describe('OpenAI-compatible request mapping', () => {
     expect(body.messages[3]).toEqual({ role: 'tool', tool_call_id: 'call_1', content: '{"mean":38}' });
     expect(body.tools.map((t) => t.function.name)).toEqual(TOOL_SPECS.map((t) => t.name));
     expect(body.tools[0]!.type).toBe('function');
-    expect(body.max_tokens).toBe(800);
+    // the answer budget plus room for the reasoning of thinking models
+    expect(body.max_tokens).toBe(800 + OPENAI_HEADROOM);
   });
 
   test('OpenAI uses max_completion_tokens; Gemini asks for low reasoning; custom URLs get the plain fields', () => {
-    expect(buildOpenAiBody(PROVIDERS.openai.baseUrl, request())).toMatchObject({ max_completion_tokens: 800 });
+    expect(buildOpenAiBody(PROVIDERS.openai.baseUrl, request())).toMatchObject({ max_completion_tokens: 800 + OPENAI_HEADROOM });
     expect(buildOpenAiBody(PROVIDERS.openai.baseUrl, request())).not.toHaveProperty('max_tokens');
-    expect(buildOpenAiBody(PROVIDERS.gemini.baseUrl, request())).toMatchObject({ max_tokens: 800, reasoning_effort: 'low' });
+    expect(buildOpenAiBody(PROVIDERS.gemini.baseUrl, request())).toMatchObject({ max_tokens: 800 + OPENAI_HEADROOM, reasoning_effort: 'low' });
     const custom = buildOpenAiBody('http://192.168.1.5:11434/v1', request());
-    expect(custom).toMatchObject({ max_tokens: 800 });
+    expect(custom).toMatchObject({ max_tokens: 800 + OPENAI_HEADROOM });
     expect(custom).not.toHaveProperty('reasoning_effort');
   });
 
@@ -52,7 +53,7 @@ describe('OpenAI-compatible request mapping', () => {
     expect(calls[0]!.method).toBe('POST');
     expect(calls[0]!.headers.Authorization).toBe(`Bearer ${KEY}`);
     expect(JSON.stringify(calls[0]!.body)).not.toContain(KEY);
-    expect(reply).toEqual({ text: 'Halo', toolCalls: [], usage: { inputTokens: 1200, outputTokens: 40 }, stop: 'end' });
+    expect(reply).toEqual({ text: 'Halo', thinking: '', toolCalls: [], usage: { inputTokens: 1200, outputTokens: 40 }, stop: 'end', finish: 'stop' });
   });
 });
 
@@ -141,7 +142,7 @@ describe('Anthropic request and response mapping', () => {
     expect(calls[0]!.headers['x-api-key']).toBe(KEY);
     expect(calls[0]!.headers['anthropic-version']).toBe(ANTHROPIC_VERSION);
     expect(calls[0]!.headers).not.toHaveProperty('Authorization');
-    expect(reply).toEqual({ text: 'Halo', toolCalls: [], usage: { inputTokens: 900, outputTokens: 20 }, stop: 'end' });
+    expect(reply).toEqual({ text: 'Halo', thinking: '', toolCalls: [], usage: { inputTokens: 900, outputTokens: 20 }, stop: 'end', finish: 'end_turn' });
   });
 
   test('tool_use blocks become tool calls; thinking blocks are ignored; max_tokens is a length stop', () => {

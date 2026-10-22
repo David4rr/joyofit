@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { TOOL_LIMITS, TOOL_NAMES, TOOL_SPECS, runTool, trendOf, type ToolData } from './tools';
+import { TOOL_LIMITS, TOOL_NAMES, TOOL_SPECS, runTool, summarize, trendOf, type ToolData } from './tools';
 import { day, fakeToolData, TODAY } from './testFixtures';
 
 const run = (name: string, args: Record<string, unknown>, data: ToolData = fakeToolData()) => runTool({ id: 't', name, args }, data);
@@ -131,5 +131,22 @@ describe('tool dispatch', () => {
     const body = parse((await run('list_workouts', { from: '2026-09-01', to: TODAY }, many)).content);
     expect(body.workouts).toHaveLength(TOOL_LIMITS.workoutRows);
     expect(body.workouts[0].id).toBe('w:0');
+  });
+});
+
+describe('tool step summaries (what the chat shows next to a step)', () => {
+  test('rows found, nothing found, not connected, failed', async () => {
+    expect((await run('get_daily', { from: '2026-10-20', to: TODAY })).summary).toEqual({ count: 3, empty: false, failed: false, notConnected: false });
+    expect((await run('list_workouts', { from: '2026-10-01', to: TODAY }, fakeToolData({ workouts: async () => [] }))).summary).toMatchObject({ count: 0, empty: true });
+    expect((await run('get_nutrition', { from: '2026-10-20', to: TODAY }, fakeToolData({ food: async () => 'not_connected' }))).summary).toMatchObject({ notConnected: true, empty: true });
+    expect((await run('get_daily', { from: 'bad', to: TODAY })).summary).toMatchObject({ failed: true });
+    expect((await run('get_workout', { id: 'w:nope' })).summary).toMatchObject({ empty: true, failed: false });
+    expect((await run('get_trend', { metric: 'hrvMs', days: 14 })).summary).toMatchObject({ count: 14, empty: false });
+    expect((await run('get_plan', {}, fakeToolData({ plan: async () => null }))).summary).toMatchObject({ empty: true });
+  });
+  test('summarize is total', () => {
+    expect(summarize('not json')).toMatchObject({ failed: true });
+    expect(summarize('5')).toMatchObject({ failed: true });
+    expect(summarize('{}')).toMatchObject({ failed: false, count: null });
   });
 });

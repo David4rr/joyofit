@@ -33,7 +33,7 @@ export interface AskInput {
   history: readonly ChatLine[];
   text: SafetyText;
   signal?: AbortSignal;
-  onStatus?: AnswerDeps['onStatus'];
+  onEvent?: AnswerDeps['onEvent'];
 }
 
 /** One answer with the person's own key, with everything bound to the phone's stores. */
@@ -51,7 +51,7 @@ export async function askJoyoAi(input: AskInput): Promise<Answer> {
     locale: locale(),
     nowSec,
     signal: input.signal,
-    onStatus: input.onStatus,
+    onEvent: input.onEvent,
   });
 }
 

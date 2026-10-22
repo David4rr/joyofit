@@ -92,8 +92,8 @@ export function scriptedAdapter(script: (ModelReply | Error)[]): Adapter & { req
   };
 }
 
-export const textReply = (text: string): ModelReply => ({ text, toolCalls: [], usage: { inputTokens: 1000, outputTokens: 80 }, stop: 'end' });
-export const toolReply = (...calls: { id: string; name: string; args: Record<string, unknown> }[]): ModelReply => ({ text: '', toolCalls: calls, usage: { inputTokens: 900, outputTokens: 30 }, stop: 'tools' });
+export const textReply = (text: string): ModelReply => ({ text, thinking: '', toolCalls: [], usage: { inputTokens: 1000, outputTokens: 80 }, stop: 'end', finish: 'stop' });
+export const toolReply = (...calls: { id: string; name: string; args: Record<string, unknown> }[]): ModelReply => ({ text: '', thinking: '', toolCalls: calls, usage: { inputTokens: 900, outputTokens: 30 }, stop: 'tools', finish: 'tool_calls' });
 
 export function fakeToolData(over: Partial<ToolData> = {}): ToolData & { calls: string[] } {
   const calls: string[] = [];

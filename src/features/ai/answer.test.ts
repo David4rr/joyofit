@@ -103,10 +103,11 @@ describe('answer loop', () => {
   test('a tool round trip: the call runs on the phone, its result goes back, the trace is kept', async () => {
     const t = await setup({ script: [toolReply({ id: 'c1', name: 'get_trend', args: { metric: 'hrvMs', days: 14 } }), textReply('HRV-mu turun 10 ms dibanding dua minggu sebelumnya.')] });
     const statuses: string[] = [];
-    const out = await answer(ask('Kenapa HRV-ku turun?'), { ...t.deps, onStatus: (s) => statuses.push(s.kind === 'tool' ? s.trace.tool : s.kind) });
+    const out = await answer(ask('Kenapa HRV-ku turun?'), { ...t.deps, onEvent: (e) => statuses.push(e.type === 'toolDone' ? `${e.type}:${e.trace.tool}:${e.summary.count}` : e.type) });
     expect(out.reply).toContain('HRV-mu turun');
     expect(out.trace).toEqual([{ tool: 'get_trend', args: { metric: 'hrvMs', days: 14 } }]);
-    expect(statuses).toEqual(['thinking', 'get_trend', 'thinking']);
+    expect(statuses).toEqual(['round', 'toolStart', 'toolDone:get_trend:14', 'round']);
+    expect(out.steps).toEqual([{ id: 'c1', trace: out.trace[0], summary: { count: 14, empty: false, failed: false, notConnected: false } }]);
     const second = t.adapter.requests[1]!.messages;
     expect(second.at(-2)).toMatchObject({ role: 'assistant', toolCalls: [{ id: 'c1', name: 'get_trend' }] });
     expect(second.at(-1)).toMatchObject({ role: 'tool', callId: 'c1' });
@@ -186,5 +187,39 @@ describe('answer loop', () => {
     await answer(ask('hai'), t.deps);
     expect(JSON.stringify(t.adapter.requests)).not.toContain('sk-live');
     expect(t.adapter.conns[0]!.apiKey).toBe('sk-live-ABCDEFGH12345678');
+  });
+
+  test('events: a round starts, text and reasoning arrive, tools start and end; the final reply is authoritative', async () => {
+    const t = await setup({ script: [toolReply({ id: 'c1', name: 'get_plan', args: {} }), textReply('**Rencanamu** minggu ke-4.')] });
+    const events: string[] = [];
+    const out = await answer(ask('plan?'), { ...t.deps, onEvent: (e) => events.push(e.type) });
+    expect(events).toEqual(['round', 'toolStart', 'toolDone', 'round']);
+    expect(out.reply).toBe('Rencanamu minggu ke-4.');
+    expect(out.reasoning).toBe('');
+  });
+
+  test('a thinking model that ran out of budget gets one more try with more room, counted as a call', async () => {
+    const t = await setup({ script: [new AiError('truncated', 200, 'finish_reason=length'), textReply('Ini jawabannya.')] });
+    const out = await answer(ask('review minggu ini'), t.deps);
+    expect(out.reply).toBe('Ini jawabannya.');
+    expect(t.adapter.requests.map((r) => r.maxTokens)).toEqual([ANSWER_LIMITS.maxTokens, ANSWER_LIMITS.maxTokensRetry]);
+    expect(t.usage.today(NOW).calls).toBe(2);
+  });
+
+  test('truncated twice is an error that carries the technical line', async () => {
+    const t = await setup({ script: [new AiError('truncated', 200, 'finish_reason=length; answer=0 chars'), new AiError('truncated', 200, 'finish_reason=length; answer=0 chars')] });
+    await expect(answer(ask('review'), t.deps)).rejects.toMatchObject({ kind: 'truncated', detail: 'finish_reason=length; answer=0 chars' });
+  });
+
+  test('the reasoning of the answer is kept apart from the reply', async () => {
+    const t = await setup({ script: [{ ...textReply('Tidurmu cukup.'), thinking: 'Lihat data tidur dulu.' }] });
+    const out = await answer(ask('tidur?'), t.deps);
+    expect(out.reply).toBe('Tidurmu cukup.');
+    expect(out.reasoning).toBe('Lihat data tidur dulu.');
+  });
+
+  test('a reply that is only markup is an empty error with the stop word', async () => {
+    const t = await setup({ script: [textReply('<think>hmm</think>')] });
+    await expect(answer(ask('tidur?'), t.deps)).rejects.toMatchObject({ kind: 'empty' });
   });
 });

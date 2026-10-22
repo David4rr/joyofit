@@ -5,11 +5,11 @@ import type { Person } from './person';
 import { PROVIDERS } from './providers';
 import { assessMessages, buildSystemPrompt, finishReply, notesMentionInjury, personMode, safeReply, SAFETY_LIMITS, type ChatLine, type CoachFlag, type SafetyText } from './safety';
 import { toolKey, type SettingsStore } from './settings';
-import { runTool, TOOL_SPECS, type ToolData, type ToolTrace } from './tools';
+import { isToolName, runTool, TOOL_SPECS, type ToolData, type ToolSummary, type ToolTrace } from './tools';
 import type { UsageStore } from './usage';
 import { AiError, type Adapter, type AdapterKind, type NeutralMessage, type ProviderId, type ToolCall, type Usage } from './types';
 
-export const ANSWER_LIMITS = { toolRounds: 6, toolCallsPerRound: 4, maxTokens: 800, turns: 12 } as const;
+export const ANSWER_LIMITS = { toolRounds: 6, toolCallsPerRound: 4, maxTokens: 800, maxTokensRetry: 2_400, turns: 12, reasoningChars: 6_000 } as const;
 
 export interface AnswerDeps {
   settings: SettingsStore;
@@ -26,8 +26,23 @@ export interface AnswerDeps {
   nowSec: () => number;
   signal?: AbortSignal;
   fetchImpl?: typeof fetch;
-  /** Called before each provider call and each tool, for the status line ("reading sleep of 7 days"). */
-  onStatus?: (status: { kind: 'thinking' } | { kind: 'tool'; trace: ToolTrace }) => void;
+  /** Live events of the answer being written: a provider call starts, text and reasoning arrive, a tool starts and ends. */
+  onEvent?: (event: AnswerEvent) => void;
+}
+
+export type AnswerEvent =
+  /** A provider call starts (the first one, or the next after tools ran). Text from the previous call, if any, is kept. */
+  | { type: 'round'; round: number }
+  | { type: 'text'; delta: string }
+  | { type: 'reasoning'; delta: string }
+  | { type: 'toolStart'; id: string; trace: ToolTrace }
+  | { type: 'toolDone'; id: string; trace: ToolTrace; summary: ToolSummary };
+
+/** One tool the answer ran, kept with the message: what was read and how it went. */
+export interface AnswerStep {
+  id: string;
+  trace: ToolTrace;
+  summary: ToolSummary;
 }
 
 export interface Answer {
@@ -37,6 +52,10 @@ export interface Answer {
   flagged: CoachFlag | null;
   /** What the answer read, in order: shown as "based on". */
   trace: ToolTrace[];
+  /** The same tools with how each went (rows found, nothing, failed): the collapsible steps of the chat. */
+  steps: AnswerStep[];
+  /** The reasoning the model wrote, when it sent any. Never part of the reply. */
+  reasoning: string;
   /** Notes the model suggested; the person confirms each one. */
   proposedNotes: string[];
   usage: Usage & { calls: number };
@@ -71,7 +90,7 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
   const safety = assessMessages(turns, { minor });
   const empty = { inputTokens: 0, outputTokens: 0, calls: 0 };
   if (safety.last.reason) {
-    return { reply: safeReply(safety.last.reason, deps.text), fixed: true, flagged: safety.last.flagged, trace: [], proposedNotes: [], usage: empty, toolsUnsupported: false, digest: null };
+    return { reply: safeReply(safety.last.reason, deps.text), fixed: true, flagged: safety.last.flagged, trace: [], steps: [], reasoning: '', proposedNotes: [], usage: empty, toolsUnsupported: false, digest: null };
   }
 
   const key = await deps.getKey(gate.provider);
@@ -90,20 +109,36 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
   const conn = { baseUrl: gate.baseUrl, apiKey: key, model: gate.model };
   const messages: NeutralMessage[] = turns.map((t) => (t.role === 'user' ? { role: 'user', content: t.content } : { role: 'assistant', content: t.content }));
   const trace: ToolTrace[] = [];
+  const steps: AnswerStep[] = [];
   const proposedNotes: string[] = [];
   const spent = { inputTokens: 0, outputTokens: 0, calls: 0 };
   let toolsUnsupported = noTools;
+  let reasoning = '';
+  let rounds = 0;
 
-  const call = async (withTools: boolean) => {
+  const call = async (withTools: boolean, maxTokens: number) => {
     if (deps.usage.today(deps.nowSec()).calls >= ceiling) throw blocked('ceiling');
-    deps.onStatus?.({ kind: 'thinking' });
+    deps.onEvent?.({ type: 'round', round: rounds });
+    rounds += 1;
     const system = buildSystemPrompt({ locale: deps.locale, digestJson: digestJson(digest), safety, mode, notesFlag, tools: withTools });
     try {
-      const reply = await adapter.complete(conn, { model: gate.model, system, messages, tools: withTools ? TOOL_SPECS : undefined, maxTokens: ANSWER_LIMITS.maxTokens }, { signal: deps.signal, fetchImpl: deps.fetchImpl });
+      const reply = await adapter.complete(
+        conn,
+        { model: gate.model, system, messages, tools: withTools ? TOOL_SPECS : undefined, maxTokens },
+        {
+          signal: deps.signal,
+          fetchImpl: deps.fetchImpl,
+          onDelta: (delta) => {
+            if (delta.thinking) deps.onEvent?.({ type: 'reasoning', delta: delta.thinking });
+            if (delta.text) deps.onEvent?.({ type: 'text', delta: delta.text });
+          },
+        },
+      );
       deps.usage.record(deps.nowSec(), reply.usage);
       spent.calls += 1;
       spent.inputTokens += reply.usage?.inputTokens ?? 0;
       spent.outputTokens += reply.usage?.outputTokens ?? 0;
+      if (reply.thinking && reasoning.length < ANSWER_LIMITS.reasoningChars) reasoning = `${reasoning}${reasoning ? '\n\n' : ''}${reply.thinking}`.slice(0, ANSWER_LIMITS.reasoningChars);
       return reply;
     } catch (error) {
       // The provider answered, so it still counts against the ceiling even when it refused.
@@ -112,30 +147,44 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
     }
   };
 
+  /** One provider call; a thinking model that used its whole budget thinking gets one more try with more room (it counts as a call). */
+  const callWithRetry = async (withTools: boolean) => {
+    try {
+      return await call(withTools, ANSWER_LIMITS.maxTokens);
+    } catch (error) {
+      if (error instanceof AiError && error.kind === 'truncated') return call(withTools, ANSWER_LIMITS.maxTokensRetry);
+      throw error;
+    }
+  };
+
   let text = '';
+  let finish: string | null = null;
   for (let round = 0; ; round++) {
     let reply;
     try {
-      reply = await call(toolsOn);
+      reply = await callWithRetry(toolsOn);
     } catch (error) {
       // A model without tool calling: remember it and answer from the digest alone.
       if (toolsOn && error instanceof AiError && error.kind === 'noTools') {
         toolsOn = false;
         toolsUnsupported = true;
         deps.settings.update((s) => ({ noTools: [...new Set([...s.noTools, toolKey(gate.provider, gate.model)])] }));
-        reply = await call(false);
+        reply = await callWithRetry(false);
       } else throw error;
     }
+    finish = reply.finish;
     if (reply.toolCalls.length === 0 || !toolsOn) {
       text = reply.text;
       break;
     }
     const calls: ToolCall[] = reply.toolCalls.slice(0, ANSWER_LIMITS.toolCallsPerRound);
-    messages.push({ role: 'assistant', content: reply.text, toolCalls: calls });
+    messages.push({ role: 'assistant', content: reply.text, toolCalls: calls, ...(reply.thinking ? { reasoning: reply.thinking } : {}) });
     for (const toolCall of calls) {
+      deps.onEvent?.({ type: 'toolStart', id: toolCall.id, trace: { tool: isToolName(toolCall.name) ? toolCall.name : 'get_daily', args: {} } });
       const outcome = await runTool(toolCall, deps.data);
       trace.push(outcome.trace);
-      deps.onStatus?.({ kind: 'tool', trace: outcome.trace });
+      steps.push({ id: toolCall.id, trace: outcome.trace, summary: outcome.summary });
+      deps.onEvent?.({ type: 'toolDone', id: toolCall.id, trace: outcome.trace, summary: outcome.summary });
       if (outcome.proposedNote) proposedNotes.push(outcome.proposedNote);
       messages.push({ role: 'tool', callId: toolCall.id, name: toolCall.name, content: outcome.content });
       if (deps.signal?.aborted) throw new AiError('aborted');
@@ -148,6 +197,6 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
   }
 
   const finished = finishReply(text, { text: deps.text, lastUserText: lastUser.content, mode });
-  if (finished === null) throw new AiError('empty');
-  return { reply: finished, fixed: false, flagged: null, trace, proposedNotes, usage: spent, toolsUnsupported, digest };
+  if (finished === null) throw new AiError('empty', null, `finish_reason=${finish ?? 'none'}; the answer held only reasoning tags or markup (${text.length} chars)`);
+  return { reply: finished, fixed: false, flagged: null, trace, steps, reasoning, proposedNotes, usage: spent, toolsUnsupported, digest };
 }

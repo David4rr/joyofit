@@ -17,6 +17,8 @@ export interface ProviderPreset {
   keyUrl: string | null;
   /** Google's free tier uses what it receives to improve Google products; the setup screen says so. */
   freeTierTrainsOnData: boolean;
+  /** The server accepts `stream_options.include_usage`, so a streamed answer still reports its tokens. Unknown servers may reject it. */
+  streamUsage: boolean;
   /** The person types the endpoint (LiteLLM, Ollama on the LAN, a company gateway). */
   customUrl: boolean;
   /** Shown in the key field when empty. */
@@ -34,6 +36,7 @@ export const PROVIDERS: Record<ProviderId, ProviderPreset> = {
     reasoningEffort: null,
     keyUrl: 'https://openrouter.ai/keys',
     freeTierTrainsOnData: false,
+    streamUsage: true,
     customUrl: false,
     keyPlaceholder: 'sk-or-...',
   },
@@ -47,6 +50,7 @@ export const PROVIDERS: Record<ProviderId, ProviderPreset> = {
     reasoningEffort: null,
     keyUrl: 'https://platform.openai.com/api-keys',
     freeTierTrainsOnData: false,
+    streamUsage: true,
     customUrl: false,
     keyPlaceholder: 'sk-...',
   },
@@ -60,6 +64,7 @@ export const PROVIDERS: Record<ProviderId, ProviderPreset> = {
     reasoningEffort: null,
     keyUrl: 'https://platform.claude.com/settings/keys',
     freeTierTrainsOnData: false,
+    streamUsage: false,
     customUrl: false,
     keyPlaceholder: 'sk-ant-...',
   },
@@ -73,6 +78,7 @@ export const PROVIDERS: Record<ProviderId, ProviderPreset> = {
     reasoningEffort: 'low',
     keyUrl: 'https://aistudio.google.com/apikey',
     freeTierTrainsOnData: true,
+    streamUsage: true,
     customUrl: false,
     keyPlaceholder: 'AIza...',
   },
@@ -86,6 +92,7 @@ export const PROVIDERS: Record<ProviderId, ProviderPreset> = {
     reasoningEffort: null,
     keyUrl: null,
     freeTierTrainsOnData: false,
+    streamUsage: false,
     customUrl: true,
     keyPlaceholder: 'sk-...',
   },

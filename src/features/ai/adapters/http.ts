@@ -1,4 +1,5 @@
 import { AiError, type AiErrorKind, type CallOptions } from '../types';
+import { createSseParser, type SseEvent } from './sse';
 
 /** The deadline of one provider call (the hosted coach uses the same 25 s). */
 export const CALL_TIMEOUT_MS = 25_000;
@@ -7,7 +8,7 @@ export const LIST_TIMEOUT_MS = 15_000;
 
 const MAX_BODY_CHARS = 400_000;
 
-function cleanDetail(text: string | null | undefined, key: string): string | null {
+export function cleanDetail(text: string | null | undefined, key: string): string | null {
   if (!text) return null;
   let out = text.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
   // A provider may echo a truncated key back in its error; never show or keep it.
@@ -113,6 +114,109 @@ export async function postJson(
     return body;
   } finally {
     clearTimeout(timer);
+    outer?.removeEventListener('abort', onAbort);
+  }
+}
+
+/** The longest a streamed answer may run in total, however steadily it arrives. */
+export const STREAM_TOTAL_MS = 180_000;
+
+export type StreamOutcome = 'done' | 'unsupported';
+
+/**
+ * A POST that answers with server-sent events. `options.timeoutMs` (default 25 s) is an IDLE limit: it restarts with every chunk, so a
+ * long answer that keeps arriving is not cut, while a stalled one is; {@link STREAM_TOTAL_MS} caps the whole answer. Returns
+ * `unsupported` BEFORE any event when the runtime has no streaming body or text decoder (then the caller answers without
+ * streaming). Failures are the same {@link AiError}s as {@link postJson}: an HTTP error is read as a normal error body.
+ */
+export async function postStream(
+  url: string,
+  init: { headers: Record<string, string>; body: unknown },
+  options: CallOptions,
+  key: string,
+  onEvent: (event: SseEvent) => void,
+): Promise<StreamOutcome> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const idleMs = options.timeoutMs ?? CALL_TIMEOUT_MS;
+  const controller = new AbortController();
+  let timedOut = false;
+  let idle: ReturnType<typeof setTimeout> | undefined;
+  const arm = () => {
+    clearTimeout(idle);
+    idle = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, idleMs);
+  };
+  const total = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, STREAM_TOTAL_MS);
+  const outer = options.signal;
+  const onAbort = () => controller.abort();
+  if (outer) {
+    if (outer.aborted) {
+      clearTimeout(total);
+      throw new AiError('aborted');
+    }
+    outer.addEventListener('abort', onAbort, { once: true });
+  }
+  arm();
+  try {
+    let response: Response;
+    try {
+      response = await doFetch(url, {
+        method: 'POST',
+        headers: { Accept: 'text/event-stream', 'Content-Type': 'application/json', ...init.headers },
+        body: JSON.stringify(init.body),
+        signal: controller.signal,
+        credentials: 'omit',
+      });
+    } catch {
+      if (outer?.aborted) throw new AiError('aborted');
+      throw new AiError(timedOut ? 'timeout' : 'network');
+    }
+    if (!response.ok) {
+      let text = '';
+      try {
+        text = (await response.text()).slice(0, MAX_BODY_CHARS);
+      } catch {
+        if (outer?.aborted) throw new AiError('aborted');
+      }
+      let body: unknown = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = null;
+      }
+      const message = errorMessageOf(body) ?? (body === null ? text : null);
+      throw new AiError(kindForStatus(response.status, message), response.status, cleanDetail(message, key));
+    }
+    const reader = response.body?.getReader?.();
+    if (!reader || typeof TextDecoder === 'undefined') return 'unsupported';
+    const decoder = new TextDecoder();
+    const parser = createSseParser(onEvent);
+    // A runtime whose body does not end its pending read on abort would hang: cancel the reader ourselves.
+    controller.signal.addEventListener('abort', () => void reader.cancel().catch(() => {}), { once: true });
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        arm();
+        if (value) parser.push(decoder.decode(value, { stream: true }));
+      }
+      if (controller.signal.aborted) throw new AiError(outer?.aborted ? 'aborted' : 'timeout');
+      parser.push(decoder.decode());
+      parser.flush();
+    } catch (error) {
+      if (error instanceof AiError) throw error;
+      if (outer?.aborted) throw new AiError('aborted');
+      throw new AiError(timedOut ? 'timeout' : 'network');
+    }
+    return 'done';
+  } finally {
+    clearTimeout(idle);
+    clearTimeout(total);
     outer?.removeEventListener('abort', onAbort);
   }
 }
