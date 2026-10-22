@@ -160,7 +160,7 @@ describe('fast mode (ask the model not to think at length)', () => {
     resetStreamMemory();
     const on = mockFetch([plain()]);
     await openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl: on.fetchImpl });
-    expect(on.calls[0]!.body).toMatchObject({ thinking: { type: 'disabled' }, enable_thinking: false, reasoning_effort: 'low' });
+    expect(on.calls[0]!.body).toMatchObject({ thinking: { type: 'disabled' } });
     const off = mockFetch([plain()]);
     await openAiAdapter.complete(custom, ask, { fetchImpl: off.fetchImpl });
     expect(off.calls[0]!.body).not.toHaveProperty('thinking');
@@ -175,15 +175,15 @@ describe('fast mode (ask the model not to think at length)', () => {
 
   test('a server that rejects the fields is asked again without them, and remembered', async () => {
     resetStreamMemory();
-    const first = mockFetch([json({ error: { message: 'Unrecognized request argument: enable_thinking' } }, 400), plain()]);
+    const first = mockFetch([json({ error: { message: 'Unrecognized request argument: thinking' } }, 400), plain()]);
     const reply = await openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl: first.fetchImpl });
     expect(reply.text).toBe('Halo');
     expect(first.calls).toHaveLength(2);
-    expect(first.calls[0]!.body).toHaveProperty('enable_thinking');
-    expect(first.calls[1]!.body).not.toHaveProperty('enable_thinking');
+    expect(first.calls[0]!.body).toHaveProperty('thinking');
+    expect(first.calls[1]!.body).not.toHaveProperty('thinking');
     const next = mockFetch([plain()]);
     await openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl: next.fetchImpl });
-    expect(next.calls[0]!.body).not.toHaveProperty('enable_thinking');
+    expect(next.calls[0]!.body).not.toHaveProperty('thinking');
   });
 
   test('another kind of failure (a bad key) is not retried', async () => {

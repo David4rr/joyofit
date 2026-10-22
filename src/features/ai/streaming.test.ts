@@ -223,6 +223,38 @@ describe('OpenAI-compatible streaming', () => {
   });
 });
 
+describe('what a server refuses is blamed on the right extra', () => {
+  const custom = { baseUrl: 'https://gateway.example.com/v1', apiKey: KEY, model: 'glm-5.3-flash' };
+
+  test('fast-mode fields refused: the next try still streams, with usage; only fast is remembered as refused', async () => {
+    resetStreamMemory();
+    const { fetchImpl, calls } = mockFetch([json({ error: { message: 'Unknown parameter: thinking' } }, 400), sse([chunk({ content: 'Halo' }, 'stop'), frame('[DONE]')])]);
+    const reply = await openAiAdapter.complete(custom, { ...request, fast: true }, { fetchImpl, onDelta: () => {} });
+    expect(reply.text).toBe('Halo');
+    expect(calls).toHaveLength(2);
+    expect(calls[0]!.body).toMatchObject({ stream: true, stream_options: { include_usage: true }, thinking: { type: 'disabled' } });
+    expect(calls[1]!.body).toMatchObject({ stream: true, stream_options: { include_usage: true } });
+    expect(calls[1]!.body).not.toHaveProperty('thinking');
+    // the next question streams with usage and without the fast fields
+    const next = mockFetch([sse([chunk({ content: 'Lagi' }, 'stop')])]);
+    await openAiAdapter.complete(custom, { ...request, fast: true }, { fetchImpl: next.fetchImpl, onDelta: () => {} });
+    expect(next.calls).toHaveLength(1);
+    expect(next.calls[0]!.body).toMatchObject({ stream: true, stream_options: { include_usage: true } });
+    expect(next.calls[0]!.body).not.toHaveProperty('thinking');
+  });
+
+  test('a refusal that is not about the extras (still 400 on the plain call) is reported, and nothing is learned', async () => {
+    resetStreamMemory();
+    const bad = () => json({ error: { message: 'messages too long' } }, 400);
+    const { fetchImpl, calls } = mockFetch([bad(), bad(), bad(), bad()]);
+    await expect(openAiAdapter.complete(custom, { ...request, fast: true }, { fetchImpl, onDelta: () => {} })).rejects.toMatchObject({ kind: 'badRequest' });
+    expect(calls).toHaveLength(4);
+    const after = mockFetch([sse([chunk({ content: 'ok' }, 'stop')])]);
+    await openAiAdapter.complete(custom, request, { fetchImpl: after.fetchImpl, onDelta: () => {} });
+    expect(after.calls[0]!.body).toMatchObject({ stream: true, stream_options: { include_usage: true } });
+  });
+});
+
 describe('Anthropic streaming', () => {
   const conn = { baseUrl: PROVIDERS.anthropic.baseUrl, apiKey: KEY, model: 'claude-haiku-5-5' };
   const ev = (type: string, body: Record<string, unknown>) => `event: ${type}\ndata: ${JSON.stringify({ type, ...body })}\n\n`;

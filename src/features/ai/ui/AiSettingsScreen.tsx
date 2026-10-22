@@ -208,6 +208,9 @@ export function AiSettingsScreen() {
               disabled={!ownReady}
               onValueChange={(value) => aiSettings.update({ insightWeekly: value })}
             />
+            <AppText variant="caption" muted>
+              {t('prefs.style.where')}
+            </AppText>
             <SwitchRow
               label={t('prefs.style.fast')}
               hint={t('prefs.style.fastHint')}
@@ -215,9 +218,6 @@ export function AiSettingsScreen() {
               disabled={!ownReady}
               onValueChange={(value) => aiSettings.update({ fastMode: value })}
             />
-            <AppText variant="caption" muted>
-              {t('prefs.style.where')}
-            </AppText>
             <AppText variant="bodyStrong">{t('prefs.style.ceiling')}</AppText>
             <Segmented
               value={settings.dailyCeiling}

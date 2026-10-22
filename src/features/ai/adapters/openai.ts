@@ -41,17 +41,16 @@ function toWire(message: NeutralMessage): Json {
 
 /**
  * What "fast" adds per provider. A custom server gets the switches the Chinese and open-source servers read (GLM, Kimi and DeepSeek
- * take `thinking: {type: disabled}`, Qwen `enable_thinking: false`; servers that do not know a field ignore it, and one that rejects
- * it is asked again without, see `refusedFast`). OpenRouter normalises `reasoning.effort`. OpenAI and Gemini already run at their
+ * take `thinking: {type: disabled}`; a server that rejects it is asked again without, see `refusedFast`). OpenRouter normalises `reasoning.effort`. OpenAI and Gemini already run at their
  * defaults here and are left alone.
  */
 const FAST_FIELDS: Partial<Record<ProviderId, Json>> = {
-  custom: { thinking: { type: 'disabled' }, enable_thinking: false, reasoning_effort: 'low' },
+  custom: { thinking: { type: 'disabled' } },
   openrouter: { reasoning: { effort: 'low' } },
 };
 
 /** The body of `POST {baseUrl}/chat/completions`. Exported for the request-mapping tests. */
-export function buildOpenAiBody(baseUrl: string, request: ModelRequest, opts: { stream?: boolean; usage?: boolean } = {}): Json {
+export function buildOpenAiBody(baseUrl: string, request: ModelRequest, opts: { stream?: boolean; usage?: boolean; fast?: boolean } = {}): Json {
   const q = quirks(baseUrl);
   const body: Json = {
     model: request.model,
@@ -62,7 +61,7 @@ export function buildOpenAiBody(baseUrl: string, request: ModelRequest, opts: { 
     body.tools = request.tools.map((tool) => ({ type: 'function', function: { name: tool.name, description: tool.description, parameters: tool.parameters } }));
   }
   if (q.reasoningEffort) body.reasoning_effort = q.reasoningEffort;
-  if (request.fast) Object.assign(body, FAST_FIELDS[q.id] ?? {});
+  if (opts.fast ?? request.fast) Object.assign(body, FAST_FIELDS[q.id] ?? {});
   if (opts.stream) {
     body.stream = true;
     // Every compatible server that streams is asked for the token count; one that refuses is remembered (`refusedUsage`) and asked without.
@@ -259,6 +258,17 @@ export function createOpenAiStream(onDelta: ((delta: StreamDelta) => void) | und
 const refusedUsage = new Set<string>();
 /** Hosts that refused `stream` itself: answered without streaming from then on. */
 const refusedStream = new Set<string>();
+/** Hosts that answered 400 or 422 to the fast-mode fields: asked without them from then on. */
+const refusedFast = new Set<string>();
+
+/** For tests: forget what servers refused. */
+export function resetStreamMemory(): void {
+  refusedUsage.clear();
+  refusedStream.clear();
+  refusedFast.clear();
+}
+
+const refusal = (error: unknown): error is AiError => error instanceof AiError && error.kind === 'badRequest' && error.status !== null;
 
 function hostKey(baseUrl: string): string {
   try {
@@ -268,55 +278,66 @@ function hostKey(baseUrl: string): string {
   }
 }
 
-/** For tests: forget what servers refused. */
-export function resetStreamMemory(): void {
-  refusedUsage.clear();
-  refusedStream.clear();
-  refusedFast.clear();
+interface Attempt {
+  fast: boolean;
+  usage: boolean;
+  stream: boolean;
 }
 
-/** Hosts that answered 400 or 422 to the fast-mode fields: asked without them from then on. */
-const refusedFast = new Set<string>();
-
+/**
+ * One call, with the extras a server may not know taken off one at a time. A 400 or 422 cannot say which field it did not like, so
+ * the extras are dropped in order (fast-mode fields, then `stream_options`, then streaming itself) and what a server accepted is
+ * learned only from a call that SUCCEEDED after the drop: a refusal caused by the first extra is never blamed on the next. What is
+ * learned is kept per host until the app restarts.
+ */
 async function complete(conn: ProviderConnection, request: ModelRequest, options: CallOptions = {}): Promise<ModelReply> {
-  const host = hostKey(conn.baseUrl);
-  if (request.fast && FAST_FIELDS[quirks(conn.baseUrl).id] && !refusedFast.has(host)) {
-    try {
-      return await completeOnce(conn, request, options);
-    } catch (error) {
-      if (!refusal(error)) throw error;
-      options.mark?.('fast-refused');
-      refusedFast.add(host);
-    }
-  }
-  return completeOnce(conn, { ...request, fast: false }, options);
-}
-
-const refusal = (error: unknown): boolean => error instanceof AiError && error.kind === 'badRequest' && error.status !== null;
-
-async function completeOnce(conn: ProviderConnection, request: ModelRequest, options: CallOptions = {}): Promise<ModelReply> {
   const url = `${conn.baseUrl}/chat/completions`;
   const headers = { Authorization: `Bearer ${conn.apiKey}` };
   const host = hostKey(conn.baseUrl);
-  if (options.onDelta && !refusedStream.has(host)) {
-    // First with token usage, then without it, then not streaming: each step only after the server said 400 or 422 to the one before.
-    for (const usage of refusedUsage.has(host) ? [false] : [true, false]) {
-      const stream = createOpenAiStream(options.onDelta);
-      try {
-        const outcome = await postStream(url, { headers, body: buildOpenAiBody(conn.baseUrl, request, { stream: true, usage }) }, options, conn.apiKey, (event) => stream.push(event.data));
-        if (outcome === 'done') return stream.result();
-        options.mark?.('no-stream-body');
-        refusedStream.add(host);
-        break;
-      } catch (error) {
-        if (!refusal(error)) throw error;
-        options.mark?.('stream-refused', { usage: usage ? 1 : 0 });
-        if (usage) refusedUsage.add(host);
-        else refusedStream.add(host);
+  const wantsFast = request.fast === true && FAST_FIELDS[quirks(conn.baseUrl).id] !== undefined && !refusedFast.has(host);
+  const streams = options.onDelta !== undefined && !refusedStream.has(host);
+  const first: Attempt = { fast: wantsFast, usage: streams && !refusedUsage.has(host), stream: streams };
+  const ladder: Attempt[] = [first];
+  const push = (next: Attempt) => {
+    if (!ladder.some((x) => x.fast === next.fast && x.usage === next.usage && x.stream === next.stream)) ladder.push(next);
+  };
+  if (first.fast) push({ ...first, fast: false });
+  if (first.stream && first.usage) push({ fast: false, usage: false, stream: true });
+  if (first.stream) push({ fast: false, usage: false, stream: false });
+
+  let refused: AiError | null = null;
+  for (let i = 0; i < ladder.length; i++) {
+    const attempt = ladder[i]!;
+    try {
+      const reply = attempt.stream ? await streamOnce(conn, request, options, attempt, url, headers) : await plainOnce(conn, request, options, attempt, url, headers);
+      if (i > 0) {
+        // The earlier attempts were refused and this one was not: learn what was dropped on the way.
+        if (first.fast && !attempt.fast) refusedFast.add(host);
+        if (first.usage && !attempt.usage) refusedUsage.add(host);
+        if (first.stream && !attempt.stream) refusedStream.add(host);
       }
+      return reply;
+    } catch (error) {
+      if (!refusal(error)) throw error;
+      refused = error;
+      options.mark?.('refused', { step: i, fast: attempt.fast ? 1 : 0, usage: attempt.usage ? 1 : 0, stream: attempt.stream ? 1 : 0, status: error.status ?? 0, why: (error.detail ?? '').slice(0, 100) });
     }
   }
-  const body = await postJson(url, { method: 'POST', headers, body: buildOpenAiBody(conn.baseUrl, request) }, options, CALL_TIMEOUT_MS, conn.apiKey);
+  throw refused ?? new AiError('badRequest');
+}
+
+async function streamOnce(conn: ProviderConnection, request: ModelRequest, options: CallOptions, attempt: Attempt, url: string, headers: Record<string, string>): Promise<ModelReply> {
+  const stream = createOpenAiStream(options.onDelta);
+  const outcome = await postStream(url, { headers, body: buildOpenAiBody(conn.baseUrl, request, { stream: true, usage: attempt.usage, fast: attempt.fast }) }, options, conn.apiKey, (event) => stream.push(event.data));
+  if (outcome === 'done') return stream.result();
+  // The runtime gave no readable body: the same call without streaming.
+  options.mark?.('no-stream-body');
+  refusedStream.add(hostKey(conn.baseUrl));
+  return plainOnce(conn, request, options, { ...attempt, stream: false }, url, headers);
+}
+
+async function plainOnce(conn: ProviderConnection, request: ModelRequest, options: CallOptions, attempt: Attempt, url: string, headers: Record<string, string>): Promise<ModelReply> {
+  const body = await postJson(url, { method: 'POST', headers, body: buildOpenAiBody(conn.baseUrl, request, { fast: attempt.fast }) }, options, CALL_TIMEOUT_MS, conn.apiKey);
   const reply = parseOpenAiReply(body);
   // A runtime or server that could not stream still shows the answer: hand it over in one piece.
   if (options.onDelta) options.onDelta({ ...(reply.thinking ? { thinking: reply.thinking } : {}), ...(reply.text ? { text: reply.text } : {}) });

@@ -27,7 +27,7 @@ import { useCloud } from '@/state/CloudProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { radius as radii, spacing, useColors } from '@/theme';
 import { chatLines, type ChatMessage } from '../conversations';
-import { askJoyoAi } from '../engine';
+import { askJoyoAi, warmDigestData } from '../engine';
 import { hostOf } from '../providers';
 import { useByokAccess } from '../hooks';
 import { finishReply, type SafetyText } from '../safety';
@@ -226,6 +226,12 @@ export function JoyoAiChat() {
     const id = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(id);
   }, [focusTick, composerReady]);
+
+  // The diary and weight the digest needs are read while the person is still typing.
+  const today = coach?.today ?? null;
+  useEffect(() => {
+    if (own && today) warmDigestData(today, cloud.signedIn);
+  }, [own, today, cloud.signedIn]);
 
   const safetyText: SafetyText = {
     disclaimer: t('disclaimerLine'),

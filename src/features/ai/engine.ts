@@ -7,7 +7,9 @@ import { startTiming } from './timing';
 import { baseUrlFor, byokAccess, modelFor, type ByokAccess } from './access';
 import { answer, type Answer, type AnswerDeps } from './answer';
 import { grantConsent } from './consent';
+import { addDays } from '@/features/coach/time';
 import { createToolData, gatherDigestSource } from './data/assemble';
+import { createRogoData } from './data/rogoData';
 import { readPerson } from './data/personData';
 import { buildDigest, digestJson, type Digest } from './digest';
 import { insightFor, insightSlot, type InsightKind } from './insight';
@@ -58,6 +60,17 @@ export async function askJoyoAi(input: AskInput): Promise<Answer> {
     onEvent: input.onEvent,
     mark,
   });
+}
+
+/**
+ * Reads the JoyoRogo diary and weight for the digest ahead of the first question (when the chat opens), into the session cache, so the
+ * question itself does not wait for the network. Failures are ignored: the question reads them again.
+ */
+export function warmDigestData(today: string, signedIn: boolean): void {
+  if (!signedIn) return;
+  const rogoData = createRogoData();
+  const from = addDays(today, -13);
+  void Promise.all([rogoData.food(from, today), rogoData.weights(from, today)]).catch(() => {});
 }
 
 /** The digest as it would be sent now, for "Lihat data yang dikirim" and the consent screen's sample. */
