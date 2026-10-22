@@ -47,7 +47,7 @@ export function ChatsScreen() {
   const openChat = (id: string | null) => {
     aiChats.setCurrent(id);
     // The chat is on top of this list in the same stack: going to it again shows the existing one (Back from it comes here).
-    router.navigate('/joyo/chat');
+    router.dismissTo('/joyo/chat');
   };
 
   return (

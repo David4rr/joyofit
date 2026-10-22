@@ -616,7 +616,7 @@ export function JoyoAiChat() {
         <View style={styles.headerTitle}>
           <MarqueeTitle title={title} hint={t('chat.renameHint')} onPress={conversationId ? () => setRenaming(true) : undefined} />
         </View>
-        <HeaderIconButton icon="time-outline" label={t('chat.history')} onPress={() => router.navigate('/joyo/chats')} />
+        <HeaderIconButton icon="time-outline" label={t('chat.history')} onPress={() => router.dismissTo('/joyo/chats')} />
         <HeaderIconButton icon="add" label={t('chat.new')} onPress={startNew} />
       </View>
       <Screen footer={composer} overlay={composerReady ? jump : undefined} list={renderList}>
