@@ -62,6 +62,7 @@ import { averagePaceSec, averageSpeedMs, workoutTimes } from '@/features/workout
 import { sourceLabel } from '@/features/fitness/format';
 import { effectWord, trainingEffect } from '@/features/fitness/trainingEffect';
 import { plausibleVo2 } from '@/features/fitness/vo2max';
+import { hrZoneName } from '@/features/hrzones/names';
 import { useHrZones, userHrZones } from '@/features/hrzones/settings';
 import { useStrengthHistory } from '@/features/strength/history';
 import { getStrengthWorkoutByStart } from '@/features/strength/store';
@@ -519,7 +520,7 @@ export default function WorkoutDetailScreen() {
           </View>
           <FuelBar fatShare={burn.fatShare} />
           {burn.zones.map((z) => {
-            const zoneName = t(`detail.burn.zone.${z.zone as 0 | 1 | 2 | 3 | 4 | 5}`);
+            const zoneName = z.zone === 0 ? t('detail.burn.below') : hrZoneName(zones.method, z.zone);
             return (
               <KeyValue
                 key={z.zone}

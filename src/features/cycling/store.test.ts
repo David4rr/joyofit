@@ -97,7 +97,7 @@ describe('training load of rides does not double count', () => {
     await seed(db, { start: day(3), name: 'Outdoor Run', type: 1, secs: 2400, hr: 160, speed: 3 });
     await syncRideMetrics(db, PROFILE, { sinceSec: 0, limit: 10 });
     const bounds = [startOfLocalDay(day(0)), startOfLocalDay(day(1)), startOfLocalDay(day(2)), startOfLocalDay(day(3)), startOfLocalDay(day(4))];
-    const base = strainFromLoads(await listDayHeartLoad(db, bounds, PROFILE.zones.limits));
+    const base = strainFromLoads(await listDayHeartLoad(db, bounds, PROFILE.zones.bounds));
     const rows = await listRideMetrics(db);
     return { base, rows, db, hard, bounds };
   }

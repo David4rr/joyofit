@@ -15,7 +15,7 @@ const cache = new Map<string, number | null>();
 export function useWorkoutStrain(workout: WorkoutRow): number | null | undefined {
   const db = useSQLiteContext();
   const zones = useHrZones();
-  const key = `${workout.id}:${workout.complete ? 1 : 0}:${workout.end}:${zones.limits.join(',')}`;
+  const key = `${workout.id}:${workout.complete ? 1 : 0}:${workout.end}:${zones.bounds.join(',')}`;
   const [state, setState] = useState<{ key: string; strain: number | null } | null>(null);
   const cached = cache.get(key);
 

@@ -37,7 +37,7 @@ export async function readDailyRows(db: SQLiteDatabase, from: string, to: string
   const zones = userHrZones();
   const windowStart = starts[0]!;
   const [loads, resting, totals, hrv, sleep, scores, workouts] = await Promise.all([
-    listDayHeartLoad(db, bounds, zones.limits),
+    listDayHeartLoad(db, bounds, zones.bounds),
     listRestingHeartRateByDay(db, bounds),
     listDayTotals(db, bounds),
     listHrvReadingsSince(db, windowStart),

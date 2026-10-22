@@ -5,7 +5,8 @@ import type { StepSample } from '@/wear';
 /**
  * Daily strain, computed by JoyoFit from the watch's stored heart rate (the watch has no such number).
  *
- * Load is Edwards' summated-heart-rate-zone TRIMP (Edwards 1993): minutes in zones 1 to 5 count 1 / 2 / 3 / 4 / 5 times. The zones are the
+ * Load is Edwards' summated-heart-rate-zone TRIMP (Edwards 1993): minutes in zones 1 to 5 count 1 / 2 / 3 / 4 / 5 times (the reserve method has a
+ * sixth zone, counting 6 times: its warm-up is Z1 and its aerobic base Z2, the numbering of the watch and Huawei Health). The zones are the
  * person's heart-rate zones (`@/features/hrzones`): by default 50-60 / 60-70 / 70-80 / 80-90 / 90-100 % of maximum heart rate, or whatever
  * method and limits they set in Settings. Strain maps that load onto 0..21 with `21 * (1 - e^(-TRIMP / 250))`,
  * so easy minutes add a lot early in the day and the top is hard to reach. The 0..21 range copies the idea of WHOOP's
@@ -28,23 +29,23 @@ export interface DayStrain {
   trimp: number;
   /** 0..21. */
   strain: number;
-  /** Minutes in Edwards zones 1..5 (index 0 is zone 1). */
-  zoneMinutes: [number, number, number, number, number];
+  /** Minutes in Edwards zones 1..5, 1..6 for the reserve method (index 0 is zone 1). */
+  zoneMinutes: number[];
   /** Minutes the stored heart rate covers; strain is only as complete as this. */
   coveredMinutes: number;
 }
 
-/** Per local day: seconds in Edwards zones 1..5 and seconds covered by any heart-rate reading (zone 0 included). */
+/** Per local day: seconds in Edwards zones 1..5 (1..6 for the reserve method) and seconds covered by any heart-rate reading (zone 0 included). */
 export interface DayHeartLoad {
   /** Local midnight, unix seconds. */
   day: number;
-  zoneSeconds: [number, number, number, number, number];
+  zoneSeconds: number[];
   coveredSeconds: number;
 }
 
 /** Whole seconds are summed and divided by 60 once, so the SQL aggregate and the JS loop below give identical floats. */
 function dayStrainOf(load: DayHeartLoad): DayStrain {
-  const zoneMinutes = load.zoneSeconds.map((s) => s / 60) as DayStrain['zoneMinutes'];
+  const zoneMinutes = load.zoneSeconds.map((s) => s / 60);
   const trimp = load.zoneSeconds.reduce((sum, s, i) => sum + ((i + 1) * s) / 60, 0);
   return { day: load.day, trimp, strain: strainFromTrimp(trimp), zoneMinutes, coveredMinutes: load.coveredSeconds / 60 };
 }
@@ -70,7 +71,7 @@ export function dailyStrain(samples: readonly Pick<StepSample, 'timestamp' | 'he
     const seconds = Math.max(1, until - sample.timestamp);
     let entry = days.get(day);
     if (!entry) {
-      entry = { day, zoneSeconds: [0, 0, 0, 0, 0], coveredSeconds: 0 };
+      entry = { day, zoneSeconds: zones.bounds.map(() => 0), coveredSeconds: 0 };
       days.set(day, entry);
     }
     entry.coveredSeconds += seconds;
@@ -87,8 +88,8 @@ export interface WorkoutStrain {
   trimp: number;
   /** 0..21, this workout on its own (as if it were the only effort of the day). */
   strain: number;
-  /** Minutes in Edwards zones 1..5 (index 0 is zone 1). */
-  zoneMinutes: [number, number, number, number, number];
+  /** Minutes in Edwards zones 1..5, 1..6 for the reserve method (index 0 is zone 1). */
+  zoneMinutes: number[];
   /** Minutes the heart-rate samples cover, pauses left out. */
   coveredMinutes: number;
 }
@@ -99,7 +100,7 @@ export interface WorkoutStrain {
  */
 export function workoutStrain(points: readonly { ts: number; hr: number | null }[], zones: HrZones): WorkoutStrain | null {
   const samples = points.filter((p) => p.hr !== null && p.hr > 0).sort((a, b) => a.ts - b.ts);
-  const result: WorkoutStrain = { trimp: 0, strain: 0, zoneMinutes: [0, 0, 0, 0, 0], coveredMinutes: 0 };
+  const result: WorkoutStrain = { trimp: 0, strain: 0, zoneMinutes: zones.bounds.map(() => 0), coveredMinutes: 0 };
   for (let i = 0; i + 1 < samples.length; i++) {
     const dt = samples[i + 1].ts - samples[i].ts;
     if (dt <= 0 || dt > MAX_WORKOUT_GAP_SEC) continue;

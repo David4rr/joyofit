@@ -354,7 +354,7 @@
     "emptyToday": "No heart rate stored yet today. Sync to fetch it from the watch.",
     "emptyPast": "No heart rate stored for this date.",
     "zonesTitle": "Time in each zone",
-    "zone": "Zone {{n}}",
+    "zone": "Z{{n}} {{name}}",
     "zoneRange": "{{from}} bpm and up",
     "zonesNote": "The line colour follows your heart-rate zones (max HR {{max}} bpm; change it in Settings > HR zones). A gap in the chart means the watch recorded nothing.",
     "loadError": "Could not read heart rate: {{error}}",

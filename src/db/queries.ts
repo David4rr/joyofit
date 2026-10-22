@@ -286,7 +286,7 @@ export async function listWorkoutsSince(
  * Heart-rate load per local day, aggregated in SQL so long ranges never put per-minute rows through JS. It is
  * `dailyStrain`'s arithmetic: a reading counts until the next reading (of any day), at most 600 s, never past
  * `day + 86400`, and at least 1 s; seconds are summed per Edwards zone. `bounds` are consecutive local midnights (day `i`
- * spans `bounds[i]` up to `bounds[i + 1]`), and `thresholds` come from `zoneThresholds` (lowest bpm of zones 1..5).
+ * spans `bounds[i]` up to `bounds[i + 1]`), and `thresholds` are the lowest bpm of every zone (`HrZones.bounds`: five, six for the reserve method).
  * Everything is integer arithmetic, so there is no division to truncate. Days without heart rate are absent.
  */
 export async function listDayHeartLoad(
@@ -299,7 +299,9 @@ export async function listDayHeartLoad(
   if (days.length === 0) return [];
   // CROSS JOIN pins `days` as the outer loop, so each day is one range seek on the timestamp primary key. LEAD runs over
   // the joined rows of all days in timestamp order, so the last reading of a day sees the next day's first.
-  const rows = await db.getAllAsync<{ day: number; covered: number; z1: number; z2: number; z3: number; z4: number; z5: number }>(
+  const zoneSums = thresholds.map((_, i) => `COALESCE(SUM(CASE WHEN zone = ${i + 1} THEN secs END), 0) AS z${i + 1}`).join(',\n            ');
+  const zoneExpr = thresholds.map(() => '(bpm >= ?)').join(' + ');
+  const rows = await db.getAllAsync<Record<string, number>>(
     `WITH days(d0, d1) AS (VALUES ${Array.from({ length: days.length / 2 }, () => '(?, ?)').join(', ')}),
      hr AS (
        SELECT s.timestamp AS ts, s.heart_rate AS bpm, d.d0 AS d0,
@@ -309,19 +311,15 @@ export async function listDayHeartLoad(
      ),
      cover AS (
        SELECT d0, MAX(1, MIN(COALESCE(nxt, ts + 60), ts + 600, d0 + 86400) - ts) AS secs,
-              (bpm >= ?) + (bpm >= ?) + (bpm >= ?) + (bpm >= ?) + (bpm >= ?) AS zone
+              ${zoneExpr} AS zone
        FROM hr
      )
      SELECT d0 AS day, SUM(secs) AS covered,
-            COALESCE(SUM(CASE WHEN zone = 1 THEN secs END), 0) AS z1,
-            COALESCE(SUM(CASE WHEN zone = 2 THEN secs END), 0) AS z2,
-            COALESCE(SUM(CASE WHEN zone = 3 THEN secs END), 0) AS z3,
-            COALESCE(SUM(CASE WHEN zone = 4 THEN secs END), 0) AS z4,
-            COALESCE(SUM(CASE WHEN zone = 5 THEN secs END), 0) AS z5
+            ${zoneSums}
      FROM cover GROUP BY d0 ORDER BY d0`,
     [...days, ...thresholds],
   );
-  return rows.map((r) => ({ day: r.day, zoneSeconds: [r.z1, r.z2, r.z3, r.z4, r.z5], coveredSeconds: r.covered }));
+  return rows.map((r) => ({ day: r.day, zoneSeconds: thresholds.map((_, i) => r[`z${i + 1}`] as number), coveredSeconds: r.covered }));
 }
 
 /**

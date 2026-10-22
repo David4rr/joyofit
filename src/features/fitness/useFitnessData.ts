@@ -68,7 +68,7 @@ export async function readFitnessData(db: SQLiteDatabase, scope: FitnessScope, n
   const depth = DEPTH[scope];
   const bounds = dayBounds(dayStarts(dayStart, depth.strainDays + 1));
   const [loads, resting, workouts, hrv, sleep, samples, stress] = await Promise.all([
-    listDayHeartLoad(db, bounds, zones.limits),
+    listDayHeartLoad(db, bounds, zones.bounds),
     listRestingHeartRateByDay(db, bounds),
     listWorkoutsSince(db, nowSec - depth.workoutDays * 86400, nowSec + 1, -1),
     listHrvReadingsSince(db, dayStart - depth.hrvDays * 86400),

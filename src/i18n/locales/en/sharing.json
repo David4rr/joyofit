@@ -104,13 +104,6 @@
     },
     "timeA11y": "Time {{value}}",
     "zone": "Zone {{zone}} · {{label}}",
-    "zones": {
-      "warmup": "Warm-up",
-      "fatBurning": "Fat burning",
-      "aerobic": "Aerobic",
-      "anaerobic": "Anaerobic",
-      "extreme": "Extreme"
-    },
     "tiles": {
       "distance": "Distance",
       "speed": "Speed",

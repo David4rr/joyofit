@@ -1,5 +1,6 @@
+import { hrZoneName } from '@/features/hrzones/names';
 import { zoneIndex, type HrZones } from '@/features/hrzones/zones';
-import { fmtDecimal, fmtInt, t } from '@/i18n';
+import { fmtDecimal, fmtInt } from '@/i18n';
 import type { LiveWorkout } from '@/wear';
 
 /** Workout time now: the watch's last figure plus the time since it, while running (the watch pushes about every second). */
@@ -64,11 +65,9 @@ export function isActive(live: LiveWorkout | null): live is LiveWorkout {
   return live !== null && live.status !== 'ended';
 }
 
-const ZONE_LABELS = ['warmup', 'fatBurning', 'aerobic', 'anaerobic', 'extreme'] as const;
-
-/** The person's zone (`@/features/hrzones`) of a reading, named the way Huawei Health names the five zones. Below zone 1 is no zone. */
+/** The person's zone (`@/features/hrzones`) of a reading, named the way Huawei Health names its zones (five for the maximum method, six for the reserve method). Below zone 1 is no zone. */
 export function heartZone(heartRate: number, zones: HrZones): { zone: number; label: string } | null {
   const zone = zoneIndex(heartRate, zones);
   if (zone === 0) return null;
-  return { zone, label: t(`sharing:live.zones.${ZONE_LABELS[zone - 1]}`) };
+  return { zone, label: hrZoneName(zones.method, zone) };
 }

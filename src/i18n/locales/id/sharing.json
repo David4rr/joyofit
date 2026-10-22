@@ -104,13 +104,6 @@
     },
     "timeA11y": "Waktu {{value}}",
     "zone": "Zona {{zone}} · {{label}}",
-    "zones": {
-      "warmup": "Pemanasan",
-      "fatBurning": "Pembakaran lemak",
-      "aerobic": "Aerobik",
-      "anaerobic": "Anaerobik",
-      "extreme": "Ekstrem"
-    },
     "tiles": {
       "distance": "Jarak",
       "speed": "Kecepatan",

@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { fmtInt } from '@/i18n';
 import { heartZone } from '@/features/live/liveWorkout';
-import { defaultPalette } from '@/features/workouts/analysis/ui';
+import { defaultPalette, hrZoneColor } from '@/features/workouts/analysis/ui';
 import { useHrZones } from '@/features/hrzones/settings';
 import { radius, spacing, useTheme } from '@/theme';
 
@@ -25,7 +25,7 @@ export function StrapChip({ workoutId }: { workoutId: string | null }) {
 
   const bpm = chip.state === 'live' ? chip.bpm : null;
   const zone = bpm !== null ? heartZone(bpm, zones) : null;
-  const iconColor = zone ? defaultPalette(scheme === 'dark').zones[zone.zone - 1] : bpm !== null ? colors.heart : colors.mutedForeground;
+  const iconColor = zone ? hrZoneColor(defaultPalette(scheme === 'dark'), zone.zone) : bpm !== null ? colors.heart : colors.mutedForeground;
   const live = bpm !== null;
   const text = bpm !== null ? fmtInt(bpm) : t(chip.state === 'waiting' ? 'hr.waiting' : 'hr.searching');
   const label =

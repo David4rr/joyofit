@@ -90,6 +90,6 @@ export function computeFitnessOverview(d: FitnessData, efforts: readonly EffortS
     load: loadBalance(d.strain, d.dayStart),
     races: predictRaces(efforts),
     hrv: hrvStatus(d.hrv, d.nowSec),
-    intensity: intensityMinutes(d.strain, mondayOf(d.dayStart)),
+    intensity: intensityMinutes(d.strain, mondayOf(d.dayStart), d.zones.method),
   };
 }

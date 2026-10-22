@@ -2,10 +2,10 @@
  * Heart-rate zones: the one place that turns the person's settings into the five zone limits every screen and the watch use.
  *
  * The model is Huawei Health's (`HeartRateThresholdConfig`, decompiled from 17.0.8.300; docs/hr-zones.md): zones 1..5 start at 50, 60, 70,
- * 80 and 90 % of the maximum heart rate ("max" method), or at 59, 74, 84, 88 and 95 % of the heart rate reserve added to the resting rate
- * ("hrr" method). A limit is the lowest whole bpm at or above the exact value, so a reading is in zone k exactly when its share reaches the
+ * 80 and 90 % of the maximum heart rate ("max" method), or the five limits at 59, 74, 84, 88 and 95 % of the heart rate reserve added to the
+ * resting rate ("hrr" method), under which sits a warm-up from 50 % of the reserve: six zones, the aerobic base being Z2. A limit is the lowest whole bpm at or above the exact value, so a reading is in zone k exactly when its share reaches the
  * zone's percentage (the rule every figure of this app used before zones were editable, and so unchanged for people who set nothing; Huawei
- * Health rounds to the nearest bpm instead, up to one bpm apart). Zone 5 runs up to the maximum, below zone 1 is no zone.
+ * Health rounds to the nearest bpm instead, up to one bpm apart). The last zone runs up to the maximum, below zone 1 is no zone.
  */
 
 export type HrZoneMethod = 'max' | 'hrr';
@@ -26,6 +26,9 @@ export const ZONE_MIN_BPM = 30;
 export const WARNING_MIN = 100;
 
 export type ZoneLimits = [number, number, number, number, number];
+
+/** The heart-rate-reserve method has a sixth zone under Huawei's five: the warm-up, from this share of the reserve up to the first limit. */
+const WARMUP_RESERVE_PERCENT = 50;
 
 const MAX_PERCENT: readonly number[] = [50, 60, 70, 80, 90];
 const RESERVE_PERCENT: readonly number[] = [59, 74, 84, 88, 95];
@@ -59,8 +62,10 @@ export interface HrZones {
   /** Where `maxHr` comes from: the age formula or the person's entry. */
   maxHrSource: 'age' | 'setting';
   restingHr: number;
-  /** The lowest bpm of zones 1..5, strictly rising. A reading under `limits[0]` is in no zone. */
+  /** The five limits Huawei Health stores and the watch takes, strictly rising: in the max-HR method the lowest bpm of zones 1..5, in the reserve method of zones 2..6. */
   limits: Readonly<ZoneLimits>;
+  /** The lowest bpm of every zone, strictly rising: `limits` for the max-HR method (five zones), the warm-up start plus `limits` for the reserve method (six). A reading under `bounds[0]` is in no zone. */
+  bounds: readonly number[];
   /** True when the limits were edited by hand. */
   custom: boolean;
   warningEnabled: boolean;
@@ -112,6 +117,38 @@ export function methodLimits(method: HrZoneMethod, maxHr: number, restingHr: num
   return normalizeLimits(raw, maxHr);
 }
 
+/**
+ * The lowest bpm of each zone. The reserve method starts one zone earlier than Huawei's five limits: the warm-up, from 50 % of the reserve
+ * (plus rest) to the first limit, so Z1 is the warm-up and Z2 the aerobic base, as the watch and Huawei Health number them. A hand-edited first
+ * limit under the warm-up's start pulls the start down with it.
+ */
+export function zoneBounds(method: HrZoneMethod, limits: Readonly<ZoneLimits>, maxHr: number, restingHr: number): number[] {
+  if (method === 'max') return [...limits];
+  const warmUp = Math.ceil(((maxHr - restingHr) * WARMUP_RESERVE_PERCENT) / 100) + restingHr;
+  return [Math.max(Math.min(warmUp, limits[0] - 1), ZONE_MIN_BPM - 1), ...limits];
+}
+
+/** How many zones a method has: five for the maximum, six for the reserve (warm-up and Huawei's five). */
+export function zoneCount(method: HrZoneMethod): number {
+  return method === 'hrr' ? HR_ZONE_COUNT + 1 : HR_ZONE_COUNT;
+}
+
+/** Names of the zones, in order, as keys under `settings:hrZones.zones.names`: Huawei Health's own words for each method. */
+export const ZONE_NAME_KEYS = {
+  max: ['warmup', 'fatBurning', 'aerobic', 'anaerobic', 'extreme'],
+  hrr: ['warmup', 'aerobicBase', 'aerobicAdvance', 'lacticAcid', 'anaerobicBase', 'anaerobicAdvance'],
+} as const satisfies Record<HrZoneMethod, readonly string[]>;
+
+/**
+ * Which zones count as moderate and which as vigorous intensity minutes (WHO 2020, ACSM 2018: about 64 to 76 % of the maximum is moderate, 77 % and
+ * more vigorous). Maximum method: 60-80 % (zones 2, 3) moderate, 80 % and more (zones 4, 5) vigorous. Reserve method: 74 % of the reserve is where
+ * a typical person reaches 80 % of the maximum, so the warm-up and the aerobic base (zones 1, 2: 50-74 %) are moderate and every zone from
+ * the aerobic advance up (zones 3 to 6) is vigorous. Indexes are zero-based.
+ */
+export function intensityZones(method: HrZoneMethod): { moderate: readonly number[]; vigorous: readonly number[] } {
+  return method === 'hrr' ? { moderate: [0, 1], vigorous: [2, 3, 4, 5] } : { moderate: [1, 2], vigorous: [3, 4] };
+}
+
 function validLimits(value: unknown): value is number[] {
   return Array.isArray(value) && value.length === HR_ZONE_COUNT && value.every(isWholeNumber);
 }
@@ -123,12 +160,14 @@ export function resolveHrZones(settings: HrZoneSettings, age: number): HrZones {
   const derived = methodLimits(settings.method, maxHr, restingHr);
   const edited = validLimits(settings.limits) ? normalizeLimits(settings.limits, maxHr) : null;
   const custom = edited !== null && edited.some((value, i) => value !== derived[i]);
+  const limits = custom && edited ? edited : derived;
   return {
     method: settings.method,
     maxHr,
     maxHrSource: settings.maxHr === null ? 'age' : 'setting',
     restingHr,
-    limits: custom && edited ? edited : derived,
+    limits,
+    bounds: zoneBounds(settings.method, limits, maxHr, restingHr),
     custom,
     warningEnabled: settings.warningEnabled,
     warningLimit: clamp(Math.round(settings.warningLimit ?? maxHr), WARNING_MIN, MAX_HR_MAX),
@@ -140,19 +179,19 @@ export function hrZonesForMax(maxHr: number): HrZones {
   return resolveHrZones({ ...DEFAULT_HR_ZONE_SETTINGS, maxHr }, 0);
 }
 
-/** 0 below zone 1, else 1..5: the number of limits the reading has reached. */
-export function zoneIndex(heartRate: number, zones: Pick<HrZones, 'limits'>): number {
+/** 0 below zone 1, else 1..5 (1..6 for the reserve method): the number of bounds the reading has reached. */
+export function zoneIndex(heartRate: number, zones: Pick<HrZones, 'bounds'>): number {
   let zone = 0;
-  for (const limit of zones.limits) {
+  for (const limit of zones.bounds) {
     if (heartRate >= limit) zone += 1;
   }
   return zone;
 }
 
-/** The bpm range of zone `zone` (1..5): zone 5 ends at the maximum, the others one below the next zone's limit. */
-export function zoneRange(zone: number, zones: Pick<HrZones, 'limits' | 'maxHr'>): { from: number; to: number } {
-  const from = zones.limits[zone - 1] ?? zones.maxHr;
-  const to = zone >= HR_ZONE_COUNT ? zones.maxHr : (zones.limits[zone] ?? zones.maxHr) - 1;
+/** The bpm range of zone `zone` (1-based): the last zone ends at the maximum, the others one below the next zone's lowest bpm. */
+export function zoneRange(zone: number, zones: Pick<HrZones, 'bounds' | 'maxHr'>): { from: number; to: number } {
+  const from = zones.bounds[zone - 1] ?? zones.maxHr;
+  const to = zone >= zones.bounds.length ? zones.maxHr : (zones.bounds[zone] ?? zones.maxHr) - 1;
   return { from, to };
 }
 

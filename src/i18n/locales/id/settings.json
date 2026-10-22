@@ -915,8 +915,8 @@
       "title": "Cara menghitung",
       "max": "% HR maks",
       "hrr": "Cadangan HR (HRR)",
-      "maxBody": "Awal zona 1 sampai 5 ada di 50, 60, 70, 80, dan 90 persen dari HR maksimal. Ini bawaan Huawei Health.",
-      "hrrBody": "Awal zona 1 sampai 5 ada di 59, 74, 84, 88, dan 95 persen dari cadangan HR (HR maks dikurangi HR istirahat), ditambah HR istirahat. Lebih pas kalau HR istirahatmu rendah."
+      "maxBody": "Zona 1 sampai 5 mulai di 50, 60, 70, 80, dan 90 persen dari HR maksimal. Ini bawaan Huawei Health.",
+      "hrrBody": "Pemanasan mulai di 50 persen cadangan HR (HR maks dikurangi HR istirahat), lalu zona 2 sampai 6 mulai di 59, 74, 84, 88, dan 95 persen, semuanya ditambah HR istirahat. Urutan dan nama zona sama seperti di jam dan Huawei Health. Lebih pas kalau HR istirahatmu rendah."
     },
     "rates": {
       "title": "HR maks dan istirahat",
@@ -934,21 +934,27 @@
     },
     "zones": {
       "title": "Zona",
-      "body": "Angka di kanan adalah bpm tempat tiap zona mulai. Zona 5 berakhir di HR maks.",
+      "body": "Angka di kanan adalah bpm tempat tiap zona mulai. Zona terakhir berakhir di HR maks.",
       "zone": "Z{{n}} {{name}}",
       "names": {
         "warmup": "Pemanasan",
         "fatBurning": "Pembakaran lemak",
         "aerobic": "Aerobik",
         "anaerobic": "Anaerobik",
-        "extreme": "Ekstrem"
+        "extreme": "Ekstrem",
+        "aerobicBase": "Aerobik dasar",
+        "aerobicAdvance": "Aerobik lanjutan",
+        "lacticAcid": "Asam laktat",
+        "anaerobicBase": "Anaerobik dasar",
+        "anaerobicAdvance": "Anaerobik lanjutan"
       },
       "range": "{{from}} sampai {{to}} bpm",
       "top": "Mulai {{from}}, sampai HR maks {{to}} bpm",
       "startLabel": "Zona {{n}} mulai di (bpm)",
       "custom": "Batas zona kamu ubah sendiri. Mengganti metode, HR maks, atau HR istirahat menghitungnya ulang.",
       "resetLimits": "Kembalikan",
-      "details": "Analisis latihan, strain, grafik detak jantung harian, Coach, dan layar latihan di jam memakai batas yang sama. Latihan yang sudah terunggah ke JoyoRogo tidak dihitung ulang."
+      "details": "Analisis latihan, strain, grafik detak jantung harian, Coach, dan layar latihan di jam memakai batas yang sama. Latihan yang sudah terunggah ke JoyoRogo tidak dihitung ulang.",
+      "warmupFixed": "Tetap: mulai di 50 persen cadangan HR"
     },
     "alert": {
       "title": "Peringatan batas HR",

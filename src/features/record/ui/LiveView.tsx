@@ -15,6 +15,7 @@ import { heartZone } from '@/features/live/liveWorkout';
 import { kindChannels } from '@/features/sensors/store';
 import { SensorLinkRow } from '@/features/sensors/ui/SensorLinkRow';
 import { useAnalysisPalette } from '@/features/workouts/analysis/palette';
+import { hrZoneColor } from '@/features/workouts/analysis/ui';
 import { SPORT_ROWS } from '@/features/workouts/manual';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { formatElapsed, workoutDistanceParts } from '@/features/workouts/summary';
@@ -130,7 +131,7 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
                 />
                 {zone ? (
                   <View style={styles.zone}>
-                    <View style={[styles.zoneDot, { backgroundColor: palette.zones[zone.zone - 1] }]} />
+                    <View style={[styles.zoneDot, { backgroundColor: hrZoneColor(palette, zone.zone) }]} />
                     <AppText variant="label" color={colors.heroForeground}>
                       {t('record.live.zone', { zone: zone.zone, label: zone.label })}
                     </AppText>

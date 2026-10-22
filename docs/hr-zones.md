@@ -21,13 +21,16 @@ resources `IDS_rate_zone_*`, `IDS_hrr_heart_rate_description`). Notes: `~/re/hua
 | Resting heart rate | 30 to `min(110, max - 15)`; default 60 (`DEFAULT_REST_HEART_RATE`). |
 | Zone limits | Five sliders. Default max-HR method: 50, 60, 70, 80, 90 % of the maximum (`mFitnessThreshold`, `mWarmUpThreshold`, `mFatBurnThreshold`, `mAerobicThreshold`, `mAnaerobicThreshold`, each `Math.round`); HRR method: 59, 74, 84, 88, 95 % of `max - rest` plus rest. The lowest limit stops at 30 %. |
 | Heart-rate limit alert | A switch (`mIsWarningEnable`, off by default in Huawei Health) and a limit from 100 to 220 (default `220 - age`). |
-| Zone names | Max-HR method: warm-up, fat burning, aerobic, anaerobic and a top zone (`IDS_rate_zone_warmup_threshold`, `..._fatburn_threshold_string`, `..._aerobic_threshold`, `..._anaerobic_threshold`, `..._maximum_threshold`); JoyoFit's live screen already used these five words. HRR method: aerobic base, aerobic advance, lactic acid, anaerobic base, anaerobic advance (`IDS_rate_zone_hrr_*`). |
+| Zone names | Max-HR method: warm-up, fat burning, aerobic, anaerobic and a top zone (`IDS_rate_zone_warmup_threshold`, `..._fatburn_threshold_string`, `..._aerobic_threshold`, `..._anaerobic_threshold`, `..._maximum_threshold`). HRR method: aerobic base, aerobic advance, lactic acid, anaerobic base, anaerobic advance (`IDS_rate_zone_hrr_*`; English strings in `resources.arsc`: Basic aerobic, Advanced aerobic, Lactic acid, Basic anaerobic, Advanced anaerobic). |
+
+**What the decompile does not show, and a tester's report fills in.** `HeartRateSectionActivity` has five sliders for either method and the HRR names start at *aerobic base* (59 %): the settings screen has no warm-up row for the reserve method, and `getHrrThresholdString` holds `base|advance|lactic|anaerobic base|anaerobic advance|max`. A runner with a Watch Fit 4 Pro (Salim, 2026-10) reports that, in reserve mode, the watch and Huawei Health's workout views number the zones with a **warm-up first**: Z1 warm-up at 50 to 59 % of the reserve, Z2 aerobic base (59 to 74), Z3 aerobic advance (74 to 84), Z4 lactic acid (84 to 88), Z5 anaerobic base (88 to 95), Z6 anaerobic advance (95 up). That is a report, not something found in the code; the string `Warm-up zone` exists in the resources, and the five limits and their percentages agree with the report. JoyoFit follows it.
 
 ## What JoyoFit does
 
 | | |
 | --- | --- |
-| Methods | `max` (default) and `hrr`. LTHR is not offered: there is no input for it in the app. |
+| Methods | `max` (default) and `hrr`. LTHR is not offered yet (see "Limits"). |
+| Zones | `max`: five zones (warm-up, fat burning, aerobic, anaerobic, extreme). `hrr`: **six** zones, Huawei's names: Pemanasan / Warm-up from 50 % of the reserve plus rest up to the first limit (fixed start, pulled down only if a hand-edited first limit falls under it), then Aerobik dasar, Aerobik lanjutan, Asam laktat, Anaerobik dasar, Anaerobik lanjutan. `HrZones.limits` stays Huawei's five limits (what the steppers edit and what the watch gets); `HrZones.bounds` is the lowest bpm of every zone (five or six) and is what every consumer counts with. |
 | Maximum heart rate | Default `220 - age` from the profile's birth year (35 years without one), as before. One tap on "Tanaka" fills `208 - 0.7 x age`. Editable from 100 to 219 (the watch protocol, like Gadgetbridge, takes values below 220). |
 | Resting heart rate | Default 60 (Huawei Health's), 30 to `min(110, max - 15)`; only the HRR method uses it. |
 | Zone limits | Five steppers (or typed numbers), each kept at least 1 bpm above the zone before it, at least 30, and below the maximum. Changing the method, the maximum or the resting rate derives the limits again, so hand-edited limits never outlive the numbers they were set against. "Kembalikan" returns to the method's limits. |
@@ -48,6 +51,8 @@ JoyoFit's limits as they are, so app and watch agree.
 - Coach: the bpm range of a planned run's zone and the post-workout feedback.
 - Live workout screens (zone label and colour), the strength logger's strap chip, the recorder's live view, the bike computer's zone field.
 - Cycling: the heart-rate load of a ride without power (`ride_metrics` is emptied on save, so it is worked out again).
+
+**Weights and thresholds that depend on the zone number.** Strain is Edwards' TRIMP, zone number times minutes, so with the reserve method the aerobic base counts 2 (it counted 1 before the warm-up zone existed), the aerobic advance 3 and so on to 6; the maximum method is unchanged. Intensity minutes (WHO 2020 / ACSM 2018, `intensityZones`): maximum method zones 2-3 (60-80 %) moderate and 4-5 vigorous, unchanged; reserve method warm-up and aerobic base (50-74 % of the reserve, about 66-81 % of the maximum for a typical resting rate) moderate and aerobic advance up (74 % of the reserve is about 80 % of the maximum) vigorous. The coach's plan zones 1 to 5 keep their number: zone 2 (easy) is the aerobic base in either method. The sticker templates draw five zones, so the sixth is added to the fifth there.
 
 Not recalculated: workouts already uploaded to JoyoRogo keep the zones they were uploaded with; the workout screen on the phone always works out the
 analysis again.
@@ -86,7 +91,8 @@ the capability line and a look at the workout screen says otherwise.
 
 ## Limits
 
-- One zone set for every sport (the watch's four postures all get it). Huawei Health's per-posture sets and LTHR are not offered.
+- One zone set for every sport (the watch's four postures all get it). Huawei Health's per-posture sets are not offered.
+- The warm-up zone of the reserve method is JoyoFit's reading of the tester's report: the watch payload carries only Huawei's five limits, so the warm-up is a phone-side band.
 - The suggestion cannot find a true maximum: it only sees what the workouts reached.
 - Cached cloud analyses (see above) and the Huawei Health app's own zones are not touched; the watch shows whichever was sent last.
 

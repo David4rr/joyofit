@@ -3,6 +3,7 @@ import { describe, expect, it } from 'bun:test';
 import { openMemoryDb } from '@/cloud/syncTestKit';
 import { listDayHeartLoad } from '@/db/queries';
 import { heartZone } from '@/features/live/liveWorkout';
+import { hrZoneName } from './names';
 import { dailyStrain, strainFromLoads, workoutStrain } from '@/features/today/strain';
 
 import {
@@ -27,6 +28,7 @@ import {
   suggestZones,
   typicalResting,
   watchConfig,
+  zoneCount,
   zoneIndex,
   zoneRange,
   type HrZoneSettings,
@@ -50,6 +52,15 @@ describe('limits by method', () => {
   it('hrr: 59, 74, 84, 88 and 95 percent of the reserve on top of the resting rate', () => {
     // reserve 135: 79.65, 99.9, 113.4, 118.8, 128.25 -> 80, 100, 114, 119, 129; plus 55
     expect(methodLimits('hrr', 190, 55)).toEqual([135, 155, 169, 174, 184]);
+  });
+
+  it('hrr: the warm-up zone sits under the aerobic base, from 50 percent of the reserve', () => {
+    // Reserve 135 (max 190, rest 55): 50 percent is 67.5 -> 68, plus 55 = 123.
+    const zones = resolveHrZones(settings({ method: 'hrr', maxHr: 190, restingHr: 55 }), 35);
+    expect(zones.bounds).toEqual([123, 135, 155, 169, 174, 184]);
+    expect([...zones.limits]).toEqual([135, 155, 169, 174, 184]);
+    expect(zoneCount('hrr')).toBe(6);
+    expect(zoneCount('max')).toBe(5);
   });
 
   it('hrr with a higher resting rate lifts every limit', () => {
@@ -167,9 +178,9 @@ describe('zones feed the computations', () => {
   const hrr = resolveHrZones(settings({ method: 'hrr', maxHr: 190, restingHr: 55 }), 35);
   const points = Array.from({ length: 11 }, (_, i) => ({ ts: 1_760_000_000 + i * 60, hr: 140 as number | null }));
 
-  it('workout strain follows the limits: 140 bpm is zone 3 by max%, zone 1 by reserve', () => {
+  it('workout strain follows the limits: 140 bpm is zone 3 by max%, zone 2 (aerobic base) by reserve', () => {
     expect(workoutStrain(points, hrZonesForMax(190))?.zoneMinutes).toEqual([0, 0, 10, 0, 0]);
-    expect(workoutStrain(points, hrr)?.zoneMinutes).toEqual([10, 0, 0, 0, 0]);
+    expect(workoutStrain(points, hrr)?.zoneMinutes).toEqual([0, 10, 0, 0, 0, 0]);
   });
 
   it('hand-edited limits move the same minutes to another zone', () => {
@@ -184,7 +195,7 @@ describe('zones feed the computations', () => {
     rates.forEach((hr, i) => raw.query('INSERT INTO step_samples (timestamp, steps, calories, distance, heart_rate) VALUES (?, 0, 0, 0, ?)').run(day + i * 60, hr));
     const samples = rates.map((hr, i) => ({ timestamp: day + i * 60, heartRate: hr }));
     for (const zones of [hrZonesForMax(190), hrr, resolveHrZones(settings({ maxHr: 190, limits: [90, 110, 130, 150, 170] }), 35)]) {
-      const sql = strainFromLoads(await listDayHeartLoad(db, [day, day + 86400], zones.limits));
+      const sql = strainFromLoads(await listDayHeartLoad(db, [day, day + 86400], zones.bounds));
       const js = dailyStrain(samples, zones);
       expect(sql[0]?.zoneMinutes).toEqual(js[0]?.zoneMinutes as never);
       expect(sql[0]?.trimp).toBe(js[0]?.trimp as number);
@@ -246,5 +257,61 @@ describe('suggestions from data', () => {
     expect(suggestZones(192, 52, 35)).toEqual({ maxHr: 192, peak: 192, restingHr: 52 });
     expect(suggestZones(170, 52, 35)).toEqual({ maxHr: null, peak: 170, restingHr: 52 });
     expect(suggestZones(null, null, 35)).toEqual({ maxHr: null, peak: null, restingHr: null });
+  });
+});
+
+describe('reserve method zones, numbered as the watch and Huawei Health do (a runner with max 190, resting 55)', () => {
+  const zones = resolveHrZones(settings({ method: 'hrr', maxHr: 190, restingHr: 55 }), 35);
+  const named = (hr: number) => {
+    const z = heartZone(hr, zones);
+    return z ? `Z${z.zone}` : null;
+  };
+
+  it('puts the warm-up at Z1, the aerobic base at Z2 and runs to Z6', () => {
+    expect(named(110)).toBeNull();
+    expect(named(123)).toBe('Z1');
+    expect(named(134)).toBe('Z1');
+    expect(named(135)).toBe('Z2');
+    expect(named(154)).toBe('Z2');
+    expect(named(155)).toBe('Z3');
+    expect(named(169)).toBe('Z4');
+    expect(named(174)).toBe('Z5');
+    expect(named(184)).toBe('Z6');
+    expect(named(190)).toBe('Z6');
+  });
+
+  it('gives the ranges of the zones, the last one up to the maximum', () => {
+    expect(zoneRange(1, zones)).toEqual({ from: 123, to: 134 });
+    expect(zoneRange(2, zones)).toEqual({ from: 135, to: 154 });
+    expect(zoneRange(6, zones)).toEqual({ from: 184, to: 190 });
+  });
+
+  it('weights the minutes by the zone number: an hour at 140 bpm is TRIMP 120, not the old 60', () => {
+    const points = Array.from({ length: 61 }, (_, i) => ({ ts: 1_760_000_000 + i * 60, hr: 140 as number | null }));
+    expect(workoutStrain(points, zones)?.trimp).toBeCloseTo(120, 6);
+  });
+
+  it('a limit edited under the warm-up pulls the warm-up start down; the watch still gets Huawei\'s five limits', () => {
+    const edited = resolveHrZones(settings({ method: 'hrr', maxHr: 190, restingHr: 55, limits: [110, 155, 169, 174, 184] }), 35);
+    expect(edited.bounds).toEqual([109, 110, 155, 169, 174, 184]);
+    expect(watchConfig(zones).zones).toEqual([135, 155, 169, 174, 184]);
+  });
+
+  it('the SQL day load counts the six zones', async () => {
+    const { raw, db } = openMemoryDb();
+    const day = 1_760_000_000 - (1_760_000_000 % 86400);
+    [125, 140, 160, 170, 180, 188].forEach((hr, i) => raw.query('INSERT INTO step_samples (timestamp, steps, calories, distance, heart_rate) VALUES (?, 0, 0, 0, ?)').run(day + i * 60, hr));
+    const load = await listDayHeartLoad(db, [day, day + 86400], zones.bounds);
+    expect(load[0]?.zoneSeconds).toEqual([60, 60, 60, 60, 60, 60]);
+  });
+});
+
+describe('zone names follow Huawei Health', () => {
+  it('names five zones for the maximum method and six for the reserve method', () => {
+    expect(hrZoneName('max', 1)).toBe(hrZoneName('max', 1));
+    expect(hrZoneName('max', 6)).toBe('');
+    expect(hrZoneName('hrr', 6)).not.toBe('');
+    expect(new Set([1, 2, 3, 4, 5, 6].map((z) => hrZoneName('hrr', z))).size).toBe(6);
+    expect(hrZoneName('hrr', 2)).not.toBe(hrZoneName('max', 2));
   });
 });

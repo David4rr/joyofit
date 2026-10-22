@@ -932,7 +932,7 @@
       "max": "% max HR",
       "hrr": "HR reserve (HRR)",
       "maxBody": "Zones 1 to 5 start at 50, 60, 70, 80 and 90 percent of your maximum heart rate. This is Huawei Health's default.",
-      "hrrBody": "Zones 1 to 5 start at 59, 74, 84, 88 and 95 percent of your heart rate reserve (max HR minus resting HR), added to your resting HR. A better fit when your resting HR is low."
+      "hrrBody": "Warm-up starts at 50 percent of your heart rate reserve (max HR minus resting HR), then zones 2 to 6 start at 59, 74, 84, 88 and 95 percent, all added to your resting HR. The zone order and names match the watch and Huawei Health. A better fit when your resting HR is low."
     },
     "rates": {
       "title": "Max and resting HR",
@@ -950,21 +950,27 @@
     },
     "zones": {
       "title": "Zones",
-      "body": "The number on the right is the bpm where each zone starts. Zone 5 ends at your max HR.",
+      "body": "The number on the right is the bpm where each zone starts. The last zone ends at your max HR.",
       "zone": "Z{{n}} {{name}}",
       "names": {
         "warmup": "Warm-up",
         "fatBurning": "Fat burning",
         "aerobic": "Aerobic",
         "anaerobic": "Anaerobic",
-        "extreme": "Extreme"
+        "extreme": "Extreme",
+        "aerobicBase": "Basic aerobic",
+        "aerobicAdvance": "Advanced aerobic",
+        "lacticAcid": "Lactic acid",
+        "anaerobicBase": "Basic anaerobic",
+        "anaerobicAdvance": "Advanced anaerobic"
       },
       "range": "{{from}} to {{to}} bpm",
       "top": "From {{from}}, up to max HR {{to}} bpm",
       "startLabel": "Zone {{n}} starts at (bpm)",
       "custom": "You changed the zone limits by hand. Changing the method, max HR or resting HR works them out again.",
       "resetLimits": "Restore",
-      "details": "Workout analysis, strain, the daily heart-rate chart, Coach and the watch's workout screen use the same limits. Workouts already uploaded to JoyoRogo are not recalculated."
+      "details": "Workout analysis, strain, the daily heart-rate chart, Coach and the watch's workout screen use the same limits. Workouts already uploaded to JoyoRogo are not recalculated.",
+      "warmupFixed": "Fixed: starts at 50 percent of the reserve"
     },
     "alert": {
       "title": "Heart-rate limit alert",

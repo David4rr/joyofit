@@ -17,6 +17,7 @@ import { useToast } from '@/components/Toast';
 import { showsWatchUi } from '@/features/device/presence';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { useAnalysisPalette } from '@/features/workouts/analysis/palette';
+import { hrZoneColor } from '@/features/workouts/analysis/ui';
 import { fmtInt } from '@/i18n';
 import { spacing } from '@/theme';
 import { hasNative, HuaweiWear } from '@/wear';
@@ -32,6 +33,7 @@ import {
   REST_HR_MAX,
   REST_HR_MIN,
   WARNING_MIN,
+  ZONE_NAME_KEYS,
   clampRest,
   maxHrFromAge,
   maxHrTanaka,
@@ -44,9 +46,6 @@ import {
   type HrZoneSuggestion,
 } from '../zones';
 import { BpmStepper } from './BpmStepper';
-
-/** The names Huawei Health gives zones 1 to 5 (the live workout screen uses the same words). */
-const ZONE_NAMES = ['warmup', 'fatBurning', 'aerobic', 'anaerobic', 'extreme'] as const;
 
 type Suggestion = { status: 'idle' } | { status: 'loading' } | { status: 'done'; value: HrZoneSuggestion } | { status: 'failed' };
 
@@ -214,23 +213,33 @@ export function HrZonesSettings() {
         <AppText variant="caption" muted>
           {t('hrZones.zones.body')}
         </AppText>
-        {Array.from({ length: HR_ZONE_COUNT }, (_, i) => {
-          const range = zoneRange(i + 1, zones);
+        {zones.bounds.map((_, z) => {
+          const range = zoneRange(z + 1, zones);
+          const offset = zones.bounds.length - HR_ZONE_COUNT;
+          const i = z - offset;
+          const last = z === zones.bounds.length - 1;
+          const names = ZONE_NAME_KEYS[zones.method];
           return (
             <StepperRow
-              key={i}
-              color={palette.zones[i]}
-              title={t('hrZones.zones.zone', { n: i + 1, name: t(`hrZones.zones.names.${ZONE_NAMES[i]}`) })}
-              caption={i === HR_ZONE_COUNT - 1 ? t('hrZones.zones.top', { from: fmtInt(range.from), to: fmtInt(range.to) }) : t('hrZones.zones.range', { from: fmtInt(range.from), to: fmtInt(range.to) })}>
-              <BpmStepper
-                label={t('hrZones.zones.startLabel', { n: i + 1 })}
-                lessLabel={t('hrZones.less')}
-                moreLabel={t('hrZones.more')}
-                value={zones.limits[i] ?? 0}
-                min={i === 0 ? 30 : (zones.limits[i - 1] ?? 0) + 1}
-                max={i === HR_ZONE_COUNT - 1 ? zones.maxHr - 1 : (zones.limits[i + 1] ?? zones.maxHr) - 1}
-                onChange={(value) => setLimit(i, value)}
-              />
+              key={z}
+              color={hrZoneColor(palette, z + 1)}
+              title={t('hrZones.zones.zone', { n: z + 1, name: t(`hrZones.zones.names.${names[z]}`) })}
+              caption={last ? t('hrZones.zones.top', { from: fmtInt(range.from), to: fmtInt(range.to) }) : t('hrZones.zones.range', { from: fmtInt(range.from), to: fmtInt(range.to) })}>
+              {i < 0 ? (
+                <AppText variant="caption" muted>
+                  {t('hrZones.zones.warmupFixed')}
+                </AppText>
+              ) : (
+                <BpmStepper
+                  label={t('hrZones.zones.startLabel', { n: z + 1 })}
+                  lessLabel={t('hrZones.less')}
+                  moreLabel={t('hrZones.more')}
+                  value={zones.limits[i] ?? 0}
+                  min={i === 0 ? 30 : (zones.limits[i - 1] ?? 0) + 1}
+                  max={i === HR_ZONE_COUNT - 1 ? zones.maxHr - 1 : (zones.limits[i + 1] ?? zones.maxHr) - 1}
+                  onChange={(value) => setLimit(i, value)}
+                />
+              )}
             </StepperRow>
           );
         })}

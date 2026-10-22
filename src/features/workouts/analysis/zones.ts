@@ -20,9 +20,10 @@ export function hrZones(strain: WorkoutStrain, zones: HrZones): AnalysisHrZones 
   const sec = strain.zoneMinutes.map((m) => Math.round(m * 60));
   const covered = Math.round(strain.coveredMinutes * 60);
   return {
+    method: zones.method,
     maxHr: zones.maxHr,
     source: zones.maxHrSource,
-    bounds: [...zones.limits, zones.maxHr],
+    bounds: [...zones.bounds, zones.maxHr],
     sec,
     belowSec: Math.max(0, covered - sec.reduce((a, b) => a + b, 0)),
   };

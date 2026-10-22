@@ -71,7 +71,7 @@ export function useTodayData(dataVersion: number): TodayState {
       const bounds = dayBounds(dayStarts(dayStart, HISTORY_DAYS + 1));
       Promise.all([
         listStepSamplesSince(db, dayStart),
-        listDayHeartLoad(db, bounds, zones.limits),
+        listDayHeartLoad(db, bounds, zones.bounds),
         listRestingHeartRateByDay(db, bounds),
         listSleepSince(db, nowSec - SLEEP_LOOKBACK_SEC),
         getLatestHeartRate(db),

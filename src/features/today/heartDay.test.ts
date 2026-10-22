@@ -122,7 +122,7 @@ describe('listHeartBuckets', () => {
     const { raw, db } = openMemoryDb();
     for (let i = 0; i < 10; i++) insert(raw, DAY + i * 60, 130);
     raw.query('UPDATE step_samples SET resting_heart_rate = 52 WHERE timestamp = ?').run(DAY + 60);
-    const data = await loadHeartDay(db, DAY, END, hrZonesForMax(190).limits);
+    const data = await loadHeartDay(db, DAY, END, hrZonesForMax(190).bounds);
     expect(data.resting).toBe(52);
     expect(data.day.stats).toEqual({ min: 130, max: 130, avg: 130, readings: 10 });
     expect(data.zoneSeconds.reduce((a, b) => a + b, 0)).toBeGreaterThan(0);

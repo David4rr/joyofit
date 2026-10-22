@@ -52,7 +52,7 @@ export function useTrendsData(range: TrendRange, dataVersion: number): TrendsSta
       const days = dayStarts(startOfLocalDay(Math.floor(Date.now() / 1000)), range);
       const zones = userHrZones();
       Promise.all([
-        listDayHeartLoad(db, dayBounds([addDays(days[0], -1), ...days]), zones.limits),
+        listDayHeartLoad(db, dayBounds([addDays(days[0], -1), ...days]), zones.bounds),
         listRestingHeartRateByDay(db, dayBounds(days)),
         listHrvReadingsSince(db, addDays(days[0], -BASELINE_DAYS)),
         // A night that ends on the first day started the evening before.

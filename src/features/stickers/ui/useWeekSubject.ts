@@ -42,7 +42,7 @@ export function useWeekSubject(dataVersion = 0): StickerSubject | null {
       Promise.all([
         listWorkouts(db),
         listStrengthWorkoutsBetween(db, weekStart * 1000, weekEnd * 1000),
-        listDayHeartLoad(db, dayBounds(loadDays), zones.limits),
+        listDayHeartLoad(db, dayBounds(loadDays), zones.bounds),
         listStepSamplesSince(db, weekStart),
       ]).then(
         ([rows, strength, loads, samples]) => {
