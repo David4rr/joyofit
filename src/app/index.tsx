@@ -33,7 +33,8 @@ import { useTodayData } from '@/features/today/useTodayData';
 import { WatchHero } from '@/features/today/WatchHero';
 import { computeScores } from '@/features/today/scores';
 import { MorningCheckin } from '@/features/today/MorningCheckin';
-import { FitnessLinkCard, FitnessTodayCards } from '@/features/fitness/FitnessTodayCards';
+import { FitnessTodayCards } from '@/features/fitness/FitnessTodayCards';
+import { IntensityWeekCard } from '@/features/fitness/IntensityWeekCard';
 import { CoachTodayCard } from '@/features/coach/ui/CoachTodayCard';
 import { LoopShortcut } from '@/features/loops/ui/LoopShortcut';
 import { FamilyCard } from '@/features/today/FamilyCard';
@@ -173,7 +174,7 @@ function WatchToday() {
       </Section>
     ),
     energy: <FitnessTodayCards data={fitness} availability={nightHrv} />,
-    fitness: <FitnessLinkCard />,
+    fitness: <IntensityWeekCard data={fitness} />,
     coach: <CoachTodayCard dataVersion={dataVersion} availability={nightHrv} />,
     checkin: data ? (
       <MorningCheckin hrv={data.hrv} dayStart={data.dayStart} nowMs={nowMs} connected={isLinkUp(linkState)} onMeasure={() => router.push('/hrv')} />

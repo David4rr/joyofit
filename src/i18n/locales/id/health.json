@@ -230,7 +230,15 @@
       "howNeedDebt": "Utang tidur menambah {{duration}}.",
       "howNeedNoDebt": "Utang tidur belum dihitung: butuh minimal 3 malam tercatat.",
       "navTitle": "Kebugaran",
-      "navSubtitle": "VO2max, status latihan, prediksi lomba, HRV, menit intensitas"
+      "intensity": {
+        "title": "Intensitas minggu ini",
+        "unit": "mnt",
+        "of": "dari {{target}} · pedoman WHO",
+        "left": "{{value}} mnt lagi",
+        "done": "Pedoman tercapai",
+        "dayA11y_other": "{{day}}: {{minutes}} menit intensitas",
+        "noHeartRate": "Belum ada detak jantung tersimpan minggu ini. Nyalakan detak jantung terus-menerus lalu sinkron."
+      }
     },
     "screen": {
       "loadError": "Gagal membaca data tersimpan: {{error}}",

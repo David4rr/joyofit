@@ -9,6 +9,9 @@ import { addDays } from '@/features/trends/series';
  */
 export const WEEKLY_TARGET_MIN = 150;
 
+/** A day counts as an active day (a check on the week's pills) from this many intensity minutes, so a stray minute above 60 % of maximum heart rate is not an exercise day. */
+export const ACTIVE_DAY_MIN = 10;
+
 export interface IntensityDay {
   day: number;
   moderate: number;

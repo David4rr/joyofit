@@ -234,7 +234,16 @@
       "howNeedDebt": "Sleep debt adds {{duration}}.",
       "howNeedNoDebt": "Sleep debt is not counted yet: it needs at least 3 recorded nights.",
       "navTitle": "Fitness",
-      "navSubtitle": "VO2max, training status, race predictions, HRV, intensity minutes"
+      "intensity": {
+        "title": "Intensity this week",
+        "unit": "min",
+        "of": "of {{target}} · WHO guideline",
+        "left": "{{value}} min to go",
+        "done": "Guideline reached",
+        "dayA11y_one": "{{day}}: {{minutes}} intensity minute",
+        "dayA11y_other": "{{day}}: {{minutes}} intensity minutes",
+        "noHeartRate": "No heart rate stored this week yet. Turn on continuous heart rate and sync."
+      }
     },
     "screen": {
       "loadError": "Could not read stored data: {{error}}",
