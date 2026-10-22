@@ -289,14 +289,17 @@ Weigh-ins follow Huawei's `BroadBodyFat` description: `bodyWeight` (kg), `bodyFa
 `basalMetabolism`, `visceralFatLevel`, `proteinRate`, `bodyAge`, `bmi`, `impedance`; fat and water in kilograms, skeletal and
 per-limb values, scores and ratios are not `ReportedBody` fields and are dropped, a fraction (0.21) is read as a percentage, a
 weight of 10 000-500 000 as grams, a weigh-in without a plausible weight (10-500 kg) is not stored. A real export had 22
-weigh-ins, all weight and BMI only (from the phone's manual entry, no scale). They show in the scale history and are sent
+weigh-ins, all weight and BMI only (from the phone's manual entry, no scale). They show in the weigh-in history of Settings > Scale
+(labelled "From Huawei Health export", 40 at a time with a *Show more* button) and are sent
 to JoyoRogo's weight history on their real days (see "To JoyoRogo"). A weigh-in within a minute and 0.3 kg of one already
-in `scale_reading` is skipped.
+in `scale_reading` is skipped. The first version of the import wrote its rows `skipped` without an error (not sent on purpose);
+`ensureScaleSchema` turns those into `pending` whenever the database opens, so they are sent too.
 
 **To JoyoRogo** (`src/features/huaweiimport/rogoQueue.ts`, server `docs/history-import.md` in the JoyoRogo repo). The native import never calls
 the network: it writes weigh-ins into `scale_reading` (`rogo_state = 'pending'`) and meals and water days into `rogo_import_queue`
-(`kind`, `key`, `payload`, `state`; created by native code and by `ensureRogoImportQueueSchema`). When an import ends, and from the *Send to
-JoyoRogo* button, JS sends what is pending through `weight.importHistory`, `food.importHistory` and `water.importHistory` (batches of 100,
+(`kind`, `key`, `payload`, `state`; created by native code and by `ensureRogoImportQueueSchema`). When an import ends, from the *Send to
+JoyoRogo* button, and whenever the person signs in to JoyoRogo or the app opens or returns to the foreground signed in (`ScaleProvider`,
+`pushImportedHistory`; a refusal is a line in the Log screen), JS sends what is pending, one run at a time (`syncImportedToRogo`), through `weight.importHistory`, `food.importHistory` and `water.importHistory` (batches of 100,
 idempotent, past days only, never over a day or meal the person has; offline or signed out leaves the rows pending, a server answer that is
 an error is kept on the rows and shown, for example the 404 of a JoyoRogo not yet updated). The Bluetooth scale's own push
 (`pendingWeighIns`, `weight.checkIn`, which writes over a day) skips imported rows. Imported meals and weigh-ins are `source = "huawei"`
