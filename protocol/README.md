@@ -346,17 +346,20 @@ Sport codes: the workout type of tag 05 is in the watch's own sport space (the t
 a value no Huawei Health code path was seen to send, so whether a watch starts "Strength training" for it is the open question the first
 test on a watch has to answer (log lines `Watch workout: ... answered`, `status after the start`).
 
-**Observed on the Fit 4 Pro (6.1.0.117), 2026-10-21, `adb` probe, plaintext of the encrypted frames.** The watch lists `17/01 04 06 07 0B 0C 12 15 17`
+**Observed on the Fit 4 Pro (6.1.0.117), 2026-10-21 and 22, `adb` probe, plaintext of the encrypted frames.** The watch lists `17/01 04 06 07 0B 0C 12 15 17`
 and `16/01 03` (so Huawei Health's `isSupportExerciseAdvice` 22.1, `isSupportWorkoutExerciseDisplayLink` 23.11, 23.18 and 23.21 are all true, and the
-captured HH log on this watch says `setNewLinkStrategy is true`); ExpandCapability 0, 83, 84, 85, 175, 234 set. JoyoFit's start for strength (`81 32 02 01 01 03 01 01
-05 01 8C 06 04 <t> 87 12 08 04 0 09 04 0 0A 04 0 0B 01 00 0C 04 <t> 0D 01 00 0E 01 00`) has the same length (0x32) and tag order as Huawei's builder. The
+captured HH log on this watch says `setNewLinkStrategy is true`); ExpandCapability 0, 83, 84, 85, 175, 234 set, 335 clear. JoyoFit's start for strength (`81 32 02 01 01 03 01 01
+05 01 8C 06 04 <t> 87 12 08 04 0 09 04 0 0A 04 0 0B 01 00 0C 04 <t> 0D 01 00 0E 01 00`) has the same length (0x32, Huawei's own length formula) and tag order as Huawei's builder. The
 answer was `7F 04 0001E07A` (123002) to **every** `17/01`: start for sport 140, 1 (run), 137, 255, with or without `17/12` open first, with or without
 `22/01` first, kind tag 0/1/2/4, without tags 05, 87 or the optional ones, and stop, pause and resume with no workout. So the refusal does not depend
 on the payload or the sport; the sport-type question above is moot until a start is accepted. `17/03` answered `81 06 02 01 00 03 01 00` (nothing running) before
-and after. At the same time `01/3D` WearStatus answered `01 01 02`, which Huawei Health reads as **not worn** (`etj`: value 2 is false), and Huawei's own
-instructions for starting a workout from Huawei Health say to wear the watch snugly. **Not verified**: whether a worn watch accepts the start (the watch
-was off the wrist for the whole probe and nobody was available to put it on). JoyoFit therefore reads `01/3D` after a refusal, logs it and hands it to JS
-(`worn`), which says "not on your wrist" only when the watch said so.
+and after. **The cause is not known.** The watch's wear state is not known either: Huawei Health reads it with `2E/03` (request `01 00`, answer tag 01, 2 = its "not worn"
+dialog), and nobody has sent that to the watch yet. DeviceConfig `01/3D` answered `01 01 02`, but that is a different command (Huawei Health does not use it for the wear
+state); an earlier note here that it meant "not worn" was wrong. After a refusal JoyoFit now reads `2E/03` once and logs it (`worn` to JS), so the support log of the
+next failed start says. Huawei Health itself treats a non-100000 answer to its `17/01` as "no link" and carries on with a phone-only workout (`fjq.s`); it sends
+`17/12` (open report) only after the `17/01`, so that is not a prerequisite. No other phone-to-watch start route exists in Huawei Health 17.0.8.300: the HiWear P2P
+business types are run plan, course and trajectory files only, and the `37/02` linkage events the phone may send are stop, report-status and restart (ExpandCapability 335,
+clear here).
 
 Huawei's own text also says a workout started from Huawei Health and synced to the watch is stored **only in Huawei Health**: the watch displays and supplies heart
 rate, it may not keep a workout of its own. So even an accepted start may give no watch workout to join with `link.ts`; check after the first accepted start.
