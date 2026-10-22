@@ -6,7 +6,7 @@ import { dailyFacts, insightFor, insightPrompt, insightSlot, RETRY_AFTER_SEC, va
 import { memoryKv, memorySecrets } from './kv';
 import { createKeyVault } from './keyVault';
 import { createSettingsStore } from './settings';
-import { adult, fourteenDays, sampleSource, scriptedAdapter, textReply, TODAY } from './testKit';
+import { adult, fourteenDays, sampleSource, scriptedAdapter, textReply, TODAY } from './testFixtures';
 import { createUsageStore } from './usage';
 import { AiError } from './types';
 

@@ -4,7 +4,7 @@ import { answer, ANSWER_LIMITS, type AnswerDeps } from './answer';
 import { grantConsent } from './consent';
 import { memoryKv, memorySecrets } from './kv';
 import { createKeyVault } from './keyVault';
-import { adult, fakeToolData, sampleSource, scriptedAdapter, textReply, toolReply } from './testKit';
+import { adult, fakeToolData, sampleSource, scriptedAdapter, textReply, toolReply } from './testFixtures';
 import { createSettingsStore, toolKey } from './settings';
 import { createUsageStore } from './usage';
 import { AiError } from './types';

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { TOOL_LIMITS, TOOL_NAMES, TOOL_SPECS, runTool, trendOf, type ToolData } from './tools';
-import { day, fakeToolData, TODAY } from './testKit';
+import { day, fakeToolData, TODAY } from './testFixtures';
 
 const run = (name: string, args: Record<string, unknown>, data: ToolData = fakeToolData()) => runTool({ id: 't', name, args }, data);
 const parse = (content: string) => JSON.parse(content) as Record<string, any>;

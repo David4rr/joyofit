@@ -7,7 +7,7 @@ import { buildOpenAiBody, openAiAdapter, parseOpenAiModels, parseOpenAiReply } f
 import { PROVIDERS } from './providers';
 import { TOOL_SPECS } from './tools';
 import { AiError, type ModelRequest, type NeutralMessage } from './types';
-import { json, mockFetch } from './testKit';
+import { json, mockFetch } from './testFixtures';
 
 const KEY = 'sk-test-SECRET-1234567890abcdef';
 const history: NeutralMessage[] = [

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { CONSENT_VERSION } from './consent';
 import { buildDigest, CONSENT_FIELDS_HASH, consentMatchesFields, DIGEST_FIELDS, DIGEST_MAX_CHARS, digestJson, fieldsHash, flat, type DigestSource } from './digest';
-import { sampleSource, TODAY, fourteenDays } from './testKit';
+import { sampleSource, TODAY, fourteenDays } from './testFixtures';
 
 /** Every dot path of an object, with `[]` for list items (the shape `DIGEST_FIELDS` uses). */
 function paths(value: unknown, prefix = ''): string[] {

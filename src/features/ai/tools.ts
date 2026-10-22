@@ -17,18 +17,18 @@ export const DAILY_FIELDS = ['sleepMin', 'sleepScore', 'restBpm', 'hrvMs', 'stra
 export type DailyField = (typeof DAILY_FIELDS)[number];
 const FOOD_FIELDS: readonly DailyField[] = ['eatKcal', 'proteinG'];
 
-const DATE = { type: 'string', description: 'Local date, YYYY-MM-DD' } as const;
+const DATE = { type: 'string', description: 'Local date, YYYY-MM-DD' } as const; // i18n-ok: model-facing text
 
 export const TOOL_SPECS: readonly ToolSpec[] = [
   {
     name: 'get_daily',
-    description: 'Daily values per local day (null = not recorded). At most 90 days. eatKcal and proteinG cover at most 14 days and need JoyoRogo.',
+    description: 'Daily values per local day (null = not recorded). At most 90 days. eatKcal and proteinG cover at most 14 days and need JoyoRogo.', // i18n-ok: model-facing text
     parameters: {
       type: 'object',
       properties: {
         from: DATE,
         to: DATE,
-        fields: { type: 'array', items: { type: 'string', enum: [...DAILY_FIELDS] }, description: 'Which values; all when omitted' },
+        fields: { type: 'array', items: { type: 'string', enum: [...DAILY_FIELDS] }, description: 'Which values; all when omitted' }, // i18n-ok: model-facing text
       },
       required: ['from', 'to'],
     },
@@ -44,32 +44,32 @@ export const TOOL_SPECS: readonly ToolSpec[] = [
   },
   {
     name: 'get_sleep_night',
-    description: 'One night of sleep (the night that ended on this date): onset, wake, minutes per stage or stages "none", awakenings, overnight HRV and resting heart rate.',
+    description: 'One night of sleep (the night that ended on this date): onset, wake, minutes per stage or stages "none", awakenings, overnight HRV and resting heart rate.', // i18n-ok: model-facing text
     parameters: { type: 'object', properties: { date: DATE }, required: ['date'] },
   },
   {
     name: 'list_workouts',
-    description: 'Workouts between two dates, newest first (at most 30), with the same fields as the data block.',
-    parameters: { type: 'object', properties: { from: DATE, to: DATE, sport: { type: 'string', description: 'Optional sport name filter' } }, required: ['from', 'to'] },
+    description: 'Workouts between two dates, newest first (at most 30), with the same fields as the data block.', // i18n-ok: model-facing text
+    parameters: { type: 'object', properties: { from: DATE, to: DATE, sport: { type: 'string', description: 'Optional sport name filter' } }, required: ['from', 'to'] }, // i18n-ok: model-facing text
   },
   {
     name: 'get_workout',
-    description: 'Details of one workout by its id from the data block or list_workouts: heart rate zones, effect, recovery, splits, laps.',
+    description: 'Details of one workout by its id from the data block or list_workouts: heart rate zones, effect, recovery, splits, laps.', // i18n-ok: model-facing text
     parameters: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
   },
   {
     name: 'get_nutrition',
-    description: 'Food totals per day (kcal, protein, carbs, fat, meals) for at most 14 days. Answers not_connected when the person is not signed in to JoyoRogo.',
+    description: 'Food totals per day (kcal, protein, carbs, fat, meals) for at most 14 days. Answers not_connected when the person is not signed in to JoyoRogo.', // i18n-ok: model-facing text
     parameters: { type: 'object', properties: { from: DATE, to: DATE }, required: ['from', 'to'] },
   },
   {
     name: 'get_plan',
-    description: 'The active training plan: goal, level, week, this week\'s progress and the next sessions.',
+    description: 'The active training plan: goal, level, week, this week\'s progress and the next sessions.', // i18n-ok: model-facing text
     parameters: { type: 'object', properties: {} },
   },
   {
     name: 'propose_note',
-    description: 'Suggest a short note about the person (an injury, a goal, a preference) to remember. Nothing is saved until the person taps to confirm.',
+    description: 'Suggest a short note about the person (an injury, a goal, a preference) to remember. Nothing is saved until the person taps to confirm.', // i18n-ok: model-facing text
     parameters: { type: 'object', properties: { text: { type: 'string', maxLength: NOTE_MAX_CHARS } }, required: ['text'] },
   },
 ];
@@ -287,7 +287,7 @@ async function dispatch(call: ToolCall, data: ToolData): Promise<ToolOutcome> {
     case 'get_nutrition': {
       const { from, to } = rangeArgs(a, TOOL_LIMITS.nutritionDays);
       const food = await data.food(from, to);
-      const body = food === 'not_connected' ? { not_connected: true, hint: 'The person is not signed in to JoyoRogo, so food is unknown.' } : { days: food };
+      const body = food === 'not_connected' ? { not_connected: true, hint: 'The person is not signed in to JoyoRogo, so food is unknown.' } : { days: food }; // i18n-ok: model-facing text
       return { content: cap(body, food === 'not_connected' ? null : 'days'), trace: { tool: 'get_nutrition', args: { from, to } } };
     }
     case 'get_plan': {
@@ -297,7 +297,7 @@ async function dispatch(call: ToolCall, data: ToolData): Promise<ToolOutcome> {
     case 'propose_note': {
       const note = text(a.text, NOTE_MAX_CHARS);
       if (note === '') throw new ToolInputError('text is required');
-      return { content: JSON.stringify({ status: 'proposed', note: 'The person will be asked to confirm; it is not saved yet.' }), trace: { tool: 'propose_note', args: {} }, proposedNote: note };
+      return { content: JSON.stringify({ status: 'proposed', note: 'The person will be asked to confirm; it is not saved yet.' }), trace: { tool: 'propose_note', args: {} }, proposedNote: note }; // i18n-ok: model-facing text
     }
     default:
       throw new ToolInputError(`unknown tool ${flat(String(call.name), 40)}`);

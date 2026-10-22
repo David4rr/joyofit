@@ -1,4 +1,4 @@
-// Fixtures shared by the Joyo AI tests. No bun:test import: this file is type-checked with the app.
+// Fixtures shared by the Joyo AI tests (named *Fixtures so the UI text scan skips it). No bun:test import: this file is type-checked with the app.
 import { addDays } from '@/features/coach/time';
 import type { DigestDay, DigestSource } from './digest';
 import { EMPTY_PERSON, type Person } from './person';

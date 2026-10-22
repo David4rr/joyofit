@@ -4,7 +4,7 @@ import fixtures from './safety.fixtures.json';
 import { assessMessages, buildSystemPrompt, cleanReply, finishReply, classifyMessage, mentionsMaternal, notesMentionInjury, personMode, safeReply, SAFETY_LIMITS, CANARY, type SafetyText } from './safety';
 import { EMPTY_PERSON } from './person';
 import { digestJson, buildDigest } from './digest';
-import { sampleSource } from './testKit';
+import { sampleSource } from './testFixtures';
 import idAi from '@/i18n/locales/id/ai.json';
 import enAi from '@/i18n/locales/en/ai.json';
 
