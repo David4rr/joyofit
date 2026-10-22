@@ -285,6 +285,15 @@ export const nextAway = (was: boolean, offset: number): boolean => (was ? offset
 export const shiftOnGrowth = (a: { prev: number; next: number; offset: number; away: boolean; windowOpen: boolean }): number =>
   a.away && a.windowOpen && a.prev > 0 && a.next > a.prev && a.offset > 0 ? a.next - a.prev : 0;
 
+/** Room under the newest message while "Ke terbaru" floats over the list: the button's height plus its gap to the composer. */
+export const JUMP_ROOM_PX = 52;
+
+/**
+ * The room for the button appears and goes away with it, which moves everything at the same offset by that much. When a change of the
+ * content height is exactly that room, the signed distance to move the offset so what the person reads stays where it was; else 0.
+ */
+export const roomShift = (delta: number): number => (Math.abs(Math.abs(delta) - JUMP_ROOM_PX) < 1 ? delta : 0);
+
 /** True when the person is at the end of the chat (or close enough that new text should keep it in view). */
 export const isNearBottom = (m: ScrollMetrics, threshold: number = NEAR_BOTTOM_PX): boolean => distanceFromBottom(m) <= threshold;
 

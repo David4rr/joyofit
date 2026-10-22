@@ -10,6 +10,8 @@ import {
   distanceFromBottom,
   splitStable,
   nextAway,
+  JUMP_ROOM_PX,
+  roomShift,
   shiftOnGrowth,
   initialLive,
   isNearBottom,
@@ -382,5 +384,11 @@ describe('away from the newest message', () => {
     expect(shiftOnGrowth({ ...base, offset: 0 })).toBe(0);
     expect(shiftOnGrowth({ ...base, next: 900 })).toBe(0);
     expect(shiftOnGrowth({ ...base, prev: 0 })).toBe(0);
+  });
+  test('the room under the newest message for the jump button is followed by the offset, in both directions', () => {
+    expect(roomShift(JUMP_ROOM_PX)).toBe(JUMP_ROOM_PX);
+    expect(roomShift(-JUMP_ROOM_PX)).toBe(-JUMP_ROOM_PX);
+    expect(roomShift(400)).toBe(0);
+    expect(roomShift(0)).toBe(0);
   });
 });

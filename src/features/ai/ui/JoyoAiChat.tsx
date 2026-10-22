@@ -604,7 +604,7 @@ export function JoyoAiChat() {
       initialNumToRender={10}
       windowSize={9}
       // In an inverted list the native top is the bottom of the screen: swap the padding, and push a short chat to the top.
-      contentContainerStyle={[styles.listContent, { paddingHorizontal: padding.paddingHorizontal, paddingTop: spacing.sm, paddingBottom: spacing.sm }]}
+      contentContainerStyle={[styles.listContent, { paddingHorizontal: padding.paddingHorizontal, paddingTop: spacing.sm + scroll.room, paddingBottom: spacing.sm }]}
     />
   );
 
@@ -616,7 +616,7 @@ export function JoyoAiChat() {
         <View style={styles.headerTitle}>
           <MarqueeTitle title={title} hint={t('chat.renameHint')} onPress={conversationId ? () => setRenaming(true) : undefined} />
         </View>
-        <HeaderIconButton icon="time-outline" label={t('chat.history')} onPress={() => router.push('/coach/chats')} />
+        <HeaderIconButton icon="time-outline" label={t('chat.history')} onPress={() => router.navigate('/joyo/chats')} />
         <HeaderIconButton icon="add" label={t('chat.new')} onPress={startNew} />
       </View>
       <Screen footer={composer} overlay={composerReady ? jump : undefined} list={renderList}>

@@ -1,10 +1,13 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { FlatList, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
-import { AWAY_PX, BACK_PX, nextAway, shiftOnGrowth } from './chatState';
+import { JUMP_ROOM_PX, nextAway, roomShift, shiftOnGrowth } from './chatState';
 
 /** How long after a change to the newest message a growth of the content is still the person's reading position moving (ms). */
 const COMPENSATE_MS = 600;
+
+/** How long after "Ke terbaru" appears or goes away its room in the list is still being laid out (ms). */
+const ROOM_MS = 400;
 
 /**
  * Scrolling of the chat list, an inverted `FlatList` (offset 0 is the newest message). The rule: the list never moves by itself
@@ -23,6 +26,7 @@ export function useChatScroll() {
   const offset = useRef(0);
   const contentH = useRef(0);
   const compensateUntil = useRef(0);
+  const roomUntil = useRef(0);
   const afterAway = useRef<(() => void) | null>(null);
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -30,6 +34,7 @@ export function useChatScroll() {
     const next = nextAway(awayRef.current, offset.current);
     if (next !== awayRef.current) {
       awayRef.current = next;
+      roomUntil.current = Date.now() + ROOM_MS;
       setAway(next);
       // Back near the newest message: the screen draws the answer as it is now.
       if (!next) afterAway.current?.();
@@ -38,8 +43,13 @@ export function useChatScroll() {
 
   const onContentSizeChange = useCallback((_w: number, h: number) => {
     const delta = shiftOnGrowth({ prev: contentH.current, next: h, offset: offset.current, away: awayRef.current, windowOpen: Date.now() < compensateUntil.current });
+    const room = contentH.current > 0 && Date.now() < roomUntil.current ? roomShift(h - contentH.current) : 0;
     contentH.current = h;
-    if (delta > 0) {
+    if (room !== 0) {
+      roomUntil.current = 0;
+      offset.current = Math.max(0, offset.current + room);
+      ref.current?.scrollToOffset({ offset: offset.current, animated: false });
+    } else if (delta > 0) {
       offset.current += delta;
       ref.current?.scrollToOffset({ offset: offset.current, animated: false });
     }
@@ -67,5 +77,8 @@ export function useChatScroll() {
     afterAway.current = fn;
   }, []);
 
-  return { ref, away, awayRef, scrollProps, follow, expectGrowth, onBack };
+  /** Extra room under the newest message while the button is shown, so it never covers the last lines. */
+  const room = away ? JUMP_ROOM_PX : 0;
+
+  return { ref, away, awayRef, room, scrollProps, follow, expectGrowth, onBack };
 }
