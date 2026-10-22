@@ -12,6 +12,7 @@ import { isIos } from '@/components/IosUnavailable';
 import { KeyValue } from '@/components/KeyValue';
 import { Metric } from '@/components/Metric';
 import { HeaderIconButton } from '@/components/HeaderIconButton';
+import { AskJoyoAction } from '@/features/ai/ui/AskJoyoButton';
 import { Card, Screen, Section } from '@/components/Screen';
 import { useToast } from '@/components/Toast';
 import { Notice, Skeleton } from '@/components/States';
@@ -401,6 +402,7 @@ export default function WorkoutDetailScreen() {
             </AppText>
           </View>
         </View>
+        <AskJoyoAction seed={{ seed: 'workout', ref: `w:${workout.start}`, label: `${sport}, ${formatDateTime(workout.start)}` }} />
         {fallbackFigures}
         {rideInput !== null ? <EbikeRow workoutStart={workout.start} /> : null}
         {bare ? null : (

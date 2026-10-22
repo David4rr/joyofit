@@ -36,30 +36,51 @@
     "noFood": "Kamu belum masuk ke JoyoRogo, jadi makan dan berat badan tidak tersambung. Jawaban tidak memakai data makan.",
     "emptyOwn": "Joyo AI membaca ringkasan datamu dan, kalau perlu, data harian yang lebih lengkap dari ponsel ini. Jawaban ditulis oleh {{model}} lewat {{provider}}, dengan kunci milikmu.",
     "toolsOff": "Model ini tidak bisa membaca data tambahan, jadi jawabannya hanya dari ringkasan 14 hari. Pilih model lain kalau kamu mau jawaban yang lebih dalam.",
-    "cancel": "Batal",
+    "newTitle": "Percakapan baru",
+    "history": "Riwayat",
+    "new": "Baru",
+    "writing": "Menulis...",
+    "reasoningLive": "Berpikir...",
+    "thinking": "Berpikir",
+    "thought": "Proses berpikir",
+    "stop": "Berhenti",
+    "stopped": "Dihentikan",
+    "copy": "Salin",
+    "copied": "Disalin",
+    "regenerate": "Buat ulang jawaban",
+    "edit": "Ubah pertanyaan",
+    "retry": "Coba lagi",
+    "editing": "Mengubah pertanyaan. Saat dikirim, jawaban setelahnya diganti.",
+    "editCancel": "Batal mengubah",
+    "jump": "Ke terbaru",
+    "tokens": "{{tokens}} token",
+    "hosted": "JoyoRogo",
     "privacyOwn": "Pesanmu, ringkasan datamu, dan hasil data yang dibaca AI dikirim langsung dari ponsel ke {{provider}} ({{host}}), tidak lewat server JoyoRogo. Kunci hanya ada di ponsel ini. Obrolan hanya tersimpan di ponsel ini.",
     "disclaimer": "Joyo AI memberi panduan umum tentang latihan, tidur, dan makan. Ini bukan saran medis. Kalau ada nyeri, pusing, atau keluhan lain, berhenti dan periksakan ke dokter."
   },
-  "working": {
-    "thinking": "Memikirkan jawaban...",
-    "reading": "Membaca {{what}}...",
-    "note": "Menyiapkan usulan catatan..."
-  },
-  "basis": {
-    "summary": "Dasar jawaban: {{items}}",
-    "digest": "ringkasan 14 hari",
+  "steps": {
+    "running": "{{what}}...",
     "days_other": "{{count}} hari",
-    "metric": "{{what}} {{days}}",
-    "trend": "tren {{what}} {{days}}",
+    "read": "Membaca {{what}}",
+    "readDays": "Membaca {{what}} {{days}}",
+    "trend": "Membaca tren {{what}} {{days}}",
+    "trendAny": "Membaca tren",
+    "night": "Membaca tidur malam {{date}}",
+    "nightAny": "Membaca satu malam tidur",
+    "workout": "Membaca detail satu latihan",
+    "plan": "Membaca rencana latihan",
+    "note": "Menyiapkan usulan catatan",
     "food": "makan",
     "workoutList": "daftar latihan",
-    "nights_other": "{{count}} malam tidur",
-    "workouts_other": "{{count}} latihan",
-    "plan": "rencana latihan",
-    "noteProposed": "usulan catatan",
-    "noCalls": "AI tidak membaca data tambahan. Jawaban hanya dari ringkasan data yang dikirim.",
-    "answeredBy": "Dijawab oleh {{model}} lewat {{provider}}",
-    "answeredByModel": "Dijawab oleh {{model}}",
+    "group": "Membaca data ({{count}})",
+    "call": "Panggilan yang dijalankan",
+    "result": {
+      "rows_other": "{{count}} baris",
+      "empty": "tidak ada data",
+      "failed": "gagal",
+      "notConnected": "perlu masuk JoyoRogo",
+      "done": "selesai"
+    },
     "field": {
       "all": "data harian",
       "sleepMin": "tidur",
@@ -75,6 +96,28 @@
       "proteinG": "protein"
     }
   },
+  "chats": {
+    "title": "Riwayat",
+    "new": "Percakapan baru",
+    "count_other": "{{count}} pesan",
+    "open": "Buka percakapan: {{title}}",
+    "current": "Dibuka",
+    "delete": "Hapus percakapan",
+    "deleteTitle": "Hapus percakapan ini?",
+    "deleteMessage": "\"{{title}}\" dihapus dari ponsel ini dan tidak bisa dikembalikan.",
+    "deleteConfirm": "Hapus",
+    "deleted": "Percakapan dihapus",
+    "deleteAll": "Hapus semua",
+    "deleteAllTitle": "Hapus semua percakapan?",
+    "deleteAllMessage_other": "{{count}} percakapan dihapus dari ponsel ini dan tidak bisa dikembalikan.",
+    "deleteAllConfirm": "Hapus semua",
+    "emptyTitle": "Belum ada percakapan",
+    "emptyBody": "Percakapan dengan Joyo AI tersimpan di ponsel ini dan muncul di sini. Tanyakan sesuatu untuk memulai."
+  },
+  "seed": {
+    "workout": "Debrief latihan ini: {{label}} (id {{ref}}). Apa yang berjalan baik dan apa yang perlu diperhatikan?",
+    "sleep": "Bagaimana tidurku semalam ({{label}}, tanggal {{ref}})? Apa yang memengaruhinya?"
+  },
   "errors": {
     "unknown": "Terjadi kesalahan yang tidak dikenal. Coba lagi sebentar lagi.",
     "badKey": "Kunci ditolak oleh penyedia. Cek apakah kunci tersalin utuh tanpa spasi, atau buat kunci baru di akun penyedia.",
@@ -89,8 +132,13 @@
     "network": "Tidak tersambung ke penyedia. Cek koneksi internetmu, lalu coba lagi.",
     "timeout": "Tidak ada jawaban dalam 25 detik. Coba lagi, atau pilih model yang lebih cepat.",
     "empty": "Model tidak mengirim jawaban yang bisa dipakai. Coba kirim lagi, atau ubah pertanyaannya.",
+    "truncated": "Model terus berpikir dan kehabisan ruang sebelum menulis jawaban. Kirim lagi, atau pilih model yang lebih cepat atau tanpa mode berpikir.",
     "aborted": "Dibatalkan.",
-    "detail": "Pesan dari penyedia",
+    "techTitle": "Lihat detail teknis",
+    "techKind": "Jenis: {{kind}}",
+    "techStatus": "Status HTTP: {{status}}",
+    "techLine": "Rincian: {{text}}",
+    "techProvider": "Pesan dari penyedia: {{text}}",
     "action": {
       "setup": "Cek kunci",
       "model": "Pilih model",
@@ -337,10 +385,15 @@
     "regenFailed": "Belum bisa dibuat ulang sekarang. Ringkasan sebelumnya tetap ditampilkan."
   },
   "status": {
-    "own": "Kunci sendiri, {{provider}}, aktif",
+    "own": "Kunci sendiri: {{provider}}, {{model}}",
     "ownCheck": "Kunci sendiri, {{provider}}, perlu dicek",
     "minor": "Tidak tersedia di bawah 18 tahun",
     "pro": "JoyoRogo Pro",
     "none": "Belum diatur"
+  },
+  "ask": {
+    "header": "Tanya Joyo AI",
+    "workout": "Tanya soal latihan ini",
+    "sleep": "Tanya soal tidur ini"
   }
 }

@@ -36,33 +36,53 @@
     "noFood": "You are not signed in to JoyoRogo, so food and weight are not connected. Answers leave food out.",
     "emptyOwn": "Joyo AI reads a summary of your data and, when it needs to, fuller daily data from this phone. Answers are written by {{model}} through {{provider}}, with your own key.",
     "toolsOff": "This model cannot read extra data, so the answer comes from the 14-day summary only. Pick another model for deeper answers.",
-    "cancel": "Cancel",
+    "newTitle": "New chat",
+    "history": "History",
+    "new": "New",
+    "writing": "Writing...",
+    "reasoningLive": "Thinking...",
+    "thinking": "Thinking",
+    "thought": "Thought process",
+    "stop": "Stop",
+    "stopped": "Stopped",
+    "copy": "Copy",
+    "copied": "Copied",
+    "regenerate": "Regenerate answer",
+    "edit": "Edit question",
+    "retry": "Try again",
+    "editing": "Editing the question. When sent, the answer after it is replaced.",
+    "editCancel": "Cancel editing",
+    "jump": "Jump to latest",
+    "tokens": "{{tokens}} tokens",
+    "hosted": "JoyoRogo",
     "privacyOwn": "Your message, a summary of your data and the data the AI reads go straight from this phone to {{provider}} ({{host}}), not through JoyoRogo's servers. The key only exists on this phone. The chat is kept only on this phone.",
     "disclaimer": "Joyo AI gives general guidance on training, sleep and food. It is not medical advice. If you have pain, dizziness or other symptoms, stop and see a doctor."
   },
-  "working": {
-    "thinking": "Thinking about the answer...",
-    "reading": "Reading {{what}}...",
-    "note": "Preparing a note suggestion..."
-  },
-  "basis": {
-    "summary": "Based on: {{items}}",
-    "digest": "14-day summary",
+  "steps": {
+    "running": "{{what}}...",
     "days_one": "{{count}} day",
     "days_other": "{{count}} days",
-    "metric": "{{what}} {{days}}",
-    "trend": "{{what}} trend {{days}}",
+    "read": "Reading {{what}}",
+    "readDays": "Reading {{what}} {{days}}",
+    "trend": "Reading {{what}} trend {{days}}",
+    "trendAny": "Reading a trend",
+    "night": "Reading sleep of the night of {{date}}",
+    "nightAny": "Reading one night of sleep",
+    "workout": "Reading one workout in detail",
+    "plan": "Reading the training plan",
+    "note": "Preparing a note suggestion",
     "food": "food",
     "workoutList": "workout list",
-    "nights_one": "{{count}} night of sleep",
-    "nights_other": "{{count}} nights of sleep",
-    "workouts_one": "{{count}} workout",
-    "workouts_other": "{{count}} workouts",
-    "plan": "training plan",
-    "noteProposed": "note suggestion",
-    "noCalls": "The AI read no extra data. The answer comes only from the summary that was sent.",
-    "answeredBy": "Answered by {{model}} through {{provider}}",
-    "answeredByModel": "Answered by {{model}}",
+    "group": "Reading data ({{count}})",
+    "call": "The call that ran",
+    "result": {
+      "rows_one": "{{count}} row",
+      "rows_other": "{{count}} rows",
+      "empty": "no data",
+      "failed": "failed",
+      "notConnected": "needs JoyoRogo sign-in",
+      "done": "done"
+    },
     "field": {
       "all": "daily data",
       "sleepMin": "sleep",
@@ -78,6 +98,30 @@
       "proteinG": "protein"
     }
   },
+  "chats": {
+    "title": "History",
+    "new": "New chat",
+    "count_one": "{{count}} message",
+    "count_other": "{{count}} messages",
+    "open": "Open chat: {{title}}",
+    "current": "Open",
+    "delete": "Delete chat",
+    "deleteTitle": "Delete this chat?",
+    "deleteMessage": "\"{{title}}\" is deleted from this phone and cannot be brought back.",
+    "deleteConfirm": "Delete",
+    "deleted": "Chat deleted",
+    "deleteAll": "Delete all",
+    "deleteAllTitle": "Delete all chats?",
+    "deleteAllMessage_one": "{{count}} chat is deleted from this phone and cannot be brought back.",
+    "deleteAllMessage_other": "{{count}} chats are deleted from this phone and cannot be brought back.",
+    "deleteAllConfirm": "Delete all",
+    "emptyTitle": "No chats yet",
+    "emptyBody": "Your chats with Joyo AI are kept on this phone and show up here. Ask something to start."
+  },
+  "seed": {
+    "workout": "Debrief this workout: {{label}} (id {{ref}}). What went well and what should I watch?",
+    "sleep": "How did I sleep last night ({{label}}, date {{ref}})? What affected it?"
+  },
   "errors": {
     "unknown": "Something unexpected went wrong. Try again in a moment.",
     "badKey": "The provider rejected the key. Check that it was copied whole without spaces, or create a new key in the provider's account.",
@@ -92,8 +136,13 @@
     "network": "Not connected to the provider. Check your internet connection, then try again.",
     "timeout": "No answer within 25 seconds. Try again, or pick a faster model.",
     "empty": "The model did not send a usable answer. Send it again, or reword the question.",
+    "truncated": "The model kept thinking and ran out of room before writing an answer. Send again, or pick a faster model or one without thinking.",
     "aborted": "Cancelled.",
-    "detail": "Message from the provider",
+    "techTitle": "Show technical details",
+    "techKind": "Kind: {{kind}}",
+    "techStatus": "HTTP status: {{status}}",
+    "techLine": "Detail: {{text}}",
+    "techProvider": "Message from the provider: {{text}}",
     "action": {
       "setup": "Check the key",
       "model": "Pick a model",
@@ -341,10 +390,15 @@
     "regenFailed": "Could not regenerate right now. The earlier summary stays."
   },
   "status": {
-    "own": "Own key, {{provider}}, active",
+    "own": "Own key: {{provider}}, {{model}}",
     "ownCheck": "Own key, {{provider}}, needs a check",
     "minor": "Not available under 18",
     "pro": "JoyoRogo Pro",
     "none": "Not set up"
+  },
+  "ask": {
+    "header": "Ask Joyo AI",
+    "workout": "Ask about this workout",
+    "sleep": "Ask about this night"
   }
 }

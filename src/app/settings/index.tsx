@@ -17,6 +17,7 @@ import { linkLabel } from '@/features/device/linkState';
 import { HEALTH_STORE } from '@/features/sources/store';
 import { useAccountDialogs } from '@/features/settings/useAccountDialogs';
 import { useByokAccess } from '@/features/ai/hooks';
+import { joyoAiDestination } from '@/features/ai/open';
 import { hubStatusLine } from '@/features/ai/ui/status';
 import { useCoachAccess } from '@/features/coach/useCoachAccess';
 import { t as tOther } from '@/i18n';
@@ -90,6 +91,22 @@ export default function SettingsScreen() {
       : [],
   };
 
+  // Coach (plans, library) and Joyo AI (the chat; its settings are one tap away in the chat) sit right under the account.
+  const coachGroup: HubGroup = {
+    title: t('hub.groups.coach'),
+    data: [
+      { key: 'coach', title: t('screens.coach'), subtitle: t('hub.coach'), icon: 'flash', tint: 'workouts', onPress: go('/coach') },
+      {
+        key: 'joyo-ai',
+        title: t('screens.joyoAi'),
+        subtitle: hubStatusLine({ settings: ai.settings, access: ai.access, coachAccess }, ta),
+        icon: 'chatbubbles',
+        tint: 'link',
+        onPress: () => router.push(joyoAiDestination({ settings: ai.settings, access: ai.access, coachAccess })),
+      },
+    ],
+  };
+
   const bodyGroup: HubGroup = {
     title: t('hub.groups.body'),
     data: [
@@ -116,15 +133,7 @@ export default function SettingsScreen() {
         tint: 'link',
         onPress: go('/settings/sources'),
       },
-      {
-        key: 'joyo-ai',
-        title: t('screens.joyoAi'),
-        subtitle: hubStatusLine({ settings: ai.settings, access: ai.access, coachAccess }, ta),
-        icon: 'chatbubbles',
-        tint: 'link',
-        onPress: go('/settings/ai'),
-      },
-      { key: 'koneksi', title: t('screens.koneksi'), icon: 'sparkles', tint: 'link', onPress: go('/settings/koneksi') },
+      { key: 'koneksi', title: t('screens.koneksi'), subtitle: t('hub.koneksi'), icon: 'link', tint: 'link', onPress: go('/settings/koneksi') },
       { key: 'family', title: tOther('family:title.family'), icon: 'people', tint: 'link', onPress: go('/family') },
       { key: 'import', title: t('screens.importAll'), icon: 'cloud-download', tint: 'heart', onPress: go('/settings/import') },
     ],
@@ -179,6 +188,7 @@ export default function SettingsScreen() {
   // Account on top, then goals and body, then the one Watch row, then the settings.
   const groups = [
     accountSummaryGroup,
+    coachGroup,
     bodyGroup,
     watchGroup,
     watchSettingsGroup,

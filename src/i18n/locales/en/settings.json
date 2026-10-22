@@ -8,7 +8,7 @@
     "safety": "Safety",
     "health": "Health Connect",
     "strava": "Strava",
-    "koneksi": "AI connections",
+    "koneksi": "Connect ChatGPT or Claude",
     "joyoAi": "Joyo AI",
     "joyorogo": "JoyoRogo",
     "scale": "Smart scale",
@@ -30,7 +30,8 @@
     "importAll": "Import data",
     "akun": "Account",
     "homeCards": "Arrange Home cards",
-    "hrZones": "HR zones"
+    "hrZones": "HR zones",
+    "coach": "Coach"
   },
   "index": {
     "title": "More",
@@ -752,7 +753,8 @@
       "watchSettings": "Watch settings",
       "body": "Goals & body",
       "connections": "Connections",
-      "app": "App"
+      "app": "App",
+      "coach": "Coach & AI"
     },
     "account": {
       "signedOut": "Not signed in",
@@ -761,7 +763,9 @@
       "pro": "Pro active, cloud sync on",
       "free": "Free, cloud sync needs Pro",
       "valuePro": "Pro"
-    }
+    },
+    "koneksi": "Through MCP, read-only, Pro only",
+    "coach": "Daily advice, training plans, exercise library"
   },
   "account": {
     "signOutTitle": "Sign out of JoyoRogo?",

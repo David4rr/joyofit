@@ -8,7 +8,7 @@
     "safety": "Keselamatan",
     "health": "Health Connect",
     "strava": "Strava",
-    "koneksi": "Koneksi AI",
+    "koneksi": "Hubungkan ChatGPT atau Claude",
     "joyoAi": "Joyo AI",
     "joyorogo": "JoyoRogo",
     "scale": "Timbangan",
@@ -30,7 +30,8 @@
     "importAll": "Impor data",
     "akun": "Akun",
     "homeCards": "Atur kartu Beranda",
-    "hrZones": "Zona HR"
+    "hrZones": "Zona HR",
+    "coach": "Coach"
   },
   "index": {
     "title": "Lainnya",
@@ -740,7 +741,8 @@
       "watchSettings": "Pengaturan jam",
       "body": "Target & tubuh",
       "connections": "Koneksi",
-      "app": "Aplikasi"
+      "app": "Aplikasi",
+      "coach": "Coach & AI"
     },
     "account": {
       "signedOut": "Belum masuk",
@@ -749,7 +751,9 @@
       "pro": "Pro aktif, sinkron cloud nyala",
       "free": "Gratis, sinkron cloud butuh Pro",
       "valuePro": "Pro"
-    }
+    },
+    "koneksi": "Lewat MCP, hanya baca, khusus Pro",
+    "coach": "Saran harian, rencana latihan, perpustakaan latihan"
   },
   "account": {
     "signOutTitle": "Keluar dari JoyoRogo?",

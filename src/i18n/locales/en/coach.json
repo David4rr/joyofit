@@ -402,7 +402,6 @@
     },
     "placeholder": "Write your question",
     "send": "Send",
-    "clear": "Clear chat",
     "thinking": "Joyo AI is writing...",
     "capReached": "Today's message limit is reached. Try again tomorrow.",
     "error": "The message was not sent: {{message}}",

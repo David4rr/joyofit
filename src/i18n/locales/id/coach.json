@@ -402,7 +402,6 @@
     },
     "placeholder": "Tulis pertanyaanmu",
     "send": "Kirim",
-    "clear": "Hapus obrolan",
     "thinking": "Joyo AI sedang menulis...",
     "capReached": "Batas pesan hari ini sudah tercapai. Coba lagi besok.",
     "error": "Pesan belum terkirim: {{message}}",

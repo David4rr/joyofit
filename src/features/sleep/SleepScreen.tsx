@@ -25,6 +25,7 @@ import { userHrZones } from '@/features/hrzones/settings';
 import { errorMessage, formatClock, formatDuration } from '@/format';
 import { fmtDate, fmtDecimal, fmtInt, useTranslation } from '@/i18n';
 import { Paragraphs } from '@/features/fitness/Paragraphs';
+import { AskJoyoAction } from '@/features/ai/ui/AskJoyoButton';
 import { ShareSleepButton } from '@/features/stickers/ui/ShareSleepButton';
 import { useWatch } from '@/state/WatchProvider';
 import { HIT, radius, spacing, useColors, useTheme } from '@/theme';
@@ -154,6 +155,7 @@ export function SleepScreen() {
       </View>
 
       <ShareSleepButton night={night} recentAsleepSec={recentAsleepSec} />
+      <AskJoyoAction seed={{ seed: 'sleep', ref: night.day, label: dateLabel }} />
 
       <Section title={night.nap ? t('sleep.sectionNap') : t('sleep.sectionNight')} icon="moon" tint="sleep">
         <View style={styles.headlineRow}>

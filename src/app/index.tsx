@@ -46,6 +46,7 @@ import { useSleepNightsPush } from '@/features/sleep/useSleepNightsPush';
 import { useRogoActiveKcal } from '@/features/today/useRogoActiveKcal';
 import { rogoDailyMetrics, rogoSleepHoursByDate } from '@/features/today/rogoScores';
 import { useFitnessData } from '@/features/fitness/useFitnessData';
+import { AskJoyoHeaderButton } from '@/features/ai/ui/AskJoyoButton';
 import { ShareTodayButton } from '@/features/stickers/ui/ShareTodayButton';
 import { formatElapsed } from '@/features/workouts/summary';
 import { formatClock, formatCount, formatDistance } from '@/format';
@@ -197,9 +198,10 @@ function WatchToday() {
       decorated
       caption={new Date().toLocaleDateString(INTL_TAG[getLocale()], WEEKDAY_FORMAT)}
       right={
-        data && view ? (
-          <ShareTodayButton day={view.share} nowMs={data.nowSec * 1000} stepGoal={goal} restingHr={data.resting.get(data.dayStart) ?? null} />
-        ) : null
+        <View style={styles.headerActions}>
+          <AskJoyoHeaderButton />
+          {data && view ? <ShareTodayButton day={view.share} nowMs={data.nowSec * 1000} stepGoal={goal} restingHr={data.resting.get(data.dayStart) ?? null} /> : null}
+        </View>
       }
       refresh={{ refreshing: syncing, onRefresh: () => void sync(), enabled: canSync }}>
       <View style={styles.stack}>
@@ -281,6 +283,7 @@ export default function TodayScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   stack: { gap: spacing.md },
   tiles: { flexDirection: 'row', gap: spacing.md },
   heartRow: { flexDirection: 'row', gap: spacing.md },

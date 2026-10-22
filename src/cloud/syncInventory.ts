@@ -53,7 +53,7 @@ import { HuaweiWear, type CycleSwitches, type UserSex } from '@/wear';
  *    they name the provider this person trusts and record a yes that was given on this phone, for that provider and host;
  *    the API key (secure store `joyofit.ai.key.<provider>`, `WHEN_UNLOCKED_THIS_DEVICE_ONLY`): a secret that must not leave the phone,
  *    not for our servers, a backup or another phone, and it is never logged; the notes (kv `joyofit.ai.notes`): free text about
- *    injuries and goals that goes only to the provider the person chose; the conversation (kv `joyofit.coach.chat`, shared with the hosted
+ *    injuries and goals that goes only to the provider the person chose; the conversations (kv `joyofit.ai.chats` and `joyofit.ai.chat.<id>`, shared with the hosted
  *    chat): the server stores no messages; the insights (kv `joyofit.ai.insight`), the day's usage counters (`joyofit.ai.usage`) and the
  *    cached JoyoRogo profile used for the age gate (`joyofit.ai.person`): derived from this phone's data and key
  *  - Strength preferences (already in `strength_record`) and Sticker Studio / route data (`contentSync.ts`)
