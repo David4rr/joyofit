@@ -49,7 +49,7 @@ class HuaweiImportStoreSqlTest {
     )
     assertEquals(2, store.writeWeighIns(rows))
     assertEquals(0, store.writeWeighIns(rows))
-    assertEquals(2, count("SELECT COUNT(*) FROM scale_reading WHERE scale_id = 'huawei-health-export' AND rogo_state = 'skipped'"))
+    assertEquals(2, count("SELECT COUNT(*) FROM scale_reading WHERE scale_id = 'huawei-health-export' AND rogo_state = 'pending'"))
     assertEquals(1, count("SELECT COUNT(*) FROM scale_reading WHERE reported LIKE '%bodyFatPct%' AND impedance_ohm = 500"))
   }
 
@@ -163,5 +163,19 @@ class HuaweiImportStoreSqlTest {
     assertEquals(1, store.writeSleep(rows))
     assertEquals(0, store.writeSleep(rows))
     assertEquals(2, count("SELECT COUNT(*) FROM sleep_segments"))
+  }
+
+  @Test
+  fun theQueueKeepsWhatIsThereAndImportedWeighInsAreWaitingForJoyoRogo() {
+    val items = listOf(QueuedImport("meal", "r:0", """{"kcal":1}"""), QueuedImport("water", "2026-08-02", """{"glasses":3}"""))
+    assertEquals(2, store.queueForRogo(items))
+    assertEquals(0, store.queueForRogo(items))
+    db.execSQL("UPDATE rogo_import_queue SET state = 'sent' WHERE kind = 'meal'")
+    assertEquals(0, store.queueForRogo(listOf(QueuedImport("meal", "r:0", """{"kcal":2}"""))))
+    assertEquals(1, count("SELECT COUNT(*) FROM rogo_import_queue WHERE kind = 'meal' AND state = 'sent' AND payload = '{\"kcal\":1}'"))
+    assertEquals(1, count("SELECT COUNT(*) FROM rogo_import_queue WHERE kind = 'water' AND state = 'pending'"))
+    createScaleTableLikeJs()
+    store.writeWeighIns(listOf(ImportedWeighIn(t0, 80.0, null, null)))
+    assertEquals(1, count("SELECT COUNT(*) FROM scale_reading WHERE scale_id = 'huawei-health-export' AND rogo_state = 'pending'"))
   }
 }

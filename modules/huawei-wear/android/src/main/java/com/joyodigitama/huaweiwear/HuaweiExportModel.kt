@@ -37,6 +37,26 @@ internal class ImportedDayTotal(val dayStartSec: Long, val dayEndSec: Long, val 
  */
 internal class ImportedWeighIn(val tsMs: Long, val weightKg: Double, val impedanceOhm: Double?, val reportedJson: String?)
 
+/**
+ * A meal from `NUTRITION_RECORD` for JoyoRogo's diary (`food.importHistory`): [key] identifies it across imports, [date] is the
+ * diary day (`YYYY-MM-DD`, the day in the record's own time zone), [meal] one of JoyoRogo's slots (`sarapan`, `makan_siang`,
+ * `makan_malam`, `snack`), [eatenAtMs] when it was eaten if the record says. Macros are grams.
+ */
+internal class ImportedMeal(
+  val key: String,
+  val date: String,
+  val meal: String,
+  val name: String,
+  val kcal: Double,
+  val protein: Double?,
+  val carbs: Double?,
+  val fat: Double?,
+  val eatenAtMs: Long?,
+)
+
+/** One thing for JoyoRogo that the importer found: [kind] `meal` or `water`, [key] its identity, [payload] the JSON the endpoint takes. */
+internal class QueuedImport(val kind: String, val key: String, val payload: String)
+
 /** A `workouts` row with its `workout_points`. Times are unix seconds, distance metres, calories kcal. */
 internal class ImportedWorkout(
   val start: Long,
@@ -65,6 +85,15 @@ internal interface HuaweiImportCollector {
   fun steps(minuteSec: Long, steps: Int, distance: Int, calories: Int)
 
   fun weighIn(weighIn: ImportedWeighIn)
+
+  /** A meal of `NUTRITION_RECORD`; the importer queues it for JoyoRogo. */
+  fun meal(meal: ImportedMeal)
+
+  /** Water of one `DRINK_WATER` record, [ml] on the local day [date]; [key] identifies the record so a repeat is counted once. */
+  fun water(date: String, ml: Int, key: String)
+
+  /** A fact about the person (`height` cm, `male` 1.0 / 0.0, `age` years) seen at [tsMs]; the newest of each kind is kept for the profile. */
+  fun profileFact(kind: String, value: Double, tsMs: Long)
 
   /** A sample point whose key the importer does not use. */
   fun unmapped(key: String)
@@ -98,6 +127,9 @@ internal interface HuaweiImportStore {
 
   /** Adds, per day, the part of its total the `step_samples` rows of that day do not add up to, as one row from noon; returns the rows added. */
   fun writeDayTotals(totals: List<ImportedDayTotal>): Int
+
+  /** Queues [items] for JoyoRogo in `rogo_import_queue` unless an item of that kind and key is there; returns the rows added. */
+  fun queueForRogo(items: List<QueuedImport>): Int
 
   /** Adds weigh-ins to `scale_reading` unless one of the same moment is there; returns the rows added. */
   fun writeWeighIns(weighIns: List<ImportedWeighIn>): Int

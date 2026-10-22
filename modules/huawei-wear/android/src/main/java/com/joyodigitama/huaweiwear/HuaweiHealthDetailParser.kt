@@ -24,6 +24,9 @@ import org.json.JSONObject
  * | VASCULAR_HEALTH (`pulseWaveVelocity`)                  | health_metrics `arterial_stiffness`             |
  * | ARRHYTHMIA_RESULT (`ppgIrregularHeartbeat`)            | health_metrics `arrhythmia`                     |
  * | WEIGHT_BODYFAT_BROAD and other weight / body keys      | scale_reading (see [HuaweiWeightParser])        |
+ * | NUTRITION_RECORD (one meal: `dietaryEnergy`, macros, `meal` slot code) | JoyoRogo diary (queued, see [HuaweiDiaryParser]) |
+ * | DRINK_WATER (`drinkWater` ml)                          | JoyoRogo water (queued, glasses per local day)  |
+ * | USER_HEIGHT (`userHeight` cm)                          | the profile, when the phone has none            |
  *
  * Everything else (exercise intensity, goals, diet ...) is counted per key as unmapped and left alone.
  */
@@ -62,13 +65,19 @@ internal object HuaweiHealthDetailParser {
     val recordStart = HuaweiExportJson.epochMs(record.opt("startTime"))
     val recordEnd = HuaweiExportJson.epochMs(record.opt("endTime"))
     val weights = HuaweiWeightParser.Collected()
+    val zone = record.optString("timeZone", "")
+    val recordId = record.optString("recordId", "")
     for (i in 0 until points.length()) {
       val point = points.optJSONObject(i) ?: continue
       val key = point.optString("key", "")
       if (key.isEmpty()) continue
       val startMs = HuaweiExportJson.epochMs(point.opt("startTime")) ?: recordStart
       val endMs = HuaweiExportJson.epochMs(point.opt("endTime")) ?: recordEnd ?: startMs
-      parsePoint(key, point.opt("value"), startMs, endMs, out, weights)
+      if (HuaweiDiaryParser.handles(key)) {
+        HuaweiDiaryParser.parse(key, point.opt("value"), startMs, zone, if (recordId.isEmpty()) "$startMs" else "$recordId:$i", out)
+      } else {
+        parsePoint(key, point.opt("value"), startMs, endMs, out, weights)
+      }
     }
     weights.emit(out)
   }

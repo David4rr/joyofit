@@ -280,15 +280,35 @@ metric and second) wins.
 | `Sport per minute`: `steps`, `distance`, `calorie` | `step_samples.steps` / `distance` / `calories` (largest value per minute; `calories` in small calories, 1/1000 kcal, like the watch's own; checked: a day's minutes sum to 110 000 for 2 829 steps) |
 | `Motion path`: `summaryData` totals, `detailData` lines `tp=lbs` (GPS), `h-r` (heart rate), `s-r` (cadence), `rs` (speed, dm/s from the start), `alti` | `workouts` (`complete = 1`, calories kcal = `totalCalories` / 1000) and `workout_points` |
 | `Sample sequence` type 700013 (`sleepScore`, `sleepEfficiency`) | `sleep_scores` (start / end of the record) |
+| `NUTRITION_RECORD` (`dietaryEnergy` kcal, macros, `meal` slot code, `mealEatTime`) | JoyoRogo diary through `food.importHistory` (queued first, see "To JoyoRogo") |
+| `DRINK_WATER` (`drinkWater` ml per drink) | JoyoRogo water log through `water.importHistory`, glasses of 250 ml per local day |
+| `USER_HEIGHT`, and the `height` / `gender` / `age` a weigh-in carries | the profile, only when the phone has none (see "To JoyoRogo") |
 | `SportsHealth-Data.xls` sheet 10 (`recordDay`, `timeZone`, `{steps, distance, calorie}`) | the part of each day's total the day's `step_samples` rows do not add up to, as one row from noon (`imported = 1`; an hour chart shows it at 12:00) |
 
 Weigh-ins follow Huawei's `BroadBodyFat` description: `bodyWeight` (kg), `bodyFatRate`, `moistureRate`, `muscleMass`, `boneSalt`,
 `basalMetabolism`, `visceralFatLevel`, `proteinRate`, `bodyAge`, `bmi`, `impedance`; fat and water in kilograms, skeletal and
 per-limb values, scores and ratios are not `ReportedBody` fields and are dropped, a fraction (0.21) is read as a percentage, a
 weight of 10 000-500 000 as grams, a weigh-in without a plausible weight (10-500 kg) is not stored. A real export had 22
-weigh-ins, all weight and BMI only (from the phone's manual entry, no scale). They show in the scale history as "Not sent to
-JoyoRogo": a history is not pushed to JoyoRogo as a burst of check-ins. A weigh-in within a minute and 0.3 kg of one already
+weigh-ins, all weight and BMI only (from the phone's manual entry, no scale). They show in the scale history and are sent
+to JoyoRogo's weight history on their real days (see "To JoyoRogo"). A weigh-in within a minute and 0.3 kg of one already
 in `scale_reading` is skipped.
+
+**To JoyoRogo** (`src/features/huaweiimport/rogoQueue.ts`, server `docs/history-import.md` in the JoyoRogo repo). The native import never calls
+the network: it writes weigh-ins into `scale_reading` (`rogo_state = 'pending'`) and meals and water days into `rogo_import_queue`
+(`kind`, `key`, `payload`, `state`; created by native code and by `ensureRogoImportQueueSchema`). When an import ends, and from the *Send to
+JoyoRogo* button, JS sends what is pending through `weight.importHistory`, `food.importHistory` and `water.importHistory` (batches of 100,
+idempotent, past days only, never over a day or meal the person has; offline or signed out leaves the rows pending, a server answer that is
+an error is kept on the rows and shown, for example the 404 of a JoyoRogo not yet updated). The Bluetooth scale's own push
+(`pendingWeighIns`, `weight.checkIn`, which writes over a day) skips imported rows. Imported meals and weigh-ins are `source = "huawei"`
+there and do not count toward streaks or challenge days; an old weight cannot replace a newer one because every reader takes the newest
+day and an imported day is only added where there was none. Meals have no name in the export (it holds kcal and macros), so the diary
+row is called "Makanan dari Huawei Health"; the slot comes from `meal` (10 breakfast, 20 lunch, 30 dinner, 11 / 21 / 31 snack, read off the
+eaten times of a real export), the day from the record's own `timeZone`. The 1 500 ml entries of `DRINK_WATER` are summed like the
+rest (it is not known whether Huawei writes a day's goal there). The profile is filled (`profileFromExport`) only when Settings > Profile was
+never saved: height from `USER_HEIGHT`, weight of the newest weigh-in, sex from `gender`, birth year as the year of that weigh-in minus its `age`
+(off by one before the birthday); without all of height, weight and birth year nothing is saved. JoyoRogo's own profile height is not
+touched: its profile always has one. The iOS ZIP import (`HuaweiImportController.swift`) is a port of the first Kotlin version and has none of
+this yet.
 
 Sport ids (`subType`, the `Sport type` sheet): 3 cycling, 4 running, 5 walking, 1 stairs, 2 mountain climbing, 101 indoor
 running, 102 pool swimming, 103 indoor cycling, 104 open water, 105-116 racket / ball sports, machines, yoga, pilates, aerobics,
@@ -311,9 +331,9 @@ store (*In the file but not stored by JoyoFit*). The same lines go to logcat und
 | In the export | Why not |
 | --- | --- |
 | `EMOTION` (valence / arousal, 1 202), `EXERCISE_INTENSITY`, `ACTIVE_HOUR`, `SPORT_GOAL_ACHIEVEMENT_DATA`, `FOUR_LEAF_ACHIEVEMENT_DATA`, `PREDICTED_TIMES`, `TRAINING_RECOVERY_TIME` | Huawei's own scores, rings and predictions: JoyoFit computes its own load, recovery and goals. `emotion` in JoyoFit is the stress score, so the valence of `EMOTION` would not fit it. |
-| `BASAL_METABOLISM`, `CURRENT_BASAL_METABOLISM`, `BASAL_METABOLISM_AFTER_EXERCISE`, `USER_HEIGHT` | derived or profile values (in thousandths of a kcal); JoyoFit takes basal energy from the profile. |
-| `SLEEP_RECORD`, `SLEEP_ON_OFF_BED_RECORD`, `LOW_BLOOD_OXYGEN`, `BLOOD_OXYGEN_REMIND`, `DRINK_WATER`, `BREATH_TRAIN` | single-purpose flags and alerts with no screen in JoyoFit (the low-oxygen readings are already in the blood-oxygen series). |
-| `DIET_RECORD`, `NUTRITION_RECORD` | meals: JoyoFit's diet days sync to JoyoRogo, and a handful of records (a real export: 12 meals) are not worth a path that could write a wrong day. |
+| `BASAL_METABOLISM`, `CURRENT_BASAL_METABOLISM`, `BASAL_METABOLISM_AFTER_EXERCISE` | derived values (in thousandths of a kcal); JoyoFit takes basal energy from the profile. |
+| `SLEEP_RECORD`, `SLEEP_ON_OFF_BED_RECORD`, `LOW_BLOOD_OXYGEN`, `BLOOD_OXYGEN_REMIND`, `BREATH_TRAIN` | single-purpose flags and alerts with no screen in JoyoFit (the low-oxygen readings are already in the blood-oxygen series). |
+| `DIET_RECORD` | an empty marker (`{"dietRecord":0}`, 123 in a real export) with nothing to import. |
 | `Sample sequence` 700021 (RRI beat intervals, 2 886 one-minute windows) | the derived RMSSD of each window is imported (`hrv`); the raw intervals have no consumer. |
 | `Sample sequence` ECG and arrhythmia PPG waveforms | no ECG viewer or storage. |
 | `User int run plan data` (one 5-week plan), `User run plan data`, `User route data` | training plans and saved routes: JoyoFit has no plan import (its plans are its own). |
@@ -324,7 +344,7 @@ How imported data is kept apart: migration `imported` adds `imported INTEGER NOT
 `sleep_segments` and `workouts`; the importer inserts with `imported = 1`. `health_metrics`, `sleep_scores` and `scale_reading` have no
 such column: imported rows there are added with the same insert-or-ignore rules (a watch row of the same type and second, or the
 same night start, stays), they follow those tables' own sync (the cloud health sync carries `health_metrics` and
-`sleep_scores`), and weigh-ins are marked `skipped` for JoyoRogo.
+`sleep_scores`), and weigh-ins wait as `pending` for JoyoRogo until JS has sent them (`sent`) or JoyoRogo cannot take the weight (`skipped` with the reason).
 
 - **Watch data wins.** Nothing existing is replaced. A minute the watch stored only gets heart rate, SpO2 and resting heart
   rate filled in where they are NULL; sleep segments that overlap a watch-synced one and workouts starting within two

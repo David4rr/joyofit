@@ -281,10 +281,45 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
   /**
    * Weigh-ins go where the Bluetooth scale's go (`scale_reading`, `src/features/scale/store.ts`, created by JS when the
    * database opens; the same statement runs here so an import before the first JS start still works), under the
-   * scale id [WEIGH_IN_SCALE_ID] and with `rogo_state = 'skipped'`: a history is not pushed to JoyoRogo as a burst of
-   * check-ins. Skipped when a weigh-in already sits within a minute at about the same weight (the same weighing from the
+   * scale id [WEIGH_IN_SCALE_ID] and with `rogo_state = 'pending'`. The Bluetooth scale's own push (`weight.checkIn`, which writes
+   * over a day) leaves these rows alone; JS sends them through `weight.importHistory`, which never writes over a day.
+   * Skipped when a weigh-in already sits within a minute at about the same weight (the same weighing from the
    * scale and from Huawei Health, or this export imported twice).
    */
+  /**
+   * The queue of what JoyoRogo should get from an import (`rogo_import_queue`, created here and by JS, `src/features/import/rogoQueue.ts`):
+   * one row per meal or water day, `state` `pending` until JS has sent it. A row that is there already (pending, sent or failed) stays as it is.
+   */
+  override fun queueForRogo(items: List<QueuedImport>): Int {
+    if (items.isEmpty()) return 0
+    val db = openDb()
+    var added = 0
+    db.beginTransaction()
+    try {
+      db.execSQL(
+        """CREATE TABLE IF NOT EXISTS rogo_import_queue (
+             kind TEXT NOT NULL, key TEXT NOT NULL, payload TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', error TEXT,
+             PRIMARY KEY (kind, key))""",
+      )
+      val statement = db.compileStatement("INSERT OR IGNORE INTO rogo_import_queue (kind, key, payload) VALUES (?, ?, ?)")
+      try {
+        for (item in items) {
+          statement.clearBindings()
+          statement.bindString(1, item.kind)
+          statement.bindString(2, item.key)
+          statement.bindString(3, item.payload)
+          added += statement.executeUpdateDelete()
+        }
+      } finally {
+        statement.close()
+      }
+      db.setTransactionSuccessful()
+    } finally {
+      db.endTransaction()
+    }
+    return added
+  }
+
   override fun writeWeighIns(weighIns: List<ImportedWeighIn>): Int {
     if (weighIns.isEmpty()) return 0
     val db = openDb()
@@ -299,7 +334,7 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
       db.execSQL("CREATE INDEX IF NOT EXISTS scale_reading_taken_at ON scale_reading (taken_at)")
       val statement = db.compileStatement(
         """INSERT INTO scale_reading (scale_id, taken_at, weight_kg, impedance_ohm, reported, rogo_state)
-           SELECT ?, ?, ?, ?, ?, 'skipped'
+           SELECT ?, ?, ?, ?, ?, 'pending'
            WHERE NOT EXISTS (SELECT 1 FROM scale_reading WHERE taken_at BETWEEN ? AND ? AND ABS(weight_kg - ?) < 0.3)""",
       )
       try {

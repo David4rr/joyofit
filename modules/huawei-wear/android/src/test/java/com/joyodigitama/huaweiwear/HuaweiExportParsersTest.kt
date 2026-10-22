@@ -21,6 +21,9 @@ class HuaweiExportParsersTest {
     val steps = ArrayList<List<Number>>()
     val unmapped = ArrayList<String>()
     val weighIns = ArrayList<ImportedWeighIn>()
+    val meals = ArrayList<ImportedMeal>()
+    val water = ArrayList<Triple<String, Int, String>>()
+    val facts = ArrayList<Triple<String, Double, Long>>()
     val rejectedKeys = ArrayList<Triple<String, String, String?>>()
     val rejected get() = rejectedKeys.size
 
@@ -33,6 +36,9 @@ class HuaweiExportParsersTest {
     override fun dayTotal(total: ImportedDayTotal) { dayTotals.add(total) }
     override fun steps(minuteSec: Long, steps: Int, distance: Int, calories: Int) { this.steps.add(listOf(minuteSec, steps, distance, calories)) }
     override fun weighIn(weighIn: ImportedWeighIn) { weighIns.add(weighIn) }
+    override fun meal(meal: ImportedMeal) { meals.add(meal) }
+    override fun water(date: String, ml: Int, key: String) { water.add(Triple(date, ml, key)) }
+    override fun profileFact(kind: String, value: Double, tsMs: Long) { facts.add(Triple(kind, value, tsMs)) }
     override fun unmapped(key: String) { unmapped.add(key) }
     override fun rejected(key: String, reason: String, sample: String?) { rejectedKeys.add(Triple(key, reason, sample)) }
   }
@@ -526,5 +532,102 @@ class HuaweiExportParsersTest {
     assertEquals(30.0, r.getDouble("bodyAge"), 0.001)
     // Fat and water in kilograms, skeletal and per-limb values, scores and ratios are not ReportedBody fields.
     assertEquals(setOf("bodyFatPct", "waterPct", "muscleKg", "boneKg", "bmrKcal", "visceralFat", "proteinPct", "bodyAge"), r.keys().asSequence().toSet())
+  }
+
+  // Meals, water and the profile (real field names, made-up values)
+
+  private fun nutrition(
+    meal: Int,
+    kcal: Double = 546.0,
+    startMs: Long = 1_785_603_600_000L, // 2026-08-02 00:00 in +0700
+    eatSec: Long? = null,
+    extra: String = "",
+  ) = """{"carbohydrates":47.82,"dietaryEnergy":$kcal,"fat":27.21,"foodCount":300,"foodExtUnitValue":1,"foodProvider":1,"meal":$meal,""" +
+    (eatSec?.let { """"mealEatTime":$it,""" } ?: "") + """"mealRecordTime":${startMs / 1000 + 75_000},"protein":27.21$extra}"""
+
+  private fun mealRecord(value: String, startMs: Long = 1_785_603_600_000L, zone: String = "+0700") = JSONObject(
+    """{"recordId":"rec","timeZone":"$zone","startTime":$startMs,"endTime":$startMs,"samplePoints":[{"key":"NUTRITION_RECORD","startTime":$startMs,"endTime":$startMs,"value":${JSONObject.quote(value)}}]}""",
+  )
+
+  @Test
+  fun nutritionRecordBecomesAMealOnItsLocalDayWithTheSlotOfItsCode() {
+    val out = Recorder()
+    HuaweiHealthDetailParser.parse(mealRecord(nutrition(20, 584.0, eatSec = 1_785_646_800L)), out)
+    val m = out.meals.single()
+    assertEquals("rec:0", m.key)
+    assertEquals("2026-08-02", m.date)
+    assertEquals("makan_siang", m.meal)
+    assertEquals(584.0, m.kcal, 0.0)
+    assertEquals(27.2, m.protein!!, 0.0)
+    assertEquals(47.8, m.carbs!!, 0.0)
+    assertEquals(1_785_646_800_000L, m.eatenAtMs)
+    assertEquals(HuaweiDiaryParser.MEAL_NAME, m.name)
+    assertEquals(0, out.rejected)
+    assertEquals(emptyList<String>(), out.unmapped)
+  }
+
+  @Test
+  fun aRecordWrittenInAnotherZoneKeepsItsOwnDay() {
+    // 2026-08-06 23:00 in +0700 is 2026-08-07 00:00 in +0800: the day Huawei means.
+    val out = Recorder()
+    HuaweiHealthDetailParser.parse(mealRecord(nutrition(30, 800.0, startMs = 1_786_035_600_000L), startMs = 1_786_035_600_000L, zone = "+0800"), out)
+    assertEquals("2026-08-07", out.meals.single().date)
+    assertEquals("makan_malam", out.meals.single().meal)
+    assertEquals(null, out.meals.single().eatenAtMs)
+  }
+
+  @Test
+  fun mealSlotCodesAndTheHourFallback() {
+    assertEquals("sarapan", HuaweiDiaryParser.slot(10, 0, "+0700"))
+    assertEquals("snack", HuaweiDiaryParser.slot(21, 0, "+0700"))
+    assertEquals("snack", HuaweiDiaryParser.slot(31, 0, "+0700"))
+    // an unknown code goes by the local hour: 01:00 UTC is 08:00 at +0700, 13:00 UTC is 20:00
+    assertEquals("sarapan", HuaweiDiaryParser.slot(99, 3_600_000, "+0700"))
+    assertEquals("makan_malam", HuaweiDiaryParser.slot(null, 13 * 3_600_000L, "+0700"))
+  }
+
+  @Test
+  fun implausibleMealsAreRejected() {
+    val out = Recorder()
+    HuaweiHealthDetailParser.parse(mealRecord(nutrition(10, 0.0)), out)
+    HuaweiHealthDetailParser.parse(mealRecord(nutrition(10, 90000.0)), out)
+    HuaweiHealthDetailParser.parse(mealRecord("""{"meal":10}"""), out)
+    assertTrue(out.meals.isEmpty())
+    assertEquals(listOf("out-of-range", "out-of-range", "no-number"), out.rejectedKeys.map { it.second })
+  }
+
+  @Test
+  fun waterAndHeightAreRead() {
+    val out = Recorder()
+    val rec = JSONObject(
+      """{"recordId":"w","timeZone":"+0800","startTime":1747564821000,"samplePoints":[
+           {"key":"DRINK_WATER","startTime":1747564821000,"value":"{\"drinkWater\":250}"},
+           {"key":"DRINK_WATER","startTime":1747564821000,"value":"{\"drinkWater\":0}"},
+           {"key":"USER_HEIGHT","startTime":1747564830000,"value":"{\"userHeight\":0}"},
+           {"key":"USER_HEIGHT","startTime":1747564840000,"value":"{\"userHeight\":172}"},
+           {"key":"USER_HEIGHT","startTime":1747564850000,"value":"{\"userHeight\":17}"},
+           {"key":"DIET_RECORD","startTime":1747564850000,"value":"{\"dietRecord\":0}"}]}""",
+    )
+    HuaweiHealthDetailParser.parse(rec, out)
+    // 1747564821000 is 2025-05-18 10:00:21 UTC: 18:00 on the +0800 clock
+    assertEquals(listOf(Triple("2025-05-18", 250, "w:0")), out.water)
+    assertEquals(listOf(Triple("height", 172.0, 1_747_564_840_000L)), out.facts)
+    assertEquals(listOf("out-of-range", "out-of-range"), out.rejectedKeys.map { it.second })
+    assertEquals(listOf("DIET_RECORD"), out.unmapped)
+  }
+
+  @Test
+  fun aWeighInCarriesTheProfileItWasWeighedWith() {
+    val out = Recorder()
+    HuaweiHealthDetailParser.parse(
+      healthRecord(point("WEIGHT_BODYFAT_BROAD", t0, t0, """{"age":33,"bodyWeight":89.2,"gender":1,"height":170}""")),
+      out,
+    )
+    assertEquals(
+      setOf("height" to 170.0, "male" to 1.0, "age" to 33.0, "weight" to 89.2),
+      out.facts.map { it.first to it.second }.toSet(),
+    )
+    // those profile fields are not body values
+    assertEquals(null, out.weighIns.single().reportedJson)
   }
 }

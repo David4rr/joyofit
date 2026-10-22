@@ -29,6 +29,8 @@ internal object HuaweiWeightParser {
    */
   fun classify(name: String): String? {
     val n = normalize(name)
+    // The profile the scale weighed with: height cm, gender 1 male / 0 female, age in years. Not body values; they go to the profile.
+    if (n == "height" || n == "gender" || n == "age") return n
     if (listOf("skeletal", "arm", "leg", "trunk", "hf", "balance", "ratio", "shape", "score", "healthy").any { it in n } && !("proteinratio" in n)) return null
     return when {
       n == "impedance" || n == "resistance" -> "impedance"
@@ -104,6 +106,10 @@ internal object HuaweiWeightParser {
         }
         val impedance = fields["impedance"]?.takeIf { it in 50.0..5000.0 }
         out.weighIn(ImportedWeighIn(ts, weight, impedance, if (reported.length() == 0) null else reported.toString()))
+        fields["height"]?.takeIf { it in 100.0..250.0 }?.let { out.profileFact("height", it, ts) }
+        fields["gender"]?.takeIf { it == 0.0 || it == 1.0 }?.let { out.profileFact("male", it, ts) }
+        fields["age"]?.takeIf { it in 10.0..100.0 }?.let { out.profileFact("age", it, ts) }
+        out.profileFact("weight", weight, ts)
       }
     }
 

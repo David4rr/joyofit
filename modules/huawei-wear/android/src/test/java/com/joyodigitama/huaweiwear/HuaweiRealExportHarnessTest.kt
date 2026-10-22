@@ -66,6 +66,10 @@ class HuaweiRealExportHarnessTest {
       count("workout_kcal", "SELECT COALESCE(SUM(calories),0) FROM workouts")
       count("scale_reading", "SELECT COUNT(*) FROM scale_reading")
       count("scale_reading_with_body", "SELECT COUNT(*) FROM scale_reading WHERE reported IS NOT NULL")
+      count("queue_meals", "SELECT COUNT(*) FROM rogo_import_queue WHERE kind = 'meal'")
+      count("queue_water_days", "SELECT COUNT(*) FROM rogo_import_queue WHERE kind = 'water'")
+      count("queue_glasses", "SELECT COALESCE(SUM(json_extract(payload, '$.glasses')),0) FROM rogo_import_queue WHERE kind = 'water'")
+      count("scale_reading_pending", "SELECT COUNT(*) FROM scale_reading WHERE rogo_state = 'pending'")
       for (type in listOf("emotion", "hrv", "sleep_apnea", "skin_temperature", "arterial_stiffness", "arrhythmia")) {
         count("health_metrics_$type", "SELECT COUNT(*) FROM health_metrics WHERE type = '$type'")
       }

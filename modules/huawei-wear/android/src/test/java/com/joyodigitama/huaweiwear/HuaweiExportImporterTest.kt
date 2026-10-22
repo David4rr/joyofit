@@ -62,6 +62,13 @@ class HuaweiExportImporterTest {
       return totals.size
     }
 
+    val queued = ArrayList<QueuedImport>()
+
+    override fun queueForRogo(items: List<QueuedImport>): Int {
+      queued.addAll(items)
+      return items.size
+    }
+
     override fun writeWeighIns(weighIns: List<ImportedWeighIn>): Int {
       this.weighIns.addAll(weighIns)
       return weighIns.size
@@ -247,6 +254,50 @@ class HuaweiExportImporterTest {
     assertEquals(1, summary.minutesWritten)
     // The minute is written before the day totals that may only fill days without rows.
     assertEquals(1, store.writeCalls)
+  }
+
+  private fun drinkPoint(ms: Long, ml: Int) = sample("DRINK_WATER", ms, ms, """{"drinkWater":$ml}""")
+
+  @Test
+  fun mealsAndWaterAreQueuedForJoyoRogoAndTheProfileComesFromTheWeighIn() {
+    val store = FakeStore()
+    val day = 1_785_603_600_000L // 2026-08-02 00:00 in +0700
+    val nutrition = """{"dietaryEnergy":584,"protein":12.5,"carbohydrates":50,"fat":8,"meal":20,"mealEatTime":${day / 1000 + 43_200},"mealRecordTime":${day / 1000 + 75_000}}"""
+    val summary = run(
+      mapOf(
+        healthFile to "[" + healthRecord(
+          sample("NUTRITION_RECORD", day, day, nutrition),
+          drinkPoint(day + 8 * 3_600_000, 250),
+          drinkPoint(day + 9 * 3_600_000, 500),
+          drinkPoint(day + 30 * 3_600_000, 250),
+          sample("WEIGHT_BODYFAT_BROAD", t0, t0, """{"age":33,"bodyWeight":89.2,"gender":1,"height":170}"""),
+          sample("USER_HEIGHT", t0 + 1000, t0 + 1000, """{"userHeight":172}"""),
+        ) + "]",
+      ),
+      store,
+    )
+    assertEquals(1, summary.mealsFound)
+    assertEquals(1, summary.mealsQueued)
+    val meal = store.queued.single { it.kind == "meal" }
+    assertTrue(meal.payload.contains("\"date\":\"2026-08-02\"") && meal.payload.contains("\"meal\":\"makan_siang\""))
+    // 750 ml on the 2nd is 3 glasses, 250 ml on the 3rd is one
+    val water = store.queued.filter { it.kind == "water" }
+    assertEquals(listOf("2026-08-02", "2026-08-03"), water.map { it.key })
+    assertEquals(listOf(3, 1), water.map { org.json.JSONObject(it.payload).getInt("glasses") })
+    assertEquals(2, summary.waterDaysQueued)
+    // the newest height (the USER_HEIGHT record, a second later) wins; age 33 at 2025-06 gives 1992
+    assertEquals(mapOf("heightCm" to 172, "weightKg" to 89.2, "sex" to "male", "birthYear" to 1992), summary.profile)
+  }
+
+  @Test
+  fun aCancelledRunQueuesMealsButNotAPartialDaysWater() {
+    val store = FakeStore()
+    var calls = 0
+    val day = 1_785_603_600_000L
+    val health = "[" + healthRecord(drinkPoint(day, 250)) + "," + healthRecord(drinkPoint(day + 1000, 250)) + "]"
+    val summary = run(mapOf(healthFile to health), store) { calls++ >= 1 }
+    assertTrue(summary.cancelled)
+    assertEquals(emptyList<QueuedImport>(), store.queued.filter { it.kind == "water" })
   }
 
   @Test

@@ -33,6 +33,16 @@ export interface HuaweiImportSummary {
   sleepScoresAdded?: number;
   dayTotalsFound?: number;
   dayTotalsAdded?: number;
+  /**
+   * Meals found and put in the queue for JoyoRogo now; water days (glasses of 250 ml per local day) found and queued. The rest were
+   * queued by an earlier run. Absent from the iOS Apple Health import.
+   */
+  mealsFound?: number;
+  mealsQueued?: number;
+  waterDaysFound?: number;
+  waterDaysQueued?: number;
+  /** What the export says about the person: `heightCm`, `weightKg`, `sex`, `birthYear` (each only when it says it). */
+  profile?: { heightCm?: number; weightKg?: number; sex?: 'male' | 'female'; birthYear?: number };
   /** Workouts of an earlier import that had no track or totals and got them now. */
   workoutsUpdated?: number;
   /**

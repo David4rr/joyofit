@@ -144,6 +144,28 @@ export interface RogoCheckInInput {
   proteinPct?: number;
 }
 
+/** One past weigh-in for `weight.importHistory`: the day, the weight and the body values the export had (each already range-checked). */
+export type RogoImportWeight = Omit<RogoCheckInInput, 'source'>;
+
+/** One past meal for `food.importHistory`; `key` is the import's own identity for it, `eatenAt` unix milliseconds. */
+export interface RogoImportMeal {
+  key: string;
+  date: string;
+  meal: RogoMeal;
+  name: string;
+  kcal: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  eatenAt?: number;
+}
+
+/** What the three `importHistory` procedures answer: rows written and rows left (a day or meal JoyoRogo already had, or a day not in the past). */
+export interface RogoImportResult {
+  added: number;
+  skipped: number;
+}
+
 export interface RogoWeightEntry {
   /** `YYYY-MM-DD`. */
   date: string;
@@ -460,6 +482,15 @@ export const rogo = {
    * weigh-in also sends `source: 'scale'` and the body values it has (each optional, already range-checked, see `toRogoCheckIn`).
    */
   checkInWeight: (input: RogoCheckInInput) => rogoCall<RogoWeightEntry>('weight/checkIn', input),
+  /**
+   * Past weigh-ins from a Huawei Health export (`weight.importHistory`, at most 100 a call): one per day, never over a day that already
+   * has one, so the answer's `skipped` includes days the person weighed themselves. Idempotent.
+   */
+  importWeights: (entries: RogoImportWeight[]) => rogoCall<RogoImportResult>('weight/importHistory', { entries }),
+  /** Past meals from a Huawei Health export (`food.importHistory`, at most 100 a call), kept out of streaks. Idempotent by `key`. */
+  importMeals: (meals: RogoImportMeal[]) => rogoCall<RogoImportResult>('food/importHistory', { meals }),
+  /** Past days of water in glasses (`water.importHistory`, at most 100 a call); a day with a count is never written over. */
+  importWater: (days: { date: string; glasses: number }[]) => rogoCall<RogoImportResult>('water/importHistory', { days }),
   /** Writes one item to the diary (a meal the watch quick-logged). Not repeated on failure (it would write the meal twice), but given the reads' deadline so a slow answer is not cut off while JoyoRogo is still saving it. */
   addFood: (input: { date: string; meal: RogoMeal; name: string; kcal: number }) =>
     rogoCall<RogoFoodItem>('food/add', { ...input, source: 'manual' }, { timeoutMs: SLOW_OK_MS }),

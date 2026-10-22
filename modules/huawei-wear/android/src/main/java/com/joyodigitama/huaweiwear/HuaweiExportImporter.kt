@@ -5,6 +5,9 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
 import android.util.Log
+import java.time.Instant
+import kotlin.math.roundToInt
+import org.json.JSONObject
 
 /** Why an import could not start; the module turns [kind] into an error code for JS. */
 internal class HuaweiImportException(val kind: Kind, message: String, cause: Throwable? = null) : Exception(message, cause) {
@@ -102,6 +105,15 @@ internal class HuaweiImportSummary {
   /** Days of the `.xls` summary found, and those added as a noon row (the per-minute files had no row for them). */
   var dayTotalsFound = 0
   var dayTotalsAdded = 0
+  var mealsFound = 0
+  var waterDaysFound = 0
+
+  /** Meals and water days put in the queue for JoyoRogo now (the rest were queued by an earlier run). */
+  var mealsQueued = 0
+  var waterDaysQueued = 0
+
+  /** What the export says about the person, for the profile when the phone has none: `heightCm`, `weightKg`, `sex`, `birthYear`. */
+  var profile: Map<String, Any> = emptyMap()
   var weighInsFound = 0
   var weighInsAdded = 0
   var workoutsFound = 0
@@ -159,6 +171,11 @@ internal class HuaweiImportSummary {
     "sleepScoresAdded" to sleepScoresAdded,
     "dayTotalsFound" to dayTotalsFound,
     "dayTotalsAdded" to dayTotalsAdded,
+    "mealsFound" to mealsFound,
+    "mealsQueued" to mealsQueued,
+    "waterDaysFound" to waterDaysFound,
+    "waterDaysQueued" to waterDaysQueued,
+    "profile" to profile,
     "weighInsFound" to weighInsFound,
     "weighInsAdded" to weighInsAdded,
     "rejectedReasons" to rejectedReasons.values.sortedByDescending { it.count }.take(MAX_REASONS).map { it.toJs() },
@@ -226,6 +243,12 @@ internal class HuaweiExportImporter(
   private val restingMinutes = HashSet<Long>()
   private val spo2Minutes = HashSet<Long>()
   private val weighInMinutes = HashSet<Long>()
+  private val queue = ArrayList<QueuedImport>()
+  private val waterKeys = HashSet<String>()
+  private val waterMl = HashMap<String, Int>()
+
+  /** Newest value (and its time) per kind of profile fact. */
+  private val facts = HashMap<String, Pair<Long, Double>>()
   private val metrics = ArrayList<ImportedMetric>()
   private val metricKeys = HashSet<String>()
   private val sleepScores = ArrayList<ImportedSleepScore>()
@@ -307,6 +330,31 @@ internal class HuaweiExportImporter(
       weighIns.add(weighIn)
     }
 
+    override fun meal(meal: ImportedMeal) {
+      summary.mealsFound++
+      summary.seen(meal.eatenAtMs?.div(1000) ?: Instant.parse("${meal.date}T12:00:00Z").epochSecond)
+      val json = JSONObject()
+        .put("key", meal.key)
+        .put("date", meal.date)
+        .put("meal", meal.meal)
+        .put("name", meal.name)
+        .put("kcal", meal.kcal)
+      meal.protein?.let { json.put("protein", it) }
+      meal.carbs?.let { json.put("carbs", it) }
+      meal.fat?.let { json.put("fat", it) }
+      meal.eatenAtMs?.let { json.put("eatenAt", it) }
+      queue.add(QueuedImport("meal", meal.key, json.toString()))
+    }
+
+    override fun water(date: String, ml: Int, key: String) {
+      if (waterKeys.add(key)) waterMl.merge(date, ml, Int::plus)
+    }
+
+    override fun profileFact(kind: String, value: Double, tsMs: Long) {
+      val have = facts[kind]
+      if (have == null || tsMs >= have.first) facts[kind] = tsMs to value
+    }
+
     override fun unmapped(key: String) = summary.unmapped(key)
 
     override fun rejected(key: String, reason: String, sample: String?) = summary.reject(key, reason, sample)
@@ -348,6 +396,9 @@ internal class HuaweiExportImporter(
       summary.cancelled = true
       flush()
     }
+    // A cancelled run has only part of a day's drinks: queueing that sum would fix the day at too little.
+    if (!summary.cancelled) queueWater()
+    summary.profile = profileFromFacts()
     fileName = null
     doneBytes = totalBytes
     report("done", force = true)
@@ -361,13 +412,34 @@ internal class HuaweiExportImporter(
     override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { if (it > 0) doneBytes += it }
   }
 
+  /** The summed water of each local day, in glasses of 250 ml, as one queue item per day (a day under 125 ml is no glass). */
+  private fun queueWater() {
+    summary.waterDaysFound = waterMl.size
+    val items = waterMl.entries.sortedBy { it.key }.mapNotNull { (date, ml) ->
+      val glasses = (ml / WATER_GLASS_ML.toDouble()).roundToInt().coerceAtMost(40)
+      if (glasses < 1) null else QueuedImport("water", date, JSONObject().put("date", date).put("glasses", glasses).toString())
+    }
+    if (items.isNotEmpty()) summary.waterDaysQueued = store.queueForRogo(items)
+    waterMl.clear()
+  }
+
+  /** `heightCm`, `weightKg`, `sex` (`male` / `female`) and `birthYear` (the year of the newest weigh-in minus the age it carried), where the export says them. */
+  private fun profileFromFacts(): Map<String, Any> {
+    val out = LinkedHashMap<String, Any>()
+    facts["height"]?.let { out["heightCm"] = it.second.roundToInt() }
+    facts["weight"]?.let { out["weightKg"] = Math.round(it.second * 10) / 10.0 }
+    facts["male"]?.let { out["sex"] = if (it.second == 1.0) "male" else "female" }
+    facts["age"]?.let { (ts, age) -> out["birthYear"] = Instant.ofEpochMilli(ts).atOffset(java.time.ZoneOffset.UTC).year - age.roundToInt() }
+    return out
+  }
+
   /** One line per fact in logcat (`adb logcat -s HuaweiImport`): counts and keys, never a health value but the first offending one per reason. */
   private fun logSummary() {
     Log.i(TAG, "files read=${summary.filesRead} failed=${summary.filesFailed} ignored=${summary.filesIgnored} bad=${summary.badRecords} rejected=${summary.rejectedSamples} unmapped=${summary.unmappedSamples}")
     for (r in summary.rejectedReasons.values.sortedByDescending { it.count }.take(MAX_REASONS)) Log.i(TAG, "rejected ${r.key} ${r.reason} x${r.count} e.g. ${r.sample}")
     for ((reason, n) in summary.badRecordReasons) Log.i(TAG, "bad record $reason x$n")
     for ((key, n) in summary.unmappedKeys.entries.sortedByDescending { it.value }.take(MAX_REASONS)) Log.i(TAG, "unmapped $key x$n")
-    Log.i(TAG, "written minutes=${summary.minutesWritten} sleep=${summary.sleepSegmentsAdded} stress=${summary.stressAdded} metrics=${summary.metricsAdded}/${summary.metricsFound} sleepScores=${summary.sleepScoresAdded}/${summary.sleepScoresFound} dayTotals=${summary.dayTotalsAdded}/${summary.dayTotalsFound} weighIns=${summary.weighInsAdded}/${summary.weighInsFound} workouts=${summary.workoutsAdded}+${summary.workoutsUpdated}/${summary.workoutsFound}")
+    Log.i(TAG, "written minutes=${summary.minutesWritten} sleep=${summary.sleepSegmentsAdded} stress=${summary.stressAdded} metrics=${summary.metricsAdded}/${summary.metricsFound} sleepScores=${summary.sleepScoresAdded}/${summary.sleepScoresFound} dayTotals=${summary.dayTotalsAdded}/${summary.dayTotalsFound} weighIns=${summary.weighInsAdded}/${summary.weighInsFound} meals=${summary.mealsQueued}/${summary.mealsFound} waterDays=${summary.waterDaysQueued}/${summary.waterDaysFound} workouts=${summary.workoutsAdded}+${summary.workoutsUpdated}/${summary.workoutsFound}")
   }
 
   private fun readFile(kind: HuaweiExportKind, stream: InputStream) {
@@ -481,6 +553,10 @@ internal class HuaweiExportImporter(
       summary.sleepScoresAdded += store.writeSleepScores(sleepScores)
       sleepScores.clear()
     }
+    if (queue.isNotEmpty()) {
+      summary.mealsQueued += store.queueForRogo(queue)
+      queue.clear()
+    }
     if (weighIns.isNotEmpty()) {
       summary.weighInsAdded += store.writeWeighIns(weighIns)
       weighIns.clear()
@@ -503,6 +579,9 @@ internal class HuaweiExportImporter(
     const val FLUSH_MINUTES = 20_000
     const val FLUSH_ROWS = 5_000
     const val PROGRESS_INTERVAL_MS = 250L
+
+    /** One glass in JoyoRogo's water log, ml. */
+    const val WATER_GLASS_ML = 250
     private const val TAG = "HuaweiImport"
   }
 }
