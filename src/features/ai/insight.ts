@@ -3,6 +3,7 @@ import { byokAccess } from './access';
 import type { Digest, DigestDay } from './digest';
 import { readJson, type KvStore } from './kv';
 import type { Person } from './person';
+import { PROVIDERS } from './providers';
 import { weekdayOf } from '@/features/coach/time';
 import { classifyMessage, LANGUAGE, personMode } from './safety';
 import type { SettingsStore } from './settings';
@@ -229,7 +230,7 @@ export async function insightFor(slot: { kind: InsightKind; key: string }, deps:
   if (Object.keys(facts.values).length === 0) return null;
   const mode = personMode(deps.person, false);
   const cautious = mode.conservative || mode.minor || mode.ageUnknown;
-  const adapter = (deps.adapters ?? ADAPTERS)[gate.provider === 'anthropic' ? 'anthropic' : 'openai'];
+  const adapter = (deps.adapters ?? ADAPTERS)[PROVIDERS[gate.provider].adapter];
 
   try {
     for (const strict of [false, true]) {

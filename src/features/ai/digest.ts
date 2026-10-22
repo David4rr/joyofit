@@ -8,7 +8,7 @@ import type { Person } from './person';
  *
  * NOT in it, on purpose: menstrual cycle data (the owner's rule: no AI path reads it, see `docs/coach.md`), Strava data, per-minute
  * heart rate, sleep stages, GPS. A test builds a digest from a source that carries cycle fields and checks they cannot appear.
- * Every key below is listed in `DIGEST_FIELDS`, and `consent.test.ts` ties that list to `CONSENT_VERSION`.
+ * Every key below is listed in `DIGEST_FIELDS`, and `digest.test.ts` ties that list to `CONSENT_VERSION`.
  */
 
 export const DIGEST_VERSION = 1;

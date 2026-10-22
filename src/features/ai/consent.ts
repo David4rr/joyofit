@@ -4,7 +4,7 @@ import type { ProviderId } from './types';
 
 /**
  * The version of the consent text and of the list of data the digest sends. Change the digest fields (`DIGEST_FIELDS`) and this
- * number together: `consent.test.ts` pins the field list to the version, so a changed list without a new version fails the build,
+ * number together: `digest.test.ts` pins the field list to the version, so a changed list without a new version fails the build,
  * and everyone is asked again (Apple 5.1.2(i), Google Play's AI user-data rules).
  */
 export const CONSENT_VERSION = 1;

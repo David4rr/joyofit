@@ -177,6 +177,8 @@ describe('answer loop', () => {
     const sent = t.adapter.requests[0]!.messages;
     expect(sent.length).toBeLessThanOrEqual(ANSWER_LIMITS.turns);
     for (const m of sent) if (m.role !== 'tool') expect(m.content.length).toBeLessThanOrEqual(2000);
+    // the cut never starts with an answer (Anthropic needs the first message from the user)
+    expect(sent[0]!.role).toBe('user');
   });
 
   test('the key goes only to the adapter connection, never into the prompt or the messages', async () => {

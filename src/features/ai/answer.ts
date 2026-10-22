@@ -2,6 +2,7 @@ import { ADAPTERS } from './adapters';
 import { byokAccess, type ByokBlock } from './access';
 import { buildDigest, digestJson, type Digest, type DigestSource } from './digest';
 import type { Person } from './person';
+import { PROVIDERS } from './providers';
 import { assessMessages, buildSystemPrompt, finishReply, notesMentionInjury, personMode, safeReply, SAFETY_LIMITS, type ChatLine, type CoachFlag, type SafetyText } from './safety';
 import { toolKey, type SettingsStore } from './settings';
 import { runTool, TOOL_SPECS, type ToolData, type ToolTrace } from './tools';
@@ -61,6 +62,8 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
   if (!gate.ok) throw blocked(gate.reason);
 
   const turns = history.slice(-ANSWER_LIMITS.turns).map((t) => ({ role: t.role, content: t.content.slice(0, SAFETY_LIMITS.maxMessageChars) }));
+  // Anthropic wants the first message from the user; cutting to the last turns can leave an answer in front.
+  while (turns.length > 0 && turns[0]!.role !== 'user') turns.shift();
   const lastUser = [...turns].reverse().find((t) => t.role === 'user');
   if (!lastUser) throw new AiError('badRequest');
 
@@ -80,7 +83,7 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
   const digest = buildDigest(source);
   const mode = personMode(deps.person, safety.maternalMention);
   const notesFlag = notesMentionInjury(digest.notes);
-  const adapter = (deps.adapters ?? ADAPTERS)[gate.provider === 'anthropic' ? 'anthropic' : 'openai'];
+  const adapter = (deps.adapters ?? ADAPTERS)[PROVIDERS[gate.provider].adapter];
 
   const noTools = settings.noTools.includes(toolKey(gate.provider, gate.model));
   let toolsOn = !noTools;
