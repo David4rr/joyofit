@@ -62,6 +62,31 @@ func parseUserProfile(_ raw: [String: Any]) throws -> UserProfileData {
     return UserProfileData(heightCm: Int(height), weightKg: weight, birthYear: Int(birth), sex: sex, dailyStepGoal: Int(goal))
 }
 
+/// `HeartRateZonesConfig` of HuaweiWear.types.ts from the JS object; a wrong type or a value outside its range rejects with ERR_INVALID_ARGUMENT.
+func parseHeartRateZones(_ raw: [String: Any]) throws -> HeartRateZonesCalc.UserZones {
+    func whole(_ key: String) throws -> Int {
+        guard let value = number(raw[key]), value == value.rounded(), abs(value) < 1e6 else {
+            throw WearException(.invalidArgument, "Heart-rate zones: \(key) must be a whole number")
+        }
+        return Int(value)
+    }
+    guard let method = raw["method"] as? String, method == "max" || method == "hrr" else {
+        throw WearException(.invalidArgument, "Heart-rate zones: method must be 'max' or 'hrr'")
+    }
+    guard let list = raw["zones"] as? [Any] else { throw WearException(.invalidArgument, "Heart-rate zones: zones must be a list of 5 numbers") }
+    let limits: [Int] = try list.map {
+        guard let value = number($0), value == value.rounded(), abs(value) < 1e6 else {
+            throw WearException(.invalidArgument, "Heart-rate zones: every zone limit must be a whole number")
+        }
+        return Int(value)
+    }
+    guard let enabled = raw["warningEnabled"] as? Bool else { throw WearException(.invalidArgument, "Heart-rate zones: warningEnabled must be true or false") }
+    return HeartRateZonesCalc.UserZones(
+        method: method == "hrr" ? .hrr : .mhr, maxHr: try whole("maxHr"), restingHr: try whole("restingHr"), zones: limits, warningEnabled: enabled,
+        warningLimit: try whole("warningLimit")
+    )
+}
+
 // MARK: unsupported definitions
 
 /// A command with no arguments that rejects with ERR_UNSUPPORTED.
@@ -279,6 +304,14 @@ public final class HuaweiWearModule: Module {
             let parsed = try parseUserProfile(profile)
             return try await wearCall { try await runtime.setUserProfile(parsed) }
         }
+
+        // The zones for the watch's workout screen: stored, sent at every connect and now when a watch is connected; null = the defaults for the age.
+        AsyncFunction("setHeartRateZones") { (config: [String: Any]?) async throws -> Bool in
+            let parsed = try config.map(parseHeartRateZones)
+            return try await wearCall { try await runtime.setHeartRateZones(parsed) }
+        }
+
+        Function("getHeartRateZonesStatus") { () -> [String: Any] in runtime.heartRateZonesStatus() }
 
         // MARK: activity-ring goals and body metrics
 

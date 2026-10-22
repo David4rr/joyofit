@@ -164,6 +164,33 @@ country code: GB's `SendCountryCodeRequest` (`1A/0A` AccountRelated, tag `01` co
 user whether the workout settings show one. The watch's `17/0D` "voice play" request (LIVE_WORKOUT_PROTOCOL.md in the Huawei Health notes) is
 answered by Huawei Health's phone-side voice player [INFERENCE], so it is not the watch's own speaker.
 
+## Heart-rate zones (service 0x07 `13` / `21`, P2P `hw.unitedevice.track`; `HeartRateZonesCalc.kt` / `HeartRateZones.swift`)
+
+**What the watch gets.** The zones its workout screen shows: warning switch and limit, five zone limits (lowest bpm of zones 1 to 5), the
+calculation method (`0` maximum-heart-rate percentage, `1` heart-rate reserve) and the resting rate. Which way a watch takes them is what it
+declares (Gadgetbridge `HuaweiState`): ExpandCapability `0x36` ("Track") means P2P, else SupportedCommands `07/21` (extended), else `07/13` (simple),
+else nothing is sent. The connect log prints the three answers (`HR zones: ExpandCapability 0x36 (Track)=..., FitnessData 07/13=..., 07/21=...`).
+
+**FitnessData `07/13` and `07/21`** (`FitnessData.HeartRateZoneConfigPacket`): outer TLV `0x81`; inside, `0x08` warning switch (bool), and with a limit and a
+maximum above 0: `0x09` limit, `0x02..0x06` zone 1 to 5, `0x07` and `0x0B` maximum. `07/21` adds `0x0D..0x11` HRR zone 1 to 5, `0x0A` method and `0x0C`
+resting rate. All values are single bytes.
+
+**P2P `hw.unitedevice.track`** (package `hw.watch.health.p2p`, fingerprint `SystemApp`): on registration a type-2 sub-message with one TLV
+(`HuaweiP2PTrackService.getHRZonesData`), single-byte values, sent in this order. Upright: `0x02..0x06` MHR zones, `0x07` maximum, `0x08` warning switch,
+`0x09` warning limit, `0x0A` current method, `0x0B` maximum, `0x0C` resting, `0x0D..0x11` HRR zones, `0x3F` LTHR, `0x40..0x44` LTHR zones 5 to 1. Sitting
+(riding) `0x12..0x20`, swimming `0x21..0x2F`, other `0x30..0x3E`, each: switch, method, limit, five MHR zones, maximum, resting, five HRR zones. Gadgetbridge
+refuses to send when a value is not 0 to 219 or the zones are not ascending (`isValid`), and so does JoyoFit.
+
+**JoyoFit's choice.** Without a stored configuration, Gadgetbridge's defaults for the profile age (`220 - age`, the postures lowered by 0, 6, 10 and 5 bpm,
+warning on at the maximum). With `HuaweiWear.setHeartRateZones(config)` (Settings > Zona HR, docs/hr-zones.md): the app's own five limits, maximum, resting
+rate and alert go out as they are, the same in all four postures with no correction; the chosen method carries the user's limits and the other method's
+slot, and the upright LTHR set, the defaults for the same maximum and resting rate. On `07/13`, which has no method field, the effective five limits and the
+maximum go into the one array whatever the method. Sent at every connect, after a profile change, and when the setting is saved; stored natively (`WearSettings`
+`heart_rate_zones` / UserDefaults) so a connect without the app's JS still sends it. `getHeartRateZonesStatus()` reports `track`, `extended`, `simple`
+or `none` from the three capability answers above (null while no watch is connected). Unit tests: `HeartRateZonesCalcTest` (exact tag/value pairs for max 190,
+resting 55, limits 95/114/133/152/171), Swift `HealthSensorsTests`. **UNVERIFIED on any watch with edited zones**; the default zones were already sent
+before this and the packet layout is Gadgetbridge's.
+
 ## Sleep files (TruSleep / dictionary)
 
 After the frame-based sync, `SleepSync` follows GB's `downloadTruSleepData(start, end)`:
