@@ -377,7 +377,8 @@ public final class HuaweiWearModule: Module {
         AsyncFunction("setQuickReplies") { (_: [String]) async throws -> Bool in false }
         Function("getRoutes") { () -> [String: Any] in runtime.p2p.routesStatus() }
 
-        AsyncFunction("getNotificationApps") { () async throws -> [[String: Any]] in [] }
+        // iOS: the fixed list of apps whose notifications the watch can filter (02/0B); see NotificationAppFilter.swift.
+        AsyncFunction("getNotificationApps") { () async throws -> [[String: Any]] in runtime.notificationFilter.apps() }
         AsyncFunction("getCycle") { () async throws -> [String: Any] in
             try await wearCall { try runtime.cycle.overview() }
         }
@@ -395,11 +396,30 @@ public final class HuaweiWearModule: Module {
 
         OnAppEntersBackground {
             runtime.watchSettings.liveHeartRate.setActive(false)
+            // A filter test hides one app on the watch until it ends: it does not outlive the app being on screen.
+            Task { _ = await runtime.notificationFilter.cancelTest(reason: "the app went to the background") }
         }
         Function("startLiveWorkout") { () -> Void in runtime.liveWorkout.startManual() }
 
         AsyncFunction("setNotificationsEnabled") { (enabled: Bool) async throws -> Void in
             try await wearCall { try await runtime.notifications.setEnabled(enabled) }
+        }
+
+        // MARK: per-app notification switches (iOS only, not defined on Android)
+
+        Function("getNotificationFilter") { () -> [String: Any] in runtime.notificationFilter.status() }
+        AsyncFunction("setNotificationAppEnabled") { (packageName: String, enabled: Bool) async throws -> Void in
+            try await wearCall { try await runtime.notificationFilter.setEnabled(key: packageName, enabled: enabled) }
+        }
+        AsyncFunction("startNotificationFilterTest") { (packageName: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.notificationFilter.startTest(appKey: packageName).toJS() }
+        }
+        AsyncFunction("answerNotificationFilterTest") { (shown: Bool) async throws -> [String: Any] in
+            try await wearCall { try await runtime.notificationFilter.answerTest(shown: shown).toJS() }
+        }
+        // Ends a running test and switches the app back; the screen reads the result with getNotificationFilter.
+        AsyncFunction("cancelNotificationFilterTest") { () async throws -> Void in
+            _ = await runtime.notificationFilter.cancelTest(reason: "left the screen")
         }
 
         AsyncFunction("setHealthSensors") { (sensors: [String: Any]) async throws -> Bool in
@@ -653,7 +673,6 @@ public final class HuaweiWearModule: Module {
         rejects("openNotificationAccess")
         rejects("openBatteryExemption")
         rejects("openAutoStartSettings")
-        rejects("setNotificationAppEnabled", String.self, Bool.self)
         rejects("parseWatchfacePackage", String.self, Bool?.self)
         rejects("deleteLocalWatchfaceFile", String.self)
     }

@@ -46,6 +46,8 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var features: PhoneFeatures!
     /// The watch's notification switch and iOS's ANCS state.
     public private(set) var notifications: WatchNotifications!
+    /// The per-app notification switches (02/0B) and the test that finds the encoding the watch takes.
+    public private(set) var notificationFilter: NotificationAppFilter!
     /// Alarms, health sensor switches, live heart rate, HRV and stress (the watch settings that are plain protocol commands).
     public private(set) var watchSettings: WatchSettingsFeatures!
     /// Weather push (settings, the watch's weather requests, the refresh timer).
@@ -120,6 +122,7 @@ public final class WearRuntime: @unchecked Sendable {
         weatherDefaults: UserDefaults? = nil,
         goalsDefaults: UserDefaults? = nil,
         cycleDefaults: UserDefaults? = nil,
+        notificationFilterDefaults: UserDefaults? = nil,
         liveGps: LiveGpsSource = UnavailableLiveGps(),
         p2pDefaults: UserDefaults? = nil,
         familyDefaults: UserDefaults? = nil,
@@ -147,6 +150,8 @@ public final class WearRuntime: @unchecked Sendable {
         features = PhoneFeatures(link: link, events: fanOut)
         notifications = WatchNotifications(link: link, events: fanOut)
         linkObservers.add(notifications)
+        notificationFilter = NotificationAppFilter(link: link, events: fanOut, settings: NotificationFilterSettings(defaults: notificationFilterDefaults))
+        linkObservers.add(notificationFilter)
         watchSettings = WatchSettingsFeatures(handle: { [link] in link?.handle() }, settings: settings, syncStore: syncStore, events: fanOut)
         linkObservers.add(watchSettings)
         weather = WeatherController(
@@ -392,6 +397,7 @@ public final class WearRuntime: @unchecked Sendable {
             transport: .le,
             identifiers: identifiers,
             extraSummary: weather.supportSummary(caps: link.lastCaps)
+                + notificationFilter.supportSummary(caps: link.lastCaps)
                 + [SupportReport.nightHrvLine(listed: settings.autoStressListed, enabled: settings.stressEnabled)]
         )
     }
