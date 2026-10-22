@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { byokAccess, baseUrlFor, modelFor } from './access';
 import { CONSENT_CATEGORIES, CONSENT_VERSION, consentFor, grantConsent, hasConsent, revokeConsent } from './consent';
 import { memoryKv } from './kv';
-import { ageFromBirthYear, lowestAge } from './person';
+import { ageFromBirthYear, lowestAge, PROFILE_FRESH_SEC, profileIsFresh } from './person';
 import { isInsecureRemote, normalizeBaseUrl, hostOf } from './providers';
 import { createSettingsStore, DEFAULT_SETTINGS, parseSettings } from './settings';
 
@@ -46,6 +46,12 @@ describe('own-key gate', () => {
     expect(ageFromBirthYear(1800, 2026)).toBeNull();
     expect(ageFromBirthYear(2030, 2026)).toBeNull();
     expect(ageFromBirthYear(undefined, 2026)).toBeNull();
+  });
+
+  test('a cached JoyoRogo profile is trusted for 12 hours, so a slow server never delays a question', () => {
+    expect(profileIsFresh(1000, 1000 + PROFILE_FRESH_SEC - 1)).toBe(true);
+    expect(profileIsFresh(1000, 1000 + PROFILE_FRESH_SEC)).toBe(false);
+    expect(profileIsFresh(2000, 1000)).toBe(false);
   });
 
   test('consent is per provider: another provider with a key but no yes stays closed', () => {

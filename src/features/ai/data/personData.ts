@@ -3,10 +3,12 @@ import { HuaweiWear } from '@/wear';
 import { NotSignedInError } from '@/cloud/api';
 import type { KvStore } from '../kv';
 import { readJson } from '../kv';
-import { ageFromBirthYear, EMPTY_PERSON, lowestAge, PERSON_CACHE_KEY as KEY, type Maternal, type Person } from '../person';
+import { ageFromBirthYear, EMPTY_PERSON, lowestAge, PERSON_CACHE_KEY as KEY, PROFILE_REFRESH_MS, profileIsFresh, type Maternal, type Person } from '../person';
 
 /** What the last JoyoRogo profile read said; kept so the age gate and the maternal block still work offline. Cleared on sign-out. */
 interface CachedProfile {
+  /** Unix seconds of the JoyoRogo read. */
+  at: number;
   birthYear: number | null;
   maternal: Maternal;
   goal: Person['goal'];
@@ -17,13 +19,14 @@ interface CachedProfile {
   heightCm: number | null;
 }
 
-const valid = (v: unknown): v is CachedProfile => typeof v === 'object' && v !== null && 'maternal' in v;
+const valid = (v: unknown): v is CachedProfile => typeof v === 'object' && v !== null && 'maternal' in v && typeof (v as CachedProfile).at === 'number';
 
-function fromRogo(p: RogoMyProfile): CachedProfile {
+function fromRogo(p: RogoMyProfile, at: number): CachedProfile {
   const row = p.profile;
   const sex = row?.gender === 'male' ? 'm' : row?.gender === 'female' ? 'f' : null;
   const eat = p.targets?.eatKcal;
   return {
+    at,
     birthYear: typeof row?.birthYear === 'number' ? row.birthYear : null,
     maternal: row?.maternalMode === 'pregnant' || row?.maternalMode === 'breastfeeding' ? row.maternalMode : 'none',
     goal: row?.goal ?? null,
@@ -44,12 +47,15 @@ export async function readPerson(kv: KvStore, signedIn: boolean, nowYear: number
   const local = HuaweiWear.getUserProfile();
   let cached: CachedProfile | null = signedIn ? readJson<CachedProfile | null>(kv, KEY, null, (v): v is CachedProfile | null => v === null || valid(v)) : null;
   if (!signedIn) kv.removeItem(KEY);
-  if (signedIn) {
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (signedIn && !(cached && profileIsFresh(cached.at, nowSec))) {
     try {
-      cached = fromRogo(await rogo.myProfile());
+      // A slow JoyoRogo must not hold a question back: after 5 s the last answer is used.
+      const fresh = await Promise.race([rogo.myProfile(), new Promise<never>((_, reject) => setTimeout(() => reject(new Error('slow')), PROFILE_REFRESH_MS))]);
+      cached = fromRogo(fresh, nowSec);
       kv.setItem(KEY, JSON.stringify(cached));
     } catch (error) {
-      // Offline or a server error: the last answer stays in use. A person who is no longer signed in has none.
+      // Offline, slow or a server error: the last answer stays in use. A person who is no longer signed in has none.
       if (error instanceof NotSignedInError) cached = null;
     }
   }

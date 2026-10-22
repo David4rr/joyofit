@@ -40,3 +40,10 @@ export function lowestAge(...ages: (number | null)[]): number | null {
 
 /** The kv-store entry that caches the last JoyoRogo profile read (birth year, goal, pregnancy mode) so the age gate works offline. */
 export const PERSON_CACHE_KEY = 'joyofit.ai.person';
+
+/** A cached JoyoRogo profile younger than this is used without asking the server, so a slow or missing connection never delays a question. */
+export const PROFILE_FRESH_SEC = 12 * 3600;
+/** How long a refresh may take before the cached profile is used instead. */
+export const PROFILE_REFRESH_MS = 5_000;
+
+export const profileIsFresh = (at: number, nowSec: number): boolean => at <= nowSec && nowSec - at < PROFILE_FRESH_SEC;
