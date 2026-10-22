@@ -4,6 +4,7 @@ import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import type { IconName } from '@/components/IconChip';
+import { useRevealFocusedInput } from '@/components/keyboardReveal';
 import { fontSize, HIT, spacing, useTheme } from '@/theme';
 
 interface InputProps extends TextInputProps {
@@ -17,6 +18,7 @@ interface InputProps extends TextInputProps {
 export function Input({ icon, inputRef, style, onFocus, onBlur, ...rest }: InputProps) {
   const { colors, fonts, radius } = useTheme();
   const [focused, setFocused] = useState(false);
+  const reveal = useRevealFocusedInput();
   return (
     <View
       style={[
@@ -31,6 +33,7 @@ export function Input({ icon, inputRef, style, onFocus, onBlur, ...rest }: Input
         {...rest}
         onFocus={(e) => {
           setFocused(true);
+          reveal();
           onFocus?.(e);
         }}
         onBlur={(e) => {

@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { ReactNode, RefObject } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native';
+import { useCallback, useEffect, useRef, type ReactNode, type RefObject } from 'react';
+import { Platform, RefreshControl, ScrollView, StyleSheet, TextInput, View, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { PressableScale } from '@/components/PressableScale';
+import { KeyboardRevealContext, revealDelta } from '@/components/keyboardReveal';
 import { refreshSpinnerOffset } from '@/components/refreshSpinner';
 import { ThemeDecoration } from '@/components/ThemeDecoration';
 import { useTabBarInset } from '@/components/tabBarInset';
@@ -111,14 +112,50 @@ export function Screen({ title, caption, right, refresh, scrollEnabled = true, s
   const refreshControl = useRefreshControl(refresh, refreshSpinnerOffset(title !== undefined, insets.top));
   const keyboard = useKeyboardOverlap();
   const tabBar = useTabBarInset();
+  // Without a footer nothing lifts above the keyboard, and edge-to-edge Android does not resize the window: pad the content by
+  // the overlap so the last field can scroll clear, and scroll the focused input into view. iOS does both natively.
+  const ownScrollRef = useRef<ScrollView>(null);
+  const scroller = scrollRef ?? ownScrollRef;
+  const offsetRef = useRef(0);
+  const liftRef = useRef(0);
+  const padKeyboard = Platform.OS === 'android' && !footer && !list;
+  liftRef.current = keyboard.lift;
+  const revealFocused = useCallback(() => {
+    const input = TextInput.State.currentlyFocusedInput?.();
+    if (!input || liftRef.current <= 0) return;
+    keyboard.ref.current?.measureInWindow((_x, y, _w, h) => {
+      const keyboardTop = y + h - liftRef.current;
+      input.measureInWindow((_ix, iy, _iw, ih) => {
+        const delta = revealDelta(iy + ih, keyboardTop);
+        if (delta > 0) scroller.current?.scrollTo({ y: offsetRef.current + delta, animated: true });
+      });
+    });
+  }, [keyboard.ref, scroller]);
+  // Wait a beat so the padded content has laid out and the scroll range includes it.
+  const revealSoon = useCallback(() => {
+    setTimeout(revealFocused, 60);
+  }, [revealFocused]);
+  useEffect(() => {
+    if (padKeyboard && keyboard.lift > 0) revealSoon();
+  }, [padKeyboard, keyboard.lift, revealSoon]);
   const scroll = list ? (
     list({ paddingHorizontal: spacing.lg, paddingTop: Number(padding.paddingTop ?? 0), paddingBottom: Number(padding.paddingBottom ?? 0) })
   ) : (
     <ScrollView
-      ref={scrollRef}
+      ref={scroller}
       {...scrollProps}
+      onScroll={
+        padKeyboard
+          ? (e) => {
+              offsetRef.current = e.nativeEvent.contentOffset.y;
+              scrollProps?.onScroll?.(e);
+            }
+          : scrollProps?.onScroll
+      }
+      scrollEventThrottle={padKeyboard ? (scrollProps?.scrollEventThrottle ?? 16) : scrollProps?.scrollEventThrottle}
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, padding]}
+      contentContainerStyle={[styles.content, padding, padKeyboard && keyboard.lift > 0 ? { paddingBottom: Number(padding.paddingBottom ?? 0) + keyboard.lift } : null]}
+      automaticallyAdjustKeyboardInsets={Platform.OS === 'ios' && !footer}
       keyboardShouldPersistTaps="handled"
       refreshControl={refreshControl}
       scrollEnabled={scrollEnabled}
@@ -128,7 +165,16 @@ export function Screen({ title, caption, right, refresh, scrollEnabled = true, s
       {children}
     </ScrollView>
   );
-  if (!footer) return scroll;
+  if (!footer) {
+    if (!padKeyboard) return scroll;
+    return (
+      <KeyboardRevealContext.Provider value={revealSoon}>
+        <View ref={keyboard.ref} collapsable={false} style={styles.fill}>
+          {scroll}
+        </View>
+      </KeyboardRevealContext.Provider>
+    );
+  }
   // Under the keyboard the keyboard is the bottom edge; otherwise the footer clears the tab bar or, where there is none, the gesture bar / home indicator.
   const bottom = keyboard.lift > 0 ? keyboard.lift : Math.max(tabBar, insets.bottom);
   return (
