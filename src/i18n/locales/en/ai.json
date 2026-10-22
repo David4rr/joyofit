@@ -139,7 +139,7 @@
     "badUrl": "The server address cannot be used. Check it in the key settings.",
     "server": "The provider's server is having trouble. Try again in a little while.",
     "network": "Not connected to the provider. Check your internet connection, then try again.",
-    "timeout": "No answer within 25 seconds. Try again, or pick a faster model.",
+    "timeout": "The provider stopped answering. Try again, or pick a faster model.",
     "empty": "The model did not send a usable answer. Send it again, or reword the question.",
     "truncated": "The model kept thinking and ran out of room before writing an answer. Send again, or pick a faster model or one without thinking.",
     "aborted": "Cancelled.",

@@ -1,8 +1,12 @@
 import { AiError, type AiErrorKind, type CallOptions } from '../types';
 import { createSseParser, type SseEvent } from './sse';
 
-/** The deadline of one provider call (the hosted coach uses the same 25 s). */
-export const CALL_TIMEOUT_MS = 25_000;
+/** The deadline of one call that is not streamed: thinking models can take a minute before they answer at all. */
+export const CALL_TIMEOUT_MS = 90_000;
+/** A streamed answer is cut when nothing arrives for this long once it has started. */
+export const STREAM_IDLE_MS = 25_000;
+/** The wait for the first byte of a streamed answer (the model is reading the data and thinking). */
+export const FIRST_BYTE_MS = 60_000;
 /** Listing models is a plain read; give it less time than an answer. */
 export const LIST_TIMEOUT_MS = 15_000;
 
@@ -141,7 +145,9 @@ export async function postStream(
   onEvent: (event: SseEvent) => void,
 ): Promise<StreamOutcome> {
   const doFetch = options.fetchImpl ?? fetch;
-  const idleMs = options.timeoutMs ?? CALL_TIMEOUT_MS;
+  const idleMs = options.timeoutMs ?? STREAM_IDLE_MS;
+  // Until the first byte the model may still be reading the question and thinking; after it, silence means a stalled stream.
+  let started = false;
   const controller = new AbortController();
   let timedOut = false;
   let idle: ReturnType<typeof setTimeout> | undefined;
@@ -150,7 +156,7 @@ export async function postStream(
     idle = setTimeout(() => {
       timedOut = true;
       controller.abort();
-    }, idleMs);
+    }, started ? idleMs : Math.max(idleMs, FIRST_BYTE_MS));
   };
   const total = setTimeout(() => {
     timedOut = true;
@@ -182,6 +188,8 @@ export async function postStream(
       if (outer?.aborted) throw new AiError('aborted');
       throw new AiError(timedOut ? 'timeout' : 'network');
     }
+    started = true;
+    arm();
     mark?.('headers', { status: response.status, stream: response.body ? 1 : 0, type: response.headers?.get?.('content-type') ?? '' });
     if (!response.ok) {
       let text = '';

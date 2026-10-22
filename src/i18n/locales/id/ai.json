@@ -135,7 +135,7 @@
     "badUrl": "Alamat server tidak bisa dipakai. Cek alamatnya di pengaturan kunci.",
     "server": "Server penyedia sedang bermasalah. Coba lagi beberapa saat lagi.",
     "network": "Tidak tersambung ke penyedia. Cek koneksi internetmu, lalu coba lagi.",
-    "timeout": "Tidak ada jawaban dalam 25 detik. Coba lagi, atau pilih model yang lebih cepat.",
+    "timeout": "Penyedia berhenti menjawab. Coba lagi, atau pilih model yang lebih cepat.",
     "empty": "Model tidak mengirim jawaban yang bisa dipakai. Coba kirim lagi, atau ubah pertanyaannya.",
     "truncated": "Model terus berpikir dan kehabisan ruang sebelum menulis jawaban. Kirim lagi, atau pilih model yang lebih cepat atau tanpa mode berpikir.",
     "aborted": "Dibatalkan.",
