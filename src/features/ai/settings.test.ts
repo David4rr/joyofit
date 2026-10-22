@@ -19,8 +19,8 @@ describe('fast-mode fields typed by the person', () => {
   test('they replace the built-in fields, on any provider', () => {
     const custom = buildOpenAiBody('https://gateway.example.com/v1', { ...ask, fast: true, fastFields: { reasoning_effort: 'low' } });
     expect(custom).toMatchObject({ reasoning_effort: 'low' });
-    expect(custom).not.toHaveProperty('thinking');
-    expect(buildOpenAiBody('https://gateway.example.com/v1', { ...ask, fast: true })).toMatchObject({ thinking: { type: 'disabled' } });
+    expect(buildOpenAiBody('https://gateway.example.com/v1', { ...ask, fast: true, fastFields: { thinking: { type: 'disabled' } } })).not.toHaveProperty('reasoning_effort');
+    expect(buildOpenAiBody('https://gateway.example.com/v1', { ...ask, fast: true })).toMatchObject({ reasoning_effort: 'low' });
     expect(buildOpenAiBody('https://gateway.example.com/v1', ask)).not.toHaveProperty('thinking');
   });
   test('sent over the wire, and dropped again when the server refuses them', async () => {
@@ -34,6 +34,8 @@ describe('fast-mode fields typed by the person', () => {
     expect(parseSettings({}).fastFields).toBe('');
     expect(parseSettings({ fastFields: 'x'.repeat(500) }).fastFields).toHaveLength(300);
     expect(parseSettings({ fastMode: true }).fastMode).toBe(true);
-    expect(parseSettings({ fastMode: 'yes' }).fastMode).toBe(false);
+    expect(parseSettings({ fastMode: false }).fastMode).toBe(false);
+    // on by default (also for settings saved before the switch existed)
+    expect(parseSettings({}).fastMode).toBe(true);
   });
 });

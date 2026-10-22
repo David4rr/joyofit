@@ -228,19 +228,19 @@ describe('what a server refuses is blamed on the right extra', () => {
 
   test('fast-mode fields refused: the next try still streams, with usage; only fast is remembered as refused', async () => {
     resetStreamMemory();
-    const { fetchImpl, calls } = mockFetch([json({ error: { message: 'Unknown parameter: thinking' } }, 400), sse([chunk({ content: 'Halo' }, 'stop'), frame('[DONE]')])]);
+    const { fetchImpl, calls } = mockFetch([json({ error: { message: 'Unknown parameter: reasoning_effort' } }, 400), sse([chunk({ content: 'Halo' }, 'stop'), frame('[DONE]')])]);
     const reply = await openAiAdapter.complete(custom, { ...request, fast: true }, { fetchImpl, onDelta: () => {} });
     expect(reply.text).toBe('Halo');
     expect(calls).toHaveLength(2);
-    expect(calls[0]!.body).toMatchObject({ stream: true, stream_options: { include_usage: true }, thinking: { type: 'disabled' } });
+    expect(calls[0]!.body).toMatchObject({ stream: true, stream_options: { include_usage: true }, reasoning_effort: 'low' });
     expect(calls[1]!.body).toMatchObject({ stream: true, stream_options: { include_usage: true } });
-    expect(calls[1]!.body).not.toHaveProperty('thinking');
+    expect(calls[1]!.body).not.toHaveProperty('reasoning_effort');
     // the next question streams with usage and without the fast fields
     const next = mockFetch([sse([chunk({ content: 'Lagi' }, 'stop')])]);
     await openAiAdapter.complete(custom, { ...request, fast: true }, { fetchImpl: next.fetchImpl, onDelta: () => {} });
     expect(next.calls).toHaveLength(1);
     expect(next.calls[0]!.body).toMatchObject({ stream: true, stream_options: { include_usage: true } });
-    expect(next.calls[0]!.body).not.toHaveProperty('thinking');
+    expect(next.calls[0]!.body).not.toHaveProperty('reasoning_effort');
   });
 
   test('a refusal that is not about the extras (still 400 on the plain call) is reported, and nothing is learned', async () => {

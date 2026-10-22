@@ -41,11 +41,11 @@ function toWire(message: NeutralMessage): Json {
 
 /**
  * What "fast" adds per provider. A custom server gets the switches the Chinese and open-source servers read (GLM, Kimi and DeepSeek
- * take `thinking: {type: disabled}`; a server that rejects it is asked again without, see `refusedFast`). OpenRouter normalises `reasoning.effort`. OpenAI and Gemini already run at their
+ * take `reasoning_effort` (measured on the owner's GLM endpoint: thinking fell from 3,400 to 170 characters and the answer from 23-38 s to 15 s; `thinking: {type: disabled}` was accepted there and ignored); a server that rejects it is asked again without, see `refusedFast`). OpenRouter normalises `reasoning.effort`. OpenAI and Gemini already run at their
  * defaults here and are left alone.
  */
 const FAST_FIELDS: Partial<Record<ProviderId, Json>> = {
-  custom: { thinking: { type: 'disabled' } },
+  custom: { reasoning_effort: 'low' },
   openrouter: { reasoning: { effort: 'low' } },
 };
 

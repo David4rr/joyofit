@@ -49,7 +49,7 @@ export const DEFAULT_SETTINGS: AiSettings = {
   consents: {},
   insightDaily: false,
   insightWeekly: false,
-  fastMode: false,
+  fastMode: true,
   fastFields: '',
   dailyCeiling: DEFAULT_CEILING,
   noTools: [],
@@ -83,7 +83,8 @@ export function parseSettings(value: unknown): AiSettings {
     consents,
     insightDaily: value.insightDaily === true,
     insightWeekly: value.insightWeekly === true,
-    fastMode: value.fastMode === true,
+    // On unless the person turned it off: a thinking model that thinks for 30 s is the usual cause of a slow answer.
+    fastMode: value.fastMode !== false,
     fastFields: typeof value.fastFields === 'string' ? value.fastFields.slice(0, 300) : '',
     dailyCeiling: Math.min(MAX_CEILING, Math.max(MIN_CEILING, ceiling)),
     noTools: Array.isArray(value.noTools) ? value.noTools.filter((x): x is string => typeof x === 'string').slice(-50) : [],

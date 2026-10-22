@@ -425,7 +425,7 @@ export function JoyoAiChat() {
         : t('chip.rogo')
       : t('chip.ownOff');
 
-  const providerName = own ? t(`provider.${own.provider}`) : '';
+  const providerName = own ? (own.provider === 'custom' ? hostOf(own.baseUrl) : t(`provider.${own.provider}`)) : '';
   const lastUser = lastIndexOfRole(messages, 'user');
   const lastIndex = messages.length - 1;
   const lastMessage = messages[lastIndex];

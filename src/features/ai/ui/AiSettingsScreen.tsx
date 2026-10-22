@@ -226,7 +226,7 @@ export function AiSettingsScreen() {
                 hint={settings.fastFields.trim() !== '' && parseFastFields(settings.fastFields) === null ? t('prefs.style.fastFieldsBad') : t('prefs.style.fastFieldsHint')}
                 value={settings.fastFields}
                 onChangeText={(value) => aiSettings.update({ fastFields: value })}
-                placeholder={'{"thinking":{"type":"disabled"}}'} // i18n-ok: JSON example
+                placeholder={'{"reasoning_effort":"low"}'} // i18n-ok: JSON example
                 autoCapitalize="none"
                 autoCorrect={false}
                 multiline

@@ -336,7 +336,7 @@
       "fast": "Fast answers",
       "fastHint": "Asks the model not to think at length. Quicker and cheaper, sometimes less thorough. Only has an effect where the provider supports it (OpenRouter and your own address).",
       "fastFields": "Extra fields for fast answers (JSON, optional)",
-      "fastFieldsHint": "Sent to your server in place of the default, for example {\"reasoning_effort\":\"low\"}. Leave empty to use the default.",
+      "fastFieldsHint": "Sent to your server in place of the default, for example {\"thinking\":{\"type\":\"disabled\"}}. Leave empty to use the default.",
       "fastFieldsBad": "Not a valid JSON object, so the default is used."
     },
     "data": {

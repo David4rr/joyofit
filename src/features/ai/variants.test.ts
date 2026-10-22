@@ -160,10 +160,10 @@ describe('fast mode (ask the model not to think at length)', () => {
     resetStreamMemory();
     const on = mockFetch([plain()]);
     await openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl: on.fetchImpl });
-    expect(on.calls[0]!.body).toMatchObject({ thinking: { type: 'disabled' } });
+    expect(on.calls[0]!.body).toMatchObject({ reasoning_effort: 'low' });
     const off = mockFetch([plain()]);
     await openAiAdapter.complete(custom, ask, { fetchImpl: off.fetchImpl });
-    expect(off.calls[0]!.body).not.toHaveProperty('thinking');
+    expect(off.calls[0]!.body).not.toHaveProperty('reasoning_effort');
     const openai = mockFetch([plain()]);
     await openAiAdapter.complete({ baseUrl: PROVIDERS.openai.baseUrl, apiKey: KEY, model: 'gpt-6-luna' }, { ...ask, fast: true }, { fetchImpl: openai.fetchImpl });
     expect(openai.calls[0]!.body).not.toHaveProperty('thinking');
@@ -175,15 +175,15 @@ describe('fast mode (ask the model not to think at length)', () => {
 
   test('a server that rejects the fields is asked again without them, and remembered', async () => {
     resetStreamMemory();
-    const first = mockFetch([json({ error: { message: 'Unrecognized request argument: thinking' } }, 400), plain()]);
+    const first = mockFetch([json({ error: { message: 'Unrecognized request argument: reasoning_effort' } }, 400), plain()]);
     const reply = await openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl: first.fetchImpl });
     expect(reply.text).toBe('Halo');
     expect(first.calls).toHaveLength(2);
-    expect(first.calls[0]!.body).toHaveProperty('thinking');
-    expect(first.calls[1]!.body).not.toHaveProperty('thinking');
+    expect(first.calls[0]!.body).toHaveProperty('reasoning_effort');
+    expect(first.calls[1]!.body).not.toHaveProperty('reasoning_effort');
     const next = mockFetch([plain()]);
     await openAiAdapter.complete(custom, { ...ask, fast: true }, { fetchImpl: next.fetchImpl });
-    expect(next.calls[0]!.body).not.toHaveProperty('thinking');
+    expect(next.calls[0]!.body).not.toHaveProperty('reasoning_effort');
   });
 
   test('another kind of failure (a bad key) is not retried', async () => {

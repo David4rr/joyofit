@@ -331,7 +331,7 @@
       "fast": "Jawaban cepat",
       "fastHint": "Meminta model tidak berpikir panjang. Lebih cepat dan hemat token, kadang kurang dalam. Hanya berpengaruh bila server penyedia mendukungnya (OpenRouter dan alamat sendiri).",
       "fastFields": "Bidang tambahan untuk jawaban cepat (JSON, opsional)",
-      "fastFieldsHint": "Dikirim ke servermu menggantikan bawaan, misalnya {\"reasoning_effort\":\"low\"}. Kosongkan untuk memakai bawaan.",
+      "fastFieldsHint": "Dikirim ke servermu menggantikan bawaan, misalnya {\"thinking\":{\"type\":\"disabled\"}}. Kosongkan untuk memakai bawaan.",
       "fastFieldsBad": "Bukan objek JSON yang sah, jadi bawaan yang dipakai."
     },
     "data": {
