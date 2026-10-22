@@ -598,6 +598,7 @@ export function JoyoAiChat() {
       // No native anchoring: the list only moves for the person (see useChatScroll).
       onScroll={scroll.scrollProps.onScroll}
       onContentSizeChange={scroll.scrollProps.onContentSizeChange}
+      onLayout={() => console.log('[joyoai-scroll] list layout')}
       scrollEventThrottle={scroll.scrollProps.scrollEventThrottle}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
