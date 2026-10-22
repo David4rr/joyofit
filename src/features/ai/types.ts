@@ -45,6 +45,8 @@ export interface ModelRequest {
   maxTokens: number;
   /** Ask the model not to think at length (a faster, shorter-thinking answer) where the server understands it. */
   fast?: boolean;
+  /** Extra request fields for fast mode, from the person (JSON object); replaces the built-in fields of the provider. */
+  fastFields?: Record<string, unknown>;
 }
 
 export interface Usage {

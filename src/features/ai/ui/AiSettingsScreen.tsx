@@ -7,6 +7,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { Field } from '@/components/Input';
 import { NavRow } from '@/components/NavRow';
 import { Card, Screen, Section } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
@@ -20,6 +21,7 @@ import { modelFor } from '../access';
 import { chooseModel, listProviderModels } from '../engine';
 import { useAiSettings, useByokAccess } from '../hooks';
 import { PROVIDER_ORDER } from '../providers';
+import { parseFastFields } from '../settings';
 import { aiDeleteEverything, aiDeleteMemory, aiNotes, aiRemoveProvider, aiSettings, aiUsage } from '../stores';
 import type { ModelInfo, ProviderId } from '../types';
 import { viewAiError } from './errors';
@@ -218,6 +220,18 @@ export function AiSettingsScreen() {
               disabled={!ownReady}
               onValueChange={(value) => aiSettings.update({ fastMode: value })}
             />
+            {settings.fastMode && provider === 'custom' ? (
+              <Field
+                label={t('prefs.style.fastFields')}
+                hint={settings.fastFields.trim() !== '' && parseFastFields(settings.fastFields) === null ? t('prefs.style.fastFieldsBad') : t('prefs.style.fastFieldsHint')}
+                value={settings.fastFields}
+                onChangeText={(value) => aiSettings.update({ fastFields: value })}
+                placeholder={'{"thinking":{"type":"disabled"}}'} // i18n-ok: JSON example
+                autoCapitalize="none"
+                autoCorrect={false}
+                multiline
+              />
+            ) : null}
             <AppText variant="bodyStrong">{t('prefs.style.ceiling')}</AppText>
             <Segmented
               value={settings.dailyCeiling}

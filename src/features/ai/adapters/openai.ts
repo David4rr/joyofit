@@ -61,7 +61,7 @@ export function buildOpenAiBody(baseUrl: string, request: ModelRequest, opts: { 
     body.tools = request.tools.map((tool) => ({ type: 'function', function: { name: tool.name, description: tool.description, parameters: tool.parameters } }));
   }
   if (q.reasoningEffort) body.reasoning_effort = q.reasoningEffort;
-  if (opts.fast ?? request.fast) Object.assign(body, FAST_FIELDS[q.id] ?? {});
+  if (opts.fast ?? request.fast) Object.assign(body, request.fastFields ?? FAST_FIELDS[q.id] ?? {});
   if (opts.stream) {
     body.stream = true;
     // Every compatible server that streams is asked for the token count; one that refuses is remembered (`refusedUsage`) and asked without.
@@ -294,7 +294,7 @@ async function complete(conn: ProviderConnection, request: ModelRequest, options
   const url = `${conn.baseUrl}/chat/completions`;
   const headers = { Authorization: `Bearer ${conn.apiKey}` };
   const host = hostKey(conn.baseUrl);
-  const wantsFast = request.fast === true && FAST_FIELDS[quirks(conn.baseUrl).id] !== undefined && !refusedFast.has(host);
+  const wantsFast = request.fast === true && (request.fastFields !== undefined || FAST_FIELDS[quirks(conn.baseUrl).id] !== undefined) && !refusedFast.has(host);
   const streams = options.onDelta !== undefined && !refusedStream.has(host);
   const first: Attempt = { fast: wantsFast, usage: streams && !refusedUsage.has(host), stream: streams };
   const ladder: Attempt[] = [first];

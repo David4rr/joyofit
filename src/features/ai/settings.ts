@@ -28,6 +28,8 @@ export interface AiSettings {
   insightWeekly: boolean;
   /** Ask thinking models to answer without long reasoning: faster and cheaper, sometimes less thorough. */
   fastMode: boolean;
+  /** A JSON object sent in place of the built-in fast-mode fields, for a server that wants something else (`{"reasoning_effort":"low"}`). Empty = the built-in ones. */
+  fastFields: string;
   /** Provider calls per day the phone allows itself (tool rounds count). */
   dailyCeiling: number;
   /** `provider:model` pairs that answered "no tool calling": they run on the digest alone. */
@@ -48,6 +50,7 @@ export const DEFAULT_SETTINGS: AiSettings = {
   insightDaily: false,
   insightWeekly: false,
   fastMode: false,
+  fastFields: '',
   dailyCeiling: DEFAULT_CEILING,
   noTools: [],
 };
@@ -81,6 +84,7 @@ export function parseSettings(value: unknown): AiSettings {
     insightDaily: value.insightDaily === true,
     insightWeekly: value.insightWeekly === true,
     fastMode: value.fastMode === true,
+    fastFields: typeof value.fastFields === 'string' ? value.fastFields.slice(0, 300) : '',
     dailyCeiling: Math.min(MAX_CEILING, Math.max(MIN_CEILING, ceiling)),
     noTools: Array.isArray(value.noTools) ? value.noTools.filter((x): x is string => typeof x === 'string').slice(-50) : [],
   };
@@ -127,3 +131,20 @@ export function createSettingsStore(kv: KvStore) {
 export type SettingsStore = ReturnType<typeof createSettingsStore>;
 
 export const toolKey = (provider: ProviderId, model: string): string => `${provider}:${model}`;
+
+/** Fields a person's own fast-mode JSON may never set: they would change what is asked, not how hard the model thinks. */
+const FORBIDDEN_FAST_KEYS = ['model', 'messages', 'stream', 'stream_options', 'tools', 'tool_choice', 'max_tokens', 'max_completion_tokens', 'n', 'functions', 'function_call'];
+
+/** The fast-mode fields the person typed: a JSON object without the forbidden keys, or null (empty, broken, or not an object). */
+export function parseFastFields(text: string): Record<string, unknown> | null {
+  if (text.trim() === '') return null;
+  try {
+    const value: unknown = JSON.parse(text);
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) if (!FORBIDDEN_FAST_KEYS.includes(k)) out[k] = v;
+    return Object.keys(out).length > 0 ? out : null;
+  } catch {
+    return null;
+  }
+}

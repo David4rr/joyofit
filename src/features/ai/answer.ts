@@ -4,7 +4,7 @@ import { buildDigest, digestJson, type Digest, type DigestSource } from './diges
 import type { Person } from './person';
 import { PROVIDERS } from './providers';
 import { assessMessages, buildSystemPrompt, finishReply, notesMentionInjury, personMode, safeReply, SAFETY_LIMITS, type ChatLine, type CoachFlag, type SafetyText } from './safety';
-import { toolKey, type SettingsStore } from './settings';
+import { parseFastFields, toolKey, type SettingsStore } from './settings';
 import { noMark, type Mark } from './timing';
 import { isToolName, runTool, TOOL_SPECS, type ToolData, type ToolSummary, type ToolTrace } from './tools';
 import type { UsageStore } from './usage';
@@ -137,7 +137,7 @@ export async function answer(history: readonly ChatLine[], deps: AnswerDeps): Pr
     try {
       const reply = await adapter.complete(
         conn,
-        { model: gate.model, system, messages, tools: withTools ? TOOL_SPECS : undefined, maxTokens, fast: settings.fastMode },
+        { model: gate.model, system, messages, tools: withTools ? TOOL_SPECS : undefined, maxTokens, fast: settings.fastMode, fastFields: parseFastFields(settings.fastFields) ?? undefined },
         {
           signal: deps.signal,
           fetchImpl: deps.fetchImpl,
