@@ -80,8 +80,8 @@ internal object WatchModels {
   private fun br(name: String, prefix: String, honorSdp: Boolean = false, crypted: Boolean = true, pake: Boolean = false, tested: Boolean = false) =
     WatchModel(name, prefix, ModelTransport.BR, honorSdp, crypted, pake, tested)
 
-  private fun le(name: String, prefix: String, aw: Boolean = false, newHonorProtocol: Boolean = false) =
-    WatchModel(name, prefix, ModelTransport.LE, aw = aw, newHonorProtocol = newHonorProtocol)
+  private fun le(name: String, prefix: String, aw: Boolean = false, newHonorProtocol: Boolean = false, tested: Boolean = false) =
+    WatchModel(name, prefix, ModelTransport.LE, tested = tested, aw = aw, newHonorProtocol = newHonorProtocol)
 
   val all: List<WatchModel> = listOf(
     br("Huawei Watch Fit 4 Pro", HuaweiConstants.HU_JOYOFIT4PRO_NAME, tested = true),
