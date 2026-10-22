@@ -179,16 +179,16 @@ export function Screen({ title, caption, right, refresh, scrollEnabled = true, s
   const bottom = keyboard.lift > 0 ? keyboard.lift : Math.max(tabBar, insets.bottom);
   return (
     <View ref={keyboard.ref} collapsable={false} style={[styles.fill, { backgroundColor: colors.background, paddingBottom: bottom }]}>
-      {overlay ? (
-        <View style={styles.fill}>
-          {scroll}
+      {/* The same wrapper whether or not there is an overlay: a layer that appears and disappears (a "jump to latest" button) must not
+          change the tree above the list, or the list is mounted again and loses its scroll position. */}
+      <View style={styles.fill}>
+        {scroll}
+        {overlay ? (
           <View pointerEvents="box-none" style={styles.overlay}>
             {overlay}
           </View>
-        </View>
-      ) : (
-        scroll
-      )}
+        ) : null}
+      </View>
       {footer}
     </View>
   );
