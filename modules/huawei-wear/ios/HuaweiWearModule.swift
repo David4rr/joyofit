@@ -593,6 +593,12 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await WearApp.appleHealthImport.run { bridge.huaweiImportProgress($0) } }
         }
 
+        // A picker file URL already ends in the sender's file name, so this is that last path component (null when there is none).
+        AsyncFunction("huaweiExportDisplayName") { (uri: String) -> String? in
+            guard let name = URL(string: uri)?.lastPathComponent.removingPercentEncoding, !name.isEmpty, name != "/" else { return nil }
+            return name
+        }
+
         Function("cancelHuaweiImport") { () -> Void in
             runtime.huaweiImport.cancel()
             WearApp.appleHealthImport.cancel()

@@ -136,8 +136,8 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    */
   importHuaweiExport(uri: string, password: string): Promise<HuaweiImportSummary>;
   /**
-   * Android only (not defined on iOS): the name the sender gave the file at `uri` (`HUAWEI_HEALTH_20261022112019.zip`), read from the
-   * provider behind a `content://` URI whose own last segment is an opaque id. Null when the provider does not say.
+   * The name the sender gave the file at `uri` (`HUAWEI_HEALTH_20261022112019.zip`). Android reads it from the provider behind a
+   * `content://` URI whose own last segment is an opaque id; iOS returns the file URL's last path component. Null when there is none.
    */
   huaweiExportDisplayName(uri: string): Promise<string | null>;
   /**
