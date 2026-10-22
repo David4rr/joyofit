@@ -142,6 +142,7 @@
       "anaerobicEffect": "Anaerobic effect",
       "waiting": "Waiting for the first numbers from the watch.",
       "ended": "The full record (route, splits, heart-rate chart) arrives with the next sync and appears under Workouts."
-    }
+    },
+    "logStrength": "Log as strength workout"
   }
 }

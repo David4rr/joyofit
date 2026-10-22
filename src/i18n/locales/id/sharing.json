@@ -142,6 +142,7 @@
       "anaerobicEffect": "Efek anaerobik",
       "waiting": "Menunggu angka pertama dari jam.",
       "ended": "Catatan lengkap (rute, split, grafik detak jantung) tiba pada sinkronisasi berikutnya dan muncul di Latihan."
-    }
+    },
+    "logStrength": "Catat sebagai latihan beban"
   }
 }

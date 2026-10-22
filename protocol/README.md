@@ -362,6 +362,16 @@ next failed start says. Huawei Health itself treats a non-100000 answer to its `
 business types are run plan, course and trajectory files only, and the `37/02` linkage events the phone may send are stop, report-status and restart (ExpandCapability 335,
 clear here).
 
+**Watch-started workout probe (2026-10-22, Fit 4 Pro 6.1.0.117, `adb` probe, plaintext).** The decisive test: Strength training started **on the watch**, then `17/01` sent by the
+phone. `17/03` went from `81 06 02 01 00 03 01 00` (idle) to `81 06 02 01 00 03 01 01` (tag 03 operator 1; no sport or workout-type tag in the answer) with no `17/01` from the phone,
+so the workout was real. 20 s later the probe sent pause, resume and stop, each with JoyoFit's full payload (`81 32 02 01 02 03 01 01 05 01 8C 06 04 <t> 87 12 ... 0C 04 <start> 0D 01 00 0E 01 00`) and
+with the smallest body (`81 06 02 01 <op> 05 01 8C`): **all six got `7F 04 0001E07A` (123002)**. `2E/03` (request `01 00`) answered `01 01 01` (worn; the answer is tag 01 = 1, not 2) and
+`17/15` answered `01 04 00000007`. So the refusal is not about "no workout is running" and not about the wear state: the watch refuses `17/01` from this phone for start, pause, resume and
+stop, with a workout running or not. The most likely reading [INFERENCE]: the `17/01` channel is gated for third-party clients (Huawei Health's binding is not something a
+different app identity gets), and Huawei Health uses the same single `17/01`, so there is no other phone-to-watch route to try. `17/03` also changed on its own while the owner
+handled the watch (`..02 01 01 03 01 03`, `..02 01 00 03 01 01`), so the watch does report a pause/resume state through `17/03`; JoyoFit already reads it (`LiveWorkout`), which is how a watch-started workout is followed.
+No `17/02` notice, no `18/02` GPS request and no `17/11` frames arrived during the probe window.
+
 Huawei's own text also says a workout started from Huawei Health and synced to the watch is stored **only in Huawei Health**: the watch displays and supplies heart
 rate, it may not keep a workout of its own. So even an accepted start may give no watch workout to join with `link.ts`; check after the first accepted start.
 

@@ -48,6 +48,7 @@ import { rogoDailyMetrics, rogoSleepHoursByDate } from '@/features/today/rogoSco
 import { useFitnessData } from '@/features/fitness/useFitnessData';
 import { AskJoyoHeaderButton } from '@/features/ai/ui/AskJoyoButton';
 import { ShareTodayButton } from '@/features/stickers/ui/ShareTodayButton';
+import { isStrengthSport } from '@/features/strength/watchLive';
 import { formatElapsed } from '@/features/workouts/summary';
 import { formatClock, formatCount, formatDistance } from '@/format';
 import { useNow } from '@/hooks/useNow';
@@ -228,10 +229,13 @@ function WatchToday() {
             <NavRow
               icon="pulse"
               tint="workouts"
-              title={t(
-                liveSearching ? 'home.workoutSearching' : liveWorkout.status === 'paused' ? 'home.workoutPaused' : 'home.workoutInProgress',
-                { sport: liveWorkout.sportName ? sportLabel(liveWorkout.sportName) : t('home.workoutDefault') },
-              )}
+              title={
+                isStrengthSport(liveWorkout.sportType)
+                  ? t('home.strengthOnWatch')
+                  : t(liveSearching ? 'home.workoutSearching' : liveWorkout.status === 'paused' ? 'home.workoutPaused' : 'home.workoutInProgress', {
+                      sport: liveWorkout.sportName ? sportLabel(liveWorkout.sportName) : t('home.workoutDefault'),
+                    })
+              }
               subtitle={
                 liveSearching
                   ? t('home.workoutSearchingSubtitle')
@@ -242,7 +246,7 @@ function WatchToday() {
                       carbs: formatGrams(liveWorkout.carbGrams),
                     })
               }
-              onPress={() => router.push('/workout-live')}
+              onPress={() => router.push(isStrengthSport(liveWorkout.sportType) ? '/strength/watch-pick' : '/workout-live')}
             />
           </Card>
         ) : null}

@@ -43,7 +43,8 @@
     "aboutTitle": "About these numbers",
     "aboutWatch": "Calories and distance are as reported by the watch at the last sync. Pull down to sync.",
     "aboutSamples": "Calories and distance are added up from stored one-minute samples. Pull down to sync.",
-    "aboutNone": "Nothing stored for today yet. Sync to pull today from the watch. Pull down to sync."
+    "aboutNone": "Nothing stored for today yet. Sync to pull today from the watch. Pull down to sync.",
+    "strengthOnWatch": "Strength training running on the watch"
   },
   "hourly": {
     "peak_one": "Busiest hour {{hour}}, {{steps}} step",

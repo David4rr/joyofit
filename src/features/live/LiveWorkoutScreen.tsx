@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -19,11 +19,13 @@ import {
   elapsedSec,
   endPromptVisible,
   heartZone,
+  isActive,
   livePhase,
   paceValue,
   prefersSpeed,
   showsClock,
 } from '@/features/live/liveWorkout';
+import { isStrengthSport } from '@/features/strength/watchLive';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import { formatElapsed } from '@/features/workouts/summary';
 import { fmtDecimal, fmtInt } from '@/i18n';
@@ -64,9 +66,15 @@ export function LiveWorkoutScreen() {
     );
   }
 
+  // A strength workout belongs in the strength logger, not here.
+  if (isActive(live) && isStrengthSport(live.sportType)) return <Redirect href="/strength/watch-pick" />;
+
   return (
     <Screen>
       <HiddenTabHeader title={live.sportName ? sportLabel(live.sportName) : t('live.title')} />
+      {isActive(live) && live.sportType === null ? (
+        <Button label={t('live.logStrength')} icon="barbell" onPress={() => router.push('/strength/watch-pick')} />
+      ) : null}
       {endPromptVisible(live, kept) ? (
         <Card>
           <AppText variant="bodyStrong">{t('live.endPrompt.title')}</AppText>

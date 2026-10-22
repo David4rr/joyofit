@@ -43,7 +43,8 @@
     "aboutTitle": "Tentang angka-angka ini",
     "aboutWatch": "Kalori dan jarak sesuai laporan jam saat sinkron terakhir. Tarik ke bawah untuk sinkron.",
     "aboutSamples": "Kalori dan jarak dijumlahkan dari sampel per menit yang tersimpan. Tarik ke bawah untuk sinkron.",
-    "aboutNone": "Belum ada data tersimpan untuk hari ini. Sinkron untuk mengambil data hari ini dari jam. Tarik ke bawah untuk sinkron."
+    "aboutNone": "Belum ada data tersimpan untuk hari ini. Sinkron untuk mengambil data hari ini dari jam. Tarik ke bawah untuk sinkron.",
+    "strengthOnWatch": "Latihan beban berjalan di jam"
   },
   "hourly": {
     "peak_other": "Jam tersibuk {{hour}}, {{steps}} langkah"
