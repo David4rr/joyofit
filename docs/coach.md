@@ -1,6 +1,6 @@
 # Coach (Pro)
 
-Written 2026-10-18. A daily suggestion, running and strength plans, an exercise library and an "Tanya coach" chat. All of it is JS (ships over the air, `docs/ota.md`), none of it is medical advice, and the daily suggestion, the plans and the feedback are **rules, not a model**: every number below is a constant in the code and is covered by `src/features/coach/coach.test.ts`.
+Written 2026-10-18. A daily suggestion, running and strength plans, an exercise library and the "Joyo AI" chat (named "Tanya coach" before 2026-10-22; the own-key engine is described in "Joyo AI (own key)" below). All of it is JS (ships over the air, `docs/ota.md`), none of it is medical advice, and the daily suggestion, the plans and the feedback are **rules, not a model**: every number below is a constant in the code and is covered by `src/features/coach/coach.test.ts`.
 
 | Part | Code |
 | --- | --- |
@@ -11,6 +11,7 @@ Written 2026-10-18. A daily suggestion, running and strength plans, an exercise 
 | Matching to watch workouts | `match.ts`, `useCoach.ts` (runs after each sync) |
 | Post-workout feedback | `feedback.ts`, `pace.ts`, `ui/CoachFeedbackSection.tsx` (workout detail) |
 | Access | `useCoachAccess.ts`: JoyoRogo Pro (`watchWorkout.status.unlocked`), the last answer is kept for offline |
+| Joyo AI with your own key | `src/features/ai/` (see "Joyo AI (own key)"): free for everyone 18 or older, not behind Pro |
 
 ## Daily suggestion
 
@@ -90,9 +91,180 @@ For a workout matched to a running session (`feedback.ts`): duration within 15 %
 
 The document is one JSON per account in JoyoRogo (`coach_doc`, optimistic `rev`, same pattern as the gear document): `coach.getDoc` is open to every signed-in account, `coach.putDoc` needs Pro and answers `locked` otherwise (the app then keeps changes on the phone). A merge keeps the newer plan (`planUpdatedAt`; ending a plan is `plan: null` with a new time) and merges finished sessions and strength logs per key, the later mark winning. Progress of a plan that is no longer the active one is dropped. Synced from the cloud sync loop (`CloudProvider`), and after every change the person makes. Server side: the joyorogo repo, `docs/coach.md`.
 
+## Joyo AI (own key)
+
+Written 2026-10-22. Code: `src/features/ai/`. The Coach chat has two engines, and the person picks one. The **hosted** engine is the earlier one (JoyoRogo `coach.chat`, Pro, its own daily message limit, `src/features/coach/chat/api.ts`, unchanged). The **own-key** engine (BYOK) lets anyone 18 or older talk to a provider they pay for themselves, with their own API key. Everything in this section is JS (OTA, `docs/ota.md`) and none of it is medical advice. The daily suggestion, the plans and the feedback above stay **rules, not a model**; the model only writes chat answers and the optional insight texts, and the numbers it may use come from the phone.
+
+| | Hosted | Own key |
+| --- | --- | --- |
+| Who | JoyoRogo Pro | Everyone 18 or older, free. No JoyoRogo account needed; food and weight (JoyoRogo data) are only read when signed in |
+| Request goes | phone to JoyoRogo to Cloudflare Workers AI | phone straight to the provider the person chose; JoyoRogo is not in the path |
+| Limit | JoyoRogo's daily message limit (set on the server, 20 a day for Pro per the owner brief) | `dailyCeiling` provider calls a day counted on the phone (default 40, allowed 5 to 200); provider costs are the person's own |
+| Safety pass | JoyoRogo `coach-chat.ts` | the same pass ported to `safety.ts` |
+| What JoyoRogo's servers see | the message and the snapshot while answering (nothing stored but counts, see the privacy page) | nothing: no key, no message, no digest |
+| Setting | `engine = 'rogo'` (default) | `engine = 'byok'`, set by `connectProvider` |
+
+Removing the provider in use sets the engine back to `rogo` (see "Consent and withdrawing").
+
+### Providers and adapters
+
+Two request formats cover every provider (`adapters/`), picked by the preset (`providers.ts`, `PROVIDERS`, `PROVIDER_ORDER`):
+
+| Provider | Adapter | Endpoint | Notes |
+| --- | --- | --- | --- |
+| OpenRouter | OpenAI chat completions | `https://openrouter.ai/api/v1` | listed first in setup: prepaid credits cap what a mistake costs |
+| OpenAI | OpenAI chat completions | `https://api.openai.com/v1` | sends `max_completion_tokens` (the others `max_tokens`) |
+| Anthropic | Messages (`/v1/messages`) | `https://api.anthropic.com` | headers `x-api-key` and `anthropic-version: 2023-06-01`; `max_tokens` gets 1,200 extra for thinking; Claude 5 models get `output_config.effort = low`; tool results ride in a user turn and same-role neighbours are merged |
+| Gemini | OpenAI chat completions | `https://generativelanguage.googleapis.com/v1beta/openai` | `reasoning_effort = low`; the model list returns `models/<id>`, the prefix is dropped; `freeTierTrainsOnData` is true (see consent) |
+| Custom | OpenAI chat completions | typed by the person (LiteLLM, Ollama on the LAN, a company gateway) | plain `http://` is accepted only for `localhost`, `127.*`, `10.*`, `192.168.*`, `172.16-31.*` and `*.local`; any other `http://` host is `badUrl` (`isInsecureRemote`) |
+
+OpenAI-style requests use `Authorization: Bearer <key>`; every request is `credentials: 'omit'`. The key test (`testProvider`) lists the provider's models (15 s limit), picks the model with `resolveModel` (the person's choice, else the preset default, else the first suggested one the list contains, so a retired default never blocks setup), then sends **one** message ("ping", 16 output tokens) with no health data. A server without a model list (some custom gateways) may still pass the chat call. A model that answers "no tool calling" (`noTools`) is remembered per `provider:model` in the settings and from then on answers from the digest alone; the answer carries `toolsUnsupported` so the screen can say so.
+
+The default model ids and the suggested ones in `PROVIDERS` were written on 2026-10-22 and are **[NOT VERIFIED]** against each provider's live catalogue at release; the provider's own list replaces a default it does not contain.
+
+### Key handling
+
+- The key lives in `expo-secure-store` only, one entry per provider (`joyofit.ai.key.<provider>`), written with `keychainAccessible: WHEN_UNLOCKED_THIS_DEVICE_ONLY` (`stores.ts`, `keyVault.ts`): on iOS that keeps it out of iCloud Keychain and device backups. The kv-store holds only a `keySaved` flag per provider, never the key. **[NOT VERIFIED]** what Android does with a SecureStore value in a cloud backup or on a new phone; Expo's documentation for the installed SDK has not been checked for that case.
+- It is never sent to JoyoRogo or the JoyoFit Worker, never synced (`syncInventory.ts`), and not registered with any sync code. The only request that carries it goes to the provider's own host, as a header.
+- It is not logged: nothing in `src/features/ai/` writes to a log or to the cloud log. The text kept from a provider error (`AiError.detail`, at most 240 characters, control characters removed) has the key replaced with `[key]`, `sk-...` tokens cut to six characters and `AIza...` tokens cut to four, because a provider may echo a key back.
+- A pasted key is cleaned (`cleanPastedKey`: spaces, line breaks, a leading `Bearer`, quotes) and shown masked (`maskKey`, "sk-...Ab3f"). Setup saves nothing until the test passed and the consent box is ticked (`connectProvider`).
+- Under 18 and unknown-age rules are in "Who may use it".
+
+### The digest
+
+Every question sends the digest (`digest.ts`, `joyofit.digest` v1, `DIGEST_VERSION = 1`) in the system prompt as JSON. It is built from the same numbers Readiness and Coach show, gathered fresh for each question (`data/assemble.ts`). `buildDigest` copies named fields only, so an extra property in a data source is dropped there, not sent. Missing is `null`, never 0; free text is flattened (`flat`: control characters and line breaks removed, length capped) so a note or an imported name cannot add its own instruction line. Size cap: **8,500 characters** (about 2,000 to 2,500 tokens); when over, in this order: workouts cut to 5, then none, days cut to 7, plan dropped, days cut to 3, goals dropped. Notes, state and coverage always stay.
+
+| In the digest | Detail |
+| --- | --- |
+| Person | age (this year minus the birth year, the lower of the phone's profile and the JoyoRogo profile), sex, height, goal, pregnancy or breastfeeding mode if set in JoyoRogo |
+| Goals | daily step goal and whether it is the default, sleep need, eat target, weight goal and date |
+| State | readiness word (or calibrating), training load and ratio, HRV state and values, sleep debt, 7-day strain average, VO2max, recovery hours left |
+| 14 days | per day: sleep minutes and score, resting heart rate, overnight HRV, strain, steps, active kcal, exercise minutes; weight, eaten kcal and protein only when signed in to JoyoRogo |
+| Workouts | up to 10 of the last 14 days: id, date, sport, minutes, km, average heart rate, the plan session it matched |
+| Plan | goal, level, week, weeks, done and planned this week, scale % |
+| Notes | the person's coach notes (below) |
+| Coverage | counts of watch days, food days, weigh-ins, and what is missing and why |
+
+Not in it, on purpose: **menstrual cycle data** (the owner's rule: no AI path reads it. The daily rows read no cycle table, the digest has no cycle field, the hosted chat snapshot has none either, and a test builds a digest from a source that carries cycle fields and checks they cannot appear), **Strava data**, **GPS** (also not in the workout tool), **per-minute heart rate**, sleep stages (only the one-night tool reads them, on request), name, email, photos and device ids. `DIGEST_FIELDS` lists every field; it is tied to the consent version (see "Consent and withdrawing").
+
+The person can see what would be sent (`previewDigest`, "Lihat data yang dikirim"). The conversation (last 12 turns, 2,000 characters each) and, for the answer, the tool results are sent as well.
+
+### Tools
+
+Eight tools, defined once in a neutral schema (`tools.ts`, `TOOL_SPECS`) and translated per provider by the adapters. All run on the phone and are read-only; the model decides when to call one, and the prompt tells it to call only when the digest does not answer.
+
+| Tool | Returns |
+| --- | --- |
+| `get_daily` | the daily values above for `from` to `to` (at most 90 days; a longer range is cut to the newest 90 and says so), the fields asked for; food and weight need JoyoRogo, food only for the last 14 days |
+| `get_trend` | mean, min, max, last, the previous period's mean and the change, over the last 7 to 90 days (food metrics 7 days), computed in code so the model does no arithmetic |
+| `get_sleep_night` | one night (the one that ended on the date): onset, wake, asleep and awake minutes, stage minutes or `none`, awakenings, overnight HRV, resting heart rate, score |
+| `list_workouts` | workouts between two dates (range at most 90 days), newest first, at most 30, optional sport filter |
+| `get_workout` | one workout by id: average and maximum heart rate, calories, pace, elevation gain, training effect and load, recovery hours, minutes per heart-rate zone, strain, up to 25 km splits, lap count. No GPS, no per-second series |
+| `get_nutrition` | JoyoRogo food totals per day (kcal, protein, carbs, fat, meals), at most 14 days; `not_connected` when signed out |
+| `get_plan` | goal, level, week, this week's progress, the next four sessions |
+| `propose_note` | nothing is saved: it returns text for a confirm chip |
+
+Limits (`TOOL_LIMITS`, `ANSWER_LIMITS`, `adapters/http.ts`):
+
+| Limit | Value |
+| --- | --- |
+| Tool rounds per answer | 6 (then the model is asked to answer without tools) |
+| Tool calls per round | 4 |
+| Days per range | 90 (food 14) |
+| Rows per result | 200 daily rows, 30 workouts |
+| Result size | 6,000 characters: list rows are dropped from the old end, anything that still does not fit becomes `{"error":"result too large, ask for a shorter range"}` |
+| One provider call | 25 s (listing models 15 s); no answer in time is `timeout`. The tools themselves have no timeout of their own |
+| Answer length | 800 output tokens, and 1,800 characters after cleaning |
+| Daily call ceiling | 40 by default (5 to 200), counted on the phone for chat and insights; every round counts, and a provider that answered with an error counts too |
+
+A bad argument or a data source that fails never throws: the model gets `{"error": "..."}` and can adjust, and the round limit bounds the loop. The screen shows what an answer read ("based on"): the tool name and plain arguments, never values (`ToolTrace`).
+
+### Memory notes
+
+"Catatan coach" (`memory.ts`): short facts the person wants the model to remember (an injury, a goal, a preference). At most **20 notes of 200 characters**, flattened, duplicates ignored, kept on the phone (`joyofit.ai.notes`) and sent with every request as `notes` in the digest. A note is saved **only when the person taps**: `propose_note` returns a suggestion, the screen shows it as a chip, and nothing is stored before the tap. A note that reads as an injury or a symptom switches the stricter prompt block on for every question (below). Notes are data for the model, never instructions.
+
+### Safety pass
+
+Ported from JoyoRogo's `packages/api/src/lib/coach-chat.ts` so both engines treat a worrying message the same way (`safety.ts`). Order in `answer()` is fixed:
+
+1. The gate (under 18, no provider, bad URL, no key, no consent): nothing is sent.
+2. The keyword pass over the last user message. A message about injury, a symptom, medication or an eating disorder gets a **fixed, localized answer and no provider call**: no tokens, no cost, the disclaimer line included (`ai:safe.*`, `ai:disclaimerLine`).
+3. The local daily ceiling.
+4. The digest and system prompt, then at most 6 rounds of provider call and tool runs.
+5. The reply is cleaned (reasoning tags, code fences, headings and bold removed, capped), a reply that repeats the rules (the canary `JFC-RULES-7Q4` or the rules' first line) is replaced with `ai:refuseLeak`, and the disclaimer line is added **in code** when the exchange is medical-ish, whatever the model wrote.
+
+The shared test messages and expected answers are in `src/features/ai/safety.fixtures.json`; JoyoRogo's `coach-chat.test.ts` does not read that file today, so the two copies are kept equal by copying, **[NOT VERIFIED]** that they still match after the next change on either side. Earlier user messages and notes that mention a problem switch on a stricter prompt block; pregnancy or breastfeeding (the JoyoRogo mode, or said in the chat) switches on the conservative block; an unknown age switches on the no-dieting block. The keyword pass is Indonesian and English only and a paraphrase can slip past it, so the prompt rules and the disclaimer stay as the second line. The `minorDiet` answer exists for parity with the hosted engine; a known under-18 never reaches it because the gate comes first.
+
+### Who may use it
+
+`byokAccess` (`access.ts`) is the one gate in front of every chat and insight call, in this order: `minor`, `noProvider`, `badUrl`, `noKey`, `noConsent`. A known age under 18 turns the own-key engine off whatever else is set (`MIN_ADULT_AGE = 18`). Age is the lowest the phone's profile and the cached JoyoRogo profile give, so one source saying under 18 is enough, and it is checked on every call, so adding a birth year later switches it off. Age is this year minus the birth year, as JoyoRogo counts it, so someone in the year they turn 18 counts as 18 from 1 January. **Unknown age is allowed**: the consent includes "I am 18 or older" (`adult: true`), and the prompt then uses the conservative no-dieting block. The key test (`testProvider`) does not go through the gate because it sends no health data.
+
+### Consent and withdrawing
+
+- Consent is per provider **and endpoint host** (`ConsentRecord`: version, time, host, `adult`). A custom URL on another host is a different recipient and asks again.
+- The consent screen lists the data categories (`CONSENT_CATEGORIES`, `ai:consent.data.<id>`): body, sleep, recovery, heart, workouts, plan, food, notes, chat. `CONSENT_VERSION` (1) is pinned to `DIGEST_FIELDS` by a hash (`CONSENT_FIELDS_HASH`, `consentMatchesFields`): changing a digest field without a new version fails the test in `digest.test.ts`, and a new version asks everyone again (`noConsent`). Add the hash of the new list when raising the version.
+- Gemini: the setup screen warns that Google's free tier uses what it receives to improve its products (`freeTierTrainsOnData`). That line comes from the owner brief and is **[NOT VERIFIED]** by us against Google's current terms.
+- Withdrawing (`removeProvider`, "Hapus kunci"): deletes the key, removes the consent, clears the cached insights, and when it was the provider in use sets `provider` to none, the engine back to hosted and both insight switches off. Notes and the saved conversation stay (they have their own delete, `deleteMemory`).
+- `deleteMemory` ("Hapus catatan dan percakapan"): notes, the saved conversation (`joyofit.coach.chat`) and cached insights; it leaves the key and the cached JoyoRogo profile (`joyofit.ai.person`: birth year, sex, height, goal, targets, pregnancy mode), because the age gate needs the profile. `deleteEverything` (`aiDeleteEverything`): every key, consent and setting, the memory, the usage counters and the cached profile. "Hapus dari HP ini" (`deleteAllLocalData`, `src/db/localData.ts`) calls `aiDeleteEverything` first, so it removes all of that too. Signing out alone deletes none of it; it only drops the cached profile at the next read while signed out.
+- What the person is told: `site/src/Privasi.tsx` section `#joyo-ai`, and JoyoRogo's `/privasi` (`#coach-joyofit`).
+
+### Insights (optional)
+
+A short text on Today (`insight.ts`, `todaysInsight`): one **daily** summary and one **Monday weekly** review. **Both are off by default** (`insightDaily`, `insightWeekly`). With both on, Monday shows the weekly one. Withdrawing the provider in use switches both off.
+
+- The app computes a facts list (`dailyFacts`, `weeklyFacts`: readiness, last night's sleep, sleep debt, HRV, resting heart rate, strain, load, recovery; the week against the week before). **Only that list goes to the model**, not the digest, notes or conversation. A missing value is left out, never zero.
+- The model is told to use only numbers in the facts, copied exactly, no diagnosis, no markdown, no emoji. The reply is checked before it is shown (`validateInsight`): no number that is not in the facts (or the date), no emoji or markdown, no medical wording (the same keyword pass as the chat), at most 420 characters (daily) or 760 (weekly). A reply that fails gets one retry with a stricter prompt; failing twice, or a provider error, shows **nothing** and the card keeps the rules-based suggestion, and no new attempt is made for 30 minutes (`RETRY_AFTER_SEC`).
+- A text is cached per day (daily) or per Monday (weekly) and per language, so at most one of each is generated. It goes through the same gate, consent and call ceiling as the chat. For a pregnancy, breastfeeding, unknown or minor profile the prompt says to only describe, no advice about intensity or weight.
+
+### Errors
+
+Provider failures become an `AiError` (`types.ts`) and the screen words each one with a cause and a next step (`ai:errors.<kind>`). The HTTP status decides first, then the provider's own words (`kindForStatus`):
+
+| Kind | Cause |
+| --- | --- |
+| `badKey` | 401, or 400 or 422 that talks about the API key |
+| `quota` | 402, or 403, 429, 400 or 422 with words like insufficient quota, credit balance, billing |
+| `forbidden` | 403 otherwise |
+| `rateLimit` | 429 otherwise |
+| `modelNotFound` | 404, or 400 or 422 saying the model does not exist |
+| `noTools` | 404, 400 or 422 saying the model does not support tools: the app retries once from the digest alone and remembers the model |
+| `timeout` | 408, 504, or no answer in 25 s |
+| `server` | 500 and above (including 529), or an answer that is not JSON |
+| `network` | the connection failed |
+| `badRequest` | any other 4xx |
+| `empty` | the reply is empty after cleaning |
+| `aborted` | the person left or cancelled |
+| `blocked` | not allowed to call, nothing was sent; `detail` is the gate reason (`minor`, `noProvider`, `badUrl`, `noKey`, `noConsent`), `noKey` or `ceiling` |
+
+### Adding a provider or a tool
+
+- **Provider** that speaks OpenAI chat completions: add an entry to `PROVIDERS` and `PROVIDER_ORDER`, add its id to `PROVIDER_IDS` (`types.ts`), set its token field and reasoning quirks, `freeTierTrainsOnData` if its free tier trains, then the `ai:` strings, a consent line if its host needs wording, and a request-mapping test in `adapters.test.ts`. Another wire format needs a third adapter and an `AdapterKind`. Check the provider's terms and age limit before listing it, and put its key page in `keyUrl`.
+- **Tool**: add the name to `TOOL_NAMES`, its schema to `TOOL_SPECS`, a `case` in `dispatch` (range via `rangeArgs`, output through `cap`, free text through `flat`), and a data method on `ToolData` bound in `data/assemble.ts`. A tool stays read-only and on the phone. If it can return a new kind of data, that data must be in a consent category and `CONSENT_VERSION` must go up. Add its limit to the table above.
+- **Digest field**: add it to `DigestSource`, `buildDigest` and `DIGEST_FIELDS`, raise `CONSENT_VERSION` and add the new hash. Never add cycle data, Strava data, GPS or anything that names the person.
+
+### Not in this version
+
+- OpenRouter sign-in with PKCE (no key to paste): needs an HTTPS callback page we do not run yet. OpenRouter works with a pasted key like the others.
+- Writes of any kind from the model (it cannot log food, edit a plan or save a note by itself), push notifications from the AI, voice, images.
+- The hosted engine running on the same core (it still uses JoyoRogo's `coach.chat`).
+- Syncing notes, conversation or settings between phones: they are per phone on purpose (`docs/multi-device.md`).
+
+### Not verified
+
+- What each provider keeps or trains on, and their age limits. Our texts do not say any provider "does not store" data; the provider's own terms apply once the data reaches it.
+- The Gemini free-tier wording (above) and the default model ids (above).
+- Android handling of SecureStore in backups (above).
+- Apple and Google Play review of the consent wording (Apple 5.1.2(i), Play's AI user-data rules): not submitted yet, outcome unknown.
+- That JoyoRogo's `coach-chat.ts` and `safety.fixtures.json` still agree (above).
+- Behaviour with a real key on a real device: the adapters and the loop are tested against fakes only.
+
+### Tests
+
+Run `bun test src/features/ai` (the repo's test runner; the wipe in `src/db/localData.ts` is not covered by a Joyo AI test). Files: `adapters.test.ts` (request and response mapping for both adapters, error kinds, the key is not kept from an echoing provider, timeout, network and abort), `digest.test.ts` (size cap and trimming order, no cycle fields, every output key is a declared field, missing is null, flattening, no name, email or GPS, and the consent version pinned to the field list), `tools.test.ts` (eight read-only tools, range, food and result limits, trend arithmetic, `propose_note`, error objects), `safety.test.ts` (the shared fixtures, prompt blocks, reply cleaning, disclaimer), `access.test.ts` (the gate: consent per provider, version and host, under 18 closed, unknown age allowed, URL rules, settings defaults), `answer.test.ts` (no provider call when blocked or flagged, tool loop and its limits, `noTools` fallback, ceiling, conversation cut, the key never in the prompt), `keys.test.ts` (key only in the secure store, `joyofit.ai.` namespace, masking, "Hapus kunci", "Hapus catatan dan percakapan", delete everything, notes limits, usage counters), `insight.test.ts` (slots, facts, number validator, one stricter retry, cool-down, cache per language), `models.test.ts` (model choice and search).
+
 ## Not medical advice
 
-The suggestion, the plans and the chat are general training guidance. Every Coach screen shows the disclaimer line (`coach:disclaimer`). The chat (phase 3) sends injury and symptom messages to the "see a professional" answer without calling the model, and is conservative in Hamil mode.
+The suggestion, the plans and the chat are general training guidance. Every Coach screen shows the disclaimer line (`coach:disclaimer`). Both chat engines send injury, symptom, medication and eating-disorder messages to the "see a professional" answer without calling the model, and are conservative in Hamil mode; the own-key engine's version of this is described under "Joyo AI (own key)", "Safety pass".
 
 ## Native / next store build
 

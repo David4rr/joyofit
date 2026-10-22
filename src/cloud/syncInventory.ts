@@ -48,6 +48,14 @@ import { HuaweiWear, type CycleSwitches, type UserSex } from '@/wear';
  *    device token and base URL that are per device
  *  - one-off flags: onboarding progress, GPS explainer, morning check-in dismissed day, course draft
  *  - Coach chat and the daily "how do you feel" check-in (a day's answer, not a preference); Strava link (server side)
+ *  - Joyo AI (own-key chat, `src/features/ai/`, `docs/coach.md`), all of it per phone and never registered with any sync code:
+ *    the settings (provider, model, custom endpoint, insight switches, daily call ceiling) and the consent record (kv `joyofit.ai.settings`):
+ *    they name the provider this person trusts and record a yes that was given on this phone, for that provider and host;
+ *    the API key (secure store `joyofit.ai.key.<provider>`, `WHEN_UNLOCKED_THIS_DEVICE_ONLY`): a secret that must not leave the phone,
+ *    not for our servers, a backup or another phone, and it is never logged; the notes (kv `joyofit.ai.notes`): free text about
+ *    injuries and goals that goes only to the provider the person chose; the conversation (kv `joyofit.coach.chat`, shared with the hosted
+ *    chat): the server stores no messages; the insights (kv `joyofit.ai.insight`), the day's usage counters (`joyofit.ai.usage`) and the
+ *    cached JoyoRogo profile used for the age gate (`joyofit.ai.person`): derived from this phone's data and key
  *  - Strength preferences (already in `strength_record`) and Sticker Studio / route data (`contentSync.ts`)
  *  - sticker share sheet toggles (route privacy, watermark): held in component state, never stored
  *
