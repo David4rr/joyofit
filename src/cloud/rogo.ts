@@ -113,6 +113,11 @@ export interface RogoMyProfile {
     targetDate: string;
     /** IANA zone JoyoRogo counts this person's days in; null = Asia/Jakarta. */
     timezone?: string | null;
+    /** Birth year, as stored on the profile row (`profile.myProfile` returns the whole row). Joyo AI reads it for the age gate. */
+    birthYear?: number;
+    goal?: 'lose' | 'maintain' | 'gain';
+    /** Hamil / Menyusui mode; `none` for the normal plan. */
+    maternalMode?: 'none' | 'pregnant' | 'breastfeeding';
   } | null;
   targets: {
     /** Basal metabolic rate, kcal per day. */
@@ -450,6 +455,8 @@ export const rogo = {
     const history = await rogoCall<{ entries: RogoWeightEntry[] }>('weight/history', { limit: 1 }, READ);
     return history.entries.at(-1) ?? null;
   },
+  /** The newest `limit` weigh-ins (1 to 365), oldest first. */
+  weightHistory: (limit: number) => rogoCall<{ entries: RogoWeightEntry[] }>('weight/history', { limit }, READ),
   /**
    * A weigh-in (`weight.checkIn`, 25 to 400 kg): JoyoRogo keeps one weight per Jakarta day and the last write of a day wins. A scale
    * weigh-in also sends `source: 'scale'` and the body values it has (each optional, already range-checked, see `toRogoCheckIn`).

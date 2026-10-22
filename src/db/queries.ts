@@ -349,6 +349,23 @@ export async function countWatchWorkoutsSince(db: SQLiteDatabase, sinceSec: numb
   return row?.n ?? 0;
 }
 
+/**
+ * Steps and the watch's own active energy per local day, aggregated in SQL (`bounds` as in `listRestingHeartRateByDay`).
+ * `calories` are small calories (1/1000 kcal) of the watch's own minutes (`imported = 0`); a day without samples is absent.
+ */
+export async function listDayTotals(db: SQLiteDatabase, bounds: readonly number[]): Promise<Map<number, { steps: number; calories: number }>> {
+  const days: number[] = [];
+  for (let i = 0; i + 1 < bounds.length; i++) days.push(bounds[i], bounds[i + 1]);
+  if (days.length === 0) return new Map();
+  const rows = await db.getAllAsync<{ day: number; steps: number; calories: number }>(
+    `WITH days(d0, d1) AS (VALUES ${Array.from({ length: days.length / 2 }, () => '(?, ?)').join(', ')})
+     SELECT d0 AS day, SUM(s.steps) AS steps, SUM(CASE WHEN s.imported = 0 THEN s.calories ELSE 0 END) AS calories
+     FROM days JOIN step_samples s ON s.timestamp >= d0 AND s.timestamp < d1 GROUP BY d0`,
+    days,
+  );
+  return new Map(rows.map((r) => [r.day, { steps: r.steps ?? 0, calories: r.calories ?? 0 }]));
+}
+
 /** One `health_metrics` value of `type` (`ts` unix seconds); rows without a number are left out. */
 export function listMetricSince(db: SQLiteDatabase, type: string, sinceSec: number): Promise<{ ts: number; value: number }[]> {
   return db.getAllAsync<{ ts: number; value: number }>(
