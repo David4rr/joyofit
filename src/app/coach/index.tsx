@@ -17,6 +17,7 @@ import { endPlan } from '@/features/coach/actions';
 import { sessionStatus } from '@/features/coach/progress';
 import { useCoach } from '@/features/coach/useCoach';
 import { CoachGate } from '@/features/coach/ui/CoachGate';
+import { RetestHistory } from '@/features/coach/ui/RetestSection';
 import { SessionRow } from '@/features/coach/ui/SessionRow';
 import { FeelPicker } from '@/features/coach/ui/FeelPicker';
 import { SuggestionBlock } from '@/features/coach/ui/SuggestionBlock';
@@ -107,6 +108,8 @@ function CoachBody() {
           ))}
         </View>
       </Section>
+
+      {plan.goal === 'runWalk' ? <RetestHistory planId={plan.id} /> : null}
 
       <Details title={t('plan.allWeeks')}>
         <View style={styles.weeks}>

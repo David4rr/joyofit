@@ -7,7 +7,8 @@ Written 2026-10-18. A daily suggestion, running and strength plans, an exercise 
 | Synced document and storage | `doc.ts`, `store.ts` (`coach_doc`), `merge.ts`, `syncDoc.ts`, `sync.ts`; JoyoRogo `coach.getDoc` / `coach.putDoc` |
 | Body signals | `signals.ts` (reads `FitnessData`: the same functions Readiness, Kebugaran and Energi Tubuh use) |
 | Daily suggestion | `suggest.ts`, `format.ts`, `ui/CoachTodayCard.tsx`, `ui/SuggestionBlock.tsx` |
-| Plans | `plans/run.ts`, `plans/generate.ts`, `plans/adapt.ts`, `progress.ts`, `actions.ts`, `src/app/coach/` |
+| Plans | `plans/run.ts`, `plans/runWalk.ts`, `plans/generate.ts`, `plans/adapt.ts`, `progress.ts`, `actions.ts`, `src/app/coach/` |
+| Lari-jalan guide, cues and re-test | `runwalk/`, `ui/RunGuideSection.tsx`, `ui/RetestSection.tsx` |
 | Matching to watch workouts | `match.ts`, `useCoach.ts` (runs after each sync) |
 | Post-workout feedback | `feedback.ts`, `pace.ts`, `ui/CoachFeedbackSection.tsx` (workout detail) |
 | Access | `useCoachAccess.ts`: JoyoRogo Pro (`watchWorkout.status.unlocked`), the last answer is kept for offline |
@@ -37,13 +38,14 @@ Bands: **6 or more** exhausted, **4 to 5** tired, **2 to 3** fair, **0 to 1** fr
 | Already trained today (a workout of 20 minutes or more) | "Sudah latihan hari ini" |
 | Plan finished | "Rencanamu sudah selesai" |
 | Exhausted | Rest |
-| Today has a plan session, tired | A run: the same time at 70 % (at most 40 min) as an easy run in zone 2. Strength: active rest, 20 min |
+| Today has a plan session, tired | A run: the same time at 70 % (at most 40 min) as an easy run in zone 2. A Lari-jalan session becomes a walk instead. Strength: active rest, 20 min |
 | Today has a plan session, fair | The session at 85 % |
 | Today has a plan session after a hard day (yesterday's strain 14 or more) and it is a hard run | An easy run at 70 % |
 | Today has a plan session, fresh | The session as written |
 | Plan session of today already done | "Sesi hari ini sudah selesai" |
 | Plan rest day, a session of this week was missed, fresh, yesterday not hard | Catch up the missed session |
 | Plan rest day otherwise | "Hari ini jadwal istirahat" |
+| Plan rest day of a Lari-jalan plan, not exhausted | The same, with a brisk walk or an easy ride in zone 2 (about 30 minutes) suggested as an option |
 | No plan, tired | Active rest: a 30 minute walk in zone 1 |
 | No plan, fair or fresh | An easy run in zone 2 (30 or 40 minutes; a walk when walking, riding or strength is what you do most; a strength session of 30 or 40 minutes for strength people) |
 
@@ -59,13 +61,35 @@ The plan document stores the person's choices (`goal`, `level`, `daysPerWeek`, `
 
 Running (`plans/run.ts`, constants at the top, one recipe per goal and level):
 
-- Goals: 5K (8 weeks), 10K (10 weeks, 12 for a beginner), half marathon (12 weeks, 14 for a beginner), regular running 3x a week (8 weeks). 3 to 5 sessions a week, 3 for regular running.
+- Goals: 5K (8 weeks), 10K (10 weeks, 12 for a beginner), half marathon (12 weeks, 14 for a beginner), regular running 3x a week (8 weeks), and Lari-jalan, the run/walk restart (8 weeks, below). 3 to 5 sessions a week, 3 for regular running and Lari-jalan.
 - Slots in order: easy, quality, (recovery), (easy), long; the long run is on the last chosen weekday.
 - Volume grows linearly from the first week's minutes to the peak, rounded to 5 minutes. Every fourth week is a cut-back at 80 %. Race goals end with a taper week at 60 % whose last session is the distance itself.
 - Beginners start with walk/run (a 5 minute brisk walk, then alternating run and walk, 1 min run / 2 min walk x 8 up to 3 x 8 min run) and move to continuous running after 6 weeks (5K, regular running 4); a beginner 10K or half starts further into the table, 4 weeks.
 - Quality alternates tempo (steady, zone 3 to 4) and intervals (3 min hard in zone 4, 2 min easy jog, 3 to 8 reps) from the intermediate level; beginners and intermediate regular runners have an easy run in that slot.
 - Easy and long runs: zone 2 (60 to 70 % of the maximum heart rate, the app's zones). Recovery runs: zone 1 to 2, at most 30 minutes.
 - Pace targets (shown on the session and used in the feedback) are shares of your threshold pace (`analysis/zones.ts`, from your GPS runs of the last 90 days): easy and long 1.14 to 1.29, recovery 1.29 to 1.6, tempo 1.06 to 1.14, intervals 0.94 to 1.0. No threshold, no pace target: only the zone.
+
+### Lari-jalan (run/walk restart)
+
+Written 2026-10-23. Goal `runWalk` (`plans/runWalk.ts`, constants at the top, tests in `runWalk.test.ts`): an 8-week restart for someone heavier or long off running whose heart rate climbs fast (the owner: 106 kg, 26 y, 1 km at 10:00/km already reaches zone 4). One beginner plan, 3 sessions a week, no level to choose. JoyoFit's own progression, not a published programme, and not medical advice.
+
+| Weeks | Sessions |
+| --- | --- |
+| 1 to 6 | 5 min brisk walk, then jog and walk in turns, then 5 min walk. Jog / walk x reps: 1 min / 2 min x 8, 1:30 / 2 x 7, 2 / 2 x 6, 3 / 2 x 5, 5 / 2 x 4, 8 / 2 x 3. The walk never shrinks |
+| 7 | One continuous jog of 15, 20 and 20 min (the first is a bridge from 8-minute blocks), same warm-up and cool-down |
+| 8 | Continuous jog of 25 and 30 min |
+| 1, 5, 8 | The last session of the week is the **1 km re-test** instead |
+
+- **Heart rate leads, not pace.** Every jog session is in zones 2 to 3 (`zone` 3 is the ceiling) and carries `walkAtZone` 4: walk when the heart rate reaches zone 4, jog again when it is back in zone 2. The bpm are the person's own zones (`hrzones`). No pace target is shown or judged for these sessions.
+- Every fourth week (week 4) is a cut-back at 80 % and the weekly adaptation applies as for every plan (jog reps never below 3, a continuous jog never below 15 min). The re-test is never scaled.
+- **Re-test** (`type: 'retest'`, `RunSpec.retest`): 10 min brisk-walk warm-up, 1 km held at the heart rate of zone 3, 5 min walk, 27 minutes planned. The heart rate is the fixed part and the pace the result. The first test (week 1) is the baseline, the others are shown against it, **only when the average heart rates are within 5 bpm** (otherwise the screen says the effort was not the same and shows no verdict). Results are timed by the phone: the km ends when the watch's live distance has grown by 1 km (the pace is time over the measured distance) or at the tap on "1 km done" (the km is then taken as exactly 1 km, and the result says so). The average heart rate is the mean of the live readings and is left empty under 10 readings. Saved on the phone only (`joyofit.coach.retests`, not in the synced document), listed on the Coach screen and the session (`runwalk/retest.ts`).
+- **Session guide** (`runwalk/timeline.ts`, `hrCue.ts`, `store.ts`, `ui/RunGuideSection.tsx`, `ui/RetestSection.tsx`). Coach sessions did not have live cues or a watch push: JoyoFit sends no structured workout to the watch, so the cues are phone-side. The person starts a Run workout on the watch and taps "Start guide"; the phone follows the session's timeline by wall clock (so a restart does not lose the place), buzzes at every jog/walk change (distinct patterns), keeps the screen on while it runs, and schedules one local notification per change (17 for the longest session) so it still calls with the screen off. While the watch's live workout sends a heart rate (`useLiveWorkout`, no older than 10 s), a reading in zone 4 or above for 8 s in a row during a jog cues "walk now" (once), and a reading back in zone 2 or below for 10 s cues "jog again". The plan's timeline keeps running underneath; the cue is advice. Without a live heart rate the screen says so and points to the talk test.
+- **Rest days** (`Suggestion.restIdeas`): the rest-day suggestion adds a brisk walk or an easy ride in zone 2 of about 30 minutes as an option. They are never planned sessions and never counted in the plan.
+- **Daily suggestion**: a tired day turns a Lari-jalan session into a walk (70 % of the time, at most 40 min), never a run; a fair day scales jogging sessions to 85 % but leaves the re-test as written.
+- Safety copy is calm and general (`session.hrGuide.calm`, `setup.runWalk.note`): slow is the point, walking is the plan working, stop if something hurts or you feel dizzy or unwell, ask a doctor first with a health condition or a long inactivity. Not medical advice.
+- **Cloud**: `goal: 'runWalk'` is a new value of the synced plan document. JoyoRogo's `coachPlanSchema` (`packages/api/src/lib/coach-doc.ts`) must accept it before a Pro account can sync such a plan, or `coach.putDoc` rejects it. A JoyoFit build from before this goal cannot generate the plan: an older app that downloads such a document would fail to build its sessions, so ship the server first and the app update after it.
+
+Not verified on a device: the buzz and the heart-rate cue with the screen off (JavaScript timers may be throttled by the OS; the scheduled notifications are what works with the screen off), the Android notification channel for the immediate cue, and the live distance arriving from the watch during the re-test.
 
 ### Weekly adaptation
 
@@ -81,11 +105,11 @@ Weeks that passed while the app was closed are decided from completion only (rul
 
 ### Matching to watch workouts
 
-After each sync (`useCoach`), a workout belongs to the open plan session that is of the same kind (a run for running sessions, a walk or a run for walk/run and recovery, a strength-type workout for strength), lasted at least 50 % of the planned minutes (60 % walk/run; a race 90 % of its distance; strength 15 minutes) and falls from one day before to two days after the session's day. Oldest workout first, the nearest free session by day. Done by hand or skipped sessions are left alone; taking a mark back keeps a tombstone (`cleared`) so the undo wins over the cloud copy and the workout is not matched again.
+After each sync (`useCoach`), a workout belongs to the open plan session that is of the same kind (a run for running sessions, a walk or a run for walk/run, recovery and Lari-jalan sessions, a strength-type workout for strength), lasted at least 50 % of the planned minutes (60 % walk/run and Lari-jalan; a race 90 % of its distance; strength 15 minutes) and falls from one day before to two days after the session's day. Oldest workout first, the nearest free session by day. Done by hand or skipped sessions are left alone; taking a mark back keeps a tombstone (`cleared`) so the undo wins over the cloud copy and the workout is not matched again.
 
 ### Feedback on the workout detail
 
-For a workout matched to a running session (`feedback.ts`): duration within 15 % of the plan; heart-rate zones by session type (easy and long: under 15 % above zone 2 is fine, 35 % or more is too hard; tempo: 45 % or more in zones 3 to 4, 20 % or more in zone 5 is too hard; intervals: at least 60 % of the planned hard time in zones 4 to 5; walk/run: flags 40 % or more above zone 3); average pace against the target band (more than 3 % faster or 5 % slower than the band's edges); distance for a race (95 %). The overall line picks, in order: too hard, short, long, too easy (hard sessions only), on target.
+For a workout matched to a running session (`feedback.ts`): duration within 15 % of the plan; heart-rate zones by session type (easy and long: under 15 % above the session's zone, 2 for a regular run and 3 for a Lari-jalan jog, is fine, 35 % or more is too hard; tempo: 45 % or more in zones 3 to 4, 20 % or more in zone 5 is too hard; intervals: at least 60 % of the planned hard time in zones 4 to 5; walk/run: flags 40 % or more above zone 3; the Lari-jalan re-test: duration only); average pace against the target band (more than 3 % faster or 5 % slower than the band's edges; never for a Lari-jalan session, which is judged by its zones); distance for a race (95 %). The overall line picks, in order: too hard, short, long, too easy (hard sessions only), on target.
 
 ## Cloud
 

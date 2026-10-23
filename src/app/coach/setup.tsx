@@ -20,13 +20,13 @@ import { fmtDay, fmtInt, useLocale } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
 import { spacing } from '@/theme';
 
-const GOALS: readonly PlanGoal[] = ['run5k', 'run10k', 'runHalf', 'runRoutine', 'strengthFull'];
+const GOALS: readonly PlanGoal[] = ['runWalk', 'run5k', 'run10k', 'runHalf', 'runRoutine', 'strengthFull'];
 const LEVELS: readonly PlanLevel[] = ['beginner', 'intermediate', 'advanced'];
 const SETTINGS: readonly StrengthSetting[] = ['home', 'gym'];
 
 function dayChoices(goal: PlanGoal): number[] {
   if (goal === 'strengthFull') return [2, 3];
-  return goal === 'runRoutine' ? [3] : [3, 4, 5];
+  return goal === 'runRoutine' || goal === 'runWalk' ? [3] : [3, 4, 5];
 }
 
 function SetupForm() {
@@ -43,6 +43,7 @@ function SetupForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const strength = goal === 'strengthFull';
+  const runWalk = goal === 'runWalk';
 
   const chooseGoal = (next: PlanGoal) => {
     setGoal(next);
@@ -60,7 +61,8 @@ function SetupForm() {
   const toggleDay = (day: number) =>
     setWeekdays((current) => (current.includes(day) ? current.filter((d) => d !== day) : current.length >= days ? current : [...current, day].sort((a, b) => a - b)));
 
-  const choice: PlanChoice = { kind: strength ? 'strength' : 'run', goal, level, daysPerWeek: days, setting: strength ? setting : null, weekdays };
+  // Lari-jalan is one plan for everyone who starts from walking: it has no level to pick.
+  const choice: PlanChoice = { kind: strength ? 'strength' : 'run', goal, level: runWalk ? 'beginner' : level, daysPerWeek: days, setting: strength ? setting : null, weekdays };
   const ready = weekdays.length === days;
 
   const start = async () => {
@@ -86,13 +88,17 @@ function SetupForm() {
         </View>
       </Section>
 
-      <Section title={t('setup.level.title')} icon="speedometer" tint="workouts">
-        <View style={styles.stack} accessibilityRole="radiogroup">
-          {LEVELS.map((l) => (
-            <ChoiceCard key={l} title={t(`level.${l}`)} hint={t(strength ? `setup.levelStrength.${l}` : `setup.level.${l}`)} selected={level === l} onPress={() => setLevel(l)} />
-          ))}
-        </View>
-      </Section>
+      {runWalk ? (
+        <Notice icon="heart">{t('setup.runWalk.note')}</Notice>
+      ) : (
+        <Section title={t('setup.level.title')} icon="speedometer" tint="workouts">
+          <View style={styles.stack} accessibilityRole="radiogroup">
+            {LEVELS.map((l) => (
+              <ChoiceCard key={l} title={t(`level.${l}`)} hint={t(strength ? `setup.levelStrength.${l}` : `setup.level.${l}`)} selected={level === l} onPress={() => setLevel(l)} />
+            ))}
+          </View>
+        </Section>
+      )}
 
       {strength ? (
         <Section title={t('setup.setting.title')} icon="home" tint="workouts">
@@ -116,7 +122,7 @@ function SetupForm() {
           ))}
         </View>
         <AppText variant="caption" muted>
-          {ready ? t('setup.weekdays.hint', { n: fmtInt(days) }) : t('setup.weekdays.needMore', { n: fmtInt(days - weekdays.length) })}
+          {ready ? t(runWalk ? 'setup.weekdays.hintRunWalk' : 'setup.weekdays.hint', { n: fmtInt(days) }) : t('setup.weekdays.needMore', { n: fmtInt(days - weekdays.length) })}
         </AppText>
       </Section>
 

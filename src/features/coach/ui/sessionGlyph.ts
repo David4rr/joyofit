@@ -10,6 +10,7 @@ export const SESSION_GLYPH: Record<SessionType | 'walk' | 'mobility', ChipGlyph>
   intervals: { icon: 'flash' },
   walkrun: { icon: 'footsteps' },
   race: { icon: 'trophy' },
+  retest: { icon: 'stopwatch' },
   strength: { sport: 'weight-lifter' },
   walk: { sport: 'walk' },
   mobility: { sport: 'yoga' },

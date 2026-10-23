@@ -53,6 +53,8 @@ export interface SuggestionInput {
   missed: PlannedSession | null;
   /** The plan ended before today or has not started yet. */
   planState: 'none' | 'active' | 'finished' | 'upcoming';
+  /** The plan is Lari-jalan: its rest days suggest a brisk walk or an easy ride as an option. */
+  restIdeas: boolean;
 }
 
 export type ReasonCode =
@@ -118,6 +120,8 @@ export interface Suggestion {
   band: Band;
   /** What added up to the band, biggest first, then plan notes. */
   reasons: Reason[];
+  /** A plan rest day of a Lari-jalan plan: a brisk walk or an easy ride is suggested, never planned. */
+  restIdeas: boolean;
 }
 
 const EXHAUSTED = 6;
@@ -174,9 +178,14 @@ export function bandOf(fatigue: number): Band {
 
 const roundTo5 = (minutes: number): number => Math.max(10, Math.round(minutes / 5) * 5);
 
-/** A hard session turned easy: the same time cut to 70 % (at most 40 minutes), zone 2. */
+/**
+ * A hard session turned easy: the same time cut to 70 % (at most 40 minutes), zone 2. A Lari-jalan session (a jog guided by
+ * the heart rate) is never turned into a run: on a tired day it becomes a walk.
+ */
 function easierRun(session: PlannedSession): Effective {
-  return { type: 'easy', minutes: Math.min(40, roundTo5(session.minutes * 0.7)), zone: 2 };
+  const minutes = Math.min(40, roundTo5(session.minutes * 0.7));
+  if (session.run?.walkAtZone != null || session.type === 'retest') return { type: 'walk', minutes, zone: 2 };
+  return { type: 'easy', minutes, zone: 2 };
 }
 
 /** The reasons a person reads: signals that raised the fatigue, biggest first, then the rest. */
@@ -191,7 +200,7 @@ export function suggest(input: SuggestionInput): Suggestion {
   const known = base.length > 0 || input.readiness !== null || input.lastNightMin !== null || input.feel !== null;
   const reasons = sorted(base);
   const withNote = (...notes: Reason[]): Reason[] => [...sorted(base), ...notes];
-  const none: Suggestion = { kind: 'free', session: null, effective: null, scalePct: 100, fatigue, band, reasons };
+  const none: Suggestion = { kind: 'free', session: null, effective: null, scalePct: 100, fatigue, band, reasons, restIdeas: false };
 
   if (input.planState === 'finished') {
     return { ...none, kind: 'planFinished', reasons: withNote({ code: 'planDone', points: 0, values: {} }) };
@@ -225,7 +234,8 @@ export function suggest(input: SuggestionInput): Suggestion {
         reasons: withNote({ code: 'afterHardDay', points: 0, values: { strain: input.strainYesterday ?? 0 } }),
       };
     }
-    if (band === 'ok') {
+    // The re-test is a 1 km measurement, not a volume to cut: at a fair state it goes ahead as written, when tired it waits (above).
+    if (band === 'ok' && session.type !== 'retest') {
       const scalePct = 85;
       const effective: Effective | null =
         { type: session.type, minutes: roundTo5((session.minutes * scalePct) / 100), zone: session.run?.zone ?? null };
@@ -246,7 +256,7 @@ export function suggest(input: SuggestionInput): Suggestion {
       const effective: Effective | null = { type: session.type, minutes: session.minutes, zone: session.run?.zone ?? null };
       return { ...none, kind: 'catchUp', session, effective, scalePct: 100, reasons: withNote({ code: 'catchUp', points: 0, values: {} }) };
     }
-    return { ...none, kind: 'planRestDay', reasons: withNote({ code: 'planRestDay', points: 0, values: {} }) };
+    return { ...none, kind: 'planRestDay', restIdeas: input.restIdeas, reasons: withNote({ code: 'planRestDay', points: 0, values: {} }) };
   }
 
   // No plan (or one that has not started): a suggestion from the state of the body alone.

@@ -1,6 +1,6 @@
 import type { PlanKind } from '../doc';
 
-export type SessionType = 'walkrun' | 'easy' | 'recovery' | 'tempo' | 'intervals' | 'long' | 'race' | 'strength';
+export type SessionType = 'walkrun' | 'easy' | 'recovery' | 'tempo' | 'intervals' | 'long' | 'race' | 'retest' | 'strength';
 
 export type HrZone = 1 | 2 | 3 | 4 | 5;
 
@@ -11,10 +11,21 @@ export interface RunSpec {
   zone: HrZone;
   /** Distance to cover (the race of a distance plan), null for a plain duration. */
   distanceM: number | null;
-  /** Walk/run: alternate `runSec` running and `walkSec` walking `reps` times between a brisk walk warm-up and cool-down. */
+  /**
+   * Walk/run: alternate `runSec` running and `walkSec` walking `reps` times between a brisk walk warm-up and cool-down.
+   * Lari-jalan's continuous weeks use one rep and no walk (`walkSec` 0): one jog of `runSec`, walked down after.
+   */
   walkRun: { warmupMin: number; runSec: number; walkSec: number; reps: number; cooldownMin: number } | null;
   /** Tempo: a steady comfortably-hard stretch. */
   tempo: { warmupMin: number; mainMin: number; cooldownMin: number } | null;
+  /**
+   * Lari-jalan only: the heart-rate zone at which the jog turns into a walk (the app's zones, so the person's own bpm), and
+   * back into a jog once the rate falls to zone 2. `zone` is then the ceiling to keep the jog under, zone 2 to `zone`.
+   * Null for every other plan: their sessions have a zone target but no cue.
+   */
+  walkAtZone: HrZone | null;
+  /** Lari-jalan re-test: a brisk-walk warm-up, `distanceM` held at the heart rate of `zone`, then an easy walk. Pace is the result. */
+  retest: { warmupMin: number; cooldownMin: number } | null;
   /** Intervals: `reps` hard efforts with an easy jog between. */
   intervals: { warmupMin: number; reps: number; workSec: number; restSec: number; cooldownMin: number; workZone: HrZone } | null;
 }

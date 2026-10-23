@@ -5,10 +5,10 @@ import { daysBetween, localDay } from './time';
 
 /**
  * Matching finished sessions to watch workouts, automatically after each sync. A workout belongs to the plan session that
- *  - is of the same kind: running sessions take a run (a walk or a run for walk/run and recovery sessions), strength
- *    sessions take a strength-type workout (strength, functional, core, HIIT);
- *  - lasted long enough: at least 50 % of the planned minutes (60 % for walk/run, whose minutes include the walking),
- *    a race session at least 90 % of its distance, a strength session at least 15 minutes;
+ *  - is of the same kind: running sessions take a run (a walk or a run for walk/run, recovery and Lari-jalan sessions),
+ *    strength sessions take a strength-type workout (strength, functional, core, HIIT);
+ *  - lasted long enough: at least 50 % of the planned minutes (60 % for walk/run and Lari-jalan, whose minutes include the
+ *    walking), a race session at least 90 % of its distance, a strength session at least 15 minutes;
  *  - falls from one day before the session's day to two days after it (a session done a day early or two late still
  *    counts), and is not before the day the plan was made.
  * Workouts are taken oldest first; each takes the nearest free session by day, then by slot. A session already done or
@@ -46,10 +46,12 @@ export function workoutFitsSession(workout: MatchWorkout, session: PlannedSessio
   }
   const kind = sportKind(workout.sportName, workout.summaryKind);
   const type = session.type;
-  const onFoot = type === 'walkrun' || type === 'recovery' ? kind === 'run' || kind === 'walk' : kind === 'run';
+  // Lari-jalan's sessions (walk/run, the guided jog, the re-test) are part walking: a walk workout counts too, and they may fall a little short.
+  const mixed = type === 'walkrun' || type === 'retest' || session.run?.walkAtZone != null;
+  const onFoot = mixed || type === 'recovery' ? kind === 'run' || kind === 'walk' : kind === 'run';
   if (!onFoot) return false;
   if (type === 'race' && session.run?.distanceM) return workout.distance >= session.run.distanceM * MIN_RACE_SHARE;
-  const share = type === 'walkrun' ? MIN_WALKRUN_SHARE : MIN_SHARE;
+  const share = mixed ? MIN_WALKRUN_SHARE : MIN_SHARE;
   return workout.duration >= session.minutes * 60 * share;
 }
 

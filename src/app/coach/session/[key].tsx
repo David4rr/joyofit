@@ -18,6 +18,8 @@ import { allSessions, generatePlan } from '@/features/coach/plans/generate';
 import type { PlannedSession } from '@/features/coach/plans/types';
 import { sessionStatus } from '@/features/coach/progress';
 import { CoachGate } from '@/features/coach/ui/CoachGate';
+import { RetestHistory, RetestSection } from '@/features/coach/ui/RetestSection';
+import { RunGuideSection } from '@/features/coach/ui/RunGuideSection';
 import { useCoach, type CoachState } from '@/features/coach/useCoach';
 import { useThresholdPace } from '@/features/coach/useThresholdPace';
 import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
@@ -36,12 +38,19 @@ function useSteps(session: PlannedSession): string[] {
   const run = session.run;
   if (!run) return [];
   const steps: string[] = [];
-  const warm = run.walkRun?.warmupMin ?? run.tempo?.warmupMin ?? run.intervals?.warmupMin ?? 0;
-  const cool = run.walkRun?.cooldownMin ?? run.tempo?.cooldownMin ?? run.intervals?.cooldownMin ?? 0;
+  const warm = run.walkRun?.warmupMin ?? run.tempo?.warmupMin ?? run.intervals?.warmupMin ?? run.retest?.warmupMin ?? 0;
+  const cool = run.walkRun?.cooldownMin ?? run.tempo?.cooldownMin ?? run.intervals?.cooldownMin ?? run.retest?.cooldownMin ?? 0;
   if (warm > 0) steps.push(t('session.steps.warmup', { minutes: fmtInt(warm) }));
   switch (run.type) {
     case 'walkrun':
-      steps.push(t('session.steps.walkrun', { reps: fmtInt(run.walkRun?.reps ?? 0), run: spanText(run.walkRun?.runSec ?? 0), walk: spanText(run.walkRun?.walkSec ?? 0) }));
+      steps.push(
+        t(run.walkAtZone === null ? 'session.steps.walkrun' : 'session.steps.jogWalk', {
+          reps: fmtInt(run.walkRun?.reps ?? 0),
+          run: spanText(run.walkRun?.runSec ?? 0),
+          walk: spanText(run.walkRun?.walkSec ?? 0),
+          zone: fmtInt(run.walkAtZone ?? 4),
+        }),
+      );
       break;
     case 'tempo':
       steps.push(t('session.steps.tempo', { minutes: fmtInt(run.tempo?.mainMin ?? 0) }));
@@ -52,8 +61,15 @@ function useSteps(session: PlannedSession): string[] {
     case 'race':
       steps.push(t('session.steps.race', { distance: fmtDistance(run.distanceM ?? 0) }));
       break;
+    case 'retest':
+      steps.push(t('session.steps.retest', { distance: fmtDistance(run.distanceM ?? 0), zone: fmtInt(run.zone) }));
+      break;
     default:
-      steps.push(t(`session.steps.${run.type}`));
+      steps.push(
+        run.walkAtZone === null
+          ? t(`session.steps.${run.type}`)
+          : t('session.steps.continuous', { minutes: fmtInt(Math.round((run.walkRun?.runSec ?? 0) / 60)), zone: fmtInt(run.walkAtZone) }),
+      );
   }
   if (cool > 0) steps.push(t('session.steps.cooldown', { minutes: fmtInt(cool) }));
   return steps;
@@ -73,6 +89,7 @@ function SessionDetail({ session, coach }: { session: PlannedSession; coach: Coa
   const entry = liveDone(coach.doc.done)[session.key];
   const run = session.run;
   const zone = run?.zone ?? null;
+  const startable = status !== 'done' && status !== 'skipped' && status !== 'beforeStart';
   const range = zone ? zoneRange(zone, zones) : null;
   const pace = run && threshold ? paceTarget(run.type, threshold) : null;
 
@@ -131,12 +148,29 @@ function SessionDetail({ session, coach }: { session: PlannedSession; coach: Coa
         />
       )}
 
-      {zone && range ? (
+      {run?.walkAtZone != null && startable ? <RunGuideSection session={session} /> : null}
+      {session.type === 'retest' ? (
+        startable ? <RetestSection session={session} planId={coach.doc.plan?.id ?? ''} /> : <RetestHistory planId={coach.doc.plan?.id ?? ''} />
+      ) : null}
+
+      {run && run.walkAtZone !== null ? (
+        <Section title={t('session.hrGuide.title')} icon="heart" tint="heart">
+          <AppText variant="body">
+            {t('session.hrGuide.keep', { low: fmtInt(2), high: fmtInt(run.zone), from: fmtInt(zoneRange(2, zones).from), to: fmtInt(zoneRange(run.zone, zones).to) })}
+          </AppText>
+          <AppText variant="body">
+            {t('session.hrGuide.walk', { zone: fmtInt(run.walkAtZone), from: fmtInt(zoneRange(run.walkAtZone, zones).from), back: fmtInt(zoneRange(2, zones).to) })}
+          </AppText>
+          <AppText variant="caption" muted>
+            {t('session.hrGuide.calm')}
+          </AppText>
+        </Section>
+      ) : zone && range ? (
         <Section title={t('session.zone', { zone: fmtInt(zone) })} icon="heart" tint="heart">
           <AppText variant="body">{t('session.zoneRange', { zone: fmtInt(zone), from: fmtInt(range.from), to: fmtInt(range.to) })}</AppText>
           {pace ? (
             <AppText variant="body">{t('session.paceTarget', { fast: paceClock(pace.fast), slow: paceClock(pace.slow) })}</AppText>
-          ) : run && run.type !== 'walkrun' && run.type !== 'race' ? (
+          ) : run && run.type !== 'walkrun' && run.type !== 'race' && run.type !== 'retest' ? (
             <AppText variant="caption" muted>
               {t('session.paceUnknown')}
             </AppText>

@@ -8,7 +8,7 @@
  */
 
 export type PlanKind = 'run' | 'strength';
-export type RunGoal = 'run5k' | 'run10k' | 'runHalf' | 'runRoutine';
+export type RunGoal = 'run5k' | 'run10k' | 'runHalf' | 'runRoutine' | 'runWalk';
 export type PlanGoal = RunGoal | 'strengthFull';
 export type PlanLevel = 'beginner' | 'intermediate' | 'advanced';
 export type StrengthSetting = 'home' | 'gym';
@@ -19,7 +19,7 @@ export interface CoachPlan {
   kind: PlanKind;
   goal: PlanGoal;
   level: PlanLevel;
-  /** Sessions per week: 2 or 3 for strength, 3 to 5 for running. */
+  /** Sessions per week: 2 or 3 for strength, 3 to 5 for running (3 for regular running and Lari-jalan). */
   daysPerWeek: number;
   /** Strength only. */
   setting: StrengthSetting | null;

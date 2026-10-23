@@ -1,4 +1,5 @@
 import type { CoachPlan, PlanGoal, PlanLevel, RunGoal } from '../doc';
+import { RUNWALK_WEEKS, runWalkSession } from './runWalk';
 import type { HrZone, RunSpec, SessionType, WeekPhase } from './types';
 
 /**
@@ -73,6 +74,10 @@ export const RECIPES: Record<RunGoal, Partial<Record<PlanLevel, Recipe>>> = {
     intermediate: { weeks: 8, walkRunWeeks: 0, walkRunFrom: 0, easy: span(30, 40), long: span(40, 55), quality: span(0, 0), raceM: null, raceMin: 0 },
     advanced: { weeks: 8, walkRunWeeks: 0, walkRunFrom: 0, easy: span(35, 45), long: span(50, 65), quality: span(15, 25), raceM: null, raceMin: 0 },
   },
+  // Lari-jalan has its own session table (`runWalk.ts`); the recipe gives the week count and the cut-back rhythm, nothing else.
+  runWalk: {
+    beginner: { weeks: RUNWALK_WEEKS, walkRunWeeks: 6, walkRunFrom: 0, easy: span(20, 25), long: span(25, 30), quality: span(0, 0), raceM: null, raceMin: 0 },
+  },
 };
 
 /** Run seconds, walk seconds and repetitions of the walk/run weeks, easiest first. The last step is 3 x 8 min. */
@@ -125,7 +130,7 @@ export interface RunSession {
   run: RunSpec;
 }
 
-const NO_STRUCTURE = { walkRun: null, tempo: null, intervals: null } as const;
+const NO_STRUCTURE = { walkRun: null, tempo: null, intervals: null, retest: null, walkAtZone: null } as const;
 
 function walkRunSession(step: number, extraReps: number, scale: number): RunSession {
   const entry = WALK_RUN[Math.min(WALK_RUN.length - 1, Math.max(0, step))]!;
@@ -152,6 +157,8 @@ export function runSession(plan: Pick<CoachPlan, 'goal' | 'level' | 'daysPerWeek
   const t = Math.min(1, week / buildWeeks);
   const phaseScale = phase === 'taper' ? TAPER_SCALE : phase === 'cutback' ? CUTBACK_SCALE : 1;
   const factor = phaseScale * scale;
+
+  if (plan.goal === 'runWalk') return runWalkSession(week, slot, factor);
 
   if (recipe.raceM !== null && phase === 'taper' && slot === types.length - 1) {
     return {
@@ -180,10 +187,10 @@ export function runSession(plan: Pick<CoachPlan, 'goal' | 'level' | 'daysPerWeek
         const reps = Math.min(MAX_INTERVAL_REPS, Math.max(MIN_INTERVAL_REPS, Math.round((main * 60) / INTERVAL_WORK_SEC / 1.5)));
         const intervals = { warmupMin: WARMUP_MIN, reps, workSec: INTERVAL_WORK_SEC, restSec: INTERVAL_REST_SEC, cooldownMin: COOLDOWN_MIN, workZone: 4 as HrZone };
         const minutes = WARMUP_MIN + COOLDOWN_MIN + Math.round((reps * (INTERVAL_WORK_SEC + INTERVAL_REST_SEC)) / 60);
-        return { type: 'intervals', minutes, hard: true, run: { type: 'intervals', zone: 4, distanceM: null, walkRun: null, tempo: null, intervals } };
+        return { type: 'intervals', minutes, hard: true, run: { ...NO_STRUCTURE, type: 'intervals', zone: 4, distanceM: null, intervals } };
       }
       const tempo = { warmupMin: WARMUP_MIN, mainMin: main, cooldownMin: COOLDOWN_MIN };
-      return { type: 'tempo', minutes: WARMUP_MIN + COOLDOWN_MIN + main, hard: true, run: { type: 'tempo', zone: 3, distanceM: null, walkRun: null, tempo, intervals: null } };
+      return { type: 'tempo', minutes: WARMUP_MIN + COOLDOWN_MIN + main, hard: true, run: { ...NO_STRUCTURE, type: 'tempo', zone: 3, distanceM: null, tempo } };
     }
     default:
       return continuous('easy', roundTo5(lerp(recipe.easy, t) * factor), false);

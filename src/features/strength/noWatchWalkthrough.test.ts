@@ -124,6 +124,7 @@ describe('a fresh install with no watch', () => {
       plannedDone: false,
       missed: null,
       planState: 'none',
+      restIdeas: false,
     };
     expect(suggest(none).effective?.type).toBe('strength');
     expect(suggest({ ...none, feel: 'wrecked' }).kind).toBe('activeRest');

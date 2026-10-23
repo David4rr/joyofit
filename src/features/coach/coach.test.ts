@@ -40,9 +40,10 @@ describe('time', () => {
 
 describe('run plans', () => {
   test('every goal, level and weekly count builds weeks of sessions on the chosen weekdays', () => {
-    for (const goal of Object.keys(RECIPES) as PlanGoal[]) {
-      for (const level of ['beginner', 'intermediate', 'advanced'] as PlanLevel[]) {
-        for (const days of goal === 'runRoutine' ? [3] : [3, 4, 5]) {
+    for (const goal of Object.keys(RECIPES) as RunGoal[]) {
+      // Lari-jalan is one beginner plan, 3 sessions a week.
+      for (const level of (goal === 'runWalk' ? ['beginner'] : ['beginner', 'intermediate', 'advanced']) as PlanLevel[]) {
+        for (const days of goal === 'runRoutine' || goal === 'runWalk' ? [3] : [3, 4, 5]) {
           const plan = planOf(goal, level, days);
           const weeks = generatePlan(plan);
           expect(weeks.length).toBe(plan.weeks);
@@ -130,6 +131,7 @@ const BASE_INPUT: SuggestionInput = {
   plannedDone: false,
   missed: null,
   planState: 'none',
+  restIdeas: false,
 };
 
 describe('daily suggestion', () => {

@@ -48,6 +48,7 @@ export function suggestionInput(signals: CoachSignals, progress: PlanProgress | 
     plannedDone: progress?.todayDone != null && !progress.todayDone.skipped,
     missed: progress?.missed ?? null,
     planState: progress ? progress.state : 'none',
+    restIdeas: progress?.plan.goal === 'runWalk',
   };
 }
 

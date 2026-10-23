@@ -33,6 +33,13 @@ export function whatText(effective: Effective, session: PlannedSession | null): 
     case 'race':
       return t('coach:what.race', { distance: fmtDistance(run?.distanceM ?? 5000) });
     case 'easy':
+      if (run?.walkAtZone != null) {
+        const warm = (run.walkRun?.warmupMin ?? 0) + (run.walkRun?.cooldownMin ?? 0);
+        return t('coach:what.jog', { ...base, main: fmtInt(Math.max(1, minutes - warm)), walkZone: fmtInt(run.walkAtZone) });
+      }
+      return t('coach:what.easy', base);
+    case 'retest':
+      return t('coach:what.retest', { ...base, distance: fmtDistance(run?.distanceM ?? 1000) });
     case 'recovery':
     case 'long':
     case 'walk':
@@ -97,12 +104,13 @@ export function bodyText(suggestion: Suggestion): string | null {
     case 'sessionScaled':
       return t('coach:body.scaled', { pct: fmtInt(suggestion.scalePct) });
     case 'sessionEasier':
-      return t('coach:body.easier');
+      return t(suggestion.effective?.type === 'walk' ? 'coach:body.easierWalk' : 'coach:body.easier');
+    case 'planRestDay':
+      return t(suggestion.restIdeas ? 'coach:body.planRestDayIdeas' : 'coach:body.planRestDay');
     case 'rest':
     case 'activeRest':
     case 'trainedToday':
     case 'planDone':
-    case 'planRestDay':
     case 'planFinished':
     case 'catchUp':
       return t(`coach:body.${suggestion.kind}`);

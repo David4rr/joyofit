@@ -27,6 +27,8 @@
     "intervals": "Interval: {{reps}} x {{work}} cepat, jeda jogging {{rest}} (total {{minutes}} menit)",
     "walkrun": "Jalan-lari {{minutes}} menit: {{reps}} x (lari {{run}}, jalan {{walk}})",
     "race": "Lari {{distance}} sesuai targetmu",
+    "jog": "Jalan-lari {{minutes}} menit: jogging {{main}} menit tanpa henti, jalan kalau detak jantung masuk zona {{walkZone}}",
+    "retest": "Tes ulang: {{distance}} di detak jantung zona {{zone}} (total {{minutes}} menit)",
     "walk": "Jalan santai {{minutes}} menit",
     "mobility": "Istirahat aktif: jalan pelan atau peregangan {{minutes}} menit",
     "strength": "Latihan kekuatan {{minutes}} menit"
@@ -39,6 +41,7 @@
     "intervals": "Interval",
     "walkrun": "Jalan-lari",
     "race": "Lari {{distance}}",
+    "retest": "Tes ulang 1 km",
     "strength": "Latihan kekuatan",
     "strengthFocus": "Full body {{focus}}"
   },
@@ -61,9 +64,11 @@
     "trainedToday": "Cukup untuk hari ini. Makan dan tidur yang baik bikin latihan tadi jadi berguna.",
     "planDone": "Kerja bagus. Sisanya istirahat.",
     "planRestDay": "Istirahat bagian dari rencana, bukan sesi yang bolong.",
+    "planRestDayIdeas": "Istirahat bagian dari rencana. Kalau tetap ingin bergerak: jalan cepat atau sepeda santai di zona 2, sekitar 30 menit. Hanya kalau terasa enak.",
     "planFinished": "Mau lanjut? Buat rencana baru dari layar Coach.",
     "scaled": "Dikurangi jadi {{pct}}% dari rencana",
     "easier": "Sesi berat diganti yang ringan",
+    "easierWalk": "Kamu lelah hari ini, jadi jalan cepat menggantikan jogging. Rencananya menunggumu.",
     "catchUp": "Kamu segar dan kemarin tidak berat, jadi sesi yang terlewat bisa dikejar."
   },
   "band": {
@@ -107,6 +112,7 @@
       "run10k": "Lari 10K",
       "runHalf": "Half marathon",
       "runRoutine": "Lari rutin 3x seminggu",
+      "runWalk": "Lari-jalan, mulai lari lagi",
       "strengthFull": "Kekuatan full body"
     },
     "summary": "{{name}} · {{level}} · {{days}}x seminggu",
@@ -171,6 +177,10 @@
         "title": "Half marathon",
         "hint": "21 km dengan lari panjang tiap minggu."
       },
+      "runWalk": {
+        "title": "Mulai lari lagi (lari-jalan), 8 minggu",
+        "hint": "Untuk badan yang lebih berat atau sudah lama tidak lari. Jogging semenit, jalan dua menit, dan biarkan detak jantung yang mengatur."
+      },
       "runRoutine": {
         "title": "Lari rutin 3x seminggu",
         "hint": "Tanpa lomba. Teratur dan makin kuat."
@@ -190,9 +200,13 @@
       "title": "Berapa kali seminggu",
       "hint": "{{n}} sesi seminggu"
     },
+    "runWalk": {
+      "note": "8 minggu, 3 sesi seminggu: awalnya jogging 1 menit dan jalan 2 menit, bertahap sampai satu kali jogging 20 sampai 30 menit. Detak jantung yang memimpin, bukan kecepatan: tetap di zona 2 sampai 3 dan jalan kalau sudah masuk zona 4. Tes ulang 1 km di minggu 1, 5, dan 8 menunjukkan kecepatanmu di detak jantung yang sama. Jalan itu bagian dari rencana, bukan mundur. Kalau punya kondisi kesehatan tertentu, atau sudah lama tidak berolahraga, tanya dokter dulu sebelum mulai."
+    },
     "weekdays": {
       "title": "Hari latihan",
       "hint": "Pilih {{n}} hari. Sesi panjang jatuh di hari terakhir.",
+      "hintRunWalk": "Pilih {{n}} hari, kalau bisa dengan sehari istirahat di antaranya.",
       "needMore": "Pilih {{n}} hari",
       "tooMany": "Maksimal {{n}} hari"
     },
@@ -232,6 +246,9 @@
       "tempo": "{{minutes}} menit tempo: napas berat tapi stabil, zona 3 sampai 4.",
       "intervals": "Ulangi {{reps}} kali: {{work}} cepat (zona 4), lalu {{rest}} jogging pelan.",
       "race": "Lari {{distance}}. Mulai pelan, tambah di separuh akhir kalau masih kuat.",
+      "jogWalk": "Ulangi {{reps}} kali: jogging {{run}}, lalu jalan {{walk}}. Jalan lebih awal kalau detak jantung masuk zona {{zone}}.",
+      "continuous": "Jogging {{minutes}} menit tanpa henti, pelan saja. Kalau detak jantung masuk zona {{zone}}, jalan sampai turun, lalu jogging lagi.",
+      "retest": "Lari {{distance}} dengan detak jantung tetap di zona {{zone}}. Ikuti pace yang diizinkan detak jantung.",
       "cooldown": "Pendinginan {{minutes}} menit: jalan santai, lalu peregangan."
     },
     "mark": {
@@ -248,6 +265,12 @@
       "today": "Jadwal hari ini."
     },
     "openWorkout": "Buka latihan",
+    "hrGuide": {
+      "title": "Panduan detak jantung",
+      "keep": "Jaga jogging di zona {{low}} sampai {{high}}: {{from}} sampai {{to}} bpm.",
+      "walk": "Mulai zona {{zone}} ({{from}} bpm), jalan sampai turun kembali ke zona 2 ({{back}} bpm atau kurang). Kalau tidak bisa mengucapkan satu kalimat, pelankan, apa pun kata jam.",
+      "calm": "Pelan itu intinya, dan jalan saat ada tanda adalah rencananya berjalan baik. Kalau ada yang sakit atau kamu pusing atau tidak enak badan, berhenti dan santai dulu. Ini panduan umum, bukan saran medis."
+    },
     "strength": {
       "title": "Gerakan",
       "warmup": "Pemanasan 5 menit: jalan di tempat, putar bahu dan pinggul.",
@@ -407,6 +430,81 @@
     "error": "Pesan belum terkirim: {{message}}",
     "flagged": "Kalau nyeri atau keluhanmu berlanjut, hentikan latihan dan periksakan ke dokter atau fisioterapis.",
     "privacy": "Pesanmu dan ringkasan datamu dikirim ke AI JoyoRogo untuk dijawab, lalu tidak disimpan di server. Obrolan hanya tersimpan di ponselmu."
+  },
+  "guide": {
+    "title": "Pemandu sesi",
+    "hint": "Mulai latihan Lari di jam, lalu ketuk Mulai di sini. Ponsel bergetar di setiap pergantian dan, selama jam mengirim detak jantung, memberi tahu kapan harus jalan. Latihannya direkam oleh jam.",
+    "start": "Mulai pemandu",
+    "stop": "Hentikan pemandu",
+    "close": "Tutup",
+    "channel": "Pemandu sesi",
+    "noCues": "Notifikasi mati, jadi pemandu tidak bisa memanggilmu saat layar mati. Biarkan layar ini terbuka.",
+    "phase": {
+      "warmup": "Pemanasan: jalan cepat",
+      "jog": "Jogging",
+      "walk": "Jalan",
+      "cooldown": "Pendinginan: jalan",
+      "done": "Selesai"
+    },
+    "next": "Berikutnya: {{phase}} {{time}}",
+    "elapsed": "{{elapsed}} dari {{total}}",
+    "cue": {
+      "jog": { "title": "Jogging", "body": "Jogging {{time}}, pelan saja." },
+      "walk": { "title": "Jalan", "body": "Jalan {{time}}. Atur napas." },
+      "cooldown": { "title": "Pendinginan", "body": "Jalan {{time}} untuk mendinginkan badan." },
+      "done": { "title": "Sesi selesai", "body": "Mantap dan teratur. Tandai selesai, atau biarkan latihan di jam yang mencocokkannya." }
+    },
+    "hr": {
+      "value": "Detak jantung {{bpm}} bpm, zona {{zone}}",
+      "none": "Belum ada detak jantung langsung dari jam. Pakai tes bicara: kamu harus masih bisa mengucapkan satu kalimat.",
+      "walk": {
+        "title": "Jalan sekarang",
+        "body": "Detak jantungmu di zona {{zone}}. Jalan sampai turun.",
+        "line": "Detak jantungmu masuk zona {{zone}}. Jalan sekarang dan biarkan turun. Itu rencananya berjalan baik."
+      },
+      "resume": {
+        "title": "Boleh jogging lagi",
+        "body": "Detak jantungmu sudah turun. Jogging lagi kalau sudah siap.",
+        "line": "Detak jantungmu sudah turun. Jogging lagi kalau sudah siap."
+      }
+    },
+    "retest": {
+      "ready": { "title": "Pemanasan selesai", "body": "Mulai 1 km-mu kalau sudah siap." }
+    }
+  },
+  "retest": {
+    "title": "Tes ulang 1 km",
+    "target": "Tahan {{from}} sampai {{to}} bpm (zona {{zone}}) sejauh 1 km. Pace yang kamu capai di detak jantung ini adalah hasilnya, jadi pelan tidak apa-apa.",
+    "hint": "Panaskan dengan jalan cepat, lalu ketuk Mulai 1 km. Mulai dulu latihan Lari di jam, supaya ponsel bisa membaca detak jantung dan jarakmu.",
+    "start": "Mulai pemanasan",
+    "startKm": "Mulai 1 km",
+    "finishKm": "1 km selesai",
+    "savedThis": "Tersimpan untuk sesi ini: {{pace}} /km.",
+    "progress": "{{meters}} m dari 1 km",
+    "statusLine": "{{bpm}} bpm: {{status}}",
+    "status": {
+      "below": "di bawah rentang, boleh sedikit lebih cepat.",
+      "in": "di dalam rentang. Pertahankan.",
+      "above": "di atas rentang. Pelankan."
+    },
+    "phase": {
+      "warmup": "Pemanasan: jalan cepat",
+      "ready": "Pemanasan selesai. Mulai km-nya kalau sudah siap.",
+      "test": "1 km",
+      "cooldown": "Pendinginan: jalan",
+      "done": "Selesai"
+    },
+    "history": {
+      "title": "Tes ulang 1 km-mu",
+      "row": "{{date}}: {{pace}} /km di {{hr}} bpm",
+      "rowNoHr": "{{date}}: {{pace}} /km",
+      "baseline": "Tes pertama: tes berikutnya dibandingkan dengan ini.",
+      "notComparable": "Detak jantung beda dari tes pertama, jadi pace tidak dibandingkan.",
+      "same": "Pace sama dengan tes pertama.",
+      "faster": "{{delta}} /km lebih cepat dari tes pertama.",
+      "slower": "{{delta}} /km lebih lambat dari tes pertama.",
+      "tap": "Waktu dihitung dari ketukanmu, dengan km dianggap tepat 1 km."
+    }
   },
   "feel": {
     "title": "Gimana badanmu hari ini?",
