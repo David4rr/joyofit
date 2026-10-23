@@ -11,7 +11,8 @@ import { bestEfforts, type EffortSeconds } from './efforts';
 import { elevationProfile, elevationSummary } from './elevation';
 import { buildLaps } from './laps';
 import { round, roundOrNull } from './round';
-import { buildGrid, type AnalysisPoint, type Grid } from './series';
+import { routeDetail, type RouteDetail } from './route';
+import { buildGrid, detailGridStep, type AnalysisPoint, type Grid, type GridInput } from './series';
 import { selectSimilar, type SimilarCandidate } from './similar';
 import { hasPace, isFootKind, sportKind } from './sport';
 import { kmSplits, paceBlockSplits, type SplitGrid } from './splits';
@@ -198,18 +199,49 @@ function buildSeries(grid: Grid, options: AnalyzeOptions): AnalysisSeries | null
  * `includeComparison` no comparison.
  */
 export function analyzeWorkout(input: AnalyzeInput, options: AnalyzeOptions): WorkoutAnalysis {
-  const { workout, summary, points, history } = input;
-  const kind = sportKind(workout.sportName, summary.kind);
-  const foot = isFootKind(kind);
-  const grid = buildGrid({
+  return run(input, options).analysis;
+}
+
+/** What only the phone draws, on top of the analysis: never uploaded or posted. */
+export interface WorkoutDetail {
+  /** The charts' series on a finer grid (`detailGridStep`) than the analysis', so a long ride keeps its peaks; null when the analysis' grid is already as fine. Same distance, same units. */
+  series: AnalysisSeries | null;
+  /** The route with every GPS fix instead of the grid's 600 positions; null without a track or when the options leave the route out. */
+  route: RouteDetail | null;
+}
+
+/**
+ * `analyzeWorkout` plus the phone-only detail. The analysis is identical to `analyzeWorkout`'s (the cloud copy and the posts
+ * keep using that one, within the server's size limits); `detail` only replaces what the screen charts and maps.
+ */
+export function analyzeWorkoutWithDetail(input: AnalyzeInput, options: AnalyzeOptions): { analysis: WorkoutAnalysis; detail: WorkoutDetail } {
+  const { analysis, grid, kind } = run(input, options);
+  const step = detailGridStep(grid.elapsedSec);
+  const fine =
+    step === null
+      ? null
+      : buildSeries(buildGrid({ ...gridInputOf(input, kind), stepSec: step, fixes: grid.fixes }), options);
+  return { analysis, detail: { series: fine, route: options.includeRoute ? routeDetail(grid.fixes, grid.watch) : null } };
+}
+
+function gridInputOf(input: AnalyzeInput, kind: SportKind): GridInput {
+  const { workout } = input;
+  return {
     start: workout.start,
     end: workout.end,
     duration: workout.duration,
     distance: workout.distance,
     kind,
-    points,
+    points: input.points,
     minuteSteps: input.daySamples,
-  });
+  };
+}
+
+function run(input: AnalyzeInput, options: AnalyzeOptions): { analysis: WorkoutAnalysis; grid: Grid; kind: SportKind } {
+  const { workout, summary, points, history } = input;
+  const kind = sportKind(workout.sportName, summary.kind);
+  const foot = isFootKind(kind);
+  const grid = buildGrid(gridInputOf(input, kind));
 
   const hrPoints = points.filter((p) => p.hr !== null && p.hr >= MIN_BPM && p.hr <= MAX_BPM);
   const strain = workoutStrain(hrPoints, input.zones.maxHr);
@@ -247,7 +279,7 @@ export function analyzeWorkout(input: AnalyzeInput, options: AnalyzeOptions): Wo
   const comparison =
     similar && !options.includeHr ? { ...similar, items: similar.items.map((item) => ({ ...item, avgHr: null })) } : similar;
 
-  return {
+  const analysis: WorkoutAnalysis = {
     v: WORKOUT_ANALYSIS_VERSION,
     sport: { name: workout.sportName.slice(0, MAX_SPORT_NAME), kind },
     startedAt: workout.start * 1000,
@@ -270,4 +302,5 @@ export function analyzeWorkout(input: AnalyzeInput, options: AnalyzeOptions): Wo
     comparison,
     stats: buildStats(input, grid, kind, options, distanceM, hrPoints.map((p) => p.hr as number)),
   };
+  return { analysis, grid, kind };
 }

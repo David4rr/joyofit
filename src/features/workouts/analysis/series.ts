@@ -21,6 +21,9 @@ export type AnalysisPoint = WorkoutPointRow & {
 
 /** The grid has at most this many steps (plus the one at t = 0), well inside the 720 the contract allows. */
 const MAX_STEPS = 600;
+/** The phone's finer chart grid: one sample per this many seconds (see `detailGridStep`), at most this many samples. */
+const DETAIL_STEP_SEC = 12;
+const DETAIL_MAX_STEPS = 4000;
 const MIN_BPM = 20;
 const MAX_BPM = 250;
 /** Pace window: distance over time across this many seconds, centred on the sample. */
@@ -59,8 +62,10 @@ export interface Grid {
   track: (LatLon | null)[] | null;
   /** Seconds counted as moving: the watch's active time when a pause explains the difference, else the elapsed time (see `times.ts`). */
   movingSec: number;
-  /** Cleaned GPS fixes (empty without a usable track), for best efforts. */
+  /** Cleaned GPS fixes (empty without a usable track), for best efforts and the full-resolution route. */
   fixes: CleanFix[];
+  /** How the fixes' path length maps to the watch's distance; null without GPS or without a watch distance (the path itself is then the distance). */
+  watch: WatchDistance | null;
 }
 
 export interface GridInput {
@@ -75,6 +80,10 @@ export interface GridInput {
   points: readonly AnalysisPoint[];
   /** The watch's per-minute step samples of the workout's day; on foot they give a cadence series when the points carry none. */
   minuteSteps?: readonly MinuteSteps[];
+  /** Seconds per sample; the default is the shared grid's (`gridStep`). */
+  stepSec?: number;
+  /** The cleaned fixes of `points`, when the caller already has them (`cleanFixes`). */
+  fixes?: CleanFix[];
 }
 
 interface Sample {
@@ -91,6 +100,17 @@ export function elapsedOf(input: Pick<GridInput, 'start' | 'end' | 'duration' | 
 
 export function gridStep(elapsedSec: number): number {
   return Math.max(1, Math.ceil(elapsedSec / MAX_STEPS));
+}
+
+/**
+ * Seconds per sample of the phone's own chart grid, or null when the shared grid is already that fine. The shared grid is
+ * capped at 600 steps (the cloud document and its schema depend on it), so a long ride gets a point every 72 s at 12 h;
+ * the phone does not upload this grid, so it can follow the duration instead: a point per `DETAIL_STEP_SEC` seconds, at
+ * most `DETAIL_MAX_STEPS` of them (a 12 h ride is 3 600 points, a 24 h one 4 000 at 22 s).
+ */
+export function detailGridStep(elapsedSec: number): number | null {
+  const step = Math.max(DETAIL_STEP_SEC, Math.ceil(elapsedSec / DETAIL_MAX_STEPS));
+  return step < gridStep(elapsedSec) ? step : null;
 }
 
 function collect(points: readonly AnalysisPoint[], start: number, pick: (p: AnalysisPoint) => number | null | undefined, ok: (v: number) => boolean): Sample[] {
@@ -195,30 +215,49 @@ function gridFromFixes(fixes: readonly CleanFix[], start: number, step: number, 
 }
 
 /**
- * The GPS path length on the grid turned into the watch's distance, the way the Strava file spreads it (`withDistance` in
+ * How the GPS path length becomes the watch's distance, the way the Strava file spreads it (`withDistance` in
  * `strava/activityFile.ts`): the stretch before the first fix and the one after the last move at the workout's average
  * speed (`total` over the moving time; the watch has no fix there, not no movement) and the fixes' path, scaled, takes the
  * rest, so the last sample is exactly `total` and the splits are Strava's. A path that would be left with nothing is only
- * scaled. `path` is the grid's cumulative GPS distance (0 before the first fix, the full length after the last).
+ * scaled (`lead` and `tail` are then 0).
  */
-function toWatchDistance(path: readonly number[], fixes: readonly CleanFix[], start: number, step: number, elapsedSec: number, movingSec: number, total: number): number[] {
+export interface WatchDistance {
+  /** Metres before the first fix. */
+  lead: number;
+  /** Metres after the last fix. */
+  tail: number;
+  /** Watch metres per metre of GPS path between the first and last fix. */
+  scale: number;
+  /** The GPS path length (metres) between the first and last fix. */
+  length: number;
+  /** Seconds from the start to the first and last fix. */
+  firstSec: number;
+  lastSec: number;
+  elapsedSec: number;
+  scaledOnly: boolean;
+}
+
+function watchDistance(fixes: readonly CleanFix[], start: number, elapsedSec: number, movingSec: number, total: number): WatchDistance {
   const first = fixes[0];
   const last = fixes[fixes.length - 1];
   const length = last.dist;
-  const lead = Math.min(Math.max(0, first.ts - start), elapsedSec);
-  const tail = Math.max(0, elapsedSec - Math.max(0, last.ts - start));
   const speed = movingSec > 0 ? total / movingSec : 0;
-  const leadM = speed * lead;
-  const tailM = speed * tail;
-  if (!(total - leadM - tailM > 0)) return path.map((d) => (d * total) / length);
-  const scale = (total - leadM - tailM) / length;
+  const lead = speed * Math.min(Math.max(0, first.ts - start), elapsedSec);
+  const tail = speed * Math.max(0, elapsedSec - Math.max(0, last.ts - start));
   const firstSec = first.ts - start;
   const lastSec = last.ts - start;
+  if (!(total - lead - tail > 0)) return { lead: 0, tail: 0, scale: total / length, length, firstSec, lastSec, elapsedSec, scaledOnly: true };
+  return { lead, tail, scale: (total - lead - tail) / length, length, firstSec, lastSec, elapsedSec, scaledOnly: false };
+}
+
+/** `path` is the grid's cumulative GPS distance (0 before the first fix, the full length after the last). */
+function toWatchDistance(path: readonly number[], w: WatchDistance, step: number): number[] {
+  if (w.scaledOnly) return path.map((d) => d * w.scale);
   return path.map((d, i) => {
-    const t = Math.min(i * step, elapsedSec);
-    if (t <= firstSec) return firstSec > 0 ? (leadM * t) / firstSec : 0;
-    if (t >= lastSec) return leadM + scale * length + (elapsedSec > lastSec ? (tailM * (t - lastSec)) / (elapsedSec - lastSec) : 0);
-    return leadM + scale * d;
+    const t = Math.min(i * step, w.elapsedSec);
+    if (t <= w.firstSec) return w.firstSec > 0 ? (w.lead * t) / w.firstSec : 0;
+    if (t >= w.lastSec) return w.lead + w.scale * w.length + (w.elapsedSec > w.lastSec ? (w.tail * (t - w.lastSec)) / (w.elapsedSec - w.lastSec) : 0);
+    return w.lead + w.scale * d;
   });
 }
 
@@ -257,7 +296,9 @@ export function altitudeGrid(points: readonly AnalysisPoint[], start: number, st
 }
 
 /**
- * Builds the shared time grid: sample `i` is `i * stepSec` seconds after the start, `stepSec = max(1, ceil(elapsed / 600))`.
+ * Builds a time grid: sample `i` is `i * stepSec` seconds after the start. The shared grid (the one the analysis, the cloud
+ * copy and the posts carry) has `stepSec = max(1, ceil(elapsed / 600))`; `input.stepSec` asks for another one (the phone's
+ * finer chart grid, see `detailGridStep`).
  * Heart rate is the mean per bucket with short gaps (up to 3 steps, at least 15 s) interpolated and longer ones left null;
  * altitude is interpolated and smoothed; the position follows the cleaned GPS track and the distance is that track's
  * path length scaled so the last sample is exactly the watch's total (GPS distance drifts; the watch's is what Strava
@@ -267,7 +308,7 @@ export function altitudeGrid(points: readonly AnalysisPoint[], start: number, st
 export function buildGrid(input: GridInput): Grid {
   const { start, kind, points } = input;
   const elapsedSec = elapsedOf(input);
-  const stepSec = gridStep(elapsedSec);
+  const stepSec = input.stepSec ?? gridStep(elapsedSec);
   const n = Math.ceil(elapsedSec / stepSec) + 1;
   const fillSec = Math.max(3 * stepSec, 15);
 
@@ -280,14 +321,20 @@ export function buildGrid(input: GridInput): Grid {
   const altRaw = altitudeGrid(points, start, stepSec, n);
   const alt = smooth(altRaw, stepSec);
 
-  const fixes = cleanFixes(points, kind);
+  const fixes = input.fixes ?? cleanFixes(points, kind);
   const hasGps = fixes.length >= 2 && fixes[fixes.length - 1].dist >= MIN_GPS_DISTANCE_M;
   let dist: number[] | null = null;
   let distSource: DistanceSource | null = null;
   let track: (LatLon | null)[] | null = null;
+  let watch: WatchDistance | null = null;
   if (hasGps) {
     const g = gridFromFixes(fixes, start, stepSec, n);
-    dist = input.distance > 0 ? toWatchDistance(g.dist, fixes, start, stepSec, elapsedSec, movingOf(elapsedSec, input.duration), input.distance) : g.dist;
+    if (input.distance > 0) {
+      watch = watchDistance(fixes, start, elapsedSec, movingOf(elapsedSec, input.duration), input.distance);
+      dist = toWatchDistance(g.dist, watch, stepSec);
+    } else {
+      dist = g.dist;
+    }
     track = g.track;
     distSource = 'gps';
   } else {
@@ -322,5 +369,6 @@ export function buildGrid(input: GridInput): Grid {
     track: hasGps && track && track.some((p) => p !== null) ? track : null,
     movingSec: movingOf(elapsedSec, input.duration),
     fixes: hasGps ? fixes : [],
+    watch,
   };
 }

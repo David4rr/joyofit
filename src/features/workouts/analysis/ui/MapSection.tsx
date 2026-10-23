@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 
 import { TileMap, type MapMarker } from '@/features/map';
 
+import type { RouteDetail } from '../route';
 import { kmMarkers, trackSegments, type LatLon, type WorkoutAnalysis } from '../types';
 import { useAnalysisContext } from './context';
 import { Card } from './primitives';
@@ -51,26 +52,29 @@ export function RouteMap({ segments, markers, highlight, mapTheme, height = MAP_
 interface Props {
   analysis: WorkoutAnalysis;
   mapTheme: AnalysisMapTheme;
+  /** The route at the recording's resolution (phone only); without it the line is the analysis' own track. */
+  route?: RouteDetail | null;
 }
 
 /** The route card of the full analysis: km markers, start and finish, and a ring that follows the shared scrubber. */
-function MapSectionImpl({ analysis, mapTheme }: Props) {
+function MapSectionImpl({ analysis, mapTheme, route = null }: Props) {
   const { store } = useAnalysisContext();
   const series = analysis.series;
   const track = series?.track ?? null;
 
   const { segments, markers } = useMemo(() => {
     if (!series || !track) return { segments: [], markers: [] as MapMarker[] };
-    const segs = trackSegments(track);
+    const segs = route ? route.segments : trackSegments(track);
+    const kms = route ? route.kms : kmMarkers(series);
     const out: MapMarker[] = [];
     const first = segs[0]?.[0];
     const lastSeg = segs[segs.length - 1];
     const last = lastSeg?.[lastSeg.length - 1];
-    for (const m of kmMarkers(series)) out.push({ pos: m.pos, kind: 'km', km: m.km, label: String(m.km) });
+    for (const m of kms) out.push({ pos: m.pos, kind: 'km', km: m.km, label: String(m.km) });
     if (first) out.push({ pos: first, kind: 'start' });
     if (last) out.push({ pos: last, kind: 'finish' });
     return { segments: segs, markers: out };
-  }, [series, track]);
+  }, [series, track, route]);
 
   const index = useScrubFrame(store);
   const highlight = index !== null && track ? (track[index] ?? null) : null;

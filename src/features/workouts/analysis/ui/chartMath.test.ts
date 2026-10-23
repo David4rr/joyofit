@@ -210,6 +210,23 @@ describe('buildPaths', () => {
   it('drops single isolated points', () => {
     expect(buildPaths([0, 1, 2], [null, 5, null], 9)).toEqual({ line: '', area: '' });
   });
+  it('keeps up to three samples per pixel column whole', () => {
+    const { line } = buildPaths([0, 0.3, 0.6, 1, 1.4], [10, 12, 11, 20, 22], 50);
+    expect(line).toBe('M0 10L0.3 12L0.6 11L1 20L1.4 22');
+  });
+  it('thins a dense run to the first, lowest, highest and last sample of each pixel column, so a peak survives', () => {
+    const n = 3600;
+    const xs = Array.from({ length: n }, (_, i) => (i / (n - 1)) * 300);
+    const ys = xs.map((_, i) => (i === 1801 ? 5 : 100 + (i % 7)));
+    const { line } = buildPaths(xs, ys, 120);
+    const vertices = line.split(/[ML]/).length - 1;
+    expect(vertices).toBeLessThanOrEqual(4 * 301);
+    expect(vertices).toBeGreaterThan(300);
+    expect(line).toContain(' 5L');
+    // The ends are kept.
+    expect(line.startsWith(`M0 ${ys[0]}`)).toBe(true);
+    expect(line.endsWith(`L300 ${ys[n - 1]}`)).toBe(true);
+  });
 });
 
 describe('chartGeometry', () => {

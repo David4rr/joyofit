@@ -1,6 +1,7 @@
 import { memo, useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import type { RouteDetail } from '../route';
 import type { WorkoutAnalysis } from '../types';
 import { BestEffortsCard } from './BestEffortsCard';
 import { ChartsCard } from './ChartsCard';
@@ -31,13 +32,15 @@ export interface WorkoutAnalysisViewProps {
   omitFuel?: boolean;
   /** The host shows the watch's training effect, recovery time and load itself: leave them out of the load card. */
   omitLoadExtras?: boolean;
+  /** The route at the recording's resolution, for the map (phone only, `analyzeWorkoutWithDetail`); without it the map draws the analysis' own track. */
+  route?: RouteDetail | null;
 }
 
 /**
  * The full workout analysis as a stack of cards (12 px apart). The parent screen provides the scroll view. One shared
  * scrub index, kept in a small store, ties the charts, the map marker and the splits together without re-rendering the cards.
  */
-function WorkoutAnalysisViewImpl({ analysis, palette, t, mapTheme, onScrubActive, extraStats, omitFuel = false, omitLoadExtras = false }: WorkoutAnalysisViewProps) {
+function WorkoutAnalysisViewImpl({ analysis, palette, t, mapTheme, onScrubActive, extraStats, omitFuel = false, omitLoadExtras = false, route }: WorkoutAnalysisViewProps) {
   const store = useRef(createScrubStore()).current;
   const onActiveRef = useRef(onScrubActive);
   onActiveRef.current = onScrubActive;
@@ -52,7 +55,7 @@ function WorkoutAnalysisViewImpl({ analysis, palette, t, mapTheme, onScrubActive
     <AnalysisContext.Provider value={value}>
       <View style={styles.stack}>
         <SummaryStrip analysis={analysis} extra={extraStats} showFuel={!omitFuel} />
-        {hasTrack ? <MapSection analysis={analysis} mapTheme={mapTheme} /> : null}
+        {hasTrack ? <MapSection analysis={analysis} mapTheme={mapTheme} route={route} /> : null}
         {hasSeries ? <ChartsCard analysis={analysis} /> : null}
         {!hasSeries ? (
           <Card>

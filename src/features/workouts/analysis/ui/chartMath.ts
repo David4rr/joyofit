@@ -225,6 +225,35 @@ export interface ChartGeometry {
 
 const r1 = (v: number): string => (Math.round(v * 10) / 10).toString();
 
+/**
+ * The samples of one run worth drawing: where several share a pixel column (a long ride on a fine grid has ten or more per
+ * pixel) only the first, the lowest, the highest and the last are kept, so peaks stay and the path stays short. A column with
+ * at most three samples is kept whole.
+ */
+function thinRun(run: readonly number[], xs: readonly number[], ys: readonly (number | null)[]): number[] {
+  const out: number[] = [];
+  let k = 0;
+  while (k < run.length) {
+    const col = Math.floor(xs[run[k]!]!);
+    let end = k + 1;
+    while (end < run.length && Math.floor(xs[run[end]!]!) === col) end++;
+    if (end - k <= 3) {
+      for (let j = k; j < end; j++) out.push(run[j]!);
+    } else {
+      let lo = k;
+      let hi = k;
+      for (let j = k + 1; j < end; j++) {
+        if ((ys[run[j]!] as number) < (ys[run[lo]!] as number)) lo = j;
+        if ((ys[run[j]!] as number) > (ys[run[hi]!] as number)) hi = j;
+      }
+      const picks = [k, lo, hi, end - 1].sort((a, b) => a - b);
+      for (let j = 0; j < picks.length; j++) if (j === 0 || picks[j] !== picks[j - 1]) out.push(run[picks[j]!]!);
+    }
+    k = end;
+  }
+  return out;
+}
+
 /** `M x y L x y ...` per uninterrupted run (single points are dropped) plus the closed area down to `baseY`. */
 export function buildPaths(xs: readonly number[], ys: readonly (number | null)[], baseY: number): { line: string; area: string } {
   let line = '';
@@ -232,10 +261,11 @@ export function buildPaths(xs: readonly number[], ys: readonly (number | null)[]
   let run: number[] = [];
   const flush = () => {
     if (run.length >= 2) {
+      const kept = thinRun(run, xs, ys);
       let l = '';
-      for (let k = 0; k < run.length; k++) l += `${k === 0 ? 'M' : 'L'}${r1(xs[run[k]!]!)} ${r1(ys[run[k]!]!)}`;
-      const first = run[0]!;
-      const last = run[run.length - 1]!;
+      for (let k = 0; k < kept.length; k++) l += `${k === 0 ? 'M' : 'L'}${r1(xs[kept[k]!]!)} ${r1(ys[kept[k]!]!)}`;
+      const first = kept[0]!;
+      const last = kept[kept.length - 1]!;
       line += l;
       area += `${l}L${r1(xs[last]!)} ${r1(baseY)}L${r1(xs[first]!)} ${r1(baseY)}Z`;
     }

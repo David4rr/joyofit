@@ -379,9 +379,15 @@ for a session that has no analysis card (a logged strength session, or an analys
 
 - **Summary strip and map.** Distance, time, moving time, pace or speed, elevation. A tile map of the route (OpenFreeMap vector tiles drawn with
   react-native-svg, no native module, `src/features/map/`; cached on the phone) with km markers: the smallest of every 1, 2, 5, 10, 20, 50 ... km that leaves at most 12
-  on screen and none overlapping (`pickKmPills`), so zooming in brings the in-between kilometres back.
+  on screen and none overlapping (`pickKmPills`), so zooming in brings the in-between kilometres back. The line is the recording's own: every cleaned GPS fix
+  (`analyze.ts` `analyzeWorkoutWithDetail` → `route.ts` `routeDetail`, with the pills placed on it at the watch's distance), which `TileMap` simplifies per zoom
+  (Douglas-Peucker at half a pixel), so a 12 h, 44k-fix ride stays sharp zoomed in at a few milliseconds per redraw. It is phone-only: the analysis' own track (what the
+  cloud copy and the posts carry) stays on the 600-sample grid.
 - **Scrubber charts.** Pace or speed, heart rate, elevation, cadence, step length and power on one shared time grid; touching a chart moves a dot on the map and fills a
-  readout. The screen's scroll freezes while a chart is touched.
+  readout. The screen's scroll freezes while a chart is touched. The analysis' grid has at most 600 steps (the JoyoRogo schema takes 720 and 200 kB), so a ride over 2 h
+  gets the phone's own finer grid for these charts and the map dot, one sample per 12 s up to 4 000 samples (12 h is 3 676; `detailGridStep` in `series.ts`), with the
+  same total distance; splits, laps, zones and every other figure keep the analysis' numbers, and nothing finer is uploaded (the 157 km, 12 h fixture's document is 43 kB either way).
+  A chart path keeps the first, lowest, highest and last sample of each pixel column (`thinRun` in `chartMath.ts`), so a short burst stays visible and the path stays a few hundred vertices.
 - **Splits and laps.** Per kilometre (pace, heart rate, climb, cadence, and step length when the row has room) and the watch's or FIT file's laps.
 - **Heart-rate zones** follow the person's setting (Settings > Zona HR: max-HR or heart-rate-reserve method, maximum and resting rate, hand-edited limits; docs/hr-zones.md), **pace zones, best efforts** (400 m, 1 km, 1 mile, 5 km, 10 km, half marathon, ranked against the same sport of the last 120 days),
   **effort** (JoyoFit workout strain), **training load** (acute against chronic, with the watch's own training effect and recovery time when it reports them)

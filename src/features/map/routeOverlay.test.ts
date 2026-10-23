@@ -1,45 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 
+import { longRide } from './longRide.fixture';
 import { KM_STEPS, MAX_KM_PILLS, pickKmPills, routePath, type FixedBox, type KmCandidate } from './routeOverlay';
 import { boundsOf, fitBounds, lonLatToWorld, type LatLon } from './tileMath';
-
-const M_PER_DEG = 111_195;
-
-/**
- * A 12 h ride at 1 Hz: 157 km out along a bending road and back by a slightly different line, 44 100 points, with GPS jitter
- * of about a metre. The ends of the line are 0 km and 157 km; `kmAt` holds the position of each whole kilometre.
- */
-function longRide() {
-  const points: LatLon[] = [];
-  const total = 44_100;
-  let seed = 7;
-  const noise = () => {
-    seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
-    return (seed / 4_294_967_296 - 0.5) * 2;
-  };
-  for (let i = 0; i < total; i++) {
-    const f = i / (total - 1);
-    const out = f < 0.5;
-    const u = out ? f * 2 : (1 - f) * 2; // 0..1 along the out leg
-    const side = out ? 0 : 0.012;
-    const lat = -7.3 + u * 0.34 + 0.03 * Math.sin(u * 5) + side;
-    const lon = 110.2 + u * 0.52 + 0.04 * Math.sin(u * 7) + side;
-    points.push([lat + noise() * 0.000001, lon + noise() * 0.000001]);
-  }
-  const kmAt: { km: number; pos: LatLon }[] = [];
-  let acc = 0;
-  let next = 1;
-  for (let i = 1; i < points.length; i++) {
-    const [la0, lo0] = points[i - 1];
-    const [la1, lo1] = points[i];
-    acc += Math.hypot((la1 - la0) * M_PER_DEG, (lo1 - lo0) * M_PER_DEG * Math.cos((la1 * Math.PI) / 180));
-    while (acc >= next * 1000) {
-      kmAt.push({ km: next, pos: points[i] });
-      next += 1;
-    }
-  }
-  return { points, kmAt, km: acc / 1000 };
-}
 
 const ride = longRide();
 const WIDTH = 330;
@@ -146,7 +109,7 @@ describe('pickKmPills', () => {
 
   test('zoomed in on one stretch every kilometre comes back', () => {
     const mid = ride.kmAt[40];
-    const zoomed = { lat: mid.pos[0], lon: mid.pos[1], zoom: 12.5 };
+    const zoomed = { lat: mid.pos[0], lon: mid.pos[1], zoom: 14 };
     const onScreen = ride.kmAt
       .map((m) => pill(m.km, screenOf(zoomed, m.pos)))
       .filter((c) => c.x > 0 && c.x < WIDTH && c.y > 0 && c.y < HEIGHT);

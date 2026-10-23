@@ -1,6 +1,7 @@
 import { memo, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import type { RouteDetail } from '@/features/workouts/analysis/route';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import { ChartsCard } from '@/features/workouts/analysis/ui/ChartsCard';
 import { AnalysisContext, type AnalysisContextValue } from '@/features/workouts/analysis/ui/context';
@@ -46,6 +47,8 @@ export interface RideAnalysisViewProps {
   records: readonly number[];
   /** Tapped Use on the FTP estimate. The FTP is never changed without it. */
   onUseFtp?: (watts: number) => void;
+  /** The route at the recording's resolution, for the map (phone only, `analyzeWorkoutWithDetail`). */
+  route?: RouteDetail | null;
 }
 
 /**
@@ -53,7 +56,7 @@ export interface RideAnalysisViewProps {
  * index ties the charts, the map, the splits and the climbs together. Cards without data are left out; an indoor ride has no map,
  * elevation or climbs.
  */
-function RideAnalysisViewImpl({ analysis, ride, palette, t, mapTheme, onScrubActive, ftp, weightKg = null, allTime, records, onUseFtp }: RideAnalysisViewProps) {
+function RideAnalysisViewImpl({ analysis, ride, palette, t, mapTheme, onScrubActive, ftp, weightKg = null, allTime, records, onUseFtp, route }: RideAnalysisViewProps) {
   const [store] = useState(createScrubStore);
   const setScrubActive = onScrubActive ?? ignoreScrub;
   const value = useMemo<AnalysisContextValue>(() => ({ palette, t, store, setScrubActive }), [palette, t, store, setScrubActive]);
@@ -75,7 +78,7 @@ function RideAnalysisViewImpl({ analysis, ride, palette, t, mapTheme, onScrubAct
     <AnalysisContext.Provider value={value}>
       <View style={styles.stack}>
         <RideSummaryStrip ride={ride} />
-        {hasTrack ? <MapSection analysis={view} mapTheme={mapTheme} /> : null}
+        {hasTrack ? <MapSection analysis={view} mapTheme={mapTheme} route={route} /> : null}
         {hasSeries ? <ChartsCard analysis={view} /> : null}
         {!hasSeries ? (
           <Card>

@@ -38,7 +38,8 @@ import { ShareToRogoButton } from '@/features/social/ShareToRogo';
 import { SaveWorkoutRouteButton, SaveWorkoutRouteNotice, useSaveWorkoutRoute } from '@/features/routes/SaveWorkoutRouteButton';
 import { useRoleText } from '@/features/record/ui/roleText';
 import { listWorkoutSensors, type WorkoutSensor } from '@/features/sensors/store';
-import { analyzeWorkout } from '@/features/workouts/analysis/analyze';
+import { analyzeWorkoutWithDetail } from '@/features/workouts/analysis/analyze';
+import type { RouteDetail } from '@/features/workouts/analysis/route';
 import { loadAnalysisHistory } from '@/features/workouts/analysis/history';
 import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/palette';
 import { workoutElevation } from '@/features/workouts/analysis/elevation';
@@ -135,8 +136,15 @@ function paceRows(kind: SportKind, summary: WorkoutSummary, distanceM: number, m
 const NO_WORKOUT = { sportName: '', start: 0 };
 const NO_POINTS: WorkoutPointRow[] = [];
 
-/** The analysis of the workout on screen: computed after the rest of the screen is drawn. */
-type AnalysisState = { status: 'pending' } | { status: 'none' } | { status: 'ready'; analysis: WorkoutAnalysis } | { status: 'error'; message: string };
+/**
+ * The analysis of the workout on screen: computed after the rest of the screen is drawn. `analysis` is what the share, the coach and the
+ * cloud copy use; `shown` is the same with the phone's finer chart grid, and `route` the full-resolution track for the map.
+ */
+type AnalysisState =
+  | { status: 'pending' }
+  | { status: 'none' }
+  | { status: 'ready'; analysis: WorkoutAnalysis; shown: WorkoutAnalysis; route: RouteDetail | null }
+  | { status: 'error'; message: string };
 
 export default function WorkoutDetailScreen() {
   const db = useSQLiteContext();
@@ -194,11 +202,12 @@ export default function WorkoutDetailScreen() {
             // Let the summary paint before the analysis blocks the JS thread.
             await new Promise<void>((resolve) => setTimeout(resolve, 0));
             if (cancelled) return;
-            const analysis = analyzeWorkout(
+            const { analysis, detail } = analyzeWorkoutWithDetail(
               { workout: value.workout, summary: value.summary, points: value.points, zones, daySamples: value.daySamples, history },
               { includeHr: true, includeRoute: true, includeComparison: true },
             );
-            setAnalysisState({ status: 'ready', analysis });
+            const shown = detail.series ? { ...analysis, series: detail.series } : analysis;
+            setAnalysisState({ status: 'ready', analysis, shown, route: detail.route });
           } catch (e) {
             if (!cancelled) setAnalysisState({ status: 'error', message: errorMessage(e) });
           }
@@ -444,7 +453,8 @@ export default function WorkoutDetailScreen() {
       {analysisState.status === 'ready' ? (
         rideData.ride !== null ? (
           <RideAnalysisView
-            analysis={analysisState.analysis}
+            analysis={analysisState.shown}
+            route={analysisState.route}
             ride={rideData.ride}
             palette={palette}
             t={analysisT}
@@ -462,7 +472,8 @@ export default function WorkoutDetailScreen() {
           <>
             {rideData.error !== null ? <Notice tone="danger">{t('detail.errors.analysis', { message: rideData.error })}</Notice> : null}
             <WorkoutAnalysisView
-              analysis={analysisState.analysis}
+              analysis={analysisState.shown}
+              route={analysisState.route}
               palette={palette}
               t={analysisT}
               mapTheme={mapTheme}
