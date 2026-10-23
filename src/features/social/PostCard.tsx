@@ -13,6 +13,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { Card } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { RouteMapPreview } from '@/features/social/RouteMapPreview';
+import { ModerationMenu } from '@/features/social/ModerationMenu';
 import { PillRow, StatPill } from '@/features/social/StatPill';
 import { sportKindFromName } from '@/features/social/feedRoute';
 import { postFigures, watchStats } from '@/features/social/postStats';
@@ -85,6 +86,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true, inlineMap 
       />
     </View>
   );
+  const menu = <ModerationMenu target={{ kind: 'post', id: post.id }} author={{ id: post.author.id, name: post.author.name }} />;
 
   const body = (
     <View style={styles.body}>
@@ -121,17 +123,22 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true, inlineMap 
 
   return (
     <Card>
-      {linkAuthor && handle ? (
-        <PressableScale
-          accessibilityRole="button"
-          accessibilityLabel={t('post.openProfile', { name: post.author.name })}
-          scaleTo={0.985}
-          onPress={() => router.push({ pathname: '/social/u/[handle]', params: { handle } })}>
-          {author}
-        </PressableScale>
-      ) : (
-        author
-      )}
+      <View style={styles.row}>
+        <View style={styles.grow}>
+          {linkAuthor && handle ? (
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={t('post.openProfile', { name: post.author.name })}
+              scaleTo={0.985}
+              onPress={() => router.push({ pathname: '/social/u/[handle]', params: { handle } })}>
+              {author}
+            </PressableScale>
+          ) : (
+            author
+          )}
+        </View>
+        {menu}
+      </View>
       {onOpen ? (
         <PressableScale accessibilityRole="button" accessibilityLabel={t('post.open', { title: post.title })} scaleTo={0.985} onPress={onOpen}>
           {body}

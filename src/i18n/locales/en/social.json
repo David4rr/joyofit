@@ -208,5 +208,50 @@
     "includeComparison": "Comparison with earlier workouts",
     "note": "Everyone you share with sees the summary. The full analysis (map, charts, splits, zones, best efforts and more) is visible to JoyoRogo Pro members and to you.",
     "post": "Post"
+  },
+  "moderation": {
+    "kind": {
+      "post": "post",
+      "comment": "comment",
+      "profile": "profile"
+    },
+    "more": "Options for this {{kind}}",
+    "menuTitle": "{{name}}",
+    "menuMessage": "Report content that breaks the rules, or block this user.",
+    "report": {
+      "action": "Report {{kind}}",
+      "title": "Report {{kind}}",
+      "ask": "Why are you reporting this {{kind}}? The JoyoRogo team will review it.",
+      "reason": {
+        "spam": "Spam or promotion",
+        "kasar": "Abusive content",
+        "salah_info": "Misleading information",
+        "lainnya": "Other"
+      },
+      "noteCount": "Note (optional) · {{n}}/{{max}}",
+      "noteLabel": "Report note",
+      "notePlaceholder": "Briefly explain...",
+      "send": "Send report",
+      "thanksTitle": "Thanks, we will review it",
+      "thanks": "Your report went to the JoyoRogo team. We hide this content from you.",
+      "done": "Done"
+    },
+    "block": {
+      "action": "Block user",
+      "title": "Block {{name}}?",
+      "message": "You will no longer see each other's posts, comments or profile, and follows between you are removed. They are not told. You can unblock any time in Settings, Account, Blocked users.",
+      "confirm": "Block"
+    },
+    "blocked": {
+      "title": "Blocked users",
+      "description": "Their posts, comments and profile are hidden from you, and yours from them.",
+      "row": "Blocked users",
+      "empty": "You have not blocked anyone.",
+      "unblock": "Unblock",
+      "unblockLabel": "Unblock {{name}}"
+    },
+    "profileHidden": "You reported or blocked this profile, so it is hidden.",
+    "postHidden": "You reported this post or blocked its author, so it is hidden.",
+    "commentReported": "A comment you reported is hidden."
   }
 }

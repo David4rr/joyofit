@@ -520,6 +520,15 @@ JoyoFit reads and writes JoyoRogo's social backend with the shared JoyoRogo acco
 
 - **Feed.** Following (you, people you follow, your groups) and Explore (public posts), kudos, comments, and the author's profile. Signed out, every screen
   shows the same JoyoRogo sign-in as Settings.
+- **Report and block** (`features/social/ModerationMenu.tsx`, Google Play's rule for apps with user content). Every post (feed, profile, post screen), every comment
+  and every public profile has a ⋯ button, except the person's own content and when signed out. *Laporkan* opens a sheet with JoyoRogo's four reasons (spam,
+  kasar, salah_info, lainnya) and a note of at most 200 characters, and calls `social.report` with `source: 'joyofit'` (a post, a comment or, new, a member's profile
+  by `userId`; 10 reports a day). The sheet then says *Terima kasih, kami tinjau*; closing it hides the content for the reporter (`moderation.ts`, the reported ids
+  are kept on the phone, newest 500 of each kind). *Blokir pengguna* asks first (what is hidden, that follows are cut both ways, where to undo it), then calls
+  `social.block` and hides the person at once (`moderationCore.visiblePosts` / `visibleThreads`, a profile screen closes); JoyoRogo already filters blocked people out of
+  the feed, comments, replies, profiles, follow lists and kudos in both directions. *Settings, Account, Pengguna diblokir* (`app/settings/blocked.tsx`, also in
+  My profile) lists `social.blockList` with *Buka blokir* (`social.unblock`). A reported top-level comment with replies stays as a placeholder so the replies keep
+  their place. The admin Reports page in JoyoRogo tags these reports *JoyoFit*. Play Console answers for this: `docs/play-store.md`, section 6.
 - **Groups.** Your groups, join by invite code, and per group today's Recovery, Strain, Sleep and readiness of each member who opted in. You opt in per group
   with *Share JoyoFit scores* (`group.setShareFitness`); *Share food names* is JoyoRogo's existing switch.
 - **Share to JoyoRogo** (workout screen) posts the summary (sport, duration, kcal, distance, average and maximum heart rate) as a `latihan` post, visible to

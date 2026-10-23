@@ -6,6 +6,8 @@ import { Button } from '@/components/Button';
 import { FadeIn } from '@/components/motion';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { PostCard } from '@/features/social/PostCard';
+import { useHidden } from '@/features/social/moderation';
+import { visiblePosts } from '@/features/social/moderationCore';
 import type { PagedPosts } from '@/features/social/usePagedPosts';
 import { spacing } from '@/theme';
 
@@ -20,6 +22,7 @@ interface PostListProps {
 export function PostList({ posts, empty, linkAuthor }: PostListProps) {
   const { t } = useTranslation(['social', 'common']);
   const router = useRouter();
+  const hidden = useHidden();
   const retry = { label: t('common:actions.retry'), onPress: () => void posts.refresh() };
 
   if (posts.items === null) {
@@ -35,7 +38,8 @@ export function PostList({ posts, empty, linkAuthor }: PostListProps) {
       </View>
     );
   }
-  if (posts.items.length === 0) return <EmptyState icon="people" title={empty.title} description={empty.description} />;
+  const items = visiblePosts(hidden, posts.items);
+  if (items.length === 0) return <EmptyState icon="people" title={empty.title} description={empty.description} />;
   return (
     <View style={styles.list}>
       {posts.error !== null ? (
@@ -43,7 +47,7 @@ export function PostList({ posts, empty, linkAuthor }: PostListProps) {
           {posts.error}
         </Notice>
       ) : null}
-      {posts.items.map((post, i) => (
+      {items.map((post, i) => (
         // Only the first screenful staggers; posts added by "Load more" appear below the fold and just fade in.
         <FadeIn key={post.id} delay={i < 6 ? i * 45 : 0}>
           <PostCard

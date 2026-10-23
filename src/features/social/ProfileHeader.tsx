@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
@@ -15,10 +16,12 @@ interface ProfileHeaderProps {
   bio?: string | null;
   /** Null for a private profile: it shows no numbers. */
   counts: { posts: number; followers: number; following: number } | null;
+  /** At the end of the name row, e.g. the moderation menu. */
+  trailing?: ReactNode;
 }
 
 /** Name, @handle, bio and the post, follower and following counts of a profile. */
-export function ProfileHeader({ name, handle, image, bio, counts }: ProfileHeaderProps) {
+export function ProfileHeader({ name, handle, image, bio, counts, trailing }: ProfileHeaderProps) {
   const { t } = useTranslation('social');
   return (
     <Card>
@@ -34,6 +37,7 @@ export function ProfileHeader({ name, handle, image, bio, counts }: ProfileHeade
             </AppText>
           ) : null}
         </View>
+        {trailing}
       </View>
       {bio ? <AppText variant="body">{bio}</AppText> : null}
       {counts ? (

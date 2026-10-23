@@ -6,6 +6,7 @@ import { rogo } from '@/cloud/rogo';
 import { AppText } from '@/components/AppText';
 import { Screen } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
+import { BlockedUsersRow } from '@/features/social/BlockedUsersRow';
 import { PostList } from '@/features/social/PostList';
 import { ProfileHeader } from '@/features/social/ProfileHeader';
 import { ShareMapsCard } from '@/features/social/ShareMapsCard';
@@ -47,6 +48,7 @@ export default function MyProfileScreen() {
           <Skeleton width="100%" height={120} radius="card" />
         )}
         {profile.data ? <ShareMapsCard profile={profile.data} onChange={profile.setData} /> : null}
+        <BlockedUsersRow />
         <AppText variant="heading" accessibilityRole="header">
           {t('profile.myPosts')}
         </AppText>

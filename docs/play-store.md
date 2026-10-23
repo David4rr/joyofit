@@ -259,15 +259,21 @@ Record that demo video (2 to 3 minutes) before you submit; the same video can se
 
 | Question | Answer |
 |---|---|
-| Violence, blood, fear, sexual content, profanity, drugs, gambling, hate speech | No to all |
-| Does the app let users interact or exchange content with other users? | No |
-| Does it share the user's location with other users? | No |
-| Does it allow users to purchase digital goods? | No |
+| Violence, blood, fear, sexual content, profanity, drugs, gambling, hate speech | No to all in the app itself. Posts and comments are written by users, so this is answered through the user-content questions below, not by the app's own content |
+| Does the app let users interact or exchange content with other users? (**User Content Sharing**) | **Yes**. The Social tab has public posts, kudos, comments, follows, groups and public profiles, shared with JoyoRogo's social backend |
+| Can users block other users? | **Yes** (the ⋯ menu of a post, comment or profile: *Blokir pengguna*; list and unblock in Settings, Account, *Pengguna diblokir*) |
+| Can users report objectionable content? | **Yes** (the same ⋯ menu: *Laporkan*, with a reason and an optional note; reviewed by the JoyoRogo team in its admin Reports page) |
+| Does the app have online content / online user interaction? | **Yes** (needs a JoyoRogo account; signed out, the Social tab shows only the sign-in) |
+| Does it share the user's location with other users? (**Shares location**) | **Yes**. A shared workout post can carry its route map (GPS line, first and last 200 m cut, simplified; the author can switch maps off per post or for the whole account) and the bike computer's live-tracking link shows a rider's position to whoever has the link |
+| Does it allow users to purchase digital goods? | **No**. JoyoFit has no purchase flow: no price and no web checkout on Play (`features/pro/offer.ts`, `proOffer`). Pro is bought in the JoyoRogo app through its own Play Billing listing; JoyoFit only opens that app or its listing. [INFERENCE: if the Console reads the *Upgrade* card as a purchase prompt, answer Yes; the rating does not change] |
+| Is there generative AI chat? | **Yes, if asked**: Joyo AI (own key, "bring your own key"). The user enters their own provider key (18 or older); answers are written by the provider the user chose, not by JoyoFit or a model JoyoFit hosts. The rules-based daily suggestion and plans are not generative |
 | Does it have unrestricted internet access / a web browser? | No (it opens GitHub and the privacy page in the system browser only on tap; it has no embedded browser) |
 | Does it contain news, or is it a government, financial or COVID-19 app? | No |
 | Health: does it provide medical advice or diagnosis? | No (it displays data from the user's own watch; the listing says it is not a medical device) |
 
-Expected result: Everyone / PEGI 3 / IARC 3+.
+The first Play review (2026-10) was rejected under *Content Ratings policy: content rating may be inaccurate*: the earlier answers said "No" to user interaction, but the Social tab shows public posts, route maps, comments and public profiles. Google's user-generated-content policy also requires in-app reporting and blocking, which the Social tab now has. Update the questionnaire (App content, Content rating, start a new one) with the answers above, then resubmit.
+
+Expected result: a rating above the lowest one, because of user interaction (typically *Teen* / PEGI 12 with the label *Users Interact* and *Shares Location*); take whatever the questionnaire computes. Do not answer "No" to interaction to get a lower rating: a mismatch with the Social tab is what Play rejected.
 
 **Health apps declaration** (App content, Health apps): select **Activity and fitness** (and **Sleep** if offered). Do not select medical or clinical options.
 

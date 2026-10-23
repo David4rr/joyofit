@@ -12,9 +12,12 @@ import { FadeIn } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
 import { Divider, Section } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
+import { ModerationMenu } from '@/features/social/ModerationMenu';
 import { CommentAttachmentCard } from '@/features/social/CommentAttachmentCard';
 import { commentPhotoUrl } from '@/features/social/commentPhotoUrl';
 import type { Thread } from '@/features/social/commentThreads';
+import { useHidden } from '@/features/social/moderation';
+import { visibleThreads } from '@/features/social/moderationCore';
 import type { Comments } from '@/features/social/useComments';
 import { useAgo } from '@/features/social/useAgo';
 import { spacing, tintColors, useColors } from '@/theme';
@@ -104,6 +107,7 @@ function CommentRow({ comment, canDelete, onReply, onDelete }: RowProps) {
               </AppText>
             </PressableScale>
           ) : null}
+          <ModerationMenu target={{ kind: 'comment', id: comment.id }} author={{ id: comment.author.id, name: comment.author.name }} />
         </View>
       </View>
     </View>
@@ -128,6 +132,8 @@ export function CommentsSection({ comments, me, postAuthorId }: SectionProps) {
   const [confirming, setConfirming] = useState<RogoComment | null>(null);
   const [deleting, setDeleting] = useState(false);
   const { state, loaded, error } = comments;
+  const hidden = useHidden();
+  const shown = visibleThreads(hidden, state.threads);
 
   const canDelete = (c: RogoComment) => me !== undefined && (c.author.id === me || postAuthorId === me);
   const reply = (c: RogoComment) => comments.setReplyTo({ commentId: c.id, name: c.author.name, handle: c.author.handle });
@@ -145,13 +151,22 @@ export function CommentsSection({ comments, me, postAuthorId }: SectionProps) {
     }
   };
 
-  const threadView = (thread: Thread) => {
+  const threadView = (thread: Thread, placeholder: boolean, hiddenReplies: number) => {
     const { comment } = thread;
-    const unloaded = comment.replyCount > thread.replies.length && (!thread.repliesRead || thread.repliesCursor !== null);
+    const unloaded = comment.replyCount > thread.replies.length + hiddenReplies && (!thread.repliesRead || thread.repliesCursor !== null);
     const loading = comments.loadingMore === comment.id;
     return (
       <View style={styles.thread}>
-        <CommentRow comment={comment} canDelete={canDelete(comment) && !comment.deleted} onReply={reply} onDelete={setConfirming} />
+        {placeholder ? (
+          <View style={styles.comment}>
+            <View style={styles.avatarSlot} />
+            <AppText variant="caption" muted style={styles.commentBody}>
+              {t('moderation.commentReported')}
+            </AppText>
+          </View>
+        ) : (
+          <CommentRow comment={comment} canDelete={canDelete(comment) && !comment.deleted} onReply={reply} onDelete={setConfirming} />
+        )}
         {thread.open ? (
           <View style={styles.replies}>
             {thread.replies.map((r) => (
@@ -164,7 +179,7 @@ export function CommentsSection({ comments, me, postAuthorId }: SectionProps) {
                 onPress={() => void comments.showReplies(thread)}
                 style={styles.toggle}>
                 <AppText variant="label" muted>
-                  {t('comments.moreRepliesCount', { count: comment.replyCount - thread.replies.length })}
+                  {t('comments.moreRepliesCount', { count: comment.replyCount - thread.replies.length - hiddenReplies })}
                 </AppText>
               </PressableScale>
             ) : null}
@@ -192,11 +207,11 @@ export function CommentsSection({ comments, me, postAuthorId }: SectionProps) {
   return (
     <Section title={t('comments.title')} icon="chatbubbles" tint="link">
       {loaded ? (
-        state.threads.length > 0 ? (
-          state.threads.map((thread, i) => (
+        shown.length > 0 ? (
+          shown.map(({ thread, placeholder, hiddenReplies }, i) => (
             <FadeIn key={thread.comment.id} delay={i < 6 ? i * 40 : 0} distance={6} style={styles.item}>
               {i > 0 ? <Divider /> : null}
-              {threadView(thread)}
+              {threadView(thread, placeholder, hiddenReplies)}
             </FadeIn>
           ))
         ) : (

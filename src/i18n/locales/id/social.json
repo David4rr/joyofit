@@ -201,5 +201,50 @@
     "includeComparison": "Perbandingan dengan latihan sebelumnya",
     "note": "Semua yang kamu bagikan melihat ringkasannya. Analisis lengkap (peta, grafik, split, zona, best effort, dan lainnya) hanya terlihat oleh anggota JoyoRogo Pro dan kamu.",
     "post": "Kirim"
+  },
+  "moderation": {
+    "kind": {
+      "post": "postingan",
+      "comment": "komentar",
+      "profile": "profil"
+    },
+    "more": "Opsi untuk {{kind}}",
+    "menuTitle": "{{name}}",
+    "menuMessage": "Laporkan konten yang melanggar aturan, atau blokir pengguna ini.",
+    "report": {
+      "action": "Laporkan {{kind}}",
+      "title": "Laporkan {{kind}}",
+      "ask": "Kenapa kamu melaporkan {{kind}} ini? Tim JoyoRogo akan meninjaunya.",
+      "reason": {
+        "spam": "Spam atau promosi",
+        "kasar": "Konten kasar",
+        "salah_info": "Informasi menyesatkan",
+        "lainnya": "Lainnya"
+      },
+      "noteCount": "Catatan (opsional) · {{n}}/{{max}}",
+      "noteLabel": "Catatan laporan",
+      "notePlaceholder": "Jelaskan singkat...",
+      "send": "Kirim laporan",
+      "thanksTitle": "Terima kasih, kami tinjau",
+      "thanks": "Laporanmu terkirim ke tim JoyoRogo. Konten ini kami sembunyikan dari kamu.",
+      "done": "Selesai"
+    },
+    "block": {
+      "action": "Blokir pengguna",
+      "title": "Blokir {{name}}?",
+      "message": "Kalian tidak akan saling melihat postingan, komentar, dan profil, dan saling mengikuti diputus. Dia tidak diberi tahu. Kamu bisa membuka blokir kapan saja di Pengaturan, Akun, Pengguna diblokir.",
+      "confirm": "Blokir"
+    },
+    "blocked": {
+      "title": "Pengguna diblokir",
+      "description": "Postingan, komentar, dan profil mereka disembunyikan darimu, dan sebaliknya.",
+      "row": "Pengguna diblokir",
+      "empty": "Belum ada pengguna yang kamu blokir.",
+      "unblock": "Buka blokir",
+      "unblockLabel": "Buka blokir {{name}}"
+    },
+    "profileHidden": "Profil ini kamu laporkan atau blokir, jadi disembunyikan.",
+    "postHidden": "Postingan ini kamu laporkan atau dari pengguna yang kamu blokir, jadi disembunyikan.",
+    "commentReported": "Komentar yang kamu laporkan disembunyikan."
   }
 }

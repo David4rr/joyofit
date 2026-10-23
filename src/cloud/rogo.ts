@@ -277,6 +277,8 @@ export interface RogoSocialProfile {
 
 /** `social.publicProfile`; a private profile comes back with `publicProfile: false`, no `stats` and no posts. */
 export interface RogoPublicProfile {
+  /** The account id, what `social.block` and a profile report name. */
+  userId: string;
   name: string;
   handle: string | null;
   image: string | null;
@@ -285,6 +287,20 @@ export interface RogoPublicProfile {
   isSelf: boolean;
   stats: { postCount: number; followerCount: number; followingCount: number } | null;
   posts: RogoPostPage;
+}
+
+/** Why a post, comment or profile is reported; JoyoRogo's own four reasons. */
+export type RogoReportReason = 'spam' | 'kasar' | 'salah_info' | 'lainnya';
+
+/** What a report names: exactly one of a post, a comment or a member's profile. */
+export type RogoReportTarget = { postId: string } | { commentId: string } | { userId: string };
+
+/** A member the signed-in person blocked (`social.blockList`). */
+export interface RogoBlockedUser {
+  id: string;
+  name: string;
+  image: string | null;
+  handle: string | null;
 }
 
 /** What a comment can carry besides text (`social.comments`): a photo, or one of the commenter's own items from the app. */
@@ -544,6 +560,13 @@ export const rogo = {
     workoutDetail: (postId: string) => rogoCall<RogoWorkoutDetail>('social/workoutDetail', { postId }),
     /** The author's per-post "Tampilkan peta" switch, for a post whose `stats.hasMap` is 1 (NOT_FOUND otherwise). */
     setPostMap: (postId: string, show: boolean) => rogoCall<{ showMap: 0 | 1 }>('social/setPostMap', { postId, show }),
+    /** Sends a content report to JoyoRogo's admins, tagged as coming from JoyoFit. `note` is at most 200 characters. */
+    report: (target: RogoReportTarget, reason: RogoReportReason, note?: string) =>
+      rogoCall<{ ok: true }>('social/report', { ...target, reason, ...(note ? { note } : {}), source: 'joyofit' }),
+    /** Hides both people's content from each other and cuts follows both ways. */
+    block: (userId: string) => rogoCall<{ ok: true }>('social/block', { userId }),
+    unblock: (userId: string) => rogoCall<{ ok: true }>('social/unblock', { userId }),
+    blockList: () => rogoCall<RogoBlockedUser[]>('social/blockList', {}, READ),
     /** Account feed settings; `shareMaps` is "Peta rute di postingan". */
     updateProfile: (input: { shareMaps?: boolean }) => rogoCall<{ ok: true }>('social/updateProfile', input),
   },

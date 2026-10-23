@@ -12,6 +12,8 @@ import { Screen } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
 import { CommentComposer } from '@/features/social/CommentComposer';
 import { CommentsSection } from '@/features/social/CommentsSection';
+import { useHidden } from '@/features/social/moderation';
+import { postHidden } from '@/features/social/moderationCore';
 import { PostCard } from '@/features/social/PostCard';
 import { PostMapSection } from '@/features/social/PostMapSection';
 import { SignInGate } from '@/features/social/SignInGate';
@@ -32,6 +34,7 @@ export default function PostScreen() {
   const me = authClient.useSession().data?.user.id;
   const load = useCallback(() => rogo.social.post(id), [id]);
   const { data: post, error, refreshing, refresh, setData } = useRogoQuery(load, cloud.signedIn);
+  const hidden = useHidden();
   const stats = post ? watchStats(post) : null;
   const [scrubbing, setScrubbing] = useState(false);
   const [detailMap, setDetailMap] = useState<DetailMap>('pending');
@@ -50,9 +53,11 @@ export default function PostScreen() {
       refresh={{ refreshing, onRefresh: () => void refresh(), enabled: cloud.signedIn }}
       scrollEnabled={!scrubbing}
       scrollRef={scroll}
-      footer={post && cloud.signedIn ? <CommentComposer comments={comments} /> : undefined}>
+      footer={post && cloud.signedIn && !postHidden(hidden, post) ? <CommentComposer comments={comments} /> : undefined}>
       <SignInGate>
-        {post ? (
+        {post && postHidden(hidden, post) ? (
+          <Notice icon="eye-off">{ts('moderation.postHidden')}</Notice>
+        ) : post ? (
           <>
             <PostCard post={post} onChange={setData} inlineMap={false} />
             {post.commentCount > 0 ? (

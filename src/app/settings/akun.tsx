@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { useToast } from '@/components/Toast';
+import { BlockedUsersRow } from '@/features/social/BlockedUsersRow';
 import { CloudSection } from '@/features/settings/CloudSection';
 import { ProfilePhoto } from '@/features/settings/ProfilePhoto';
 
@@ -13,6 +14,7 @@ export default function AccountSettingsScreen() {
       <Screen>
         <ProfilePhoto onNotify={show} />
         <CloudSection />
+        <BlockedUsersRow />
       </Screen>
       {toast}
     </View>
