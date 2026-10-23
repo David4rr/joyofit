@@ -1,4 +1,5 @@
-import { POINTS_PER_STATEMENT, PULL_MAX_WORKOUTS } from "./limits";
+import { chunk, chunkByWeight, utf8Bytes } from "./d1";
+import { JSON_PARAM_TARGET_BYTES, POINTS_PER_STATEMENT, PULL_MAX_WORKOUTS } from "./limits";
 import type { DeviceInput, SleepSegmentInput, StepSampleInput, SyncBody, WorkoutInput } from "./schemas";
 
 /**
@@ -6,7 +7,8 @@ import type { DeviceInput, SleepSegmentInput, StepSampleInput, SyncBody, Workout
  *
  * Writes go to D1 as one `db.batch` (a transaction). Each table travels as a single JSON bind parameter that
  * `json_each` expands, so a request costs a handful of statements whatever its size (D1 allows 100 bound
- * parameters per statement and, on the free plan, 50 queries per invocation).
+ * parameters per statement and, on the free plan, 50 queries per invocation). A table whose JSON would pass
+ * JSON_PARAM_TARGET_BYTES (D1 caps one value at 2 MB, the body at 3 MB) is split over several statements.
  *
  * `rev` is a per-user counter. One request reserves a block of N values in `user_state` and gives each row it
  * writes a distinct value in that block. A row whose content is unchanged is not touched, so replaying a batch
@@ -124,14 +126,15 @@ export async function applySync(db: D1Database, userId: string, body: SyncBody, 
       )
       .bind(userId, total, now),
   ];
-  // Index in `statements` of each table's upsert, to read how many rows it wrote.
-  const at: Partial<Record<"steps" | "sleep" | "workouts" | "devices", number>> = {};
+  // Indexes in `statements` of each table's upserts, to read how many rows they wrote.
+  const at: Partial<Record<"steps" | "sleep" | "workouts" | "devices", number[]>> = {};
   let offset = 0;
   const add = (name: keyof typeof at, spec: TableSpec, rows: unknown[][]) => {
-    if (rows.length === 0) return;
-    at[name] = statements.length;
-    statements.push(db.prepare(upsertSql(spec)).bind(userId, JSON.stringify(rows), total, offset, now));
-    offset += rows.length;
+    for (const slice of chunkByWeight(rows, (row) => utf8Bytes(JSON.stringify(row)) + 1, JSON_PARAM_TARGET_BYTES)) {
+      (at[name] ??= []).push(statements.length);
+      statements.push(db.prepare(upsertSql(spec)).bind(userId, JSON.stringify(slice), total, offset, now));
+      offset += slice.length;
+    }
   };
   add("steps", STEP_SAMPLES, steps.map(stepRow));
   add("sleep", SLEEP_SEGMENTS, sleep.map(sleepRow));
@@ -148,7 +151,7 @@ export async function applySync(db: D1Database, userId: string, body: SyncBody, 
     const points = workouts.flatMap((w) =>
       w.points.map((p, seq) => [w.start, seq, p.ts, p.lat, p.lon, p.alt, p.hr]),
     );
-    for (let i = 0; i < points.length; i += POINTS_PER_STATEMENT) {
+    for (const slice of chunk(points, POINTS_PER_STATEMENT)) {
       statements.push(
         db
           .prepare(
@@ -158,17 +161,14 @@ export async function applySync(db: D1Database, userId: string, body: SyncBody, 
                     json_extract(j.value, '$[6]')
              FROM json_each(?2) AS j`,
           )
-          .bind(userId, JSON.stringify(points.slice(i, i + POINTS_PER_STATEMENT))),
+          .bind(userId, JSON.stringify(slice)),
       );
     }
   }
   statements.push(db.prepare("SELECT rev FROM user_state WHERE user_id = ?1").bind(userId));
 
   const results = await db.batch<{ rev: number }>(statements);
-  const changes = (name: keyof typeof at): number => {
-    const index = at[name];
-    return index === undefined ? 0 : (results[index]?.meta.changes ?? 0);
-  };
+  const changes = (name: keyof typeof at): number => (at[name] ?? []).reduce((sum, index) => sum + (results[index]?.meta.changes ?? 0), 0);
   return {
     rev: results[results.length - 1]?.results[0]?.rev ?? 0,
     written: {

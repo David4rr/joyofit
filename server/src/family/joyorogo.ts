@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { chunk } from "../d1";
 import type { AppEnv } from "../env";
 
 /** What JoyoRogo knows about a user that the evaluator needs and cannot get from a session cookie. */
@@ -40,8 +41,7 @@ export async function fetchRogoUsers(env: AppEnv, ids: string[], now: number = D
     } else missing.push(id);
   }
   if (missing.length === 0 || !env.STRAVA_CLIENT_ID || !env.STRAVA_CLIENT_SECRET) return found;
-  for (let i = 0; i < missing.length; i += MAX_IDS) {
-    const chunk = missing.slice(i, i + MAX_IDS);
+  for (const batch of chunk(missing, MAX_IDS)) {
     const url = `${env.JOYOROGO_AUTH_URL.replace(/\/+$/, "")}/internal/joyofit/family/users`;
     const request: RequestInit = {
       method: "POST",
@@ -50,7 +50,7 @@ export async function fetchRogoUsers(env: AppEnv, ids: string[], now: number = D
         "content-type": "application/json",
         accept: "application/json",
       },
-      body: JSON.stringify({ userIds: chunk }),
+      body: JSON.stringify({ userIds: batch }),
       redirect: "manual",
       signal: AbortSignal.timeout(5_000),
     };
@@ -59,7 +59,7 @@ export async function fetchRogoUsers(env: AppEnv, ids: string[], now: number = D
       if (!response.ok) throw new Error(`answered ${response.status}`);
       const parsed = answerSchema.parse(await response.json());
       const byId = new Map(parsed.users.map((u) => [u.id, u]));
-      for (const id of chunk) {
+      for (const id of batch) {
         const user = byId.get(id) ?? null;
         cache.set(id, { user, expiresAt: now + CACHE_TTL_MS });
         if (user) found.set(id, user);

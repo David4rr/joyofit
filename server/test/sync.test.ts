@@ -232,3 +232,63 @@ describe("user isolation", () => {
     expect(bobPull.workouts[0]?.points.map((p) => p.hr)).toEqual([222]);
   });
 });
+
+describe("POST /v1/sync, tables too large for one D1 value", () => {
+  // D1 refuses one bound value over 2 MB and the body may be 3 MB; the test D1 refuses it too (see d1Guard.ts).
+  it("splits 5000 step samples whose device names are control characters (6 bytes each in JSON) over several statements", async () => {
+    const { user, cookie } = signUp("bulk-steps");
+    const device = "\u0001".repeat(64);
+    const stepSamples = Array.from({ length: 5000 }, (_, i) => ({ ...step(1_000_000 + i * 60, i), device }));
+    const response = await postJson("/v1/sync", { stepSamples }, cookie);
+    expect(response.status).toBe(200);
+    const result = (await response.json()) as SyncResponse;
+    expect(result.written.stepSamples).toBe(5000);
+    expect(result.rev).toBe(5000);
+    expect(await count("step_samples", user.id)).toBe(5000);
+    const revs = await env.DB.prepare("SELECT COUNT(DISTINCT rev) AS n, MIN(rev) AS lo, MAX(rev) AS hi FROM step_samples WHERE user_id = ?1")
+      .bind(user.id)
+      .first<{ n: number; lo: number; hi: number }>();
+    expect(revs).toEqual({ n: 5000, lo: 1, hi: 5000 });
+  });
+
+  it("splits seven workouts of 200 000-character summaries over several statements and keeps one rev block", async () => {
+    const { user, cookie } = signUp("bulk-workouts");
+    const summaryJson = '"'.repeat(200_000);
+    const workouts = Array.from({ length: 7 }, (_, i) => ({
+      workoutNumber: i,
+      start: 5000 + i * 1000,
+      end: 5500 + i * 1000,
+      sportType: 2,
+      sportName: "run",
+      duration: 500,
+      distance: 1000,
+      calories: 50,
+      avgHr: null,
+      maxHr: null,
+      steps: 10,
+      summaryJson,
+      complete: true,
+      points: [{ ts: 5000 + i * 1000, lat: -6.2, lon: 106.8, alt: null, hr: 120 }],
+    }));
+    const response = await postJson("/v1/sync", { stepSamples: [step(900)], workouts }, cookie);
+    expect(response.status).toBe(200);
+    const result = (await response.json()) as SyncResponse;
+    expect(result.written).toMatchObject({ stepSamples: 1, workouts: 7 });
+    expect(await count("workouts", user.id)).toBe(7);
+    expect(await count("workout_points", user.id)).toBe(7);
+    const revs = await env.DB.prepare("SELECT COUNT(DISTINCT rev) AS n FROM workouts WHERE user_id = ?1").bind(user.id).first<{ n: number }>();
+    expect(revs?.n).toBe(7);
+    // Replaying the same request changes nothing.
+    const again = (await (await postJson("/v1/sync", { stepSamples: [step(900)], workouts }, cookie)).json()) as SyncResponse;
+    expect(again.written).toMatchObject({ stepSamples: 0, workouts: 0 });
+  });
+
+  it("stores the largest legal workout: 30 000 points, split over statements of 4 000 points", async () => {
+    const { user, cookie } = signUp("bulk-points");
+    const points = Array.from({ length: 30_000 }, (_, i) => ({ ts: 7000 + i, lat: -6.123456789012345 - i * 1e-7, lon: 106.123456789012345 + i * 1e-7, alt: 123.456789012345 + i, hr: 150 }));
+    const workout = { workoutNumber: 1, start: 7000, end: 37_000, sportType: 2, sportName: "run", duration: 30_000, distance: 1, calories: 1, avgHr: null, maxHr: null, steps: 1, summaryJson: "{}", complete: true, points };
+    const response = await postJson("/v1/sync", { workouts: [workout] }, cookie);
+    expect(response.status).toBe(200);
+    expect(await count("workout_points", user.id)).toBe(30_000);
+  });
+});

@@ -1,8 +1,10 @@
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
 import { requireFounder } from "./access";
 import { readJson } from "./body";
+import { D1_MAX_VALUE_BYTES, utf8Bytes } from "./d1";
 import type { AppContext } from "./env";
 import { MAX_GEAR_BODY_BYTES } from "./limits";
 
@@ -69,6 +71,8 @@ gear.put("/", requireFounder, async (c) => {
   const { baseRev, doc } = putBodySchema.parse(await readJson(c.req.raw, MAX_GEAR_BODY_BYTES));
   const userId = c.get("user").id;
   const json = JSON.stringify(doc);
+  // The body is capped, but re-serializing can grow it (1e20 parses to a 21-digit number): D1 refuses a value over 2 MB.
+  if (utf8Bytes(json) > D1_MAX_VALUE_BYTES) throw new HTTPException(413, { message: "too_large" });
   const now = Date.now();
   // One statement decides: the SELECT yields a row only when baseRev equals the stored rev (0 when absent); that row
   // inserts the first doc or, on conflict, replaces the stored one.

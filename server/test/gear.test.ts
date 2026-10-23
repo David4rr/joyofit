@@ -198,3 +198,15 @@ describe("PUT /v1/gear", () => {
     expect(await stored(carol.user.id)).not.toBeNull();
   });
 });
+
+describe("PUT /v1/gear, a document that grows when stored", () => {
+  it("answers 413 instead of a D1 error when re-serializing passes D1's 2 MB value cap (1e20 becomes 21 digits)", async () => {
+    const { cookie } = signUp("gear-big");
+    const head = JSON.stringify(docWith("a")).slice(0, -1);
+    const body = `{"baseRev":0,"doc":${head},"extra":[${Array(180_000).fill("1e20").join(",")}]}}`;
+    expect(body.length).toBeLessThan(1_048_576);
+    const response = await put(body, cookie);
+    expect(response.status).toBe(413);
+  });
+});
+

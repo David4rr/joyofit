@@ -1,5 +1,5 @@
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { env } from "cloudflare:workers";
+import { env as workerEnv } from "cloudflare:workers";
 import { afterEach, beforeEach, vi } from "vitest";
 
 import app from "../src";
@@ -7,6 +7,10 @@ import { clearAccessCache } from "../src/access";
 import { clearAuthCache } from "../src/auth";
 import { clearRogoCache } from "../src/family/joyorogo";
 import type { AppEnv } from "../src/env";
+import { guardD1 } from "./d1Guard";
+
+/** The test environment: the worker's bindings with `DB` refusing what production D1 refuses (see d1Guard.ts). */
+export const env: typeof workerEnv = { ...workerEnv, DB: guardD1(workerEnv.DB) };
 
 export interface FakeUser {
   id: string;
@@ -145,7 +149,7 @@ export async function call(
   const headers = new Headers(rest.headers);
   if (cookie) headers.set("cookie", cookie);
   const ctx = createExecutionContext();
-  const response = await app.fetch(new Request(`https://api.test${path}`, { ...rest, headers }), { ...env, ...overrides }, ctx);
+  const response = await app.fetch(new Request(`https://api.test${path}`, { ...rest, headers }), { ...workerEnv, DB: env.DB, ...overrides }, ctx);
   await waitOnExecutionContext(ctx);
   return response;
 }
@@ -158,5 +162,3 @@ export function postJson(path: string, body: unknown, cookie?: string): Promise<
     ...(cookie ? { cookie } : {}),
   });
 }
-
-export { env };

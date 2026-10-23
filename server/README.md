@@ -75,7 +75,11 @@ with the new `rev`. The check and the write are one conditional D1 statement, so
 
 Each table is written as one JSON bind parameter expanded with `json_each`, so a request costs a handful of
 D1 statements however large it is (D1 allows 100 bound parameters and, on the free plan, 50 queries per
-invocation).
+invocation). A table whose JSON would pass 1 MB is split over several statements (D1 refuses one value over 2 MB).
+
+D1 limits (100 bound parameters, 100 KB statement text, 2 MB per value, 50-byte LIKE patterns) are named in
+`src/d1.ts`, with `chunk` for anything built from a list. The tests run against a D1 wrapper (`test/d1Guard.ts`) that
+fails a statement production would refuse; the local D1 already enforces all but the 2 MB value.
 
 ### Live tracking link
 
