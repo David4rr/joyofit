@@ -264,7 +264,12 @@ internal class BackgroundController(private val runtime: WearRuntime) {
       log.log(LogDirection.ERROR, null, null, null, "Background battery refresh failed [${e.errorCode}]: ${e.message}")
     }
     // Family monitoring posts the fresh summary and battery; it runs on its own and never fails the cycle.
-    runtime.family.uploadAfterSync()
+    try {
+      runtime.family.uploadAfterSync()
+    } finally {
+      // Sync, battery and upload are done (the upload holds its own lock while it runs): do not wait for the loop to compute its next wait.
+      if (wakeLock.isHeld) wakeLock.release()
+    }
     return synced
   }
 
@@ -330,6 +335,8 @@ internal class BackgroundController(private val runtime: WearRuntime) {
     } finally {
       visit = null
       if (!current.aborted) link.disconnectIfConnectedTo(address)
+      // The sync step is over: the watch link does not need the CPU awake until the loop's next round.
+      if (wakeLock.isHeld) wakeLock.release()
     }
   }
 

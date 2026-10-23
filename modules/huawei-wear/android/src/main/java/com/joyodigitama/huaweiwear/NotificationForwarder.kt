@@ -53,20 +53,21 @@ internal class NotificationForwarder(
   fun onPosted(sbn: StatusBarNotification) {
     if (!settings.notificationsEnabled) return
     val notification = sbn.notification ?: return
+    // Cheapest drops first, before any text is read or app info looked up: what the watch would never show.
+    if (NotificationPolicy.skipReasonEarly(notification.flags, notification.category, sbn.packageName, ownPackage) != null) return
+    val choice = settings.appChoice(sbn.packageName)
+    if (choice == false) return
+    if (link.handle()?.notificationState?.supportsNotificationAlert != true) return
+
     val extras = notification.extras
+    val appInfo = applicationInfo(sbn.packageName, extras)
+    if (!NotificationPolicy.appAllowed(choice, appInfo != null && NotificationPolicy.isSystemApp(appInfo.flags))) return
+
     val title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.let(::sanitize)
     val big = extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
     val body = (if (!big.isNullOrBlank()) big else extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString())
       ?.let(::sanitize)
-
-    val reason = NotificationPolicy.skipReason(
-      notification.flags, notification.category, sbn.packageName, ownPackage, title, body,
-    )
-    if (reason != null) return
-
-    val appInfo = applicationInfo(sbn.packageName, extras)
-    val choice = settings.appChoice(sbn.packageName)
-    if (!NotificationPolicy.appAllowed(choice, appInfo != null && NotificationPolicy.isSystemApp(appInfo.flags))) return
+    if (title.isNullOrBlank() && body.isNullOrBlank()) return
 
     val hash = listOf(title, body, sbn.packageName).hashCode()
     val spec: WatchNotification

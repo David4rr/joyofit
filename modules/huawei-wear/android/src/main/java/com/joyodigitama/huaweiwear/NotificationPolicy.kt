@@ -8,15 +8,8 @@ internal object NotificationPolicy {
   /** Notification flags GB also treats as "not a message": ongoing and foreground-service entries. */
   private const val ONGOING_MASK = Notification.FLAG_ONGOING_EVENT or Notification.FLAG_FOREGROUND_SERVICE
 
-  /** Why a notification is not forwarded, or null when it passes the content filters. */
-  fun skipReason(
-    flags: Int,
-    category: String?,
-    sourcePackage: String,
-    ownPackage: String,
-    title: String?,
-    body: String?,
-  ): String? = when {
+  /** Why a notification is dropped from its flags, category and package alone, before any text is read. Null when it passes. */
+  fun skipReasonEarly(flags: Int, category: String?, sourcePackage: String, ownPackage: String): String? = when {
     sourcePackage == ownPackage -> "own app"
     flags and ONGOING_MASK != 0 -> "ongoing"
     flags and Notification.FLAG_GROUP_SUMMARY != 0 -> "group summary"
@@ -25,9 +18,19 @@ internal object NotificationPolicy {
     category == Notification.CATEGORY_CALL -> "call (not forwarded)"
     category == Notification.CATEGORY_TRANSPORT -> "media controls"
     category == Notification.CATEGORY_PROGRESS -> "progress"
-    title.isNullOrBlank() && body.isNullOrBlank() -> "empty"
     else -> null
   }
+
+  /** Why a notification is not forwarded, or null when it passes the content filters. */
+  fun skipReason(
+    flags: Int,
+    category: String?,
+    sourcePackage: String,
+    ownPackage: String,
+    title: String?,
+    body: String?,
+  ): String? = skipReasonEarly(flags, category, sourcePackage, ownPackage)
+    ?: if (title.isNullOrBlank() && body.isNullOrBlank()) "empty" else null
 
   /** An explicit per-app choice wins; otherwise every app is on except system apps. */
   fun appAllowed(explicitChoice: Boolean?, isSystemApp: Boolean): Boolean = explicitChoice ?: !isSystemApp

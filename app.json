@@ -2,7 +2,7 @@
   "expo": {
     "name": "JoyoFit",
     "slug": "joyofit",
-    "version": "1.0",
+    "version": "1.1",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "joyofit",
@@ -10,7 +10,7 @@
     "platforms": ["ios", "android"],
     "ios": {
       "bundleIdentifier": "com.joyodigitama.joyofit",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "appleTeamId": "F6Q6UFUK69",
       "supportsTablet": false,
       "config": {

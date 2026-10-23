@@ -95,8 +95,8 @@ internal class FamilyUploader(
       .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "joyofit:family")
       .apply { setReferenceCounted(false) }
     // Doze: the background sync's wake lock is gone by the time the request runs.
-    wakeLock.acquire(WAKE_LOCK_MS)
     val status = try {
+      wakeLock.acquire(WAKE_LOCK_MS)
       put(config, body)
     } catch (e: IOException) {
       log(LogDirection.ERROR, "Family upload failed: ${e.message ?: e.javaClass.simpleName}")

@@ -105,10 +105,16 @@ class BleProbeReceiver : BroadcastReceiver() {
     val screen = context.getSystemService(PowerManager::class.java)
       .newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "JoyoFit:ble-scan")
     screen.acquire((seconds + 5) * 1000L)
-    scanner.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), callback)
-    delay(seconds * 1000L)
-    scanner.stopScan(callback)
-    if (screen.isHeld) screen.release()
+    try {
+      scanner.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), callback)
+      try {
+        delay(seconds * 1000L)
+      } finally {
+        scanner.stopScan(callback)
+      }
+    } finally {
+      if (screen.isHeld) screen.release()
+    }
     Log.i(TAG, "scan: done, ${seen.size} distinct advertisers")
   }
 

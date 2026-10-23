@@ -34,6 +34,17 @@ class NotificationPolicyTest {
   }
 
   @Test
+  fun earlyReasonNeedsNoText() {
+    val own = "com.joyodigitama.joyofit"
+    assertNull(NotificationPolicy.skipReasonEarly(0, null, "com.chat", own))
+    assertEquals("own app", NotificationPolicy.skipReasonEarly(0, null, own, own))
+    assertEquals("ongoing", NotificationPolicy.skipReasonEarly(Notification.FLAG_ONGOING_EVENT, null, "com.chat", own))
+    assertEquals("progress", NotificationPolicy.skipReasonEarly(0, Notification.CATEGORY_PROGRESS, "com.chat", own))
+    // Empty text is the one content filter that still needs the text.
+    assertNull(NotificationPolicy.skipReasonEarly(0, null, "com.chat", own))
+  }
+
+  @Test
   fun emptyTextIsSkipped() {
     assertEquals("empty", reason(title = null, body = "  "))
     assertNull(reason(title = null, body = "only body"))
