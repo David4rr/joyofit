@@ -23,8 +23,10 @@ import kotlinx.coroutines.launch
  *  - otherwise JoyoFit's own session ([Source.GPS] / [Source.STATUS] / [Source.MANUAL]): the Fit 4 Pro (6.1.0.117) sends
  *    neither, but asks for the phone's GPS about every 20 s from the moment its workout screen looks for a fix, answers the
  *    `17/03` status poll, and pushes realtime heart rate when asked. The session runs on that heart rate: calories from
- *    [HeartRateEnergy], time from the phone's clock, which starts only when the watch's status says the workout runs
- *    (until then the session is [Status.PREPARING]: "searching for GPS"). It ends when the status poll says "no workout"
+ *    [HeartRateEnergy], time from the phone's clock, which starts only when the watch says the workout runs (its `17/03` status,
+ *    a `17/11` report, a start event; a watch that gives none of these starts it by the person moving, [MotionStart]). A GPS
+ *    request alone never starts it: the watch asks for the phone's GPS from its pre-start (GO) screen on, so until the watch
+ *    says otherwise the session is [Status.PREPARING]. It ends when the status poll says "no workout"
  *    [LiveWorkoutPolicy.IDLE_ANSWERS_TO_END] times in a row, or the user taps Finish; a watch that is not conclusive (still
  *    asks for GPS, or answers nothing) makes the screen ask the user (`endSuspected`) instead of dropping the session.
  * Either way it keeps JoyoFit's fat and carbohydrate estimate ([SubstrateEstimator]), an ongoing notification that opens the
@@ -68,6 +70,18 @@ internal class LiveWorkout(
 
     /** The watch looks to have stopped but did not say so: JS asks the user (Finish / keep going). */
     var endSuspected = false
+
+    /** The phone's last GPS fix, kept for the map (also while the workout only prepares). */
+    var location: TrackFix? = null
+
+    /** Distance, climb and speed from the phone's fixes of the running stretches: the figures a watch without its own GPS does not send. */
+    var track = TrackAccumulator()
+
+    /** Counts fixes of a person on the move, for a watch that never says when its workout starts ([MotionStart]). */
+    val motion = MotionStart()
+
+    /** The watch asked for the phone's GPS during this session: an outdoor sport, whatever sport tag it did or did not send. */
+    var gpsRequested = false
   }
 
   private var watchdog: Job? = null
@@ -85,6 +99,9 @@ internal class LiveWorkout(
   /** Last answer of the 17/03 status poll, and how many answers in a row said "no workout". */
   private var lastStatusAtMs = 0L
   private var idleAnswers = 0
+
+  /** A `17/11` report was received on this link: the watch tells its own start, so movement is no signal to wait for. */
+  private var reportsSeen = false
 
   private val appContext = context.applicationContext
   private val lock = Any()
@@ -348,6 +365,7 @@ internal class LiveWorkout(
       val s = last?.takeIf { it.status != Status.ENDED }
       if (s != null) {
         s.lastGpsAtMs = now
+        s.gpsRequested = true
         askStatus = s.status == Status.PREPARING
         if (s.endSuspected) {
           s.endSuspected = false
@@ -357,17 +375,22 @@ internal class LiveWorkout(
         // A straggling request right after a workout ended does not open a second one.
         val endedAt = last?.endedAtMs
         if (endedAt != null && now - endedAt < LiveWorkoutPolicy.RESTART_GUARD_MS) return false
-        val pollAnswers = lastStatusAtMs > 0L
-        session = newSession(null, if (pollAnswers) Status.PREPARING else Status.RUNNING, Source.GPS).also { it.lastGpsAtMs = now }
+        // Always preparing: the watch asks for GPS from its pre-start (GO) screen on, so the request says nothing about the
+        // workout running. The status poll, a `17/11` report or a start event starts the clock; a watch that gives none of
+        // those starts it by movement ([onLocation]).
+        session = newSession(null, Status.PREPARING, Source.GPS).also {
+          it.lastGpsAtMs = now
+          it.gpsRequested = true
+        }
         created = true
-        askStatus = pollAnswers
+        askStatus = true
       }
     }
     if (!created) {
       if (changed) publish(force = true)
       return askStatus
     }
-    log("Live workout: the watch asked for the phone's GPS; following its heart rate" + if (askStatus) " (timer waits for the watch to start the workout)" else "")
+    log("Live workout: the watch asked for the phone's GPS; following its heart rate (timer waits for the watch to start the workout)")
     liveHeartRate.setWorkoutActive(true)
     watchdog?.cancel()
     watchdog = scope.launch {
@@ -401,6 +424,7 @@ internal class LiveWorkout(
   /** A `17/11` realtime report ([WorkoutReport]); operator type 1 running, 2 paused, 3 resumed, 4 stopped. */
   fun onReport(report: WorkoutReport.Parsed) {
     if (mirrorBlocked()) return
+    reportsSeen = true
     synchronized(lock) {
       val now = System.currentTimeMillis()
       val operator = report.operatorType
@@ -424,6 +448,34 @@ internal class LiveWorkout(
   }
 
   /**
+   * A fix of the phone's GPS (it runs for the watch while the watch asks for it). Kept for the map; while the workout runs it
+   * also feeds the phone's own distance, climb and speed ([TrackAccumulator]), which JS shows when the watch sends none.
+   * A watch that never says when its workout starts (no `17/03` answer, no `17/11` report) has no other sign than the person
+   * moving: [MotionStart] starts the clock then, and only then.
+   */
+  fun onLocation(fix: TrackFix) {
+    if (mirrorBlocked()) return
+    var started = false
+    synchronized(lock) {
+      val s = session?.takeIf { it.status != Status.ENDED } ?: return
+      s.location = fix
+      when (s.status) {
+        Status.RUNNING -> s.track.add(fix)
+        Status.PREPARING -> {
+          val silentWatch = lastStatusAtMs == 0L && !reportsSeen && s.source != Source.WATCH
+          if (silentWatch && s.motion.onFix(fix.speedMps, fix.accuracyM)) {
+            setStatus(s, Status.RUNNING, System.currentTimeMillis())
+            started = true
+          }
+        }
+        else -> Unit
+      }
+    }
+    if (started) log("Live workout: the watch gives no sign of a start; the person is moving, timer running")
+    publish(force = started)
+  }
+
+  /**
    * The session watch numbers go into. A phone-side session is replaced by a watch-fed one with the same id, because the
    * watch's cumulative calories and its estimate would otherwise be mixed. [initial] is the state of a session opened by
    * the frame. Callers hold [lock].
@@ -433,6 +485,13 @@ internal class LiveWorkout(
     if (current != null && current.source == Source.WATCH) return current
     val status = current?.status?.takeIf { it != Status.PREPARING } ?: initial
     val fresh = newSession(current?.sportType, status, Source.WATCH, id = current?.id)
+    if (current != null) {
+      // The phone's own GPS follows the session whoever feeds the numbers.
+      fresh.location = current.location
+      fresh.track = current.track
+      fresh.gpsRequested = current.gpsRequested
+      fresh.lastGpsAtMs = current.lastGpsAtMs
+    }
     session = fresh
     if (current != null) log("Live workout: the watch sends its own numbers; using them instead of the heart-rate estimate")
     return fresh
@@ -459,6 +518,8 @@ internal class LiveWorkout(
   /** Moves a session to [status]; a phone-side session's clock follows it. Callers hold [lock]. */
   private fun setStatus(s: Session, status: Status, now: Long) {
     if (s.status == status) return
+    // The stretch before a pause (or the pre-start walk) and the one after it are not joined into one step of the phone's track.
+    if (status == Status.RUNNING) s.track.gap()
     if (s.source != Source.WATCH) {
       when (status) {
         Status.RUNNING -> {
@@ -494,6 +555,11 @@ internal class LiveWorkout(
 
   private fun toJs(s: Session): Map<String, Any?> {
     val m = s.metrics
+    val located = s.location
+    val confirmed = when (s.source) {
+      Source.WATCH, Source.MANUAL -> true
+      else -> s.confirmed
+    }
     return mapOf(
       "id" to s.id.toDouble(),
       "status" to s.status.wire,
@@ -523,6 +589,14 @@ internal class LiveWorkout(
       "carbGrams" to s.estimator.carbGrams,
       "fatShare" to m.heartRate?.let { SubstrateEstimator.fatShare(it, s.maxHeartRate) },
       "endSuspected" to s.endSuspected,
+      // Added with the pre-start fix (B1/B2/B3): absent from older binaries, JS fills the defaults.
+      "clockConfirmed" to confirmed,
+      "gpsRequested" to s.gpsRequested,
+      "location" to located?.let { mapOf("lat" to it.lat, "lon" to it.lon, "accuracy" to it.accuracyM?.toDouble(), "bearing" to it.bearingDeg?.toDouble()) },
+      "locationAt" to located?.timeMs?.toDouble(),
+      "gpsDistanceM" to if (located != null) s.track.distanceM else null,
+      "gpsRiseM" to if (located != null) s.track.riseM else null,
+      "gpsPaceSecPerKm" to s.track.paceSecPerKm,
     )
   }
 
@@ -556,7 +630,7 @@ internal class LiveWorkout(
       PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
     val m = s.metrics
-    val sport = s.sportType?.let { WorkoutSportTypes.name(it) } ?: "Workout"
+    val sport = s.sportType?.let { WorkoutSportTypes.name(it) } ?: if (s.gpsRequested) "Outdoor workout" else "Workout"
     val title = when (s.status) {
       Status.PREPARING -> if (s.source == Source.WATCH) "$sport starting on your watch" else "$sport: searching for GPS on your watch"
       Status.PAUSED -> "$sport paused"

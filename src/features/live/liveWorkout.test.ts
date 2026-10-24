@@ -53,8 +53,9 @@ describe('livePhase', () => {
     expect(livePhase(live({ status: 'ended' }))).toBe('ended');
   });
 
-  test('the searching label is Indonesian and says GPS on the watch', () => {
-    expect(t('sharing:live.status.searching')).toBe('Mencari GPS di jam…');
+  test('the waiting labels are Indonesian and say the start is on the watch', () => {
+    expect(t('sharing:live.status.searching')).toBe('Menunggu mulai di jam…');
+    expect(t('sharing:live.status.preparing')).toBe('Menunggu mulai di jam');
   });
 });
 

@@ -18,6 +18,7 @@ import type { WorkoutSensor } from '../sensors/store';
 import { cscModeOf, hexToBytes, parseCsc, type SensorKind } from '../sensors/gatt';
 import type { LinkInfo } from '../sensors/hub';
 import { appendJournal, clearJournal, loadJournal, saveJournalState } from './journal';
+import { bandHeartRateHex, type BandLink } from './bandLinkCore';
 import { Recorder, FOOT_SPORTS, MAX_FIX_ACCURACY_M, type LiveStats, type RecordedLap, type RecordedWorkout, type RecorderMeta, type RecorderStatus } from './recorder';
 import type { EnergyProfile } from './energy';
 import { saveRecordedWorkout, type SaveDb } from './save';
@@ -105,6 +106,8 @@ export interface RecordingDeps {
   /** The paired sensors right now (names for the workout's sensor list, `autoConnect`). */
   sensors: () => readonly SavedSensor[];
   log?: (message: string) => void;
+  /** The band beside the recording (`bandLink.ts`): started, paused and stopped with it, its heart rate read. Absent: no band logic at all. */
+  band?: Pick<BandLink, 'begin' | 'adopt' | 'setPaused' | 'poll' | 'end'>;
 }
 
 /** What the recording took from one sensor: how many values, which CSC parts they carried. */
@@ -127,6 +130,8 @@ interface JournalMeta {
 const JOURNAL_EVERY_S = 10;
 /** The notification counts the time itself, so this only corrects its distance and heart rate. */
 const NOTIFICATION_EVERY_S = 15;
+/** A strap that gave a heart rate this recently is the recording's source; the band's readings wait. */
+const STRAP_PREFERRED_MS = 5000;
 /** A sensor of the recording seen down is connected again after this long, then after twice that, and so on up to the maximum. */
 const SENSOR_RETRY_FIRST_MS = 3000;
 const SENSOR_RETRY_MAX_MS = 30_000;
@@ -172,6 +177,8 @@ export class RecordingController {
   private readonly retries = new Map<string, { nextAt: number; attempts: number }>();
   /** The link state last written to the log, per wanted sensor, so only changes are logged. */
   private readonly loggedState = new Map<string, string>();
+  /** When (ms) a paired strap last gave the recording a heart rate: the band's own readings only fill the gaps a strap leaves. */
+  private lastStrapHrAt: number | null = null;
 
   constructor(private readonly deps: RecordingDeps) {}
 
@@ -333,16 +340,27 @@ export class RecordingController {
     this.persist();
     this.publish();
     this.pushSession();
+    this.startBand(sport);
   }
 
   pause(): void {
+    this.pauseRecorder();
+    void this.deps.band?.setPaused(true);
+  }
+
+  resume(): void {
+    this.resumeRecorder();
+    void this.deps.band?.setPaused(false);
+  }
+
+  private pauseRecorder(): void {
     this.recorder?.pause(this.deps.now());
     this.persist();
     this.publish();
     this.pushSession();
   }
 
-  resume(): void {
+  private resumeRecorder(): void {
     this.recorder?.resume(this.deps.now());
     this.persist();
     this.publish();
@@ -380,6 +398,11 @@ export class RecordingController {
     this.beginTimer();
     this.publish({ sensorError });
     this.pushSession();
+    // The band still holds the workout of this process (a screen reload), else it is not told again; a restored recording is paused.
+    if (this.deps.band) {
+      const band = this.deps.band;
+      void band.adopt(meta.config.sport, (bpm, ts) => this.onBandHeartRate(bpm, ts)).then(() => band.setPaused(true));
+    }
     return true;
   }
 
@@ -457,6 +480,7 @@ export class RecordingController {
     if (!recorder || this.snap.phase !== 'active') return;
     const now = this.deps.now();
     recorder.tick(now);
+    this.followBand();
     this.superviseSensors(now);
     for (const observer of this.observers) {
       try {
@@ -491,6 +515,31 @@ export class RecordingController {
     if (action === 'pause') this.pause();
     else if (action === 'resume') this.resume();
     else this.lap();
+  }
+
+  /** "Mulai": the band starts the same sport (when it can and the person wants it) and its heart rate feeds the recording. Never blocks or fails the recording. */
+  private startBand(sport: ManualSport): void {
+    this.deps.band?.begin(sport, (bpm, ts) => this.onBandHeartRate(bpm, ts)).catch((e) => this.deps.log?.(`band start failed: ${String(e)}`));
+  }
+
+  /** The person pressed pause, resume or stop on the band: the recording follows. A stop pauses it (finishing is the person's call: the band's workout may have ended by mistake). */
+  private followBand(): void {
+    const order = this.deps.band?.poll();
+    if (!order) return;
+    this.deps.log?.(`the band's workout: ${order}`);
+    if (order === 'resume') {
+      if (this.recorder?.status === 'paused') this.resumeRecorder();
+    } else if (this.recorder?.status === 'recording') {
+      this.pauseRecorder();
+    }
+  }
+
+  /** The band's heart rate, as a strap would give it, unless a strap is giving it right now. */
+  private onBandHeartRate(bpm: number, ts: number): void {
+    if (!this.recorder || this.snap.phase !== 'active') return;
+    if (this.lastStrapHrAt !== null && this.deps.now() - this.lastStrapHrAt < STRAP_PREFERRED_MS) return;
+    const hex = bandHeartRateHex(bpm);
+    if (hex !== null) this.recorder.sensor('2a37', hex, ts);
   }
 
   private attach(): void {
@@ -531,6 +580,7 @@ export class RecordingController {
     }
     const recorder = this.recorder;
     if (!recorder || this.snap.phase !== 'active' || !recorder.sensor(e.characteristic, e.value, e.ts)) return;
+    if (characteristic === '2a37') this.lastStrapHrAt = this.deps.now();
     this.used.add(e.id);
     const take = this.takes.get(e.id) ?? { frames: 0, wheel: false, crank: false };
     take.frames += 1;
@@ -549,6 +599,7 @@ export class RecordingController {
 
   private resetSensors(): void {
     this.takes = new Map();
+    this.lastStrapHrAt = null;
     this.loggedFirst = new Set();
     this.retries.clear();
     this.loggedState.clear();
@@ -673,6 +724,7 @@ export class RecordingController {
   }
 
   private async teardown(): Promise<void> {
+    void this.deps.band?.end();
     clearInterval(this.timer ?? undefined);
     this.timer = null;
     this.detach();

@@ -4,31 +4,51 @@ import { Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { HeroGradient } from '@/components/HeroGradient';
 import { KeyValue } from '@/components/KeyValue';
-import { Metric } from '@/components/Metric';
 import { StatusDot } from '@/components/StatusDot';
 import { Card, Divider, Section } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
 import { Notice } from '@/components/States';
-import { heartZone } from '@/features/live/liveWorkout';
+import { averagePace, type FieldSportKind, type RunMetricId, type RunMetricValues } from '@/features/live/runFields';
+import { useTrail } from '@/features/live/trail';
+import { LiveRunMap } from '@/features/live/ui/LiveRunMap';
+import { MetricGrid, useFieldEditor } from '@/features/live/ui/MetricGrid';
+import { useStopMetronomeOnUnmount } from '@/features/metronome/metronome';
+import { MetronomeRow } from '@/features/metronome/ui/MetronomeRow';
 import { kindChannels } from '@/features/sensors/store';
 import { SensorLinkRow } from '@/features/sensors/ui/SensorLinkRow';
-import { useAnalysisPalette } from '@/features/workouts/analysis/palette';
-import { hrZoneColor } from '@/features/workouts/analysis/ui';
-import { SPORT_ROWS } from '@/features/workouts/manual';
+import { SPORT_ROWS, type ManualSport } from '@/features/workouts/manual';
 import { sportLabel } from '@/features/workouts/sportLabel';
-import { formatElapsed, workoutDistanceParts } from '@/features/workouts/summary';
-import { useHrZones } from '@/features/hrzones/settings';
+import { formatElapsed } from '@/features/workouts/summary';
 import { fmtDistance, fmtInt } from '@/i18n';
 import { useRecorder } from '@/state/RecorderProvider';
 import { useSensors } from '@/state/SensorsProvider';
-import { spacing, useTheme } from '@/theme';
+import { spacing, useColors } from '@/theme';
 
-import { GpsLine } from './GpsLine';
-import { lapRows, liveTiles, sensorErrorKind, speedFigure, type SensorChannel } from './format';
+import { bandLinkLine, useBandLink } from '../bandLink';
+import { lapRows, liveTiles, paceSecPerKm, sensorErrorKind, type SensorChannel } from './format';
 
 const DASH = '--';
+
+/** The phone has no altitude reading in a recording, so these two fields are not offered here. */
+const NO_ALTITUDE: readonly RunMetricId[] = ['elevationGain', 'altitude'];
+
+/** The sport kind a recording's data fields are saved under (a treadmill run is a run, an indoor ride a ride). */
+function fieldKind(sport: ManualSport): FieldSportKind {
+  switch (sport) {
+    case 'run':
+    case 'treadmill':
+      return 'run';
+    case 'ride':
+    case 'indoorRide':
+      return 'ride';
+    case 'walk':
+    case 'hike':
+      return sport;
+    default:
+      return 'other';
+  }
+}
 
 interface LiveViewProps {
   /** The recording is being written to the database. */
@@ -40,15 +60,19 @@ interface LiveViewProps {
   onDiscard: () => void;
 }
 
-/** Phases `active` and `saving`: the numbers of the workout on a dark panel, then the controls, the other figures and the laps. */
+/** Phases `active` and `saving`: the map when the GPS is on, the configurable data fields, the controls, the metronome and the laps. */
 export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }: LiveViewProps) {
   const { t } = useTranslation(['workouts', 'common']);
-  const { colors, radius } = useTheme();
-  const palette = useAnalysisPalette();
+  const { t: tLive } = useTranslation('sharing');
+  const colors = useColors();
   const { snapshot, pause, resume, lap } = useRecorder();
   const { saved } = useSensors();
-  const zones = useHrZones();
+  const editor = useFieldEditor();
+  const trail = useTrail(snapshot.position);
+  const band = useBandLink();
   const { live, sport } = snapshot;
+  // The metronome belongs to the recording: this view exists only while it runs.
+  useStopMetronomeOnUnmount();
 
   if (!live || !sport) return null;
 
@@ -59,103 +83,50 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
     snapshot.sensorIds.flatMap((id) => kindChannels(saved.find((s) => s.id === id)?.kinds ?? [])),
   );
   const tiles = liveTiles(live, channels);
-  const zone = live.hr !== null ? heartZone(live.hr, zones) : null;
-  const distance = workoutDistanceParts(live.distanceM);
-  const speed = speedFigure(sport, live.speedMps);
-  const foot = SPORT_ROWS[sport].foot;
   const sportName = sportLabel(SPORT_ROWS[sport].name);
-  const statusColor = paused ? colors.heroWarn : colors.heroLink;
+  const statusColor = paused ? colors.warning : colors.link;
   const laps = lapRows(snapshot.laps);
-  // On a bike the cadence sits in the dark panel beside the heart rate; on foot it stays a tile below.
-  const cadenceInHero = tiles.cadence && !foot;
   const sensorRows = snapshot.sensorIds.flatMap((id) => saved.find((s) => s.id === id) ?? []);
+  const pace = paceSecPerKm(live.speedMps);
+  const values: RunMetricValues = {
+    duration: live.movingSec,
+    distance: live.distanceM,
+    pace,
+    avgPace: averagePace(live.movingSec, live.distanceM),
+    speed: live.speedMps === null ? null : live.speedMps * 3.6,
+    hr: live.hr,
+    calories: live.calories,
+    cadence: live.cadence,
+  };
+  const bandKey = band.phase === 'refused' || band.phase === 'unavailable' || band.phase === 'ended' ? bandLinkLine(band.phase) : null;
 
   return (
     <>
       {paused && !busy ? <Notice icon="pause-circle">{t('record.live.pausedBanner')}</Notice> : null}
 
-      <Card style={[styles.hero, { backgroundColor: colors.hero, borderRadius: radius.card }]}>
-        <HeroGradient />
+      <Card>
         <View style={styles.heroHead}>
-          <AppText variant="label" color={colors.heroMuted} numberOfLines={1} style={styles.sport}>
+          <AppText variant="label" muted numberOfLines={1} style={styles.sport}>
             {sportName}
           </AppText>
           <StatusDot color={statusColor} live={!paused} />
           <AppText variant="label" color={statusColor}>
             {paused ? t('record.live.status.paused') : t('record.live.status.recording')}
           </AppText>
+          <Button label={tLive('live.fields.edit')} icon="options" variant="ghost" iconOnly onPress={() => editor.open()} />
         </View>
-        {snapshot.gps ? <GpsLine fix={{ accuracyM: live.fixAccuracyM, ageSec: live.fixAgeSec }} color={colors.heroMuted} /> : null}
-
-        <View accessible accessibilityLabel={t('record.live.timeA11y', { value: formatElapsed(live.movingSec) })} style={styles.clock}>
-          <Metric value={formatElapsed(live.movingSec)} size="hero" color={colors.heroForeground} />
-        </View>
-
-        <View style={styles.pair}>
-          <View accessible accessibilityLabel={`${t('record.live.distance')}: ${distance.value} ${distance.unit}`} style={styles.pairCell}>
-            <AppText variant="label" color={colors.heroMuted}>
-              {t('record.live.distance')}
-            </AppText>
-            <Metric value={distance.value} unit={distance.unit} size="lg" color={colors.heroForeground} unitColor={colors.heroMuted} />
-          </View>
-          <View
-            accessible
-            accessibilityLabel={`${speed.kind === 'pace' ? t('record.live.pace') : t('record.live.speed')}: ${speed.value ?? DASH}`}
-            style={styles.pairCell}>
-            <AppText variant="label" color={colors.heroMuted}>
-              {speed.kind === 'pace' ? t('record.live.pace') : t('record.live.speed')}
-            </AppText>
-            <Metric
-              value={speed.value ?? DASH}
-              unit={speed.kind === 'pace' ? t('analysis.unit.perKm') : t('analysis.unit.kmh')}
-              size="lg"
-              color={colors.heroForeground}
-              unitColor={colors.heroMuted}
-            />
-          </View>
-        </View>
-
-        {tiles.hr || cadenceInHero ? (
-          <View style={styles.pair}>
-            {tiles.hr ? (
-              <View accessible accessibilityLabel={`${t('record.live.hr')}: ${live.hr === null ? DASH : fmtInt(live.hr)}`} style={styles.pairCell}>
-                <AppText variant="label" color={colors.heroMuted}>
-                  {t('record.live.hr')}
-                </AppText>
-                <Metric
-                  value={live.hr === null ? DASH : fmtInt(live.hr)}
-                  unit={t('analysis.unit.bpm')}
-                  size="lg"
-                  color={colors.heroHeart}
-                  unitColor={colors.heroMuted}
-                />
-                {zone ? (
-                  <View style={styles.zone}>
-                    <View style={[styles.zoneDot, { backgroundColor: hrZoneColor(palette, zone.zone) }]} />
-                    <AppText variant="label" color={colors.heroForeground}>
-                      {t('record.live.zone', { zone: zone.zone, label: zone.label })}
-                    </AppText>
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
-            {cadenceInHero ? (
-              <View accessible accessibilityLabel={`${t('record.live.cadence')}: ${live.cadence === null ? DASH : fmtInt(live.cadence)}`} style={styles.pairCell}>
-                <AppText variant="label" color={colors.heroMuted}>
-                  {t('record.live.cadence')}
-                </AppText>
-                <Metric
-                  value={live.cadence === null ? DASH : fmtInt(live.cadence)}
-                  unit={t('analysis.unit.rpm')}
-                  size="lg"
-                  color={colors.heroForeground}
-                  unitColor={colors.heroMuted}
-                />
-              </View>
-            ) : null}
-          </View>
+        {bandKey !== null ? (
+          <AppText variant="caption" muted accessibilityLiveRegion="polite">
+            {t(bandKey)}
+          </AppText>
         ) : null}
       </Card>
+
+      {snapshot.gps ? (
+        <LiveRunMap position={snapshot.position} trail={trail} fix={{ accuracyM: live.fixAccuracyM, ageSec: live.fixAgeSec }} />
+      ) : null}
+
+      <MetricGrid kind={fieldKind(sport)} values={values} editor={editor} exclude={NO_ALTITUDE} />
 
       {failed ? (
         <>
@@ -180,21 +151,15 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
         </View>
       )}
 
-      <View style={styles.tiles}>
-        {tiles.cadence && !cadenceInHero ? (
-          <StatTile
-            icon="sync"
-            tint="steps"
-            label={t('record.live.cadence')}
-            value={live.cadence === null ? DASH : fmtInt(live.cadence)}
-            unit={t(foot ? 'analysis.unit.spm' : 'analysis.unit.rpm')}
-          />
-        ) : null}
-        {tiles.power ? (
+      {tiles.power ? (
+        <View style={styles.tiles}>
           <StatTile icon="flash" tint="workouts" label={t('record.live.power')} value={live.watts === null ? DASH : fmtInt(live.watts)} unit={t('analysis.unit.w')} />
-        ) : null}
-        <StatTile icon="flame" tint="workouts" label={t('record.live.calories')} value={fmtInt(live.calories)} unit={t('analysis.unit.kcal')} />
-      </View>
+        </View>
+      ) : null}
+
+      <Card>
+        <MetronomeRow />
+      </Card>
 
       <Card>
         <View style={styles.lapHead}>
@@ -251,14 +216,8 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
 }
 
 const styles = StyleSheet.create({
-  hero: { gap: spacing.md, padding: spacing.lg, overflow: 'hidden' },
   heroHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   sport: { flex: 1 },
-  clock: { alignItems: 'center', paddingVertical: spacing.xs },
-  pair: { flexDirection: 'row', gap: spacing.md },
-  pairCell: { flex: 1, gap: 2 },
-  zone: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  zoneDot: { width: 12, height: 12, borderRadius: 6 },
   controls: { gap: spacing.sm },
   controlRow: { flexDirection: 'row', gap: spacing.sm },
   big: { minHeight: 64 },

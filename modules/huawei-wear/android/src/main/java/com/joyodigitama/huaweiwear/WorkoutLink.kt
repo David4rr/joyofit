@@ -166,7 +166,9 @@ internal class WorkoutLink(
     val body = tlv.getObject(0x81)
     fun int(tag: Int) = body.getBytes(tag, null)?.let { LiveWorkoutWire.unsigned(it)?.toInt() }
     val operator = int(0x03)
-    val workoutType = int(0x06) ?: int(0x04)
+    // The sport is in tag 06 ("workout type") or 04 ("sport type"); only a code of the sport table is believed (a small enum
+    // in one of them must not turn into "Running"). UNVERIFIED on a Band 11: the status line above shows both tags.
+    val workoutType = WorkoutSportTypes.pick(int(0x06), int(0x04))
     when (operator) {
       1, 3 -> live.watchStatus(running = true, paused = false, workoutType = workoutType)
       2 -> live.watchStatus(running = true, paused = true, workoutType = workoutType)
@@ -230,7 +232,20 @@ internal class WorkoutLink(
     }
     val params = loadGpsParams() ?: return
     val manager = appContext.getSystemService(LocationManager::class.java) ?: return
-    val l = LocationListener { location -> scope.launch { sendLocation(location, params) } }
+    val l = LocationListener { location ->
+      live.onLocation(
+        TrackFix(
+          timeMs = location.time,
+          lat = location.latitude,
+          lon = location.longitude,
+          altitudeM = if (location.hasAltitude()) location.altitude else null,
+          accuracyM = if (location.hasAccuracy()) location.accuracy else null,
+          speedMps = if (location.hasSpeed()) location.speed else null,
+          bearingDeg = if (location.hasBearing()) location.bearing else null,
+        ),
+      )
+      scope.launch { sendLocation(location, params) }
+    }
     synchronized(lock) {
       if (listener != null) return
       listener = l

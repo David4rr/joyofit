@@ -22,7 +22,7 @@
     "connectWatch": "Connect watch",
     "workoutInProgress": "{{sport}} in progress",
     "workoutPaused": "{{sport}} paused",
-    "workoutSearching": "{{sport}}: searching for GPS on the watch",
+    "workoutSearching": "{{sport}}: waiting for the start on the watch",
     "workoutSearchingSubtitle": "The timer starts once the workout runs on the watch",
     "workoutDefault": "Workout",
     "workoutSubtitle": "{{elapsed}} · fat {{fat}} g, carbs {{carbs}} g",

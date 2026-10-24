@@ -147,6 +147,7 @@ Site (`site/`): `bun install`, `bun run dev`, `bun run build` (typecheck, Vite b
 | [docs/strength.md](docs/strength.md), [docs/strength-cloud.md](docs/strength-cloud.md) | Strength logger and its cloud sync |
 | [docs/multi-watch.md](docs/multi-watch.md) | Several watches: device column, primary rules, switching, background visits |
 | [docs/sensors.md](docs/sensors.md) | External sensors, phone-recorded workouts, device test script |
+| [docs/live-run.md](docs/live-run.md) | Live run: a band-started run followed on the phone (state, sport kind, figures from the phone's GPS) and a phone-started run that starts the band |
 | [docs/scale.md](docs/scale.md) | Bluetooth bathroom scales: supported protocols and sources, JoyoRogo weight sync, test script |
 | [docs/replay.md](docs/replay.md) | Workout replay: player, camera, map, MP4 export with the native encoder, privacy, known limits |
 | [docs/ride.md](docs/ride.md) | Ride on the web: the phone as sensor bridge, the relay, the wire protocol, virtual power (the game: [docs/ride-web.md](docs/ride-web.md)) |

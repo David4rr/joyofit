@@ -6,6 +6,7 @@ import { BleSensors, type WorkoutControls } from '@/ble';
 import { cloudLog as log } from '@/cloud/log';
 import { getLocale, t } from '@/i18n';
 import { afterRecordingSaved } from '@/features/record/afterSave';
+import { bandLink } from '@/features/record/bandLink';
 import { RecordingController, type ControllerTick, type FinishResult, type RecordingSnapshot } from '@/features/record/controller';
 import type { EnergyProfile, Sex } from '@/features/record/energy';
 import { LIVE_URL } from '@/features/record/liveRoute';
@@ -106,6 +107,7 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
         profile: energyProfile,
         wheelCircumferenceM: () => getWheelMm() / 1000,
         sensors: () => savedRef.current,
+        band: bandLink,
         log: (message) => log(`recording: ${message}`),
       }),
     [db],

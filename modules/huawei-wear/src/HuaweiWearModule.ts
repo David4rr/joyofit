@@ -327,6 +327,11 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   resumeWatchWorkout(): Promise<WatchWorkoutResult>;
   /** Stops the workout on the watch and releases it (the live mirror works again), whatever the watch answers. */
   stopWatchWorkout(): Promise<WatchWorkoutResult>;
+  /**
+   * Holds (true) or releases the band's realtime heart rate for a workout the phone records, whatever screen is open and also in the
+   * background (`onHeartRate` events). Needs a store build; older binaries only have `setLiveHeartRate`, which follows the screen.
+   */
+  setWorkoutHeartRate(active: boolean): void;
 
   /**
    * Makes the watch ring and vibrate (`start` true) or stops it. Needs a connected watch that

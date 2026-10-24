@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it } from 'bun:test';
 import type { LocationEvent, StepCounterPermission, StepsEvent, ValueEvent, WorkoutAction, WorkoutSessionOptions, WorkoutSessionState } from '../../../modules/ble-sensors/src/BleSensors.types';
 import { bytesToHex } from '../sensors/gatt';
 import { ensureSensorSchema, type SavedSensor } from '../sensors/store';
-import { RecordingController, type HubApi, type SessionApi } from './controller';
+import { BandLink, type BandLinkNative } from './bandLinkCore';
+import type { WatchWorkoutResult, WatchWorkoutStatus } from '../../../modules/huawei-wear/src/HuaweiWear.types';
+import { RecordingController, type HubApi, type RecordingDeps, type SessionApi } from './controller';
 import { ensureRecordingSchema, loadJournal } from './journal';
 import { openDb } from './testDb';
 
@@ -93,7 +95,11 @@ class FakeSession implements SessionApi {
   }
 }
 
-async function setup(sensors: SavedSensor[] = [strap, idle], stepCounter: StepCounterPermission | (() => Promise<StepCounterPermission>) = 'unavailable') {
+async function setup(
+  sensors: SavedSensor[] = [strap, idle],
+  stepCounter: StepCounterPermission | (() => Promise<StepCounterPermission>) = 'unavailable',
+  band?: RecordingDeps['band'],
+) {
   const { db, all } = openDb();
   await ensureSensorSchema(db as never);
   await ensureRecordingSchema(db as never);
@@ -110,6 +116,7 @@ async function setup(sensors: SavedSensor[] = [strap, idle], stepCounter: StepCo
     profile: () => ({ weightKg: 70, age: 35, sex: 'male' }),
     wheelCircumferenceM: () => 2.105,
     sensors: () => sensors,
+    band,
     log: (m) => logs.push(m),
   });
   /** Advances the fake clock and runs the controller's own tick for every second. */
@@ -675,5 +682,189 @@ describe("the phone's step counter", () => {
     const [row] = all<{ steps: number }>('SELECT steps FROM workouts WHERE id = ?', result!.workoutId);
     // 20 readings of 2 steps: the first is the baseline, the 10 of the pause are skipped
     expect(row!.steps).toBe(2 * (6 - 1) + 2 * 4);
+  });
+});
+
+/** The band as the native module shows it: a workout the phone started, which the person can also pause, resume or stop on the band. */
+class FakeBandNative implements BandLinkNative {
+  calls: string[] = [];
+  outcome: WatchWorkoutResult = { outcome: 'confirmed', code: 100000 };
+  active = false;
+  state: 'running' | 'paused' | null = null;
+  sport: number | null = null;
+  getWatchWorkout(): WatchWorkoutStatus {
+    return { connected: true, supported: true, active: this.active, sport: this.sport, state: this.state, watchOperator: null };
+  }
+  async startWatchWorkout(sport: number) {
+    this.calls.push(`start ${sport}`);
+    if (this.outcome.outcome !== 'refused' && this.outcome.outcome !== 'unsupported' && this.outcome.outcome !== 'not_connected') {
+      this.active = true;
+      this.state = 'running';
+      this.sport = sport;
+    }
+    return this.outcome;
+  }
+  async pauseWatchWorkout() {
+    this.calls.push('pause');
+    this.state = 'paused';
+    return { outcome: 'confirmed', code: 100000 } as WatchWorkoutResult;
+  }
+  async resumeWatchWorkout() {
+    this.calls.push('resume');
+    this.state = 'running';
+    return { outcome: 'confirmed', code: 100000 } as WatchWorkoutResult;
+  }
+  async stopWatchWorkout() {
+    this.calls.push('stop');
+    this.active = false;
+    this.state = null;
+    return { outcome: 'confirmed', code: 100000 } as WatchWorkoutResult;
+  }
+}
+
+function bandSetup(options: { native?: FakeBandNative | null; enabled?: boolean } = {}) {
+  const native = options.native === undefined ? new FakeBandNative() : options.native;
+  const readings: ((bpm: number, ts: number) => void)[] = [];
+  const band = new BandLink({
+    native: () => native,
+    enabled: () => options.enabled ?? true,
+    heartRate: (listener) => {
+      readings.push(listener);
+      return () => readings.splice(readings.indexOf(listener), 1);
+    },
+  });
+  const bandHr = (bpm: number, ts: number) => readings.forEach((l) => l(bpm, ts));
+  return { native, band, bandHr, readings };
+}
+
+/** Lets the band link's queued native calls (all resolved promises of the fake) run; no timers. */
+const settle = async () => {
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+};
+
+describe('the band beside a phone run', () => {
+  it('starts the band with the run, mirrors pause and resume, stops it with the workout and takes its heart rate', async () => {
+    const { native, band, bandHr, readings } = bandSetup();
+    const { controller, hub, run, all } = await setup([strap, idle], 'unavailable', band);
+    await controller.prepare('run', 'Lari');
+    expect(native!.calls).toEqual([]);
+    controller.start();
+    await settle();
+    expect(native!.calls).toEqual(['start 1']);
+    expect(band.getSnapshot().phase).toBe('linked');
+
+    let meters = 0;
+    run(30, (clock) => {
+      bandHr(140, clock);
+      hub.emitFix(clock, (meters += 3));
+    });
+    controller.pause();
+    await settle();
+    controller.resume();
+    await settle();
+    expect(native!.calls).toEqual(['start 1', 'pause', 'resume']);
+
+    const result = await controller.finish();
+    await settle();
+    expect(native!.calls).toEqual(['start 1', 'pause', 'resume', 'stop']);
+    expect(band.getSnapshot().phase).toBe('off');
+    expect(readings).toHaveLength(0);
+    const [row] = all<Record<string, unknown>>('SELECT * FROM workouts WHERE id = ?', result!.workoutId);
+    expect(row!.avg_hr).toBeGreaterThan(135);
+  });
+
+  it('a band that refuses leaves the recording going alone, still with its heart rate, and says so', async () => {
+    const native = new FakeBandNative();
+    native.outcome = { outcome: 'refused', code: 123002 };
+    const { band, bandHr } = bandSetup({ native });
+    const { controller, run } = await setup([strap, idle], 'unavailable', band);
+    live = controller;
+    await controller.prepare('run', 'Lari');
+    controller.start();
+    await settle();
+    expect(band.getSnapshot()).toMatchObject({ phase: 'refused', code: 123002 });
+    run(5, (clock) => bandHr(150, clock));
+    expect(controller.getSnapshot()).toMatchObject({ phase: 'active', status: 'recording' });
+    expect(controller.getSnapshot().live?.hr).toBe(150);
+    // Pausing the phone sends nothing to a band that never started.
+    controller.pause();
+    await settle();
+    expect(native.calls).toEqual(['start 1']);
+  });
+
+  it('a band that is not there leaves the recording going alone', async () => {
+    const { band } = bandSetup({ native: null });
+    const { controller } = await setup([strap, idle], 'unavailable', band);
+    live = controller;
+    await controller.prepare('run', 'Lari');
+    controller.start();
+    await settle();
+    expect(band.getSnapshot().phase).toBe('unavailable');
+    expect(controller.getSnapshot().status).toBe('recording');
+  });
+
+  it('the setting off, or a sport the band has no workout for, starts nothing', async () => {
+    const off = bandSetup({ enabled: false });
+    const a = await setup([strap, idle], 'unavailable', off.band);
+    await a.controller.prepare('run', 'Lari');
+    a.controller.start();
+    await settle();
+    expect(off.native!.calls).toEqual([]);
+    expect(off.band.getSnapshot().phase).toBe('off');
+    await a.controller.discard();
+
+    const other = bandSetup();
+    const b = await setup([strap, idle], 'unavailable', other.band);
+    live = b.controller;
+    await b.controller.prepare('other', 'Lainnya');
+    b.controller.start();
+    await settle();
+    expect(other.native!.calls).toEqual([]);
+  });
+
+  it('a pause, resume and stop on the band is followed by the recording, and a stop only pauses it', async () => {
+    const { native, band } = bandSetup();
+    const { controller, run } = await setup([strap, idle], 'unavailable', band);
+    live = controller;
+    await controller.prepare('run', 'Lari');
+    controller.start();
+    await settle();
+    run(3);
+
+    native!.state = 'paused';
+    run(1);
+    expect(controller.getSnapshot().status).toBe('paused');
+    native!.state = 'running';
+    run(1);
+    expect(controller.getSnapshot().status).toBe('recording');
+    // Nothing was echoed back to the band.
+    expect(native!.calls).toEqual(['start 1']);
+
+    native!.active = false;
+    native!.state = null;
+    run(1);
+    expect(controller.getSnapshot()).toMatchObject({ phase: 'active', status: 'paused' });
+    expect(band.getSnapshot().phase).toBe('ended');
+    // Said once: the person can resume the phone recording and it is not paused again.
+    controller.resume();
+    run(3);
+    expect(controller.getSnapshot().status).toBe('recording');
+  });
+
+  it('a strap keeps the heart rate: the band only fills in while no strap reading is fresh', async () => {
+    const { band, bandHr } = bandSetup();
+    const { controller, hub, run } = await setup([strap, idle], 'unavailable', band);
+    live = controller;
+    await controller.prepare('run', 'Lari');
+    controller.start();
+    await settle();
+    run(1, (clock) => {
+      hub.emitValue(strap.id, '2a37', hr(120), clock);
+      bandHr(180, clock);
+    });
+    expect(controller.getSnapshot().live?.hr).toBe(120);
+    // The strap goes quiet for more than five seconds: the band's reading is used.
+    run(7, (clock) => bandHr(150, clock));
+    expect(controller.getSnapshot().live?.hr).toBe(150);
   });
 });

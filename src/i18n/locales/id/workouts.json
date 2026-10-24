@@ -681,6 +681,15 @@
       "ready": "Siap merekam",
       "progress": "{{sport}} · {{time}} · {{distance}}",
       "a11y": "{{title}}. {{detail}}. Buka rekaman."
+    },
+    "bandLink": {
+      "starting": "Memulai di band…",
+      "linked": "Band terhubung",
+      "refused": "Band tidak memulai latihan. Hanya ponsel yang merekam.",
+      "unavailable": "Band tidak terhubung. Hanya ponsel yang merekam.",
+      "ended": "Band menghentikan latihannya. Rekaman di ponsel dijeda.",
+      "setting": "Mulai band bersama lari",
+      "settingHint": "Band ikut mulai, jeda, dan berhenti bersama lari, lalu mengirim detak jantung ke ponsel. Jika band menolak, ponsel tetap merekam sendiri."
     }
   },
   "liveEntry": {

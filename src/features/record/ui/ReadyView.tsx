@@ -8,6 +8,8 @@ import { Divider, Section } from '@/components/Screen';
 import { SportIcon } from '@/components/SportIcon';
 import { Notice } from '@/components/States';
 import { BikeReadyPanel } from '@/features/bikecomputer/record/BikeReadyPanel';
+import { useOverlayRoute } from '@/features/live/overlayRoute';
+import { RouteOverlayButton } from '@/features/live/ui/RouteOverlayButton';
 import { useBikeSettings } from '@/features/bikecomputer/ui/useBikeSettings';
 import { SensorLinkRow } from '@/features/sensors/ui/SensorLinkRow';
 import { sportIcon } from '@/features/workouts/sportIcon';
@@ -41,6 +43,7 @@ export function ReadyView({ onBack }: { onBack: () => void }) {
   const { saved } = useSensors();
   const bike = useBikeSettings();
   const { sport } = snapshot;
+  const overlay = useOverlayRoute();
   const sensors = snapshot.sensorIds.flatMap((id) => saved.find((s) => s.id === id) ?? []);
   const sensorError = snapshot.sensorError === null ? null : sensorErrorKind(snapshot.sensorError);
 
@@ -54,7 +57,7 @@ export function ReadyView({ onBack }: { onBack: () => void }) {
     <RecordStage
       onBack={onBack}
       segments={[gps, sensorsSegment]}
-      backdrop={snapshot.gps ? <MapBackdrop position={snapshot.position} location="granted" /> : <IndoorBackdrop sport={sport} />}>
+      backdrop={snapshot.gps ? <MapBackdrop position={snapshot.position} location="granted" route={overlay.selected?.line ?? null} /> : <IndoorBackdrop sport={sport} />}>
       <View style={styles.head}>
         <SportIcon name={sportIcon(SPORT_ROWS[sport].name)} size={24} color={colors.foreground} />
         <AppText variant="heading" accessibilityRole="header" style={styles.title}>
@@ -70,6 +73,11 @@ export function ReadyView({ onBack }: { onBack: () => void }) {
           {snapshot.gps ? t('record.ready.hint') : t('record.ready.hintNoGps')}
         </AppText>
         {status === 'weak' || status === 'fair' ? <GpsLine fix={snapshot.fix} /> : null}
+        {snapshot.gps ? (
+          <View style={styles.route}>
+            <RouteOverlayButton overlay={overlay} />
+          </View>
+        ) : null}
 
         {sport === 'ride' && bike.enabled ? <BikeReadyPanel /> : null}
 
@@ -113,4 +121,5 @@ const styles = StyleSheet.create({
   title: { flex: 1 },
   extras: { flexGrow: 0 },
   extrasContent: { gap: spacing.md },
+  route: { alignItems: 'flex-start' },
 });

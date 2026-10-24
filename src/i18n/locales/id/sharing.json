@@ -89,8 +89,8 @@
     "finish": "Selesai",
     "workout": "Latihan",
     "status": {
-      "searching": "Mencari GPS di jam…",
-      "preparing": "Memulai",
+      "searching": "Menunggu mulai di jam…",
+      "preparing": "Menunggu mulai di jam",
       "running": "Langsung",
       "paused": "Dijeda",
       "ended": "Selesai"
@@ -136,6 +136,55 @@
       "waiting": "Menunggu angka pertama dari jam.",
       "ended": "Catatan lengkap (rute, split, grafik detak jantung) tiba pada sinkronisasi berikutnya dan muncul di Latihan."
     },
-    "logStrength": "Catat sebagai latihan beban"
+    "logStrength": "Catat sebagai latihan beban",
+    "sport": {
+      "run": "Lari",
+      "walk": "Jalan",
+      "ride": "Gowes",
+      "hike": "Hiking",
+      "inferred": "Jam meminta GPS, jadi ini sepertinya latihan di luar ruangan. Yang mana?"
+    },
+    "map": {
+      "waiting": "Menunggu posisi GPS ponsel"
+    },
+    "route": {
+      "title": "Rute di peta",
+      "none": "Tanpa rute",
+      "choose": "Tambah rute",
+      "chosen": "Rute {{name}}, ketuk untuk mengganti",
+      "empty": "Belum ada rute tersimpan. Impor file GPX di Rute untuk menampilkannya di sini."
+    },
+    "fields": {
+      "title": "Kolom data",
+      "edit": "Ubah kolom data",
+      "close": "Tutup",
+      "back": "Kembali",
+      "done": "Selesai",
+      "count": "Jumlah kolom",
+      "big": "Kolom pertama besar",
+      "bigHint": "Mudah dibaca sekilas, untuk teman yang memandu ritme dengan ponselmu.",
+      "slotTitle": "Kolom {{number}}",
+      "shownIn": "Sekarang di kolom {{number}}, ditukar dengan itu",
+      "longPress": "Tahan untuk mengganti kolom ini",
+      "metric": {
+        "duration": "Waktu",
+        "distance": "Jarak",
+        "pace": "Pace",
+        "avgPace": "Pace rata-rata",
+        "speed": "Kecepatan",
+        "hr": "Detak jantung",
+        "calories": "Kalori",
+        "cadence": "Kadensi",
+        "elevationGain": "Tanjakan",
+        "altitude": "Ketinggian"
+      }
+    },
+    "metronome": {
+      "title": "Metronom",
+      "hint": "Getar di setiap ketukan langkah",
+      "slower": "Lebih lambat",
+      "faster": "Lebih cepat",
+      "value": "{{bpm}} ketukan per menit"
+    }
   }
 }

@@ -127,6 +127,9 @@ internal object WorkoutSportTypes {
 
   fun name(type: Int): String = sport(type)?.name ?: "Workout (type ${type and 0xFF})"
 
+  /** The first of [candidates] that is a code of the table: a status answer carries the sport in more than one tag, and only a known code is believed. */
+  fun pick(vararg candidates: Int?): Int? = candidates.firstOrNull { it != null && sport(it) != null }
+
   /** GB `ActivityKind` constant name, [UNKNOWN_KIND] for types GB does not know. */
   fun kind(type: Int): String = sport(type)?.kind ?: UNKNOWN_KIND
 

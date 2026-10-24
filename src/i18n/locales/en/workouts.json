@@ -688,6 +688,15 @@
       "ready": "Ready to record",
       "progress": "{{sport}} · {{time}} · {{distance}}",
       "a11y": "{{title}}. {{detail}}. Open the recording."
+    },
+    "bandLink": {
+      "starting": "Starting on the band…",
+      "linked": "Band linked",
+      "refused": "The band didn't start the workout. Recording on the phone only.",
+      "unavailable": "The band isn't connected. Recording on the phone only.",
+      "ended": "The band stopped its workout. The phone recording is paused.",
+      "setting": "Start the band with the run",
+      "settingHint": "The band starts, pauses and stops with the run and sends its heart rate to the phone. If it refuses, the phone keeps recording alone."
     }
   },
   "liveEntry": {

@@ -27,4 +27,10 @@ internal fun ModuleDefinitionBuilder.watchWorkoutApi(runtime: () -> WearRuntime)
   AsyncFunction("stopWatchWorkout") Coroutine { ->
     runtime().watchWorkout.stop().toJs()
   }
+
+  // The band's realtime heart rate for a workout the phone records (the Run recorder): held like a live workout holds it, so it also runs in
+  // the background and does not depend on a screen (`setLiveHeartRate` is the screen's, and stops when the app leaves the foreground).
+  Function("setWorkoutHeartRate") { active: Boolean ->
+    runtime().liveHeartRate.setWorkoutActive(active)
+  }
 }

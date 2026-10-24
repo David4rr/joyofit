@@ -11,7 +11,8 @@ import { NavRow } from '@/components/NavRow';
 import { Card, Screen, Section } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
 import { StatTile } from '@/components/StatTile';
-import { elapsedSec, formatGrams, isActive, livePhase } from '@/features/live/liveWorkout';
+import { elapsedSec, formatGrams, isActive } from '@/features/live/liveWorkout';
+import { useLiveSession } from '@/features/live/useLiveSession';
 import { scoreFor } from '@/features/sleep/nights';
 import { SetupChecklistCard } from '@/features/setup/SetupChecklistCard';
 import { StepsWeekCard } from '@/features/steps/StepsWeekCard';
@@ -77,6 +78,7 @@ function WatchToday() {
   const router = useRouter();
   const colors = useColors();
   const { t } = useTranslation(['today', 'common']);
+  const { t: tLive } = useTranslation('sharing');
   const locale = useLocale();
   const { linkState, device, battery, lastSync, totals, watches, error, dataVersion, sync } = useWatch();
   const { data, error: loadError } = useTodayData(dataVersion);
@@ -84,7 +86,10 @@ function WatchToday() {
   const { goal, isDefault: goalIsDefault } = useStepGoal();
   const live = useLiveHeartRate(isLinkUp(linkState));
   const liveWorkout = useLiveWorkout();
-  const liveSearching = liveWorkout !== null && livePhase(liveWorkout) === 'searching';
+  const liveSession = useLiveSession();
+  // Until the watch says the workout runs (its GPS or start screen), the banner waits instead of counting.
+  const liveSearching = liveSession?.state === 'preparing';
+  const liveKind = liveSession?.sportKind ?? null;
 
   const view = useMemo(() => {
     if (!data) return null;
@@ -234,7 +239,12 @@ function WatchToday() {
                 isStrengthSport(liveWorkout.sportType)
                   ? t('home.strengthOnWatch')
                   : t(liveSearching ? 'home.workoutSearching' : liveWorkout.status === 'paused' ? 'home.workoutPaused' : 'home.workoutInProgress', {
-                      sport: liveWorkout.sportName ? sportLabel(liveWorkout.sportName) : t('home.workoutDefault'),
+                      sport:
+                        liveKind !== null && liveKind !== 'other'
+                          ? tLive(`live.sport.${liveKind}`)
+                          : liveWorkout.sportName
+                            ? sportLabel(liveWorkout.sportName)
+                            : t('home.workoutDefault'),
                     })
               }
               subtitle={

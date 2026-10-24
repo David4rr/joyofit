@@ -31,11 +31,15 @@ export interface BikeMapColors {
   routeCasing: string;
   puck: string;
   offCourse: string;
+  /** The path already covered, drawn over the route line (the live run map). Defaults to the puck colour. */
+  track?: string;
 }
 
 export interface BikeMapProps {
   style: ResolvedMapStyle;
   route: readonly { lat: number; lon: number }[] | null;
+  /** The path the rider has covered so far, drawn over `route`; absent or under two points draws nothing. */
+  track?: readonly { lat: number; lon: number }[] | null;
   position: BikePosition | null;
   /** The camera follows `position`. The map calls `onFollowChange(false)` when the rider pans or zooms by hand. */
   follow: boolean;
@@ -112,6 +116,7 @@ function LiveMap({
   maplibre,
   style,
   route,
+  track,
   position,
   follow,
   offCourse,
@@ -140,6 +145,7 @@ function LiveMap({
 
   // The route data keeps its identity across the 1 Hz position updates: the GeoJSON is rebuilt only for a new route.
   const routeData = useMemo(() => routeCollection(route), [route]);
+  const trackData = useMemo(() => routeCollection(track ?? null), [track]);
   const lat = position?.lat;
   const lon = position?.lon;
   const heading = position?.headingDeg ?? null;
@@ -176,6 +182,7 @@ function LiveMap({
     }),
     [lineColor, offCourse],
   );
+  const trackPaint = useMemo(() => ({ 'line-color': ink.track ?? ink.puck, 'line-width': 5 }), [ink.track, ink.puck]);
   const wedgePaint = useMemo(() => ({ 'fill-color': ink.puck, 'fill-opacity': 0.35 }), [ink.puck]);
   const puckHaloPaint = useMemo(() => ({ 'circle-radius': 13, 'circle-color': ink.routeCasing }), [ink.routeCasing]);
   const puckPaint = useMemo(
@@ -202,6 +209,10 @@ function LiveMap({
         <GeoJSONSource id="bike-route" data={routeData}>
           <Layer id="bike-route-casing" type="line" layout={ROUND_LINE} paint={casingPaint} />
           <Layer id="bike-route-line" type="line" layout={ROUND_LINE} paint={strokePaint} />
+        </GeoJSONSource>
+        <GeoJSONSource id="bike-track" data={trackData}>
+          <Layer id="bike-track-casing" type="line" layout={ROUND_LINE} paint={casingPaint} />
+          <Layer id="bike-track-line" type="line" layout={ROUND_LINE} paint={trackPaint} />
         </GeoJSONSource>
         <GeoJSONSource id="bike-heading" data={wedgeData}>
           <Layer id="bike-heading-wedge" type="fill" paint={wedgePaint} />

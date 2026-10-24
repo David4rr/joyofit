@@ -466,6 +466,14 @@ export interface HealthSensorsStatus extends HealthSensorsUpdate {
  */
 export type LiveWorkoutStatus = 'preparing' | 'running' | 'paused' | 'ended';
 
+/** A fix of the phone's GPS as the live screen's map needs it. `accuracy` (m) and `bearing` (deg) are null when the platform gave none. */
+export interface LiveLocation {
+  lat: number;
+  lon: number;
+  accuracy: number | null;
+  bearing: number | null;
+}
+
 /**
  * A workout started on the watch, followed live (`getLiveWorkout`, `onLiveWorkout`). The watch pushes its numbers
  * about every second; every metric is null until it has sent one.
@@ -519,6 +527,22 @@ export interface LiveWorkout {
    * screen asks the user to finish or keep going. Absent from builds before the watch-status timer.
    */
   endSuspected?: boolean;
+  /**
+   * The clock of a phone-side session (`source` `gps` / `status`) was started by a word from the watch (its status, a report); false when it
+   * was started only because the person moved (a watch that gives no sign of its start). Absent from builds before the pre-start fix:
+   * those could start the clock from the first GPS request, which the JS side cannot tell apart.
+   */
+  clockConfirmed?: boolean;
+  /** The watch asked for the phone's GPS during this workout: an outdoor sport, whatever sport tag it sent. Absent from older builds (`source` `gps` says the same). */
+  gpsRequested?: boolean;
+  /** The phone's last GPS fix (it runs for the watch while the watch asks for it), null before the first. Absent from older builds. */
+  location?: LiveLocation | null;
+  /** GPS time (Unix ms) of `location`. */
+  locationAt?: number | null;
+  /** The phone's own distance, climb and pace from its fixes while the workout ran; what the screen shows when the watch sends none. Null before the first fix. */
+  gpsDistanceM?: number | null;
+  gpsRiseM?: number | null;
+  gpsPaceSecPerKm?: number | null;
 }
 
 /** Huawei sport code of strength training (Gadgetbridge's sport table; `WorkoutSportTypes.kt`). */

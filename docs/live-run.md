@@ -1,0 +1,87 @@
+# Live run: a band that runs beside the phone
+
+Two directions, one band without a GPS of its own (tester: Huawei Band 11, non-Pro; Huawei Health's "connected GPS" run):
+
+- **Started on the band, JoyoFit follows** (`LiveWorkout.kt`, `src/features/live/`): the live screen.
+- **Started on the phone, the band follows** (`src/features/record/bandLink*.ts`, `WatchWorkout.kt`): the Run recorder starts the band's workout too.
+
+Everything the band does not confirm is marked UNVERIFIED below: no Band 11 was at hand when this was written.
+
+## What the band sends (observed on a Fit 4 Pro 6.1.0.117, expected alike on a Band 11 [INFERENCE])
+
+| Frame | Meaning |
+| --- | --- |
+| `18/02 {01: 1}` about every 20 s | "send me the phone's GPS". It starts when the band's workout screen starts looking for a fix, i.e. **before the workout runs** (the GO screen / countdown). `{01: 0}` stops it. |
+| `18/01` | which GPS fields the band takes (bitmap: speed, distance, altitude, lat/lon, direction, precision). |
+| `18/03 81{82{...}}` | phone to band, one per fix (about 1 per second). The band's distance and pace come from these, so they are `--` until the first fixes reach it. |
+| `17/03 81 00` answer | `81{02 state, 03 operator, [04 sport], [06 workout type]}`; operator 1 start, 2 pause, 3 resume, 4 stop. The Fit 4 Pro's answer for a strength workout was `81 06 02 01 00 03 01 01`: **no sport tag at all**. |
+| `17/12 {01: 1}` then `17/11` | the realtime report: 02 duration (s), 03 heart rate, 04 zone, 05 steps, 06 cadence, 07 pace (s/km), 08 distance (m), 09 calories (cal, UNVERIFIED unit), 0A rise, 0B descent, 0C altitude, 0D/0E training effect, 11 operator. |
+| `37/03` points | the reverse linkage Huawei Health gets: `operator_type` 1 running, 2 paused, 3 stopped, 7 pre-sport. Not seen from this phone. |
+
+## Band-started run: state machine (`LiveWorkout.kt`, `LiveWorkoutPolicy.kt`)
+
+- A GPS request alone **never starts the clock**. It opens a session in `preparing` (`source: gps`, `gpsRequested`), starts the phone's GPS for the band, and asks for the status at once.
+- The clock starts (`running`) on the first of: `17/03` operator 1 or 3, a `17/11` report that runs (operator 1 to 3, or time on its clock), a `37/03` start event. Time then comes from the band's own `0x02` duration once a report flows (the session becomes `source: watch`); until then from the phone's clock, counted from that moment.
+- Pause and resume follow the same sources. It ends on the band's stop frame, on `17/03` saying "no workout" three times in a row, on the GPS requests stopping while preparing, or on Finish.
+- **A band that gives no sign at all** (it answers no `17/03` and sends no `17/11`): the only evidence of its start is the person moving. After three fixes in a row at 1 m/s or faster (`MotionStart`) the clock starts, `clockConfirmed` is false. Before this change such a session ran from the first GPS request, which is why the phone's clock started on the GO screen (B1).
+- Payload fields added for this: `clockConfirmed`, `gpsRequested`, `location` `{lat, lon, accuracy, bearing}`, `locationAt`, `gpsDistanceM`, `gpsRiseM`, `gpsPaceSecPerKm`.
+
+### Sport kind (`liveSession.ts`)
+
+1. The person's pick (`setSportKind`), else
+2. the sport tag, `06` then `04` of the `17/03` answer, **only when it is a code of `WorkoutSportTypes`** (a small enum in one of the tags must not become "Running"): 1, 11 run; 2 walk; 3 ride; 4, 14 hike; 5, 7, 13 are indoor and not GPS sports; everything else `other`;
+3. else, if the band asked for the phone's GPS: `run`, **inferred** (`sportKindInferred`), so the screen lets the person switch run, walk, ride, hike. The band asks for GPS only in an outdoor workout.
+4. else null: nothing says what it is, and the generic screen may offer the strength logger. `gpsSport` is true for any GPS-asking or outdoor-typed session: "Log as strength" is never offered for them.
+
+### Figures (`deriveMetrics`)
+
+The band's number wins when it is above zero. A band without GPS reports a flat 0 for distance and nothing for pace: those must not hide the phone's own numbers. Otherwise the phone's track fills it (`LiveGpsTrack.kt`, `TrackAccumulator`, fed with the fixes of the running stretches only):
+
+- distance: sum of steps of at least 3 m from the last kept fix; fixes worse than 30 m accuracy and jumps above 30 m/s are dropped;
+- climb: the altitude smoothed (alpha 0.25), counted past a 3 m dead band, so noise adds nothing;
+- pace: distance over the last 10 s (at least 3 s of it), nothing below 0.28 m/s;
+- average pace: duration over distance (`averagePace`, from 10 m), computed in JS;
+- cadence: steps per minute on foot (`0x06`), revolutions per minute on a bike.
+
+The phone's position (`location`) is in the payload for the map; the trail is the screen's (`trail.ts`).
+
+## Phone-started run (`bandLinkCore.ts`, `bandLink.ts`, `controller.ts`)
+
+"Mulai" on a GPS or treadmill run starts the band as well, when the setting "Mulai band bersama lari" is on (kv key `joyofit.record.bandStart`, default on) and a watch exists:
+
+1. `17/01` SetOperator with the Huawei sport (`bandSportCode`): 1 run, 2 walk, 3 ride, 5 treadmill, 7 indoor ride, 14 hike; none for "other". Huawei Health itself only passes 1, 2, 3, 5, 7 through; 14 is the one it was not seen to send. Wire details and the refusal on the Fit 4 Pro: `docs/strength.md`, "The watch starts too".
+2. The band then asks for GPS itself (`18/02`), and the existing `WorkoutLink` streams the phone's fixes (`18/03`). **There is no proactive GPS push**: if a band does not ask, it gets none [INFERENCE: it asks, as in a band-started run].
+3. The band's heart rate (`onHeartRate`) feeds the recorder as a `2a37` reading; a paired strap wins while it gave a value in the last 5 s. This also works when the band refused to start. The heart rate is held with `setWorkoutHeartRate` (native, also in the background), else `setLiveHeartRate` (stops when the app leaves the foreground).
+4. Pause, resume and stop go both ways. Phone to band: `setPaused`, and the end of the recording stops the band (`end`). Band to phone: the controller polls `getWatchWorkout()` once a second (no event exists): a pause or resume on the band pauses or resumes the recording, a **stop on the band only pauses** the recording and sets the phase `ended` (finishing is the person's decision, the band's workout may have ended by mistake). Our own commands are not read back as the band's (`busy` guard, and the band's state is re-read after each command, so a refused pause is not mistaken for a resume).
+5. While the phone owns the band's workout, `LiveWorkout` does not open a mirror of it (`phoneOwned`): one screen, not two.
+
+### What the screen shows (`useBandLink()`)
+
+One line, never blocking: `starting`, `linked`, `refused` ("The band didn't start the workout. Recording on the phone only." the band answered an error, or did not confirm), `unavailable` (no band connected, the band does not list `17/01`, or a binary without the functions), `ended` (the band stopped; the phone recording is paused). `off`: nothing (setting off, no watch, a sport without a band workout). A phone with no watch never sees a line.
+
+A refusal is not remembered between runs: every start is one command and one answer, and a band that starts accepting (a firmware change) simply works.
+
+### Restore
+
+After the app was killed mid-run the recording comes back paused. A band workout still open in the same process (a JS reload) is taken over (`adopt`) and paused; after a real restart the native side has forgotten it (`owned` is in memory) and the band keeps running on its own: stop it on the band.
+
+## OTA or store build
+
+| Part | OTA (JS only) | Needs a store build (native) |
+| --- | --- | --- |
+| `liveSession.ts` sport kind, GPS-sport flag, metric fallbacks, `useLiveSession` | yes: `source: gps` already says "GPS request"; band figures are used as they come | `gpsRequested`, `location`, `gps*` fallbacks stay absent until the native build |
+| B1: no clock from a GPS request alone | **no**: the old payload cannot tell a clock started by the fallback from one confirmed by the status poll (both: `source: gps`, `running`, `durationSec` 0) | `LiveWorkout.gpsPing`, `MotionStart`, `clockConfirmed` |
+| B3 distance, pace, climb from the phone's GPS; map position | no | `LiveGpsTrack.kt`, `onLocation`, payload |
+| Sport tag read with validation | no | `WorkoutLink.pollStatus`, `WorkoutSportTypes.pick` |
+| Phone-started run: start, pause, resume, stop, band heart rate, the setting | yes, on a binary that already has `startWatchWorkout` (the strength logger's functions); `setLiveHeartRate` is the fallback | `setWorkoutHeartRate` (heart rate in the background); a binary without `startWatchWorkout` shows `unavailable` |
+
+## Unverifiable without a Band 11
+
+- whether the Band 11 accepts `17/01` at all (the Fit 4 Pro answers 123002 to every one), and with sport 1, 2, 3, 14;
+- whether it asks for GPS (`18/02`) after a phone-started run;
+- whether its `17/03` answer carries a sport tag, in `04` or `06`, and in which space (`WorkoutLink` logs `workout status ...` when it changes: that line settles it);
+- whether it answers `17/03` and sends `17/11` at all (else only movement starts the clock);
+- the units of `17/11` `0x08` distance and `0x09` calories;
+- that a pause or stop on the band reaches `getWatchWorkout()` (`17/02` notices) on this band.
+
+Diagnostics to ask the tester for: the Android log lines `Workout link: watch lists ...`, `Workout link: workout status ...`, `Workout link: realtime report ...` and `Watch workout: ...`.

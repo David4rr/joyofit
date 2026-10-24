@@ -93,6 +93,8 @@ second time), `useStrengthWatch.ts`, `ui/WatchSession.tsx` (the "Jam" chip and t
 
 ## Start on the watch, JoyoFit follows
 
+Outdoor sports (run, walk, ride, hike) and the Run recorder starting the band use the same `17/01` and `17/03` frames: see [live-run.md](live-run.md). A GPS request from the band, with no sport tag, makes the live screen treat the workout as an inferred outdoor one there, so the strength button is not offered for it.
+
 What works is the other direction. The native `LiveWorkout` already follows a watch workout through `17/03` (operator 1 start, 3 resume = running, 2 pause = paused; no `17/02` notice, `17/11` or GPS request came for an indoor workout in the probe). When it is a strength-type sport (`watchLive.ts`: Huawei 140 Strength training, 145 CrossFit, 146 Functional training, 157 Core training):
 
 - `LiveWorkoutProvider` opens `/strength/watch-pick` instead of the generic `/workout-live`; the Today card says "Latihan beban berjalan di jam" and opens the same; `/workout-live` redirects there.

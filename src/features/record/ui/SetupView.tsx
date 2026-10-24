@@ -9,8 +9,11 @@ import { Button } from '@/components/Button';
 import { Details } from '@/components/Details';
 import { PressableScale } from '@/components/PressableScale';
 import { Section } from '@/components/Screen';
+import { SwitchRow } from '@/components/SwitchRow';
 import { Notice } from '@/components/States';
 import { BikeSetupPanel } from '@/features/bikecomputer/record/BikeSetupPanel';
+import { useOverlayRoute } from '@/features/live/overlayRoute';
+import { RouteOverlayButton } from '@/features/live/ui/RouteOverlayButton';
 import { SPORT_ROWS, type ManualSport } from '@/features/workouts/manual';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { errorMessage } from '@/format';
@@ -19,6 +22,7 @@ import { useSensors } from '@/state/SensorsProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
 
+import { setBandStartEnabled, useBandStartEnabled } from '../bandLink';
 import { canPrepare, gpsChip, permissionPlan } from './format';
 import { GpsLine } from './GpsLine';
 import { PermissionCards, StepsPanel, useRecordPermissions } from './PermissionGate';
@@ -57,7 +61,9 @@ export function SetupView({ sport, onSport, notice, onBack }: SetupViewProps) {
   const { height } = useWindowDimensions();
   const { prepare, snapshot } = useRecorder();
   const { saved, hub } = useSensors();
-  const { linkState } = useWatch();
+  const { linkState, device } = useWatch();
+  const overlay = useOverlayRoute();
+  const bandStart = useBandStartEnabled();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stepsOpen, setStepsOpen] = useState(false);
@@ -95,7 +101,13 @@ export function SetupView({ sport, onSport, notice, onBack }: SetupViewProps) {
     <RecordStage
       onBack={onBack}
       segments={segments}
-      backdrop={plan.location ? <MapBackdrop position={snapshot.position} location={permissions.location} /> : <IndoorBackdrop sport={sport} />}>
+      backdrop={
+        plan.location ? (
+          <MapBackdrop position={snapshot.position} location={permissions.location} route={overlay.selected?.line ?? null} />
+        ) : (
+          <IndoorBackdrop sport={sport} />
+        )
+      }>
       <ScrollView
         style={[styles.extras, { maxHeight: height * EXTRAS_MAX_SHARE }]}
         contentContainerStyle={styles.extrasContent}
@@ -110,6 +122,20 @@ export function SetupView({ sport, onSport, notice, onBack }: SetupViewProps) {
           </>
         ) : null}
         {chip === 'fair' || chip === 'weak' ? <GpsLine fix={snapshot.fix} /> : null}
+        {plan.location ? (
+          <View style={styles.route}>
+            <RouteOverlayButton overlay={overlay} />
+          </View>
+        ) : null}
+        {device !== null && plan.location ? (
+          <SwitchRow
+            icon="watch-outline"
+            label={t('record.bandLink.setting')}
+            hint={t('record.bandLink.settingHint')}
+            value={bandStart}
+            onValueChange={setBandStartEnabled}
+          />
+        ) : null}
         {autoSensors.length > 0 && hub.bluetooth === 'off' ? <Notice icon="bluetooth">{t('record.setup.bluetoothOff')}</Notice> : null}
         <PermissionCards permissions={permissions} plan={plan} />
         {plan.steps && stepsOpen ? <StepsPanel permissions={permissions} /> : null}
@@ -174,6 +200,7 @@ function TextAction({ icon, label, onPress }: TextActionProps) {
 const styles = StyleSheet.create({
   extras: { flexGrow: 0 },
   extrasContent: { gap: spacing.md },
+  route: { alignItems: 'flex-start' },
   about: { gap: spacing.sm },
   actions: { flexDirection: 'row', justifyContent: 'space-between' },
   action: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },

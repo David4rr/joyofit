@@ -19,6 +19,8 @@ import { StatPreview } from './StatPreview';
 interface MapBackdropProps {
   position: RecordingSnapshot['position'];
   location: PermissionAnswer;
+  /** A saved route drawn as a guide line under the position (the one chosen for the run); null for none. */
+  route?: readonly { lat: number; lon: number }[] | null;
 }
 
 /**
@@ -27,7 +29,7 @@ interface MapBackdropProps {
  * to show, so the space says what it waits for instead of drawing a map of the whole country. The last place stays on the map while the
  * GPS looks again (the warm-up restarts when the person comes back from the sensors page).
  */
-export function MapBackdrop({ position, location }: MapBackdropProps) {
+export function MapBackdrop({ position, location, route = null }: MapBackdropProps) {
   const { t } = useTranslation('workouts');
   const { colors, scheme } = useTheme();
   const inset = useStageInset();
@@ -43,7 +45,7 @@ export function MapBackdrop({ position, location }: MapBackdropProps) {
       <View style={styles.fill}>
         <BikeMap
           style={style}
-          route={null}
+          route={route}
           position={shown}
           follow={follow}
           offCourse={false}
