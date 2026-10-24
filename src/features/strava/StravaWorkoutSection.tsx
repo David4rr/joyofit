@@ -14,6 +14,7 @@ import type { WorkoutRow } from '@/db/queries';
 import { ViewOnStrava } from '@/features/strava/StravaLink';
 import { errorMessage } from '@/format';
 import { useStrava } from '@/state/StravaProvider';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /**
  * "Send to Strava" for one workout, and where it ended up. Sending is also allowed for workouts that ended before
@@ -68,7 +69,7 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
           <AppText variant="caption" muted>
             {t('strava.connectHint')}
           </AppText>
-          <Button label={t('strava.setUp')} variant="secondary" icon="link" onPress={() => router.push('/settings/strava')} />
+          <Button label={t('strava.setUp')} variant="secondary" icon="link" onPress={() => router.push('/settings/strava', OPEN_IN_STACK)} />
         </>
       ) : (
         <>

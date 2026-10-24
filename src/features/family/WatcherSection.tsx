@@ -16,6 +16,7 @@ import { useFamily } from '@/features/family/FamilyProvider';
 import { lastViewedText, pauseText, pauseUntil, type PauseChoice } from '@/features/family/format';
 import { useNow } from '@/hooks/useNow';
 import { spacing } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const PAUSES = ['hour', 'today', 'manual'] as const satisfies readonly PauseChoice[];
 const PAUSE_LABEL = { hour: 'watcher.pauseHour', today: 'watcher.pauseToday', manual: 'watcher.pauseManual' } as const;
@@ -61,7 +62,7 @@ export function WatcherSection({ link }: { link: FamilyLink }) {
         <Button
           label={t('family:watcher.review')}
           variant="primary"
-          onPress={() => router.push({ pathname: '/family/consent/[id]', params: { id: link.id } })}
+          onPress={() => router.push({ pathname: '/family/consent/[id]', params: { id: link.id } }, OPEN_IN_STACK)}
         />
       </Section>
     );

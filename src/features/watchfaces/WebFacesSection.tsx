@@ -17,6 +17,7 @@ import {
 } from '@/features/watchfaces/webLibraryModel';
 import { spacing } from '@/theme';
 import type { WatchfaceInfo } from '@/wear';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface WebFacesSectionProps {
   readonly state: WebLibraryState;
@@ -44,7 +45,7 @@ export function WebFacesSection({
 }: WebFacesSectionProps) {
   const { t } = useTranslation('watch');
   const router = useRouter();
-  const goAccount = () => router.push('/settings/akun');
+  const goAccount = () => router.push('/settings/akun', OPEN_IN_STACK);
 
   return (
     <Section title={t('faces.web.title')} icon="cloud-download-outline">

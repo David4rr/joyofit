@@ -12,6 +12,7 @@ import { spacing } from '@/theme';
 import { exerciseById, exerciseName } from '../exercises';
 import { exerciseLine, sessionTitle } from '../format';
 import type { PlannedSession } from '../plans/types';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /**
  * The exercises of a strength session with sets, reps (or seconds) and rest, each opening its page in the library, and the button
@@ -41,7 +42,7 @@ export function StrengthSessionSection({ session, todayScalePct, canStart }: { s
               tint="workouts"
               title={def ? exerciseName(def, getLocale()) : e.exerciseId}
               subtitle={exerciseLine(e)}
-              onPress={() => router.push({ pathname: '/coach/library/[id]', params: { id: e.exerciseId } })}
+              onPress={() => router.push({ pathname: '/coach/library/[id]', params: { id: e.exerciseId } }, OPEN_IN_STACK)}
             />
           );
         })}

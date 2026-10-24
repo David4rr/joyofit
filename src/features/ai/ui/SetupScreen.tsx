@@ -27,6 +27,7 @@ import { ConsentCard } from './ConsentCard';
 import { viewAiError, type AiErrorView } from './errors';
 import { AiErrorNotice } from './AiErrorNotice';
 import { ModelPicker } from './ModelPicker';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** How long the saved confirmation shows before the screen closes. */
 const SAVED_MS = 900;
@@ -340,7 +341,7 @@ function SetupForm() {
               </Notice>
             </View>
           ) : null}
-          <ConsentCard provider={name} host={endpoint ? hostOf(endpoint) : t('consent.noHost')} onSample={() => router.push('/settings/ai-data')} />
+          <ConsentCard provider={name} host={endpoint ? hostOf(endpoint) : t('consent.noHost')} onSample={() => router.push('/settings/ai-data', OPEN_IN_STACK)} />
           <SwitchRow label={t('consent.adult')} value={adult} onValueChange={setAdult} />
           <SwitchRow label={t('consent.agree', { provider: name })} value={agree} onValueChange={setAgree} />
           <AppText variant="caption" muted>

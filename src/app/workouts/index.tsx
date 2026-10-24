@@ -54,6 +54,7 @@ import { fmtDate, fmtDecimal, useLocale } from '@/i18n';
 import { useRecorder } from '@/state/RecorderProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, tintColors, useColors, useTheme } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface MonthGroup {
   title: string;
@@ -91,7 +92,7 @@ function WorkoutCard({ workout, strength, onDelete }: { workout: WorkoutRow; str
       onLongPress={() => onDelete({ start: workout.start, sportName: workout.sportName, name: strength?.name })}
       onPress={() =>
         strength
-          ? router.push({ pathname: '/strength/summary/[id]', params: { id: strength.id } })
+          ? router.push({ pathname: '/strength/summary/[id]', params: { id: strength.id } }, OPEN_IN_STACK)
           : router.push({ pathname: '/workouts/[id]', params: { id: String(workout.id) } })
       }
       style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.card }]}>
@@ -286,7 +287,7 @@ export default function WorkoutsScreen() {
               right={
                 <View style={styles.headerActions}>
                   <AskJoyoHeaderButton />
-                  <HeaderIconButton icon="calendar-outline" label={lifts('list.history')} onPress={() => router.push('/strength/history')} />
+                  <HeaderIconButton icon="calendar-outline" label={lifts('list.history')} onPress={() => router.push('/strength/history', OPEN_IN_STACK)} />
                   {watchUi ? <SyncIconButton /> : null}
                 </View>
               }
@@ -295,7 +296,7 @@ export default function WorkoutsScreen() {
             <LoopShortcut dismissible />
             {error ? <Notice tone="danger">{t('list.readError', { error })}</Notice> : null}
             {strengthOnlyCount > 0 ? (
-              <Notice icon="barbell-outline" action={{ label: lifts('list.history'), onPress: () => router.push('/strength/history') }}>
+              <Notice icon="barbell-outline" action={{ label: lifts('list.history'), onPress: () => router.push('/strength/history', OPEN_IN_STACK) }}>
                 {t('list.strengthElsewhere', { count: strengthOnlyCount })}
               </Notice>
             ) : null}

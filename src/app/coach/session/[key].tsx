@@ -30,6 +30,7 @@ import { fmtDay, fmtDistance, fmtInt, useLocale } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** The lines of a session's layout: warm-up, the main part, cool-down. */
 function useSteps(session: PlannedSession): string[] {
@@ -102,7 +103,7 @@ function SessionDetail({ session, coach }: { session: PlannedSession; coach: Coa
   const openWorkout = async () => {
     if (!entry?.workoutStart) return;
     const row = await db.getFirstAsync<{ id: number }>('SELECT id FROM workouts WHERE start = ?', entry.workoutStart);
-    if (row) router.push({ pathname: '/workouts/[id]', params: { id: String(row.id) } });
+    if (row) router.push({ pathname: '/workouts/[id]', params: { id: String(row.id) } }, OPEN_IN_STACK);
   };
 
   const stateText =

@@ -7,6 +7,7 @@ import { NavRow } from '@/components/NavRow';
 import { Card } from '@/components/Screen';
 import { useLoopShortcutDismissed } from '@/features/loops/loopShortcutStore';
 import { HIT, useColors } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /**
  * One quiet row that opens the Loop planner (`/routes/loop`), so it is not only behind Watch > Routes. With `dismissible` (Workouts)
@@ -23,7 +24,7 @@ export function LoopShortcut({ dismissible = false }: { dismissible?: boolean })
     <Card>
       <View style={styles.row}>
         <View style={styles.main}>
-          <NavRow icon="repeat" tint="steps" title={t('shortcut.title')} subtitle={t('shortcut.subtitle')} onPress={() => router.push('/routes/loop')} />
+          <NavRow icon="repeat" tint="steps" title={t('shortcut.title')} subtitle={t('shortcut.subtitle')} onPress={() => router.push('/routes/loop', OPEN_IN_STACK)} />
         </View>
         {dismissible ? (
           <Pressable accessibilityRole="button" accessibilityLabel={tc('actions.close')} hitSlop={4} onPress={dismiss} style={styles.close}>

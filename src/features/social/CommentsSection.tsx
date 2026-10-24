@@ -21,6 +21,7 @@ import { visibleThreads } from '@/features/social/moderationCore';
 import type { Comments } from '@/features/social/useComments';
 import { useAgo } from '@/features/social/useAgo';
 import { spacing, tintColors, useColors } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** Width of a reply's indent: the avatar and the gap after it, so a reply lines up under the parent's text. */
 const REPLY_INDENT = 32 + spacing.md;
@@ -50,7 +51,7 @@ function CommentRow({ comment, canDelete, onReply, onDelete }: RowProps) {
     );
   }
 
-  const openProfile = () => handle && router.push({ pathname: '/social/u/[handle]', params: { handle } });
+  const openProfile = () => handle && router.push({ pathname: '/social/u/[handle]', params: { handle } }, OPEN_IN_STACK);
   const mention = comment.replyTo?.handle ? `@${comment.replyTo.handle}` : comment.replyTo ? `@${comment.replyTo.name}` : null;
   return (
     <View style={styles.comment}>

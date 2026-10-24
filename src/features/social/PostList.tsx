@@ -10,6 +10,7 @@ import { useHidden } from '@/features/social/moderation';
 import { visiblePosts } from '@/features/social/moderationCore';
 import type { PagedPosts } from '@/features/social/usePagedPosts';
 import { spacing } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface PostListProps {
   posts: PagedPosts<unknown>;
@@ -54,7 +55,7 @@ export function PostList({ posts, empty, linkAuthor }: PostListProps) {
             post={post}
             linkAuthor={linkAuthor}
             onChange={posts.replace}
-            onOpen={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
+            onOpen={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } }, OPEN_IN_STACK)}
           />
         </FadeIn>
       ))}

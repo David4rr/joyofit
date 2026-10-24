@@ -26,6 +26,7 @@ import { useWebWatchfaces } from '@/features/watchfaces/useWebWatchfaces';
 import type { WebFace } from '@/features/watchfaces/webLibraryModel';
 import { radius, spacing, useColors } from '@/theme';
 import { hasNative, type WatchfaceInfo } from '@/wear';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 type TabMode = 'installed' | 'library';
 
@@ -129,7 +130,7 @@ export function WatchfacesScreen() {
       onCancel: proceed,
       confirmLabel: t('watch:faces.unsignedUsePhoto'),
       confirmVariant: 'primary',
-      onConfirm: () => router.push('/watch/photos'),
+      onConfirm: () => router.push('/watch/photos', OPEN_IN_STACK),
     });
   };
 
@@ -388,7 +389,7 @@ export function WatchfacesScreen() {
               onPreview={setPreviewFace}
               onSetActive={(id) => void setActive(id)}
               onCustomize={(id, name) =>
-                router.push({ pathname: '/watch/face-edit', params: { id, name } })
+                router.push({ pathname: '/watch/face-edit', params: { id, name } }, OPEN_IN_STACK)
               }
               onDelete={confirmDeleteFromWatch}
             />

@@ -14,6 +14,7 @@ import type { SavedRoute } from './routeModel';
 import { saveRoute } from './routeStore';
 import { workoutRouteDraft } from './workoutRoute';
 import { sportLabel } from '@/features/workouts/sportLabel';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface SaveWorkoutRouteInput {
   workout: Pick<WorkoutRow, 'sportName' | 'start'>;
@@ -81,7 +82,7 @@ export function SaveWorkoutRouteNotice({ route }: { route: SaveWorkoutRoute }) {
       {route.saved !== null ? (
         <Notice
           icon="checkmark-circle"
-          action={{ label: t('workout.open'), onPress: () => router.push({ pathname: '/routes/[id]', params: { id: route.saved!.id } }) }}>
+          action={{ label: t('workout.open'), onPress: () => router.push({ pathname: '/routes/[id]', params: { id: route.saved!.id } }, OPEN_IN_STACK) }}>
           {t('workout.saved', { name: route.saved.name })}
         </Notice>
       ) : null}

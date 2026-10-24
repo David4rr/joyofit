@@ -13,6 +13,7 @@ import { fmtDecimal, fmtInt } from '@/i18n';
 import type { RidePower } from '../types';
 import { balanceSplit, barWidth } from './format';
 import { StatGrid, type Cell } from './StatGrid';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 function BalanceBar({ leftPct }: { leftPct: number }) {
   const { palette } = useAnalysisContext();
@@ -65,7 +66,7 @@ function PowerCardImpl({ power }: { power: RidePower }) {
       {power.balanceLeftPct !== null ? <BalanceBar leftPct={power.balanceLeftPct} /> : null}
       {power.ftp === null ? (
         <View style={styles.block}>
-          <Notice icon="flash-outline" action={{ label: t('power.setFtp'), onPress: () => router.push('/settings/cycling') }}>
+          <Notice icon="flash-outline" action={{ label: t('power.setFtp'), onPress: () => router.push('/settings/cycling', OPEN_IN_STACK) }}>
             {t('power.noFtp')}
           </Notice>
         </View>
@@ -77,7 +78,7 @@ function PowerCardImpl({ power }: { power: RidePower }) {
               {t('power.explain')}
             </Txt>
             {power.avgWkg !== null ? (
-              <Button label={t('power.profileLink')} variant="ghost" icon="person-outline" onPress={() => router.push('/settings/profile')} />
+              <Button label={t('power.profileLink')} variant="ghost" icon="person-outline" onPress={() => router.push('/settings/profile', OPEN_IN_STACK)} />
             ) : null}
           </View>
         </Details>

@@ -15,6 +15,7 @@ import { useSourceFacts } from '@/features/sources/useSourceFacts';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
 import { HuaweiWear } from '@/wear';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const DESTINATION: Record<SourceId, Href> = {
   watch: '/watch',
@@ -114,7 +115,7 @@ export function SourcesScreen() {
               </AppText>
               <Card style={styles.card}>
                 {connected.map((row, i) => (
-                  <SourceItem key={row.id} row={row} first={i === 0} onPress={() => router.push(DESTINATION[row.id])} />
+                  <SourceItem key={row.id} row={row} first={i === 0} onPress={() => router.push(DESTINATION[row.id], OPEN_IN_STACK)} />
                 ))}
               </Card>
             </View>
@@ -126,7 +127,7 @@ export function SourcesScreen() {
               </AppText>
               <Card style={styles.card}>
                 {available.map((row, i) => (
-                  <SourceItem key={row.id} row={row} first={i === 0} onPress={() => router.push(DESTINATION[row.id])} />
+                  <SourceItem key={row.id} row={row} first={i === 0} onPress={() => router.push(DESTINATION[row.id], OPEN_IN_STACK)} />
                 ))}
               </Card>
             </View>

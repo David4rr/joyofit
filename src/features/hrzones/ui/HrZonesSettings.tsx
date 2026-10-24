@@ -53,6 +53,7 @@ import { BpmStepper } from './BpmStepper';
 import { ValueRow } from './ValueRow';
 import { ZoneBand } from './ZoneBand';
 import { ZoneTable } from './ZoneTable';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const WATCH_LTHR_DAYS = 120;
 
@@ -233,7 +234,7 @@ export function HrZonesSettings() {
           </View>
         </ValueRow>
         {!hasProfile && draft.maxHr === null ? (
-          <Notice icon="person-outline" action={{ label: t('hrZones.rates.openProfile'), onPress: () => router.push('/settings/profile') }}>
+          <Notice icon="person-outline" action={{ label: t('hrZones.rates.openProfile'), onPress: () => router.push('/settings/profile', OPEN_IN_STACK) }}>
             {t('hrZones.rates.noProfile', { age: fmtInt(age) })}
           </Notice>
         ) : null}

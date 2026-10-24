@@ -18,6 +18,7 @@ import { useCloud } from '@/state/CloudProvider';
 import { spacing } from '@/theme';
 
 import { strengthGlance } from './strengthWeek';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const DIARY_URL = 'https://joyorogo.com/makan?utm_source=joyofit&utm_medium=app&utm_campaign=evergreen-today-strength';
 
@@ -60,9 +61,9 @@ export function PhoneOnlyLinks() {
   const router = useRouter();
   return (
     <Card style={styles.flush}>
-      <NavRow icon="library-outline" tint="workouts" title={t('noWatch.library.title')} subtitle={t('noWatch.library.subtitle')} onPress={() => router.push('/coach/library')} />
+      <NavRow icon="library-outline" tint="workouts" title={t('noWatch.library.title')} subtitle={t('noWatch.library.subtitle')} onPress={() => router.push('/coach/library', OPEN_IN_STACK)} />
       <Divider />
-      <NavRow icon="calendar-outline" tint="steps" title={t('noWatch.history.title')} subtitle={t('noWatch.history.subtitle')} onPress={() => router.push('/strength/history')} />
+      <NavRow icon="calendar-outline" tint="steps" title={t('noWatch.history.title')} subtitle={t('noWatch.history.subtitle')} onPress={() => router.push('/strength/history', OPEN_IN_STACK)} />
     </Card>
   );
 }

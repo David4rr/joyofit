@@ -11,6 +11,7 @@ import { isActive } from '@/features/live/liveWorkout';
 import { isStrengthSport } from '@/features/strength/watchLive';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type LiveWorkout } from '@/wear';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** Set once the location explanation was shown, so the dialog does not come back on every launch. */
 const GPS_EXPLAINED_KEY = 'joyofit.gpsExplained';
@@ -75,7 +76,7 @@ export function LiveWorkoutProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (activeId === null || opened.current === activeId || !foreground || !navigatorReady) return;
     opened.current = activeId;
-    router.navigate(strength ? '/strength/watch-pick' : '/workout-live');
+    router.navigate(strength ? '/strength/watch-pick' : '/workout-live', OPEN_IN_STACK);
     // `strength` is read once per workout: the type may arrive a poll later and must not open a second screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, foreground, navigatorReady, router]);

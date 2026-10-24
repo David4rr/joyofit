@@ -10,6 +10,7 @@ import { Card, Screen } from '@/components/Screen';
 
 import { SupportedWatches } from './SupportedWatches';
 import { spacing } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /**
  * Shown on the Watch tab to a phone that has never had a watch, before Bluetooth is asked for. A watch is optional: this says what it
@@ -40,7 +41,7 @@ export function WatchIntro({ onContinue }: { onContinue: () => void }) {
           title={t('watch:sensors.intro.title')}
           subtitle={t('watch:sensors.intro.subtitle')}
           style={styles.sensorRow}
-          onPress={() => router.push('/watch/sensors')}
+          onPress={() => router.push('/watch/sensors', OPEN_IN_STACK)}
         />
       </Card>
       <SupportedWatches />

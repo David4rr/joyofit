@@ -8,6 +8,7 @@ import { LIVE_ROUTE, OPEN_LIVE } from '@/features/record/liveRoute';
 import { StartWorkoutSheet } from '@/features/workouts/ui/StartWorkoutSheet';
 import { errorMessage } from '@/format';
 import { useRecorder } from '@/state/RecorderProvider';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface StartWorkoutValue {
   /** Opens the "Start workout" sheet over whatever screen is showing. */
@@ -34,7 +35,7 @@ export function StartWorkoutProvider({ children }: { children: ReactNode }) {
   const importFit = async () => {
     try {
       const picked = await pickFitFile();
-      if (picked) router.push({ pathname: '/settings/import-fit', params: { uri: picked.uri } });
+      if (picked) router.push({ pathname: '/settings/import-fit', params: { uri: picked.uri } }, OPEN_IN_STACK);
     } catch (e) {
       setPickError(errorMessage(e));
     }
@@ -49,9 +50,9 @@ export function StartWorkoutProvider({ children }: { children: ReactNode }) {
         recording={snapshot.phase !== 'idle'}
         onRecord={() => router.navigate(LIVE_ROUTE, OPEN_LIVE)}
         onStrength={() => router.push('/strength')}
-        onManual={() => router.push('/workouts/manual')}
+        onManual={() => router.push('/workouts/manual', OPEN_IN_STACK)}
         onImportFit={() => void importFit()}
-        onLoop={() => router.push('/routes/loop')}
+        onLoop={() => router.push('/routes/loop', OPEN_IN_STACK)}
       />
       <ConfirmDialog
         visible={pickError !== null}

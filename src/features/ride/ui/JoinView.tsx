@@ -14,6 +14,7 @@ import { spacing } from '@/theme';
 
 import { RIDE_WEB_URL } from '../links';
 import { cleanCode, isCompleteCode } from './format';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** Not in a room: the six digit code from the game's screen (prefilled when the QR opened the app), and why joining can fail. */
 export function JoinView({ initialCode }: { initialCode: string }) {
@@ -45,7 +46,7 @@ export function JoinView({ initialCode }: { initialCode: string }) {
         {error ? (
           <Notice
             tone="danger"
-            action={error.kind === 'notSignedIn' ? { label: t('error.notSignedInAction'), onPress: () => router.push('/settings/akun') } : undefined}>
+            action={error.kind === 'notSignedIn' ? { label: t('error.notSignedInAction'), onPress: () => router.push('/settings/akun', OPEN_IN_STACK) } : undefined}>
             {t(`error.${error.kind}`)}
           </Notice>
         ) : null}

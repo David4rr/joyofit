@@ -9,7 +9,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Details } from '@/components/Details';
 import { Segmented } from '@/components/Segmented';
-import { useHideTabBar } from '@/components/navigation';
+import { useHideTabBar, OPEN_IN_STACK } from '@/components/navigation';
 import { PressableScale } from '@/components/PressableScale';
 import { LoadingState, Notice } from '@/components/States';
 import { LIVE_ROUTE, OPEN_LIVE } from '@/features/record/liveRoute';
@@ -333,7 +333,7 @@ function LoopMap({ maplibre }: { maplibre: MapLibre }) {
                 onExpandedChange={setExpanded}
                 onOpenHome={() => setSheet('home')}
                 onBegin={() => router.navigate({ pathname: LIVE_ROUTE, params: { sport: prefs.activity } }, OPEN_LIVE)}
-                onOpenSaved={(id) => router.push({ pathname: '/routes/[id]', params: { id } })}
+                onOpenSaved={(id) => router.push({ pathname: '/routes/[id]', params: { id } }, OPEN_IN_STACK)}
               />
             )}
           </View>
@@ -751,7 +751,7 @@ function PushOutcomeView({ planner }: { planner: LoopPlanner }) {
   const outcome = push.outcome;
   if (!outcome) return null;
   const openRoute = saved ? (
-    <Button label={t('push.openRoute')} variant="ghost" onPress={() => router.push({ pathname: '/routes/[id]', params: { id: saved.id } })} />
+    <Button label={t('push.openRoute')} variant="ghost" onPress={() => router.push({ pathname: '/routes/[id]', params: { id: saved.id } }, OPEN_IN_STACK)} />
   ) : null;
   if (outcome.kind === 'sent') {
     return (

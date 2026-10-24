@@ -9,6 +9,7 @@ import { ButtonRow } from '@/components/ButtonRow';
 import { Notice } from '@/components/States';
 import { spacing, useTheme } from '@/theme';
 import { aiNotes } from '../stores';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface ProposedNotesProps {
   notes: readonly string[];
@@ -54,7 +55,7 @@ export function ProposedNotes({ notes, disabled, onSaved, onDismiss }: ProposedN
         </View>
       ))}
       {full ? (
-        <Notice tone="danger" action={{ label: t('notes.openList'), onPress: () => router.push('/settings/ai-notes') }}>
+        <Notice tone="danger" action={{ label: t('notes.openList'), onPress: () => router.push('/settings/ai-notes', OPEN_IN_STACK) }}>
           {t('notes.fullHere')}
         </Notice>
       ) : null}

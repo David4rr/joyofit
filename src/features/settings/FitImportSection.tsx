@@ -9,6 +9,7 @@ import { isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { useFitImport } from '@/features/fitimport/useFitImport';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const HEALTH_APP = isIos ? 'Apple Health' : 'Health Connect';
 
@@ -50,7 +51,7 @@ export function FitImportSection() {
               icon="checkmark-circle"
               action={{
                 label: t('fitImport.openWorkout'),
-                onPress: () => router.push({ pathname: '/workouts/[id]', params: { id: String(result.workoutId) } }),
+                onPress: () => router.push({ pathname: '/workouts/[id]', params: { id: String(result.workoutId) } }, OPEN_IN_STACK),
               }}>
               {result.message}
             </Notice>

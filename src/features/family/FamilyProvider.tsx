@@ -11,6 +11,7 @@ import { refreshPushToken } from '@/features/family/push';
 import { useFamilyUploader } from '@/features/family/useFamilyUploader';
 import { useLocale } from '@/i18n';
 import { useCloud } from '@/state/CloudProvider';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface FamilyContextValue {
   /** The cloud server is set in this build and a JoyoRogo account is signed in: the family routes can be called. */
@@ -121,7 +122,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!navigationReady || !lastResponse || lastResponse.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
     const href = notificationHref(lastResponse.notification.request.content.data);
-    if (href) router.push(href);
+    if (href) router.push(href, OPEN_IN_STACK);
   }, [lastResponse, navigationReady, router]);
 
   const showUpsell = useCallback(() => setUpsell(true), []);

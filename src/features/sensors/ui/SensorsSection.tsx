@@ -13,6 +13,7 @@ import { useSensors } from '@/state/SensorsProvider';
 
 import { radioProblem } from './format';
 import { SensorLinkRow } from './SensorLinkRow';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /**
  * The Watch tab's "Sensor" card: every paired sensor as a row with its link, battery and last value and the one button to connect or
@@ -24,7 +25,7 @@ export function SensorsSection() {
   const router = useRouter();
   const { saved, loaded, hub } = useSensors();
   if (!loaded) return null;
-  const open = () => router.push('/watch/sensors');
+  const open = () => router.push('/watch/sensors', OPEN_IN_STACK);
   // Bluetooth off or not allowed concerns every row alike, so it is said once above them.
   const problem = saved.length > 0 ? radioProblem(hub, null, null) : null;
 

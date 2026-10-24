@@ -58,6 +58,7 @@ import { RenameDialog } from './RenameDialog';
 import { ownChipLabel } from './status';
 import { useChatScroll } from './useChatScroll';
 import { useRogoStatus } from './useRogoStatus';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** How often the growing text is shown: a fast stream is read into a ref at full speed and committed at most this often. */
 const COMMIT_MS = 50;
@@ -524,7 +525,7 @@ export function JoyoAiChat() {
     <View style={styles.notices}>
       {flagged ? <Notice icon="medkit">{tc('chat.flagged')}</Notice> : null}
       {toolsOff ? (
-        <Notice icon="construct" action={{ label: t('errors.action.model'), onPress: () => router.push({ pathname: '/settings/ai', params: { model: '1' } }) }}>
+        <Notice icon="construct" action={{ label: t('errors.action.model'), onPress: () => router.push({ pathname: '/settings/ai', params: { model: '1' } }, OPEN_IN_STACK) }}>
           {t('chat.toolsOff')}
         </Notice>
       ) : null}
@@ -555,14 +556,14 @@ export function JoyoAiChat() {
             <AppText variant="caption" muted>
               {t('chat.ownBody')}
             </AppText>
-            <Button label={t('chat.ownCta')} variant="secondary" icon="key" onPress={() => router.push('/settings/ai-setup')} />
+            <Button label={t('chat.ownCta')} variant="secondary" icon="key" onPress={() => router.push('/settings/ai-setup', OPEN_IN_STACK)} />
           </Card>
         </>
       ) : null}
       {gate === 'blocked' && access && !access.ok ? <GateCard reason={access.reason} provider={settings.provider} /> : null}
       {gate === 'ready' && !coach ? <Skeleton width="100%" height={220} radius="card" /> : null}
       {listReady && own && !cloud.signedIn ? (
-        <Notice icon="restaurant" action={{ label: t('chat.signIn'), onPress: () => router.push('/settings/akun') }}>
+        <Notice icon="restaurant" action={{ label: t('chat.signIn'), onPress: () => router.push('/settings/akun', OPEN_IN_STACK) }}>
           {t('chat.noFood')}
         </Notice>
       ) : null}

@@ -12,6 +12,7 @@ import { UpgradeCard } from '@/features/pro/UpgradeCard';
 import { StyleSheet, View } from 'react-native';
 import { spacing } from '@/theme';
 import { useCoachAccess } from '../useCoachAccess';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** Asks a signed-out person to sign in (Settings, Cloud sync, is where the JoyoRogo sign-in lives). */
 export function CoachSignIn() {
@@ -28,7 +29,7 @@ export function CoachSignIn() {
       <AppText variant="caption" muted>
         {t('access.signIn.body')}
       </AppText>
-      <Button label={t('access.signIn.cta')} variant="primary" icon="log-in" onPress={() => router.push('/settings/akun')} />
+      <Button label={t('access.signIn.cta')} variant="primary" icon="log-in" onPress={() => router.push('/settings/akun', OPEN_IN_STACK)} />
     </Card>
   );
 }

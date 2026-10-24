@@ -29,6 +29,7 @@ import { ModelPicker } from './ModelPicker';
 import { RadioRow } from './RadioRow';
 import { CEILING_CHOICES, INSIGHT_TOKENS, modelShort } from './status';
 import { useRogoStatus } from './useRogoStatus';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 type Confirm = { kind: 'memory' } | { kind: 'all' } | { kind: 'key'; provider: ProviderId } | null;
 
@@ -170,7 +171,7 @@ export function AiSettingsScreen() {
                 title={t('prefs.engine.own')}
                 subtitle={ownLine}
                 selected={settings.engine === 'byok'}
-                onPress={() => (ownReady ? aiSettings.update({ engine: 'byok' }) : router.push('/settings/ai-setup'))}
+                onPress={() => (ownReady ? aiSettings.update({ engine: 'byok' }) : router.push('/settings/ai-setup', OPEN_IN_STACK))}
               />
             )}
           </View>
@@ -178,11 +179,11 @@ export function AiSettingsScreen() {
             <Notice icon="person">{t('gate.minor.body')}</Notice>
           ) : configured ? (
             <ButtonRow>
-              <Button label={t('prefs.engine.change')} icon="key" onPress={() => router.push('/settings/ai-setup')} />
+              <Button label={t('prefs.engine.change')} icon="key" onPress={() => router.push('/settings/ai-setup', OPEN_IN_STACK)} />
               <Button label={t('prefs.engine.pickModel')} icon="options" onPress={() => setPickModel((v) => !v)} />
             </ButtonRow>
           ) : (
-            <Button label={t('prefs.engine.setup')} variant="primary" icon="key" onPress={() => router.push('/settings/ai-setup')} />
+            <Button label={t('prefs.engine.setup')} variant="primary" icon="key" onPress={() => router.push('/settings/ai-setup', OPEN_IN_STACK)} />
           )}
           {!minor && configured && provider === 'gemini' ? <Notice tone="danger" icon="warning">{t('consent.gemini')}</Notice> : null}
           {minor ? null : (
@@ -251,8 +252,8 @@ export function AiSettingsScreen() {
           {minor ? null : (
             <>
               <Card style={styles.flush}>
-                <NavRow icon="document-text" title={t('prefs.data.notes', { n: fmtInt(noteCount) })} subtitle={t('prefs.data.notesHint')} onPress={() => router.push('/settings/ai-notes')} />
-                <NavRow icon="eye" title={t('prefs.data.sent')} subtitle={t('prefs.data.sentHint')} onPress={() => router.push('/settings/ai-data')} />
+                <NavRow icon="document-text" title={t('prefs.data.notes', { n: fmtInt(noteCount) })} subtitle={t('prefs.data.notesHint')} onPress={() => router.push('/settings/ai-notes', OPEN_IN_STACK)} />
+                <NavRow icon="eye" title={t('prefs.data.sent')} subtitle={t('prefs.data.sentHint')} onPress={() => router.push('/settings/ai-data', OPEN_IN_STACK)} />
               </Card>
               <AppText variant="caption" muted>
                 {t('prefs.data.usage', { tokens: fmtInt(usage.inputTokens + usage.outputTokens), calls: fmtInt(usage.calls) })}

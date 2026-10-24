@@ -19,6 +19,7 @@ import type { PersonalRecord } from '../calc';
 import type { Catalog } from '../catalog';
 import { sendStrengthToStrava, strengthStravaStatus } from '../strava';
 import type { StrengthWorkout } from '../types';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface Props {
   workout: StrengthWorkout;
@@ -85,7 +86,7 @@ export function StrengthActions({ workout, catalog, records }: Props): ReactElem
           <AppText variant="caption" muted>
             {t('strengthshare:actions.connectHint')}
           </AppText>
-          <Button label={t('strengthshare:actions.connect')} variant="secondary" icon="link" onPress={() => router.push('/settings/strava')} />
+          <Button label={t('strengthshare:actions.connect')} variant="secondary" icon="link" onPress={() => router.push('/settings/strava', OPEN_IN_STACK)} />
         </>
       ) : (
         <>

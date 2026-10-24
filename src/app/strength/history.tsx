@@ -32,6 +32,7 @@ import { WeekStrip } from '@/features/strength/ui/WeekStrip';
 import { IconAction } from '@/features/courses/IconAction';
 import { fmtDate, fmtDay, fmtInt, useLocale } from '@/i18n';
 import { spacing, useColors } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 type HistoryView = 'list' | 'calendar';
 
@@ -77,7 +78,7 @@ export default function StrengthHistoryScreen() {
     (workout: StrengthWorkout) => router.push({ pathname: '/strength/summary/[id]', params: { id: workout.id } }),
     [router],
   );
-  const openWatch = useCallback((row: WatchRow) => router.push({ pathname: '/workouts/[id]', params: { id: String(row.id) } }), [router]);
+  const openWatch = useCallback((row: WatchRow) => router.push({ pathname: '/workouts/[id]', params: { id: String(row.id) } }, OPEN_IN_STACK), [router]);
 
   const options = useMemo(
     () => [

@@ -16,6 +16,7 @@ import { UpgradeCard } from '@/features/pro/UpgradeCard';
 import { CoachSignIn } from './CoachGate';
 import { FeelPicker } from './FeelPicker';
 import { SuggestionBlock } from './SuggestionBlock';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 function ProCard({ dataVersion, availability }: { dataVersion: number; availability: NightHrvAvailability | null }) {
   const { t } = useTranslation('coach');
@@ -33,7 +34,7 @@ function ProCard({ dataVersion, availability }: { dataVersion: number; availabil
         {coach.needsFeel ? <FeelPicker feel={coach.feel} onChange={coach.setFeel} /> : null}
         <View style={styles.actions}>
           <Button label={t('card.details')} variant="secondary" icon="chevron-forward" onPress={() => router.push('/coach')} style={styles.action} />
-          {hasPlan ? null : <Button label={t('card.createPlan')} variant="primary" icon="add" onPress={() => router.push('/coach/setup')} style={styles.action} />}
+          {hasPlan ? null : <Button label={t('card.createPlan')} variant="primary" icon="add" onPress={() => router.push('/coach/setup', OPEN_IN_STACK)} style={styles.action} />}
         </View>
       </Card>
     </FadeIn>

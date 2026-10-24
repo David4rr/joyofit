@@ -20,6 +20,7 @@ import { formatElevation, formatRouteDistance, type SavedRoute } from './routeMo
 import { RouteThumbnail } from './RouteThumbnail';
 import { deleteRoute, listRouteCards, type RouteCard } from './routeStore';
 import { WorkoutPickerSheet } from './WorkoutPickerSheet';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const WAY_KEYS = ['w1', 'w2', 'w3', 'w4', 'w5'] as const;
 
@@ -92,12 +93,12 @@ export function RouteLibraryScreen() {
     }, [load]),
   );
 
-  const open = (id: string) => router.push({ pathname: '/routes/[id]', params: { id } });
+  const open = (id: string) => router.push({ pathname: '/routes/[id]', params: { id } }, OPEN_IN_STACK);
 
   const pickFile = async () => {
     try {
       const picked = await pickRouteFile();
-      if (picked) router.push({ pathname: '/routes/import', params: { uri: picked.uri, name: picked.name } });
+      if (picked) router.push({ pathname: '/routes/import', params: { uri: picked.uri, name: picked.name } }, OPEN_IN_STACK);
     } catch (e) {
       setError(t('library.pickFailed', { message: errorMessage(e) }));
     }
@@ -126,8 +127,8 @@ export function RouteLibraryScreen() {
       }}>
       <Section title={t('library.addTitle')} icon="add-circle" tint="workouts">
         <Button label={t('library.importFile')} icon="document-attach" variant="primary" onPress={() => void pickFile()} />
-        <Button label={t('library.loopFromHome')} icon="repeat" onPress={() => router.push('/routes/loop')} />
-        <Button label={t('library.drawOnMap')} icon="create" onPress={() => router.push('/routes/draw')} />
+        <Button label={t('library.loopFromHome')} icon="repeat" onPress={() => router.push('/routes/loop', OPEN_IN_STACK)} />
+        <Button label={t('library.drawOnMap')} icon="create" onPress={() => router.push('/routes/draw', OPEN_IN_STACK)} />
         <Button label={t('library.fromWorkout')} icon="fitness" onPress={() => setPickerOpen(true)} />
       </Section>
 

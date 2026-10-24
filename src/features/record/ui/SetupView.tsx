@@ -29,6 +29,7 @@ import { StartButton } from './StartButton';
 import { StatPreview } from './StatPreview';
 import { useGpsSegment, useSensorsSegment, useStepsSegment } from './statusSegments';
 import { useGpsWarmUp } from './useGpsWarmUp';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const LOCATION_DENIED = 'ERR_LOCATION_PERMISSION';
 
@@ -72,7 +73,7 @@ export function SetupView({ sport, onSport, notice, onBack }: SetupViewProps) {
   const fix = warming ? snapshot.fix : null;
   const chip = gpsChip(plan, permissions.location, fix);
   const gpsSegment = useGpsSegment(chip, fix);
-  const sensorsSegment = useSensorsSegment(autoSensors.length, () => router.push('/watch/sensors'));
+  const sensorsSegment = useSensorsSegment(autoSensors.length, () => router.push('/watch/sensors', OPEN_IN_STACK));
   const stepsSegment = useStepsSegment(permissions.steps === 'granted', () => setStepsOpen((open) => !open));
   const segments = plan.steps ? [gpsSegment, sensorsSegment, stepsSegment] : [gpsSegment, sensorsSegment];
 
@@ -144,8 +145,8 @@ export function SetupView({ sport, onSport, notice, onBack }: SetupViewProps) {
 
       <View style={styles.actions}>
         <TextAction icon="trail-sign-outline" label={t('record.setup.actions.routes')} onPress={() => router.push('/routes')} />
-        <TextAction icon="repeat" label={t('record.setup.actions.loop')} onPress={() => router.push('/routes/loop')} />
-        <TextAction icon="bluetooth" label={t('record.setup.sensors')} onPress={() => router.push('/watch/sensors')} />
+        <TextAction icon="repeat" label={t('record.setup.actions.loop')} onPress={() => router.push('/routes/loop', OPEN_IN_STACK)} />
+        <TextAction icon="bluetooth" label={t('record.setup.sensors')} onPress={() => router.push('/watch/sensors', OPEN_IN_STACK)} />
       </View>
     </RecordStage>
   );

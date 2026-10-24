@@ -60,6 +60,7 @@ import { TodayNoWatch } from '@/features/today/TodayNoWatch';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
 import { sportLabel } from '@/features/workouts/sportLabel';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** Splits `1.23 km` into its number and unit. */
 function splitDistance(meters: number): { value: string; unit: string } {
@@ -213,7 +214,7 @@ function WatchToday() {
           goal={goal}
           heart={heartReading}
           nowSec={Math.floor(nowMs / 1000)}
-          onEnableHeartRate={() => router.push('/settings/sync')}
+          onEnableHeartRate={() => router.push('/settings/sync', OPEN_IN_STACK)}
           battery={battery}
           lastSync={lastSync}
           action={
@@ -246,7 +247,7 @@ function WatchToday() {
                       carbs: formatGrams(liveWorkout.carbGrams),
                     })
               }
-              onPress={() => router.push(isStrengthSport(liveWorkout.sportType) ? '/strength/watch-pick' : '/workout-live')}
+              onPress={() => router.push(isStrengthSport(liveWorkout.sportType) ? '/strength/watch-pick' : '/workout-live', OPEN_IN_STACK)}
             />
           </Card>
         ) : null}

@@ -6,6 +6,7 @@ import { noStagesHint } from '@/features/sleep/noStagesHint';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { useTranslation } from '@/i18n';
 import { HuaweiWear } from '@/wear';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /**
  * Shown where a night has no stages, collapsed to one row until opened: says so and, when the TruSleep switch could change it, points to it in
@@ -21,7 +22,7 @@ export function NoStagesNotice() {
     <CollapsibleNotice
       id="sleep.noStages"
       title={t('noStages.title')}
-      action={hint.openSettings ? { label: t('noStages.openSetting'), onPress: () => router.push('/settings/sync') } : undefined}>
+      action={hint.openSettings ? { label: t('noStages.openSetting'), onPress: () => router.push('/settings/sync', OPEN_IN_STACK) } : undefined}>
       {hint.text}
     </CollapsibleNotice>
   );

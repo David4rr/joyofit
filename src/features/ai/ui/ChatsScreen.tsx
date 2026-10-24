@@ -18,6 +18,7 @@ import { spacing, useColors } from '@/theme';
 import type { ConversationMeta } from '../conversations';
 import { aiChats } from '../stores';
 import { displayTitle, toSeconds } from './chatState';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** The conversation list, live. The store builds a new array on every read, so the snapshot is kept while nothing in it changed. */
 function useChatList(): ConversationMeta[] {
@@ -47,7 +48,7 @@ export function ChatsScreen() {
   const openChat = (id: string | null) => {
     aiChats.setCurrent(id);
     // The chat goes on top of this list (the history button pops the chat, so none is under it): Back from the chat comes here.
-    router.push('/joyo/chat');
+    router.push('/joyo/chat', OPEN_IN_STACK);
   };
 
   return (

@@ -53,6 +53,7 @@ import { WorkoutAnalysisView, useAnalysisT } from '@/features/workouts/analysis/
 import { useAnalysisPalette, useMapTheme } from '@/features/workouts/analysis/palette';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import { parseSummary } from '@/features/workouts/summary';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface Loaded {
   workout: StrengthWorkout;
@@ -244,7 +245,7 @@ export default function StrengthSummaryScreen() {
         </View>
 
         {workout.kcal !== null && workout.kcalSource !== 'watch' && !hasUserWeight() ? (
-          <Notice icon="scale-outline" action={{ label: t('strength:summary.kcalWeightAction'), onPress: () => router.push('/settings/profile') }}>
+          <Notice icon="scale-outline" action={{ label: t('strength:summary.kcalWeightAction'), onPress: () => router.push('/settings/profile', OPEN_IN_STACK) }}>
             {t('strength:summary.kcalWeightHint', { kg: DEFAULT_WEIGHT_KG })}
           </Notice>
         ) : null}
@@ -366,7 +367,7 @@ function WatchTiles({ watch }: { watch: WorkoutRow }) {
       title={t('summary.watch')}
       icon="watch-outline"
       tint="heart"
-      onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: String(watch.id) } })}>
+      onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: String(watch.id) } }, OPEN_IN_STACK)}>
       <View style={styles.tileRow}>
         <StatTile icon="heart-outline" tint="heart" label={t('summary.avgHr')} value={watch.avgHr ? fmtInt(watch.avgHr) : t('table.dash')} unit={t('summary.bpm')} />
         <StatTile icon="pulse-outline" tint="heart" label={t('summary.maxHr')} value={watch.maxHr ? fmtInt(watch.maxHr) : t('table.dash')} unit={t('summary.bpm')} />
@@ -425,7 +426,7 @@ function StrapTiles({ strap }: { strap: StrapRow }) {
       title={t('summary.strap')}
       icon="heart-outline"
       tint="heart"
-      onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: String(strap.rowId) } })}>
+      onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: String(strap.rowId) } }, OPEN_IN_STACK)}>
       {strap.sensors.length > 0 ? (
         <AppText variant="caption" muted>
           {t('summary.strapFrom', { name: strap.sensors.join(', ') })}

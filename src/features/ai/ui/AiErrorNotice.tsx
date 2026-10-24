@@ -10,14 +10,15 @@ import { spacing } from '@/theme';
 import { PROVIDERS } from '../providers';
 import type { ProviderId } from '../types';
 import type { AiErrorView, ErrorTarget } from './errors';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** Opens where an error's next step leads: the key setup, the model picker in settings, the settings, or the provider's key page. */
 export function useErrorTarget(provider: ProviderId | null): (target: ErrorTarget) => void {
   const router = useRouter();
   return (target) => {
-    if (target === 'setup') router.push('/settings/ai-setup');
-    else if (target === 'model') router.push({ pathname: '/settings/ai', params: { model: '1' } });
-    else if (target === 'settings') router.push('/settings/ai');
+    if (target === 'setup') router.push('/settings/ai-setup', OPEN_IN_STACK);
+    else if (target === 'model') router.push({ pathname: '/settings/ai', params: { model: '1' } }, OPEN_IN_STACK);
+    else if (target === 'settings') router.push('/settings/ai', OPEN_IN_STACK);
     else {
       const url = provider ? PROVIDERS[provider].keyUrl : null;
       if (url) void Linking.openURL(url).catch(() => {});

@@ -27,6 +27,7 @@ import { guideState, type Guide } from '../guide';
 import { getGuide, startGuide, stopGuide } from '../guideStore';
 import { clearLactateTest, saveLactateTest, useLactateTest } from '../lactate';
 import { analyseTrial, BLOCKING, EFFORT_SEC, findEffortStart, WARNING_PROBLEMS, type TrialProblem } from '../trial';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** Only runs that can hold the 30 minutes (with a minute to spare) are offered. */
 const MIN_RUN_SEC = 31 * 60;
@@ -169,7 +170,7 @@ export function LactateTestScreen() {
             <AppText variant="body">{say}</AppText>
             {!cues ? <Notice icon="notifications-off-outline">{t('lactate.noCues')}</Notice> : null}
             <ButtonRow>
-              <Button label={t('lactate.record')} variant="secondary" icon="radio-button-on" onPress={() => router.push('/workouts/record')} />
+              <Button label={t('lactate.record')} variant="secondary" icon="radio-button-on" onPress={() => router.push('/workouts/record', OPEN_IN_STACK)} />
               <Button label={t('lactate.cancel')} variant="ghost" onPress={() => void cancel()} />
             </ButtonRow>
           </View>

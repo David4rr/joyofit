@@ -14,6 +14,7 @@ import { useSetupChecklist } from '@/features/setup/useSetupChecklist';
 import { HEALTH_STORE } from '@/features/sources/store';
 import { useWatch } from '@/state/WatchProvider';
 import { HIT, spacing, useColors } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /**
  * Today: what is still missing for JoyoFit to work fully, detected from the app's own state (watch paired, first sync, the
@@ -37,11 +38,11 @@ export function SetupChecklistCard() {
         if (isLinkUp(linkState) && device !== null) return void sync();
         return router.push('/watch');
       case 'health':
-        return router.push('/settings/health');
+        return router.push('/settings/health', OPEN_IN_STACK);
       case 'account':
-        return router.push('/settings/akun');
+        return router.push('/settings/akun', OPEN_IN_STACK);
       case 'profile':
-        return router.push('/settings/profile');
+        return router.push('/settings/profile', OPEN_IN_STACK);
     }
   };
 

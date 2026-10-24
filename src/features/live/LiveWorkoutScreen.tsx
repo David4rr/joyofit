@@ -36,6 +36,7 @@ import { useWatch } from '@/state/WatchProvider';
 import { radius, spacing, useColors } from '@/theme';
 import { HuaweiWear, type LiveWorkout } from '@/wear';
 import { sportLabel } from '@/features/workouts/sportLabel';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const TICK_MS = 1_000;
 const DASH = '--';
@@ -73,7 +74,7 @@ export function LiveWorkoutScreen() {
     <Screen>
       <HiddenTabHeader title={live.sportName ? sportLabel(live.sportName) : t('live.title')} />
       {isActive(live) && live.sportType === null ? (
-        <Button label={t('live.logStrength')} icon="barbell" onPress={() => router.push('/strength/watch-pick')} />
+        <Button label={t('live.logStrength')} icon="barbell" onPress={() => router.push('/strength/watch-pick', OPEN_IN_STACK)} />
       ) : null}
       {endPromptVisible(live, kept) ? (
         <Card>

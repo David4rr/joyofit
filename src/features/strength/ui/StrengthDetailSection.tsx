@@ -16,6 +16,7 @@ import { spacing } from '@/theme';
 
 import { timerText } from '../logFormat';
 import { setText, volumeText } from './liftFormat';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface StrengthDetailSectionProps {
   strength: StrengthWorkout;
@@ -74,7 +75,7 @@ export function StrengthDetailSection({ strength, catalog }: StrengthDetailSecti
         label={t('detail.open')}
         variant="secondary"
         icon="open-outline"
-        onPress={() => router.push({ pathname: '/strength/summary/[id]', params: { id: strength.id } })}
+        onPress={() => router.push({ pathname: '/strength/summary/[id]', params: { id: strength.id } }, OPEN_IN_STACK)}
       />
     </Section>
   );

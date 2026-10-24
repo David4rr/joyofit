@@ -22,6 +22,7 @@ import { GameCard } from './GameCard';
 import { JoinView } from './JoinView';
 import { StatusCard } from './StatusCard';
 import { inRoom } from './format';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** The tag this screen holds the screen on under, so other holds are not released with it. */
 const KEEP_AWAKE_TAG = 'ride';
@@ -144,7 +145,7 @@ function RoomView() {
               {t('ride:lobby.hint')}
             </AppText>
             {!sensorsPaired ? (
-              <Notice icon="bluetooth" action={{ label: t('ride:lobby.manageSensors'), onPress: () => router.push('/watch/sensors') }}>
+              <Notice icon="bluetooth" action={{ label: t('ride:lobby.manageSensors'), onPress: () => router.push('/watch/sensors', OPEN_IN_STACK) }}>
                 {t('ride:lobby.noSensors')}
               </Notice>
             ) : null}

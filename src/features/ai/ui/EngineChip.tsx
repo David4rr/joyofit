@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { spacing, useTheme } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** Who answers right now ("claude-haiku-5.5, kunci sendiri" or "JoyoRogo Pro 3/20"); tapping it opens the Joyo AI settings. */
 export function EngineChip({ label }: { label: string }) {
@@ -16,7 +17,7 @@ export function EngineChip({ label }: { label: string }) {
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={t('chip.open', { engine: label })}
-      onPress={() => router.push('/settings/ai')}
+      onPress={() => router.push('/settings/ai', OPEN_IN_STACK)}
       scaleTo={0.97}
       style={[styles.chip, { backgroundColor: colors.muted, borderRadius: radius.control }]}>
       <Ionicons name="chatbubbles" size={16} color={colors.mutedForeground} />

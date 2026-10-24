@@ -15,6 +15,7 @@ import type { NavSnapshot } from '../types';
 import type { RidePalette } from './ridePalette';
 import { RideButton } from './RideButton';
 import { turnArrow } from './turn';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface MapPageProps {
   ctx: FieldContext | null;
@@ -97,7 +98,7 @@ export function MapPage({ ctx, nav, route, position, palette }: MapPageProps) {
         {!covered ? (
           <View style={[styles.notice, { backgroundColor: palette.surface, borderTopColor: palette.hairline }]}>
             <Text style={[styles.noticeText, { color: palette.foreground, fontFamily: fonts.bold }]}>{t('page.map.offlineNotice')}</Text>
-            <RideButton label={t('page.map.offlineAction')} icon="settings-outline" palette={palette} variant="outline" onPress={() => router.push('/settings/bikecomputer')} />
+            <RideButton label={t('page.map.offlineAction')} icon="settings-outline" palette={palette} variant="outline" onPress={() => router.push('/settings/bikecomputer', OPEN_IN_STACK)} />
           </View>
         ) : null}
       </View>

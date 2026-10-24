@@ -36,3 +36,11 @@ export function useHideTabBar(hidden: boolean) {
     }, [navigation, hidden]),
   );
 }
+
+/**
+ * Options for `router.push` / `router.navigate` to a sub-screen of a nested stack from outside that stack (a card on Today opening
+ * Settings > Akun, say). Without `withAnchor` expo-router builds the stack from that one screen, so the tab shows the sub-screen with
+ * nothing under it and no way back to the stack's root (the More menu). `withAnchor` puts the stack's root under it. Harmless when the
+ * stack already exists.
+ */
+export const OPEN_IN_STACK = { withAnchor: true } as const;

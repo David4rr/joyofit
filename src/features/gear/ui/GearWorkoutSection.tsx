@@ -25,6 +25,7 @@ import {
   reminderPending,
 } from '../store';
 import { GearReminderCard } from './GearReminderCard';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 interface State {
   all: Gear[];
@@ -114,7 +115,7 @@ export function GearWorkoutSection({ workout }: { workout: WorkoutRow }) {
           <AppText variant="caption" muted>
             {t('workout.noMatch')}
           </AppText>
-          <Button label={t('workout.manage')} variant="secondary" icon="settings-outline" onPress={() => router.push('/settings/gear')} />
+          <Button label={t('workout.manage')} variant="secondary" icon="settings-outline" onPress={() => router.push('/settings/gear', OPEN_IN_STACK)} />
         </>
       ) : (
         <>

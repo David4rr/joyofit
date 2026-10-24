@@ -23,6 +23,7 @@ import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import { errorMessage } from '@/format';
 import { HIT, spacing, useColors } from '@/theme';
 import { sportLabel } from '@/features/workouts/sportLabel';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** JoyoRogo's limit for a post caption. */
 const CAPTION_MAX = 1000;
@@ -114,7 +115,7 @@ export function ShareToRogoButton({ workout, points, analysis, analysisPending, 
                     icon="open-outline"
                     onPress={() => {
                       close();
-                      router.push({ pathname: '/social/post/[id]', params: { id: postedId } });
+                      router.push({ pathname: '/social/post/[id]', params: { id: postedId } }, OPEN_IN_STACK);
                     }}
                   />
                   <Button label={t('common:actions.done')} onPress={close} />

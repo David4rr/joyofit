@@ -17,6 +17,7 @@ import { spacing, useColors } from '@/theme';
 import { previewDigest } from '../engine';
 import { aiNotes } from '../stores';
 import { TOOL_NAMES } from '../tools';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** The digest is sent as compact JSON at about this many characters per token. */
 const CHARS_PER_TOKEN = 3.5;
@@ -103,7 +104,7 @@ export function DataScreen() {
         <AppText variant="caption" muted>
           {t('data.notesLine', { n: fmtInt(noteCount) })}
         </AppText>
-        <Button label={t('data.notesOpen')} icon="document-text" onPress={() => router.push('/settings/ai-notes')} />
+        <Button label={t('data.notesOpen')} icon="document-text" onPress={() => router.push('/settings/ai-notes', OPEN_IN_STACK)} />
       </Section>
 
       <Section title={t('data.toolsTitle')} icon="search" tint="link">

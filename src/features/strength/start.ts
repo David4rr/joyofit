@@ -5,6 +5,7 @@
 import { router } from 'expo-router';
 
 import type { PlannedInput } from './draft';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 export interface StartInput {
   /** Start from a saved routine (`r...`) or a built-in starter (`builtin:<slug>`). */
@@ -29,8 +30,8 @@ export function startStrengthWorkout(input: StartInput = {}): void {
       ...(input.name ? { name: input.name } : {}),
       ...(input.repeatWorkoutId ? { repeatWorkoutId: input.repeatWorkoutId } : {}),
     },
-  });
+  }, OPEN_IN_STACK);
 }
 
 /** Opens the workout in progress, if any. */
-export const resumeStrengthWorkout = (): void => router.push('/strength/active');
+export const resumeStrengthWorkout = (): void => router.push('/strength/active', OPEN_IN_STACK);

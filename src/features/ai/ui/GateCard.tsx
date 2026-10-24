@@ -10,6 +10,7 @@ import { spacing } from '@/theme';
 import type { ByokBlock } from '../access';
 import { aiSettings } from '../stores';
 import type { ProviderId } from '../types';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const ICON: Record<ByokBlock, IconName> = {
   noProvider: 'key',
@@ -43,7 +44,7 @@ export function GateCard({ reason, provider }: { reason: ByokBlock; provider: Pr
         <Button label={t('gate.useHosted')} variant="primary" icon="swap-horizontal" onPress={useHosted} />
       ) : (
         <>
-          <Button label={t(`gate.${reason}.action`)} variant="primary" icon="key" onPress={() => router.push('/settings/ai-setup')} />
+          <Button label={t(`gate.${reason}.action`)} variant="primary" icon="key" onPress={() => router.push('/settings/ai-setup', OPEN_IN_STACK)} />
           <Button label={t('gate.useHosted')} variant="ghost" onPress={useHosted} />
         </>
       )}

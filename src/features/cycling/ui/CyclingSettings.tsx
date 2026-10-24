@@ -18,6 +18,7 @@ import { spacing } from '@/theme';
 import { zoneBounds } from '../power';
 import { FTP_MAX_W, FTP_MIN_W, getFtp, parseFtp, rideProfile, setFtp } from '../settings';
 import { zoneRangeKind } from './format';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 /** Settings > Bersepeda: FTP with the power zones it gives, the body weight W/kg uses, and the wheel size. */
 export function CyclingSettings() {
@@ -52,7 +53,7 @@ export function CyclingSettings() {
   return (
     <>
       <Section title={tb('settings.link.title')} icon="bicycle">
-        <NavRow icon="speedometer" title={tb('settings.link.row')} subtitle={tb('settings.link.subtitle')} onPress={() => router.push('/settings/bikecomputer')} />
+        <NavRow icon="speedometer" title={tb('settings.link.row')} subtitle={tb('settings.link.subtitle')} onPress={() => router.push('/settings/bikecomputer', OPEN_IN_STACK)} />
       </Section>
 
       <Section title={t('settings.ftp.title')} icon="flash">
@@ -105,7 +106,7 @@ export function CyclingSettings() {
         <AppText variant="caption" muted>
           {t('settings.weight.body', { kg: fmtInt(weightKg) })}
         </AppText>
-        <Button label={t('settings.weight.action')} variant="secondary" icon="person-outline" onPress={() => router.push('/settings/profile')} />
+        <Button label={t('settings.weight.action')} variant="secondary" icon="person-outline" onPress={() => router.push('/settings/profile', OPEN_IN_STACK)} />
       </Section>
 
       <WheelSection />

@@ -32,6 +32,7 @@ import { startOfLocalDay } from '@/features/today/stats';
 import { fmtClock, fmtDate, fmtInt, useLocale } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const BAR_AREA_HEIGHT = 140;
 const GAP: Record<MetricRange, number> = { D: 3, W: 6, M: 2, '3M': 4, Y: 5 };
@@ -219,7 +220,7 @@ export function StepsScreen() {
           title={t('steps.goalTitle')}
           subtitle={isDefault ? t('steps.goalDefault') : undefined}
           value={t('steps.goalValue', { value: fmtInt(goal) })}
-          onPress={() => router.push('/settings/profile')}
+          onPress={() => router.push('/settings/profile', OPEN_IN_STACK)}
         />
       </Card>
       <AppText variant="caption" muted>

@@ -21,6 +21,7 @@ import { useAgo } from '@/features/social/useAgo';
 import { sportIcon } from '@/features/workouts/sportIcon';
 import { errorMessage } from '@/format';
 import { spacing, useColors } from '@/theme';
+import { OPEN_IN_STACK } from '@/components/navigation';
 
 const KIND_ICON: Record<Exclude<RogoPost['kind'], 'latihan'>, IconName> = {
   makan: 'restaurant',
@@ -130,7 +131,7 @@ export function PostCard({ post, onChange, onOpen, linkAuthor = true, inlineMap 
               accessibilityRole="button"
               accessibilityLabel={t('post.openProfile', { name: post.author.name })}
               scaleTo={0.985}
-              onPress={() => router.push({ pathname: '/social/u/[handle]', params: { handle } })}>
+              onPress={() => router.push({ pathname: '/social/u/[handle]', params: { handle } }, OPEN_IN_STACK)}>
               {author}
             </PressableScale>
           ) : (
