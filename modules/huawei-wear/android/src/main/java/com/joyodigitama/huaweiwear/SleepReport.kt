@@ -84,6 +84,15 @@ internal object SleepReport {
   /** Shorter sessions are naps, not "last night". */
   const val MIN_NIGHT_SEC = 3 * 3600L
 
+  /** A short session starting from this local hour (up to [EVENING_END_HOUR] next morning) is an evening doze (`EVENING_START_HOUR` in `stats.ts`). */
+  const val EVENING_START_HOUR = 19
+
+  /** An evening doze starts before this local hour; later starts are daytime naps (`EVENING_END_HOUR` in `stats.ts`). */
+  const val EVENING_END_HOUR = 6
+
+  /** An evening doze joins the session after it when that starts within this long after it ends (`EVENING_JOIN_GAP_SEC` in `stats.ts`). */
+  const val EVENING_JOIN_GAP_SEC = 8 * 3600L
+
   /** Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap (`BLIP_GAP_SEC` in `stats.ts`). */
   const val BLIP_GAP_SEC = 3600L
 
@@ -94,10 +103,23 @@ internal object SleepReport {
   const val MAX_AGE_SEC = 8 * 3600L
 
   /**
-   * The latest session of [segments], chained with gaps up to [SESSION_GAP_SEC] and cut at a segment marked
-   * [SleepSegment.breakBefore] (`lastSleepSession` in `stats.ts`).
+   * Whether a session that started at [prevStart], ended at [prevEnd] and holds [prevAsleepSec] of sleep is an evening
+   * doze that the session starting at [nextStart] continues unless a workout lies between ([nextAfterWorkout]): a short session (under
+   * [MIN_NIGHT_SEC]) starting from [EVENING_START_HOUR]:00 to [EVENING_END_HOUR]:00 local time, with the next session
+   * starting within [EVENING_JOIN_GAP_SEC] of its end (`joinsEveningDoze` in `stats.ts`).
    */
-  fun lastNight(segments: List<SleepSegment>): SleepNight? {
+  fun joinsEveningDoze(prevStart: Long, prevEnd: Long, prevAsleepSec: Long, nextStart: Long, nextAfterWorkout: Boolean, zone: ZoneId): Boolean {
+    if (nextAfterWorkout || prevAsleepSec >= MIN_NIGHT_SEC || nextStart - prevEnd > EVENING_JOIN_GAP_SEC) return false
+    val hour = Instant.ofEpochSecond(prevStart).atZone(zone).hour
+    return hour >= EVENING_START_HOUR || hour < EVENING_END_HOUR
+  }
+
+  /**
+   * The latest session of [segments], chained with gaps up to [SESSION_GAP_SEC] and cut at a segment marked
+   * [SleepSegment.breakBefore] (`lastSleepSession` in `stats.ts`). A short evening session before it joins it, see
+   * [EVENING_JOIN_GAP_SEC]; the time between the two counts as no sleep.
+   */
+  fun lastNight(segments: List<SleepSegment>, zone: ZoneId = ZoneId.systemDefault()): SleepNight? {
     if (segments.isEmpty()) return null
     val sorted = withoutBlips(withoutStrayUnstaged(segments))
     if (sorted.isEmpty()) return null
@@ -106,6 +128,20 @@ internal object SleepReport {
     while (first > 0 && !sorted[first].breakBefore && earliest - sorted[first - 1].end <= SESSION_GAP_SEC) {
       first--
       earliest = minOf(earliest, sorted[first].start)
+    }
+    while (first > 0) {
+      // The session before: chained backwards the same way.
+      var prevFirst = first - 1
+      var prevStart = sorted[prevFirst].start
+      while (prevFirst > 0 && !sorted[prevFirst].breakBefore && prevStart - sorted[prevFirst - 1].end <= SESSION_GAP_SEC) {
+        prevFirst--
+        prevStart = minOf(prevStart, sorted[prevFirst].start)
+      }
+      val prev = sorted.subList(prevFirst, first)
+      val asleep = prev.sumOf { if (it.stage == "awake") 0L else maxOf(0L, it.end - it.start) }
+      if (!joinsEveningDoze(prevStart, prev.maxOf { it.end }, asleep, earliest, sorted[first].afterWorkout, zone)) break
+      first = prevFirst
+      earliest = prevStart
     }
     var total = 0L
     var light = 0L

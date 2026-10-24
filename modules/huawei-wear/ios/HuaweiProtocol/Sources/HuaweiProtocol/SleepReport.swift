@@ -45,6 +45,12 @@ public enum SleepReport {
     public static let sessionGapSec: Int64 = 3 * 3600
     /// Shorter sessions are naps, not "last night".
     public static let minNightSec: Int64 = 3 * 3600
+    /// A short session starting from this local hour (up to `eveningEndHour` next morning) is an evening doze (`EVENING_START_HOUR` in `stats.ts`).
+    public static let eveningStartHour = 19
+    /// An evening doze starts before this local hour; later starts are daytime naps (`EVENING_END_HOUR` in `stats.ts`).
+    public static let eveningEndHour = 6
+    /// An evening doze joins the session after it when that starts within this long after it ends (`EVENING_JOIN_GAP_SEC` in `stats.ts`).
+    public static let eveningJoinGapSec: Int64 = 8 * 3600
     /// A report is only pushed this long after waking up at most.
     public static let maxAgeSec: Int64 = 8 * 3600
     /// Sleep within this of other sleep belongs to the same stretch when telling a blip from a nap (`BLIP_GAP_SEC` in `stats.ts`).
@@ -80,9 +86,20 @@ public enum SleepReport {
         return kept
     }
 
+    /// Whether a session that started at `prevStart`, ended at `prevEnd` and holds `prevAsleepSec` of sleep is an evening doze that the
+    /// session starting at `nextStart` continues unless a workout lies between (`nextAfterWorkout`): a short session (under `minNightSec`)
+    /// starting from `eveningStartHour`:00 to `eveningEndHour`:00 local time, with the next session starting within `eveningJoinGapSec`
+    /// of its end (`joinsEveningDoze` in `stats.ts`).
+    public static func joinsEveningDoze(prevStart: Int64, prevEnd: Int64, prevAsleepSec: Int64, nextStart: Int64, nextAfterWorkout: Bool, zone: TimeZone) -> Bool {
+        if nextAfterWorkout || prevAsleepSec >= minNightSec || nextStart - prevEnd > eveningJoinGapSec { return false }
+        let hour = calendar(zone).component(.hour, from: Date(timeIntervalSince1970: TimeInterval(prevStart)))
+        return hour >= eveningStartHour || hour < eveningEndHour
+    }
+
     /// The latest session of `segments`, chained with gaps up to `sessionGapSec` and cut where a segment is `breakBefore`
-    /// (`lastSleepSession` in `stats.ts`).
-    public static func lastNight(_ segments: [SleepSegment]) -> SleepNight? {
+    /// (`lastSleepSession` in `stats.ts`). A short evening session before it joins it, see `eveningJoinGapSec`; the time between the two
+    /// counts as no sleep.
+    public static func lastNight(_ segments: [SleepSegment], zone: TimeZone = .current) -> SleepNight? {
         if segments.isEmpty { return nil }
         // Stable by start, like Kotlin's sortedBy.
         let sorted = withoutBlips(withoutStrayUnstaged(segments)).enumerated().sorted { a, b in
@@ -94,6 +111,21 @@ public enum SleepReport {
         while first > 0 && !sorted[first].breakBefore && earliest - sorted[first - 1].end <= sessionGapSec {
             first -= 1
             earliest = min(earliest, sorted[first].start)
+        }
+        while first > 0 {
+            // The session before: chained backwards the same way.
+            var prevFirst = first - 1
+            var prevStart = sorted[prevFirst].start
+            while prevFirst > 0 && !sorted[prevFirst].breakBefore && prevStart - sorted[prevFirst - 1].end <= sessionGapSec {
+                prevFirst -= 1
+                prevStart = min(prevStart, sorted[prevFirst].start)
+            }
+            let prev = sorted[prevFirst..<first]
+            let asleep = prev.reduce(Int64(0)) { $0 + ($1.stage == "awake" ? 0 : max(0, $1.end - $1.start)) }
+            let prevEnd = prev.map(\.end).max() ?? prevStart
+            if !joinsEveningDoze(prevStart: prevStart, prevEnd: prevEnd, prevAsleepSec: asleep, nextStart: earliest, nextAfterWorkout: sorted[first].afterWorkout, zone: zone) { break }
+            first = prevFirst
+            earliest = prevStart
         }
         var total: Int64 = 0, light: Int64 = 0, deep: Int64 = 0, rem: Int64 = 0, awake: Int64 = 0, end: Int64 = 0
         for segment in sorted[first...] {

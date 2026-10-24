@@ -6,7 +6,7 @@
  * |---|---|
  * | {@link withoutStrayUnstaged}, {@link withoutBlips}, {@link SESSION_GAP_SEC}, {@link BLIP_GAP_SEC}, {@link MIN_SLEEP_SEC} | `src/features/today/stats.ts` |
  * | {@link cleanUnstagedSleep} and its constants | `src/features/sleep/cleanSleep.ts` |
- * | {@link buildNights}, {@link MIN_NIGHT_SEC}, {@link nightHasStages} | `src/features/sleep/nights.ts` |
+ * | {@link buildNights}, {@link MIN_NIGHT_SEC}, {@link nightHasStages}, {@link joinsEveningDoze}, {@link EVENING_JOIN_GAP_SEC} | `src/features/sleep/nights.ts`, `stats.ts` |
  * | {@link groupDays} | `sleepByDay` (nights.ts) and `lastSleepSession` (stats.ts), see its doc |
  *
  * Intentional differences:
@@ -40,8 +40,8 @@ export interface SleepSegment {
   stage: SleepStage | null;
 }
 
-/** A segment plus what only {@link cleanUnstagedSleep} knows: a workout or a long stretch of nothing precedes it, so it starts a new session. */
-export type SleepSpan = SleepSegment & { breakBefore?: boolean };
+/** A segment plus what only {@link cleanUnstagedSleep} knows: a workout or a long stretch of nothing precedes it (`breakBefore`, so it starts a new session), a workout in particular (`afterWorkout`, an evening doze does not join across one). */
+export type SleepSpan = SleepSegment & { breakBefore?: boolean; afterWorkout?: boolean };
 
 /** Reads the `stage` text of a row; anything but the four decoded stages is stage-less. */
 export function toStage(text: string | null): SleepStage | null {
@@ -56,6 +56,17 @@ export const BLIP_GAP_SEC = 3600;
 export const MIN_SLEEP_SEC = 5 * 60;
 /** Below this much sleep a session is a nap (`MIN_NIGHT_SEC` in SleepReport.kt). */
 export const MIN_NIGHT_SEC = 3 * 3600;
+
+/** A short session that starts at or after this WIB hour (up to {@link EVENING_END_HOUR} next morning) is an evening doze, not a nap. */
+export const EVENING_START_HOUR = 19;
+/** An evening doze starts before this WIB hour; later starts are daytime naps. */
+export const EVENING_END_HOUR = 6;
+/**
+ * An evening doze (asleep under {@link MIN_NIGHT_SEC}, starting {@link EVENING_START_HOUR}:00 to {@link EVENING_END_HOUR}:00 WIB)
+ * joins the session that follows it when that one starts within this long after the doze ends (`EVENING_JOIN_GAP_SEC` in
+ * `src/features/today/stats.ts`).
+ */
+export const EVENING_JOIN_GAP_SEC = 8 * 3600;
 
 /** A stage-less run needs this much sleep to be sleep. */
 export const MIN_RUN_SEC = 20 * 60;
@@ -92,6 +103,22 @@ export function wibDayStart(day: string): Sec | null {
   const ms = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
   if (Number.isNaN(ms) || new Date(ms).toISOString().slice(0, 10) !== day) return null;
   return ms / 1000 - WIB_OFFSET_SEC;
+}
+
+/**
+ * Whether a session that started at `prevStart`, ended at `prevEnd` and holds `prevAsleepSec` of sleep is an evening doze
+ * that the session starting at `nextStart` continues unless a workout lies between (`nextAfterWorkout`; `joinsEveningDoze` in stats.ts).
+ */
+export function joinsEveningDoze(
+  prevStart: Sec,
+  prevEnd: Sec,
+  prevAsleepSec: number,
+  nextStart: Sec,
+  nextAfterWorkout: boolean,
+): boolean {
+  if (nextAfterWorkout || prevAsleepSec >= MIN_NIGHT_SEC || nextStart - prevEnd > EVENING_JOIN_GAP_SEC) return false;
+  const hour = Math.floor((prevStart - startOfWibDay(prevStart)) / 3600);
+  return hour >= EVENING_START_HOUR || hour < EVENING_END_HOUR;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -196,12 +223,12 @@ function firstEndingAfter(spans: readonly Span[], time: Sec): number {
  * The phone's rule for watches that give no stages (`cleanUnstagedSleep`): awake evidence is subtracted from stage-less
  * ranges, what is left is chained into runs of pieces at most {@link RUN_BRIDGE_SEC} apart, runs under
  * {@link MIN_RUN_SEC} are dropped, and a stage-less segment that follows a workout, or follows another stage-less one after
- * more than {@link UNSTAGED_BREAK_SEC}, is marked `breakBefore`. Staged segments are never touched. Sorted by start.
+ * more than {@link UNSTAGED_BREAK_SEC}, is marked `breakBefore` (and `afterWorkout` when it was a workout). Staged segments are never touched. Sorted by start.
  */
 export function cleanUnstagedSleep<T extends SleepSegment>(
   segments: readonly T[],
   evidence: SleepEvidence,
-): (T & { breakBefore?: boolean })[] {
+): (T & { breakBefore?: boolean; afterWorkout?: boolean })[] {
   const staged: T[] = [];
   const unstaged: T[] = [];
   for (const s of segments) {
@@ -218,7 +245,7 @@ export function cleanUnstagedSleep<T extends SleepSegment>(
 
   // Stage-less ranges overlap each other (two raw types for one night, or two watches); an earlier-starting one keeps the time.
   unstaged.sort((a, b) => a.start - b.start || a.end - b.end);
-  const pieces: (T & { breakBefore?: boolean })[] = [];
+  const pieces: (T & { breakBefore?: boolean; afterWorkout?: boolean })[] = [];
   let cursor = -Infinity;
   for (const seg of unstaged) {
     const start = Math.max(seg.start, cursor);
@@ -229,8 +256,8 @@ export function cleanUnstagedSleep<T extends SleepSegment>(
     }
   }
 
-  const kept: (T & { breakBefore?: boolean })[] = [...staged];
-  let run: (T & { breakBefore?: boolean })[] = [];
+  const kept: (T & { breakBefore?: boolean; afterWorkout?: boolean })[] = [...staged];
+  let run: (T & { breakBefore?: boolean; afterWorkout?: boolean })[] = [];
   let runSec = 0;
   let reach = -Infinity;
   const closeRun = () => {
@@ -255,7 +282,10 @@ export function cleanUnstagedSleep<T extends SleepSegment>(
     if (seg.start < prev.end) continue;
     const next = workouts[firstEndingAfter(workouts, prev.end)];
     const workoutBetween = next !== undefined && next.start < seg.start;
-    if (workoutBetween || (!prev.stage && seg.start - prev.end > UNSTAGED_BREAK_SEC)) seg.breakBefore = true;
+    if (workoutBetween || (!prev.stage && seg.start - prev.end > UNSTAGED_BREAK_SEC)) {
+      seg.breakBefore = true;
+      if (workoutBetween) seg.afterWorkout = true;
+    }
   }
   return kept;
 }
@@ -296,11 +326,13 @@ export function isNap(night: Pick<Night, "asleepSeconds">): boolean {
  * Turns segments (as returned by {@link cleanUnstagedSleep}) into sleep sessions, oldest first. Overlaps are cut so every
  * second belongs to one stage (an earlier-starting segment keeps its time, which is also what keeps two watches from
  * counting the same night twice); sessions split where the gap exceeds {@link SESSION_GAP_SEC} and where a segment is
- * marked `breakBefore`. The phone returns newest first; this is the other way round.
+ * marked `breakBefore`. A short session that starts in the evening (19:00 to 06:00 WIB) joins the session after it when
+ * that starts within {@link EVENING_JOIN_GAP_SEC} of its end, the time between being one `awake` period (`buildNights` in
+ * nights.ts). The phone returns newest first; this is the other way round.
  */
 export function buildNights(segments: readonly SleepSpan[]): Night[] {
   const sorted = withoutBlips(withoutStrayUnstaged(segments));
-  const periods: (StagePeriod & { breakBefore?: boolean })[] = [];
+  const periods: (StagePeriod & { breakBefore?: boolean; afterWorkout?: boolean })[] = [];
   let cursor = -Infinity;
   for (const seg of sorted) {
     const start = Math.max(seg.start, cursor);
@@ -308,19 +340,37 @@ export function buildNights(segments: readonly SleepSpan[]): Night[] {
     const stage: NightStage = seg.stage ?? "asleep";
     const last = periods[periods.length - 1];
     if (last && last.stage === stage && last.end >= start && !seg.breakBefore) last.end = seg.end;
-    else periods.push(seg.breakBefore ? { start, end: seg.end, stage, breakBefore: true } : { start, end: seg.end, stage });
+    else {
+      periods.push(
+        seg.breakBefore ? { start, end: seg.end, stage, breakBefore: true, afterWorkout: !!seg.afterWorkout } : { start, end: seg.end, stage },
+      );
+    }
     cursor = seg.end;
   }
 
-  const sessions: StagePeriod[][] = [];
+  const split: StagePeriod[][] = [];
+  const afterWorkout: boolean[] = [];
   for (const period of periods) {
-    const current = sessions[sessions.length - 1];
+    const current = split[split.length - 1];
     if (current && !period.breakBefore && period.start - current[current.length - 1]!.end <= SESSION_GAP_SEC) {
       current.push({ start: period.start, end: period.end, stage: period.stage });
     } else {
-      sessions.push([{ start: period.start, end: period.end, stage: period.stage }]);
+      split.push([{ start: period.start, end: period.end, stage: period.stage }]);
+      afterWorkout.push(!!period.afterWorkout);
     }
   }
+
+  const sessions: StagePeriod[][] = [];
+  split.forEach((next, i) => {
+    const prev = sessions[sessions.length - 1];
+    const first = next[0]!;
+    const prevAsleep = prev?.reduce((sum, p) => (p.stage === "awake" ? sum : sum + p.end - p.start), 0) ?? 0;
+    if (prev && joinsEveningDoze(prev[0]!.start, prev[prev.length - 1]!.end, prevAsleep, first.start, afterWorkout[i]!)) {
+      prev.push({ start: prev[prev.length - 1]!.end, end: first.start, stage: "awake" }, ...next);
+    } else {
+      sessions.push(next);
+    }
+  });
 
   return sessions.map((session): Night => {
     const seconds: Record<NightStage, number> = { awake: 0, rem: 0, light: 0, deep: 0, asleep: 0 };

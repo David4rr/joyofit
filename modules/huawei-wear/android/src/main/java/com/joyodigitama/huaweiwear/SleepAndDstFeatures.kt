@@ -69,9 +69,9 @@ internal class SleepReportFeature(
   }
 
   /** The newest night with stages, from the stored segments of the last 36 hours. */
-  private suspend fun latestNight(nowSec: Long): SleepNight? = withContext(Dispatchers.IO) {
+  private suspend fun latestNight(nowSec: Long, zone: ZoneId): SleepNight? = withContext(Dispatchers.IO) {
     val segments = syncStore.read { db -> SleepStore.load(db, nowSec - LOOKBACK_SEC) }
-    SleepReport.lastNight(segments)
+    SleepReport.lastNight(segments, zone)
   }
 
   /**
@@ -84,7 +84,7 @@ internal class SleepReportFeature(
     if (!service.supports(DataSyncWire.CAP_EVENT)) return decision("the watch does not report DataSync events (ExpandCapability ${DataSyncWire.CAP_EVENT})")
     val zone = ZoneId.systemDefault()
     val nowSec = System.currentTimeMillis() / 1000
-    val night = latestNight(nowSec) ?: return decision("no sleep stored in the last ${LOOKBACK_SEC / 3600} h")
+    val night = latestNight(nowSec, zone) ?: return decision("no sleep stored in the last ${LOOKBACK_SEC / 3600} h")
     if (!force) {
       SleepReport.shouldPush(night, nowSec, zone, settings.sleepReportLastEnd)?.let { return decision(it) }
     }

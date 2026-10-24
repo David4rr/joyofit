@@ -182,7 +182,7 @@ describe('a workout started from the watch is not sleep (18 Oct)', () => {
     const after = state(wib(19, '05:30'), wib(19, '08:00'));
     const run = workoutSpan(wib(19, '04:40'), wib(19, '05:20'), 40 * MIN);
     const cleaned = cleanUnstagedSleep([before, after], evidence({ workouts: [run] }));
-    expect(cleaned).toEqual([before, { ...after, breakBefore: true }]);
+    expect(cleaned).toEqual([before, { ...after, breakBefore: true, afterWorkout: true }]);
 
     const nights = buildNights(cleaned, []);
     expect(nights.map((n) => [n.start, n.end, n.asleepSeconds, n.nap])).toEqual([
@@ -199,7 +199,7 @@ describe('a workout started from the watch is not sleep (18 Oct)', () => {
     const cleaned = cleanUnstagedSleep([range], evidence({ workouts: [run] }));
     expect(cleaned).toEqual([
       state(wib(18, '00:00'), wib(18, '04:34')),
-      { ...state(wib(18, '05:06'), wib(18, '07:00')), breakBefore: true },
+      { ...state(wib(18, '05:06'), wib(18, '07:00')), breakBefore: true, afterWorkout: true },
     ]);
   });
 });

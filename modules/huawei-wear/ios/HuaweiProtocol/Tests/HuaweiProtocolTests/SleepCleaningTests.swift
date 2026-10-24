@@ -19,7 +19,9 @@ final class SleepCleaningTests: XCTestCase {
     /// `TruSleep` state ranges as `SleepSync.segmentsFromState` stores them: raw kind 6, no stage.
     private func state(_ start: Int64, _ end: Int64) -> SleepSegment { SleepSegment(start: start, end: end, type: 6, stage: nil) }
 
-    private func broken(_ s: SleepSegment) -> SleepSegment { SleepSegment(start: s.start, end: s.end, type: s.type, stage: s.stage, breakBefore: true) }
+    private func broken(_ s: SleepSegment, afterWorkout: Bool = false) -> SleepSegment {
+        SleepSegment(start: s.start, end: s.end, type: s.type, stage: s.stage, breakBefore: true, afterWorkout: afterWorkout)
+    }
 
     private func ranges(_ rows: [(Int, String, Int64)]) -> [SleepSegment] {
         rows.map { day, clock, minutes in
@@ -100,7 +102,7 @@ final class SleepCleaningTests: XCTestCase {
         let after = state(wib(19, "05:30"), wib(19, "08:00"))
         let workout = SleepCleaning.workoutSpan(start: wib(19, "04:40"), end: wib(19, "05:20"), duration: 40 * MIN)
         let cleaned = SleepCleaning.cleanUnstagedSleep([before, after], SleepEvidence(workouts: [workout]))
-        XCTAssertEqual(cleaned, [before, broken(after)])
+        XCTAssertEqual(cleaned, [before, broken(after, afterWorkout: true)])
         // Last night: only what follows the workout.
         XCTAssertEqual(SleepReport.lastNight(cleaned)?.totalSec, 150 * MIN)
         XCTAssertEqual(SleepReport.lastNight(cleaned)?.start, after.start)
@@ -112,7 +114,7 @@ final class SleepCleaningTests: XCTestCase {
         let range = state(wib(18, "00:00"), wib(18, "07:00"))
         let workout = SleepCleaning.workoutSpan(start: wib(18, "04:34"), end: wib(18, "05:06"), duration: 32 * MIN)
         let cleaned = SleepCleaning.cleanUnstagedSleep([range], SleepEvidence(workouts: [workout]))
-        XCTAssertEqual(cleaned, [state(wib(18, "00:00"), wib(18, "04:34")), broken(state(wib(18, "05:06"), wib(18, "07:00")))])
+        XCTAssertEqual(cleaned, [state(wib(18, "00:00"), wib(18, "04:34")), broken(state(wib(18, "05:06"), wib(18, "07:00")), afterWorkout: true)])
     }
 
     func testANapNeedsTwentyMinutesOfContinuousSleep() {

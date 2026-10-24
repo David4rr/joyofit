@@ -35,8 +35,16 @@ internal class StepSample(
  * `stage` is GB's `normalizeType` of it as 'light' | 'deep' | 'rem' | 'awake', null when GB has none.
  * [breakBefore] is only ever set by [SleepCleaning.cleanUnstagedSleep] (never stored): a workout or a long awake stretch
  * lies between this span and the one before it, so it starts a new sleep session however close the two are.
+ * [afterWorkout] says it was a workout (an evening doze does not join across one, see [SleepReport.joinsEveningDoze]).
  */
-internal class SleepSegment(val start: Long, val end: Long, val type: Int, val stage: String?, val breakBefore: Boolean = false) {
+internal class SleepSegment(
+  val start: Long,
+  val end: Long,
+  val type: Int,
+  val stage: String?,
+  val breakBefore: Boolean = false,
+  val afterWorkout: Boolean = false,
+) {
   fun toJs(): Map<String, Any?> = mapOf("start" to start, "end" to end, "type" to type, "stage" to stage)
 }
 

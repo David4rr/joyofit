@@ -25,20 +25,23 @@ public struct StepSample: Equatable, Sendable {
 /// One sleep span. `type` is GB's raw sample kind (frame sleep: the watch's state byte; TruSleep and dictionary sleep: 0x06 light,
 /// 0x07 deep, 0x5656 REM, 0x5658 awake, 0x5659 nap, 1 unknown). `stage` is `light`, `deep`, `rem` or `awake`; nil when GB has none.
 /// `breakBefore` is set only by `SleepCleaning.cleanUnstagedSleep` (never stored): a workout or a long awake stretch lies between this segment
-/// and the one before it, so it starts a new session however close the two are.
+/// and the one before it, so it starts a new session however close the two are. `afterWorkout` says it was a workout (an evening doze does
+/// not join across one, see `SleepReport.joinsEveningDoze`).
 public struct SleepSegment: Equatable, Sendable {
     public let start: Int64
     public let end: Int64
     public let type: Int
     public let stage: String?
     public let breakBefore: Bool
+    public let afterWorkout: Bool
 
-    public init(start: Int64, end: Int64, type: Int, stage: String?, breakBefore: Bool = false) {
+    public init(start: Int64, end: Int64, type: Int, stage: String?, breakBefore: Bool = false, afterWorkout: Bool = false) {
         self.start = start
         self.end = end
         self.type = type
         self.stage = stage
         self.breakBefore = breakBefore
+        self.afterWorkout = afterWorkout
     }
 }
 

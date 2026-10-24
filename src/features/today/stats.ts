@@ -78,11 +78,44 @@ export function hourlySteps(samples: readonly StepSample[]): number[] {
 /** Segments closer together than this belong to the same sleep session. */
 export const SESSION_GAP_SEC = 3 * 3600;
 
+/** Below this much sleep a session is a nap (`MIN_NIGHT_SEC` in SleepReport.kt). */
+export const MIN_NIGHT_SEC = 3 * 3600;
+
+/** A short session that starts at or after this local hour (up to {@link EVENING_END_HOUR} next morning) is an evening doze, not a nap. */
+export const EVENING_START_HOUR = 19;
+/** An evening doze starts before this local hour; later starts are daytime naps. */
+export const EVENING_END_HOUR = 6;
 /**
- * A stored segment, plus the one thing only the cleaning step knows (`cleanUnstagedSleep`): a workout or a long awake
- * stretch lies between this segment and the one before it, so it starts a new session however close the two are.
+ * An evening doze (asleep under {@link MIN_NIGHT_SEC}, starting {@link EVENING_START_HOUR}:00 to {@link EVENING_END_HOUR}:00 local)
+ * joins the session that follows it when that one starts within this long after the doze ends: falling asleep on the
+ * sofa at 21:55 and sleeping on after 02:00 is one night with an awake stretch, not a nap plus a night. Twins: `buildNights`
+ * (`src/features/sleep/nights.ts`), `lastSleepSession` below, `server/src/sleepDays.ts`, `SleepReport.kt`.
  */
-export type SleepSpan = SleepSegment & { breakBefore?: boolean };
+export const EVENING_JOIN_GAP_SEC = 8 * 3600;
+
+/**
+ * Whether a session that started at `prevStart`, ended at `prevEnd` and holds `prevAsleepSec` of sleep is an evening doze
+ * that the session starting at `nextStart` continues. `nextAfterWorkout`: a workout lies between the two, which keeps
+ * them apart (a long stretch of nothing, `breakBefore` alone, does not: that is the awake period the join makes).
+ */
+export function joinsEveningDoze(
+  prevStart: number,
+  prevEnd: number,
+  prevAsleepSec: number,
+  nextStart: number,
+  nextAfterWorkout: boolean,
+): boolean {
+  if (nextAfterWorkout || prevAsleepSec >= MIN_NIGHT_SEC || nextStart - prevEnd > EVENING_JOIN_GAP_SEC) return false;
+  const hour = new Date(prevStart * 1000).getHours();
+  return hour >= EVENING_START_HOUR || hour < EVENING_END_HOUR;
+}
+
+/**
+ * A stored segment, plus what only the cleaning step knows (`cleanUnstagedSleep`): `breakBefore` when a workout or a long
+ * awake stretch lies between this segment and the one before it, so it starts a new session however close the two are;
+ * `afterWorkout` when that was a workout (an evening doze does not join across one).
+ */
+export type SleepSpan = SleepSegment & { breakBefore?: boolean; afterWorkout?: boolean };
 
 /**
  * Drops unstaged segments within {@link SESSION_GAP_SEC} of a staged one: the watch stores short unstaged spans
@@ -178,18 +211,39 @@ export function asleepUnionSeconds(segments: readonly SleepSegment[]): number {
   return total;
 }
 
-/** Splits cleaned segments (sorted by start) into sessions: a gap over {@link SESSION_GAP_SEC} or a `breakBefore` starts a new one. */
+/**
+ * Splits cleaned segments (sorted by start) into sessions: a gap over {@link SESSION_GAP_SEC} or a `breakBefore` starts a
+ * new one. Then an evening doze joins the session after it, see {@link EVENING_JOIN_GAP_SEC}.
+ */
 function splitSessions(sorted: readonly SleepSpan[]): SleepSpan[][] {
-  const sessions: SleepSpan[][] = [];
+  const raw: SleepSpan[][] = [];
   let reach = -Infinity;
   for (const seg of sorted) {
-    const current = sessions[sessions.length - 1];
+    const current = raw[raw.length - 1];
     if (current && !seg.breakBefore && seg.start - reach <= SESSION_GAP_SEC) {
       current.push(seg);
       reach = Math.max(reach, seg.end);
     } else {
-      sessions.push([seg]);
+      raw.push([seg]);
       reach = seg.end;
+    }
+  }
+  const sessions: SleepSpan[][] = [];
+  for (const next of raw) {
+    const prev = sessions[sessions.length - 1];
+    if (
+      prev &&
+      joinsEveningDoze(
+        prev[0].start,
+        Math.max(...prev.map((s) => s.end)),
+        asleepUnionSeconds(prev),
+        next[0].start,
+        !!next[0].afterWorkout,
+      )
+    ) {
+      prev.push(...next);
+    } else {
+      sessions.push(next);
     }
   }
   return sessions;

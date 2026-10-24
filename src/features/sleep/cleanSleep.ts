@@ -17,8 +17,8 @@ import type { SleepSegment } from '@/wear';
  *     {@link MIN_RUN_SEC} of sleep is dropped: that covers the 1 to 5 minute fragments, a stress check, and a nap too
  *     short to tell from one.
  *  3. A kept segment that follows a workout, or that follows another stage-less segment after more than
- *     {@link UNSTAGED_BREAK_SEC} of nothing, is marked `breakBefore`, so the night is split there and its totals are
- *     worked out for each side.
+ *     {@link UNSTAGED_BREAK_SEC} of nothing, is marked `breakBefore` (and `afterWorkout` when it was a workout), so the
+ *     night is split there and its totals are worked out for each side.
  */
 
 /** A stage-less run needs this much sleep (gaps up to {@link RUN_BRIDGE_SEC} inside it are not counted) to be sleep. */
@@ -102,14 +102,14 @@ function firstEndingAfter(spans: readonly Span[], time: number): number {
 export function cleanUnstagedSleep<T extends SleepSegment>(
   segments: readonly T[],
   evidence: SleepEvidence,
-): (T & { breakBefore?: boolean })[] {
+): (T & { breakBefore?: boolean; afterWorkout?: boolean })[] {
   const staged: T[] = [];
   const unstaged: T[] = [];
   for (const s of segments) {
     if (s.stage) staged.push(s);
     else if (s.end > s.start) unstaged.push(s);
   }
-  if (unstaged.length === 0) return [...segments].sort((a, b) => a.start - b.start || a.end - b.end) as (T & { breakBefore?: boolean })[];
+  if (unstaged.length === 0) return [...segments].sort((a, b) => a.start - b.start || a.end - b.end) as (T & { breakBefore?: boolean; afterWorkout?: boolean })[];
 
   const awake = mergeSpans([
     ...evidence.workouts,
@@ -119,7 +119,7 @@ export function cleanUnstagedSleep<T extends SleepSegment>(
 
   // Stage-less ranges overlap each other (two raw types for one night); an earlier-starting one keeps the time.
   unstaged.sort((a, b) => a.start - b.start || a.end - b.end);
-  const pieces: (T & { breakBefore?: boolean })[] = [];
+  const pieces: (T & { breakBefore?: boolean; afterWorkout?: boolean })[] = [];
   let cursor = -Infinity;
   for (const seg of unstaged) {
     const start = Math.max(seg.start, cursor);
@@ -131,8 +131,8 @@ export function cleanUnstagedSleep<T extends SleepSegment>(
   }
 
   // Runs: pieces chained with gaps up to RUN_BRIDGE_SEC; short ones are not sleep.
-  const kept: (T & { breakBefore?: boolean })[] = [...staged];
-  let run: (T & { breakBefore?: boolean })[] = [];
+  const kept: (T & { breakBefore?: boolean; afterWorkout?: boolean })[] = [...staged];
+  let run: (T & { breakBefore?: boolean; afterWorkout?: boolean })[] = [];
   let runSec = 0;
   let reach = -Infinity;
   const closeRun = () => {
@@ -158,7 +158,10 @@ export function cleanUnstagedSleep<T extends SleepSegment>(
     if (seg.start < prev.end) continue;
     const next = workouts[firstEndingAfter(workouts, prev.end)];
     const workoutBetween = next !== undefined && next.start < seg.start;
-    if (workoutBetween || (!prev.stage && seg.start - prev.end > UNSTAGED_BREAK_SEC)) seg.breakBefore = true;
+    if (workoutBetween || (!prev.stage && seg.start - prev.end > UNSTAGED_BREAK_SEC)) {
+      seg.breakBefore = true;
+      if (workoutBetween) seg.afterWorkout = true;
+    }
   }
   return kept;
 }

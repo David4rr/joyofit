@@ -376,3 +376,43 @@ describe("empty and odd input", () => {
     expect(days(bad)).toEqual([]);
   });
 });
+
+describe("an evening doze before the night", () => {
+  const doze = seg("2026-10-23", "21:55", "2026-10-23", "22:42", null);
+  const night = seg("2026-10-24", "02:00", "2026-10-24", "05:13", null);
+
+  it("joins the night: doze start, wake day, one awake period, not a nap", () => {
+    const result = days([doze, night]);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.day).toBe("2026-10-24");
+    expect(result[0]?.naps).toEqual([]);
+    const n = result[0]?.night;
+    expect(n?.start).toBe(doze.start);
+    expect(n?.end).toBe(night.end);
+    expect(n?.asleepSec).toBe(4 * HOUR);
+    expect(n?.awakeSec).toBe(night.start - doze.end);
+    expect(n?.awakenings).toBe(1);
+  });
+
+  it("leaves an afternoon nap a nap", () => {
+    const result = days([seg("2026-10-23", "14:00", "2026-10-23", "15:00", null), night]);
+    expect(result.map((d) => d.day)).toEqual(["2026-10-23", "2026-10-24"]);
+    expect(result[0]?.night).toBeNull();
+    expect(result[0]?.naps).toHaveLength(1);
+  });
+
+  it("keeps a doze with nothing within 8 h after it a nap on its own day", () => {
+    const alone = days([doze]);
+    expect(alone[0]?.day).toBe("2026-10-23");
+    expect(alone[0]?.night).toBeNull();
+    expect(alone[0]?.naps).toHaveLength(1);
+    const late = days([doze, seg("2026-10-24", "06:43", "2026-10-24", "10:00", null)]);
+    expect(late.map((d) => d.day)).toEqual(["2026-10-23", "2026-10-24"]);
+  });
+
+  it("does not join across a workout", () => {
+    const workout = workoutSpan(wib("2026-10-23", "23:00"), wib("2026-10-23", "23:40"), 40 * MIN);
+    const result = buildNights(cleanUnstagedSleep([doze, night], { ...NO_EVIDENCE, workouts: [workout] }));
+    expect(result).toHaveLength(2);
+  });
+});

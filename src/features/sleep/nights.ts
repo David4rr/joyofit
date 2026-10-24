@@ -1,5 +1,13 @@
 import type { SleepScoreRow } from '@/db/queries';
-import { SESSION_GAP_SEC, startOfLocalDay, withoutBlips, withoutStrayUnstaged, type SleepSpan } from '@/features/today/stats';
+import {
+  SESSION_GAP_SEC,
+  MIN_NIGHT_SEC,
+  joinsEveningDoze,
+  startOfLocalDay,
+  withoutBlips,
+  withoutStrayUnstaged,
+  type SleepSpan,
+} from '@/features/today/stats';
 import type { SleepStage } from '@/wear';
 
 /** A decoded stage, or `asleep` for a segment the watch stored without one. */
@@ -50,9 +58,6 @@ export function scoreFor(start: number, end: number, scores: readonly SleepScore
   return best;
 }
 
-/** Below this much sleep a session is a nap (`MIN_NIGHT_SEC` in SleepReport.kt). */
-export const MIN_NIGHT_SEC = 3 * 3600;
-
 function localDay(sec: number): string {
   const d = new Date(sec * 1000);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -62,11 +67,15 @@ function localDay(sec: number): string {
  * Turns stored segments into sleep sessions, newest first. Overlaps are cut so every second belongs to
  * one stage (an earlier-starting segment keeps its time); sessions split where the gap exceeds
  * {@link SESSION_GAP_SEC}, the same rule the Today card and the watch's morning report use, and where a segment
- * is marked `breakBefore` (a workout or a long awake stretch in between, see `cleanUnstagedSleep`).
+ * is marked `breakBefore` (a workout or a long awake stretch in between, see `cleanUnstagedSleep`). A short session
+ * that starts in the evening (19:00 to 06:00) joins the session after it when that starts within
+ * `EVENING_JOIN_GAP_SEC` (8 h) of its end: the time between is one `awake` period of the night, which is dated by
+ * its wake day and judged as a nap on its total (`splitSessions` in stats.ts, `sleepDays.ts` and `SleepReport.kt`
+ * apply the same rule).
  */
 export function buildNights(segments: readonly SleepSpan[], scores: readonly SleepScoreRow[]): Night[] {
   const sorted = withoutBlips(withoutStrayUnstaged(segments));
-  const periods: (StagePeriod & { breakBefore?: boolean })[] = [];
+  const periods: (StagePeriod & { breakBefore?: boolean; afterWorkout?: boolean })[] = [];
   let cursor = -Infinity;
   for (const seg of sorted) {
     const start = Math.max(seg.start, cursor);
@@ -74,17 +83,39 @@ export function buildNights(segments: readonly SleepSpan[], scores: readonly Sle
     const stage: NightStage = seg.stage ?? 'asleep';
     const last = periods[periods.length - 1];
     if (last && last.stage === stage && last.end >= start && !seg.breakBefore) last.end = seg.end;
-    else periods.push(seg.breakBefore ? { start, end: seg.end, stage, breakBefore: true } : { start, end: seg.end, stage });
+    else {
+      periods.push(
+        seg.breakBefore
+          ? { start, end: seg.end, stage, breakBefore: true, ...(seg.afterWorkout ? { afterWorkout: true } : {}) }
+          : { start, end: seg.end, stage },
+      );
+    }
     cursor = seg.end;
   }
 
-  const sessions: StagePeriod[][] = [];
+  const split: StagePeriod[][] = [];
   for (const period of periods) {
-    const current = sessions[sessions.length - 1];
+    const current = split[split.length - 1];
     if (current && !period.breakBefore && period.start - current[current.length - 1].end <= SESSION_GAP_SEC) {
       current.push(period);
     } else {
-      sessions.push([period]);
+      split.push([period]);
+    }
+  }
+
+  const asleepIn = (session: readonly StagePeriod[]) =>
+    session.reduce((sum, p) => (p.stage === 'awake' ? sum : sum + p.end - p.start), 0);
+  const sessions: StagePeriod[][] = [];
+  for (const next of split) {
+    const prev = sessions[sessions.length - 1];
+    const first = next[0] as StagePeriod & { afterWorkout?: boolean };
+    if (
+      prev &&
+      joinsEveningDoze(prev[0].start, prev[prev.length - 1].end, asleepIn(prev), first.start, !!first.afterWorkout)
+    ) {
+      prev.push({ start: prev[prev.length - 1].end, end: first.start, stage: 'awake' }, ...next);
+    } else {
+      sessions.push(next);
     }
   }
 

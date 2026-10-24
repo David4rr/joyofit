@@ -142,6 +142,7 @@ Intentional differences from the phone, also written at the top of `sleepDays.ts
 - **`stage` text** other than `awake|rem|light|deep` is read as stage-less.
 - **One night per day.** The longest session of the day (the later one on a tie) is `night` when it has 3 h of sleep or more, every other session is a `nap`, however long
   (the Today summary's rule, `lastSleepSession`). The phone's per-day total `sleepByDay` would call a second session of 3 h or more a night; `asleepSec` is the same either way.
+- **Evening doze.** A session with under 3 h of sleep that starts between 19:00 and 06:00 WIB joins the session after it when that starts within 8 h of its end (`EVENING_JOIN_GAP_SEC`): one night from the doze's start, the time between one `awake` period, dated by the wake day. A workout between the two keeps them apart; an afternoon nap is unchanged.
 
 ### Watch face library: `/v1/watchfaces`
 

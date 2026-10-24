@@ -160,7 +160,7 @@ internal object SleepCleaning {
       val next = workouts.getOrNull(firstEndingAfter(workouts, prev.end))
       val workoutBetween = next != null && next.start < seg.start
       if (workoutBetween || (prev.stage == null && seg.start - prev.end > UNSTAGED_BREAK_SEC)) {
-        kept[i] = SleepSegment(seg.start, seg.end, seg.type, null, breakBefore = true)
+        kept[i] = SleepSegment(seg.start, seg.end, seg.type, null, breakBefore = true, afterWorkout = workoutBetween)
       }
     }
     return kept

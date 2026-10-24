@@ -170,7 +170,7 @@ public enum SleepCleaning {
                 let nextIndex = firstEndingAfter(workouts, prev.end)
                 let workoutBetween = nextIndex < workouts.count && workouts[nextIndex].start < seg.start
                 if workoutBetween || (prev.stage == nil && seg.start - prev.end > unstagedBreakSec) {
-                    kept[i] = SleepSegment(start: seg.start, end: seg.end, type: seg.type, stage: nil, breakBefore: true)
+                    kept[i] = SleepSegment(start: seg.start, end: seg.end, type: seg.type, stage: nil, breakBefore: true, afterWorkout: workoutBetween)
                 }
             }
         }
