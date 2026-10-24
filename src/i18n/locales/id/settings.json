@@ -987,6 +987,10 @@
       "rest": "HR istirahat dari jam: {{bpm}} bpm",
       "restBody": "Nilai tengah 14 hari terakhir. Dipakai metode HRR.",
       "useRest": "Pakai",
+      "lthrRun": "LTHR dari lari terberat: {{bpm}} bpm",
+      "lthrRunBody": "95% dari rata-rata detak 20 menit terberat, lari {{date}}. Pakai = metode LTHR dengan angka ini.",
+      "lthrRunNone": "LTHR dari lari: belum ada lari dengan 20 menit yang cukup berat (minimal 80% HR maks) dalam 6 minggu terakhir.",
+      "useLthr": "Pakai",
       "failed": "Data tidak bisa dibaca. Coba lagi."
     },
     "watch": {

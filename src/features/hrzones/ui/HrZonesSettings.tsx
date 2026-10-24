@@ -79,10 +79,10 @@ function useLthrSources(): { test: LactateValue | null; watch: LactateValue | nu
   return { test, watch };
 }
 
-/** The heart-rate points of the runs of the last 6 weeks, for the estimate "from your hardest run". */
-function useRecentRuns(): HardestRunInput[] {
+/** The heart-rate points of the runs of the last 6 weeks, for the estimate "from your hardest run"; null until they are read. */
+function useRecentRuns(): HardestRunInput[] | null {
   const db = useSQLiteContext();
-  const [runs, setRuns] = useState<HardestRunInput[]>([]);
+  const [runs, setRuns] = useState<HardestRunInput[] | null>(null);
   useEffect(() => {
     let cancelled = false;
     const nowSec = Math.floor(Date.now() / 1000);
@@ -94,7 +94,9 @@ function useRecentRuns(): HardestRunInput[] {
         loaded.push({ workoutId: workout.id, start: workout.start, sportType: workout.sportType, points: await listWorkoutPoints(db, workout.id) });
       }
       if (!cancelled) setRuns(loaded);
-    })().catch(() => undefined);
+    })().catch(() => {
+      if (!cancelled) setRuns([]);
+    });
     return () => {
       cancelled = true;
     };
@@ -146,7 +148,11 @@ export function HrZonesSettings() {
   const hasProfile = useMemo(() => (HuaweiWear.getUserProfile()?.birthYear ?? 0) > 0, []);
 
   const zones = useMemo(() => resolveHrZones(draft, age), [draft, age]);
-  const hardestRun = useMemo(() => lthrFromHardestRun(recentRuns, zones.maxHr, Math.floor(Date.now() / 1000)), [recentRuns, zones.maxHr]);
+  const runsLoaded = recentRuns !== null;
+  const hardestRun = useMemo(
+    () => (recentRuns ? lthrFromHardestRun(recentRuns, zones.maxHr, Math.floor(Date.now() / 1000)) : null),
+    [recentRuns, zones.maxHr],
+  );
   const measured = useLthrSources();
   const dirty = !sameSettings(draft, stored);
   const isDefault = sameSettings(draft, DEFAULT_HR_ZONE_SETTINGS);
@@ -345,6 +351,25 @@ export function HrZonesSettings() {
           onPress={() => void calculate()}
         />
         {suggestion.status === 'failed' ? <Notice tone="danger">{t('hrZones.suggest.failed')}</Notice> : null}
+        {/* The hardest-run LTHR is offered here too, whatever the method: the chips above only show under LTHR. */}
+        {hardestRun ? (
+          <FoundRow title={t('hrZones.suggest.lthrRun', { bpm: fmtInt(hardestRun.lthr) })} caption={t('hrZones.suggest.lthrRunBody', { date: fmtDate(hardestRun.at, 'short') })}>
+            {draft.method === 'lthr' && draft.lthr === hardestRun.lthr ? null : (
+              <Button
+                label={t('hrZones.suggest.useLthr')}
+                variant="primary"
+                onPress={() => {
+                  setOpen(null);
+                  edit({ method: 'lthr', lthr: hardestRun.lthr, limits: null });
+                }}
+              />
+            )}
+          </FoundRow>
+        ) : runsLoaded ? (
+          <AppText variant="caption" muted>
+            {t('hrZones.suggest.lthrRunNone')}
+          </AppText>
+        ) : null}
         {found ? (
           <>
             {found.peak === null && found.restingHr === null ? <Notice>{t('hrZones.suggest.nothing')}</Notice> : null}

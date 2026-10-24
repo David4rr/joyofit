@@ -1003,6 +1003,10 @@
       "rest": "Resting HR from the watch: {{bpm}} bpm",
       "restBody": "The median of the last 14 days. Used by the HRR method.",
       "useRest": "Use",
+      "lthrRun": "LTHR from your hardest run: {{bpm}} bpm",
+      "lthrRunBody": "95% of your hardest 20-minute average heart rate, run on {{date}}. Use = the LTHR method with this number.",
+      "lthrRunNone": "LTHR from runs: no run in the last 6 weeks had 20 minutes hard enough (at least 80% of max HR).",
+      "useLthr": "Use",
       "failed": "The data could not be read. Try again."
     },
     "watch": {
