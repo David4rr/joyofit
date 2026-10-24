@@ -480,6 +480,8 @@ public final class HuaweiWearModule: Module {
         AsyncFunction("pauseWatchWorkout") { () async -> [String: Any] in await runtime.watchWorkout.pause().toJS() }
         AsyncFunction("resumeWatchWorkout") { () async -> [String: Any] in await runtime.watchWorkout.resume().toJS() }
         AsyncFunction("stopWatchWorkout") { () async -> [String: Any] in await runtime.watchWorkout.stop().toJS() }
+        // The band's realtime heart rate for a run the phone records (the Run recorder), held like a live workout holds it.
+        Function("setWorkoutHeartRate") { (active: Bool) in runtime.watchSettings.liveHeartRate.setWorkoutActive(active) }
 
         // MARK: meals on the watch's calorie card
 
