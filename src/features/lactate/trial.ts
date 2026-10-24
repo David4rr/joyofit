@@ -224,5 +224,26 @@ export function findEffortStart(points: readonly TrialPoint[]): number | null {
   return best ? best.start : null;
 }
 
+/**
+ * The `MEASURE_SEC` (20-minute) stretch of a workout with the highest mean heart rate, ignoring the first `SETTLE_SEC` of it, with at least
+ * 90 % heart-rate coverage (the trial's own rule; the same scan step as `findEffortStart`). Null when no stretch qualifies. `at` is the unix
+ * second the stretch starts.
+ */
+export function hardestMeasureWindow(points: readonly TrialPoint[]): { at: number; meanHr: number } | null {
+  const segs = segments(points);
+  const first = segs[0];
+  const last = segs[segs.length - 1];
+  if (!first || !last) return null;
+  const latest = last.t0 + last.dt - MEASURE_SEC;
+  let best: { at: number; meanHr: number } | null = null;
+  for (let at = first.t0 + SETTLE_SEC; at <= latest; at += SCAN_STEP_SEC) {
+    const s = sumRange(segs, at, at + MEASURE_SEC);
+    if (s.hrSec < MEASURE_SEC * MIN_COVERAGE) continue;
+    const meanHr = s.hrSum / s.hrSec;
+    if (!best || meanHr > best.meanHr) best = { at, meanHr };
+  }
+  return best;
+}
+
 /** Plain-language checks the result screen can show, by problem code. */
 export const WARNING_PROBLEMS: readonly TrialProblem[] = ['drift', 'paceVaries', 'tooEasy', 'aboveMax'];

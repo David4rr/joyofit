@@ -1030,6 +1030,8 @@
       "fromWatch": "From the watch ({{bpm}})",
       "estimateChip": "Estimate ({{bpm}})",
       "runTest": "Measure it with the lactate threshold test",
+      "fromRun": "From your hardest run ({{bpm}})",
+      "fromRunNote": "Estimate: 95% of your hardest 20-minute average heart rate, run on {{date}}. The 30-minute test is still the most accurate.",
       "details": "These zones use Joe Friel's percentages of LTHR. The watch takes them as ordinary heart-rate zones (five bpm limits)."
     },
     "unit": "bpm"

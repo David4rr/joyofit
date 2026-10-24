@@ -1012,6 +1012,8 @@
       "set": "Kamu yang atur",
       "fromTest": "Dari tes JoyoFit ({{bpm}})",
       "fromWatch": "Dari jam ({{bpm}})",
+      "fromRun": "Dari lari terberat ({{bpm}})",
+      "fromRunNote": "Perkiraan: 95% dari rata-rata detak 20 menit terberat, lari {{date}}. Tes 30 menit tetap paling tepat.",
       "estimateChip": "Perkiraan ({{bpm}})",
       "runTest": "Ukur dengan tes ambang laktat",
       "details": "Zona ini memakai persentase Joe Friel dari LTHR. Jam menerimanya sebagai zona detak jantung biasa (lima batas bpm)."

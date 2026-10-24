@@ -16,13 +16,14 @@ import { SwitchRow } from '@/components/SwitchRow';
 import { useToast } from '@/components/Toast';
 import { showsWatchUi } from '@/features/device/presence';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
-import { listWorkoutsSince } from '@/db/queries';
+import { listWorkoutPoints, listWorkoutsSince } from '@/db/queries';
 import { useLactateTest } from '@/features/lactate/lactate';
+import { isRunSport, lthrFromHardestRun, RUN_LOOKBACK_DAYS, type HardestRunInput } from '@/features/lactate/fromHardestRun';
 import { watchLactate, type LactateValue } from '@/features/lactate/values';
 import { parseSummary } from '@/features/workouts/summary';
 import { useAnalysisPalette } from '@/features/workouts/analysis/palette';
 import { hrZoneColor } from '@/features/workouts/analysis/ui';
-import { fmtInt } from '@/i18n';
+import { fmtDate, fmtInt } from '@/i18n';
 import { spacing } from '@/theme';
 import { hasNative, HuaweiWear } from '@/wear';
 
@@ -78,6 +79,29 @@ function useLthrSources(): { test: LactateValue | null; watch: LactateValue | nu
   return { test, watch };
 }
 
+/** The heart-rate points of the runs of the last 6 weeks, for the estimate "from your hardest run". */
+function useRecentRuns(): HardestRunInput[] {
+  const db = useSQLiteContext();
+  const [runs, setRuns] = useState<HardestRunInput[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    const nowSec = Math.floor(Date.now() / 1000);
+    (async () => {
+      const rows = await listWorkoutsSince(db, nowSec - RUN_LOOKBACK_DAYS * 86_400, nowSec + 60, -1);
+      const loaded: HardestRunInput[] = [];
+      for (const { workout } of rows) {
+        if (!isRunSport(workout.sportType)) continue;
+        loaded.push({ workoutId: workout.id, start: workout.start, sportType: workout.sportType, points: await listWorkoutPoints(db, workout.id) });
+      }
+      if (!cancelled) setRuns(loaded);
+    })().catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [db]);
+  return runs;
+}
+
 type Suggestion = { status: 'idle' } | { status: 'loading' } | { status: 'done'; value: HrZoneSuggestion } | { status: 'failed' };
 
 /** Which plain row has its editor open: one at a time. */
@@ -110,6 +134,7 @@ export function HrZonesSettings() {
   const palette = useAnalysisPalette();
   const presence = useWatchPresence();
   const { toast, show } = useToast();
+  const recentRuns = useRecentRuns();
   const withWatch = presence === null || showsWatchUi(presence);
 
   const [stored, setStored] = useState(getHrZoneSettings);
@@ -121,6 +146,7 @@ export function HrZonesSettings() {
   const hasProfile = useMemo(() => (HuaweiWear.getUserProfile()?.birthYear ?? 0) > 0, []);
 
   const zones = useMemo(() => resolveHrZones(draft, age), [draft, age]);
+  const hardestRun = useMemo(() => lthrFromHardestRun(recentRuns, zones.maxHr, Math.floor(Date.now() / 1000)), [recentRuns, zones.maxHr]);
   const measured = useLthrSources();
   const dirty = !sameSettings(draft, stored);
   const isDefault = sameSettings(draft, DEFAULT_HR_ZONE_SETTINGS);
@@ -260,8 +286,14 @@ export function HrZonesSettings() {
               <View style={styles.chips}>
                 {measured.test ? <Chip label={t('hrZones.lthr.fromTest', { bpm: fmtInt(measured.test.lthr) })} selected={draft.lthr === measured.test.lthr} onPress={() => setLthr(measured.test!.lthr)} /> : null}
                 {measured.watch ? <Chip label={t('hrZones.lthr.fromWatch', { bpm: fmtInt(measured.watch.lthr) })} selected={draft.lthr === measured.watch.lthr} onPress={() => setLthr(measured.watch!.lthr)} /> : null}
+                {hardestRun ? <Chip label={t('hrZones.lthr.fromRun', { bpm: fmtInt(hardestRun.lthr) })} selected={draft.lthr === hardestRun.lthr} onPress={() => setLthr(hardestRun.lthr)} /> : null}
                 <Chip label={t('hrZones.lthr.estimateChip', { bpm: fmtInt(estimateLthr(zones.maxHr, zones.restingHr)) })} selected={draft.lthr === null} onPress={() => setLthr(null)} />
               </View>
+              {hardestRun && draft.lthr === hardestRun.lthr ? (
+                <AppText variant="caption" muted>
+                  {t('hrZones.lthr.fromRunNote', { date: fmtDate(hardestRun.at, 'short') })}
+                </AppText>
+              ) : null}
               <Button label={t('hrZones.lthr.runTest')} variant="secondary" icon="speedometer" onPress={() => router.push('/lactate-test')} />
             </ValueRow>
           </>
