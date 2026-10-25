@@ -87,6 +87,14 @@
       "week": "Bagikan minggu ini",
       "badges": "Bagikan pencapaian",
       "plan": "Bagikan progres rencana"
+    },
+    "customMetrics": {
+      "title": "Data latihan",
+      "count": "Pilih 1–{{max}} data",
+      "maxReached": "Maksimal {{max}} data agar tampilan tetap rapi",
+      "reset": "Reset ke bawaan",
+      "defaultBadge": "Bawaan",
+      "customBadge": "Kustom"
     }
   },
   "tpl": {

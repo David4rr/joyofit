@@ -38,7 +38,10 @@ import {
   type PhotosPrompt,
 } from '../share/shareImage';
 import { canSaveToLibrary } from '../share/shareTargets';
-import type { StickerSubject } from '../subject';
+import type { JsonObject, StickerSubject } from '../subject';
+import type { SportCategory } from '@/features/workouts/sportCategory';
+import { applyCustomMetrics, getDefaultMetrics, MAX_CUSTOM_METRICS } from '../data/customMetrics';
+import { MetricCustomizer } from './MetricCustomizer';
 import { EXPORT_CARD_WIDTH, ScenePainter } from './ScenePainter';
 import { templateTitle } from './templateTitle';
 import { useStickerPro } from './useStickerPro';
@@ -120,7 +123,8 @@ function TargetButton({ label, icon, loading, done = false, disabled, onPress }:
 interface ThumbProps {
   group: TemplateGroup;
   canvas: CanvasPref;
-  subject: StickerSubject;
+  data: JsonObject;
+  date?: number;
   mode: Mode;
   options: StickerData['options'];
   selected: boolean;
@@ -129,11 +133,11 @@ interface ThumbProps {
 }
 
 /** A picker entry: the real Scene of the style at thumbnail size, so what you tap is what you get. */
-function Thumb({ group, canvas, subject, mode, options, selected, label, onPress }: ThumbProps) {
+function Thumb({ group, canvas, data, date, mode, options, selected, label, onPress }: ThumbProps) {
   const { colors, radius } = useTheme();
   const locale = useLocale();
   const template = pickVariant(group, canvas);
-  const scene = useMemo(() => sceneFor(template, subject.data, { locale, mode, options, date: subject.date }), [template, subject.data, subject.date, locale, mode, options]);
+  const scene = useMemo(() => sceneFor(template, data, { locale, mode, options, date }), [template, data, date, locale, mode, options]);
   const height = (THUMB_WIDTH * scene.height) / scene.width;
   return (
     <PressableScale
@@ -228,6 +232,23 @@ export function StickerSheet({
     setFeedback(null);
   }, [subject.id]);
 
+  const runData = subject.data.run as JsonObject | undefined;
+  const category = (runData?.category as SportCategory) ?? 'run';
+
+  const defaultMetrics = useMemo(() => (runData ? getDefaultMetrics(runData, category) : []), [runData, category]);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(defaultMetrics);
+
+  useEffect(() => {
+    if (runData) {
+      setSelectedMetrics(getDefaultMetrics(runData, category));
+    }
+  }, [subject.id]);
+
+  const activeData = useMemo(() => {
+    if (!runData || selectedMetrics.length === 0) return subject.data;
+    return applyCustomMetrics(subject.data, selectedMetrics);
+  }, [subject.data, runData, selectedMetrics]);
+
   const group = visibleGroups.find((g) => g.key === groupKey) ?? initialGroup(visibleGroups, subject) ?? groups[0] ?? null;
   const template = group ? pickVariant(group, canvas) : null;
   const mode: Mode = modePick ?? scheme;
@@ -238,8 +259,8 @@ export function StickerSheet({
     [pro, watermark, routePrivacy],
   );
   const scene = useMemo(
-    () => (template ? sceneFor(template, subject.data, { locale, mode, options, date: subject.date, assets: photo ? { photo } : undefined }) : null),
-    [template, subject.data, subject.date, locale, mode, options, photo],
+    () => (template ? sceneFor(template, activeData, { locale, mode, options, date: subject.date, assets: photo ? { photo } : undefined }) : null),
+    [template, activeData, subject.date, locale, mode, options, photo],
   );
 
   const needsPhoto = group?.needsPhoto === true;
@@ -370,7 +391,8 @@ export function StickerSheet({
                 <Thumb
                   group={item}
                   canvas={canvas}
-                  subject={subject}
+                  data={activeData}
+                  date={subject.date}
                   mode={mode}
                   options={options}
                   selected={item.key === group?.key}
@@ -428,6 +450,16 @@ export function StickerSheet({
               onChange={setModePick}
             />
           </View>
+
+          {runData ? (
+            <MetricCustomizer
+              run={runData}
+              category={category}
+              selectedIds={selectedMetrics}
+              onChange={setSelectedMetrics}
+              onMaxLimit={() => show(t('stickers:ui.customMetrics.maxReached', { max: MAX_CUSTOM_METRICS }))}
+            />
+          ) : null}
 
           {needsPhoto ? (
             <View style={styles.row}>

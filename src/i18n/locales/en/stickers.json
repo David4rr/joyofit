@@ -87,6 +87,14 @@
       "week": "Share this week",
       "badges": "Share achievements",
       "plan": "Share plan progress"
+    },
+    "customMetrics": {
+      "title": "Workout metrics",
+      "count": "Choose 1–{{max}} metrics",
+      "maxReached": "Maximum {{max}} metrics to keep the card clean",
+      "reset": "Reset to default",
+      "defaultBadge": "Default",
+      "customBadge": "Custom"
     }
   },
   "tpl": {
