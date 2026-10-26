@@ -112,9 +112,6 @@ function photoHero(
   );
 }
 
-const bleed = (k: Kit, x: number, y: number, w: number, h: number, child: LayerJson): LayerJson =>
-  k.group({ x, y, w, h }, [child], { dir: 'column' });
-
 function buildPhoto(
   id: string,
   name: string,
@@ -139,34 +136,12 @@ function buildPhoto(
   });
 }
 
-/** 1. Clean Corner (Strava style): unobtrusive, 85% photo clear, stats in bottom corner. */
+/** 1. Clean Corner (Strava style): unobtrusive, photo-focused, dynamic text scrim. */
 export function runPhoto(canvas: Canvas) {
   const k = kit('rpc');
   const story = canvas === 'story';
   const W = 936;
   const H = story ? 1920 : 1080;
-  const y0 = story ? 1300 : 680;
-
-  // Gentle bottom wash
-  const ease = bleed(
-    k,
-    0,
-    y0,
-    1080,
-    H - y0,
-    k.shape({ w: 1080, h: H - y0 }, 'rect', {
-      fill: {
-        gradient: {
-          angle: 180,
-          stops: [
-            { at: 0, color: '$bg/0' },
-            { at: 0.5, color: '$bg/45' },
-            { at: 1, color: '$bg/72' },
-          ],
-        },
-      },
-    }),
-  );
 
   const topBadge = k.group(
     { w: W, h: 'auto' },
@@ -179,6 +154,28 @@ export function runPhoto(canvas: Canvas) {
       ),
     ],
     { dir: 'row', justify: 'between', align: 'center' },
+  );
+
+  const topWash = k.group(
+    { w: 1080, h: 'auto' },
+    [
+      k.shape({ w: 1, h: story ? 178 : 0 }, 'rect'),
+      topBadge,
+    ],
+    {
+      dir: 'column',
+      padding: 72,
+      fill: {
+        gradient: {
+          angle: 180,
+          stops: [
+            { at: 0, color: '$bg/85' },
+            { at: 0.5, color: '$bg/45' },
+            { at: 1, color: '$bg/0' },
+          ],
+        },
+      },
+    },
   );
 
   const header = k.group(
@@ -197,13 +194,41 @@ export function runPhoto(canvas: Canvas) {
     { dir: 'row', gap: 24, align: 'start' },
   );
 
-  const root = k.group(
-    { x: 72, y: story ? 250 : 72, w: W, h: story ? 1330 : 936 },
-    [topBadge, k.shape({ w: 1, h: 'fill' }, 'rect'), header, hero, stats],
-    { dir: 'column', gap: story ? 28 : 20, align: 'start' },
+  // Dynamic bottom scrim: height and starting Y adapt 100% dynamically to text content
+  const bottomWash = k.group(
+    { w: 1080, h: 'auto' },
+    [
+      header,
+      hero,
+      stats,
+      k.shape({ w: 1, h: story ? 268 : 0 }, 'rect'),
+    ],
+    {
+      dir: 'column',
+      gap: story ? 28 : 20,
+      padding: 72,
+      fill: {
+        gradient: {
+          angle: 180,
+          stops: [
+            { at: 0, color: '$bg/0' },
+            { at: 0.18, color: '$bg/60' },
+            { at: 0.45, color: '$bg/88' },
+            { at: 0.75, color: '$bg/96' },
+            { at: 1, color: '$bg' },
+          ],
+        },
+      },
+    },
   );
 
-  return buildPhoto('photo', `Run, photo corner, ${canvas}`, 'photo', 'photo', canvas, [ease, root]);
+  const root = k.group(
+    { x: 0, y: 0, w: 1080, h: H },
+    [topWash, bottomWash],
+    { dir: 'column', justify: 'between' },
+  );
+
+  return buildPhoto('photo', `Run, photo corner, ${canvas}`, 'photo', 'photo', canvas, [root]);
 }
 
 /** 2. Modern Pill (Apple Fitness / WHOOP style): floating frosted glass capsule. */
@@ -258,7 +283,7 @@ export function runGlass(canvas: Canvas) {
       gap: story ? 24 : 18,
       align: 'start',
       padding: PAD,
-      fill: { gradient: { angle: 180, stops: [{ at: 0, color: '$bg/62' }, { at: 1, color: '$bg/82' }] } },
+      fill: { gradient: { angle: 180, stops: [{ at: 0, color: '$bg/82' }, { at: 1, color: '$bg/95' }] } },
       radius: story ? 38 : 30,
       glass: true,
     },
@@ -273,34 +298,12 @@ export function runGlass(canvas: Canvas) {
   return buildPhoto('glass', `Run, photo pill, ${canvas}`, 'glass', 'glass', canvas, [root]);
 }
 
-/** 3. Editorial Magazine: sleek top banner + bottom ruler spread. */
+/** 3. Editorial Magazine: sleek top banner + bottom ruler spread with dynamic scrims. */
 export function runEditorial(canvas: Canvas) {
   const k = kit('rpe');
   const story = canvas === 'story';
   const W = 936;
   const H = story ? 1920 : 1080;
-
-  const topWash = bleed(
-    k,
-    0,
-    0,
-    1080,
-    story ? 400 : 260,
-    k.shape({ w: 1080, h: story ? 400 : 260 }, 'rect', {
-      fill: { gradient: { angle: 180, stops: [{ at: 0, color: '$bg/65' }, { at: 1, color: '$bg/0' }] } },
-    }),
-  );
-
-  const botWash = bleed(
-    k,
-    0,
-    story ? 1380 : 700,
-    1080,
-    H - (story ? 1380 : 700),
-    k.shape({ w: 1080, h: H - (story ? 1380 : 700) }, 'rect', {
-      fill: { gradient: { angle: 180, stops: [{ at: 0, color: '$bg/0' }, { at: 1, color: '$bg/72' }] } },
-    }),
-  );
 
   const topHeader = k.group(
     { w: W, h: 'auto' },
@@ -309,6 +312,28 @@ export function runEditorial(canvas: Canvas) {
       k.text({ w: 'fill' }, '{run.startedAt|date:medium}', { size: story ? 26 : 22, weight: 600, upper: true, ls: 3, color: '$fgSoft', shadow: true }),
     ],
     { dir: 'column', gap: 10, align: 'start' },
+  );
+
+  const topWash = k.group(
+    { w: 1080, h: 'auto' },
+    [
+      k.shape({ w: 1, h: story ? 178 : 0 }, 'rect'),
+      topHeader,
+    ],
+    {
+      dir: 'column',
+      padding: 72,
+      fill: {
+        gradient: {
+          angle: 180,
+          stops: [
+            { at: 0, color: '$bg/90' },
+            { at: 0.6, color: '$bg/55' },
+            { at: 1, color: '$bg/0' },
+          ],
+        },
+      },
+    },
   );
 
   const hero = photoHero(k, W, story ? 160 : 120, story ? 44 : 32, story ? 110 : 80, true);
@@ -325,15 +350,40 @@ export function runEditorial(canvas: Canvas) {
     { dir: 'row', justify: 'between', align: 'center' },
   );
 
-  const root = k.group(
-    { x: 72, y: story ? 250 : 72, w: W, h: story ? 1330 : 936 },
-    [topHeader, k.shape({ w: 1, h: 'fill' }, 'rect'), hero, ruler, stats, footer],
-    { dir: 'column', gap: story ? 24 : 18, align: 'start' },
+  // Dynamic bottom scrim: height and starting Y adapt 100% dynamically to text content
+  const bottomWash = k.group(
+    { w: 1080, h: 'auto' },
+    [
+      hero,
+      ruler,
+      stats,
+      footer,
+      k.shape({ w: 1, h: story ? 268 : 0 }, 'rect'),
+    ],
+    {
+      dir: 'column',
+      gap: story ? 24 : 18,
+      padding: 72,
+      fill: {
+        gradient: {
+          angle: 180,
+          stops: [
+            { at: 0, color: '$bg/0' },
+            { at: 0.18, color: '$bg/65' },
+            { at: 0.45, color: '$bg/88' },
+            { at: 0.75, color: '$bg/96' },
+            { at: 1, color: '$bg' },
+          ],
+        },
+      },
+    },
   );
 
-  return buildPhoto('editorial', `Run, photo editorial, ${canvas}`, 'editorial', 'editorial', canvas, [
-    topWash,
-    botWash,
-    root,
-  ]);
+  const root = k.group(
+    { x: 0, y: 0, w: 1080, h: H },
+    [topWash, bottomWash],
+    { dir: 'column', justify: 'between' },
+  );
+
+  return buildPhoto('editorial', `Run, photo editorial, ${canvas}`, 'editorial', 'editorial', canvas, [root]);
 }
