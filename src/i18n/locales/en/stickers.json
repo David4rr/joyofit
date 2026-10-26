@@ -27,7 +27,10 @@
     "swolf": "SWOLF",
     "pool": "Pool",
     "power": "Power",
-    "jumps": "Jumps"
+    "jumps": "Jumps",
+    "swimStyle": "Swim style",
+    "strokeRate": "Stroke rate",
+    "exercises": "Exercises"
   },
   "unit": {
     "perKm": "/km",
@@ -40,7 +43,8 @@
     "kg": "kg",
     "km": "km",
     "rpm": "rpm",
-    "watt": "W"
+    "watt": "W",
+    "perMin": "/min"
   },
   "ui": {
     "filter": {

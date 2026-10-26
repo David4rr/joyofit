@@ -57,11 +57,17 @@ const M = {
   strokes: metric('strokes', 'int', 'strokes'),
   swolf: metric('swolf', 'int', 'swolf'),
   pool: metric('poolM', 'int', 'pool', 'm'),
+  strokeRate: metric('strokeRate', 'int', 'strokeRate', 'perMin'),
+  swimStyle: {
+    bind: 'run.swimStyle',
+    value: '{run.swimStyle}',
+    label: tl('label.swimStyle'),
+  },
   volume: { ...metric('volume', 'int', 'volume'), unit: '{run.unit}' },
   sets: metric('sets', 'int', 'sets'),
   reps: metric('reps', 'int', 'reps'),
+  exercises: metric('exercises', 'int', 'exercises'),
 } satisfies Record<string, Metric>;
-
 /** The picture of a card, first one the workout has wins: its route, its climb, its heart rate, its heart rate zones. */
 type Art = 'route' | 'alt' | 'hr' | 'zones';
 
@@ -120,9 +126,9 @@ export const FAMILY_SPECS: readonly FamilySpec[] = [
     rows: [
       [M.clock, M.pace100, M.laps],
       [M.swolf, M.strokes, M.pool],
-      [M.hr, M.kcal],
+      [M.swimStyle, M.strokeRate, M.hr, M.kcal],
     ],
-    brief: [M.clock, M.pace100, M.laps, M.swolf],
+    brief: [M.clock, M.pace100, M.swimStyle, M.laps, M.swolf],
     art: ['route'],
     effort: false,
     styles: ALL_STYLES,

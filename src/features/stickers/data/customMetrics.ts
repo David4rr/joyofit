@@ -30,9 +30,13 @@ export const METRIC_CATALOG: readonly MetricDef[] = [
   { id: 'laps', labelKey: 'laps', fields: ['laps'], isAvailable: (r) => pos(r.laps) },
   { id: 'swolf', labelKey: 'swolf', fields: ['swolf'], isAvailable: (r) => pos(r.swolf) },
   { id: 'strokes', labelKey: 'strokes', fields: ['strokes'], isAvailable: (r) => pos(r.strokes) },
+  { id: 'swimStyle', labelKey: 'swimStyle', fields: ['swimStyle'], isAvailable: (r) => typeof r.swimStyle === 'string' && r.swimStyle.length > 0 },
+  { id: 'strokeRate', labelKey: 'strokeRate', fields: ['strokeRate'], isAvailable: (r) => pos(r.strokeRate) },
+  { id: 'pool', labelKey: 'pool', fields: ['poolM'], isAvailable: (r) => pos(r.poolM) },
   { id: 'volume', labelKey: 'volume', fields: ['volumeKg'], isAvailable: (r) => pos(r.volumeKg) },
   { id: 'sets', labelKey: 'sets', fields: ['sets'], isAvailable: (r) => pos(r.sets) },
   { id: 'reps', labelKey: 'reps', fields: ['reps'], isAvailable: (r) => pos(r.reps) },
+  { id: 'exercises', labelKey: 'exercises', fields: ['exercises'], isAvailable: (r) => pos(r.exercises) },
 ];
 
 /** Resolves the field used as the headline hero stat for this workout family. */
@@ -71,8 +75,8 @@ const PRIORITY_BY_CATEGORY: Readonly<Record<SportCategory, readonly string[]>> =
   run: ['time', 'pace', 'hr', 'kcal', 'elevation', 'cadence', 'steps'],
   walk: ['time', 'pace', 'elevation', 'steps', 'hr', 'kcal'],
   ride: ['time', 'speed', 'elevation', 'cadence', 'power', 'hr', 'kcal'],
-  swim: ['time', 'pace', 'laps', 'swolf', 'strokes', 'hr', 'kcal'],
-  gym: ['time', 'sets', 'reps', 'volume', 'kcal', 'hr'],
+  swim: ['time', 'pace', 'swimStyle', 'laps', 'swolf', 'strokes', 'strokeRate', 'pool', 'hr', 'kcal'],
+  gym: ['time', 'sets', 'reps', 'volume', 'exercises', 'kcal', 'hr'],
   cardio: ['time', 'kcal', 'hr', 'hrMax', 'jumps', 'cadence'],
   flow: ['kcal', 'hr', 'hrMax'],
   court: ['kcal', 'hr', 'hrMax', 'steps', 'distance'],

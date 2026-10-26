@@ -27,7 +27,10 @@
     "swolf": "SWOLF",
     "pool": "Kolam",
     "power": "Daya",
-    "jumps": "Lompatan"
+    "jumps": "Lompatan",
+    "swimStyle": "Gaya renang",
+    "strokeRate": "Laju ayunan",
+    "exercises": "Gerakan"
   },
   "unit": {
     "perKm": "/km",
@@ -40,7 +43,8 @@
     "kg": "kg",
     "km": "km",
     "rpm": "rpm",
-    "watt": "W"
+    "watt": "W",
+    "perMin": "/mnt"
   },
   "ui": {
     "filter": {

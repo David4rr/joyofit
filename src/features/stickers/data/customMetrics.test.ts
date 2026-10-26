@@ -103,6 +103,9 @@ describe('customMetrics', () => {
       const swimRun: JsonObject = { distanceM: 1500, movingSec: 2100, pace100Sec: 140, laps: 30, swolf: 38, hrAvg: 135 };
       expect(getDefaultMetrics(swimRun, 'swim')).toEqual(['time', 'pace', 'laps', 'swolf']);
 
+      const swimWithStyle: JsonObject = { distanceM: 1500, movingSec: 2100, pace100Sec: 140, swimStyle: 'Gaya dada', laps: 30, swolf: 38 };
+      expect(getDefaultMetrics(swimWithStyle, 'swim')).toEqual(['time', 'pace', 'swimStyle', 'laps']);
+
       const gymRun: JsonObject = { volumeKg: 3500, movingSec: 3000, sets: 18, reps: 150, kcal: 280, hrAvg: 125 };
       expect(getDefaultMetrics(gymRun, 'gym')).toEqual(['time', 'sets', 'reps', 'kcal']);
 
