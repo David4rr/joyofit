@@ -19,6 +19,7 @@ import {
 import type { JsonObject, StickerKind, StickerSubject } from '../subject';
 import { CATEGORY_KIND, DEFAULT_GROUP, dropInapplicable, metricApplies } from './sportMetrics';
 import { formatSwimStyle } from './swimStyle';
+import { extractWorkoutMetrics } from './workoutMetrics';
 export interface RunSubjectInput {
   workout: WorkoutRow;
   summary: WorkoutSummary;
@@ -208,6 +209,7 @@ export function buildRunSubject(input: RunSubjectInput, locale: 'id' | 'en' | Lo
   if (pos(workout.steps) && !jumpRope) run.steps = Math.round(workout.steps);
   swimFields(summary, run, locale);
   if (strength) liftFields(strength, run);
+  extractWorkoutMetrics(summary, analysis, movingSec, jumps, run);
 
   const points = route.filter((p) => num(p.lat) && num(p.lon));
   if (points.length >= 2) run.route = downsample(points, ROUTE_MAX_POINTS).map((p) => [p.lat, p.lon]);

@@ -67,6 +67,20 @@ const M = {
   sets: metric('sets', 'int', 'sets'),
   reps: metric('reps', 'int', 'reps'),
   exercises: metric('exercises', 'int', 'exercises'),
+  fastPace: metric('paceFastestSec', 'pace', 'bestPace', 'perKm'),
+  maxSpeed: metric('maxSpeedKmh', 'num:1', 'maxSpeed', 'kmh'),
+  elevLoss: metric('elevLossM', 'int', 'elevLoss', 'm'),
+  stepLength: metric('stepLengthCm', 'int', 'stepLength', 'cm'),
+  jumpRate: metric('jumpRate', 'int', 'jumpRate', 'perMin'),
+  longestStreak: metric('longestStreak', 'int', 'longestStreak'),
+  interruptions: metric('interruptions', 'int', 'interruptions'),
+  minHr: metric('minHr', 'int', 'minHr', 'bpm'),
+  maxPower: metric('maxPower', 'int', 'maxPower', 'watt'),
+  aerobic: metric('aerobicEffect', 'num:1', 'aerobicEffect'),
+  anaerobic: metric('anaerobicEffect', 'num:1', 'anaerobicEffect'),
+  vo2max: metric('vo2max', 'int', 'vo2max', 'mlKgMin'),
+  recovery: metric('recoveryHours', 'int', 'recoveryHours', 'hours'),
+  workoutLoad: metric('workoutLoad', 'int', 'trainingLoad'),
 } satisfies Record<string, Metric>;
 /** The picture of a card, first one the workout has wins: its route, its climb, its heart rate, its heart rate zones. */
 type Art = 'route' | 'alt' | 'hr' | 'zones';

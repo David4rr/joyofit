@@ -3,7 +3,7 @@ import { kit, template } from './dsl';
 import type { Cond, Dim, Expr, Kit, LayerJson } from './dsl';
 import { GLASS, INK, PAPER, VOLT } from './palette';
 import type { Palette } from './palette';
-
+import { runEditorial, runGlass, runPhoto } from './photoTemplates';
 type Canvas = 'story' | 'square';
 
 /** The three cards below the hero are the same data, in a different layout per style. */
@@ -378,134 +378,7 @@ function runMinimal(canvas: Canvas) {
 
 // ----------------------------------------------------------------------------------------------------------------- photo
 
-/** Without a photo (it failed to load) the card is a dark wash with a glow; by day a milky one. */
-const PHOTO_FALLBACK = {
-  kind: 'gradient',
-  angle: 180,
-  stops: [
-    { at: 0, color: '$bg' },
-    { at: 1, color: '$bg2' },
-  ],
-  glows: [{ x: 800, y: 420, r: 1100, color: '$accent2', opacity: 0.32 }],
-};
-
-/** `run.photo.*`: the person's photo full-bleed, a bottom scrim, the stats overlaid and a small route inset. */
-function runPhoto(canvas: Canvas) {
-  const k = kit('rf');
-  const story = canvas === 'story';
-  const W = 936;
-  const H = story ? 1920 : 1080;
-  // The photo is painted as it is; one eased wash under the text block keeps white numerals (or ink by day) readable on any sky.
-  const background = { kind: 'photo', bind: 'photo', fit: 'cover', fallback: PHOTO_FALLBACK };
-  const y0 = story ? 700 : 300;
-  const ease = bleed(
-    k,
-    0,
-    y0,
-    1080,
-    H - y0,
-    k.shape({ w: 1080, h: H - y0 }, 'rect', {
-      fill: {
-        gradient: {
-          angle: 180,
-          stops: [
-            { at: 0, color: '$bg/0' },
-            { at: 0.5, color: '$bg/70' },
-            { at: 0.8, color: '$bg/82' },
-            { at: 1, color: '$bg/55' },
-          ],
-        },
-      },
-    }),
-  );
-
-  const header = headerRow(k, { disc: story ? 72 : 64, glyph: story ? 38 : 34, size: story ? 40 : 34, dateSize: story ? 32 : 28, color: '$fg', muted: '$fgSoft', discFill: '$surfaceStrong', shadow: true, gap: 20 });
-  const route = (box: { w: Dim; h: Dim }, o: { when: Cond; size?: number }) =>
-    k.route(box, { color: '$fg', color2: '$accent', strokeWidth: o.size ?? 12, halo: true, markers: true, padding: 28 }, { when: o.when });
-  const stats = k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, { size: story ? 70 : 60, labelSize: 26, unitSize: 30, color: '$fg', labelColor: '$fgSoft', weight: 800, shadow: true }), { dir: 'row', gap: 28, align: 'start' });
-  const bigRoute = k.group({ x: 72, y: story ? 300 : 120, w: W, h: story ? 760 : 400 }, [route({ w: W, h: story ? 760 : 400 }, { when: lacks('photo'), size: story ? 18 : 14 })], { dir: 'column' });
-
-  let root: LayerJson;
-  if (story) {
-    const insetRoute = k.group({ w: W, h: 'auto' }, [k.shape({ w: 'fill', h: 1 }, 'rect'), route({ w: 340, h: 260 }, { when: all(has('run.route'), has('photo')) })], { dir: 'row', align: 'center' });
-    root = k.group(
-      { x: 72, y: 250, w: W, h: 1330 },
-      [insetRoute, header, hero(k, W, { size: 380, unitSize: 84, timeSize: 280, color: '$fg', shadow: true }), stats, footerRow(k, W)],
-      { dir: 'column', gap: 36, align: 'start', justify: 'end' },
-    );
-  } else {
-    const heroRow = k.group(
-      { w: W, h: 'auto' },
-      [hero(k, 'fill', { size: 300, unitSize: 68, timeSize: 220, color: '$fg', shadow: true, minSize: 100 }), route({ w: 280, h: 240 }, { when: all(has('run.route'), has('photo')) })],
-      { dir: 'row', gap: 24, align: 'end' },
-    );
-    root = k.group(
-      { x: 72, y: 72, w: W, h: 936 },
-      [header, heroRow, stats, footerRow(k, W, 44)],
-      { dir: 'column', gap: 28, align: 'start', justify: 'end' },
-    );
-  }
-  return build({
-    id: 'photo',
-    name: `Run, photo, ${canvas}`,
-    titleKey: 'photo',
-    style: 'photo',
-    canvas,
-    palette: GLASS,
-    background,
-    layers: [ease, bigRoute, root],
-    tags: ['photo'],
-    photo: true,
-  });
-}
-
-// ----------------------------------------------------------------------------------------------------------------- glass
-
-/** `run.glass.*`: the photo with one glass panel holding the distance, time, pace and the route. */
-function runGlass(canvas: Canvas) {
-  const k = kit('rg');
-  const story = canvas === 'story';
-  const W = 936;
-  const PAD = story ? 48 : 40;
-  const inner = W - PAD * 2;
-
-  const header = k.group(
-    { w: inner, h: 'auto' },
-    [
-      glyphBox(k, story ? 48 : 42, '$fg'),
-      sportText(k, { size: story ? 36 : 32, color: '$fg', minSize: 26 }),
-      dateText(k, { size: story ? 30 : 26, color: '$fgMuted' }),
-    ],
-    { dir: 'row', gap: 18, align: 'center' },
-  );
-  const routeBox = story ? { w: 'fill' as Dim, h: 400 } : { w: 240, h: 210 };
-  const route = k.route(routeBox, { color: '$fg', color2: '$accent', strokeWidth: story ? 16 : 12, halo: true, markers: true, padding: 24 }, { when: has('run.route') });
-  const heroLayer = hero(k, 'fill', { size: story ? 340 : 220, unitSize: story ? 76 : 52, timeSize: story ? 240 : 170, color: '$fg', minSize: 100 });
-  const stats = k.group({ w: inner, h: 'auto' }, cellRow(k, CELLS3, { size: story ? 64 : 54, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 24, align: 'start' });
-  const body = story ? [heroLayer, route] : [k.group({ w: inner, h: 'auto' }, [heroLayer, route], { dir: 'row', gap: 20, align: 'center' })];
-
-  const panel = k.group(
-    { w: W, h: 'auto' },
-    [header, ...body, stats, footerRow(k, inner, 44)],
-    { dir: 'column', gap: story ? 36 : 28, align: 'start', padding: PAD, fill: { gradient: { angle: 180, stops: [{ at: 0, color: '$bg/52' }, { at: 1, color: '$bg/74' }] } }, radius: story ? 52 : 44, glass: true },
-  );
-  const root = story
-    ? k.group({ x: 72, y: 250, w: W, h: 1330 }, [panel], { dir: 'column', justify: 'end', align: 'start' })
-    : k.group({ x: 72, y: 72, w: W, h: 936 }, [panel], { dir: 'column', justify: 'end', align: 'start' });
-
-  return build({
-    id: 'glass',
-    name: `Run, glass, ${canvas}`,
-    titleKey: 'glass',
-    style: 'glass',
-    canvas,
-    palette: GLASS,
-    background: { kind: 'photo', bind: 'photo', fit: 'cover', fallback: PHOTO_FALLBACK },
-    layers: [root],
-    tags: ['photo', 'glass'],
-    photo: true,
-  });
-}
+// Photo styles (photo corner, pill, editorial) are in ./photoTemplates.ts
 
 export const RUN_TEMPLATES = [
   runBold('story'),
@@ -518,4 +391,6 @@ export const RUN_TEMPLATES = [
   runPhoto('square'),
   runGlass('story'),
   runGlass('square'),
+  runEditorial('story'),
+  runEditorial('square'),
 ];

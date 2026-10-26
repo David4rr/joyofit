@@ -30,7 +30,21 @@
     "jumps": "Lompatan",
     "swimStyle": "Gaya renang",
     "strokeRate": "Laju ayunan",
-    "exercises": "Gerakan"
+    "exercises": "Gerakan",
+    "bestPace": "Pace terbaik",
+    "maxSpeed": "Kecepatan maks",
+    "elevLoss": "Turunan",
+    "stepLength": "Panjang langkah",
+    "jumpRate": "Laju lompatan",
+    "longestStreak": "Beruntun terbaik",
+    "interruptions": "Terputus",
+    "minHr": "Detak min",
+    "maxPower": "Daya maks",
+    "aerobicEffect": "Efek aerobik",
+    "anaerobicEffect": "Efek anaerobik",
+    "vo2max": "VO2Max",
+    "recoveryHours": "Waktu pulih",
+    "trainingLoad": "Beban latihan"
   },
   "unit": {
     "perKm": "/km",
@@ -44,7 +58,10 @@
     "km": "km",
     "rpm": "rpm",
     "watt": "W",
-    "perMin": "/mnt"
+    "perMin": "/mnt",
+    "cm": "cm",
+    "hours": "jam",
+    "mlKgMin": "ml/kg/mnt"
   },
   "ui": {
     "filter": {
@@ -168,8 +185,9 @@
       "bold": "Tebal",
       "poster": "Poster",
       "minimal": "Minimal",
-      "photo": "Foto",
-      "glass": "Kaca",
+      "photo": "Sudut",
+      "glass": "Kapsul",
+      "editorial": "Editorial",
       "route": "Rute",
       "stats": "Statistik",
       "receipt": "Struk",

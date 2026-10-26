@@ -37,6 +37,20 @@ export const METRIC_CATALOG: readonly MetricDef[] = [
   { id: 'sets', labelKey: 'sets', fields: ['sets'], isAvailable: (r) => pos(r.sets) },
   { id: 'reps', labelKey: 'reps', fields: ['reps'], isAvailable: (r) => pos(r.reps) },
   { id: 'exercises', labelKey: 'exercises', fields: ['exercises'], isAvailable: (r) => pos(r.exercises) },
+  { id: 'fastPace', labelKey: 'bestPace', fields: ['paceFastestSec'], isAvailable: (r) => pos(r.paceFastestSec) },
+  { id: 'maxSpeed', labelKey: 'maxSpeed', fields: ['maxSpeedKmh'], isAvailable: (r) => pos(r.maxSpeedKmh) },
+  { id: 'elevLoss', labelKey: 'elevLoss', fields: ['elevLossM'], isAvailable: (r) => num(r.elevLossM) },
+  { id: 'stepLength', labelKey: 'stepLength', fields: ['stepLengthCm'], isAvailable: (r) => pos(r.stepLengthCm) },
+  { id: 'jumpRate', labelKey: 'jumpRate', fields: ['jumpRate'], isAvailable: (r) => pos(r.jumpRate) },
+  { id: 'longestStreak', labelKey: 'longestStreak', fields: ['longestStreak'], isAvailable: (r) => pos(r.longestStreak) },
+  { id: 'interruptions', labelKey: 'interruptions', fields: ['interruptions'], isAvailable: (r) => pos(r.interruptions) },
+  { id: 'minHr', labelKey: 'minHr', fields: ['minHr'], isAvailable: (r) => pos(r.minHr) },
+  { id: 'maxPower', labelKey: 'maxPower', fields: ['maxPower'], isAvailable: (r) => pos(r.maxPower) },
+  { id: 'aerobic', labelKey: 'aerobicEffect', fields: ['aerobicEffect'], isAvailable: (r) => pos(r.aerobicEffect) },
+  { id: 'anaerobic', labelKey: 'anaerobicEffect', fields: ['anaerobicEffect'], isAvailable: (r) => pos(r.anaerobicEffect) },
+  { id: 'vo2max', labelKey: 'vo2max', fields: ['vo2max'], isAvailable: (r) => pos(r.vo2max) },
+  { id: 'recovery', labelKey: 'recoveryHours', fields: ['recoveryHours'], isAvailable: (r) => pos(r.recoveryHours) },
+  { id: 'workoutLoad', labelKey: 'trainingLoad', fields: ['workoutLoad'], isAvailable: (r) => pos(r.workoutLoad) },
 ];
 
 /** Resolves the field used as the headline hero stat for this workout family. */
@@ -72,13 +86,13 @@ export function getAvailableMetrics(run: JsonObject, category: SportCategory): M
 }
 
 const PRIORITY_BY_CATEGORY: Readonly<Record<SportCategory, readonly string[]>> = {
-  run: ['time', 'pace', 'hr', 'kcal', 'elevation', 'cadence', 'steps'],
-  walk: ['time', 'pace', 'elevation', 'steps', 'hr', 'kcal'],
-  ride: ['time', 'speed', 'elevation', 'cadence', 'power', 'hr', 'kcal'],
+  run: ['time', 'pace', 'hr', 'kcal', 'elevation', 'cadence', 'steps', 'fastPace', 'stepLength', 'vo2max'],
+  walk: ['time', 'pace', 'elevation', 'steps', 'hr', 'kcal', 'stepLength'],
+  ride: ['time', 'speed', 'elevation', 'cadence', 'power', 'hr', 'kcal', 'maxSpeed', 'maxPower'],
   swim: ['time', 'pace', 'swimStyle', 'laps', 'swolf', 'strokes', 'strokeRate', 'pool', 'hr', 'kcal'],
   gym: ['time', 'sets', 'reps', 'volume', 'exercises', 'kcal', 'hr'],
-  cardio: ['time', 'kcal', 'hr', 'hrMax', 'jumps', 'cadence'],
-  flow: ['kcal', 'hr', 'hrMax'],
+  cardio: ['time', 'jumps', 'jumpRate', 'longestStreak', 'kcal', 'hr', 'hrMax', 'interruptions', 'cadence'],
+  flow: ['time', 'kcal', 'hr', 'minHr', 'hrMax'],
   court: ['kcal', 'hr', 'hrMax', 'steps', 'distance'],
   other: ['time', 'pace', 'speed', 'hr', 'kcal', 'elevation', 'steps'],
 };

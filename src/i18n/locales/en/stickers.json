@@ -30,7 +30,21 @@
     "jumps": "Jumps",
     "swimStyle": "Swim style",
     "strokeRate": "Stroke rate",
-    "exercises": "Exercises"
+    "exercises": "Exercises",
+    "bestPace": "Best pace",
+    "maxSpeed": "Max speed",
+    "elevLoss": "Elevation loss",
+    "stepLength": "Step length",
+    "jumpRate": "Jump rate",
+    "longestStreak": "Longest streak",
+    "interruptions": "Trips",
+    "minHr": "Min HR",
+    "maxPower": "Max power",
+    "aerobicEffect": "Aerobic TE",
+    "anaerobicEffect": "Anaerobic TE",
+    "vo2max": "VO2Max",
+    "recoveryHours": "Recovery",
+    "trainingLoad": "Training load"
   },
   "unit": {
     "perKm": "/km",
@@ -44,7 +58,10 @@
     "km": "km",
     "rpm": "rpm",
     "watt": "W",
-    "perMin": "/min"
+    "perMin": "/min",
+    "cm": "cm",
+    "hours": "h",
+    "mlKgMin": "ml/kg/min"
   },
   "ui": {
     "filter": {
@@ -171,8 +188,9 @@
       "bold": "Bold",
       "poster": "Poster",
       "minimal": "Minimal",
-      "photo": "Photo",
-      "glass": "Glass",
+      "photo": "Corner",
+      "glass": "Pill",
+      "editorial": "Editorial",
       "route": "Route",
       "stats": "Stats",
       "receipt": "Receipt",
