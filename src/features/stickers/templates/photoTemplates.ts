@@ -1,4 +1,4 @@
-import { all, has, is, lacks, not, sportGlyph, tl } from './blocks';
+import { all, any, has, is, lacks, not, sportGlyph, tl } from './blocks';
 import { kit, template } from './dsl';
 import type { Cond, Dim, Expr, Kit, LayerJson } from './dsl';
 import { GLASS } from './palette';
@@ -61,42 +61,52 @@ const CELL = {
   workoutLoad: { bind: 'run.workoutLoad', value: '{run.workoutLoad|int}', label: tl('label.trainingLoad') },
 } satisfies Record<string, Cell>;
 
-const ALL_PHOTO_CELLS: Cell[] = Object.values(CELL);
+const ROW1_PHOTO_CELLS: Cell[] = [
+  CELL.time, CELL.pace, CELL.fastPace, CELL.pace100, CELL.speed, CELL.maxSpeed,
+  CELL.elev, CELL.elevLoss, CELL.swimStyle, CELL.laps, CELL.pool, CELL.sets,
+  CELL.reps, CELL.exercises, CELL.jumps, CELL.jumpRate,
+];
+
+const ROW2_PHOTO_CELLS: Cell[] = [
+  CELL.hr, CELL.minHr, CELL.hrMax, CELL.cadence, CELL.power, CELL.steps,
+  CELL.stepLength, CELL.vo2max, CELL.kcal, CELL.aerobic, CELL.anaerobic,
+  CELL.recovery, CELL.workoutLoad, CELL.swolf, CELL.strokes, CELL.strokeRate,
+  CELL.volume, CELL.longestStreak, CELL.interruptions,
+];
 
 const cellWhen = (c: Cell): Cond => (c.when ? all(has(c.bind), c.when) : has(c.bind));
 
-function photoStatRow(
-  k: Kit,
-  size: number,
-  labelSize: number,
-  unitSize: number,
-  shadow = true,
-): LayerJson[] {
-  return ALL_PHOTO_CELLS.map((c) =>
-    k.stat({ w: 'fill', h: 'auto' }, c.value, {
-      unit: c.unit,
-      label: c.label,
-      size,
-      labelSize,
-      unitSize,
-      color: '$fg',
-      labelColor: '$fgSoft',
-      weight: 800,
-      shadow,
-      minSize: 28,
-      when: cellWhen(c),
-    }),
-  );
+function photoStatCell(k: Kit, c: Cell, size: number, labelSize: number, unitSize: number, shadow = true): LayerJson {
+  return k.stat({ w: 'fill', h: 'auto' }, c.value, {
+    unit: c.unit,
+    label: c.label,
+    size,
+    labelSize,
+    unitSize,
+    color: '$fg',
+    labelColor: '$fgSoft',
+    weight: 800,
+    shadow,
+    minSize: 28,
+    when: cellWhen(c),
+  });
 }
 
-function photoHero(
-  k: Kit,
-  w: Dim,
-  size: number,
-  unitSize: number,
-  timeSize: number,
-  shadow = true,
-): LayerJson {
+function photoStatsGrid(k: Kit, w: Dim, size: number, labelSize: number, unitSize: number, shadow = true, gap = 18): LayerJson {
+  const row1 = k.group(
+    { w: 'fill', h: 'auto' },
+    ROW1_PHOTO_CELLS.map((c) => photoStatCell(k, c, size, labelSize, unitSize, shadow)),
+    { dir: 'row', gap: 28, align: 'start' },
+  );
+  const row2 = k.group(
+    { w: 'fill', h: 'auto' },
+    ROW2_PHOTO_CELLS.map((c) => photoStatCell(k, c, size, labelSize, unitSize, shadow)),
+    { dir: 'row', gap: 28, align: 'start' },
+  );
+  return k.group({ w, h: 'auto' }, [row1, row2], { dir: 'column', gap, align: 'stretch' });
+}
+
+function photoHero(k: Kit, w: Dim, size: number, unitSize: number, timeSize: number, shadow = true): LayerJson {
   const common = { size, unitSize, weight: 900, color: '$fg', shadow, minSize: 64 };
   return k.group(
     { w, h: 'auto' },
@@ -112,14 +122,7 @@ function photoHero(
   );
 }
 
-function buildPhoto(
-  id: string,
-  name: string,
-  titleKey: string,
-  style: string,
-  canvas: Canvas,
-  layers: LayerJson[],
-) {
+function buildPhoto(id: string, name: string, titleKey: string, style: string, canvas: Canvas, layers: LayerJson[]) {
   return template({
     id: `run.${id}.${canvas}`,
     name,
@@ -136,46 +139,19 @@ function buildPhoto(
   });
 }
 
-/** 1. Clean Corner (Strava style): unobtrusive, photo-focused, dynamic text scrim. */
+/** 1. Clean Corner (Strava style): unobtrusive, photo-focused, shadow follows text directly. */
 export function runPhoto(canvas: Canvas) {
   const k = kit('rpc');
   const story = canvas === 'story';
   const W = 936;
-  const H = story ? 1920 : 1080;
 
   const topBadge = k.group(
     { w: W, h: 'auto' },
     [
       k.brand({ w: 'auto', h: 36 }, 'lockup', { size: 36 }),
-      k.route(
-        { w: 200, h: 140 },
-        { color: '$fg', color2: '$accent', strokeWidth: 10, halo: true, markers: true, padding: 18 },
-        { when: has('run.route') },
-      ),
+      k.route({ w: 200, h: 140 }, { color: '$fg', color2: '$accent', strokeWidth: 10, halo: true, markers: true, padding: 18 }, { when: has('run.route') }),
     ],
     { dir: 'row', justify: 'between', align: 'center' },
-  );
-
-  const topWash = k.group(
-    { w: 1080, h: 'auto' },
-    [
-      k.shape({ w: 1, h: story ? 178 : 0 }, 'rect'),
-      topBadge,
-    ],
-    {
-      dir: 'column',
-      padding: 72,
-      fill: {
-        gradient: {
-          angle: 180,
-          stops: [
-            { at: 0, color: '$bg/85' },
-            { at: 0.5, color: '$bg/45' },
-            { at: 1, color: '$bg/0' },
-          ],
-        },
-      },
-    },
   );
 
   const header = k.group(
@@ -188,44 +164,18 @@ export function runPhoto(canvas: Canvas) {
   );
 
   const hero = photoHero(k, W, story ? 180 : 130, story ? 48 : 36, story ? 120 : 90, true);
-  const stats = k.group(
-    { w: W, h: 'auto' },
-    photoStatRow(k, story ? 46 : 38, 22, 24, true),
-    { dir: 'row', gap: 24, align: 'start' },
-  );
+  const stats = photoStatsGrid(k, W, story ? 46 : 38, 22, 24, true, story ? 24 : 18);
 
-  // Dynamic bottom scrim: height and starting Y adapt 100% dynamically to text content
-  const bottomWash = k.group(
-    { w: 1080, h: 'auto' },
-    [
-      header,
-      hero,
-      stats,
-      k.shape({ w: 1, h: story ? 268 : 0 }, 'rect'),
-    ],
-    {
-      dir: 'column',
-      gap: story ? 28 : 20,
-      padding: 72,
-      fill: {
-        gradient: {
-          angle: 180,
-          stops: [
-            { at: 0, color: '$bg/0' },
-            { at: 0.18, color: '$bg/60' },
-            { at: 0.45, color: '$bg/88' },
-            { at: 0.75, color: '$bg/96' },
-            { at: 1, color: '$bg' },
-          ],
-        },
-      },
-    },
+  const bottomContent = k.group(
+    { w: W, h: 'auto' },
+    [header, hero, stats],
+    { dir: 'column', gap: story ? 24 : 18, align: 'start' },
   );
 
   const root = k.group(
-    { x: 0, y: 0, w: 1080, h: H },
-    [topWash, bottomWash],
-    { dir: 'column', justify: 'between' },
+    { x: 72, y: story ? 250 : 72, w: W, h: story ? 1330 : 936 },
+    [topBadge, bottomContent],
+    { dir: 'column', justify: 'between', align: 'start' },
   );
 
   return buildPhoto('photo', `Run, photo corner, ${canvas}`, 'photo', 'photo', canvas, [root]);
@@ -263,11 +213,7 @@ export function runGlass(canvas: Canvas) {
   );
 
   const rule = k.shape({ w: inner, h: 2 }, 'line', { stroke: { color: '$line', width: 2 } });
-  const stats = k.group(
-    { w: inner, h: 'auto' },
-    photoStatRow(k, story ? 44 : 36, 20, 22, false),
-    { dir: 'row', gap: 20, align: 'start' },
-  );
+  const stats = photoStatsGrid(k, inner, story ? 44 : 36, 20, 22, false, story ? 18 : 14);
 
   const footer = k.group(
     { w: inner, h: 'auto' },
@@ -303,7 +249,6 @@ export function runEditorial(canvas: Canvas) {
   const k = kit('rpe');
   const story = canvas === 'story';
   const W = 936;
-  const H = story ? 1920 : 1080;
 
   const topHeader = k.group(
     { w: W, h: 'auto' },
@@ -314,35 +259,9 @@ export function runEditorial(canvas: Canvas) {
     { dir: 'column', gap: 10, align: 'start' },
   );
 
-  const topWash = k.group(
-    { w: 1080, h: 'auto' },
-    [
-      k.shape({ w: 1, h: story ? 178 : 0 }, 'rect'),
-      topHeader,
-    ],
-    {
-      dir: 'column',
-      padding: 72,
-      fill: {
-        gradient: {
-          angle: 180,
-          stops: [
-            { at: 0, color: '$bg/90' },
-            { at: 0.6, color: '$bg/55' },
-            { at: 1, color: '$bg/0' },
-          ],
-        },
-      },
-    },
-  );
-
   const hero = photoHero(k, W, story ? 160 : 120, story ? 44 : 32, story ? 110 : 80, true);
   const ruler = k.shape({ w: W, h: 2 }, 'line', { stroke: { color: '$line', width: 2 } });
-  const stats = k.group(
-    { w: W, h: 'auto' },
-    photoStatRow(k, story ? 46 : 38, 22, 24, true),
-    { dir: 'row', gap: 24, align: 'start' },
-  );
+  const stats = photoStatsGrid(k, W, story ? 46 : 38, 22, 24, true, story ? 22 : 16);
 
   const footer = k.group(
     { w: W, h: 'auto' },
@@ -350,39 +269,16 @@ export function runEditorial(canvas: Canvas) {
     { dir: 'row', justify: 'between', align: 'center' },
   );
 
-  // Dynamic bottom scrim: height and starting Y adapt 100% dynamically to text content
-  const bottomWash = k.group(
-    { w: 1080, h: 'auto' },
-    [
-      hero,
-      ruler,
-      stats,
-      footer,
-      k.shape({ w: 1, h: story ? 268 : 0 }, 'rect'),
-    ],
-    {
-      dir: 'column',
-      gap: story ? 24 : 18,
-      padding: 72,
-      fill: {
-        gradient: {
-          angle: 180,
-          stops: [
-            { at: 0, color: '$bg/0' },
-            { at: 0.18, color: '$bg/65' },
-            { at: 0.45, color: '$bg/88' },
-            { at: 0.75, color: '$bg/96' },
-            { at: 1, color: '$bg' },
-          ],
-        },
-      },
-    },
+  const bottomContent = k.group(
+    { w: W, h: 'auto' },
+    [hero, ruler, stats, footer],
+    { dir: 'column', gap: story ? 24 : 18, align: 'stretch' },
   );
 
   const root = k.group(
-    { x: 0, y: 0, w: 1080, h: H },
-    [topWash, bottomWash],
-    { dir: 'column', justify: 'between' },
+    { x: 72, y: story ? 250 : 72, w: W, h: story ? 1330 : 936 },
+    [topHeader, bottomContent],
+    { dir: 'column', justify: 'between', align: 'stretch' },
   );
 
   return buildPhoto('editorial', `Run, photo editorial, ${canvas}`, 'editorial', 'editorial', canvas, [root]);

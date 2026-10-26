@@ -120,7 +120,7 @@ export function applyCustomMetrics(data: JsonObject, selectedIds: readonly strin
   const hero = getHeroField(originalRun, category);
   const selectedSet = new Set(selectedIds.slice(0, MAX_CUSTOM_METRICS));
 
-  const newRun: JsonObject = { ...originalRun };
+  const newRun: JsonObject = { ...originalRun, _custom: true };
   for (const def of METRIC_CATALOG) {
     if (selectedSet.has(def.id)) continue;
     for (const field of def.fields) {

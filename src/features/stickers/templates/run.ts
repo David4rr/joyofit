@@ -1,4 +1,4 @@
-import { all, footer, has, is, lacks, not, sportGlyph, tl } from './blocks';
+import { all, any, footer, has, is, lacks, not, sportGlyph, tl } from './blocks';
 import { kit, template } from './dsl';
 import type { Cond, Dim, Expr, Kit, LayerJson } from './dsl';
 import { GLASS, INK, PAPER, VOLT } from './palette';
@@ -18,17 +18,53 @@ interface Cell {
 const CELL = {
   time: { bind: 'run.movingSec', value: '{run.movingSec|dur}', label: tl('label.time'), when: has('run.distanceM') },
   pace: { bind: 'run.paceSecKm', value: '{run.paceSecKm|pace}', label: tl('label.pace'), unit: tl('unit.perKm') },
+  fastPace: { bind: 'run.paceFastestSec', value: '{run.paceFastestSec|pace}', label: tl('label.bestPace'), unit: tl('unit.perKm') },
   pace100: { bind: 'run.pace100Sec', value: '{run.pace100Sec|pace}', label: tl('label.pace'), unit: tl('unit.per100m') },
   speed: { bind: 'run.speedKmh', value: '{run.speedKmh|num:1}', label: tl('label.speed'), unit: tl('unit.kmh') },
+  maxSpeed: { bind: 'run.maxSpeedKmh', value: '{run.maxSpeedKmh|num:1}', label: tl('label.maxSpeed'), unit: tl('unit.kmh') },
   hr: { bind: 'run.hrAvg', value: '{run.hrAvg|int}', label: tl('label.hr'), unit: tl('unit.bpm') },
-  kcal: { bind: 'run.kcal', value: '{run.kcal|int}', label: tl('label.kcal'), when: lacks('run.hrAvg') },
+  minHr: { bind: 'run.minHr', value: '{run.minHr|int}', label: tl('label.minHr'), unit: tl('unit.bpm') },
+  hrMax: { bind: 'run.hrMax', value: '{run.hrMax|int}', label: tl('label.maxHr'), unit: tl('unit.bpm'), when: has('run._custom') },
+  kcal: { bind: 'run.kcal', value: '{run.kcal|int}', label: tl('label.kcal'), when: any(lacks('run.hrAvg'), has('run._custom')) },
   elev: { bind: 'run.elevGainM', value: '{run.elevGainM|int}', label: tl('label.elevation'), unit: tl('unit.m') },
+  elevLoss: { bind: 'run.elevLossM', value: '{run.elevLossM|int}', label: tl('label.elevLoss'), unit: tl('unit.m') },
+  cadence: { bind: 'run.cadence', value: '{run.cadence|int}', label: tl('label.cadence'), unit: tl('unit.rpm'), when: has('run._custom') },
+  steps: { bind: 'run.steps', value: '{run.steps|int}', label: tl('label.steps') },
+  stepLength: { bind: 'run.stepLengthCm', value: '{run.stepLengthCm|int}', label: tl('label.stepLength'), unit: tl('unit.cm') },
+  vo2max: { bind: 'run.vo2max', value: '{run.vo2max|int}', label: tl('label.vo2max'), unit: tl('unit.mlKgMin') },
+  aerobic: { bind: 'run.aerobicEffect', value: '{run.aerobicEffect|num:1}', label: tl('label.aerobicEffect') },
+  anaerobic: { bind: 'run.anaerobicEffect', value: '{run.anaerobicEffect|num:1}', label: tl('label.anaerobicEffect') },
+  recovery: { bind: 'run.recoveryHours', value: '{run.recoveryHours|int}', label: tl('label.recoveryHours'), unit: tl('unit.hours') },
+  workoutLoad: { bind: 'run.workoutLoad', value: '{run.workoutLoad|int}', label: tl('label.trainingLoad') },
 } satisfies Record<string, Cell>;
 
-/** Time, pace (or speed, or swim pace), heart rate (or calories): at most three exist for any one workout. */
-const CELLS3: Cell[] = [CELL.time, CELL.pace, CELL.pace100, CELL.speed, CELL.hr, CELL.kcal];
-/** The same plus the climb, for layouts that stack the cells in a column. */
-const CELLS4: Cell[] = [...CELLS3, CELL.elev];
+/** Up to four secondary metrics across running layouts. */
+const CELLS3: Cell[] = [
+  CELL.time,
+  CELL.pace,
+  CELL.fastPace,
+  CELL.pace100,
+  CELL.speed,
+  CELL.maxSpeed,
+  CELL.hr,
+  CELL.minHr,
+  CELL.hrMax,
+  CELL.kcal,
+  CELL.elevLoss,
+  CELL.stepLength,
+  CELL.cadence,
+  CELL.steps,
+  CELL.vo2max,
+  CELL.aerobic,
+  CELL.anaerobic,
+  CELL.recovery,
+  CELL.workoutLoad,
+];
+
+const CELLS4: Cell[] = [
+  ...CELLS3,
+  CELL.elev,
+];
 
 const cellWhen = (cell: Cell): Cond => (cell.when ? all(has(cell.bind), cell.when) : has(cell.bind));
 
@@ -182,7 +218,7 @@ function build(spec: Spec) {
     light: spec.palette.light,
     layers: spec.layers,
     // The sport glyph is one layer per family and kind (most of them hidden): the poster draws it twice.
-    constraints: { maxLayers: 80 },
+    constraints: { maxLayers: 140 },
     meta: { tags: spec.tags, ...(spec.photo ? { needsPhoto: true } : {}) },
   });
 }
