@@ -224,6 +224,12 @@ export function StickerSheet({
     void ensureStickerFonts().then(() => setFontsReady(true));
   }, [visible]);
 
+  const runData = subject.data.run as JsonObject | undefined;
+  const category = (runData?.category as SportCategory) ?? 'run';
+
+  const defaultMetrics = useMemo(() => (runData ? getDefaultMetrics(runData, category) : []), [runData, category]);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(defaultMetrics);
+
   // A new subject (another workout) starts from the card that fits its sport; a filter that no longer has the chosen group moves on.
   const [seenSubjectId, setSeenSubjectId] = useState(subject.id);
   if (seenSubjectId !== subject.id) {
@@ -232,19 +238,8 @@ export function StickerSheet({
     setFilter('all');
     setPhoto(null);
     setFeedback(null);
+    setSelectedMetrics(defaultMetrics);
   }
-
-  const runData = subject.data.run as JsonObject | undefined;
-  const category = (runData?.category as SportCategory) ?? 'run';
-
-  const defaultMetrics = useMemo(() => (runData ? getDefaultMetrics(runData, category) : []), [runData, category]);
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(defaultMetrics);
-
-  useEffect(() => {
-    if (runData) {
-      setSelectedMetrics(getDefaultMetrics(runData, category));
-    }
-  }, [subject.id]);
 
   const activeData = useMemo(() => {
     if (!runData || selectedMetrics.length === 0) return subject.data;
