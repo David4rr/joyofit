@@ -61,6 +61,7 @@ internal class WorkoutLink(
 
   init {
     live.onEnded = { phoneGps.sessionEnded() }
+    live.onNeedsGps = { phoneGps.sessionNeedsGps() }
   }
 
   private fun log(message: String) = events.log(LogDirection.INFO, null, null, null, message)

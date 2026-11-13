@@ -154,8 +154,17 @@ internal class LiveWorkout(
   @Volatile
   var onEnded: () -> Unit = {}
 
+  /** Called when an active outdoor live session needs phone GPS tracking started ([PhoneGpsSession.sessionNeedsGps]). */
+  @Volatile
+  var onNeedsGps: () -> Unit = {}
+
+  /** Called when a session with a phone Connected GPS route ends so stored workouts can be backfilled or synced. */
+  @Volatile
+  var onTrackCompleted: (ConnectedGpsSession) -> Unit = {}
+
   /** The ended session [onEnded] was already called for. */
   private var endReported: Session? = null
+  private var lastPersistedTrackMs = 0L
 
   private val appContext = context.applicationContext
   private val lock = Any()
@@ -668,18 +677,52 @@ internal class LiveWorkout(
       "gpsDistanceM" to if (located != null) track.distanceM else null,
       "gpsRiseM" to if (located != null) track.riseM else null,
       "gpsPaceSecPerKm" to track.paceSecPerKm,
+      "trail" to track.trailCoordinates(),
+    )
+  }
+
+  private fun toConnectedGpsSession(s: Session): ConnectedGpsSession? {
+    val pts = s.phoneTrack.track.points
+    if (pts.size < 2 || WorkoutSportTypes.isIndoor(s.sportType)) return null
+    val firstSec = pts.first().timeMs / 1000L
+    val lastSec = pts.last().timeMs / 1000L
+    val endSec = maxOf((s.endedAtMs ?: s.updatedAtMs) / 1000L, lastSec)
+    val durSec = (s.metrics.durationSec ?: 0).coerceAtLeast(0).toLong()
+    val startFromDur = if (durSec > 0L) endSec - durSec else firstSec
+    val startSec = minOf(firstSec, startFromDur, s.id / 1000L).coerceAtLeast(1L)
+    return ConnectedGpsSession(
+      id = s.id.toString(),
+      startSec = startSec,
+      endSec = maxOf(startSec, endSec),
+      sportType = s.sportType,
+      distanceM = s.phoneTrack.track.distanceM,
+      riseM = s.phoneTrack.track.riseM,
+      points = pts,
     )
   }
 
   private fun publish(force: Boolean) {
+    val nowWall = System.currentTimeMillis()
     val (payload, s, justEnded) = synchronized(lock) {
       val s = session ?: return
       val justEnded = s.status == Status.ENDED && endReported !== s
       if (justEnded) endReported = s
       Triple(toJs(s), s, justEnded)
     }
+    val (needsGps, connectedTrack, persistTrack) = synchronized(lock) {
+      val activeOutdoor = s.status != Status.ENDED && !WorkoutSportTypes.isIndoor(s.sportType)
+      val track = toConnectedGpsSession(s)
+      val shouldPersist = justEnded || (track != null && nowWall - lastPersistedTrackMs >= 30_000L)
+      if (shouldPersist && track != null) lastPersistedTrackMs = nowWall
+      Triple(activeOutdoor, track, shouldPersist)
+    }
+    if (needsGps) onNeedsGps()
+    if (connectedTrack != null) ConnectedGpsStore.shared.upsert(connectedTrack, persist = persistTrack)
     events.liveWorkout(payload)
-    if (justEnded) onEnded()
+    if (justEnded) {
+      onEnded()
+      if (connectedTrack != null) onTrackCompleted(connectedTrack)
+    }
     val now = SystemClock.elapsedRealtime()
     if (!force && s.status == notifiedStatus && now - notifiedAtMs < NOTIFY_EVERY_MS) return
     notifiedAtMs = now

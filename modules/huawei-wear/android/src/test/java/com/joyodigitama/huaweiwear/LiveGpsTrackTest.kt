@@ -286,4 +286,27 @@ class LiveGpsTrackTest {
     assertEquals(2, gps.starts)
     assertTrue(gps.session.isTracking)
   }
+
+  @Test
+  fun trackAccumulatorRetainsTrajectoryPointsAndSessionNeedsGpsStartsTrackingWithoutFeeding() {
+    val acc = TrackAccumulator()
+    assertTrue(acc.add(TrackFix(1_000L, -6.2000, 106.8000, 10.0, 5f, 3f, null)))
+    // Jitter (< 3 m) does not duplicate trajectory point
+    assertTrue(acc.add(TrackFix(2_000L, -6.200001, 106.800001, 10.0, 5f, 3f, null)))
+    assertEquals(1, acc.points.size)
+    // Real step (>= 3 m) records second trajectory point
+    assertTrue(acc.add(TrackFix(5_000L, -6.2001, 106.8001, 14.0, 5f, 3f, null)))
+    assertEquals(2, acc.points.size)
+    assertEquals(listOf(listOf(106.8000, -6.2000), listOf(106.8001, -6.2001)), acc.trailCoordinates())
+    // Invalid coordinates are rejected
+    assertFalse(acc.add(TrackFix(6_000L, Double.NaN, 106.8, null, 5f, 3f, null)))
+    assertFalse(acc.add(TrackFix(7_000L, 95.0, 106.8, null, 5f, 3f, null)))
+    assertEquals(2, acc.points.size)
+
+    val gps = FakeLocation()
+    gps.session.sessionNeedsGps()
+    assertTrue(gps.session.isTracking)
+    assertFalse(gps.session.feeding)
+    assertEquals(1, gps.starts)
+  }
 }

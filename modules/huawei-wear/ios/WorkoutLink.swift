@@ -65,6 +65,7 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
         self.nowMs = nowMs
         phoneGps = PhoneGpsSession(start: { [weak self] in self?.startLocation() ?? false }, stop: { [weak self] in self?.stopLocation() })
         live.onEnded = { [weak self] in self?.phoneGps.sessionEnded() }
+        live.onNeedsGps = { [weak self] in self?.phoneGps.sessionNeedsGps() }
     }
 
     private func log(_ message: String) { events.info(message) }

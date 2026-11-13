@@ -397,4 +397,90 @@ final class WorkoutStoreTests: XCTestCase {
         XCTAssertTrue(rig.events.messages(.error).contains { $0.hasPrefix("Workout sync failed:") && $0.contains("link closed") })
         XCTAssertTrue(rig.events.messages(.info).contains("Workout sync: 0 workouts stored"))
     }
+
+    func testBandWorkoutWithNoGpsMergesPhoneConnectedGpsTrackAndSkipsIndoorSport() throws {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let gpsStore = ConnectedGpsStore()
+        let fixes = [
+            WorkoutLinkWire.Fix(timeMs: 1_700_000_010_000, latitude: -6.2000, longitude: 106.8000, altitude: 15.0, accuracy: 5.0, speed: 3.0, bearing: nil),
+            WorkoutLinkWire.Fix(timeMs: 1_700_000_020_000, latitude: -6.2005, longitude: 106.8005, altitude: 19.0, accuracy: 5.0, speed: 3.2, bearing: nil),
+            WorkoutLinkWire.Fix(timeMs: 1_700_000_030_000, latitude: -6.2010, longitude: 106.8010, altitude: 22.0, accuracy: 5.0, speed: 3.1, bearing: nil),
+        ]
+        gpsStore.upsert(
+            ConnectedGpsSession(
+                id: "band-run-1",
+                startSec: 1_700_000_000,
+                endSec: 1_700_000_600,
+                sportType: 1,
+                distanceM: 157.0,
+                riseM: 7.0,
+                points: fixes
+            )
+        )
+
+        let sink = WorkoutStore(store, address: "AA:BB:CC:DD:EE:01", gpsStore: gpsStore)
+        // Huawei Band outdoor run (sportType 1) with no watch GPS points and 0 watch distance
+        let bandRun = WorkoutRecord(
+            number: 11,
+            start: 1_700_000_000,
+            end: 1_700_000_600,
+            sportType: 1,
+            sportName: "Running",
+            duration: 600,
+            distance: 0,
+            calories: 85,
+            steps: 900,
+            avgHr: 142,
+            maxHr: 165,
+            summaryJson: #"{"kind":"RUNNING","gps":"none","gpsPoints":0}"#,
+            points: [WorkoutPoint(ts: 1_700_000_015, lat: nil, lon: nil, alt: nil, hr: 142)],
+            complete: true
+        )
+        XCTAssertTrue(try sink.save(bandRun))
+
+        let gpsPointsCount = try rows(store, "SELECT COUNT(*) FROM workout_points WHERE lat IS NOT NULL AND lon IS NOT NULL") { $0.int(0) }.first
+        XCTAssertEqual(gpsPointsCount, 3)
+        let summaryStr = try rows(store, "SELECT summary_json FROM workouts WHERE start = 1700000000") { $0.text(0) ?? "" }.first ?? ""
+        XCTAssertTrue(summaryStr.contains(#""gps":"ok""#))
+        XCTAssertTrue(summaryStr.contains(#""gpsSource":"phone""#))
+        XCTAssertTrue(summaryStr.contains(#""gpsPoints":3"#))
+        let savedDist = try rows(store, "SELECT distance FROM workouts WHERE start = 1700000000") { $0.int(0) }.first ?? 0
+        XCTAssertGreaterThan(savedDist, 100)
+
+        // Indoor running (sportType 5) at an overlapping window must NOT get GPS points attached
+        gpsStore.upsert(
+            ConnectedGpsSession(
+                id: "indoor-1",
+                startSec: 1_700_010_000,
+                endSec: 1_700_010_600,
+                sportType: nil,
+                distanceM: 200.0,
+                riseM: 0.0,
+                points: [
+                    WorkoutLinkWire.Fix(timeMs: 1_700_010_010_000, latitude: -6.2, longitude: 106.8, altitude: nil, accuracy: 5.0, speed: 3.0, bearing: nil),
+                    WorkoutLinkWire.Fix(timeMs: 1_700_010_020_000, latitude: -6.201, longitude: 106.801, altitude: nil, accuracy: 5.0, speed: 3.0, bearing: nil),
+                ]
+            )
+        )
+        let indoorRun = WorkoutRecord(
+            number: 12,
+            start: 1_700_010_000,
+            end: 1_700_010_600,
+            sportType: 5,
+            sportName: "Indoor Running",
+            duration: 600,
+            distance: 1000,
+            calories: 90,
+            steps: 1000,
+            avgHr: 140,
+            maxHr: 160,
+            summaryJson: #"{"kind":"INDOOR_RUNNING","gps":"none","gpsPoints":0}"#,
+            points: [],
+            complete: true
+        )
+        XCTAssertTrue(try sink.save(indoorRun))
+        let indoorId = try rows(store, "SELECT id FROM workouts WHERE start = 1700010000") { $0.int64(0) }.first!
+        let indoorGpsCount = try rows(store, "SELECT COUNT(*) FROM workout_points WHERE workout_id = \(indoorId) AND lat IS NOT NULL") { $0.int(0) }.first
+        XCTAssertEqual(indoorGpsCount, 0)
+    }
 }

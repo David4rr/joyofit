@@ -521,4 +521,86 @@ class MultiWatchSqlTest {
     assertEquals(100, WorkoutWriter(db, a).syncStart(false))
     assertEquals(WorkoutStore.DEFAULT_START_SEC.toInt(), WorkoutWriter(db, b).syncStart(false))
   }
+
+  @Test
+  fun bandWorkoutWithoutGpsMergesPhoneConnectedGpsTrackAndSupportsBackfill() {
+    threeWatches()
+    val gpsStore = ConnectedGpsStore()
+    val fixes = listOf(
+      TrackFix(1_010_000L, -6.2000, 106.8000, 12.0, 5f, 3.0f, null),
+      TrackFix(1_020_000L, -6.2005, 106.8005, 16.0, 5f, 3.1f, null),
+      TrackFix(1_030_000L, -6.2010, 106.8010, 20.0, 5f, 3.2f, null),
+    )
+    gpsStore.upsert(
+      ConnectedGpsSession(
+        id = "band-session-1",
+        startSec = 1_000L,
+        endSec = 1_600L,
+        sportType = 1,
+        distanceM = 157.0,
+        riseM = 8.0,
+        points = fixes,
+      ),
+      persist = false,
+    )
+
+    val bandRun = WorkoutRecord(
+      number = 1,
+      start = 1_000L,
+      end = 1_600L,
+      sportType = 1,
+      sportName = "Running",
+      duration = 600,
+      distance = 0,
+      calories = 80,
+      steps = 900,
+      avgHr = 140,
+      maxHr = 160,
+      summaryJson = """{"kind":"RUNNING","gps":"none","gpsPoints":0}""",
+      points = listOf(WorkoutPoint(1_015L, null, null, null, 140)),
+      complete = true,
+    )
+    assertTrue(WorkoutWriter(db, b, gpsStore).save(bandRun))
+    val gpsCount = one("SELECT COUNT(*) FROM workout_points WHERE lat IS NOT NULL AND lon IS NOT NULL")
+    assertEquals(3L, gpsCount)
+    val summary = db.query("SELECT summary_json, distance FROM workouts WHERE start = 1000").single()
+    val summaryJson = summary[0] as String
+    assertTrue(summaryJson.contains("\"gps\":\"ok\""))
+    assertTrue(summaryJson.contains("\"gpsSource\":\"phone\""))
+    assertTrue((summary[1] as Long) > 100L)
+
+    // Reverse-order backfill: workout synced before LiveWorkout flushed its track
+    val unmergedWalk = WorkoutRecord(
+      number = 2,
+      start = 5_000L,
+      end = 5_600L,
+      sportType = 2,
+      sportName = "Walking",
+      duration = 600,
+      distance = 0,
+      calories = 45,
+      steps = 700,
+      avgHr = 110,
+      maxHr = 125,
+      summaryJson = """{"kind":"WALKING","gps":"none","gpsPoints":0}""",
+      points = emptyList(),
+      complete = true,
+    )
+    assertTrue(WorkoutWriter(db, b, ConnectedGpsStore()).save(unmergedWalk))
+    val walkTrack = ConnectedGpsSession(
+      id = "band-session-2",
+      startSec = 5_000L,
+      endSec = 5_600L,
+      sportType = 2,
+      distanceM = 120.0,
+      riseM = 4.0,
+      points = listOf(
+        TrackFix(5_010_000L, -6.2100, 106.8100, 10.0, 5f, 1.5f, null),
+        TrackFix(5_030_000L, -6.2105, 106.8105, 14.0, 5f, 1.5f, null),
+      ),
+    )
+    assertEquals(1, ConnectedGpsMerger.backfillStored(db, b, walkTrack))
+    val walkGpsCount = one("SELECT COUNT(*) FROM workout_points p JOIN workouts w ON w.id = p.workout_id WHERE w.start = 5000 AND p.lat IS NOT NULL")
+    assertEquals(2L, walkGpsCount)
+  }
 }

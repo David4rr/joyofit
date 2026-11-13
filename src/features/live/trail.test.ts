@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { appendTrail, TRAIL_MAX_POINTS } from './trail';
+import { appendTrail, fromNativeTrail, TRAIL_MAX_POINTS } from './trail';
 
 describe('appendTrail', () => {
   test('the first point starts the trail', () => {
@@ -18,5 +18,22 @@ describe('appendTrail', () => {
     for (let i = 0; i < TRAIL_MAX_POINTS + 50; i += 1) trail = appendTrail(trail, { lat: -6.2 - i * 0.001, lon: 106.8 });
     expect(trail.length).toBeLessThanOrEqual(TRAIL_MAX_POINTS);
     expect(trail[trail.length - 1].lat).toBeCloseTo(-6.2 - (TRAIL_MAX_POINTS + 49) * 0.001, 6);
+  });
+});
+
+describe('fromNativeTrail', () => {
+  test('converts GeoJSON [lon, lat] pairs and drops invalid coordinates', () => {
+    expect(fromNativeTrail(null)).toEqual([]);
+    expect(
+      fromNativeTrail([
+        [106.8, -6.2],
+        [Number.NaN, -6.2],
+        [106.8, 95],
+        [106.801, -6.201],
+      ]),
+    ).toEqual([
+      { lat: -6.2, lon: 106.8 },
+      { lat: -6.201, lon: 106.801 },
+    ]);
   });
 });

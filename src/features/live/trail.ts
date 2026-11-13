@@ -21,9 +21,31 @@ export function appendTrail(trail: readonly TrailPoint[], point: TrailPoint): re
   return next.filter((_, index) => index % 2 === 0 || index === next.length - 1);
 }
 
-/** The path a recording's position has taken since this hook mounted, for the line on the map. */
-export function useTrail(position: TrailPoint | null): readonly TrailPoint[] {
-  const [trail, setTrail] = useState<readonly TrailPoint[]>([]);
+/** Converts GeoJSON `[lon, lat]` pairs from native `LiveWorkout.trail` into validated `TrailPoint`s. */
+export function fromNativeTrail(nativeTrail?: readonly (readonly [number, number])[] | null): readonly TrailPoint[] {
+  if (!nativeTrail || nativeTrail.length === 0) return [];
+  const out: TrailPoint[] = [];
+  for (const pair of nativeTrail) {
+    if (!Array.isArray(pair) || pair.length < 2) continue;
+    const lon = Number(pair[0]);
+    const lat = Number(pair[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+    out.push({ lat, lon });
+  }
+  return out;
+}
+
+/** The path a recording's position has taken since the workout started, for the line on the map. */
+export function useTrail(
+  position: TrailPoint | null,
+  nativeTrail?: readonly (readonly [number, number])[] | null,
+): readonly TrailPoint[] {
+  const [trail, setTrail] = useState<readonly TrailPoint[]>(() => fromNativeTrail(nativeTrail));
+  const nativeCount = nativeTrail?.length ?? 0;
+  if (nativeCount > trail.length) {
+    const recovered = fromNativeTrail(nativeTrail);
+    if (recovered.length > trail.length) setTrail(recovered);
+  }
   const lat = position?.lat;
   const lon = position?.lon;
   // Append when the position changes, during render, rather than from an effect.

@@ -118,6 +118,20 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     }
     private var _onEnded: @Sendable () -> Void = {}
 
+    /// Called when an active outdoor live session needs phone GPS tracking started (`PhoneGpsSession.sessionNeedsGps`).
+    public var onNeedsGps: @Sendable () -> Void {
+        get { lock.locked { _onNeedsGps } }
+        set { lock.locked { _onNeedsGps = newValue } }
+    }
+    private var _onNeedsGps: @Sendable () -> Void = {}
+
+    /// Called when a session with a phone Connected GPS route ends so stored workouts can be backfilled or synced.
+    public var onTrackCompleted: @Sendable (ConnectedGpsSession) -> Void {
+        get { lock.locked { _onTrackCompleted } }
+        set { lock.locked { _onTrackCompleted = newValue } }
+    }
+    private var _onTrackCompleted: @Sendable (ConnectedGpsSession) -> Void = { _ in }
+
     /// True while a workout the phone started on the watch (`WatchWorkoutControl`) is owned by a screen of its own (the strength logger): the
     /// watch's workout is then not mirrored as a live workout, which would open a second screen for the same session. A mirror that is already
     /// running is left alone; only a new one is not opened.
@@ -683,21 +697,49 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             "gpsDistanceM": v(located.map { _ in track.distanceM }),
             "gpsRiseM": v(located.map { _ in track.riseM }),
             "gpsPaceSecPerKm": v(track.paceSecPerKm),
+            "trail": track.trailCoordinates(),
         ]
     }
 
+    private func toConnectedGpsSession(_ s: Session) -> ConnectedGpsSession? {
+        let pts = s.phoneTrack.track.points
+        if pts.count < 2 || WorkoutSportTypes.isIndoor(s.sportType) { return nil }
+        let firstSec = pts[0].timeMs / 1000
+        let lastSec = pts[pts.count - 1].timeMs / 1000
+        let endSec = max((s.endedAtMs ?? s.updatedAtMs) / 1000, lastSec)
+        let durSec = Int64(max(0, s.metrics.durationSec ?? 0))
+        let startFromDur = durSec > 0 ? endSec - durSec : firstSec
+        let startSec = max(1, min(firstSec, min(startFromDur, s.id / 1000)))
+        return ConnectedGpsSession(
+            id: String(s.id),
+            startSec: startSec,
+            endSec: max(startSec, endSec),
+            sportType: s.sportType,
+            distanceM: s.phoneTrack.track.distanceM,
+            riseM: s.phoneTrack.track.riseM,
+            points: pts
+        )
+    }
+
     private func publish(force: Bool) {
-        guard let (payload, status, justEnded) = lock.locked({ () -> ([String: Any], Status, Bool)? in
+        guard let (payload, status, justEnded, needsGps, connectedTrack) = lock.locked({
+            () -> ([String: Any], Status, Bool, Bool, ConnectedGpsSession?)? in
             guard var s = session else { return nil }
             let justEnded = s.status == .ended && !s.endReported
             if justEnded {
                 s.endReported = true
                 session = s
             }
-            return (toJS(s), s.status, justEnded)
+            let activeOutdoor = s.status != .ended && !WorkoutSportTypes.isIndoor(s.sportType)
+            return (toJS(s), s.status, justEnded, activeOutdoor, toConnectedGpsSession(s))
         }) else { return }
+        if needsGps { onNeedsGps() }
+        if let connectedTrack { ConnectedGpsStore.shared.upsert(connectedTrack) }
         events.liveWorkout(payload)
-        if justEnded { onEnded() }
+        if justEnded {
+            onEnded()
+            if let connectedTrack { onTrackCompleted(connectedTrack) }
+        }
         // The heart-rate sensor is released once, however many pushes the ended workout still gets.
         if status == .ended {
             let first: Bool = lock.locked {

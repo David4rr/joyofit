@@ -17,10 +17,12 @@ public final class WorkoutStore: WorkoutSink, DynamicsSink {
     private let store: SyncStore
     /// The watch that writes (`device.address`): attributes every row and keeps this watch's sync window apart from the other watches'.
     private let address: String
+    private let gpsStore: ConnectedGpsStore
 
-    public init(_ store: SyncStore, address: String) {
+    public init(_ store: SyncStore, address: String, gpsStore: ConnectedGpsStore = .shared) {
         self.store = store
         self.address = address
+        self.gpsStore = gpsStore
     }
 
     /// Who keeps a session two watches recorded (docs/multi-watch.md, section 3): the copy with a GPS track, else the primary watch's, else the
@@ -92,8 +94,11 @@ public final class WorkoutStore: WorkoutSink, DynamicsSink {
     }
 
     /// Stores the workout; false when it was not newly stored (it was complete already, or another watch's copy of the session was kept).
-    public func save(_ record: WorkoutRecord) throws -> Bool {
-        try store.read { db in
+    /// When `rawRecord` has no GPS points of its own (for example a Huawei Band without built-in GNSS), attaches a matching phone Connected
+    /// GPS trajectory from `gpsStore` before duplicate resolution and persistence.
+    public func save(_ rawRecord: WorkoutRecord) throws -> Bool {
+        let record = ConnectedGpsMerger.merge(rawRecord, store: gpsStore)
+        return try store.read { db in
             try db.transaction {
                 if try !keepsIncoming(db, record) { return false }
                 let wasComplete: Bool? = try db.query("SELECT complete FROM workouts WHERE start = ?", [.int(record.start)]) { $0.int(0) == 1 }.first
@@ -171,6 +176,78 @@ public final class WorkoutStore: WorkoutSink, DynamicsSink {
                 try db.run("UPDATE workouts SET summary_json = ? WHERE start = ?", [.text(edited.json), .int(start)])
                 return .updated
             }
+        }
+    }
+
+    /// Reverse-order backfill: when a band workout synced to SQLite just before `LiveWorkout` finished or flushed its last fixes,
+    /// attaches the phone's GPS route to the already-stored workout row if it currently has zero GPS points.
+    @discardableResult
+    public func backfillConnectedGps(_ session: ConnectedGpsSession) throws -> Int {
+        if session.points.count < 2 || WorkoutSportTypes.isIndoor(session.sportType) { return 0 }
+        let lo = session.startSec - ConnectedGpsStore.matchSlackSec
+        let hi = session.effectiveEndSec + ConnectedGpsStore.matchSlackSec
+        return try store.read { db in
+            let rows = try db.query(
+                """
+                SELECT w.id, w.start, w.end, w.sport_type, w.duration, w.distance, w.summary_json
+                FROM workouts w
+                WHERE w.imported = 0 AND (? = '' OR w.device = ?)
+                  AND w.end >= ? AND w.start <= ?
+                  AND NOT EXISTS (
+                    SELECT 1 FROM workout_points p WHERE p.workout_id = w.id AND p.lat IS NOT NULL AND p.lon IS NOT NULL
+                  )
+                """,
+                [.text(address), .text(address), .int(lo), .int(hi)]
+            ) { row in
+                (
+                    id: row.int64(0),
+                    start: row.int64(1),
+                    end: row.int64(2),
+                    sportType: row.isNull(3) ? nil : row.int(3),
+                    duration: row.isNull(4) ? 0 : row.int(4),
+                    distance: row.isNull(5) ? 0 : row.int(5),
+                    summaryJson: row.text(6) ?? "{}"
+                )
+            }
+            var updated = 0
+            for row in rows {
+                if WorkoutSportTypes.isIndoor(row.sportType) { continue }
+                if let rowSport = row.sportType, let sessSport = session.sportType, rowSport != sessSport { continue }
+                let fixes = session.fixesInWindow(workoutStartSec: row.start, workoutEndSec: row.end)
+                guard fixes.count >= 2 else { continue }
+                let routeDist = ConnectedGpsMerger.routeDistanceM(fixes)
+                let effectiveDist = routeDist > 0 ? routeDist : session.distanceM
+                let newDistance = row.distance > 0 ? row.distance : Int(effectiveDist.rounded())
+                let newSummary = ConnectedGpsMerger.enrichSummaryJson(
+                    row.summaryJson,
+                    fixes: fixes,
+                    gpsPointsCount: fixes.count,
+                    distanceM: newDistance,
+                    durationSec: row.duration,
+                    riseM: session.riseM
+                )
+                let upper = max(row.start, row.end)
+                try db.transaction {
+                    try db.run(
+                        "UPDATE workouts SET distance = ?, summary_json = ? WHERE id = ?",
+                        [.int(Int64(newDistance)), .text(newSummary), .int(row.id)]
+                    )
+                    let insert = try db.prepare(
+                        "INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power) VALUES (?, ?, ?, ?, ?, NULL, ?, NULL, NULL, NULL)"
+                    )
+                    for fix in fixes {
+                        insert.reset()
+                        let ts = min(max(fix.timeMs / 1000, row.start), upper)
+                        try insert.bind([
+                            .int(row.id), .int(ts), .double(fix.latitude), .double(fix.longitude),
+                            fix.altitude.map { .double($0) } ?? .null, fix.speed.map { .double($0) } ?? .null,
+                        ])
+                        while try insert.step() {}
+                    }
+                }
+                updated += 1
+            }
+            return updated
         }
     }
 

@@ -1,0 +1,209 @@
+// Port of ConnectedGpsTrack.kt: retains phone Connected GPS trajectories recorded during a LiveWorkout session and merges them into
+// synced WorkoutRecords from wearables without built-in GNSS (Huawei Band 8/9/10/11, etc., where trajectoriesData == 0).
+import Foundation
+#if canImport(HuaweiProtocol)
+import HuaweiProtocol
+#endif
+
+public struct ConnectedGpsSession: Sendable {
+    public let id: String
+    public let startSec: Int64
+    public let endSec: Int64
+    public let sportType: Int?
+    public let distanceM: Double
+    public let riseM: Double
+    public let points: [WorkoutLinkWire.Fix]
+
+    public init(
+        id: String,
+        startSec: Int64,
+        endSec: Int64,
+        sportType: Int?,
+        distanceM: Double,
+        riseM: Double,
+        points: [WorkoutLinkWire.Fix]
+    ) {
+        self.id = id
+        self.startSec = startSec
+        self.endSec = endSec
+        self.sportType = sportType
+        self.distanceM = distanceM
+        self.riseM = riseM
+        self.points = points
+    }
+
+    public var effectiveEndSec: Int64 {
+        max(endSec, (points.last?.timeMs ?? 0) / 1000)
+    }
+
+    public func fixesInWindow(
+        workoutStartSec: Int64,
+        workoutEndSec: Int64,
+        slackSec: Int64 = ConnectedGpsStore.matchSlackSec
+    ) -> [WorkoutLinkWire.Fix] {
+        let lo = workoutStartSec - slackSec
+        let hi = workoutEndSec + slackSec
+        var seenSecs = Set<Int64>()
+        var result: [WorkoutLinkWire.Fix] = []
+        for fix in points {
+            let sec = fix.timeMs / 1000
+            guard sec >= lo, sec <= hi,
+                  fix.latitude.isFinite, fix.longitude.isFinite,
+                  (-90.0...90.0).contains(fix.latitude), (-180.0...180.0).contains(fix.longitude)
+            else { continue }
+            if seenSecs.insert(sec).inserted {
+                result.append(fix)
+            }
+        }
+        return result
+    }
+}
+
+public final class ConnectedGpsStore: @unchecked Sendable {
+    public static let matchSlackSec: Int64 = 180
+    public static let maxSessions = 20
+    public static let retentionSec: Int64 = 7 * 86_400
+
+    public static let shared = ConnectedGpsStore()
+
+    private let lock = NSLock()
+    private var sessions: [ConnectedGpsSession] = []
+
+    public init() {}
+
+    public func clear() {
+        lock.locked { sessions.removeAll() }
+    }
+
+    public func upsert(_ session: ConnectedGpsSession) {
+        guard session.points.count >= 2, session.startSec > 0 else { return }
+        if WorkoutSportTypes.isIndoor(session.sportType) { return }
+        lock.locked {
+            let cutoff = max(0, session.effectiveEndSec - Self.retentionSec)
+            sessions.removeAll {
+                $0.id == session.id || abs($0.startSec - session.startSec) <= 10 || $0.effectiveEndSec < cutoff
+            }
+            sessions.append(session)
+            while sessions.count > Self.maxSessions {
+                sessions.removeFirst()
+            }
+        }
+    }
+
+    public func match(workoutStartSec: Int64, workoutEndSec: Int64, sportType: Int?) -> ConnectedGpsSession? {
+        guard workoutStartSec > 0, workoutEndSec >= workoutStartSec, !WorkoutSportTypes.isIndoor(sportType) else {
+            return nil
+        }
+        return lock.locked {
+            sessions
+                .filter { s in
+                    let sportOk = sportType == nil || s.sportType == nil || s.sportType == sportType
+                    let overlap = min(workoutEndSec + Self.matchSlackSec, s.effectiveEndSec)
+                        - max(workoutStartSec - Self.matchSlackSec, s.startSec)
+                    return sportOk && overlap > 0 && s.fixesInWindow(workoutStartSec: workoutStartSec, workoutEndSec: workoutEndSec).count >= 2
+                }
+                .max { a, b in
+                    let countA = a.fixesInWindow(workoutStartSec: workoutStartSec, workoutEndSec: workoutEndSec).count
+                    let countB = b.fixesInWindow(workoutStartSec: workoutStartSec, workoutEndSec: workoutEndSec).count
+                    if countA != countB { return countA < countB }
+                    return abs(a.startSec - workoutStartSec) > abs(b.startSec - workoutStartSec)
+                }
+        }
+    }
+}
+
+public enum ConnectedGpsMerger {
+    public static func merge(_ record: WorkoutRecord, store: ConnectedGpsStore = .shared) -> WorkoutRecord {
+        if record.points.contains(where: { $0.lat != nil && $0.lon != nil }) { return record }
+        guard let session = store.match(workoutStartSec: record.start, workoutEndSec: record.end, sportType: record.sportType) else {
+            return record
+        }
+        let fixes = session.fixesInWindow(workoutStartSec: record.start, workoutEndSec: record.end)
+        guard fixes.count >= 2 else { return record }
+
+        let upper = max(record.start, record.end)
+        let gpsPoints: [WorkoutPoint] = fixes.map { fix in
+            let ts = min(max(fix.timeMs / 1000, record.start), upper)
+            return WorkoutPoint(ts: ts, lat: fix.latitude, lon: fix.longitude, alt: fix.altitude, hr: nil, speed: fix.speed)
+        }
+        var mergedPoints = record.points + gpsPoints
+        mergedPoints.sort { $0.ts < $1.ts }
+
+        let routeDist = routeDistanceM(fixes)
+        let effectiveDist = routeDist > 0 ? routeDist : session.distanceM
+        let newDistance = record.distance > 0 ? record.distance : Int(effectiveDist.rounded())
+        let updatedSummary = enrichSummaryJson(
+            record.summaryJson,
+            fixes: fixes,
+            gpsPointsCount: gpsPoints.count,
+            distanceM: newDistance,
+            durationSec: record.duration,
+            riseM: session.riseM
+        )
+
+        return WorkoutRecord(
+            number: record.number,
+            start: record.start,
+            end: record.end,
+            sportType: record.sportType,
+            sportName: record.sportName,
+            duration: record.duration,
+            distance: newDistance,
+            calories: record.calories,
+            steps: record.steps,
+            avgHr: record.avgHr,
+            maxHr: record.maxHr,
+            summaryJson: updatedSummary,
+            points: mergedPoints,
+            complete: record.complete
+        )
+    }
+
+    public static func enrichSummaryJson(
+        _ summaryJson: String,
+        fixes: [WorkoutLinkWire.Fix],
+        gpsPointsCount: Int,
+        distanceM: Int,
+        durationSec: Int,
+        riseM: Double
+    ) -> String {
+        var obj = (try? JSONSerialization.jsonObject(with: Data(summaryJson.utf8)) as? [String: Any]) ?? [:]
+        obj["gps"] = "ok"
+        obj["gpsPoints"] = gpsPointsCount
+        obj["gpsSource"] = "phone"
+        if distanceM > 0, durationSec > 0 {
+            let avgSpeed = Double(distanceM) / Double(durationSec)
+            if (obj["avgSpeed"] as? Double ?? 0) <= 0 {
+                obj["avgSpeed"] = (avgSpeed * 100).rounded() / 100
+            }
+            if (obj["avgPaceSecPerKm"] as? Int ?? 0) <= 0, avgSpeed > 0 {
+                obj["avgPaceSecPerKm"] = Int((1000.0 / avgSpeed).rounded())
+            }
+        }
+        if (obj["elevationGain"] as? Double ?? 0) <= 0, riseM > 0 {
+            obj["elevationGain"] = (riseM * 10).rounded() / 10
+        }
+        let alts = fixes.compactMap { $0.altitude }.filter { $0.isFinite }
+        if let minAlt = alts.min(), let maxAlt = alts.max() {
+            if obj["minAltitude"] == nil || obj["minAltitude"] is NSNull {
+                obj["minAltitude"] = (minAlt * 10).rounded() / 10
+            }
+            if obj["maxAltitude"] == nil || obj["maxAltitude"] is NSNull {
+                obj["maxAltitude"] = (maxAlt * 10).rounded() / 10
+            }
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: obj, options: [.sortedKeys]),
+              let str = String(data: data, encoding: .utf8)
+        else { return summaryJson }
+        return str
+    }
+
+    public static func routeDistanceM(_ fixes: [WorkoutLinkWire.Fix]) -> Double {
+        guard fixes.count >= 2 else { return 0 }
+        var sum = 0.0
+        for i in 1 ..< fixes.count {
+            sum += fixes[i - 1].distance(to: fixes[i])
+        }
+        return sum
+    }
+}

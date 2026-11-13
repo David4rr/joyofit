@@ -43,9 +43,11 @@ public struct TrackAccumulator: Sendable {
     public static let speedMinSpanMs: Int64 = 3_000
     /// Below this (about 1:00:00 per km) the person is standing and no pace is shown.
     public static let minPaceSpeedMps = 0.28
+    public static let maxTrackPoints = 10_800
 
     public private(set) var distanceM = 0.0
     public private(set) var riseM = 0.0
+    public private(set) var points: [WorkoutLinkWire.Fix] = []
 
     private var last: WorkoutLinkWire.Fix?
     private var smoothedAlt: Double?
@@ -77,9 +79,13 @@ public struct TrackAccumulator: Sendable {
     /// Takes a fix of the running workout; false when it was dropped.
     @discardableResult
     public mutating func add(_ fix: WorkoutLinkWire.Fix) -> Bool {
+        if !fix.latitude.isFinite || !fix.longitude.isFinite || !(-90.0...90.0).contains(fix.latitude) || !(-180.0...180.0).contains(fix.longitude) {
+            return false
+        }
         if let accuracy = fix.accuracy, accuracy > Self.maxAccuracyM { return false }
         guard let prev = last else {
             last = fix
+            recordPoint(fix)
             window.append((fix.timeMs, distanceM))
             takeAltitude(fix)
             return true
@@ -97,9 +103,36 @@ public struct TrackAccumulator: Sendable {
         }
         distanceM += step
         last = fix
+        recordPoint(fix)
         window.append((fix.timeMs, distanceM))
         trim(fix.timeMs)
         return true
+    }
+
+    /// GeoJSON `[lon, lat]` coordinates for the live map trail, downsampled to at most `maxPoints`.
+    public func trailCoordinates(maxPoints: Int = 500) -> [[Double]] {
+        let n = points.count
+        if n == 0 || maxPoints <= 0 { return [] }
+        if n <= maxPoints { return points.map { [$0.longitude, $0.latitude] } }
+        if maxPoints == 1, let p = points.last { return [[p.longitude, p.latitude]] }
+        return (0 ..< maxPoints).map { i in
+            let idx = (i * (n - 1)) / (maxPoints - 1)
+            let p = points[idx]
+            return [p.longitude, p.latitude]
+        }
+    }
+
+    private mutating func recordPoint(_ fix: WorkoutLinkWire.Fix) {
+        if let prevKept = points.last, fix.timeMs <= prevKept.timeMs { return }
+        if points.count >= Self.maxTrackPoints {
+            var compacted: [WorkoutLinkWire.Fix] = []
+            compacted.reserveCapacity((points.count + 1) / 2)
+            for i in stride(from: 0, to: points.count, by: 2) {
+                compacted.append(points[i])
+            }
+            points = compacted
+        }
+        points.append(fix)
     }
 
     private mutating func trim(_ nowMs: Int64) {
@@ -218,6 +251,15 @@ public final class PhoneGpsSession: @unchecked Sendable {
     public func watchAsks() {
         lock.locked {
             setFeeding(true)
+            if !tracking { tracking = start() }
+        }
+    }
+
+    /// Starts phone GPS tracking for an active outdoor live workout even when the wearable has not sent `18/02` (for example a Huawei Band
+    /// whose workout was discovered via `17/03`, `17/11`, or `37/02`, or started from the phone). Does not turn on the `18/03` feed unless
+    /// the watch explicitly asked via `watchAsks`.
+    public func sessionNeedsGps() {
+        lock.locked {
             if !tracking { tracking = start() }
         }
     }

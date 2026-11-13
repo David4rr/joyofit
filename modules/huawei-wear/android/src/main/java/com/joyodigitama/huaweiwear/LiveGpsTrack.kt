@@ -34,6 +34,12 @@ internal class TrackAccumulator {
   var riseM = 0.0
     private set
 
+  private val keptPoints = ArrayList<TrackFix>()
+
+  /** Accepted trajectory fixes in chronological order (bounded to [MAX_TRACK_POINTS]). */
+  val points: List<TrackFix>
+    get() = keptPoints.toList()
+
   private var last: TrackFix? = null
   private var smoothedAlt: Double? = null
   private var referenceAlt: Double? = null
@@ -59,6 +65,7 @@ internal class TrackAccumulator {
   fun reset() {
     distanceM = 0.0
     riseM = 0.0
+    keptPoints.clear()
     last = null
     smoothedAlt = null
     referenceAlt = null
@@ -73,10 +80,12 @@ internal class TrackAccumulator {
 
   /** Takes a fix of the running workout; false when it was dropped. */
   fun add(fix: TrackFix): Boolean {
+    if (!fix.lat.isFinite() || !fix.lon.isFinite() || fix.lat !in -90.0..90.0 || fix.lon !in -180.0..180.0) return false
     if (fix.accuracyM != null && fix.accuracyM > MAX_ACCURACY_M) return false
     val prev = last
     if (prev == null) {
       last = fix
+      recordPoint(fix)
       window.addLast(fix.timeMs to distanceM)
       takeAltitude(fix)
       return true
@@ -94,9 +103,35 @@ internal class TrackAccumulator {
     }
     distanceM += step
     last = fix
+    recordPoint(fix)
     window.addLast(fix.timeMs to distanceM)
     trim(fix.timeMs)
     return true
+  }
+
+  /** GeoJSON `[lon, lat]` coordinates for the live map trail, downsampled to at most [maxPoints]. */
+  fun trailCoordinates(maxPoints: Int = 500): List<List<Double>> {
+    val n = keptPoints.size
+    if (n == 0 || maxPoints <= 0) return emptyList()
+    if (n <= maxPoints) return keptPoints.map { listOf(it.lon, it.lat) }
+    if (maxPoints == 1) return listOf(listOf(keptPoints.last().lon, keptPoints.last().lat))
+    return (0 until maxPoints).map { i ->
+      val idx = ((i.toLong() * (n - 1)) / (maxPoints - 1)).toInt()
+      val p = keptPoints[idx]
+      listOf(p.lon, p.lat)
+    }
+  }
+
+  private fun recordPoint(fix: TrackFix) {
+    val prevKept = keptPoints.lastOrNull()
+    if (prevKept != null && fix.timeMs <= prevKept.timeMs) return
+    if (keptPoints.size >= MAX_TRACK_POINTS) {
+      val compacted = ArrayList<TrackFix>((keptPoints.size + 1) / 2)
+      for (i in keptPoints.indices step 2) compacted.add(keptPoints[i])
+      keptPoints.clear()
+      keptPoints.addAll(compacted)
+    }
+    keptPoints.add(fix)
   }
 
   private fun trim(nowMs: Long) {
@@ -129,6 +164,7 @@ internal class TrackAccumulator {
 
     /** Below this (about 1:00:00 per km) the person is standing and no pace is shown. */
     const val MIN_PACE_SPEED_MPS = 0.28
+    const val MAX_TRACK_POINTS = 10_800
 
     private const val EARTH_RADIUS_M = 6_371_008.8
 
@@ -246,6 +282,17 @@ internal class PhoneGpsSession(private val start: () -> Boolean, private val sto
   fun watchAsks() {
     synchronized(lock) {
       feeding = true
+      if (!tracking) tracking = start()
+    }
+  }
+
+  /**
+   * Starts phone GPS tracking for an active outdoor live workout even when the wearable has not sent `18/02` (for example a Huawei Band
+   * whose workout was discovered via `17/03`, `17/11`, or `37/02`, or started from the phone). Does not turn on the `18/03` feed unless
+   * the watch explicitly asked via [watchAsks].
+   */
+  fun sessionNeedsGps() {
+    synchronized(lock) {
       if (!tracking) tracking = start()
     }
   }

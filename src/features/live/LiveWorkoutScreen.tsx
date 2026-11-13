@@ -139,7 +139,7 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
   const location = session.location;
   const kind: FieldSportKind = session.sportKind ?? 'other';
   const [layout] = useRunLayout(kind);
-  const trail = useTrail(location);
+  const trail = useTrail(location, live.trail);
   const metronome = useMetronome();
   const phase = livePhase(live);
   const extras = useLiveExtras(session, nowMs);
