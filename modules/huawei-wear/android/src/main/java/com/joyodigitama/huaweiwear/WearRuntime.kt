@@ -230,7 +230,7 @@ internal class WearRuntime private constructor(context: Context) {
       scope.launch(Dispatchers.IO) {
         runCatching { WorkoutStore(syncStore, settings.watchAddress ?: "").backfillConnectedGps(track) }
         kotlinx.coroutines.delay(3_000L)
-        if (link.currentState() == LinkState.CONNECTED && !liveWorkout.isLive) {
+        if (link.currentState() == LinkState.CONNECTED.wire && !liveWorkout.isLive) {
           runCatching { link.syncActivity(false) }
         }
       }
