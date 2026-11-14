@@ -483,4 +483,88 @@ final class WorkoutStoreTests: XCTestCase {
         let indoorGpsCount = try rows(store, "SELECT COUNT(*) FROM workout_points WHERE workout_id = \(indoorId) AND lat IS NOT NULL") { $0.int(0) }.first
         XCTAssertEqual(indoorGpsCount, 0)
     }
+
+    func testBandWorkoutWithZeroEndMergesTrackAndBackfillsWithCaseInsensitiveDevice() throws {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let gpsStore = ConnectedGpsStore()
+        let fixes = [
+            WorkoutLinkWire.Fix(timeMs: 1_700_000_010_000, latitude: -6.2000, longitude: 106.8000, altitude: 15.0, accuracy: 5.0, speed: 3.0, bearing: nil),
+            WorkoutLinkWire.Fix(timeMs: 1_700_000_030_000, latitude: -6.2010, longitude: 106.8010, altitude: 22.0, accuracy: 5.0, speed: 3.1, bearing: nil),
+        ]
+        let session = ConnectedGpsSession(
+            id: "band-zero-end",
+            startSec: 1_700_000_000,
+            endSec: 1_700_000_600,
+            sportType: 1,
+            distanceM: 157.0,
+            riseM: 7.0,
+            points: fixes
+        )
+        gpsStore.upsert(session)
+
+        // fixesInWindow handles workoutEndSec <= workoutStartSec gracefully
+        XCTAssertEqual(session.fixesInWindow(workoutStartSec: 1_700_000_000, workoutEndSec: 0).count, 2)
+        XCTAssertEqual(session.fixesInWindow(workoutStartSec: 1_700_000_000, workoutEndSec: 1_700_000_000).count, 2)
+
+        let bandRunZeroEnd = WorkoutRecord(
+            number: 21,
+            start: 1_700_000_000,
+            end: 0,
+            sportType: 1,
+            sportName: "Running",
+            duration: 600,
+            distance: 0,
+            calories: 85,
+            steps: 900,
+            avgHr: 142,
+            maxHr: 165,
+            summaryJson: #"{"kind":"RUNNING","gps":"none","gpsPoints":0}"#,
+            points: [],
+            complete: true
+        )
+        let merged = ConnectedGpsMerger.merge(bandRunZeroEnd, store: gpsStore)
+        XCTAssertEqual(merged.end, 1_700_000_600)
+        XCTAssertEqual(merged.points.count, 2)
+
+        // Backfill with uppercase address in DB vs lowercase address parameter and end == 0
+        let sinkUpper = WorkoutStore(store, address: "AA:BB:CC:DD:EE:01", gpsStore: ConnectedGpsStore())
+        let unmergedRecord = WorkoutRecord(
+            number: 22,
+            start: 1_700_020_000,
+            end: 0,
+            sportType: 2,
+            sportName: "Walking",
+            duration: 600,
+            distance: 0,
+            calories: 50,
+            steps: 800,
+            avgHr: 115,
+            maxHr: 130,
+            summaryJson: #"{"kind":"WALKING","gps":"none","gpsPoints":0}"#,
+            points: [],
+            complete: true
+        )
+        XCTAssertTrue(try sinkUpper.save(unmergedRecord))
+
+        let backfillSession = ConnectedGpsSession(
+            id: "backfill-zero-end",
+            startSec: 1_700_020_000,
+            endSec: 1_700_020_600,
+            sportType: 2,
+            distanceM: 140.0,
+            riseM: 3.0,
+            points: [
+                WorkoutLinkWire.Fix(timeMs: 1_700_020_010_000, latitude: -6.3000, longitude: 106.9000, altitude: 10.0, accuracy: 5.0, speed: 1.4, bearing: nil),
+                WorkoutLinkWire.Fix(timeMs: 1_700_020_040_000, latitude: -6.3010, longitude: 106.9010, altitude: 12.0, accuracy: 5.0, speed: 1.4, bearing: nil),
+            ]
+        )
+        let sinkLower = WorkoutStore(store, address: "aa:bb:cc:dd:ee:01", gpsStore: ConnectedGpsStore())
+        let updatedCount = try sinkLower.backfillConnectedGps(backfillSession)
+        XCTAssertEqual(updatedCount, 1)
+
+        let pointsCount = try rows(store, "SELECT COUNT(*) FROM workout_points p JOIN workouts w ON w.id = p.workout_id WHERE w.start = 1700020000 AND p.lat IS NOT NULL") { $0.int(0) }.first
+        XCTAssertEqual(pointsCount, 2)
+        let updatedEnd = try rows(store, "SELECT end FROM workouts WHERE start = 1700020000") { $0.int64(0) }.first
+        XCTAssertEqual(updatedEnd, 1_700_020_600)
+    }
 }

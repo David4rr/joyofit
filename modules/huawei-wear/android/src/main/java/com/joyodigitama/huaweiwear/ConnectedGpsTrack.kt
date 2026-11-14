@@ -26,12 +26,13 @@ internal data class ConnectedGpsSession(
     get() = max(endSec, (points.lastOrNull()?.timeMs ?: 0L) / 1000L)
 
   fun fixesInWindow(workoutStartSec: Long, workoutEndSec: Long, slackSec: Long = ConnectedGpsStore.MATCH_SLACK_SEC): List<TrackFix> {
+    val effectiveEnd = if (workoutEndSec > workoutStartSec) workoutEndSec else effectiveEndSec
     val lo = workoutStartSec - slackSec
-    val hi = workoutEndSec + slackSec
+    val hi = effectiveEnd + slackSec
     val bySec = LinkedHashMap<Long, TrackFix>()
     for (fix in points) {
       val sec = fix.timeMs / 1000L
-      if (sec in lo..hi && fix.lat.isFinite() && fix.lon.isFinite() && fix.lat in -90.0..90.0 && fix.lon in -180.0..180.0) {
+      if (sec > 0L && sec in lo..hi && fix.lat.isFinite() && fix.lon.isFinite() && fix.lat in -90.0..90.0 && fix.lon in -180.0..180.0) {
         bySec.putIfAbsent(sec, fix)
       }
     }
@@ -71,16 +72,19 @@ internal class ConnectedGpsStore(private val storageFile: File? = null) {
   }
 
   fun match(workoutStartSec: Long, workoutEndSec: Long, sportType: Int?): ConnectedGpsSession? {
-    if (workoutStartSec <= 0L || workoutEndSec < workoutStartSec || WorkoutSportTypes.isIndoor(sportType)) return null
+    if (workoutStartSec <= 0L || WorkoutSportTypes.isIndoor(sportType)) return null
     synchronized(lock) {
       return sessions
         .filter { s ->
+          val effectiveEnd = if (workoutEndSec > workoutStartSec) workoutEndSec else s.effectiveEndSec
           val sportOk = sportType == null || s.sportType == null || s.sportType == sportType
-          val overlap = min(workoutEndSec + MATCH_SLACK_SEC, s.effectiveEndSec) - max(workoutStartSec - MATCH_SLACK_SEC, s.startSec)
-          sportOk && overlap > 0L && s.fixesInWindow(workoutStartSec, workoutEndSec).size >= 2
+          val overlap = min(effectiveEnd + MATCH_SLACK_SEC, s.effectiveEndSec) - max(workoutStartSec - MATCH_SLACK_SEC, s.startSec)
+          sportOk && overlap > 0L && s.fixesInWindow(workoutStartSec, effectiveEnd).size >= 2
         }
-        .maxWithOrNull(compareBy<ConnectedGpsSession> { it.fixesInWindow(workoutStartSec, workoutEndSec).size }
-          .thenBy { -abs(it.startSec - workoutStartSec) })
+        .maxWithOrNull(compareBy<ConnectedGpsSession> { s ->
+          val effectiveEnd = if (workoutEndSec > workoutStartSec) workoutEndSec else s.effectiveEndSec
+          s.fixesInWindow(workoutStartSec, effectiveEnd).size
+        }.thenBy { -abs(it.startSec - workoutStartSec) })
     }
   }
 
@@ -152,8 +156,14 @@ internal class ConnectedGpsStore(private val storageFile: File? = null) {
         if (s.sportType != null) obj.put("sportType", s.sportType)
         arr.put(obj)
       }
-      file.parentFile?.mkdirs()
-      file.writeText(arr.toString())
+      val parent = file.parentFile
+      parent?.mkdirs()
+      val tmp = File(parent ?: file.absoluteFile.parentFile, "${file.name}.tmp")
+      tmp.writeText(arr.toString())
+      if (!tmp.renameTo(file)) {
+        file.writeText(arr.toString())
+        tmp.delete()
+      }
     }
   }
 
@@ -171,13 +181,15 @@ internal class ConnectedGpsStore(private val storageFile: File? = null) {
 internal object ConnectedGpsMerger {
   fun merge(record: WorkoutRecord, store: ConnectedGpsStore = ConnectedGpsStore.shared): WorkoutRecord {
     if (record.points.any { it.lat != null && it.lon != null }) return record
-    val session = store.match(record.start, record.end, record.sportType) ?: return record
-    val fixes = session.fixesInWindow(record.start, record.end)
+    val nominalEnd = if (record.end > record.start) record.end else if (record.duration > 0) record.start + record.duration else 0L
+    val session = store.match(record.start, nominalEnd, record.sportType) ?: return record
+    val effectiveEnd = if (nominalEnd > record.start) nominalEnd else session.effectiveEndSec
+    val fixes = session.fixesInWindow(record.start, effectiveEnd)
     if (fixes.size < 2) return record
 
     val gpsPoints = fixes.map { fix ->
       WorkoutPoint(
-        ts = (fix.timeMs / 1000L).coerceIn(record.start, max(record.start, record.end)),
+        ts = (fix.timeMs / 1000L).coerceIn(record.start, max(record.start, effectiveEnd)),
         lat = fix.lat,
         lon = fix.lon,
         alt = fix.altitudeM,
@@ -193,7 +205,7 @@ internal object ConnectedGpsMerger {
     return WorkoutRecord(
       number = record.number,
       start = record.start,
-      end = record.end,
+      end = if (record.end > record.start) record.end else effectiveEnd,
       sportType = record.sportType,
       sportName = record.sportName,
       duration = record.duration,
@@ -219,8 +231,8 @@ internal object ConnectedGpsMerger {
     val rows = db.query(
       """SELECT w.id, w.start, w.end, w.sport_type, w.duration, w.distance, w.summary_json
          FROM workouts w
-         WHERE w.imported = 0 AND (? = '' OR w.device = ?)
-           AND w.end >= ? AND w.start <= ?
+         WHERE w.imported = 0 AND (? = '' OR w.device IS NULL OR LOWER(w.device) = LOWER(?))
+           AND CAST(MAX(COALESCE(w.end, 0), w.start + COALESCE(w.duration, 0)) AS INTEGER) >= ? AND w.start <= ?
            AND NOT EXISTS (
              SELECT 1 FROM workout_points p WHERE p.workout_id = w.id AND p.lat IS NOT NULL AND p.lon IS NOT NULL
            )""",
@@ -230,11 +242,12 @@ internal object ConnectedGpsMerger {
     for (row in rows) {
       val workoutId = row[0] as Long
       val startSec = row[1] as Long
-      val endSec = row[2] as Long
+      val rawEndSec = row[2] as Long
       val sportType = (row[3] as? Long)?.toInt()
       val durationSec = (row[4] as? Long)?.toInt() ?: 0
       val distanceM = (row[5] as? Long)?.toInt() ?: 0
       val summaryJson = (row[6] as? String) ?: "{}"
+      val endSec = if (rawEndSec > startSec) rawEndSec else if (durationSec > 0) startSec + durationSec else session.effectiveEndSec
       if (WorkoutSportTypes.isIndoor(sportType)) continue
       if (sportType != null && session.sportType != null && sportType != session.sportType) continue
       val fixes = session.fixesInWindow(startSec, endSec)
@@ -253,7 +266,8 @@ internal object ConnectedGpsMerger {
         )
       }
       db.transaction {
-        db.exec("UPDATE workouts SET distance = ?, summary_json = ? WHERE id = ?", newDistance, newSummary, workoutId)
+        val newEnd = if (rawEndSec > startSec) rawEndSec else endSec
+        db.exec("UPDATE workouts SET distance = ?, end = ?, summary_json = ? WHERE id = ?", newDistance, newEnd, newSummary, workoutId)
         db.insertPoints(workoutId, gpsPoints)
       }
       updated++

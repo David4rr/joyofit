@@ -14,6 +14,16 @@ export const TRAIL_MAX_POINTS = 1500;
 
 /** `trail` with `point` added when it is a real step from the last point; the same array when it is not. */
 export function appendTrail(trail: readonly TrailPoint[], point: TrailPoint): readonly TrailPoint[] {
+  if (
+    !Number.isFinite(point.lat) ||
+    !Number.isFinite(point.lon) ||
+    point.lat < -90 ||
+    point.lat > 90 ||
+    point.lon < -180 ||
+    point.lon > 180
+  ) {
+    return trail;
+  }
   const last = trail[trail.length - 1];
   if (last && haversineM(last, point) < TRAIL_MIN_STEP_M) return trail;
   const next = [...trail, { lat: point.lat, lon: point.lon }];
@@ -42,9 +52,16 @@ export function useTrail(
 ): readonly TrailPoint[] {
   const [trail, setTrail] = useState<readonly TrailPoint[]>(() => fromNativeTrail(nativeTrail));
   const nativeCount = nativeTrail?.length ?? 0;
-  if (nativeCount > trail.length) {
+  const [lastNativeCount, setLastNativeCount] = useState(() => nativeTrail?.length ?? 0);
+  if (nativeCount < lastNativeCount) {
+    setLastNativeCount(nativeCount);
+    setTrail(fromNativeTrail(nativeTrail));
+  } else if (nativeCount > lastNativeCount) {
+    setLastNativeCount(nativeCount);
     const recovered = fromNativeTrail(nativeTrail);
-    if (recovered.length > trail.length) setTrail(recovered);
+    if (recovered.length > 0) {
+      setTrail(recovered);
+    }
   }
   const lat = position?.lat;
   const lon = position?.lon;
@@ -52,7 +69,18 @@ export function useTrail(
   const [seen, setSeen] = useState<{ lat?: number; lon?: number }>({});
   if (seen.lat !== lat || seen.lon !== lon) {
     setSeen({ lat, lon });
-    if (lat !== undefined && lon !== undefined) setTrail((old) => appendTrail(old, { lat, lon }));
+    if (
+      lat !== undefined &&
+      lon !== undefined &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lon) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lon >= -180 &&
+      lon <= 180
+    ) {
+      setTrail((old) => appendTrail(old, { lat, lon }));
+    }
   }
   return trail;
 }

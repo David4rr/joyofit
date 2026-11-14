@@ -102,7 +102,7 @@ export function LiveWorkoutScreen() {
           <Button label={t('live.endPrompt.keep')} onPress={() => setKept(true)} />
         </Card>
       ) : null}
-      <LiveBody session={session} title={title} />
+      <LiveBody key={session.id} session={session} title={title} />
       {live.status === 'ended' ? (
         <Button
           label={t('common:actions.done')}
@@ -147,7 +147,7 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
   const [stepsRefused, setStepsRefused] = useState(false);
   const active = session.state !== 'ended';
   const statusColor = live.status === 'running' ? colors.link : live.status === 'paused' ? colors.warning : colors.mutedForeground;
-  const showMap = session.gpsSport || location !== null || (session.sportKind !== null && session.sportKind !== 'other');
+  const showMap = session.gpsSport || location !== null || trail.length > 0 || (session.sportKind !== null && session.sportKind !== 'other');
 
   // The screen stays on while the metronome beats: a timer of a sleeping app may be throttled (see `metronome.ts`).
   const hold = active && metronome.enabled;

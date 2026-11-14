@@ -200,6 +200,7 @@ public final class WearRuntime: @unchecked Sendable {
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
                 guard let self, self.link.currentState() == .connected, !self.liveWorkout.isLive else { return }
                 _ = try? await self.link.syncActivity(fullHistory: false)
+                _ = try? WorkoutStore(self.syncStore, address: self.settings.watchAddress ?? "").backfillConnectedGps(track)
             }
         }
         p2p = P2pController(

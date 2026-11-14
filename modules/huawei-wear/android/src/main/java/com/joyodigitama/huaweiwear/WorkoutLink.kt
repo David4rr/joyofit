@@ -130,13 +130,13 @@ internal class WorkoutLink(
   @Volatile
   private var statusAnswered = false
 
-  private fun startStatusPoll(session: HuaweiSession) {
+  private fun startStatusPoll(session: HuaweiSession, initialDelayMs: Long = STATUS_FIRST_MS, resetAnswered: Boolean = true) {
     statusPoll?.cancel()
-    statusAnswered = false
+    if (resetAnswered) statusAnswered = false
     // The Fit 4 Pro does not list 17/03; it is probed anyway and the poll stops on the first failure.
     if (!DeviceCaps.supports(WORKOUT_SERVICE, STATUS)) log("Workout link: the watch does not list 17/03; probing it")
     statusPoll = scope.launch {
-      kotlinx.coroutines.delay(STATUS_FIRST_MS)
+      if (initialDelayMs > 0) kotlinx.coroutines.delay(initialDelayMs)
       while (true) {
         val handle = link.handle() ?: return@launch
         if (handle.session !== session) return@launch
@@ -160,7 +160,7 @@ internal class WorkoutLink(
       return
     }
     val handle = link.handle() ?: return
-    scope.launch { pollStatus(handle.session) }
+    startStatusPoll(handle.session, initialDelayMs = 0L, resetAnswered = false)
   }
 
   /** False when the watch does not answer with a status (unsupported, or no answer yet). */
@@ -181,7 +181,6 @@ internal class WorkoutLink(
       log("Workout link: workout status $text")
     }
     if (tlv == null || !tlv.contains(0x81)) {
-      // A watch that already answered with a workout state and now sends none has no workout to report.
       if (!statusAnswered) return false
       live.watchStatus(WatchPhase.IDLE, workoutType = null)
       return true

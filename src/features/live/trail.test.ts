@@ -13,6 +13,13 @@ describe('appendTrail', () => {
   test('a step of about 11 m is kept', () => {
     expect(appendTrail([{ lat: -6.2, lon: 106.8 }], { lat: -6.2001, lon: 106.8 }).length).toBe(2);
   });
+  test('drops NaN, Infinity, and out-of-bounds coordinates without corrupting trail', () => {
+    const trail = [{ lat: -6.2, lon: 106.8 }];
+    expect(appendTrail(trail, { lat: Number.NaN, lon: 106.8 })).toBe(trail);
+    expect(appendTrail(trail, { lat: -6.2, lon: Number.POSITIVE_INFINITY })).toBe(trail);
+    expect(appendTrail(trail, { lat: 95, lon: 106.8 })).toBe(trail);
+    expect(appendTrail(trail, { lat: -6.2, lon: 200 })).toBe(trail);
+  });
   test('stays under the cap and keeps the newest point', () => {
     let trail: readonly { lat: number; lon: number }[] = [];
     for (let i = 0; i < TRAIL_MAX_POINTS + 50; i += 1) trail = appendTrail(trail, { lat: -6.2 - i * 0.001, lon: 106.8 });

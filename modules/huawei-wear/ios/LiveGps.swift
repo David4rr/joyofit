@@ -140,7 +140,7 @@ public struct TrackAccumulator: Sendable {
     }
 
     private mutating func takeAltitude(_ fix: WorkoutLinkWire.Fix) {
-        guard let alt = fix.altitude else { return }
+        guard let alt = fix.altitude, alt.isFinite else { return }
         let smooth = smoothedAlt.map { $0 + Self.altAlpha * (alt - $0) } ?? alt
         smoothedAlt = smooth
         guard let ref = referenceAlt else {
@@ -199,10 +199,11 @@ public struct SessionTrack: Sendable {
     /// start, so movement is the start. Returns true when this fix completes that movement (`MotionStart`): the caller starts the session, which
     /// calls `startStretch`.
     public mutating func onFix(_ fix: WorkoutLinkWire.Fix, running: Bool, motionStarts: Bool) -> Bool {
-        location = fix
+        if fix.latitude.isFinite, fix.longitude.isFinite, (-90.0...90.0).contains(fix.latitude), (-180.0...180.0).contains(fix.longitude) {
+            location = fix
+        }
         if running {
             track.add(fix)
-            return false
         }
         return motionStarts && motion.onFix(speedMps: fix.speed, accuracyM: fix.accuracy)
     }

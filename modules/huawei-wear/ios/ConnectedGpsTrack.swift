@@ -41,13 +41,14 @@ public struct ConnectedGpsSession: Sendable {
         workoutEndSec: Int64,
         slackSec: Int64 = ConnectedGpsStore.matchSlackSec
     ) -> [WorkoutLinkWire.Fix] {
+        let effectiveEnd = workoutEndSec > workoutStartSec ? workoutEndSec : effectiveEndSec
         let lo = workoutStartSec - slackSec
-        let hi = workoutEndSec + slackSec
+        let hi = effectiveEnd + slackSec
         var seenSecs = Set<Int64>()
         var result: [WorkoutLinkWire.Fix] = []
         for fix in points {
             let sec = fix.timeMs / 1000
-            guard sec >= lo, sec <= hi,
+            guard sec > 0, sec >= lo, sec <= hi,
                   fix.latitude.isFinite, fix.longitude.isFinite,
                   (-90.0...90.0).contains(fix.latitude), (-180.0...180.0).contains(fix.longitude)
             else { continue }
@@ -91,20 +92,23 @@ public final class ConnectedGpsStore: @unchecked Sendable {
     }
 
     public func match(workoutStartSec: Int64, workoutEndSec: Int64, sportType: Int?) -> ConnectedGpsSession? {
-        guard workoutStartSec > 0, workoutEndSec >= workoutStartSec, !WorkoutSportTypes.isIndoor(sportType) else {
+        guard workoutStartSec > 0, !WorkoutSportTypes.isIndoor(sportType) else {
             return nil
         }
         return lock.locked {
             sessions
                 .filter { s in
+                    let effectiveEnd = workoutEndSec > workoutStartSec ? workoutEndSec : s.effectiveEndSec
                     let sportOk = sportType == nil || s.sportType == nil || s.sportType == sportType
-                    let overlap = min(workoutEndSec + Self.matchSlackSec, s.effectiveEndSec)
+                    let overlap = min(effectiveEnd + Self.matchSlackSec, s.effectiveEndSec)
                         - max(workoutStartSec - Self.matchSlackSec, s.startSec)
-                    return sportOk && overlap > 0 && s.fixesInWindow(workoutStartSec: workoutStartSec, workoutEndSec: workoutEndSec).count >= 2
+                    return sportOk && overlap > 0 && s.fixesInWindow(workoutStartSec: workoutStartSec, workoutEndSec: effectiveEnd).count >= 2
                 }
                 .max { a, b in
-                    let countA = a.fixesInWindow(workoutStartSec: workoutStartSec, workoutEndSec: workoutEndSec).count
-                    let countB = b.fixesInWindow(workoutStartSec: workoutStartSec, workoutEndSec: workoutEndSec).count
+                    let effectiveEndA = workoutEndSec > workoutStartSec ? workoutEndSec : a.effectiveEndSec
+                    let countA = a.fixesInWindow(workoutStartSec: workoutStartSec, workoutEndSec: effectiveEndA).count
+                    let effectiveEndB = workoutEndSec > workoutStartSec ? workoutEndSec : b.effectiveEndSec
+                    let countB = b.fixesInWindow(workoutStartSec: workoutStartSec, workoutEndSec: effectiveEndB).count
                     if countA != countB { return countA < countB }
                     return abs(a.startSec - workoutStartSec) > abs(b.startSec - workoutStartSec)
                 }
@@ -115,13 +119,15 @@ public final class ConnectedGpsStore: @unchecked Sendable {
 public enum ConnectedGpsMerger {
     public static func merge(_ record: WorkoutRecord, store: ConnectedGpsStore = .shared) -> WorkoutRecord {
         if record.points.contains(where: { $0.lat != nil && $0.lon != nil }) { return record }
-        guard let session = store.match(workoutStartSec: record.start, workoutEndSec: record.end, sportType: record.sportType) else {
+        let nominalEnd = record.end > record.start ? record.end : (record.duration > 0 ? record.start + Int64(record.duration) : 0)
+        guard let session = store.match(workoutStartSec: record.start, workoutEndSec: nominalEnd, sportType: record.sportType) else {
             return record
         }
-        let fixes = session.fixesInWindow(workoutStartSec: record.start, workoutEndSec: record.end)
+        let effectiveEnd = nominalEnd > record.start ? nominalEnd : session.effectiveEndSec
+        let fixes = session.fixesInWindow(workoutStartSec: record.start, workoutEndSec: effectiveEnd)
         guard fixes.count >= 2 else { return record }
 
-        let upper = max(record.start, record.end)
+        let upper = max(record.start, effectiveEnd)
         let gpsPoints: [WorkoutPoint] = fixes.map { fix in
             let ts = min(max(fix.timeMs / 1000, record.start), upper)
             return WorkoutPoint(ts: ts, lat: fix.latitude, lon: fix.longitude, alt: fix.altitude, hr: nil, speed: fix.speed)
@@ -144,7 +150,7 @@ public enum ConnectedGpsMerger {
         return WorkoutRecord(
             number: record.number,
             start: record.start,
-            end: record.end,
+            end: record.end > record.start ? record.end : effectiveEnd,
             sportType: record.sportType,
             sportName: record.sportName,
             duration: record.duration,

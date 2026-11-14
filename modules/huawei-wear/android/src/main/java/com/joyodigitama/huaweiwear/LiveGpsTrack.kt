@@ -139,7 +139,7 @@ internal class TrackAccumulator {
   }
 
   private fun takeAltitude(fix: TrackFix) {
-    val alt = fix.altitudeM ?: return
+    val alt = fix.altitudeM?.takeIf { it.isFinite() } ?: return
     val smooth = smoothedAlt?.let { it + ALT_ALPHA * (alt - it) } ?: alt
     smoothedAlt = smooth
     val ref = referenceAlt
@@ -231,10 +231,11 @@ internal class SessionTrack {
    * session, which calls [startStretch].
    */
   fun onFix(fix: TrackFix, running: Boolean, motionStarts: Boolean): Boolean {
-    location = fix
+    if (fix.lat.isFinite() && fix.lon.isFinite() && fix.lat in -90.0..90.0 && fix.lon in -180.0..180.0) {
+      location = fix
+    }
     if (running) {
       track.add(fix)
-      return false
     }
     return motionStarts && motion.onFix(fix.speedMps, fix.accuracyM)
   }

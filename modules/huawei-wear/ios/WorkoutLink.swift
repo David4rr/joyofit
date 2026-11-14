@@ -122,7 +122,7 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
 
     // Request `81 00`; the answer's 81 holds 02 trainMonitorState, 03 operatorType, 04 sportType, 06 workoutType (`WatchPhase`).
 
-    private func startStatusPoll(_ session: HuaweiSession, caps: DeviceCaps) {
+    private func startStatusPoll(_ session: HuaweiSession, caps: DeviceCaps, initialDelayMs: Int64? = nil, resetAnswered: Bool = true) {
         // The Fit 4 Pro does not list 17/03; it is probed anyway and the poll stops on the first failure.
         if !caps.supports(Int(WorkoutLinkWire.workoutService), Int(WorkoutLinkWire.status)) { log("Workout link: the watch does not list 17/03; probing it") }
         let (previous, generation): (Task<Void, Never>?, Int) = lock.locked {
@@ -130,14 +130,16 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
             statusPoll = nil
             pollGeneration += 1
             pollActive = true
-            statusAnswered = false
+            if resetAnswered { statusAnswered = false }
             return (previous, pollGeneration)
         }
         previous?.cancel()
         releasePollWaiter()
         let poll = Task { [weak self] in
-            guard let first = self?.statusFirstMs else { return }
-            try? await Task.sleep(nanoseconds: UInt64(first) * 1_000_000)
+            let first = initialDelayMs ?? self?.statusFirstMs ?? 0
+            if first > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(first) * 1_000_000)
+            }
             while !Task.isCancelled {
                 guard let self, let handle = self.link.handle(), handle.session === session else { break }
                 // Once the watch has answered, a failed poll is a busy or briefly lost link, not a missing command: keep polling, or a running
@@ -216,7 +218,7 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
             return
         }
         guard let handle = link.handle() else { return }
-        Task { _ = await self.pollStatus(handle.session) }
+        startStatusPoll(handle.session, caps: handle.caps, initialDelayMs: 0, resetAnswered: false)
     }
 
     /// False when the watch does not answer with a status (unsupported, or no answer yet).

@@ -191,8 +191,8 @@ public final class WorkoutStore: WorkoutSink, DynamicsSink {
                 """
                 SELECT w.id, w.start, w.end, w.sport_type, w.duration, w.distance, w.summary_json
                 FROM workouts w
-                WHERE w.imported = 0 AND (? = '' OR w.device = ?)
-                  AND w.end >= ? AND w.start <= ?
+                WHERE w.imported = 0 AND (? = '' OR w.device IS NULL OR LOWER(w.device) = LOWER(?))
+                  AND MAX(COALESCE(w.end, 0), w.start + COALESCE(w.duration, 0)) >= ? AND w.start <= ?
                   AND NOT EXISTS (
                     SELECT 1 FROM workout_points p WHERE p.workout_id = w.id AND p.lat IS NOT NULL AND p.lon IS NOT NULL
                   )
@@ -213,7 +213,8 @@ public final class WorkoutStore: WorkoutSink, DynamicsSink {
             for row in rows {
                 if WorkoutSportTypes.isIndoor(row.sportType) { continue }
                 if let rowSport = row.sportType, let sessSport = session.sportType, rowSport != sessSport { continue }
-                let fixes = session.fixesInWindow(workoutStartSec: row.start, workoutEndSec: row.end)
+                let effectiveEnd = row.end > row.start ? row.end : (row.duration > 0 ? row.start + Int64(row.duration) : session.effectiveEndSec)
+                let fixes = session.fixesInWindow(workoutStartSec: row.start, workoutEndSec: effectiveEnd)
                 guard fixes.count >= 2 else { continue }
                 let routeDist = ConnectedGpsMerger.routeDistanceM(fixes)
                 let effectiveDist = routeDist > 0 ? routeDist : session.distanceM
@@ -226,11 +227,12 @@ public final class WorkoutStore: WorkoutSink, DynamicsSink {
                     durationSec: row.duration,
                     riseM: session.riseM
                 )
-                let upper = max(row.start, row.end)
+                let upper = max(row.start, effectiveEnd)
                 try db.transaction {
+                    let newEnd = row.end > row.start ? row.end : effectiveEnd
                     try db.run(
-                        "UPDATE workouts SET distance = ?, summary_json = ? WHERE id = ?",
-                        [.int(Int64(newDistance)), .text(newSummary), .int(row.id)]
+                        "UPDATE workouts SET distance = ?, end = ?, summary_json = ? WHERE id = ?",
+                        [.int(Int64(newDistance)), .int(newEnd), .text(newSummary), .int(row.id)]
                     )
                     let insert = try db.prepare(
                         "INSERT INTO workout_points (workout_id, ts, lat, lon, alt, hr, speed, cadence, stride, power) VALUES (?, ?, ?, ?, ?, NULL, ?, NULL, NULL, NULL)"

@@ -585,11 +585,14 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         if mirrorBlocked() { return }
         let outcome: (live: Bool, started: Bool) = lock.locked {
             guard var s = session, s.status != .ended else { return (false, false) }
+            let shouldRecord = s.gpsRequested || s.source == .gps || s.status == .running
             let silentWatch = lastStatusAtMs == 0 && !reportsSeen && s.source != .watch
-            let moving = s.phoneTrack.onFix(fix, running: s.status == .running, motionStarts: s.status == .preparing && silentWatch)
-            if moving { s.setStatus(.running, nowMs: nowMs()) }
+            let moving = s.phoneTrack.onFix(fix, running: shouldRecord, motionStarts: s.status == .preparing && silentWatch)
+            let hasMovement = (fix.speed.map { $0 >= 0.4 } ?? false) && (fix.accuracy.map { $0 <= TrackAccumulator.maxAccuracyM } ?? true)
+            let shouldStart = s.status == .preparing && (moving || (silentWatch && s.gpsRequested && hasMovement))
+            if shouldStart { s.setStatus(.running, nowMs: nowMs()) }
             session = s
-            return (true, moving)
+            return (true, shouldStart)
         }
         if !outcome.live { return }
         if outcome.started { log("Live workout: the watch gives no sign of a start; the person is moving, timer running") }

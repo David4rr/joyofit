@@ -539,9 +539,12 @@ internal class LiveWorkout(
     var started = false
     synchronized(lock) {
       val s = session?.takeIf { it.status != Status.ENDED } ?: return
+      val shouldRecord = s.gpsRequested || s.source == Source.GPS || s.status == Status.RUNNING
       val silentWatch = lastStatusAtMs == 0L && !reportsSeen && s.source != Source.WATCH
-      val moving = s.phoneTrack.onFix(fix, running = s.status == Status.RUNNING, motionStarts = s.status == Status.PREPARING && silentWatch)
-      if (moving) {
+      val moving = s.phoneTrack.onFix(fix, running = shouldRecord, motionStarts = s.status == Status.PREPARING && silentWatch)
+      val hasMovement = (fix.speedMps != null && fix.speedMps >= 0.4f && (fix.accuracyM == null || fix.accuracyM <= TrackAccumulator.MAX_ACCURACY_M))
+      val shouldStart = s.status == Status.PREPARING && (moving || (silentWatch && s.gpsRequested && hasMovement))
+      if (shouldStart) {
         setStatus(s, Status.RUNNING, System.currentTimeMillis())
         started = true
       }
